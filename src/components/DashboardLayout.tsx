@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Building2, Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut } from "lucide-react";
+import { Building2, Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut, Newspaper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -15,6 +15,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Bell, label: "Updates", path: "/dashboard/updates" },
+    { icon: Newspaper, label: "Campus News", path: "/campus-news" },
     { icon: Search, label: "Find My Res", path: "/findmyres" },
     { icon: FileText, label: "Applications", path: "/dashboard/applications" },
     { icon: User, label: "Profile", path: "/dashboard/profile" },
@@ -49,8 +50,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 onClick={() => navigate(item.path)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-smooth ${
                   active 
-                    ? "bg-primary text-primary-foreground shadow-card" 
-                    : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
+                    ? "bg-gradient-primary text-primary-foreground shadow-glow" 
+                    : "text-foreground hover:bg-primary/10 hover:text-primary"
                 }`}
               >
                 <Icon className="w-5 h-5" />

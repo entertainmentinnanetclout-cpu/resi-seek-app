@@ -66,23 +66,24 @@ const Landing = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-hero text-white py-24 overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
+      <section className="relative bg-gradient-hero text-white py-32 overflow-hidden">
+        <div className="absolute inset-0 opacity-30">
           <img src={heroImage} alt="" className="w-full h-full object-cover" />
         </div>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50" />
         <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight font-display animate-fade-in">
               Find Student Accommodation in Pretoria & Tshwane
             </h1>
-            <p className="text-xl mb-8 text-white/90">
+            <p className="text-xl md:text-2xl mb-10 text-white/90">
               Your journey to the perfect student residence starts here. Safe, affordable, and close to campus.
             </p>
             <Button 
               variant="hero" 
               size="lg"
               onClick={() => navigate("/findmyres")}
-              className="text-lg px-8 py-6"
+              className="text-xl px-12 py-7 shadow-premium"
             >
               Find My Res <ArrowRight className="ml-2" />
             </Button>
@@ -96,12 +97,12 @@ const Landing = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Why Choose ResKonnect?</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <Card key={index} className="shadow-card hover:shadow-hover transition-smooth">
+              <Card key={index} className="shadow-card hover:shadow-premium transition-smooth group">
                 <CardContent className="p-6 text-center">
-                  <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <feature.icon className="w-7 h-7 text-primary" />
+                  <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-glow">
+                    <feature.icon className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                  <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
                   <p className="text-muted-foreground text-sm">{feature.description}</p>
                 </CardContent>
               </Card>

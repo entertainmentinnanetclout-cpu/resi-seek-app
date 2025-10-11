@@ -9,14 +9,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-card hover:shadow-hover transition-smooth",
+        default: "bg-gradient-primary text-primary-foreground hover:shadow-glow shadow-card transition-smooth font-semibold",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        outline: "border-2 border-primary/20 bg-card/50 backdrop-blur-sm hover:bg-primary/10 hover:border-primary/40 text-foreground transition-smooth",
+        secondary: "bg-gradient-secondary text-secondary-foreground hover:shadow-glow shadow-card transition-smooth font-semibold",
+        ghost: "hover:bg-accent/10 hover:text-accent transition-smooth",
         link: "text-primary underline-offset-4 hover:underline",
-        hero: "bg-gradient-hero text-white shadow-hover hover:shadow-lg hover:scale-105 transition-smooth font-semibold",
-        accent: "bg-accent text-accent-foreground hover:bg-accent/90 shadow-card hover:shadow-hover transition-smooth",
+        hero: "bg-gradient-hero text-white shadow-premium hover:shadow-glow hover:scale-105 transition-smooth font-bold text-lg",
+        accent: "bg-accent text-accent-foreground hover:shadow-glow shadow-card transition-smooth font-semibold",
+        premium: "bg-gradient-accent text-white shadow-premium hover:shadow-glow hover:scale-105 transition-smooth font-bold",
       },
       size: {
         default: "h-10 px-4 py-2",

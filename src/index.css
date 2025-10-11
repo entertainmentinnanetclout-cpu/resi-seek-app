@@ -8,33 +8,39 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 210 40% 10%;
+    --background: 220 25% 97%;
+    --foreground: 220 40% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 40% 10%;
+    --card-foreground: 220 40% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 40% 10%;
+    --popover-foreground: 220 40% 12%;
 
-    --primary: 180 65% 45%;
+    --primary: 220 90% 56%;
     --primary-foreground: 0 0% 100%;
+    
+    --primary-light: 210 100% 65%;
+    --primary-dark: 230 80% 42%;
 
-    --secondary: 180 25% 92%;
-    --secondary-foreground: 180 65% 25%;
+    --secondary: 260 60% 65%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --secondary-light: 270 70% 75%;
+    --secondary-dark: 250 55% 50%;
 
-    --muted: 210 30% 96%;
-    --muted-foreground: 210 20% 50%;
+    --muted: 220 20% 96%;
+    --muted-foreground: 220 15% 50%;
 
-    --accent: 15 85% 60%;
+    --accent: 195 100% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 30% 88%;
-    --input: 210 30% 88%;
-    --ring: 180 65% 45%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 220 90% 56%;
 
     --success: 145 65% 45%;
     --success-foreground: 0 0% 100%;
@@ -42,12 +48,20 @@ All colors MUST be HSL.
     --warning: 45 93% 47%;
     --warning-foreground: 0 0% 100%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
     
-    --gradient-hero: linear-gradient(135deg, hsl(180 65% 45%), hsl(200 75% 50%));
-    --gradient-accent: linear-gradient(135deg, hsl(15 85% 60%), hsl(25 90% 65%));
-    --shadow-card: 0 4px 20px -2px hsl(210 30% 15% / 0.08);
-    --shadow-hover: 0 8px 30px -4px hsl(210 30% 15% / 0.12);
+    --gradient-primary: linear-gradient(135deg, hsl(220 90% 56%), hsl(195 100% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(260 60% 65%), hsl(270 70% 75%));
+    --gradient-hero: linear-gradient(135deg, hsl(230 80% 42%) 0%, hsl(220 90% 56%) 50%, hsl(195 100% 50%) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(220 40% 15%), hsl(230 40% 20%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 25% 98%));
+    --gradient-accent: linear-gradient(135deg, hsl(260 60% 65%), hsl(195 100% 50%));
+    
+    --shadow-card: 0 4px 24px -4px hsl(220 40% 15% / 0.08), 0 0 0 1px hsl(220 40% 15% / 0.02);
+    --shadow-hover: 0 12px 40px -8px hsl(220 40% 15% / 0.15), 0 0 0 1px hsl(220 40% 15% / 0.03);
+    --shadow-glow: 0 0 40px hsl(195 100% 50% / 0.3);
+    --shadow-premium: 0 20px 60px -12px hsl(220 90% 56% / 0.25);
+    
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --sidebar-background: 0 0% 98%;
@@ -68,41 +82,54 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 210 40% 8%;
-    --foreground: 210 30% 96%;
+    --background: 220 40% 8%;
+    --foreground: 220 25% 96%;
 
-    --card: 210 35% 12%;
-    --card-foreground: 210 30% 96%;
+    --card: 220 35% 12%;
+    --card-foreground: 220 25% 96%;
 
-    --popover: 210 35% 12%;
-    --popover-foreground: 210 30% 96%;
+    --popover: 220 35% 12%;
+    --popover-foreground: 220 25% 96%;
 
-    --primary: 180 65% 50%;
+    --primary: 220 90% 60%;
     --primary-foreground: 0 0% 100%;
+    
+    --primary-light: 210 100% 70%;
+    --primary-dark: 230 80% 45%;
 
-    --secondary: 180 30% 20%;
-    --secondary-foreground: 180 30% 90%;
+    --secondary: 260 60% 60%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --secondary-light: 270 70% 70%;
+    --secondary-dark: 250 55% 45%;
 
-    --muted: 210 30% 18%;
-    --muted-foreground: 210 20% 65%;
+    --muted: 220 30% 18%;
+    --muted-foreground: 220 20% 65%;
 
-    --accent: 15 85% 55%;
+    --accent: 195 100% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 30% 20%;
-    --input: 210 30% 20%;
-    --ring: 180 65% 50%;
+    --border: 220 30% 20%;
+    --input: 220 30% 20%;
+    --ring: 220 90% 60%;
 
     --success: 145 65% 50%;
     --warning: 45 93% 52%;
     
-    --gradient-hero: linear-gradient(135deg, hsl(180 65% 40%), hsl(200 75% 45%));
-    --gradient-accent: linear-gradient(135deg, hsl(15 85% 55%), hsl(25 90% 60%));
-    --shadow-card: 0 4px 20px -2px hsl(0 0% 0% / 0.3);
-    --shadow-hover: 0 8px 30px -4px hsl(0 0% 0% / 0.4);
+    --gradient-primary: linear-gradient(135deg, hsl(220 90% 60%), hsl(195 100% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(260 60% 60%), hsl(270 70% 70%));
+    --gradient-hero: linear-gradient(135deg, hsl(230 80% 38%) 0%, hsl(220 90% 50%) 50%, hsl(195 100% 45%) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(220 40% 10%), hsl(230 40% 15%));
+    --gradient-card: linear-gradient(135deg, hsl(220 35% 12%), hsl(220 35% 14%));
+    --gradient-accent: linear-gradient(135deg, hsl(260 60% 60%), hsl(195 100% 55%));
+    
+    --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.4), 0 0 0 1px hsl(0 0% 100% / 0.05);
+    --shadow-hover: 0 12px 40px -8px hsl(0 0% 0% / 0.6), 0 0 0 1px hsl(0 0% 100% / 0.08);
+    --shadow-glow: 0 0 40px hsl(195 100% 50% / 0.4);
+    --shadow-premium: 0 20px 60px -12px hsl(220 90% 56% / 0.35);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -120,6 +147,35 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', 'Poppins', system-ui, -apple-system, sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 20px hsl(var(--accent) / 0.5);
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  
+  .backdrop-blur-glass {
+    backdrop-filter: blur(12px);
+    background: hsl(var(--card) / 0.8);
   }
 }

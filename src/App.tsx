@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import ProfileSetup from "./pages/ProfileSetup";
 import Dashboard from "./pages/Dashboard";
 import Updates from "./pages/Updates";
+import CampusNews from "./pages/CampusNews";
 import FindMyRes from "./pages/FindMyRes";
 import Applications from "./pages/Applications";
 import Profile from "./pages/Profile";
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/setup-profile" element={<ProfileSetup />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/updates" element={<Updates />} />
+          <Route path="/campus-news" element={<CampusNews />} />
           <Route path="/dashboard/applications" element={<Applications />} />
           <Route path="/dashboard/profile" element={<Profile />} />
           <Route path="/dashboard/messages" element={<Messages />} />
