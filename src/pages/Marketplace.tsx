@@ -24,8 +24,8 @@ interface MarketplaceListing {
   created_at: string;
   profiles: {
     full_name: string;
-    student_number: string;
-  };
+    student_number: string | null;
+  } | null;
 }
 
 const Marketplace = () => {
@@ -85,7 +85,7 @@ const Marketplace = () => {
     if (error) {
       toast.error("Failed to load listings");
     } else {
-      setListings(data || []);
+      setListings((data as any) || []);
     }
     setIsLoading(false);
   };
@@ -389,8 +389,10 @@ const Marketplace = () => {
                         </Badge>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        <p>Seller: {listing.profiles.full_name}</p>
-                        <p className="text-xs">Student #: {listing.profiles.student_number}</p>
+                        <p>Seller: {listing.profiles?.full_name || 'Unknown'}</p>
+                        {listing.profiles?.student_number && (
+                          <p className="text-xs">Student #: {listing.profiles.student_number}</p>
+                        )}
                       </div>
                       <Button variant="default" className="w-full">
                         Contact Seller
