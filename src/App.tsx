@@ -16,6 +16,7 @@ import Messages from "./pages/Messages";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Marketplace from "./pages/marketplace";
+import ProtectedRoute from "./context/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
