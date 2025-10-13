@@ -1,8 +1,9 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Building2, Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut, Newspaper } from "lucide-react";
+import { Building2, Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut, Newspaper, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -11,12 +12,14 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+  const { signOut } = useAuth();
+
   const navItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Bell, label: "Updates", path: "/dashboard/updates" },
     { icon: Newspaper, label: "Campus News", path: "/campus-news" },
     { icon: Search, label: "Find My Res", path: "/findmyres" },
+    { icon: ShoppingBag, label: "Marketplace", path: "/marketplace" },
     { icon: FileText, label: "Applications", path: "/dashboard/applications" },
     { icon: User, label: "Profile", path: "/dashboard/profile" },
     { icon: MessageSquare, label: "Messages", path: "/dashboard/messages" },
@@ -24,9 +27,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const handleLogout = () => {
-    // TODO: Implement actual logout
-    navigate("/");
+  const handleLogout = async () => {
+    await signOut();
   };
 
   const SidebarContent = () => (

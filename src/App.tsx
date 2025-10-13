@@ -38,11 +38,19 @@ const App = () => (
           <Route path="/dashboard/applications" element={<Applications />} />
           <Route path="/dashboard/profile" element={<Profile />} />
           <Route path="/dashboard/messages" element={<Messages />} />
-          <Route path="/findmyres" element={<FindMyRes />} />
+          <Route path="/findmyres" element={
+            <ProtectedRoute>
+              <FindMyRes />
+            </ProtectedRoute>
+          } />
+          <Route path="/marketplace" element={
+            <ProtectedRoute>
+              <Marketplace />
+            </ProtectedRoute>
+          } />
           <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
-           <Route path="/marketplace" element={<Marketplace />} />
           </Routes>
         </AuthProvider>
       </BrowserRouter>
