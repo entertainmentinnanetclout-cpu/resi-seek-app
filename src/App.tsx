@@ -16,7 +16,8 @@ import Messages from "./pages/Messages";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Marketplace from "./pages/Marketplace";
-import ProtectedRoute from "./context/ProtectedRoute";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +27,8 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
+        <AuthProvider>
+          <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/setup-profile" element={<ProfileSetup />} />
@@ -41,7 +43,8 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
            <Route path="/marketplace" element={<Marketplace />} />
-        </Routes>
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

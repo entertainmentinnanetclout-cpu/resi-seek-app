@@ -11,7 +11,6 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-</ProtectedRoute>
   
   const navItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
