@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { user, isLoading: authLoading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -20,18 +30,51 @@ const Auth = () => {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    // TODO: Implement actual authentication with Lovable Cloud
-    // For now, simulate authentication
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
       if (isLogin) {
-        toast.success("Welcome back!");
-        navigate("/dashboard");
+        // Sign in existing user
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success("Welcome back!");
+          navigate("/dashboard");
+        }
       } else {
-        toast.success("Account created! Please complete your profile.");
-        navigate("/setup-profile");
+        // Sign up new user
+        const confirmPassword = formData.get("confirmPassword") as string;
+        
+        if (password !== confirmPassword) {
+          toast.error("Passwords do not match");
+          setIsLoading(false);
+          return;
+        }
+
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+          },
+        });
+
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success("Account created! Please check your email to verify.");
+          navigate("/dashboard");
+        }
       }
-    }, 1000);
+    } catch (error) {
+      toast.error("An unexpected error occurred. Please try again.");
+      console.error("Auth error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

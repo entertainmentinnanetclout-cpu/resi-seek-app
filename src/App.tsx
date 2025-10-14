@@ -31,13 +31,41 @@ const App = () => (
           <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/setup-profile" element={<ProfileSetup />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/updates" element={<Updates />} />
-          <Route path="/campus-news" element={<CampusNews />} />
-          <Route path="/dashboard/applications" element={<Applications />} />
-          <Route path="/dashboard/profile" element={<Profile />} />
-          <Route path="/dashboard/messages" element={<Messages />} />
+          <Route path="/setup-profile" element={
+            <ProtectedRoute>
+              <ProfileSetup />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard/updates" element={
+            <ProtectedRoute>
+              <Updates />
+            </ProtectedRoute>
+          } />
+          <Route path="/campus-news" element={
+            <ProtectedRoute>
+              <CampusNews />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard/applications" element={
+            <ProtectedRoute>
+              <Applications />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard/messages" element={
+            <ProtectedRoute>
+              <Messages />
+            </ProtectedRoute>
+          } />
           <Route path="/findmyres" element={
             <ProtectedRoute>
               <FindMyRes />
@@ -48,7 +76,11 @@ const App = () => (
               <Marketplace />
             </ProtectedRoute>
           } />
-          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
+          } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
           </Routes>
