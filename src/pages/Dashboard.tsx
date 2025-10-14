@@ -1,19 +1,99 @@
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, AlertCircle, FileText, Search, User, TrendingUp, Newspaper, Sparkles } from "lucide-react";
+import { CheckCircle2, AlertCircle, FileText, Search, User, TrendingUp, Newspaper, ShoppingBag } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import QuickActionCard from "@/components/QuickActionCard";
+import HeroCarousel from "@/components/HeroCarousel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
+import heroAccommodation from "@/assets/hero-accommodation.jpg";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   
-  // Mock data - TODO: Replace with actual data from backend
-  const profileCompletion = 100;
-  const activeApplications = 2;
+  const [profileData, setProfileData] = useState<any>(null);
+  const [listingsCount, setListingsCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!user) return;
+
+      try {
+        // Fetch profile data
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        setProfileData(profile);
+
+        // Fetch user's marketplace listings count
+        const { count } = await supabase
+          .from("marketplace_listings")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id);
+
+        setListingsCount(count || 0);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [user]);
+
+  // Calculate profile completion
+  const profileCompletion = profileData
+    ? Math.round(
+        (Object.values(profileData).filter(
+          (val) => val !== null && val !== ""
+        ).length /
+          Object.keys(profileData).length) *
+          100
+      )
+    : 0;
+  
   const profileComplete = profileCompletion === 100;
+
+  // Carousel slides for marketing
+  const carouselSlides = [
+    {
+      image: heroAccommodation,
+      title: "Find Your Perfect Res",
+      description: "Discover comfortable, affordable student accommodation near your campus",
+      cta: {
+        text: "Browse Residences",
+        action: () => navigate("/findmyres")
+      }
+    },
+    {
+      image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=600&fit=crop",
+      title: "Student Grocery Discounts",
+      description: "Save up to 30% on grocery hampers specially curated for students",
+      cta: {
+        text: "Get Discounts",
+        action: () => navigate("/campus-news")
+      }
+    },
+    {
+      image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&h=600&fit=crop",
+      title: "Promote Your Products",
+      description: "List your items on our marketplace and reach thousands of students",
+      cta: {
+        text: "Create Listing",
+        action: () => navigate("/marketplace")
+      }
+    }
+  ];
 
   const quickLinks = [
     {
@@ -46,23 +126,25 @@ const Dashboard = () => {
     }
   ];
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 md:p-8 flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading your dashboard...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="p-6 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
-          {/* Welcome Section */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-hero p-8 md:p-12 text-white shadow-premium">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20" />
-            <div className="relative flex items-center gap-4">
-              <Sparkles className="w-12 h-12 animate-float" />
-              <div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-2">Welcome Back!</h1>
-                <p className="text-white/90 text-lg">
-                  Here's your ResKonnect dashboard overview
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* Hero Carousel */}
+          <HeroCarousel slides={carouselSlides} autoPlay={true} interval={6000} />
 
           {/* Profile Status */}
           <Card className="shadow-card border-l-4 border-l-primary overflow-hidden">
@@ -106,22 +188,26 @@ const Dashboard = () => {
           {/* Quick Stats */}
           <div className="grid md:grid-cols-3 gap-6">
             <StatCard
-              icon={FileText}
-              value={activeApplications}
-              label="Active Applications"
+              icon={ShoppingBag}
+              value={listingsCount}
+              label="My Marketplace Listings"
               gradient="bg-gradient-primary"
-              trend={{ value: "2 new", positive: true }}
             />
             <StatCard
               icon={Search}
-              value={24}
-              label="Available Residences"
+              value={profileCompletion}
+              label="Profile Completion"
               gradient="bg-gradient-secondary"
+              trend={
+                profileComplete
+                  ? { value: "Complete", positive: true }
+                  : undefined
+              }
             />
             <StatCard
-              icon={TrendingUp}
-              value={0}
-              label="Unread Messages"
+              icon={Newspaper}
+              value="Live"
+              label="Campus Updates"
               gradient="bg-gradient-accent"
             />
           </div>
@@ -162,33 +248,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="text-2xl">Recent Activity</CardTitle>
-              <CardDescription>Your latest actions and updates</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-start gap-4 pb-4 border-b last:border-0 group hover:bg-primary/5 -mx-2 px-2 py-2 rounded-lg transition-colors">
-                  <div className="w-3 h-3 bg-gradient-primary rounded-full mt-2 group-hover:scale-125 transition-transform shadow-glow" />
-                  <div className="flex-1">
-                    <p className="font-semibold">Application submitted</p>
-                    <p className="text-sm text-muted-foreground">You applied to Campus Heights Residence</p>
-                    <p className="text-xs text-muted-foreground mt-1">2 days ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4 pb-4 border-b last:border-0 group hover:bg-primary/5 -mx-2 px-2 py-2 rounded-lg transition-colors">
-                  <div className="w-3 h-3 bg-gradient-secondary rounded-full mt-2 group-hover:scale-125 transition-transform shadow-glow" />
-                  <div className="flex-1">
-                    <p className="font-semibold">Profile updated</p>
-                    <p className="text-sm text-muted-foreground">Your profile is now 100% complete</p>
-                    <p className="text-xs text-muted-foreground mt-1">1 week ago</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </DashboardLayout>
