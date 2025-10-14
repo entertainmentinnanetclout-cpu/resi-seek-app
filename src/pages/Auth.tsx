@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,29 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { z } from "zod";
+import logo from "@/assets/RES KONNECT LOGO.png";
+
+const passwordSchema = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number");
+
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required")
+});
+
+const signupSchema = z.object({
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  password: passwordSchema,
+  confirmPassword: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -27,51 +49,49 @@ const Auth = () => {
     setIsLoading(true);
     
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
+    
     try {
+      const data = {
+        email: formData.get("email") as string,
+        password: formData.get("password") as string,
+        ...(isLogin ? {} : { 
+          fullName: formData.get("fullName") as string,
+          confirmPassword: formData.get("confirmPassword") as string 
+        })
+      };
+
+      // Validate with zod
+      const schema = isLogin ? loginSchema : signupSchema;
+      const validated = schema.parse(data);
+
       if (isLogin) {
-        // Sign in existing user
         const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: validated.email,
+          password: validated.password,
         });
 
-        if (error) {
-          toast.error(error.message);
-        } else {
-          toast.success("Welcome back!");
-          navigate("/dashboard");
-        }
+        if (error) throw error;
+        toast.success("Welcome back!");
+        navigate("/dashboard");
       } else {
-        // Sign up new user
-        const confirmPassword = formData.get("confirmPassword") as string;
-        
-        if (password !== confirmPassword) {
-          toast.error("Passwords do not match");
-          setIsLoading(false);
-          return;
-        }
-
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: validated.email,
+          password: validated.password,
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard`,
           },
         });
 
-        if (error) {
-          toast.error(error.message);
-        } else {
-          toast.success("Account created! Please check your email to verify.");
-          navigate("/dashboard");
-        }
+        if (error) throw error;
+        toast.success("Account created! Please check your email to verify.");
+        navigate("/dashboard");
       }
-    } catch (error) {
-      toast.error("An unexpected error occurred. Please try again.");
-      console.error("Auth error:", error);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.issues[0].message);
+      } else {
+        toast.error(error.message || "An error occurred");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -81,11 +101,10 @@ const Auth = () => {
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <Building2 className="w-10 h-10 text-white" />
-            <span className="text-2xl font-bold text-white">ResKonnect</span>
+          <div className="inline-flex justify-center mb-4">
+            <img src={logo} alt="ResKonnect" className="h-20 w-auto" />
           </div>
-          <p className="text-white/90">Your student accommodation portal</p>
+          <p className="text-white/90 text-lg">Your student accommodation portal</p>
         </div>
 
         <Card className="shadow-hover">

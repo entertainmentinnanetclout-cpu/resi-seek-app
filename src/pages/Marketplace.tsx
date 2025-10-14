@@ -14,6 +14,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Package, Plus, Search, Filter } from "lucide-react";
 import { StudentVerificationModal } from "@/components/StudentVerificationModal";
+import { z } from "zod";
+
+const listingSchema = z.object({
+  item_name: z.string()
+    .trim()
+    .min(3, "Item name must be at least 3 characters")
+    .max(100, "Item name must be less than 100 characters")
+    .regex(/^[a-zA-Z0-9\s-]+$/, "Item name contains invalid characters"),
+  description: z.string()
+    .trim()
+    .min(10, "Description must be at least 10 characters")
+    .max(1000, "Description must be less than 1000 characters"),
+  price: z.number()
+    .positive("Price must be positive")
+    .max(1000000, "Price is unreasonably high")
+    .finite(),
+  condition: z.enum(["New", "Like New", "Good", "Fair", "Poor"]),
+  category: z.enum(["Electronics", "Books", "Study Materials"])
+});
 
 interface MarketplaceListing {
   id: string;
@@ -198,11 +217,6 @@ const Marketplace = () => {
       return;
     }
 
-    if (!ALLOWED_CATEGORIES.includes(formData.category)) {
-      toast.error(`Only ${ALLOWED_CATEGORIES.join(", ")} are allowed.`);
-      return;
-    }
-
     if (selectedFiles.length === 0) {
       toast.error("Please upload at least one image");
       return;
@@ -213,22 +227,31 @@ const Marketplace = () => {
       return;
     }
 
-    const imageUrls = await uploadImages();
+    try {
+      // Validate with zod
+      const validated = listingSchema.parse({
+        item_name: formData.item_name,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        condition: formData.condition,
+        category: formData.category
+      });
 
-    const { error } = await supabase.from("marketplace_listings").insert({
-      user_id: user?.id,
-      item_name: formData.item_name,
-      description: formData.description,
-      price: parseFloat(formData.price),
-      condition: formData.condition,
-      category: formData.category,
-      images: imageUrls,
-      verified: false
-    });
+      const imageUrls = await uploadImages();
 
-    if (error) {
-      toast.error("Failed to create listing");
-    } else {
+      const { error } = await supabase.from("marketplace_listings").insert({
+        user_id: user?.id,
+        item_name: validated.item_name,
+        description: validated.description,
+        price: validated.price,
+        condition: validated.condition,
+        category: validated.category,
+        images: imageUrls,
+        verified: false
+      });
+
+      if (error) throw error;
+
       toast.success("Listing created! Pending verification.");
       setIsDialogOpen(false);
       setFormData({
@@ -240,6 +263,12 @@ const Marketplace = () => {
       });
       setSelectedFiles([]);
       fetchListings();
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.issues[0].message);
+      } else {
+        toast.error(error.message || "Failed to create listing");
+      }
     }
   };
 

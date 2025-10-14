@@ -154,7 +154,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      marketplace_seller_profiles: {
+        Row: {
+          full_name: string | null
+          id: string | null
+          profile_picture_url: string | null
+        }
+        Insert: {
+          full_name?: string | null
+          id?: string | null
+          profile_picture_url?: string | null
+        }
+        Update: {
+          full_name?: string | null
+          id?: string | null
+          profile_picture_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {

@@ -6,6 +6,20 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const studentVerificationSchema = z.object({
+  fullName: z.string()
+    .trim()
+    .min(2, "Full name must be at least 2 characters")
+    .max(100, "Full name is too long")
+    .regex(/^[a-zA-Z\s'-]+$/, "Full name contains invalid characters"),
+  studentNumber: z.string()
+    .trim()
+    .regex(/^[uU]\d{8}$/, "Student number must be in format u12345678")
+    .transform(s => s.toLowerCase()),
+  institution: z.enum(["Cape Town", "Durban", "Johannesburg", "Pretoria"])
+});
 
 interface StudentVerificationModalProps {
   open: boolean;
@@ -37,15 +51,18 @@ export function StudentVerificationModal({
     setLoading(true);
 
     try {
+      // Validate with zod
+      const validated = studentVerificationSchema.parse(formData);
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       const { error } = await supabase
         .from("profiles")
         .update({
-          full_name: formData.fullName,
-          student_number: formData.studentNumber,
-          campus: formData.institution
+          full_name: validated.fullName,
+          student_number: validated.studentNumber,
+          campus: validated.institution
         })
         .eq("id", user.id);
 
@@ -59,11 +76,19 @@ export function StudentVerificationModal({
       onVerified();
       onClose();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.issues[0].message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import { Building2, Shield, MapPin, DollarSign, FileCheck, ArrowRight } from "lucide-react";
+import { Shield, MapPin, DollarSign, FileCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import heroImage from "@/assets/hero-accommodation.jpg";
+import logo from "@/assets/RES KONNECT LOGO.png";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -51,8 +52,7 @@ const Landing = () => {
       <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Building2 className="w-8 h-8 text-primary" />
-            <span className="text-xl font-bold text-foreground">ResKonnect</span>
+            <img src={logo} alt="ResKonnect" className="h-10 w-auto" />
           </div>
           <div className="flex gap-4">
             <Button variant="ghost" onClick={() => navigate("/auth")}>
@@ -128,7 +128,7 @@ const Landing = () => {
               </Button>
             </div>
             <div className="bg-primary/10 rounded-2xl p-8 h-80 flex items-center justify-center">
-              <Building2 className="w-32 h-32 text-primary/30" />
+              <img src={logo} alt="ResKonnect Illustration" className="w-48 h-auto opacity-40" />
             </div>
           </div>
         </div>
@@ -185,8 +185,7 @@ const Landing = () => {
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Building2 className="w-6 h-6 text-primary" />
-                <span className="text-lg font-bold">ResKonnect</span>
+                <img src={logo} alt="ResKonnect" className="h-8 w-auto" />
               </div>
               <p className="text-sm text-muted-foreground">
                 Your trusted student accommodation finder in Pretoria & Tshwane.

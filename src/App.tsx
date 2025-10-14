@@ -17,6 +17,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Marketplace from "./pages/Marketplace";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminRoute } from "@/components/AdminRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 const queryClient = new QueryClient();
@@ -78,7 +79,9 @@ const App = () => (
           } />
           <Route path="/admin" element={
             <ProtectedRoute>
-              <Admin />
+              <AdminRoute>
+                <Admin />
+              </AdminRoute>
             </ProtectedRoute>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -1,9 +1,10 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Building2, Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut, Newspaper, ShoppingBag } from "lucide-react";
+import { Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut, Newspaper, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
+import logo from "@/assets/RES KONNECT LOGO.png";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -34,11 +35,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-6 border-b">
-        <div className="flex items-center gap-2 mb-1">
-          <Building2 className="w-8 h-8 text-primary" />
-          <span className="text-xl font-bold">ResKonnect</span>
+        <div className="flex flex-col items-center mb-1">
+          <img src={logo} alt="ResKonnect" className="h-16 w-auto mb-2" />
         </div>
-        <p className="text-sm text-muted-foreground">Student Portal</p>
+        <p className="text-sm text-muted-foreground text-center">Student Portal</p>
       </div>
 
       <nav className="flex-1 p-4">
@@ -88,9 +88,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <div className="flex-1 flex flex-col">
         {/* Mobile Header */}
         <header className="md:hidden border-b bg-card p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-primary" />
-            <span className="font-bold">ResKonnect</span>
+          <div className="flex items-center">
+            <img src={logo} alt="ResKonnect" className="h-8 w-auto" />
           </div>
           <Sheet>
             <SheetTrigger asChild>
