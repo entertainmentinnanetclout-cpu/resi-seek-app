@@ -66,44 +66,44 @@ const Landing = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-hero text-white py-32 overflow-hidden">
+      <section className="relative bg-gradient-hero text-white py-20 md:py-32 overflow-hidden">
         <div className="absolute inset-0 opacity-30">
           <img src={heroImage} alt="" className="w-full h-full object-cover" />
         </div>
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight font-display animate-fade-in">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-4 md:mb-6 leading-tight font-display animate-fade-in">
               Find Student Accommodation in Pretoria & Tshwane
             </h1>
-            <p className="text-xl md:text-2xl mb-10 text-white/90">
+            <p className="text-lg md:text-xl lg:text-2xl mb-8 md:mb-10 text-white/90 px-4">
               Your journey to the perfect student residence starts here. Safe, affordable, and close to campus.
             </p>
             <Button 
               variant="hero" 
               size="lg"
-              onClick={() => navigate("/findmyres")}
-              className="text-xl px-12 py-7 shadow-premium"
+              onClick={() => navigate("/auth")}
+              className="text-base md:text-xl px-8 md:px-12 py-6 md:py-7 shadow-premium w-full sm:w-auto"
             >
-              Find My Res <ArrowRight className="ml-2" />
+              Get Started <ArrowRight className="ml-2" />
             </Button>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20">
+      <section className="py-12 md:py-20">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Why Choose ResKonnect?</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-8 md:mb-12">Why Choose ResKonnect?</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {features.map((feature, index) => (
               <Card key={index} className="shadow-card hover:shadow-premium transition-smooth group">
                 <CardContent className="p-6 text-center">
-                  <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-glow">
-                    <feature.icon className="w-8 h-8 text-white" />
+                  <div className="w-16 h-16 bg-gradient-accent rounded-full flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-smooth">
+                    <feature.icon className="w-8 h-8 text-accent-foreground" />
                   </div>
-                  <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground text-sm">{feature.description}</p>
+                  <h3 className="text-lg md:text-xl font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-sm md:text-base text-muted-foreground">{feature.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -112,38 +112,38 @@ const Landing = () => {
       </section>
 
       {/* About Section */}
-      <section className="py-20 bg-secondary/30">
+      <section className="py-12 md:py-20 bg-secondary/30">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center max-w-6xl mx-auto">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">About ResKonnect</h2>
-              <p className="text-muted-foreground mb-4 leading-relaxed">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6">About ResKonnect</h2>
+              <p className="text-sm md:text-base text-muted-foreground mb-4 leading-relaxed">
                 ResKonnect is your trusted partner in finding quality student accommodation. We connect students with verified residences in Pretoria and Tshwane, making the search process simple and stress-free.
               </p>
-              <p className="text-muted-foreground mb-6 leading-relaxed">
+              <p className="text-sm md:text-base text-muted-foreground mb-6 leading-relaxed">
                 Our platform streamlines applications, ensures transparency, and puts students first. Whether you're looking for budget-friendly options or premium facilities, we've got you covered.
               </p>
-              <Button variant="default" onClick={() => navigate("/findmyres")}>
-                Browse Residences
+              <Button variant="default" onClick={() => navigate("/auth")} className="w-full sm:w-auto">
+                Get Started
               </Button>
             </div>
-            <div className="bg-primary/10 rounded-2xl p-8 h-80 flex items-center justify-center">
-              <img src={logo} alt="ResKonnect Illustration" className="w-48 h-auto opacity-40" />
+            <div className="bg-accent/10 rounded-2xl p-8 h-64 md:h-80 flex items-center justify-center">
+              <img src={logo} alt="ResKonnect Illustration" className="w-32 md:w-48 h-auto opacity-60" />
             </div>
           </div>
         </div>
       </section>
 
       {/* Contact Section */}
-      <section className="py-20">
+      <section className="py-12 md:py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Get in Touch</h2>
-            <p className="text-muted-foreground text-center mb-8">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-4">Get in Touch</h2>
+            <p className="text-sm md:text-base text-muted-foreground text-center mb-8">
               Have questions? We're here to help you find your perfect student residence.
             </p>
             <Card className="shadow-card">
-              <CardContent className="p-6">
+              <CardContent className="p-4 md:p-6">
                 <form onSubmit={handleContactSubmit} className="space-y-4">
                   <div>
                     <label htmlFor="name" className="text-sm font-medium mb-2 block">
@@ -169,7 +169,7 @@ const Landing = () => {
                       rows={5}
                     />
                   </div>
-                  <Button type="submit" variant="accent" className="w-full">
+                  <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
                     Send Message
                   </Button>
                 </form>
@@ -180,34 +180,34 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-card border-t py-12">
+      <footer className="bg-card border-t py-8 md:py-12">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <img src={logo} alt="ResKonnect" className="h-8 w-auto" />
+                <img src={logo} alt="ResKonnect" className="h-6 md:h-8 w-auto" />
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs md:text-sm text-muted-foreground">
                 Your trusted student accommodation finder in Pretoria & Tshwane.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><button onClick={() => navigate("/findmyres")} className="hover:text-primary transition-colors">Find My Res</button></li>
-                <li><button onClick={() => navigate("/auth")} className="hover:text-primary transition-colors">Sign Up</button></li>
-                <li><button onClick={() => navigate("/auth")} className="hover:text-primary transition-colors">Login</button></li>
+              <h4 className="font-semibold mb-4 text-sm md:text-base">Quick Links</h4>
+              <ul className="space-y-2 text-xs md:text-sm text-muted-foreground">
+                <li><button onClick={() => navigate("/auth")} className="hover:text-accent transition-colors">Get Started</button></li>
+                <li><button onClick={() => navigate("/auth")} className="hover:text-accent transition-colors">Sign Up</button></li>
+                <li><button onClick={() => navigate("/auth")} className="hover:text-accent transition-colors">Login</button></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Contact</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <h4 className="font-semibold mb-4 text-sm md:text-base">Contact</h4>
+              <ul className="space-y-2 text-xs md:text-sm text-muted-foreground">
                 <li>Email: info@reskonnect.co.za</li>
                 <li>Phone: +27 12 345 6789</li>
               </ul>
             </div>
           </div>
-          <div className="border-t pt-6 text-center text-sm text-muted-foreground">
+          <div className="border-t pt-4 md:pt-6 text-center text-xs md:text-sm text-muted-foreground">
             <p>&copy; {new Date().getFullYear()} ResKonnect. All rights reserved.</p>
           </div>
         </div>

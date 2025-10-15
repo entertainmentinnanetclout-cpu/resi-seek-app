@@ -2,19 +2,28 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ResKonnect - Find Student Accommodation in Pretoria & Tshwane</title>
-    <meta name="description" content="Your trusted student accommodation portal. Find secure, affordable residences close to campus in Pretoria and Tshwane. Easy applications, verified properties." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>ResKonnect Simplified Portal - Student Hub & Marketplace</title>
+    <meta name="description" content="Student Hub and Marketplace – campus life, accommodation, and career connection made easy." />
     <meta name="author" content="ResKonnect" />
+    <meta name="application-name" content="ResKonnect Simplified Portal" />
+    <meta name="theme-color" content="#141414" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ResKonnect" />
+    
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="manifest" href="/manifest.json" />
 
-    <meta property="og:title" content="ResKonnect - Student Accommodation Portal" />
-    <meta property="og:description" content="Find secure, affordable student accommodation in Pretoria & Tshwane. Easy applications, verified properties." />
+    <meta property="og:title" content="ResKonnect Simplified Portal - Student Hub" />
+    <meta property="og:description" content="Student Hub and Marketplace – campus life, accommodation, and career connection made easy." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:image" content="/icon-512.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:site" content="@reskonnect" />
+    <meta name="twitter:image" content="/icon-512.png" />
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,5 +33,15 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Register service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.log('Service Worker registration failed'));
+        });
+      }
+    </script>
   </body>
 </html>

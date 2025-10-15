@@ -1,27 +1,79 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Upload, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import logo from "@/assets/RES KONNECT LOGO.png";
 
 const ProfileSetup = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [uploadedDocs, setUploadedDocs] = useState({
     id: false,
     registration: false,
     funding: false
   });
+  const [uploading, setUploading] = useState<string | null>(null);
 
   const progress = Object.values(uploadedDocs).filter(Boolean).length * 33.33;
 
-  const handleFileUpload = (docType: keyof typeof uploadedDocs) => {
-    // TODO: Implement actual file upload
-    setUploadedDocs(prev => ({ ...prev, [docType]: true }));
-    toast.success("Document uploaded successfully!");
+  const handleFileUpload = async (docType: keyof typeof uploadedDocs, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only PDF, DOCX, JPG, and PNG files are allowed");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+
+    setUploading(docType);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${docType}-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { error: dbError } = await supabase
+        .from('documents')
+        .insert({
+          user_id: user.id,
+          file_path: fileName,
+          file_name: file.name,
+          document_type: docType,
+          file_size: file.size
+        });
+
+      if (dbError) throw dbError;
+
+      setUploadedDocs(prev => ({ ...prev, [docType]: true }));
+      toast.success("Document uploaded successfully!");
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(error.message || "Failed to upload document");
+    } finally {
+      setUploading(null);
+      event.target.value = '';
+    }
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -42,23 +94,22 @@ const ProfileSetup = () => {
       <nav className="border-b bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Building2 className="w-8 h-8 text-primary" />
-            <span className="text-xl font-bold">ResKonnect</span>
+            <img src={logo} alt="ResKonnect" className="h-8 w-auto" />
           </div>
         </div>
       </nav>
 
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8 md:py-12">
         <div className="max-w-3xl mx-auto">
           {/* Progress Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Complete Your Profile</h1>
-            <p className="text-muted-foreground mb-4">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Complete Your Profile</h1>
+            <p className="text-sm md:text-base text-muted-foreground mb-4">
               Upload required documents to unlock residence applications
             </p>
             <div className="flex items-center gap-4">
               <Progress value={progress} className="flex-1" />
-              <span className="text-sm font-medium">{Math.round(progress)}%</span>
+              <span className="text-sm font-medium whitespace-nowrap">{Math.round(progress)}%</span>
             </div>
           </div>
 
@@ -66,11 +117,11 @@ const ProfileSetup = () => {
             {/* Personal Information */}
             <Card className="shadow-card">
               <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Provide your student details</CardDescription>
+                <CardTitle className="text-lg md:text-xl">Personal Information</CardTitle>
+                <CardDescription className="text-sm">Provide your student details</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="fullName" className="text-sm font-medium mb-2 block">
                       Full Name
@@ -85,7 +136,7 @@ const ProfileSetup = () => {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="email" className="text-sm font-medium mb-2 block">
                       Email Address
@@ -100,7 +151,7 @@ const ProfileSetup = () => {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label htmlFor="campus" className="text-sm font-medium mb-2 block">
                       Campus
@@ -147,87 +198,150 @@ const ProfileSetup = () => {
             {/* Document Uploads */}
             <Card className="shadow-card">
               <CardHeader>
-                <CardTitle>Required Documents</CardTitle>
-                <CardDescription>Upload these documents to complete your profile</CardDescription>
+                <CardTitle className="text-lg md:text-xl">Required Documents</CardTitle>
+                <CardDescription className="text-sm">Upload these documents to complete your profile</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* ID Upload */}
                 <div className="border rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">ID Copy</h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-medium text-sm md:text-base">ID Copy</h4>
                         <span className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded">Required</span>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Upload a clear copy of your ID (PDF or JPEG)
+                      <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                        Upload a clear copy of your ID (PDF, DOCX, JPG, PNG - Max 10MB)
                       </p>
                     </div>
-                    {uploadedDocs.id && <CheckCircle2 className="w-5 h-5 text-success" />}
+                    {uploadedDocs.id && <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />}
                   </div>
-                  <Button 
-                    type="button"
-                    variant={uploadedDocs.id ? "secondary" : "default"}
-                    size="sm"
-                    onClick={() => handleFileUpload("id")}
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    {uploadedDocs.id ? "Re-upload" : "Upload ID"}
-                  </Button>
+                  <div className="relative">
+                    <Input
+                      type="file"
+                      id="id-upload"
+                      accept=".pdf,.docx,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileUpload("id", e)}
+                      className="hidden"
+                      disabled={uploading === "id"}
+                    />
+                    <Button 
+                      type="button"
+                      variant={uploadedDocs.id ? "secondary" : "default"}
+                      size="sm"
+                      onClick={() => document.getElementById('id-upload')?.click()}
+                      disabled={uploading === "id"}
+                      className="w-full sm:w-auto"
+                    >
+                      {uploading === "id" ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          {uploadedDocs.id ? "Re-upload" : "Upload ID"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Registration Upload */}
                 <div className="border rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">Proof of Registration</h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-medium text-sm md:text-base">Proof of Registration</h4>
                         <span className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded">Required</span>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Current year registration certificate (PDF or JPEG)
+                      <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                        Current year registration certificate (PDF, DOCX, JPG, PNG - Max 10MB)
                       </p>
                     </div>
-                    {uploadedDocs.registration && <CheckCircle2 className="w-5 h-5 text-success" />}
+                    {uploadedDocs.registration && <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />}
                   </div>
-                  <Button 
-                    type="button"
-                    variant={uploadedDocs.registration ? "secondary" : "default"}
-                    size="sm"
-                    onClick={() => handleFileUpload("registration")}
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    {uploadedDocs.registration ? "Re-upload" : "Upload Registration"}
-                  </Button>
+                  <div className="relative">
+                    <Input
+                      type="file"
+                      id="registration-upload"
+                      accept=".pdf,.docx,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileUpload("registration", e)}
+                      className="hidden"
+                      disabled={uploading === "registration"}
+                    />
+                    <Button 
+                      type="button"
+                      variant={uploadedDocs.registration ? "secondary" : "default"}
+                      size="sm"
+                      onClick={() => document.getElementById('registration-upload')?.click()}
+                      disabled={uploading === "registration"}
+                      className="w-full sm:w-auto"
+                    >
+                      {uploading === "registration" ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          {uploadedDocs.registration ? "Re-upload" : "Upload Registration"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Funding Upload */}
                 <div className="border rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">Proof of Funding</h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-medium text-sm md:text-base">Proof of Funding</h4>
                         <span className="text-xs bg-accent/10 text-accent px-2 py-1 rounded">Optional</span>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Bursary letter or financial proof (if applicable)
+                      <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                        Bursary letter or financial proof (PDF, DOCX, JPG, PNG - Max 10MB)
                       </p>
                     </div>
-                    {uploadedDocs.funding && <CheckCircle2 className="w-5 h-5 text-success" />}
+                    {uploadedDocs.funding && <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />}
                   </div>
-                  <Button 
-                    type="button"
-                    variant={uploadedDocs.funding ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => handleFileUpload("funding")}
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    {uploadedDocs.funding ? "Re-upload" : "Upload Funding Proof"}
-                  </Button>
+                  <div className="relative">
+                    <Input
+                      type="file"
+                      id="funding-upload"
+                      accept=".pdf,.docx,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileUpload("funding", e)}
+                      className="hidden"
+                      disabled={uploading === "funding"}
+                    />
+                    <Button 
+                      type="button"
+                      variant={uploadedDocs.funding ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => document.getElementById('funding-upload')?.click()}
+                      disabled={uploading === "funding"}
+                      className="w-full sm:w-auto"
+                    >
+                      {uploading === "funding" ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          {uploadedDocs.funding ? "Re-upload" : "Upload Funding Proof"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 {(!uploadedDocs.id || !uploadedDocs.registration) && (
-                  <div className="flex items-start gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                  <div className="flex items-start gap-2 text-xs md:text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                     <p>You must upload ID and Registration documents before applying for residences.</p>
                   </div>
@@ -235,7 +349,7 @@ const ProfileSetup = () => {
               </CardContent>
             </Card>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 type="button" 
                 variant="outline" 
@@ -246,8 +360,7 @@ const ProfileSetup = () => {
               </Button>
               <Button 
                 type="submit" 
-                variant="accent" 
-                className="flex-1"
+                className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
                 disabled={!uploadedDocs.id || !uploadedDocs.registration}
               >
                 Complete Profile
