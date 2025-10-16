@@ -42,11 +42,11 @@ const Profile = () => {
     if (!files || files.length === 0) return;
 
     const file = files[0];
-    const fileExtension = file.name.split('.').pop();
+    const fileExtension = file.name.split(".").pop();
     const fileName = `${user?.id}-${Date.now()}.${fileExtension}`;
     const path = `avatars/${fileName}`;
 
-    const url = await uploadFile(file, 'user-profiles', path);
+    const url = await uploadFile(file, "user-profiles", path);
     if (url) {
       await updateProfile({ profile_picture_url: url });
       toast.success("Avatar updated successfully!");
@@ -55,12 +55,12 @@ const Profile = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => prev ? { ...prev, [name]: value } : null);
-  }
+    setFormData((prev) => (prev ? { ...prev, [name]: value } : null));
+  };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => prev ? { ...prev, [name]: value } : null);
-  }
+    setFormData((prev) => (prev ? { ...prev, [name]: value } : null));
+  };
 
   return (
     <DashboardLayout>
@@ -134,23 +134,19 @@ const Profile = () => {
               <form onSubmit={handleSave} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Full Name
-                    </label>
+                    <label className="text-sm font-medium mb-2 block">Full Name</label>
                     <Input
                       name="full_name"
-                      value={formData?.full_name ?? ''}
+                      value={formData?.full_name ?? ""}
                       onChange={handleInputChange}
                       disabled={!isEditing || loading}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Student Number
-                    </label>
+                    <label className="text-sm font-medium mb-2 block">Student Number</label>
                     <Input
                       name="student_number"
-                      value={formData?.student_number ?? ''}
+                      value={formData?.student_number ?? ""}
                       onChange={handleInputChange}
                       disabled={!isEditing || loading}
                     />
@@ -159,25 +155,21 @@ const Profile = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Email Address
-                    </label>
+                    <label className="text-sm font-medium mb-2 block">Email Address</label>
                     <Input
                       type="email"
                       name="email"
-                      value={formData?.email ?? ''}
+                      value={formData?.email ?? ""}
                       onChange={handleInputChange}
                       disabled
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Phone Number
-                    </label>
+                    <label className="text-sm font-medium mb-2 block">Phone Number</label>
                     <Input
                       type="tel"
                       name="phone"
-                      value={formData?.phone ?? ''}
+                      value={formData?.phone ?? ""}
                       onChange={handleInputChange}
                       disabled={!isEditing || loading}
                     />
@@ -186,13 +178,11 @@ const Profile = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Campus
-                    </label>
+                    <label className="text-sm font-medium mb-2 block">Campus</label>
                     <Select
                       name="campus"
-                      value={formData?.campus ?? ''}
-                      onValueChange={(value) => handleSelectChange('campus', value)}
+                      value={formData?.campus ?? ""}
+                      onValueChange={(value) => handleSelectChange("campus", value)}
                       disabled={!isEditing || loading}
                     >
                       <SelectTrigger>
@@ -206,24 +196,20 @@ const Profile = () => {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Course
-                    </label>
+                    <label className="text-sm font-medium mb-2 block">Course</label>
                     <Input
                       name="course"
-                      value={formData?.course ?? ''}
+                      value={formData?.course ?? ""}
                       onChange={handleInputChange}
                       disabled={!isEditing || loading}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Year of Study
-                    </label>
+                    <label className="text-sm font-medium mb-2 block">Year of Study</label>
                     <Select
                       name="year_of_study"
-                      value={formData?.year_of_study ?? ''}
-                      onValueChange={(value) => handleSelectChange('year_of_study', value)}
+                      value={formData?.year_of_study ?? ""}
+                      onValueChange={(value) => handleSelectChange("year_of_study", value)}
                       disabled={!isEditing || loading}
                     >
                       <SelectTrigger>
@@ -241,16 +227,16 @@ const Profile = () => {
 
                 {isEditing && (
                   <div className="flex gap-3 pt-4">
-                    <Button 
-                      type="button" 
+                    <Button
+                      type="button"
                       variant="outline"
                       onClick={() => setIsEditing(false)}
                       className="flex-1"
                     >
                       Cancel
                     </Button>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       variant="accent"
                       className="flex-1"
                       disabled={isSaving}
@@ -271,47 +257,26 @@ const Profile = () => {
               <CardDescription>Your verified documents</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <div>
-                    <p className="font-medium">ID Copy</p>
-                    <p className="text-sm text-muted-foreground">Uploaded on Oct 1, 2025</p>
+              {["ID Copy", "Proof of Registration", "Proof of Funding"].map((doc) => (
+                <div
+                  key={doc}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-success" />
+                    <div>
+                      <p className="font-medium">{doc}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Uploaded on Oct 1, 2025
+                      </p>
+                    </div>
                   </div>
+                  <Button variant="outline" size="sm">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Replace
+                  </Button>
                 </div>
-                <Button variant="outline" size="sm">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Replace
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <div>
-                    <p className="font-medium">Proof of Registration</p>
-                    <p className="text-sm text-muted-foreground">Uploaded on Oct 1, 2025</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Replace
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                  <div>
-                    <p className="font-medium">Proof of Funding</p>
-                    <p className="text-sm text-muted-foreground">Uploaded on Oct 1, 2025</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Replace
-                </Button>
-              </div>
+              ))}
             </CardContent>
           </Card>
         </div>
