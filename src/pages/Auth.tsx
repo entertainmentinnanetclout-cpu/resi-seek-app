@@ -36,6 +36,7 @@ const Auth = () => {
   const { user, isLoading: authLoading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -88,9 +89,9 @@ const Auth = () => {
       }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        toast.error(error.issues[0].message);
+        setError(error.issues[0].message);
       } else {
-        toast.error(error.message || "An error occurred");
+        setError(error.message || "An error occurred");
       }
     } finally {
       setIsLoading(false);
@@ -117,6 +118,7 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {error && <div className="bg-red-500 text-white p-3 rounded-md mb-4">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <div>
