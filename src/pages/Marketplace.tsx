@@ -414,7 +414,7 @@ const Marketplace = () => {
             {/* Search and Filters */}
             <Card className="shadow-card">
               <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
@@ -426,7 +426,7 @@ const Marketplace = () => {
                   </div>
                   <div className="flex gap-2">
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-full sm:w-40">
                         <Filter className="w-4 h-4 mr-2" />
                         <SelectValue />
                       </SelectTrigger>
@@ -461,7 +461,7 @@ const Marketplace = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredListings.map((listing) => (
                   <Card key={listing.id} className="shadow-card hover:shadow-premium transition-shadow overflow-hidden group">
                     {listing.images[0] && (

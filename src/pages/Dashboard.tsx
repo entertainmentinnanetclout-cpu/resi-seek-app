@@ -150,7 +150,7 @@ const Dashboard = () => {
           <Card className="shadow-card border-l-4 border-l-primary overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
             <CardHeader className="relative">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col md:flex-row items-start justify-between gap-4">
                 <div>
                   <CardTitle className="flex items-center gap-2 text-2xl">
                     Profile Status
@@ -171,6 +171,7 @@ const Dashboard = () => {
                     variant="premium" 
                     size="lg"
                     onClick={() => navigate("/setup-profile")}
+                    className="w-full md:w-auto"
                   >
                     Complete Profile
                   </Button>
@@ -186,7 +187,7 @@ const Dashboard = () => {
           </Card>
 
           {/* Quick Stats */}
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <StatCard
               icon={ShoppingBag}
               value={listingsCount}
@@ -216,15 +217,15 @@ const Dashboard = () => {
           <Card className="bg-gradient-accent text-white shadow-premium border-0 overflow-hidden group cursor-pointer" onClick={() => navigate("/campus-news")}>
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20" />
             <CardContent className="p-8 relative">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-6">
-                  <Newspaper className="w-16 h-16 group-hover:scale-110 transition-transform" />
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-6 text-center md:text-left">
+                  <Newspaper className="w-16 h-16 group-hover:scale-110 transition-transform flex-shrink-0" />
                   <div>
                     <h3 className="text-2xl font-bold mb-2">Explore Campus Opportunities</h3>
                     <p className="text-white/90">Latest news, student jobs, and campus events</p>
                   </div>
                 </div>
-                <Button variant="outline" size="lg" className="bg-white text-primary hover:bg-white/90">
+                <Button variant="outline" size="lg" className="bg-white text-primary hover:bg-white/90 w-full md:w-auto flex-shrink-0">
                   Explore Now
                 </Button>
               </div>
@@ -234,7 +235,7 @@ const Dashboard = () => {
           {/* Quick Actions */}
           <div>
             <h2 className="text-3xl font-bold mb-6 font-display">Quick Actions</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {quickLinks.map((link) => (
                 <QuickActionCard
                   key={link.path}

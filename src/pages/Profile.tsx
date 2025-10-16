@@ -1,22 +1,71 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, CheckCircle2, User as UserIcon } from "lucide-react";
+import { Upload, CheckCircle2, User as UserIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useFileUpload } from "@/hooks/useFileUpload";
+import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const { isUploading, uploadFile } = useFileUpload();
+  const { user } = useAuth();
+  const { profile, loading, updateProfile } = useProfile(user?.id ?? "");
+  const [formData, setFormData] = useState<typeof profile>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (profile) {
+      setFormData(profile);
+    } else {
+      setFormData(null);
+    }
+  }, [profile]);
+
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // TODO: Save to backend
-    toast.success("Profile updated successfully!");
+    if (!formData) return;
+    setIsSaving(true);
+    await updateProfile(formData);
+    setIsSaving(false);
     setIsEditing(false);
   };
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${user?.id}-${Date.now()}.${fileExtension}`;
+    const path = `${user.id}/${fileName}`;
+
+    const url = await uploadFile(file, 'profile-pictures', path);
+    if (url) {
+      const { error } = await supabase.from('profiles').update({ profile_picture_url: url }).eq('id', user.id);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Avatar updated successfully!");
+      }
+      toast.success("Avatar updated successfully!");
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => prev ? { ...prev, [name]: value } : null);
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => prev ? { ...prev, [name]: value } : null);
+  }
 
   return (
     <DashboardLayout>
@@ -46,14 +95,30 @@ const Profile = () => {
             <CardContent>
               <div className="flex items-center gap-6">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src="" />
+                  <AvatarImage src={profile?.profile_picture_url ?? undefined} />
                   <AvatarFallback className="text-2xl bg-primary/10 text-primary">
                     <UserIcon className="w-12 h-12" />
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <Button variant="outline" size="sm">
-                    <Upload className="w-4 h-4 mr-2" />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                    accept="image/png, image/jpeg, image/gif"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4 mr-2" />
+                    )}
                     Upload Photo
                   </Button>
                   <p className="text-xs text-muted-foreground mt-2">
@@ -72,56 +137,69 @@ const Profile = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSave} className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       Full Name
                     </label>
-                    <Input 
-                      defaultValue="John Doe" 
-                      disabled={!isEditing}
+                    <Input
+                      name="full_name"
+                      value={formData?.full_name ?? ''}
+                      onChange={handleInputChange}
+                      disabled={!isEditing || loading}
                     />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       Student Number
                     </label>
-                    <Input 
-                      defaultValue="u12345678" 
-                      disabled={!isEditing}
+                    <Input
+                      name="student_number"
+                      value={formData?.student_number ?? ''}
+                      onChange={handleInputChange}
+                      disabled={!isEditing || loading}
                     />
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       Email Address
                     </label>
-                    <Input 
+                    <Input
                       type="email"
-                      defaultValue="john@student.ac.za" 
-                      disabled={!isEditing}
+                      name="email"
+                      value={formData?.email ?? ''}
+                      onChange={handleInputChange}
+                      disabled
                     />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       Phone Number
                     </label>
-                    <Input 
+                    <Input
                       type="tel"
-                      defaultValue="+27 12 345 6789" 
-                      disabled={!isEditing}
+                      name="phone"
+                      value={formData?.phone ?? ''}
+                      onChange={handleInputChange}
+                      disabled={!isEditing || loading}
                     />
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       Campus
                     </label>
-                    <Select disabled={!isEditing} defaultValue="hatfield">
+                    <Select
+                      name="campus"
+                      value={formData?.campus ?? ''}
+                      onValueChange={(value) => handleSelectChange('campus', value)}
+                      disabled={!isEditing || loading}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -136,16 +214,23 @@ const Profile = () => {
                     <label className="text-sm font-medium mb-2 block">
                       Course
                     </label>
-                    <Input 
-                      defaultValue="Computer Science" 
-                      disabled={!isEditing}
+                    <Input
+                      name="course"
+                      value={formData?.course ?? ''}
+                      onChange={handleInputChange}
+                      disabled={!isEditing || loading}
                     />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       Year of Study
                     </label>
-                    <Select disabled={!isEditing} defaultValue="2">
+                    <Select
+                      name="year_of_study"
+                      value={formData?.year_of_study ?? ''}
+                      onValueChange={(value) => handleSelectChange('year_of_study', value)}
+                      disabled={!isEditing || loading}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -173,7 +258,9 @@ const Profile = () => {
                       type="submit" 
                       variant="accent"
                       className="flex-1"
+                      disabled={isSaving}
                     >
+                      {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                       Save Changes
                     </Button>
                   </div>

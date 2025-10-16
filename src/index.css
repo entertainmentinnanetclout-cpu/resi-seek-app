@@ -171,4 +171,8 @@ All colors MUST be HSL.
     backdrop-filter: blur(12px);
     background: hsl(var(--card) / 0.8);
   }
+
+  .hide-on-mobile-preview {
+    display: none;
+  }
 }
