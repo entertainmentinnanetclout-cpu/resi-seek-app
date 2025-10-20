@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
-import logo from "@/assets/RES KONNECT LOGO.png";
+import logo from "@/assets/LOGIN PAGE.png";
 
 const passwordSchema = z.string()
   .min(8, "Password must be at least 8 characters")

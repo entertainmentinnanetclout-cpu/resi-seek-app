@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import logo from "@/assets/RES KONNECT LOGO.png";
+import logo from "@/assets/Main header Desktop.png";
 
 const ProfileSetup = () => {
   const navigate = useNavigate();
