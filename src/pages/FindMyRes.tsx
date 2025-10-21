@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MapPin, DollarSign, Users, Wifi, Car, CheckCircle2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,13 +11,15 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
+import { useRealtimeResidences } from "@/hooks/useRealtimeResidences";
 import { supabase } from "@/integrations/supabase/client";
+import ResidenceCard from "@/components/ResidenceCard";
 
 const FindMyRes = () => {
   const { user } = useAuth();
   const { profile } = useRealtimeProfile(user);
   const { applications } = useRealtimeApplications(user);
-  const [residences, setResidences] = useState<any[]>([]);
+  const { residences, loading } = useRealtimeResidences();
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [applicationStep, setApplicationStep] = useState(1);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
@@ -31,19 +33,6 @@ const FindMyRes = () => {
     setApplicationStep(1);
     setShowApplicationModal(true);
   };
-
-  useEffect(() => {
-    const fetchResidences = async () => {
-      try {
-        const { data, error } = await supabase.from('residences').select('*');
-        if (error) throw error;
-        setResidences(data || []);
-      } catch (err: any) {
-        toast.error(err.message);
-      }
-    };
-    fetchResidences();
-  }, []);
 
   const handleNextStep = () => {
     if (applicationStep < 3) {
@@ -243,58 +232,17 @@ const FindMyRes = () => {
           </Card>
 
           {/* Residences Grid */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {residences.map((residence) => (
-              <Card key={residence.id} className="shadow-card hover:shadow-hover transition-smooth">
-                <CardHeader>
-                  <CardTitle>{residence.name}</CardTitle>
-                  <CardDescription className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    {residence.location}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">{residence.description}</p>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {residence.amenities.map((amenity) => (
-                      <span 
-                        key={amenity}
-                        className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full"
-                      >
-                        {amenity}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div>
-                      <p className="text-2xl font-bold text-primary">{residence.price}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {residence.available} rooms available
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={() => handleViewMore(residence)}
-                    >
-                      View More
-                    </Button>
-                    <Button 
-                      variant="accent" 
-                      className="flex-1"
-                      onClick={() => handleApply(residence)}
-                    >
-                      Apply Now
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {loading
+              ? Array.from({ length: 6 }).map((_, index) => <ResidenceCard key={index} residence={null} />)
+              : residences.map((residence) => (
+                  <ResidenceCard
+                    key={residence.id}
+                    residence={residence}
+                    onViewMore={handleViewMore}
+                    onApply={handleApply}
+                  />
+                ))}
           </div>
         </div>
       </div>
