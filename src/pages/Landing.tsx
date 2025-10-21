@@ -6,7 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import heroImage from "@/assets/hero-accommodation.jpg";
-import logo from "@/assets/RES KONNECT LOGO.png";
+import headerLogo from "@/assets/Main header Desktop.png";
+import footerLogo from "@/assets/FOOTER.png";
+import iconLogo from "@/assets/ICON NO TEXT.png";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -52,7 +54,7 @@ const Landing = () => {
       <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <img src={logo} alt="ResKonnect" className="h-10 w-auto" />
+            <img src={headerLogo} alt="ResKonnect" className="h-10 w-auto" />
           </div>
           <div className="flex gap-4">
             <Button variant="ghost" onClick={() => navigate("/auth")}>
@@ -128,7 +130,7 @@ const Landing = () => {
               </Button>
             </div>
             <div className="bg-accent/10 rounded-2xl p-8 h-64 md:h-80 flex items-center justify-center">
-              <img src={logo} alt="ResKonnect Illustration" className="w-32 md:w-48 h-auto opacity-60" />
+              <img src={iconLogo} alt="ResKonnect Illustration" className="w-32 md:w-48 h-auto opacity-60" />
             </div>
           </div>
         </div>
@@ -185,7 +187,7 @@ const Landing = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <img src={logo} alt="ResKonnect" className="h-6 md:h-8 w-auto" />
+                <img src={footerLogo} alt="ResKonnect" className="h-6 md:h-8 w-auto" />
               </div>
               <p className="text-xs md:text-sm text-muted-foreground">
                 Your trusted student accommodation finder in Pretoria & Tshwane.

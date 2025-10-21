@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Upload, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,17 +9,34 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import logo from "@/assets/RES KONNECT LOGO.png";
+import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
+import logo from "@/assets/Main header Desktop.png";
 
 const ProfileSetup = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile } = useRealtimeProfile(user);
+  const [formData, setFormData] = useState<any>({});
   const [uploadedDocs, setUploadedDocs] = useState({
     id: false,
     registration: false,
     funding: false
   });
   const [uploading, setUploading] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name ?? '',
+        student_number: profile.student_number ?? '',
+        email: user?.email ?? '',
+        phone: profile.phone ?? '',
+        campus: profile.campus ?? '',
+        course: profile.course ?? '',
+        year_of_study: profile.year_of_study ?? '',
+      });
+    }
+  }, [profile, user]);
 
   const progress = Object.values(uploadedDocs).filter(Boolean).length * 33.33;
 
@@ -76,16 +93,34 @@ const ProfileSetup = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!uploadedDocs.id || !uploadedDocs.registration) {
+    if (!uploadedDocs.id || !uploadedDocs.registration || !user) {
       toast.error("Please upload all required documents");
       return;
     }
 
-    toast.success("Profile completed! You can now apply for residences.");
-    navigate("/dashboard");
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(formData)
+        .eq('id', user.id);
+      if (error) throw error;
+      toast.success("Profile completed! You can now apply for residences.");
+      navigate("/dashboard");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   return (
@@ -126,13 +161,13 @@ const ProfileSetup = () => {
                     <label htmlFor="fullName" className="text-sm font-medium mb-2 block">
                       Full Name
                     </label>
-                    <Input id="fullName" name="fullName" required placeholder="John Doe" />
+                    <Input id="fullName" name="full_name" required placeholder="John Doe" value={formData.full_name} onChange={handleInputChange} />
                   </div>
                   <div>
                     <label htmlFor="studentNumber" className="text-sm font-medium mb-2 block">
                       Student Number
                     </label>
-                    <Input id="studentNumber" name="studentNumber" required placeholder="u12345678" />
+                    <Input id="studentNumber" name="student_number" required placeholder="u12345678" value={formData.student_number} onChange={handleInputChange} />
                   </div>
                 </div>
 
@@ -141,13 +176,13 @@ const ProfileSetup = () => {
                     <label htmlFor="email" className="text-sm font-medium mb-2 block">
                       Email Address
                     </label>
-                    <Input id="email" name="email" type="email" required placeholder="john@student.ac.za" />
+                    <Input id="email" name="email" type="email" required placeholder="john@student.ac.za" value={formData.email} disabled />
                   </div>
                   <div>
                     <label htmlFor="phone" className="text-sm font-medium mb-2 block">
                       Phone Number
                     </label>
-                    <Input id="phone" name="phone" type="tel" required placeholder="+27 12 345 6789" />
+                    <Input id="phone" name="phone" type="tel" required placeholder="+27 12 345 6789" value={formData.phone} onChange={handleInputChange} />
                   </div>
                 </div>
 
@@ -156,7 +191,7 @@ const ProfileSetup = () => {
                     <label htmlFor="campus" className="text-sm font-medium mb-2 block">
                       Campus
                     </label>
-                    <Select name="campus" required>
+                    <Select name="campus" required value={formData.campus} onValueChange={(value) => handleSelectChange('campus', value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select campus" />
                       </SelectTrigger>
@@ -172,13 +207,13 @@ const ProfileSetup = () => {
                     <label htmlFor="course" className="text-sm font-medium mb-2 block">
                       Course
                     </label>
-                    <Input id="course" name="course" required placeholder="Computer Science" />
+                    <Input id="course" name="course" required placeholder="Computer Science" value={formData.course} onChange={handleInputChange} />
                   </div>
                   <div>
                     <label htmlFor="year" className="text-sm font-medium mb-2 block">
                       Year of Study
                     </label>
-                    <Select name="year" required>
+                    <Select name="year_of_study" required value={formData.year_of_study} onValueChange={(value) => handleSelectChange('year_of_study', value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select year" />
                       </SelectTrigger>

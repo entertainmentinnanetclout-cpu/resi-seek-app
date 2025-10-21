@@ -4,7 +4,8 @@ import { Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut, Newspa
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
-import logo from "@/assets/RES KONNECT LOGO.png";
+import desktopLogo from "@/assets/Main header Desktop.png";
+import mobileLogo from "@/assets/HEADER MOBILE.png";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -36,7 +37,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     <div className="flex flex-col h-full">
       <div className="p-6 border-b">
         <div className="flex flex-col items-center mb-1">
-          <img src={logo} alt="ResKonnect" className="h-16 w-auto mb-2" />
+          <img src={desktopLogo} alt="ResKonnect" className="h-16 w-auto mb-2" />
         </div>
         <p className="text-sm text-muted-foreground text-center">Student Portal</p>
       </div>
@@ -89,7 +90,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         {/* Mobile Header */}
         <header className="md:hidden border-b bg-card p-4 flex items-center justify-between">
           <div className="flex items-center">
-            <img src={logo} alt="ResKonnect" className="h-8 w-auto" />
+            <img src={mobileLogo} alt="ResKonnect" className="h-8 w-auto" />
           </div>
           <Sheet>
             <SheetTrigger asChild>

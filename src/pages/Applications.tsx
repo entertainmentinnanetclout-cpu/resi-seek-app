@@ -2,34 +2,58 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle2, XCircle, Eye } from "lucide-react";
+import { useEffect, useState } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Clock, CheckCircle2, XCircle, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
+import { supabase } from "@/integrations/supabase/client";
 
 const Applications = () => {
-  // Mock application data
-  const applications = [
-    {
-      id: 1,
-      residence: "Campus Heights Residence",
-      location: "Hatfield",
-      price: "R4,500/month",
-      status: "pending",
-      date: "2025-10-08",
-      notes: "Waiting for admin review"
-    },
-    {
-      id: 2,
-      residence: "Student Village",
-      location: "Sunnyside",
-      price: "R3,800/month",
-      status: "pending",
-      date: "2025-10-05",
-      notes: "Documents under verification"
-    }
-  ];
+  const { user } = useAuth();
+  const { applications, loading: applicationsLoading, error } = useRealtimeApplications(user);
+  const [detailedApplications, setDetailedApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      if (applicationsLoading || !applications.length) {
+        setLoading(applicationsLoading);
+        if (!applications.length) setDetailedApplications([]);
+        return;
+      }
+
+      setLoading(true);
+      const residenceIds = applications.map(app => app.residence_id);
+      const { data: residences, error: resError } = await supabase
+        .from('residences')
+        .select('*')
+        .in('id', residenceIds);
+
+      if (resError) {
+        console.error("Error fetching residence details:", resError);
+        setLoading(false);
+        return;
+      }
+
+      const detailed = applications.map(app => {
+        const residence = residences.find(res => res.id === app.residence_id);
+        return { ...app, residence };
+      });
+
+      setDetailedApplications(detailed);
+      setLoading(false);
+    };
+
+    fetchDetails();
+  }, [applications, applicationsLoading]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "pending":
+      case "submitted":
         return (
           <Badge className="bg-warning/10 text-warning border-warning/20">
             <Clock className="w-3 h-3 mr-1" />
@@ -68,7 +92,9 @@ const Applications = () => {
           </div>
 
           {/* Applications List */}
-          {applications.length === 0 ? (
+          {loading ? (
+            <p>Loading applications...</p>
+          ) : detailedApplications.length === 0 ? (
             <Card className="shadow-card">
               <CardContent className="p-12 text-center">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -83,13 +109,13 @@ const Applications = () => {
             </Card>
           ) : (
             <div className="space-y-4">
-              {applications.map((application) => (
+              {detailedApplications.map((application) => (
                 <Card key={application.id} className="shadow-card hover:shadow-hover transition-smooth">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle>{application.residence}</CardTitle>
-                        <CardDescription>{application.location}</CardDescription>
+                        <CardTitle>{application.residence?.name}</CardTitle>
+                        <CardDescription>{application.residence?.location}</CardDescription>
                       </div>
                       {getStatusBadge(application.status)}
                     </div>
@@ -98,17 +124,17 @@ const Applications = () => {
                     <div className="grid md:grid-cols-4 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Price</p>
-                        <p className="font-semibold">{application.price}</p>
+                        <p className="font-semibold">{application.residence?.price}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Application Date</p>
                         <p className="font-semibold">
-                          {new Date(application.date).toLocaleDateString()}
+                          {new Date(application.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="md:col-span-2">
                         <p className="text-sm text-muted-foreground mb-1">Notes</p>
-                        <p className="text-sm">{application.notes}</p>
+                        <p className="text-sm">{application.notes ?? 'No notes provided'}</p>
                       </div>
                     </div>
                     <div className="mt-4 pt-4 border-t">
