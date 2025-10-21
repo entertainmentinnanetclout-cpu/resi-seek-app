@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapPin, DollarSign, Users, Wifi, Car, CheckCircle2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,49 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-
-// Mock residence data
-const residences = [
-  {
-    id: 1,
-    name: "Campus Heights Residence",
-    price: "R4,500/month",
-    location: "Hatfield, 0.5km from campus",
-    description: "Modern student accommodation with excellent facilities",
-    amenities: ["WiFi", "Parking", "24/7 Security", "Study Areas"],
-    available: 12
-  },
-  {
-    id: 2,
-    name: "Student Village",
-    price: "R3,800/month",
-    location: "Sunnyside, 1km from campus",
-    description: "Affordable accommodation perfect for first-year students",
-    amenities: ["WiFi", "Laundry", "Cafeteria", "Study Room"],
-    available: 8
-  },
-  {
-    id: 3,
-    name: "Brooklyn Residence",
-    price: "R5,200/month",
-    location: "Brooklyn, 2km from campus",
-    description: "Premium student living with all modern conveniences",
-    amenities: ["WiFi", "Parking", "Gym", "Pool", "Security"],
-    available: 5
-  },
-  {
-    id: 4,
-    name: "Hillcrest Apartments",
-    price: "R4,000/month",
-    location: "Hillcrest, 1.5km from campus",
-    description: "Comfortable and affordable student apartments",
-    amenities: ["WiFi", "Security", "Study Areas", "Laundry"],
-    available: 15
-  }
-];
+import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
+import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
+import { supabase } from "@/integrations/supabase/client";
 
 const FindMyRes = () => {
-  const [selectedResidence, setSelectedResidence] = useState<typeof residences[0] | null>(null);
+  const { user } = useAuth();
+  const { profile } = useRealtimeProfile(user);
+  const { applications } = useRealtimeApplications(user);
+  const [residences, setResidences] = useState<any[]>([]);
+  const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [applicationStep, setApplicationStep] = useState(1);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
 
@@ -64,17 +32,41 @@ const FindMyRes = () => {
     setShowApplicationModal(true);
   };
 
+  useEffect(() => {
+    const fetchResidences = async () => {
+      try {
+        const { data, error } = await supabase.from('residences').select('*');
+        if (error) throw error;
+        setResidences(data || []);
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    };
+    fetchResidences();
+  }, []);
+
   const handleNextStep = () => {
     if (applicationStep < 3) {
       setApplicationStep(applicationStep + 1);
     }
   };
 
-  const handleSubmitApplication = () => {
-    // TODO: Submit to backend
-    toast.success(`Application submitted for ${selectedResidence?.name}!`);
-    setShowApplicationModal(false);
-    setApplicationStep(1);
+  const handleSubmitApplication = async () => {
+    if (!selectedResidence || !user) return;
+    try {
+      const { error } = await supabase.from('applications').insert({
+        user_id: user.id,
+        residence_id: selectedResidence.id,
+        status: 'submitted',
+      });
+      if (error) throw error;
+      toast.success(`Application submitted for ${selectedResidence?.name}!`);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setShowApplicationModal(false);
+      setApplicationStep(1);
+    }
   };
 
   const renderApplicationStep = () => {
@@ -89,23 +81,23 @@ const FindMyRes = () => {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between p-3 bg-secondary/30 rounded-lg">
                   <span className="text-muted-foreground">Full Name:</span>
-                  <span className="font-medium">John Doe</span>
+                  <span className="font-medium">{profile?.full_name}</span>
                 </div>
                 <div className="flex justify-between p-3 bg-secondary/30 rounded-lg">
                   <span className="text-muted-foreground">Email:</span>
-                  <span className="font-medium">john@student.ac.za</span>
+                  <span className="font-medium">{profile?.email}</span>
                 </div>
                 <div className="flex justify-between p-3 bg-secondary/30 rounded-lg">
                   <span className="text-muted-foreground">Student Number:</span>
-                  <span className="font-medium">u12345678</span>
+                  <span className="font-medium">{profile?.student_number}</span>
                 </div>
                 <div className="flex justify-between p-3 bg-secondary/30 rounded-lg">
                   <span className="text-muted-foreground">Campus:</span>
-                  <span className="font-medium">Hatfield Campus</span>
+                  <span className="font-medium">{profile?.campus}</span>
                 </div>
                 <div className="flex justify-between p-3 bg-secondary/30 rounded-lg">
                   <span className="text-muted-foreground">Year of Study:</span>
-                  <span className="font-medium">2nd Year</span>
+                  <span className="font-medium">{profile?.year_of_study}</span>
                 </div>
               </div>
               <div className="mt-4 p-4 bg-success/10 border border-success/20 rounded-lg">
@@ -189,7 +181,7 @@ const FindMyRes = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Student:</span>
-                  <span className="font-medium">John Doe</span>
+                  <span className="font-medium">{profile?.full_name}</span>
                 </div>
               </div>
 

@@ -8,15 +8,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, CheckCircle2, User as UserIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useFileUpload } from "@/hooks/useFileUpload";
-import { useProfile } from "@/hooks/useProfile";
+import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const { isUploading, uploadFile } = useFileUpload();
   const { user } = useAuth();
-  const { profile, loading, updateProfile } = useProfile(user?.id ?? "");
-  const [formData, setFormData] = useState<typeof profile>(null);
+  const { profile, loading } = useRealtimeProfile(user);
+  const [formData, setFormData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,26 +31,44 @@ const Profile = () => {
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!formData) return;
+    if (!formData || !user) return;
     setIsSaving(true);
-    await updateProfile(formData);
-    setIsSaving(false);
-    setIsEditing(false);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(formData)
+        .eq('id', user.id);
+      if (error) throw error;
+      toast.success("Profile updated successfully!");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsSaving(false);
+      setIsEditing(false);
+    }
   };
 
   const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0 || !user) return;
 
     const file = files[0];
     const fileExtension = file.name.split(".").pop();
-    const fileName = `${user?.id}-${Date.now()}.${fileExtension}`;
+    const fileName = `${user.id}-${Date.now()}.${fileExtension}`;
     const path = `avatars/${fileName}`;
 
     const url = await uploadFile(file, "user-profiles", path);
     if (url) {
-      await updateProfile({ profile_picture_url: url });
-      toast.success("Avatar updated successfully!");
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ profile_picture_url: url })
+          .eq('id', user.id);
+        if (error) throw error;
+        toast.success("Avatar updated successfully!");
+      } catch (err: any) {
+        toast.error(err.message);
+      }
     }
   };
 
