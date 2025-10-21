@@ -36,9 +36,9 @@ const Profile = () => {
     setIsSaving(true);
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update(formData)
-        .eq('id', user.id);
+        .eq("id", user.id);
       if (error) throw error;
       toast.success("Profile updated successfully!");
     } catch (err: any) {
@@ -49,6 +49,7 @@ const Profile = () => {
     }
   };
 
+  // ✅ FIXED: only one instance of handleAvatarChange
   const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0 || !user) return;
@@ -62,11 +63,12 @@ const Profile = () => {
     if (url) {
       try {
         const { error } = await supabase
-          .from('profiles')
+          .from("profiles")
           .update({ profile_picture_url: url })
-          .eq('id', user.id);
+          .eq("id", user.id);
         if (error) throw error;
-        setFormData((prev) => (prev ? { ...prev, profile_picture_url: url } : { profile_picture_url: url }));
+// instantly update the local avatar image
+setFormData((prev: any) => ({ ...prev, profile_picture_url: url }));
         toast.success("Avatar updated successfully!");
       } catch (err: any) {
         toast.error(err.message);
@@ -81,17 +83,17 @@ const Profile = () => {
     setUploadingDoc(selectedDocType);
     const file = files[0];
     const fileExtension = file.name.split(".").pop();
-    const fileName = `${user.id}-${selectedDocType.toLowerCase().replace(' ', '-')}.${fileExtension}`;
+    const fileName = `${user.id}-${selectedDocType.toLowerCase().replace(" ", "-")}.${fileExtension}`;
     const path = `documents/${fileName}`;
 
     const url = await uploadFile(file, "user-documents", path);
     if (url) {
       try {
         const updates = {
-          [`${selectedDocType.toLowerCase().replace(' ', '_')}_url`]: url,
-          [`${selectedDocType.toLowerCase().replace(' ', '_')}_status`]: 'uploaded',
+          [`${selectedDocType.toLowerCase().replace(" ", "_")}_url`]: url,
+          [`${selectedDocType.toLowerCase().replace(" ", "_")}_status`]: "uploaded",
         };
-        const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+        const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
         if (error) throw error;
         toast.success(`${selectedDocType} uploaded successfully!`);
       } catch (err: any) {
@@ -323,9 +325,9 @@ const Profile = () => {
                     <div>
                       <p className="font-medium">{doc}</p>
                       <p className="text-sm text-muted-foreground">
-                        {profile?.[`${doc.toLowerCase().replace(' ', '_')}_status`] === 'uploaded'
-                          ? 'Uploaded'
-                          : 'Not Uploaded'}
+                        {profile?.[`${doc.toLowerCase().replace(" ", "_")}_status`] === "uploaded"
+                          ? "Uploaded"
+                          : "Not Uploaded"}
                       </p>
                     </div>
                   </div>
