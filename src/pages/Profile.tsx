@@ -25,12 +25,10 @@ const Profile = () => {
   const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
 
   useEffect(() => {
-    if (profile && !isEditing) {
+    if (profile) {
       setFormData(profile);
-    } else if (!profile) {
-      setFormData(null);
     }
-  }, [profile, isEditing]);
+  }, []);
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -69,9 +67,8 @@ const Profile = () => {
           .update({ profile_picture_url: url })
           .eq("id", user.id);
         if (error) throw error;
-
-        // instantly update the local avatar image
-        setFormData((prev: any) => ({ ...prev, profile_picture_url: url }));
+// instantly update the local avatar image
+setFormData((prev: any) => ({ ...prev, profile_picture_url: url }));
         toast.success("Avatar updated successfully!");
       } catch (err: any) {
         toast.error(err.message);
