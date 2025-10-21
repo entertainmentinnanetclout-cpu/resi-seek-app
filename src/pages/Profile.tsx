@@ -25,12 +25,10 @@ const Profile = () => {
   const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
 
   useEffect(() => {
-    if (profile && !isEditing) {
+    if (profile) {
       setFormData(profile);
-    } else if (!profile) {
-      setFormData(null);
     }
-  }, [profile, isEditing]);
+  }, []);
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -68,6 +66,7 @@ const Profile = () => {
           .update({ profile_picture_url: url })
           .eq('id', user.id);
         if (error) throw error;
+        setFormData((prev) => (prev ? { ...prev, profile_picture_url: url } : { profile_picture_url: url }));
         toast.success("Avatar updated successfully!");
       } catch (err: any) {
         toast.error(err.message);
@@ -112,30 +111,6 @@ const Profile = () => {
     setFormData((prev) => (prev ? { ...prev, [name]: value } : null));
   };
 
-  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0 || !user) return;
-
-    const file = files[0];
-    const fileExtension = file.name.split(".").pop();
-    const fileName = `${user.id}-${Date.now()}.${fileExtension}`;
-    const path = `avatars/${fileName}`;
-
-    const url = await uploadFile(file, "user-profiles", path);
-    if (url) {
-      try {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ profile_picture_url: url })
-          .eq('id', user.id);
-        if (error) throw error;
-        toast.success("Avatar updated successfully!");
-      } catch (err: any) {
-        toast.error(err.message);
-      }
-    }
-  };
-
   return (
     <DashboardLayout>
       <div className="p-6 md:p-8">
@@ -164,7 +139,7 @@ const Profile = () => {
             <CardContent>
               <div className="flex items-center gap-6">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src={profile?.profile_picture_url ?? undefined} />
+                  <AvatarImage src={formData?.profile_picture_url ?? undefined} />
                   <AvatarFallback className="text-2xl bg-primary/10 text-primary">
                     <UserIcon className="w-12 h-12" />
                   </AvatarFallback>
