@@ -20,14 +20,17 @@ const Profile = () => {
   const [formData, setFormData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
 
   useEffect(() => {
-    if (profile) {
+    if (profile && !isEditing) {
       setFormData(profile);
-    } else {
+    } else if (!profile) {
       setFormData(null);
     }
-  }, [profile]);
+  }, [profile, isEditing]);
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -72,6 +75,34 @@ const Profile = () => {
     }
   };
 
+  const handleDocumentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !user || !selectedDocType) return;
+
+    setUploadingDoc(selectedDocType);
+    const file = files[0];
+    const fileExtension = file.name.split(".").pop();
+    const fileName = `${user.id}-${selectedDocType.toLowerCase().replace(' ', '-')}.${fileExtension}`;
+    const path = `documents/${fileName}`;
+
+    const url = await uploadFile(file, "user-documents", path);
+    if (url) {
+      try {
+        const updates = {
+          [`${selectedDocType.toLowerCase().replace(' ', '_')}_url`]: url,
+          [`${selectedDocType.toLowerCase().replace(' ', '_')}_status`]: 'uploaded',
+        };
+        const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+        if (error) throw error;
+        toast.success(`${selectedDocType} uploaded successfully!`);
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    }
+    setUploadingDoc(null);
+    setSelectedDocType(null);
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => (prev ? { ...prev, [name]: value } : null));
@@ -79,6 +110,30 @@ const Profile = () => {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => (prev ? { ...prev, [name]: value } : null));
+  };
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !user) return;
+
+    const file = files[0];
+    const fileExtension = file.name.split(".").pop();
+    const fileName = `${user.id}-${Date.now()}.${fileExtension}`;
+    const path = `avatars/${fileName}`;
+
+    const url = await uploadFile(file, "user-profiles", path);
+    if (url) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ profile_picture_url: url })
+          .eq('id', user.id);
+        if (error) throw error;
+        toast.success("Avatar updated successfully!");
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    }
   };
 
   return (
@@ -276,6 +331,13 @@ const Profile = () => {
               <CardDescription>Your verified documents</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
+              <input
+                type="file"
+                ref={documentInputRef}
+                onChange={handleDocumentChange}
+                className="hidden"
+                accept="application/pdf, image/png, image/jpeg"
+              />
               {["ID Copy", "Proof of Registration", "Proof of Funding"].map((doc) => (
                 <div
                   key={doc}
@@ -286,12 +348,26 @@ const Profile = () => {
                     <div>
                       <p className="font-medium">{doc}</p>
                       <p className="text-sm text-muted-foreground">
-                        Uploaded on Oct 1, 2025
+                        {profile?.[`${doc.toLowerCase().replace(' ', '_')}_status`] === 'uploaded'
+                          ? 'Uploaded'
+                          : 'Not Uploaded'}
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
-                    <Upload className="w-4 h-4 mr-2" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedDocType(doc);
+                      documentInputRef.current?.click();
+                    }}
+                    disabled={uploadingDoc === doc}
+                  >
+                    {uploadingDoc === doc ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4 mr-2" />
+                    )}
                     Replace
                   </Button>
                 </div>
