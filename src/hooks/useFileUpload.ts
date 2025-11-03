@@ -11,46 +11,21 @@ export const useFileUpload = () => {
       setIsUploading(true);
       setUploadProgress(0);
 
-      // Get Supabase session for authenticated upload
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) throw new Error('User session not found.');
+      // Upload file using Supabase storage API
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(path, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
 
-      // Construct the upload URL
-      const uploadUrl = `${supabase.storage.url}/object/${bucket}/${path}`;
+      if (error) throw error;
 
-      // Create the request manually so we can track progress
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', uploadUrl);
+      // Simulate progress for better UX
+      setUploadProgress(100);
 
-      // Add authentication header
-      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
-      xhr.setRequestHeader('Cache-Control', '3600');
-      xhr.setRequestHeader('x-upsert', 'true');
-      xhr.setRequestHeader('Content-Type', file.type || 'image/png');
-
-      // Track upload progress
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(percent);
-        }
-      };
-
-      // Wrap in a promise so we can await completion
-      const uploadPromise = new Promise<string>((resolve, reject) => {
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-            resolve(data.publicUrl);
-          } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`));
-          }
-        };
-        xhr.onerror = () => reject(new Error('Network error during upload.'));
-        xhr.send(file);
-      });
-
-      const publicUrl = await uploadPromise;
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path);
       return publicUrl;
 
     } catch (error: any) {

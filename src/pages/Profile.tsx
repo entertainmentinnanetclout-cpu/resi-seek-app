@@ -49,17 +49,30 @@ const Profile = () => {
     }
   };
 
-  // ✅ FIXED: only one instance of handleAvatarChange
   const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0 || !user) return;
 
     const file = files[0];
+    
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Only JPG, PNG, or GIF images are allowed');
+      return;
+    }
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be under 2MB');
+      return;
+    }
+
     const fileExtension = file.name.split(".").pop();
     const fileName = `${user.id}-${Date.now()}.${fileExtension}`;
     const path = `avatars/${fileName}`;
 
-    const url = await uploadFile(file, "user-profiles", path);
+    const url = await uploadFile(file, "profile-pictures", path);
     if (url) {
       try {
         const { error } = await supabase
@@ -67,8 +80,9 @@ const Profile = () => {
           .update({ profile_picture_url: url })
           .eq("id", user.id);
         if (error) throw error;
-// instantly update the local avatar image
-setFormData((prev: any) => ({ ...prev, profile_picture_url: url }));
+        
+        // Instantly update the local avatar image
+        setFormData((prev: any) => ({ ...prev, profile_picture_url: url }));
         toast.success("Avatar updated successfully!");
       } catch (err: any) {
         toast.error(err.message);
@@ -80,13 +94,26 @@ setFormData((prev: any) => ({ ...prev, profile_picture_url: url }));
     const files = event.target.files;
     if (!files || files.length === 0 || !user || !selectedDocType) return;
 
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(files[0].type)) {
+      toast.error('Only PDF, JPG, or PNG files are allowed');
+      return;
+    }
+
+    // Validate file size (10MB max)
+    if (files[0].size > 10 * 1024 * 1024) {
+      toast.error('File must be under 10MB');
+      return;
+    }
+
     setUploadingDoc(selectedDocType);
     const file = files[0];
     const fileExtension = file.name.split(".").pop();
-    const fileName = `${user.id}-${selectedDocType.toLowerCase().replace(" ", "-")}.${fileExtension}`;
+    const fileName = `${user.id}-${selectedDocType.toLowerCase().replace(" ", "-")}-${Date.now()}.${fileExtension}`;
     const path = `documents/${fileName}`;
 
-    const url = await uploadFile(file, "user-documents", path);
+    const url = await uploadFile(file, "documents", path);
     if (url) {
       try {
         const updates = {

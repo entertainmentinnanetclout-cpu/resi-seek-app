@@ -234,7 +234,14 @@ const FindMyRes = () => {
           {/* Residences Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {loading
-              ? Array.from({ length: 6 }).map((_, index) => <ResidenceCard key={index} residence={null} />)
+              ? Array.from({ length: 6 }).map((_, index) => (
+                  <ResidenceCard
+                    key={index}
+                    residence={null}
+                    onViewMore={() => {}}
+                    onApply={() => {}}
+                  />
+                ))
               : residences.map((residence) => (
                   <ResidenceCard
                     key={residence.id}

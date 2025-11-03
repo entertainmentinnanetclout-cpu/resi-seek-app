@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      applications: {
+        Row: {
+          application_date: string
+          created_at: string
+          id: string
+          notes: string | null
+          residence_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          application_date?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          residence_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          application_date?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          residence_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           document_type: string
@@ -128,6 +169,57 @@ export type Database = {
           student_number?: string | null
           updated_at?: string
           year_of_study?: string | null
+        }
+        Relationships: []
+      }
+      residences: {
+        Row: {
+          address: string
+          amenities: string[] | null
+          available_spots: number
+          campus: string | null
+          capacity: number
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          amenities?: string[] | null
+          available_spots?: number
+          campus?: string | null
+          capacity?: number
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          amenities?: string[] | null
+          available_spots?: number
+          campus?: string | null
+          capacity?: number
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          price?: number
+          updated_at?: string
         }
         Relationships: []
       }

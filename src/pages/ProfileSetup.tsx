@@ -17,7 +17,7 @@ const ProfileSetup = () => {
   const { user } = useAuth();
 
   // ✅ Only call the hook when user exists
-  const { profile } = useRealtimeProfile(user ?? { id: null });
+  const { profile } = useRealtimeProfile(user);
 
   const [formData, setFormData] = useState<any>({});
   const [uploadedDocs, setUploadedDocs] = useState({
