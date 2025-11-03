@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
+import Layout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle2, XCircle, Eye } from "lucide-react";
@@ -77,7 +77,7 @@ const Applications = () => {
   };
 
   return (
-    <DashboardLayout>
+    <Layout>
       <div className="p-6 md:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Header */}
@@ -146,7 +146,7 @@ const Applications = () => {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </Layout>
   );
 };
 
