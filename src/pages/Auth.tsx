@@ -71,7 +71,16 @@ const Auth = () => {
           password: validated.password,
         });
 
-        if (error) throw error;
+        if (error) {
+          // Provide user-friendly error messages
+          if (error.message.includes("Invalid login credentials")) {
+            throw new Error("Invalid email or password. If you don't have an account, please sign up.");
+          } else if (error.message.includes("Email not confirmed")) {
+            throw new Error("Please verify your email address before logging in.");
+          }
+          throw error;
+        }
+        
         toast.success("Welcome back!");
         navigate("/dashboard");
       } else {
@@ -80,18 +89,32 @@ const Auth = () => {
           password: validated.password,
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: {
+              full_name: (validated as any).fullName,
+            }
           },
         });
 
-        if (error) throw error;
-        toast.success("Account created! Please check your email to verify.");
-        navigate("/dashboard");
+        if (error) {
+          // Provide user-friendly signup error messages
+          if (error.message.includes("already registered")) {
+            throw new Error("This email is already registered. Please login instead.");
+          }
+          throw error;
+        }
+        
+        toast.success("Account created successfully! You can now login.");
+        setIsLogin(true); // Switch to login mode
       }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        setError(error.issues[0].message);
+        const message = error.issues[0].message;
+        setError(message);
+        toast.error(message);
       } else {
-        setError(error.message || "An error occurred");
+        const message = error.message || "An error occurred";
+        setError(message);
+        toast.error(message);
       }
     } finally {
       setIsLoading(false);
