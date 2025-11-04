@@ -35,7 +35,7 @@ const FindMyRes = () => {
   const [distanceRange, setDistanceRange] = useState<string>("");
   const [roomType, setRoomType] = useState<string>("");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  const [campus, setCampus] = useState<string>("");
+  const [campus, setCampus] = useState<string>("all");
   
   // Filtered residences
   const [filteredResidences, setFilteredResidences] = useState<any[]>([]);
@@ -238,11 +238,7 @@ const FindMyRes = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All campuses</SelectItem>
-                            <SelectItem value="Pretoria Main Campus">Pretoria Main Campus</SelectItem>
-                            <SelectItem value="Hatfield">Hatfield</SelectItem>
-                            <SelectItem value="Groenkloof">Groenkloof</SelectItem>
-                            <SelectItem value="Prinshof">Prinshof</SelectItem>
-                            <SelectItem value="Mamelodi">Mamelodi</SelectItem>
+                            <SelectItem value="Pretoria West (Main Campus)">Pretoria West (Main Campus)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
