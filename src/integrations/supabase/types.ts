@@ -183,10 +183,14 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           description: string | null
+          display_order: number | null
+          distance_from_campus: number | null
+          featured: boolean | null
           id: string
           image_url: string | null
           name: string
           price: number
+          room_type: string | null
           updated_at: string
         }
         Insert: {
@@ -199,10 +203,14 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           description?: string | null
+          display_order?: number | null
+          distance_from_campus?: number | null
+          featured?: boolean | null
           id?: string
           image_url?: string | null
           name: string
           price: number
+          room_type?: string | null
           updated_at?: string
         }
         Update: {
@@ -215,10 +223,14 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           description?: string | null
+          display_order?: number | null
+          distance_from_campus?: number | null
+          featured?: boolean | null
           id?: string
           image_url?: string | null
           name?: string
           price?: number
+          room_type?: string | null
           updated_at?: string
         }
         Relationships: []

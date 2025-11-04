@@ -122,9 +122,9 @@ const Marketplace = () => {
       .from("marketplace_listings")
       .select(`
         *,
-        profiles (
+        marketplace_seller_profiles (
           full_name,
-          student_number
+          profile_picture_url
         )
       `)
       .eq("status", "active")
@@ -167,10 +167,31 @@ const Marketplace = () => {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    
+    // Validate number of files
     if (files.length > MAX_IMAGES) {
       toast.error(`Maximum ${MAX_IMAGES} images allowed`);
+      e.target.value = ''; // Reset input
       return;
     }
+    
+    // Validate file types and sizes
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    
+    for (const file of files) {
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`${file.name} is not a valid image. Only JPG, PNG, GIF, and WebP are allowed.`);
+        e.target.value = ''; // Reset input
+        return;
+      }
+      if (file.size > maxSize) {
+        toast.error(`${file.name} is too large. Maximum file size is 5MB.`);
+        e.target.value = ''; // Reset input
+        return;
+      }
+    }
+    
     setSelectedFiles(files.slice(0, MAX_IMAGES));
   };
 
