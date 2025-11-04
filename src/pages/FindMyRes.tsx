@@ -238,6 +238,7 @@ const FindMyRes = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All campuses</SelectItem>
+                            <SelectItem value="Pretoria Main Campus">Pretoria Main Campus</SelectItem>
                             <SelectItem value="Hatfield">Hatfield</SelectItem>
                             <SelectItem value="Groenkloof">Groenkloof</SelectItem>
                             <SelectItem value="Prinshof">Prinshof</SelectItem>

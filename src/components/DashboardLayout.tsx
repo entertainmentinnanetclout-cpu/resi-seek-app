@@ -18,13 +18,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const navItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
-    { icon: Bell, label: "Updates", path: "/updates" },
+    { icon: Bell, label: "Updates", path: "/dashboard/updates" },
     { icon: Newspaper, label: "Campus News", path: "/campus-news" },
     { icon: Search, label: "Find My Res", path: "/find-my-res" },
     { icon: ShoppingBag, label: "Marketplace", path: "/marketplace" },
-    { icon: FileText, label: "Applications", path: "/applications" },
-    { icon: User, label: "Profile", path: "/profile" },
-    { icon: MessageSquare, label: "Messages", path: "/messages" },
+    { icon: FileText, label: "Applications", path: "/dashboard/applications" },
+    { icon: User, label: "Profile", path: "/dashboard/profile" },
+    { icon: MessageSquare, label: "Messages", path: "/dashboard/messages" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
