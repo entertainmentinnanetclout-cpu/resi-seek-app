@@ -4,8 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, CheckCircle2, User as UserIcon, Loader2 } from "lucide-react";
+import { Upload, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
@@ -19,7 +18,6 @@ const Profile = () => {
   const { profile, loading } = useRealtimeProfile(user);
   const [formData, setFormData] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
@@ -49,46 +47,6 @@ const Profile = () => {
     }
   };
 
-  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0 || !user) return;
-
-    const file = files[0];
-    
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Only JPG, PNG, or GIF images are allowed');
-      return;
-    }
-
-    // Validate file size (2MB max)
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Image must be under 2MB');
-      return;
-    }
-
-    const fileExtension = file.name.split(".").pop();
-    const fileName = `${user.id}-${Date.now()}.${fileExtension}`;
-    const path = `avatars/${fileName}`;
-
-    const url = await uploadFile(file, "profile-pictures", path);
-    if (url) {
-      try {
-        const { error } = await supabase
-          .from("profiles")
-          .update({ profile_picture_url: url })
-          .eq("id", user.id);
-        if (error) throw error;
-        
-        // Instantly update the local avatar image
-        setFormData((prev: any) => ({ ...prev, profile_picture_url: url }));
-        toast.success("Avatar updated successfully!");
-      } catch (err: any) {
-        toast.error(err.message);
-      }
-    }
-  };
 
   const handleDocumentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -158,49 +116,6 @@ const Profile = () => {
               </Button>
             )}
           </div>
-
-          {/* Profile Picture */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Profile Picture</CardTitle>
-              <CardDescription>Update your profile photo</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-6">
-                <Avatar className="w-24 h-24">
-                  <AvatarImage src={formData?.profile_picture_url ?? undefined} />
-                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                    <UserIcon className="w-12 h-12" />
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                    accept="image/png, image/jpeg, image/gif"
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                  >
-                    {isUploading ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Upload className="w-4 h-4 mr-2" />
-                    )}
-                    Upload Photo
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    JPG, PNG or GIF. Max size 2MB
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Personal Information */}
           <Card className="shadow-card">
