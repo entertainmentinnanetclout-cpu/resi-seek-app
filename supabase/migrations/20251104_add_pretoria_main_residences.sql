@@ -48,3 +48,4 @@ alter table public.residences enable row level security;
 create policy "Allow public read access to residences"
 on public.residences for select
 using (true);
+('Tshwane Heights', 'Pretoria West (Main Campus)', '71 Steve Biko Road, Arcadia');
