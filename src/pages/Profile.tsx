@@ -118,7 +118,7 @@ const Profile = () => {
           </div>
 
           {/* Personal Information */}
-          <Card className="shadow-card">
+          <Card className="shadow-card bg-card dark:bg-card/80">
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
               <CardDescription>Your student details</CardDescription>
@@ -127,7 +127,7 @@ const Profile = () => {
               <form onSubmit={handleSave} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Full Name</label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Full Name</label>
                     <Input
                       name="full_name"
                       value={formData?.full_name ?? ""}
@@ -136,7 +136,7 @@ const Profile = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Student Number</label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Student Number</label>
                     <Input
                       name="student_number"
                       value={formData?.student_number ?? ""}
@@ -148,7 +148,7 @@ const Profile = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Email Address</label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Email Address</label>
                     <Input
                       type="email"
                       name="email"
@@ -158,7 +158,7 @@ const Profile = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Phone Number</label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Phone Number</label>
                     <Input
                       type="tel"
                       name="phone"
@@ -171,7 +171,7 @@ const Profile = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Campus</label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Campus</label>
                     <Select
                       name="campus"
                       value={formData?.campus ?? ""}
@@ -189,7 +189,7 @@ const Profile = () => {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Course</label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Course</label>
                     <Input
                       name="course"
                       value={formData?.course ?? ""}
@@ -198,7 +198,7 @@ const Profile = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Year of Study</label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Year of Study</label>
                     <Select
                       name="year_of_study"
                       value={formData?.year_of_study ?? ""}
@@ -230,7 +230,7 @@ const Profile = () => {
                     </Button>
                     <Button
                       type="submit"
-                      variant="accent"
+                      variant="default"
                       className="flex-1"
                       disabled={isSaving}
                     >
@@ -244,7 +244,7 @@ const Profile = () => {
           </Card>
 
           {/* Documents */}
-          <Card className="shadow-card">
+          <Card className="shadow-card bg-card dark:bg-card/80">
             <CardHeader>
               <CardTitle>Uploaded Documents</CardTitle>
               <CardDescription>Your verified documents</CardDescription>
@@ -260,10 +260,10 @@ const Profile = () => {
               {["ID Copy", "Proof of Registration", "Proof of Funding"].map((doc) => (
                 <div
                   key={doc}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex items-center justify-between p-4 border rounded-lg bg-background dark:bg-background/50"
                 >
                   <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-success" />
+                    <CheckCircle2 className="w-5 h-5 text-primary" />
                     <div>
                       <p className="font-medium">{doc}</p>
                       <p className="text-sm text-muted-foreground">

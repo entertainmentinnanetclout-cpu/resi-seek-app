@@ -40,3 +40,12 @@ insert into residences (name, campus, address) values
 ('Prime Residence', 'Pretoria West (Main Campus)', '15 Bourke Street, Sunnyside'),
 ('Urban Park', 'Pretoria West (Main Campus)', '18 Park Street, Arcadia'),
 ('Tshwane Heights', 'Pretoria West (Main Campus)', '71 Steve Biko Road, Arcadia');
+
+-- Enable Row Level Security for the residences table
+alter table public.residences enable row level security;
+
+-- Create a policy to allow public read access to all residences
+create policy "Allow public read access to residences"
+on public.residences for select
+using (true);
+('Tshwane Heights', 'Pretoria West (Main Campus)', '71 Steve Biko Road, Arcadia');
