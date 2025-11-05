@@ -68,7 +68,6 @@ const Profile = () => {
 
     setUploadingDoc(selectedDocType);
     const file = files[0];
-    const fileExtension = file.name.split(".").pop();
     const fileName = `${user.id}-${selectedDocType.toLowerCase().replace(" ", "-")}-${Date.now()}.${fileExtension}`;
     const path = `documents/${fileName}`;
 
