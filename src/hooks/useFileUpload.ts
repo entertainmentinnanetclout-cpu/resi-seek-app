@@ -6,28 +6,37 @@ export const useFileUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const uploadFile = async (file: File, bucket: string, path: string) => {
+  const uploadFile = async (file: File, userId: string) => {
     try {
       setIsUploading(true);
       setUploadProgress(0);
 
-      // Upload file using Supabase storage API
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(path, file, {
-          cacheControl: '3600',
-          upsert: true,
-        });
+      const fileData = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-      if (error) throw error;
+      const response = await fetch('/api/handler', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'uploadFile',
+          user_id: userId,
+          fileName: file.name,
+          fileData,
+        }),
+      });
 
-      // Simulate progress for better UX
-      setUploadProgress(100);
+      const result = await response.json();
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path);
-      return publicUrl;
-
+      if (response.ok) {
+        setUploadProgress(100);
+        return result.url;
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error: any) {
       toast.error(`Failed to upload file: ${error.message}`);
       return null;
