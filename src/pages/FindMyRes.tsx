@@ -47,18 +47,18 @@ const FindMyRes = () => {
   useEffect(() => {
     const fetchResidences = async () => {
       setLoading(true);
-      const response = await fetch(`/api/handler?action=getResidences&role=${profile?.role || 'student'}`);
-      const data = await response.json();
-      if (response.ok) {
-        setResidences(data);
+      const { data, error } = await supabase.from('residences').select('*, manager:res_manager_id(*)');
+      if (error) {
+        console.error('Error fetching residences:', error);
+        toast.error('Failed to load residences.');
       } else {
-        toast.error(data.error);
+        setResidences(data || []);
       }
       setLoading(false);
     };
 
-    if (profile) fetchResidences();
-  }, [profile]);
+    fetchResidences();
+  }, []);
 
   useEffect(() => {
     if (!residences.length) return;
