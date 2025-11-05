@@ -5,10 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import heroImage from "@/assets/hero-accommodation.jpg";
+import HeroCarousel from "@/components/HeroCarousel";
 import headerLogo from "@/assets/Main header Desktop.png";
 import footerLogo from "@/assets/FOOTER.png";
 import iconLogo from "@/assets/ICON NO TEXT.png";
+import artsFestival from "@/assets/arts-festival.jpg";
+import campusDinokeng from "@/assets/campus-dinokeng.jpg";
+import studentStudying from "@/assets/student-studying.jpg";
+import studentsCelebration from "@/assets/students-celebration.jpg";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -24,6 +28,45 @@ const Landing = () => {
     toast.success("Thank you! We'll get back to you soon.");
     e.currentTarget.reset();
   };
+
+  const heroSlides = [
+    {
+      image: campusDinokeng,
+      title: "Welcome to TUT Dinokeng Campus",
+      description: "Find your perfect student accommodation near campus - 400+ verified options available",
+      cta: {
+        text: "Explore Residences",
+        action: () => navigate("/auth")
+      }
+    },
+    {
+      image: artsFestival,
+      title: "Experience Campus Life",
+      description: "Join vibrant campus activities and cultural celebrations throughout the year",
+      cta: {
+        text: "Get Started",
+        action: () => navigate("/auth")
+      }
+    },
+    {
+      image: studentStudying,
+      title: "Study in Comfort",
+      description: "Access quality accommodation that supports your academic success",
+      cta: {
+        text: "Find Your Res",
+        action: () => navigate("/auth")
+      }
+    },
+    {
+      image: studentsCelebration,
+      title: "Build Lifelong Connections",
+      description: "Be part of a thriving student community in Pretoria & Tshwane",
+      cta: {
+        text: "Join Now",
+        action: () => navigate("/auth")
+      }
+    }
+  ];
 
   const features = [
     {
@@ -67,30 +110,9 @@ const Landing = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative bg-gradient-hero text-white py-20 md:py-32 overflow-hidden">
-        <div className="absolute inset-0 opacity-30">
-          <img src={heroImage} alt="" className="w-full h-full object-cover" />
-        </div>
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50" />
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-4 md:mb-6 leading-tight font-display animate-fade-in">
-              Find Student Accommodation in Pretoria & Tshwane
-            </h1>
-            <p className="text-lg md:text-xl lg:text-2xl mb-8 md:mb-10 text-white/90 px-4">
-              Your journey to the perfect student residence starts here. Safe, affordable, and close to campus.
-            </p>
-            <Button 
-              variant="hero" 
-              size="lg"
-              onClick={() => navigate("/auth")}
-              className="text-base md:text-xl px-8 md:px-12 py-6 md:py-7 shadow-premium w-full sm:w-auto"
-            >
-              Get Started <ArrowRight className="ml-2" />
-            </Button>
-          </div>
-        </div>
+      {/* Hero Carousel */}
+      <section>
+        <HeroCarousel slides={heroSlides} autoPlay interval={6000} />
       </section>
 
       {/* Features Section */}

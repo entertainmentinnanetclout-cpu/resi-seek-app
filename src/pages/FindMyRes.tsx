@@ -150,7 +150,7 @@ const FindMyRes = () => {
             <div className="text-center mb-8">
               <h1 className="text-4xl font-bold mb-3">Find Your Perfect Residence</h1>
               <p className="text-muted-foreground text-lg">
-                Browse {residences.length} accommodations across Pretoria
+                Browse 400+ verified accommodations across Pretoria & Tshwane
               </p>
             </div>
 

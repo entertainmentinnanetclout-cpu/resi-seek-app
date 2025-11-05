@@ -10,6 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Newspaper, Briefcase, Filter, TrendingUp, PenTool, Upload } from "lucide-react";
 import { toast } from "sonner";
+import artsFestival from "@/assets/arts-festival.jpg";
+import heitaMagazine from "@/assets/heita-magazine.jpg";
+import oneRepublicMagazine from "@/assets/one-republic-magazine.png";
+import emergencyServices from "@/assets/emergency-services.png";
+import studentPortalPromo from "@/assets/student-portal-promo.jpg";
+import campusDinokeng from "@/assets/campus-dinokeng.jpg";
+import studentStudying from "@/assets/student-studying.jpg";
 
 const CampusNews = () => {
   const navigate = useNavigate();
@@ -18,25 +25,29 @@ const CampusNews = () => {
   // Hero Carousel Slides
   const heroSlides = [
     {
-      image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1920&q=80",
-      title: "Your Campus, Your Stories",
-      description: "Stay connected with the latest news, events, and opportunities across campus",
+      image: artsFestival,
+      title: "TUT Arts & Culture Festival",
+      description: "Celebrating creativity and diversity through vibrant campus arts programs",
       cta: {
-        text: "Explore Stories",
+        text: "Learn More",
         action: () => document.getElementById('news-feed')?.scrollIntoView({ behavior: 'smooth' })
       }
     },
     {
-      image: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1920&q=80",
-      title: "Student Life & Culture",
-      description: "Discover what's happening in clubs, societies, and campus events",
+      image: heitaMagazine,
+      title: "HEITA! Student Magazine",
+      description: "Legacy & Learning - Reflecting on heritage and progress at TUT",
+      cta: {
+        text: "Read Magazine",
+        action: () => document.getElementById('news-feed')?.scrollIntoView({ behavior: 'smooth' })
+      }
     },
     {
-      image: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=1920&q=80",
-      title: "Career Opportunities",
-      description: "Find part-time jobs, internships, and bursaries tailored for students",
+      image: oneRepublicMagazine,
+      title: "1Republic Campus Magazine",
+      description: "Featured stories from Soshanguve Campus - Volume 2, Issue 3",
       cta: {
-        text: "Browse Jobs",
+        text: "View Issue",
         action: () => document.getElementById('jobs-section')?.scrollIntoView({ behavior: 'smooth' })
       }
     }
@@ -47,59 +58,59 @@ const CampusNews = () => {
     {
       id: 1,
       category: "campus-life",
-      title: "New Student Hub Opens at Main Campus",
-      author: "Sarah Mthembu",
-      date: "2025-10-10",
-      image: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80",
-      description: "The new 3-story student hub features study spaces, cafes, and collaboration zones designed by students, for students.",
+      title: "Emergency Medical Services Now Available on Campus",
+      author: "Campus Safety Team",
+      date: "2025-11-05",
+      image: emergencyServices,
+      description: "ER24 emergency medical services are now stationed at TUT campuses. In case of medical emergency, call ER24 at 010 205 3087 or dial DID 205 3087 from campus phones.",
       trending: true
     },
     {
       id: 2,
-      category: "research",
-      title: "Engineering Students Win National Innovation Award",
-      author: "Thabo Ndlovu",
-      date: "2025-10-09",
-      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&q=80",
-      description: "A team of final-year engineering students developed a solar-powered water purification system for rural communities.",
+      category: "culture",
+      title: "TUT Arts Festival Celebrates Cultural Diversity",
+      author: "Arts & Culture Committee",
+      date: "2025-11-04",
+      image: artsFestival,
+      description: "Experience vibrant student creativity through our annual arts festival featuring music, dance, visual arts, and cultural performances from diverse communities.",
       trending: true
     },
     {
       id: 3,
-      category: "culture",
-      title: "Annual Cultural Festival Returns This Month",
-      author: "Lerato Sithole",
-      date: "2025-10-08",
-      image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80",
-      description: "Experience diverse cultures through food, music, and performances at the biggest campus event of the year.",
+      category: "campus-life",
+      title: "New Student Portal Launched - myTUT",
+      author: "IT Services",
+      date: "2025-11-03",
+      image: studentPortalPromo,
+      description: "Access the new myTUT Student Portal at https://mytut.tut.ac.za. Features include e-Learning, e-Admin, MyLife, WiFi access, exam timetables, and results viewing.",
+      trending: true
     },
     {
       id: 4,
-      category: "campus-life",
-      title: "New Library Hours Extended for Exam Period",
-      author: "Admin Team",
-      date: "2025-10-07",
-      image: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=800&q=80",
-      description: "The main library will now operate 24/7 during the exam period to support students' study needs.",
+      category: "research",
+      title: "Post-Graduate Study Opportunities Available",
+      author: "Admissions Office",
+      date: "2025-11-02",
+      image: campusDinokeng,
+      description: "Are you aspiring to pursue a Post Graduate qualification? TUT offers comprehensive postgraduate programs across all faculties. Contact admissions for detailed information.",
     },
     {
       id: 5,
-      category: "research",
-      title: "Medical Students Launch Mental Health Initiative",
-      author: "Zanele Dlamini",
-      date: "2025-10-06",
-      image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80",
-      description: "Peer-to-peer support program aims to break stigma and provide accessible mental health resources.",
-      trending: true
+      category: "campus-life",
+      title: "HEITA! Magazine: Legacy & Learning Edition",
+      author: "Student Publications",
+      date: "2025-11-01",
+      image: heitaMagazine,
+      description: "The latest edition of HEITA! explores the intersection of heritage and progress at TUT, featuring inspiring student stories and academic achievements.",
     },
     {
       id: 6,
       category: "culture",
-      title: "Student Band Performs at National Music Awards",
-      author: "Sipho Maleka",
-      date: "2025-10-05",
-      image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80",
-      description: "Campus-formed band 'The Scholars' gains national recognition with their debut album.",
+      title: "1Republic Magazine Features Campus Stories",
+      author: "Soshanguve Campus",
+      date: "2025-10-31",
+      image: oneRepublicMagazine,
+      description: "Volume 2, Issue 3 of 1Republic magazine highlights inspiring student journeys, club activities, and campus achievements from Soshanguve.",
     }
   ];
 
