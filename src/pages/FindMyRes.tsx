@@ -136,7 +136,7 @@ const FindMyRes = () => {
     setDistanceRange("");
     setRoomType("");
     setSelectedAmenities([]);
-    setCampus("");
+    setCampus("all");
   };
 
   const amenitiesList = ["WiFi", "Parking", "Security", "Study Room", "Laundry", "Gym", "Pool", "Kitchen"];
@@ -238,7 +238,7 @@ const FindMyRes = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All campuses</SelectItem>
-                            <SelectItem value="Pretoria West (Main Campus)">Pretoria West (Main Campus)</SelectItem>
+                            <SelectItem value="Pretoria West">Pretoria West (Main Campus)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

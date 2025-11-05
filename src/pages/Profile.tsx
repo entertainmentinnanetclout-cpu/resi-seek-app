@@ -53,8 +53,9 @@ const Profile = () => {
     if (!files || files.length === 0 || !user || !selectedDocType) return;
 
     // Validate file type
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-    if (!allowedTypes.includes(files[0].type)) {
+    const allowedExtensions = ['pdf', 'jpeg', 'jpg', 'png'];
+    const fileExtension = files[0].name.split('.').pop()?.toLowerCase();
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
       toast.error('Only PDF, JPG, or PNG files are allowed');
       return;
     }
@@ -67,11 +68,10 @@ const Profile = () => {
 
     setUploadingDoc(selectedDocType);
     const file = files[0];
-    const fileExtension = file.name.split(".").pop();
     const fileName = `${user.id}-${selectedDocType.toLowerCase().replace(" ", "-")}-${Date.now()}.${fileExtension}`;
     const path = `documents/${fileName}`;
 
-    const url = await uploadFile(file, "documents", path);
+    const url = await uploadFile(file, "user-documents", path);
     if (url) {
       try {
         const updates = {
