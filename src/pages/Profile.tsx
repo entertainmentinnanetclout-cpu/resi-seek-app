@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useFileUpload } from "@/hooks/useFileUpload";
-import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,34 +14,53 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const { isUploading, uploadFile } = useFileUpload();
   const { user } = useAuth();
-  const { profile, loading } = useRealtimeProfile(user);
-  const [formData, setFormData] = useState<any>(null);
+  const [profile, setProfile] = useState({
+    full_name: "",
+    student_number: "",
+    email: "",
+    phone: "",
+    campus: "",
+    course: "",
+    year_of_study: "",
+  });
   const [isSaving, setIsSaving] = useState(false);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
 
   useEffect(() => {
-    if (profile) {
-      setFormData(profile);
-    }
-  }, [profile]);
+    const fetchProfile = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name, student_number, email, phone, campus, course, year_of_study")
+        .eq("id", user?.id)
+        .single();
+
+      if (!error && data) setProfile(data);
+    };
+
+    if (user?.id) fetchProfile();
+  }, [user?.id]);
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!formData || !user) return;
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update(formData)
-        .eq("id", user.id);
-      if (error) throw error;
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        full_name: profile.full_name,
+        student_number: profile.student_number,
+        phone: profile.phone,
+        campus: profile.campus,
+        course: profile.course,
+        year_of_study: profile.year_of_study,
+      })
+      .eq("id", user.id);
+
+    if (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Error saving profile.");
+    } else {
       toast.success("Profile updated successfully!");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setIsSaving(false);
       setIsEditing(false);
     }
   };
@@ -129,19 +147,23 @@ const Profile = () => {
                   <div>
                     <label className="text-sm font-medium mb-2 block text-muted-foreground">Full Name</label>
                     <Input
-                      name="full_name"
-                      value={formData?.full_name ?? ""}
-                      onChange={handleInputChange}
-                      disabled={!isEditing || loading}
+                      value={profile.full_name || ""}
+                      onChange={(e) =>
+                        setProfile((prev) => ({ ...prev, full_name: e.target.value }))
+                      }
+                      placeholder="Enter your full name"
+                      disabled={!isEditing}
                     />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block text-muted-foreground">Student Number</label>
                     <Input
-                      name="student_number"
-                      value={formData?.student_number ?? ""}
-                      onChange={handleInputChange}
-                      disabled={!isEditing || loading}
+                      value={profile.student_number || ""}
+                      onChange={(e) =>
+                        setProfile((prev) => ({ ...prev, student_number: e.target.value }))
+                      }
+                      placeholder="Enter your student number"
+                      disabled={!isEditing}
                     />
                   </div>
                 </div>
@@ -150,21 +172,19 @@ const Profile = () => {
                   <div>
                     <label className="text-sm font-medium mb-2 block text-muted-foreground">Email Address</label>
                     <Input
-                      type="email"
-                      name="email"
-                      value={formData?.email ?? ""}
-                      onChange={handleInputChange}
+                      value={user?.email || ""}
                       disabled
                     />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block text-muted-foreground">Phone Number</label>
                     <Input
-                      type="tel"
-                      name="phone"
-                      value={formData?.phone ?? ""}
-                      onChange={handleInputChange}
-                      disabled={!isEditing || loading}
+                      value={profile.phone || ""}
+                      onChange={(e) =>
+                        setProfile((prev) => ({ ...prev, phone: e.target.value }))
+                      }
+                      placeholder="Enter your phone number"
+                      disabled={!isEditing}
                     />
                   </div>
                 </div>
@@ -173,13 +193,14 @@ const Profile = () => {
                   <div>
                     <label className="text-sm font-medium mb-2 block text-muted-foreground">Campus</label>
                     <Select
-                      name="campus"
-                      value={formData?.campus ?? ""}
-                      onValueChange={(value) => handleSelectChange("campus", value)}
-                      disabled={!isEditing || loading}
+                      value={profile.campus || ""}
+                      onValueChange={(value) =>
+                        setProfile((prev) => ({ ...prev, campus: value }))
+                      }
+                      disabled={!isEditing}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select your campus" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="hatfield">Hatfield Campus</SelectItem>
@@ -191,22 +212,25 @@ const Profile = () => {
                   <div>
                     <label className="text-sm font-medium mb-2 block text-muted-foreground">Course</label>
                     <Input
-                      name="course"
-                      value={formData?.course ?? ""}
-                      onChange={handleInputChange}
-                      disabled={!isEditing || loading}
+                      value={profile.course || ""}
+                      onChange={(e) =>
+                        setProfile((prev) => ({ ...prev, course: e.target.value }))
+                      }
+                      placeholder="Enter your course"
+                      disabled={!isEditing}
                     />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block text-muted-foreground">Year of Study</label>
                     <Select
-                      name="year_of_study"
-                      value={formData?.year_of_study ?? ""}
-                      onValueChange={(value) => handleSelectChange("year_of_study", value)}
-                      disabled={!isEditing || loading}
+                      value={profile.year_of_study || ""}
+                      onValueChange={(value) =>
+                        setProfile((prev) => ({ ...prev, year_of_study: value }))
+                      }
+                      disabled={!isEditing}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select your year of study" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="1">1st Year</SelectItem>

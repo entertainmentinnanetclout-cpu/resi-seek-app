@@ -14,4 +14,7 @@ DROP POLICY IF EXISTS "Allow users to view their own documents" ON storage.objec
 CREATE POLICY "Allow users to view their own documents"
 ON storage.objects FOR SELECT
 TO authenticated
+
+USING (auth.uid()::text = owner_id::text);
 USING (auth.uid()::text = (storage.foldername(name))[1]);
+
