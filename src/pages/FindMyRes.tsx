@@ -136,7 +136,7 @@ const FindMyRes = () => {
     setDistanceRange("");
     setRoomType("");
     setSelectedAmenities([]);
-    setCampus("");
+    setCampus("all");
   };
 
   const amenitiesList = ["WiFi", "Parking", "Security", "Study Room", "Laundry", "Gym", "Pool", "Kitchen"];
