@@ -26,7 +26,7 @@ const Profile = () => {
     if (profile) {
       setFormData(profile);
     }
-  }, []);
+  }, [profile]);
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

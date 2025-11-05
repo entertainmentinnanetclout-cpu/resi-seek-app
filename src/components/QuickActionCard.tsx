@@ -24,13 +24,13 @@ const QuickActionCard = ({ icon: Icon, title, description, gradient, onClick }: 
         {/* Content */}
         <div className="relative flex items-start gap-4">
           <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform", gradient)}>
-            <Icon className="w-7 h-7 text-white" />
+            <Icon className="w-7 h-7 text-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors">{title}</h3>
+            <h3 className="font-bold text-lg mb-1 text-card-foreground group-hover:text-accent transition-colors">{title}</h3>
             <p className="text-sm text-muted-foreground">{description}</p>
           </div>
-          <ArrowRight className="w-5 h-5 text-muted-foreground flex-shrink-0 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+          <ArrowRight className="w-5 h-5 text-muted-foreground flex-shrink-0 group-hover:text-accent group-hover:translate-x-1 transition-all" />
         </div>
       </CardContent>
     </Card>

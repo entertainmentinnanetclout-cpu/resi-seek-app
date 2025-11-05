@@ -20,18 +20,18 @@ const StatCard = ({ icon: Icon, value, label, gradient = "bg-gradient-primary", 
       <CardContent className="p-6 relative">
         {/* Background Icon */}
         <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
-          <Icon className="w-32 h-32" />
+          <Icon className="w-32 h-32 text-card-foreground" />
         </div>
 
         {/* Content */}
         <div className="relative">
           <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-4", gradient)}>
-            <Icon className="w-7 h-7 text-white" />
+            <Icon className="w-7 h-7 text-foreground" />
           </div>
           
           <div className="space-y-1">
             <div className="flex items-baseline gap-2">
-              <div className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              <div className="text-4xl font-bold text-card-foreground">
                 {value}
               </div>
               {trend && (
