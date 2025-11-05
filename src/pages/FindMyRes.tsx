@@ -15,14 +15,14 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
-import { useRealtimeResidences } from "@/hooks/useRealtimeResidences";
 import { supabase } from "@/integrations/supabase/client";
 
 const FindMyRes = () => {
   const { user } = useAuth();
   const { profile } = useRealtimeProfile(user);
   const { applications } = useRealtimeApplications(user);
-  const { residences, loading } = useRealtimeResidences();
+  const [residences, setResidences] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
@@ -43,6 +43,22 @@ const FindMyRes = () => {
 
   // Application notes
   const [applicationNotes, setApplicationNotes] = useState("");
+
+  useEffect(() => {
+    const fetchResidences = async () => {
+      setLoading(true);
+      const response = await fetch(`/api/handler?action=getResidences&role=${profile?.role || 'student'}`);
+      const data = await response.json();
+      if (response.ok) {
+        setResidences(data);
+      } else {
+        toast.error(data.error);
+      }
+      setLoading(false);
+    };
+
+    if (profile) fetchResidences();
+  }, [profile]);
 
   useEffect(() => {
     if (!residences.length) return;

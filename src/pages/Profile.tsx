@@ -44,25 +44,31 @@ const Profile = () => {
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        full_name: profile.full_name,
-        student_number: profile.student_number,
-        phone: profile.phone,
-        campus: profile.campus,
-        course: profile.course,
-        year_of_study: profile.year_of_study,
-      })
-      .eq("id", user.id);
+    setIsSaving(true);
+    const updates = {
+      full_name: profile.full_name,
+      student_number: profile.student_number,
+      phone: profile.phone,
+      campus: profile.campus,
+      course: profile.course,
+      year_of_study: profile.year_of_study,
+    };
 
-    if (error) {
-      console.error("Error updating profile:", error);
-      toast.error("Error saving profile.");
-    } else {
-      toast.success("Profile updated successfully!");
+    const response = await fetch('/api/handler', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'updateProfile', user_id: user.id, updates }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      toast.success(result.message);
       setIsEditing(false);
+    } else {
+      toast.error(result.error);
     }
+    setIsSaving(false);
   };
 
 
@@ -86,10 +92,8 @@ const Profile = () => {
 
     setUploadingDoc(selectedDocType);
     const file = files[0];
-    const fileName = `${user.id}-${selectedDocType.toLowerCase().replace(" ", "-")}-${Date.now()}.${fileExtension}`;
-    const path = `documents/${fileName}`;
 
-    const url = await uploadFile(file, "user-documents", path);
+    const url = await uploadFile(file, user.id);
     if (url) {
       try {
         const updates = {
