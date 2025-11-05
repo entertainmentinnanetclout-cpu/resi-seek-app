@@ -45,30 +45,21 @@ const Profile = () => {
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
-    const updates = {
-      full_name: profile.full_name,
-      student_number: profile.student_number,
-      phone: profile.phone,
-      campus: profile.campus,
-      course: profile.course,
-      year_of_study: profile.year_of_study,
-    };
+    const { error } = await supabase
+      .from("profiles")
+      .update(profile)
+      .eq("id", user.id)
+      .select();
 
-    const response = await fetch('/api/handler', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'updateProfile', user_id: user.id, updates }),
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      toast.success(result.message);
-      setIsEditing(false);
-    } else {
-      toast.error(result.error);
-    }
     setIsSaving(false);
+
+    if (error) {
+      console.error('Save error:', error);
+      toast.error('Failed to save changes. Please try again.');
+    } else {
+      toast.success('Profile updated successfully!');
+      setIsEditing(false);
+    }
   };
 
 
@@ -76,39 +67,50 @@ const Profile = () => {
     const files = event.target.files;
     if (!files || files.length === 0 || !user || !selectedDocType) return;
 
-    // Validate file type
+    const file = files[0];
     const allowedExtensions = ['pdf', 'jpeg', 'jpg', 'png'];
-    const fileExtension = files[0].name.split('.').pop()?.toLowerCase();
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
     if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
       toast.error('Only PDF, JPG, or PNG files are allowed');
       return;
     }
-
-    // Validate file size (10MB max)
-    if (files[0].size > 10 * 1024 * 1024) {
+    if (file.size > 10 * 1024 * 1024) {
       toast.error('File must be under 10MB');
       return;
     }
 
     setUploadingDoc(selectedDocType);
-    const file = files[0];
 
-    const url = await uploadFile(file, user.id);
-    if (url) {
-      try {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = async () => {
+      const fileData = reader.result as string;
+      const response = await fetch('/api/handler', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'uploadFile',
+          user_id: user.id,
+          fileName: file.name,
+          fileData,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success(`${selectedDocType} uploaded successfully!`);
         const updates = {
-          [`${selectedDocType.toLowerCase().replace(" ", "_")}_url`]: url,
+          [`${selectedDocType.toLowerCase().replace(" ", "_")}_url`]: result.url,
           [`${selectedDocType.toLowerCase().replace(" ", "_")}_status`]: "uploaded",
         };
-        const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
-        if (error) throw error;
-        toast.success(`${selectedDocType} uploaded successfully!`);
-      } catch (err: any) {
-        toast.error(err.message);
+        await supabase.from("profiles").update(updates).eq("id", user.id);
+      } else {
+        toast.error(`Upload failed: ${result.error}`);
       }
-    }
-    setUploadingDoc(null);
-    setSelectedDocType(null);
+      setUploadingDoc(null);
+      setSelectedDocType(null);
+    };
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
