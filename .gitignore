@@ -1,22 +1,28 @@
-# Logs
-logs
-*.log
+# Supabase
+.env
+
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Vite
+.DS_Store
+/dist
+/dist-ssr
+*.local
+
+# Log files
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
 .idea
-.DS_Store
+.vscode
 *.suo
 *.ntvs*
 *.njsproj
