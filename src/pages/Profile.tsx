@@ -133,11 +133,11 @@ const Profile = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => (prev ? { ...prev, [name]: value } : null));
+    setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => (prev ? { ...prev, [name]: value } : null));
+    setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
