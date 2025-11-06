@@ -30,13 +30,18 @@ const Profile = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("full_name, student_number, email, phone, campus, course, year_of_study")
-        .eq("id", user?.id)
-        .single();
-
-      if (!error && data) setProfile(data);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("full_name, student_number, email, phone, campus, course, year_of_study")
+          .eq("id", user?.id)
+          .single();
+        if (error) throw error;
+        if (data) setProfile(data);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast.error("Could not load your profile data.");
+      }
     };
 
     if (user?.id) fetchProfile();
@@ -45,20 +50,22 @@ const Profile = () => {
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update(profile)
-      .eq("id", user.id)
-      .select();
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update(profile)
+        .eq("id", user.id)
+        .select();
 
-    setIsSaving(false);
+      if (error) throw error;
 
-    if (error) {
-      console.error('Save error:', error);
-      toast.error('Failed to save changes. Please try again.');
-    } else {
       toast.success('Profile updated successfully!');
       setIsEditing(false);
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error('Failed to save changes. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -81,36 +88,47 @@ const Profile = () => {
 
     setUploadingDoc(selectedDocType);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onloadend = async () => {
-      const fileData = reader.result as string;
-      const response = await fetch('/api/handler', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'uploadFile',
-          user_id: user.id,
-          fileName: file.name,
-          fileData,
-        }),
-      });
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = async () => {
+        try {
+          const fileData = reader.result as string;
+          const response = await fetch('/api/handler', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'uploadFile',
+              user_id: user.id,
+              fileName: file.name,
+              fileData,
+            }),
+          });
 
-      const result = await response.json();
+          const result = await response.json();
 
-      if (response.ok) {
-        toast.success(`${selectedDocType} uploaded successfully!`);
-        const updates = {
-          [`${selectedDocType.toLowerCase().replace(" ", "_")}_url`]: result.url,
-          [`${selectedDocType.toLowerCase().replace(" ", "_")}_status`]: "uploaded",
-        };
-        await supabase.from("profiles").update(updates).eq("id", user.id);
-      } else {
-        toast.error(`Upload failed: ${result.error}`);
-      }
+          if (!response.ok) throw new Error(result.error);
+
+          toast.success(`${selectedDocType} uploaded successfully!`);
+          const updates = {
+            [`${selectedDocType.toLowerCase().replace(" ", "_")}_url`]: result.url,
+            [`${selectedDocType.toLowerCase().replace(" ", "_")}_status`]: "uploaded",
+          };
+          const { error: updateError } = await supabase.from("profiles").update(updates).eq("id", user.id);
+          if (updateError) throw updateError;
+
+        } catch (err: any) {
+          toast.error(`Upload failed: ${err.message}`);
+        } finally {
+          setUploadingDoc(null);
+          setSelectedDocType(null);
+        }
+      };
+    } catch (err: any) {
+      toast.error(`An unexpected error occurred: ${err.message}`);
       setUploadingDoc(null);
       setSelectedDocType(null);
-    };
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

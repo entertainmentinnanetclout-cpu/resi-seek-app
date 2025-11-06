@@ -47,14 +47,16 @@ const FindMyRes = () => {
   useEffect(() => {
     const fetchResidences = async () => {
       setLoading(true);
-      const { data, error } = await supabase.from('residences').select('*, manager:res_manager_id(*)');
-      if (error) {
+      try {
+        const { data, error } = await supabase.from('residences').select('*, manager:res_manager_id(*)');
+        if (error) throw error;
+        setResidences(data || []);
+      } catch (error) {
         console.error('Error fetching residences:', error);
         toast.error('Failed to load residences.');
-      } else {
-        setResidences(data || []);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchResidences();
