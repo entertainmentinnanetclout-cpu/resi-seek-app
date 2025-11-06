@@ -48,7 +48,7 @@ const FindMyRes = () => {
     const fetchResidences = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from('residences').select('*');
+        const { data, error } = await supabase.from('residences_public').select('*');
         if (error) throw error;
         setResidences(data || []);
       } catch (error) {
@@ -624,23 +624,6 @@ const FindMyRes = () => {
                 </div>
               </div>
 
-              <div>
-                <h4 className="font-semibold mb-3">Contact</h4>
-                <div className="space-y-2 text-sm">
-                  {selectedResidence?.contact_email && (
-                    <div>
-                      <span className="text-muted-foreground">Email:</span>
-                      <p>{selectedResidence.contact_email}</p>
-                    </div>
-                  )}
-                  {selectedResidence?.contact_phone && (
-                    <div>
-                      <span className="text-muted-foreground">Phone:</span>
-                      <p>{selectedResidence.contact_phone}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
 
             {selectedResidence?.description && (
