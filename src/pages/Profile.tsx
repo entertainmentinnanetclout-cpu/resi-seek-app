@@ -35,7 +35,7 @@ const Profile = () => {
           .from("profiles")
           .select("full_name, student_number, email, phone, campus, course, year_of_study")
           .eq("id", user?.id)
-          .single();
+          .maybeSingle();
         if (error) throw error;
         if (data) setProfile(data);
       } catch (error) {

@@ -30,7 +30,7 @@ const Dashboard = () => {
           .from("profiles")
           .select("*")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         setProfileData(profile);
 

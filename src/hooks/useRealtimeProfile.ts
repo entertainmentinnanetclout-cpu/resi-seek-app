@@ -20,7 +20,7 @@ export function useRealtimeProfile(user: User | null) {
           .from('profiles')
           .select('*')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
         setProfile(data);
