@@ -23,6 +23,8 @@ const FindMyRes = () => {
   const { applications } = useRealtimeApplications(user);
   const [residences, setResidences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [campuses, setCampuses] = useState<string[]>([]);
+  const [loadingCampuses, setLoadingCampuses] = useState(true);
   
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
@@ -60,6 +62,29 @@ const FindMyRes = () => {
     };
 
     fetchResidences();
+  }, []);
+
+  useEffect(() => {
+    const fetchCampuses = async () => {
+      setLoadingCampuses(true);
+      try {
+        const { data, error } = await supabase
+          .from('residences')
+          .select('campus');
+
+        if (error) throw error;
+
+        const uniqueCampuses = [...new Set(data.map(item => item.campus).filter(Boolean))];
+        setCampuses(uniqueCampuses);
+      } catch (error) {
+        console.error('Error fetching campuses:', error);
+        toast.error('Failed to load campuses.');
+      } finally {
+        setLoadingCampuses(false);
+      }
+    };
+
+    fetchCampuses();
   }, []);
 
   useEffect(() => {
@@ -250,13 +275,17 @@ const FindMyRes = () => {
 
                       <div className="space-y-2">
                         <Label>Campus</Label>
-                        <Select value={campus} onValueChange={setCampus}>
+                        <Select value={campus} onValueChange={setCampus} disabled={loadingCampuses}>
                           <SelectTrigger>
                             <SelectValue placeholder="All campuses" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All campuses</SelectItem>
-                            <SelectItem value="Pretoria West">Pretoria West (Main Campus)</SelectItem>
+                            {campuses.map((campusName) => (
+                              <SelectItem key={campusName} value={campusName}>
+                                {campusName}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
