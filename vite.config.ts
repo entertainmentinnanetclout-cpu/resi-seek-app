@@ -13,8 +13,10 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(), 
     mode === "development" && componentTagger(),
-    VitePWA({
+    // Only enable PWA in production to avoid dev caching/black screen issues
+    mode === "production" && VitePWA({
       registerType: 'autoUpdate',
+      devOptions: { enabled: false },
       includeAssets: ['icon-192.png', 'icon-512.png', 'icon-1024.png'],
       manifest: {
         name: 'ResKonnect Simplified Portal',
