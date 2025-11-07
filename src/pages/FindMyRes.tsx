@@ -60,6 +60,34 @@ const FindMyRes = () => {
     };
 
     fetchResidences();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('residences-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'residences'
+        },
+        (payload) => {
+          console.log('Residence change detected:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setResidences(prev => [...prev, payload.new]);
+          } else if (payload.eventType === 'UPDATE') {
+            setResidences(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
+          } else if (payload.eventType === 'DELETE') {
+            setResidences(prev => prev.filter(r => r.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
