@@ -193,7 +193,11 @@ setCampusOptions(uniqueCampuses);
       });
 
     if (profileError) {
-      console.error("Profile check failed:", profileError);
+      if (profileError) {
+  console.error("Profile check failed:", profileError);
+  toast.error(`Profile verification failed: ${profileError.message}`);
+  return;
+}
       toast.error("Could not verify profile before applying.");
       return;
     }
