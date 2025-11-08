@@ -64,6 +64,7 @@ const Profile = () => {
       .upsert({
         id: user.id,
         full_name: profile.full_name,
+         student_number: profile.student_number,
         email: profile.email,
         phone_number: profile.phone_number,
         campus: profile.campus,
@@ -215,18 +216,20 @@ const Profile = () => {
                       value={user?.email || ""}
                       disabled
                     />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Phone Number</label>
-                    <Input
-                      value={profile.phone || ""}
-                      onChange={(e) =>
-                        setProfile((prev) => ({ ...prev, phone: e.target.value }))
-                      }
-                      placeholder="Enter your phone number"
-                      disabled={!isEditing}
-                    />
-                  </div>
+                  </div><div>
+  <label className="text-sm font-medium mb-2 block text-muted-foreground">
+    Phone Number
+  </label>
+  <Input
+    value={profile.phone_number || ""}
+    onChange={(e) =>
+      setProfile((prev) => ({ ...prev, phone_number: e.target.value }))
+    }
+    placeholder="Enter your phone number"
+    disabled={!isEditing}
+  />
+</div>
+ </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
