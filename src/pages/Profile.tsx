@@ -48,26 +48,42 @@ const Profile = () => {
   }, [user?.id]);
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update(profile)
-        .eq("id", user.id)
-        .select();
+  e.preventDefault();
+  setIsSaving(true);
 
-      if (error) throw error;
-
-      toast.success('Profile updated successfully!');
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error('Failed to save changes. Please try again.');
-    } finally {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert("You must be logged in to save your profile.");
       setIsSaving(false);
+      return;
     }
-  };
+
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({
+        id: user.id,
+        full_name: profile.full_name,
+        email: profile.email,
+        phone_number: profile.phone_number,
+        campus: profile.campus,
+        course: profile.course,
+        year_of_study: profile.year_of_study,
+        updated_at: new Date().toISOString(),
+      });
+
+    if (error) {
+      console.error("Profile save error:", error);
+      alert("Failed to save profile. Please try again.");
+    } else {
+      alert("Profile saved successfully!");
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setIsSaving(false);
+  }
+};
 
 
   const handleDocumentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
