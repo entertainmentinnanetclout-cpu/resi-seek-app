@@ -36,6 +36,7 @@ const FindMyRes = () => {
   const [roomType, setRoomType] = useState<string>("");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [campus, setCampus] = useState<string>("all");
+const [campusOptions, setCampusOptions] = useState<string[]>([]);
   
   // Filtered residences
   const [filteredResidences, setFilteredResidences] = useState<any[]>([]);
@@ -51,6 +52,12 @@ const FindMyRes = () => {
         const { data, error } = await supabase.from('public_residences').select('*');
         if (error) throw error;
         setResidences(data || []);
+        // Extract unique campuses from residences
+const uniqueCampuses = [...new Set(data.map((r) => r.campus?.trim()))]
+  .filter(Boolean)
+  .sort();
+setCampusOptions(uniqueCampuses);
+
       } catch (error) {
         console.error('Error fetching residences:', error);
         toast.error('Failed to load residences.');
@@ -279,14 +286,18 @@ const FindMyRes = () => {
                       <div className="space-y-2">
                         <Label>Campus</Label>
                         <Select value={campus} onValueChange={setCampus}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="All campuses" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All campuses</SelectItem>
-                            <SelectItem value="Pretoria West">Pretoria West (Main Campus)</SelectItem>
-                          </SelectContent>
-                        </Select>
+  <SelectTrigger>
+    <SelectValue placeholder="All campuses" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="all">All campuses</SelectItem>
+    {campusOptions.map((campusName) => (
+      <SelectItem key={campusName} value={campusName}>
+        {campusName}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
                       </div>
                     </div>
 
