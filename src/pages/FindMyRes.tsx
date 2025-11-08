@@ -165,23 +165,58 @@ setCampusOptions(uniqueCampuses);
   };
 
   const handleSubmitApplication = async () => {
-    if (!selectedResidence || !user) return;
-    try {
-      const { error } = await supabase.from('applications').insert({
-        user_id: user.id,
-        residence_id: selectedResidence.id,
-        status: 'submitted',
-        notes: applicationNotes
-      });
-      if (error) throw error;
-      toast.success(`Application submitted for ${selectedResidence?.name}!`);
-      setApplicationNotes("");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setShowApplicationModal(false);
+  if (!selectedResidence) {
+    toast.error("Please select a residence first.");
+    return;
+  }
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast.error("You must be logged in to submit an application.");
+      return;
     }
-  };
+
+    // ✅ Ensure profile exists (avoids foreign key constraint)
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert({
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata?.full_name || "",
+        phone_number: user.user_metadata?.phone_number || "",
+        campus: "",
+        course: "",
+        year_of_study: "",
+        updated_at: new Date().toISOString(),
+      });
+
+    if (profileError) {
+      console.error("Profile check failed:", profileError);
+      toast.error("Could not verify profile before applying.");
+      return;
+    }
+
+    // ✅ Insert application safely
+    const { error } = await supabase.from("applications").insert({
+      user_id: user.id,
+      residence_id: selectedResidence.id,
+      status: "submitted",
+      notes: applicationNotes || "",
+    });
+
+    if (error) throw error;
+
+    toast.success(`Application submitted for ${selectedResidence.name}!`);
+    setApplicationNotes("");
+  } catch (err: any) {
+    console.error("Application submission error:", err);
+    toast.error(err.message || "Error submitting application.");
+  } finally {
+    setShowApplicationModal(false);
+  }
+};
 
   const resetFilters = () => {
     setSearchQuery("");
