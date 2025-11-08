@@ -440,7 +440,6 @@ const Profile = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
     </DashboardLayout>
   );
 };
