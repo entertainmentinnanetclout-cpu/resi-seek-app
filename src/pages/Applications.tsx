@@ -8,69 +8,59 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { supabase } from "@/integrations/supabase/client";
 
-// Applications page - view all residence applications
 const Applications = () => {
   const { user } = useAuth();
   const { applications, loading: applicationsLoading, error } = useRealtimeApplications(user);
-  console.log("Fetched applications:", applications);
-console.log("Fetched residences:", residences);
-const [detailedApplications, setDetailedApplications] = useState<any[]>([]);
+
+  const [detailedApplications, setDetailedApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDetails = async () => {
-      if (applicationsLoading || !applications.length) {
-        setLoading(applicationsLoading);
-        if (!applications.length) setDetailedApplications([]);
+      // wait until realtime hook finishes
+      if (applicationsLoading) {
+        setLoading(true);
         return;
       }
 
-const fetchApplications = async () => {
-  setLoading(true);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+      // no applications found
+      if (!applications || applications.length === 0) {
+        console.warn("No applications found for this user.");
+        setDetailedApplications([]);
+        setLoading(false);
+        return;
+      }
 
-  // Fetch applications for the current user
-  const { data: applications, error } = await supabase
-    .from("applications")
-    .select("*")
-    .eq("user_id", user.id);
+      try {
+        setLoading(true);
 
-  if (error) {
-    console.error("Error fetching applications:", error);
-    setLoading(false);
-    return;
-  }
+        // get residence IDs from applications
+        const residenceIds = applications.map((app) => app.residence_id);
 
-  if (!applications || applications.length === 0) {
-    console.warn("No applications found for this user.");
-    setDetailedApplications([]);
-    setLoading(false);
-    return;
-  }
+        // fetch residence info
+        const { data: residences, error: resError } = await supabase
+          .from("Public_residences")
+          .select("*")
+          .in("id", residenceIds);
 
-  // Fetch linked residences
-  const residenceIds = applications.map((app) => app.residence_id);
-  const { data: residences, error: resError } = await supabase
-    .from("Public_residences")
-    .select("*")
-    .in("id", residenceIds);
+        if (resError) throw resError;
 
-  if (resError) {
-    console.error("Error fetching residence details:", resError);
-    setLoading(false);
-    return;
-  }
+        console.log("Fetched applications:", applications);
+        console.log("Fetched residences:", residences);
 
-  // Combine details
-  const detailed = applications.map((app) => ({
-    ...app,
-    residence: residences.find((res) => res.id === app.residence_id),
-  }));
+        // merge app + residence details
+        const detailed = applications.map((app) => ({
+          ...app,
+          residence: residences?.find((res) => res.id === app.residence_id),
+        }));
 
-  setDetailedApplications(detailed);
-  setLoading(false);
-};
+        setDetailedApplications(detailed);
+      } catch (err) {
+        console.error("Error fetching details:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     fetchDetails();
   }, [applications, applicationsLoading]);
@@ -107,7 +97,6 @@ const fetchApplications = async () => {
     <DashboardLayout>
       <div className="p-6 md:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
-          {/* Header */}
           <div>
             <h1 className="text-3xl font-bold mb-2">My Applications</h1>
             <p className="text-muted-foreground">
@@ -134,7 +123,10 @@ const fetchApplications = async () => {
           ) : (
             <div className="space-y-4">
               {detailedApplications.map((application) => (
-                <Card key={application.id} className="shadow-card hover:shadow-hover transition-smooth">
+                <Card
+                  key={application.id}
+                  className="shadow-card hover:shadow-hover transition-smooth"
+                >
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
@@ -149,7 +141,10 @@ const fetchApplications = async () => {
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Price</p>
                         <p className="font-semibold">
-                          R{typeof application.residence?.price === 'number' ? application.residence.price.toLocaleString() : application.residence?.price}
+                          R
+                          {typeof application.residence?.price === "number"
+                            ? application.residence.price.toLocaleString()
+                            : application.residence?.price}
                         </p>
                       </div>
                       <div>
@@ -160,7 +155,7 @@ const fetchApplications = async () => {
                       </div>
                       <div className="md:col-span-2">
                         <p className="text-sm text-muted-foreground mb-1">Notes</p>
-                        <p className="text-sm">{application.notes ?? 'No notes provided'}</p>
+                        <p className="text-sm">{application.notes ?? "No notes provided"}</p>
                       </div>
                     </div>
                     <div className="mt-4 pt-4 border-t">
