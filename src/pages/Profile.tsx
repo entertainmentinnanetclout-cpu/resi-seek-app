@@ -388,7 +388,6 @@ const Profile = () => {
       </Card>
     </div>
   </div>
-</DashboardLayout>
 
           {/* Documents */}
           <Card className="shadow-card bg-card dark:bg-card/80">
