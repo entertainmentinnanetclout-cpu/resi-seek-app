@@ -113,7 +113,7 @@ const FindMyRes = () => {
     if (priceRange) {
       const [min, max] = priceRange.split("-").map(v => v === "+" ? Infinity : parseFloat(v));
       filtered = filtered.filter(r => {
-        const price = parseFloat(r.price?.replace(/[^0-9.-]+/g, "") || "0");
+        const price = typeof r.price === 'number' ? r.price : parseFloat(r.price?.replace(/[^0-9.-]+/g, "") || "0");
         return price >= min && price <= max;
       });
     }
@@ -357,9 +357,11 @@ const FindMyRes = () => {
                     </div>
                   )}
                   <CardHeader>
-                    <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start mb-2">
                       <CardTitle className="text-lg">{residence.name}</CardTitle>
-                      <span className="text-lg font-bold text-primary">{residence.price}</span>
+                      <span className="text-lg font-bold text-primary">
+                        R{typeof residence.price === 'number' ? residence.price.toLocaleString() : residence.price}
+                      </span>
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground gap-1">
                       <MapPin className="w-4 h-4" />
@@ -448,7 +450,9 @@ const FindMyRes = () => {
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-primary">{residence.price}</div>
+                            <div className="text-2xl font-bold text-primary">
+                              R{typeof residence.price === 'number' ? residence.price.toLocaleString() : residence.price}
+                            </div>
                             <div className="text-xs text-muted-foreground">per month</div>
                           </div>
                         </div>
@@ -567,7 +571,9 @@ const FindMyRes = () => {
                     <p className="font-semibold text-lg">{selectedResidence?.name}</p>
                     <p className="text-sm text-muted-foreground">{selectedResidence?.address}</p>
                   </div>
-                  <p className="text-xl font-bold text-primary">{selectedResidence?.price}</p>
+                  <p className="text-xl font-bold text-primary">
+                    R{typeof selectedResidence?.price === 'number' ? selectedResidence.price.toLocaleString() : selectedResidence?.price}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -627,7 +633,9 @@ const FindMyRes = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Price:</span>
-                    <span className="font-semibold text-primary">{selectedResidence?.price}</span>
+                    <span className="font-semibold text-primary">
+                      R{typeof selectedResidence?.price === 'number' ? selectedResidence.price.toLocaleString() : selectedResidence?.price}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Capacity:</span>
