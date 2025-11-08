@@ -14,6 +14,21 @@ interface StatCardProps {
   className?: string;
 }
 
+/**
+ * StatCard component - A card for displaying a key statistic with an icon and trend indicator.
+ *
+ * @component
+ * @param {StatCardProps} props - Component props.
+ * @param {LucideIcon} props.icon - The icon to display.
+ * @param {string|number} props.value - The statistical value.
+ * @param {string} props.label - The label for the statistic.
+ * @param {string} [props.gradient="bg-gradient-primary"] - The CSS gradient class for the icon background.
+ * @param {Object} [props.trend] - Optional trend data.
+ * @param {string} props.trend.value - The trend value (e.g., "+5.2%").
+ * @param {boolean} props.trend.positive - Whether the trend is positive or negative.
+ * @param {string} [props.className] - Optional additional CSS classes.
+ * @returns {JSX.Element} The rendered stat card.
+ */
 const StatCard = ({ icon: Icon, value, label, gradient = "bg-gradient-primary", trend, className }: StatCardProps) => {
   return (
     <Card className={cn("shadow-card hover:shadow-hover transition-smooth overflow-hidden group", className)}>

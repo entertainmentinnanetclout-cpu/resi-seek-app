@@ -12,6 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import heroAccommodation from "@/assets/hero-accommodation.jpg";
 
+/**
+ * The main dashboard page, which displays a user's profile status, quick links, and marketing content.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered dashboard page.
+ */
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();

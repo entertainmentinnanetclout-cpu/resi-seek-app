@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { type User } from '@supabase/supabase-js';
 
+/**
+ * A hook for fetching and subscribing to real-time updates for a user's profile.
+ *
+ * @param {User | null} user - The user object.
+ * @returns {{profile: any, loading: boolean, error: string | null}} The profile, loading state, and error.
+ */
 export function useRealtimeProfile(user: User | null) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);

@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+/**
+ * A hook for fetching and subscribing to real-time updates for residences.
+ *
+ * @returns {{residences: any[], loading: boolean}} The residences and loading state.
+ */
 export const useRealtimeResidences = () => {
   const [residences, setResidences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

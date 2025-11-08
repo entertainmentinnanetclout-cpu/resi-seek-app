@@ -4,12 +4,33 @@ import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * A window overlaid on either the primary window or another dialog window, rendering the content underneath inert.
+ *
+ * @component
+ * @see https://www.radix-ui.com/primitives/docs/components/dialog
+ */
 const Dialog = DialogPrimitive.Root;
 
+/**
+ * A button that opens the dialog.
+ *
+ * @component
+ */
 const DialogTrigger = DialogPrimitive.Trigger;
 
+/**
+ * Renders its children into a new DOM node, ensuring they appear on top of other elements.
+ *
+ * @component
+ */
 const DialogPortal = DialogPrimitive.Portal;
 
+/**
+ * A button that closes the dialog.
+ *
+ * @component
+ */
 const DialogClose = DialogPrimitive.Close;
 
 const DialogOverlay = React.forwardRef<
@@ -27,6 +48,11 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+/**
+ * The main content of the dialog.
+ *
+ * @component
+ */
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
@@ -51,16 +77,31 @@ const DialogContent = React.forwardRef<
 ));
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
+/**
+ * A header for the dialog.
+ *
+ * @component
+ */
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />
 );
 DialogHeader.displayName = "DialogHeader";
 
+/**
+ * A footer for the dialog.
+ *
+ * @component
+ */
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)} {...props} />
 );
 DialogFooter.displayName = "DialogFooter";
 
+/**
+ * The title of the dialog.
+ *
+ * @component
+ */
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
@@ -73,6 +114,11 @@ const DialogTitle = React.forwardRef<
 ));
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
+/**
+ * A description of the dialog's content.
+ *
+ * @component
+ */
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>

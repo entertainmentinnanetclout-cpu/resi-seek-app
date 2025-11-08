@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { type User } from '@supabase/supabase-js';
 
+/**
+ * A hook for fetching and subscribing to real-time updates for a user's applications.
+ *
+ * @param {User | null} user - The user object.
+ * @returns {{applications: any[], loading: boolean, error: string | null}} The applications, loading state, and error.
+ */
 export function useRealtimeApplications(user: User | null) {
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

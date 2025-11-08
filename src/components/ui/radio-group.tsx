@@ -4,6 +4,12 @@ import { Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * A set of checkable buttons—known as radio buttons—where no more than one of the buttons can be checked at a time.
+ *
+ * @component
+ * @see https://www.radix-ui.com/primitives/docs/components/radio-group
+ */
 const RadioGroup = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>
@@ -12,6 +18,11 @@ const RadioGroup = React.forwardRef<
 });
 RadioGroup.displayName = RadioGroupPrimitive.Root.displayName;
 
+/**
+ * An item in a radio group.
+ *
+ * @component
+ */
 const RadioGroupItem = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>

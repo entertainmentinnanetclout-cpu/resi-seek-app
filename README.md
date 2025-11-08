@@ -1,73 +1,80 @@
-# Welcome to your Lovable project
+# ResKonnect
 
-## Project info
+## 🌍 Overview
+**ResKonnect** is a digital platform for South African university students, helping them connect with accommodation, campus news, marketplace listings, jobs, and student services.
 
-**URL**: https://lovable.dev/projects/dedebc2a-aca6-4fe3-8e88-445bf6af16bd
+Built with **Lovable (Vite + React)** and **Supabase**, and deployed on **Vercel**, ResKonnect provides a unified student experience through a fast and modern web app.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🧩 Features
+- 🏠 **Find Accommodation** — Browse and apply for TUT-accredited residences.
+- 🗞️ **Campus News** — Stay informed with real-time campus updates.
+- 🛒 **Student Marketplace** — Buy, sell, or exchange goods securely.
+- 💼 **Student Jobs** — Apply for verified student job opportunities.
+- 👤 **Profile Creation** — Build and manage your verified student profile.
+- 🔔 **Notifications** — Get important updates from admins instantly.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/dedebc2a-aca6-4fe3-8e88-445bf6af16bd) and start prompting.
+## ⚙️ Setup & Installation
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
+- Node.js v18+
+- npm or yarn
+- Supabase project (for production use)
 
-**Use your preferred IDE**
+### Installation Steps
+1. Clone this repository
+   ```bash
+   git clone https://github.com/yourusername/reskonnect.git
+   ```
+2. Install dependencies
+   ```bash
+   npm install
+   ```
+3. Configure environment variables in a `.env` file:
+   ```env
+   VITE_SUPABASE_URL=<your_supabase_project_url>
+   VITE_SUPABASE_ANON_KEY=<your_supabase_anon_key>
+   ```
+4. Start the development server
+   ```bash
+   npm run dev
+   ```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 🧠 Environment Modes
+| Mode                   | Platform        | Description                                                              |
+| ---------------------- | --------------- | ------------------------------------------------------------------------ |
+| 🧪 **Development (Local)** | Lovable Studio  | Uses Lovable’s built-in Supabase environment. No manual setup required.  |
+| 🚀 **Production (Live)** | Vercel          | Connects to your permanent Supabase instance via .env variables.          |
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+⚠️ Even though Lovable manages the local Supabase automatically, you must configure your own Supabase credentials in Vercel for production.
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🚀 Deployment (Vercel)
+1. Push your code to GitHub.
+2. Import your repo into Vercel.
+3. In the Environment Variables section, add:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. Deploy the project — Vercel will automatically build your Vite app.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 📘 Documentation
+All components, hooks, and functions include JSDoc-based documentation. See `docs/summary.md` for a breakdown of documented files and coverage details.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+---
 
-**Edit a file directly in GitHub**
+## 🧑‍💻 Contributing
+1. Fork the repository
+2. Create a new branch (`feature/your-feature-name`)
+3. Commit and test your changes
+4. Submit a pull request
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/dedebc2a-aca6-4fe3-8e88-445bf6af16bd) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 🧾 License
+Open-source under the MIT License.

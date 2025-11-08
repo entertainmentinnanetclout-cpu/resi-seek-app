@@ -54,6 +54,12 @@ interface MarketplaceListing {
 const ALLOWED_CATEGORIES = ["Electronics", "Books", "Study Materials"];
 const MAX_IMAGES = 3;
 
+/**
+ * The marketplace page, which allows users to buy and sell items.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered marketplace page.
+ */
 const Marketplace = () => {
   const { user } = useAuth();
   const [listings, setListings] = useState<MarketplaceListing[]>([]);

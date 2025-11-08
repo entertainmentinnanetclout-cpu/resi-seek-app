@@ -5,6 +5,12 @@ import { Tables } from '@/integrations/supabase/types';
 
 type Profile = Tables<'profiles'>;
 
+/**
+ * A hook for fetching and updating a user's profile.
+ *
+ * @param {string} userId - The ID of the user.
+ * @returns {{profile: Profile | null, loading: boolean, updateProfile: (updatedFields: Partial<Profile>) => Promise<void>, refetch: () => Promise<void>}} The profile, loading state, and update/refetch functions.
+ */
 export const useProfile = (userId: string) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);

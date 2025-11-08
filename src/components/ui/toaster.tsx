@@ -1,6 +1,11 @@
 import { useToast } from "@/hooks/use-toast";
 import { Toast, ToastClose, ToastDescription, ToastProvider, ToastTitle, ToastViewport } from "@/components/ui/toast";
 
+/**
+ * A toaster component that renders toasts from the `useToast` hook.
+ *
+ * @component
+ */
 export function Toaster() {
   const { toasts } = useToast();
 

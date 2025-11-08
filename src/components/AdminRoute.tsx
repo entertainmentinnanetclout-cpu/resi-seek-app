@@ -4,6 +4,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+/**
+ * AdminRoute component - A protected route that only allows access to users with the 'admin' role.
+ *
+ * @component
+ * @param {Object} props - Component props.
+ * @param {React.ReactNode} props.children - The child components to render if the user is an admin.
+ * @returns {JSX.Element|null} Rendered child components if the user has admin privileges, otherwise null.
+ */
 export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const [hasAdminRole, setHasAdminRole] = useState(false);

@@ -4,18 +4,54 @@ import { Check, ChevronRight, Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Displays a menu to the user — such as a set of actions or functions — triggered by a right-click.
+ *
+ * @component
+ * @see https://www.radix-ui.com/primitives/docs/components/context-menu
+ */
 const ContextMenu = ContextMenuPrimitive.Root;
 
+/**
+ * The trigger for the context menu.
+ *
+ * @component
+ */
 const ContextMenuTrigger = ContextMenuPrimitive.Trigger;
 
+/**
+ * A group of context menu items.
+ *
+ * @component
+ */
 const ContextMenuGroup = ContextMenuPrimitive.Group;
 
+/**
+ * Renders its children into a new DOM node, ensuring they appear on top of other elements.
+ *
+ * @component
+ */
 const ContextMenuPortal = ContextMenuPrimitive.Portal;
 
+/**
+ * A submenu in a context menu.
+ *
+ * @component
+ */
 const ContextMenuSub = ContextMenuPrimitive.Sub;
 
+/**
+ * A group of radio items in a context menu.
+ *
+ * @component
+ */
 const ContextMenuRadioGroup = ContextMenuPrimitive.RadioGroup;
 
+/**
+ * A trigger for a submenu in a context menu.
+ *
+ * @component
+ */
 const ContextMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.SubTrigger>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubTrigger> & {
@@ -37,6 +73,11 @@ const ContextMenuSubTrigger = React.forwardRef<
 ));
 ContextMenuSubTrigger.displayName = ContextMenuPrimitive.SubTrigger.displayName;
 
+/**
+ * The content of a submenu in a context menu.
+ *
+ * @component
+ */
 const ContextMenuSubContent = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubContent>
@@ -52,6 +93,11 @@ const ContextMenuSubContent = React.forwardRef<
 ));
 ContextMenuSubContent.displayName = ContextMenuPrimitive.SubContent.displayName;
 
+/**
+ * The content of the context menu.
+ *
+ * @component
+ */
 const ContextMenuContent = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Content>
@@ -87,6 +133,11 @@ const ContextMenuItem = React.forwardRef<
 ));
 ContextMenuItem.displayName = ContextMenuPrimitive.Item.displayName;
 
+/**
+ * A checkbox item in a context menu.
+ *
+ * @component
+ */
 const ContextMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.CheckboxItem>
@@ -110,6 +161,11 @@ const ContextMenuCheckboxItem = React.forwardRef<
 ));
 ContextMenuCheckboxItem.displayName = ContextMenuPrimitive.CheckboxItem.displayName;
 
+/**
+ * A radio item in a context menu.
+ *
+ * @component
+ */
 const ContextMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.RadioItem>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.RadioItem>
@@ -132,6 +188,11 @@ const ContextMenuRadioItem = React.forwardRef<
 ));
 ContextMenuRadioItem.displayName = ContextMenuPrimitive.RadioItem.displayName;
 
+/**
+ * A label in a context menu.
+ *
+ * @component
+ */
 const ContextMenuLabel = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Label> & {
@@ -146,6 +207,11 @@ const ContextMenuLabel = React.forwardRef<
 ));
 ContextMenuLabel.displayName = ContextMenuPrimitive.Label.displayName;
 
+/**
+ * A separator in a context menu.
+ *
+ * @component
+ */
 const ContextMenuSeparator = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Separator>
@@ -154,6 +220,11 @@ const ContextMenuSeparator = React.forwardRef<
 ));
 ContextMenuSeparator.displayName = ContextMenuPrimitive.Separator.displayName;
 
+/**
+ * A keyboard shortcut in a context menu.
+ *
+ * @component
+ */
 const ContextMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
   return <span className={cn("ml-auto text-xs tracking-widest text-muted-foreground", className)} {...props} />;
 };

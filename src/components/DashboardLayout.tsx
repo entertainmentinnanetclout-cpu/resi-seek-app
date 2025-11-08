@@ -11,6 +11,14 @@ interface DashboardLayoutProps {
   children: ReactNode;
 }
 
+/**
+ * DashboardLayout component - Provides a responsive sidebar and header for the main dashboard.
+ *
+ * @component
+ * @param {DashboardLayoutProps} props - Component props.
+ * @param {ReactNode} props.children - The main content to be rendered within the layout.
+ * @returns {JSX.Element} The rendered dashboard layout.
+ */
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();

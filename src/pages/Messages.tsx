@@ -3,6 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+/**
+ * The messages page, which currently displays an empty state.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered messages page.
+ */
 const Messages = () => {
   return (
     <DashboardLayout>

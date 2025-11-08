@@ -14,6 +14,12 @@ import campusDinokeng from "@/assets/campus-dinokeng.jpg";
 import studentStudying from "@/assets/student-studying.jpg";
 import studentsCelebration from "@/assets/students-celebration.jpg";
 
+/**
+ * The landing page for the application.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered landing page.
+ */
 const Landing = () => {
   const navigate = useNavigate();
 

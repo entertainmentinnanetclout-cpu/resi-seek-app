@@ -3,6 +3,12 @@ import * as SwitchPrimitives from "@radix-ui/react-switch";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * A control that allows the user to toggle between checked and not checked.
+ *
+ * @component
+ * @see https://www.radix-ui.com/primitives/docs/components/switch
+ */
 const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
