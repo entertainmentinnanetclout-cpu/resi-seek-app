@@ -17,6 +17,12 @@ import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * The "Find My Res" page, which allows users to browse, filter, and apply for residences.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered "Find My Res" page.
+ */
 const FindMyRes = () => {
   const { user } = useAuth();
   const { profile } = useRealtimeProfile(user);

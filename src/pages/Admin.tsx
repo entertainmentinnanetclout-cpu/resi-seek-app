@@ -7,6 +7,12 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+/**
+ * The admin dashboard page.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered admin dashboard page.
+ */
 const Admin = () => {
   const navigate = useNavigate();
   const [selectedApplication, setSelectedApplication] = useState<any>(null);

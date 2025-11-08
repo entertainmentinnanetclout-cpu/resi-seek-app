@@ -12,6 +12,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile"; // ✅ kept correct import
 import logo from "@/assets/Main header Desktop.png";
 
+/**
+ * The profile setup page, which guides users through completing their profile information and uploading required documents.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered profile setup page.
+ */
 const ProfileSetup = () => {
   const navigate = useNavigate();
   const { user } = useAuth();

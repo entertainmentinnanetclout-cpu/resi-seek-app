@@ -25,6 +25,12 @@ const toggleVariants = cva(
   },
 );
 
+/**
+ * A two-state button that can be toggled on or off.
+ *
+ * @component
+ * @see https://www.radix-ui.com/primitives/docs/components/toggle
+ */
 const Toggle = React.forwardRef<
   React.ElementRef<typeof TogglePrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root> & VariantProps<typeof toggleVariants>

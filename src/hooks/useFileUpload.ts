@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+/**
+ * A hook for uploading files to Supabase storage.
+ *
+ * @returns {{isUploading: boolean, uploadProgress: number, uploadFile: (file: File, userId: string) => Promise<string | null>}} The upload state and function.
+ */
 export const useFileUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);

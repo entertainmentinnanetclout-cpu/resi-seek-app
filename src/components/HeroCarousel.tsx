@@ -20,6 +20,17 @@ interface HeroCarouselProps {
   className?: string;
 }
 
+/**
+ * HeroCarousel component - A full-width, auto-playing carousel for showcasing featured content.
+ *
+ * @component
+ * @param {HeroCarouselProps} props - Component props.
+ * @param {Slide[]} props.slides - An array of slide objects to display.
+ * @param {boolean} [props.autoPlay=true] - Whether the carousel should auto-play.
+ * @param {number} [props.interval=5000] - The interval in milliseconds for auto-play.
+ * @param {string} [props.className] - Optional additional CSS classes.
+ * @returns {JSX.Element} The rendered hero carousel.
+ */
 const HeroCarousel = ({ slides, autoPlay = true, interval = 5000, className }: HeroCarouselProps) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 

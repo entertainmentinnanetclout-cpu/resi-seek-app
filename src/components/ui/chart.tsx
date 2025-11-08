@@ -19,6 +19,12 @@ type ChartContextProps = {
 
 const ChartContext = React.createContext<ChartContextProps | null>(null);
 
+/**
+ * A hook to access the chart's context.
+ *
+ * @returns {ChartContextProps} The chart's context.
+ * @throws {Error} If used outside of a `<ChartContainer />` component.
+ */
 function useChart() {
   const context = React.useContext(ChartContext);
 
@@ -29,6 +35,11 @@ function useChart() {
   return context;
 }
 
+/**
+ * A container for a chart.
+ *
+ * @component
+ */
 const ChartContainer = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
@@ -89,6 +100,11 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
+/**
+ * The content of a chart tooltip.
+ *
+ * @component
+ */
 const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
@@ -227,6 +243,11 @@ ChartTooltipContent.displayName = "ChartTooltip";
 
 const ChartLegend = RechartsPrimitive.Legend;
 
+/**
+ * The content of a chart legend.
+ *
+ * @component
+ */
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> &

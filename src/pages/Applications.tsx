@@ -8,7 +8,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { supabase } from "@/integrations/supabase/client";
 
-// Applications page - view all residence applications
+/**
+ * The applications page, which displays all of a user's residence applications.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered applications page.
+ */
 const Applications = () => {
   const { user } = useAuth();
   const { applications, loading: applicationsLoading, error } = useRealtimeApplications(user);

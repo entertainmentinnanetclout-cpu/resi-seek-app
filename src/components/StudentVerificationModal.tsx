@@ -32,6 +32,17 @@ interface StudentVerificationModalProps {
   } | null;
 }
 
+/**
+ * StudentVerificationModal component - A dialog for users to input and save their student verification details.
+ *
+ * @component
+ * @param {StudentVerificationModalProps} props - Component props.
+ * @param {boolean} props.open - Whether the modal is open.
+ * @param {() => void} props.onClose - Function to close the modal.
+ * @param {() => void} props.onVerified - Function called after successful verification.
+ * @param {Object|null} props.currentProfile - The user's current profile data to pre-fill the form.
+ * @returns {JSX.Element} The rendered student verification modal.
+ */
 export function StudentVerificationModal({ 
   open, 
   onClose, 

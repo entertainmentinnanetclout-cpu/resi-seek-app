@@ -4,6 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * ResidenceCard component - Displays a single residence listing with its details and actions.
+ *
+ * @component
+ * @param {Object} props - Component props.
+ * @param {Object} props.residence - The residence object to display.
+ * @param {() => void} props.onViewMore - Function to handle the "View More" action.
+ * @param {() => void} props.onApply - Function to handle the "Apply Now" action.
+ * @returns {JSX.Element} The rendered residence card or a skeleton loader if no residence is provided.
+ */
 const ResidenceCard = ({ residence, onViewMore, onApply }) => {
   if (!residence) {
     return (

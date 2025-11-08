@@ -31,6 +31,12 @@ const signupSchema = z.object({
   path: ["confirmPassword"],
 });
 
+/**
+ * The authentication page, which handles both login and signup.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered authentication page.
+ */
 const Auth = () => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();

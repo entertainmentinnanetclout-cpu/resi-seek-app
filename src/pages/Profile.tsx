@@ -10,6 +10,12 @@ import { useFileUpload } from "@/hooks/useFileUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * The user profile page, where users can view and edit their personal information and documents.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered profile page.
+ */
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const { isUploading, uploadFile } = useFileUpload();

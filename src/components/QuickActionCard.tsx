@@ -11,6 +11,18 @@ interface QuickActionCardProps {
   onClick: () => void;
 }
 
+/**
+ * QuickActionCard component - A clickable card for navigating to key sections of the dashboard.
+ *
+ * @component
+ * @param {QuickActionCardProps} props - Component props.
+ * @param {LucideIcon} props.icon - The icon to display on the card.
+ * @param {string} props.title - The title of the action.
+ * @param {string} props.description - A brief description of the action.
+ * @param {string} props.gradient - The CSS gradient class for the card's accent.
+ * @param {() => void} props.onClick - The function to call when the card is clicked.
+ * @returns {JSX.Element} The rendered quick action card.
+ */
 const QuickActionCard = ({ icon: Icon, title, description, gradient, onClick }: QuickActionCardProps) => {
   return (
     <Card 

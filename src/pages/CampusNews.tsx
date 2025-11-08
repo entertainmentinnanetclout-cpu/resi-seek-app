@@ -18,6 +18,12 @@ import studentPortalPromo from "@/assets/student-portal-promo.jpg";
 import campusDinokeng from "@/assets/campus-dinokeng.jpg";
 import studentStudying from "@/assets/student-studying.jpg";
 
+/**
+ * The campus news page, which displays news articles, job opportunities, and a hero carousel.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered campus news page.
+ */
 const CampusNews = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");

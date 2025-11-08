@@ -3,6 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Bell, Briefcase, AlertCircle, Info } from "lucide-react";
 
+/**
+ * The updates and notifications page.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered updates page.
+ */
 const Updates = () => {
   const updates = [
     {
