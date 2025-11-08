@@ -23,27 +23,52 @@ const Applications = () => {
         return;
       }
 
-      setLoading(true);
-      const residenceIds = applications.map(app => app.residence_id);
-      const { data: residences, error: resError } = await supabase
-        .from('Public_residences')
-        .select('*')
-        .in('id', residenceIds);
+const fetchApplications = async () => {
+  setLoading(true);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
 
-      if (resError) {
-        console.error("Error fetching residence details:", resError);
-        setLoading(false);
-        return;
-      }
+  // Fetch applications for the current user
+  const { data: applications, error } = await supabase
+    .from("applications")
+    .select("*")
+    .eq("user_id", user.id);
 
-      const detailed = applications.map(app => {
-        const residence = residences.find(res => res.id === app.residence_id);
-        return { ...app, residence };
-      });
+  if (error) {
+    console.error("Error fetching applications:", error);
+    setLoading(false);
+    return;
+  }
 
-      setDetailedApplications(detailed);
-      setLoading(false);
-    };
+  if (!applications || applications.length === 0) {
+    console.warn("No applications found for this user.");
+    setDetailedApplications([]);
+    setLoading(false);
+    return;
+  }
+
+  // Fetch linked residences
+  const residenceIds = applications.map((app) => app.residence_id);
+  const { data: residences, error: resError } = await supabase
+    .from("Public_residences")
+    .select("*")
+    .in("id", residenceIds);
+
+  if (resError) {
+    console.error("Error fetching residence details:", resError);
+    setLoading(false);
+    return;
+  }
+
+  // Combine details
+  const detailed = applications.map((app) => ({
+    ...app,
+    residence: residences.find((res) => res.id === app.residence_id),
+  }));
+
+  setDetailedApplications(detailed);
+  setLoading(false);
+};
 
     fetchDetails();
   }, [applications, applicationsLoading]);
