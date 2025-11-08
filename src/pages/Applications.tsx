@@ -26,7 +26,7 @@ const Applications = () => {
       setLoading(true);
       const residenceIds = applications.map(app => app.residence_id);
       const { data: residences, error: resError } = await supabase
-        .from('residences')
+        .from('Public_residences')
         .select('*')
         .in('id', residenceIds);
 
