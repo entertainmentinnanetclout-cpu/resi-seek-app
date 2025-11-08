@@ -216,7 +216,8 @@ const Profile = () => {
                       value={user?.email || ""}
                       disabled
                     />
-                  </div><div>
+                  </div>
+                  <div>
   <label className="text-sm font-medium mb-2 block text-muted-foreground">
     Phone Number
   </label>
