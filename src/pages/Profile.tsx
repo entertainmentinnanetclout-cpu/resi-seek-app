@@ -437,11 +437,11 @@ const Profile = () => {
                   </Button>
                 </div>
               ))}
-            </CardContent>
-          </Card>
-        </div>
-    </DashboardLayout>
-  );
-};
+                          </CardContent>
+            </Card>
+          </div>
+        </DashboardLayout>
+      );
+    };
 
 export default Profile;
