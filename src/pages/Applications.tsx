@@ -12,7 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 const Applications = () => {
   const { user } = useAuth();
   const { applications, loading: applicationsLoading, error } = useRealtimeApplications(user);
-  const [detailedApplications, setDetailedApplications] = useState<any[]>([]);
+  console.log("Fetched applications:", applications);
+console.log("Fetched residences:", residences);
+const [detailedApplications, setDetailedApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
