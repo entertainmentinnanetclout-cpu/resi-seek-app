@@ -159,157 +159,236 @@ const Profile = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6 md:p-8">
-        <div className="max-w-4xl mx-auto space-y-8">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">My Profile</h1>
-              <p className="text-muted-foreground">
-                Manage your personal information and documents
-              </p>
+  <div className="p-6 md:p-8">
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">My Profile</h1>
+          <p className="text-muted-foreground">
+            Manage your personal information and documents
+          </p>
+        </div>
+        {!isEditing && (
+          <Button variant="default" onClick={() => setIsEditing(true)}>
+            Edit Profile
+          </Button>
+        )}
+      </div>
+
+      {/* Personal Information */}
+      <Card className="shadow-card bg-card dark:bg-card/80">
+        <CardHeader>
+          <CardTitle>Personal Information</CardTitle>
+          <CardDescription>Your student details</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setIsSaving(true);
+              try {
+                const { error } = await supabase
+                  .from("profiles")
+                  .update({
+                    full_name: profile.full_name,
+                    student_number: profile.student_number,
+                    phone_number: profile.phone_number,
+                    campus: profile.campus,
+                    course: profile.course,
+                    year_of_study: profile.year_of_study,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", user.id);
+
+                if (error) throw error;
+
+                toast.success("Profile updated successfully!");
+                setIsEditing(false);
+              } catch (err: any) {
+                console.error(err);
+                toast.error("Failed to update profile. Please try again.");
+              } finally {
+                setIsSaving(false);
+              }
+            }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                  Full Name
+                </label>
+                <Input
+                  value={profile.full_name || ""}
+                  onChange={(e) =>
+                    setProfile((prev) => ({
+                      ...prev,
+                      full_name: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter your full name"
+                  disabled={!isEditing}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                  Student Number
+                </label>
+                <Input
+                  value={profile.student_number || ""}
+                  onChange={(e) =>
+                    setProfile((prev) => ({
+                      ...prev,
+                      student_number: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter your student number"
+                  disabled={!isEditing}
+                />
+              </div>
             </div>
-            {!isEditing && (
-              <Button variant="default" onClick={() => setIsEditing(true)}>
-                Edit Profile
-              </Button>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                  Email Address
+                </label>
+                <Input value={user?.email || ""} disabled />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                  Phone Number
+                </label>
+                <Input
+                  value={profile.phone_number || ""}
+                  onChange={(e) =>
+                    setProfile((prev) => ({
+                      ...prev,
+                      phone_number: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter your phone number"
+                  disabled={!isEditing}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                  Campus
+                </label>
+                <Select
+                  value={profile.campus || ""}
+                  onValueChange={(value) =>
+                    setProfile((prev) => ({ ...prev, campus: value }))
+                  }
+                  disabled={!isEditing}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your campus" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pretoria West (Main)">
+                      Pretoria West (Main Campus)
+                    </SelectItem>
+                    <SelectItem value="Arcadia Campus">
+                      Arcadia Campus
+                    </SelectItem>
+                    <SelectItem value="Ga-Rankuwa Campus">
+                      Ga-Rankuwa Campus
+                    </SelectItem>
+                    <SelectItem value="Mbombela Campus">
+                      Mbombela Campus
+                    </SelectItem>
+                    <SelectItem value="Polokwane Campus">
+                      Polokwane Campus
+                    </SelectItem>
+                    <SelectItem value="Soshanguve North Campus">
+                      Soshanguve North Campus
+                    </SelectItem>
+                    <SelectItem value="Soshanguve South Campus">
+                      Soshanguve South Campus
+                    </SelectItem>
+                    <SelectItem value="eMalahleni Campus">
+                      eMalahleni Campus
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                  Course
+                </label>
+                <Input
+                  value={profile.course || ""}
+                  onChange={(e) =>
+                    setProfile((prev) => ({
+                      ...prev,
+                      course: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter your course"
+                  disabled={!isEditing}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                  Year of Study
+                </label>
+                <Select
+                  value={profile.year_of_study || ""}
+                  onValueChange={(value) =>
+                    setProfile((prev) => ({
+                      ...prev,
+                      year_of_study: value,
+                    }))
+                  }
+                  disabled={!isEditing}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your year of study" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1st Year</SelectItem>
+                    <SelectItem value="2">2nd Year</SelectItem>
+                    <SelectItem value="3">3rd Year</SelectItem>
+                    <SelectItem value="4">4th Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {isEditing && (
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditing(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="default"
+                  className="flex-1"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : null}
+                  Save Changes
+                </Button>
+              </div>
             )}
-          </div>
-
-          {/* Personal Information */}
-          <Card className="shadow-card bg-card dark:bg-card/80">
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Your student details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSave} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Full Name</label>
-                    <Input
-                      value={profile.full_name || ""}
-                      onChange={(e) =>
-                        setProfile((prev) => ({ ...prev, full_name: e.target.value }))
-                      }
-                      placeholder="Enter your full name"
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Student Number</label>
-                    <Input
-                      value={profile.student_number || ""}
-                      onChange={(e) =>
-                        setProfile((prev) => ({ ...prev, student_number: e.target.value }))
-                      }
-                      placeholder="Enter your student number"
-                      disabled={!isEditing}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Email Address</label>
-                    <Input
-                      value={user?.email || ""}
-                      disabled
-                    />
-                  </div>
-                  <div>
-  <label className="text-sm font-medium mb-2 block text-muted-foreground">
-    Phone Number
-  </label>
-  <Input
-    value={profile.phone_number || ""}
-    onChange={(e) =>
-      setProfile((prev) => ({ ...prev, phone_number: e.target.value }))
-    }
-    placeholder="Enter your phone number"
-    disabled={!isEditing}
-  />
-</div>
- </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Campus</label>
-                    <Select
-                      value={profile.campus || ""}
-                      onValueChange={(value) =>
-                        setProfile((prev) => ({ ...prev, campus: value }))
-                      }
-                      disabled={!isEditing}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your campus" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="hatfield">Hatfield Campus</SelectItem>
-                        <SelectItem value="mamelodi">Mamelodi Campus</SelectItem>
-                        <SelectItem value="sunnyside">Sunnyside Campus</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Course</label>
-                    <Input
-                      value={profile.course || ""}
-                      onChange={(e) =>
-                        setProfile((prev) => ({ ...prev, course: e.target.value }))
-                      }
-                      placeholder="Enter your course"
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Year of Study</label>
-                    <Select
-                      value={profile.year_of_study || ""}
-                      onValueChange={(value) =>
-                        setProfile((prev) => ({ ...prev, year_of_study: value }))
-                      }
-                      disabled={!isEditing}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your year of study" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1st Year</SelectItem>
-                        <SelectItem value="2">2nd Year</SelectItem>
-                        <SelectItem value="3">3rd Year</SelectItem>
-                        <SelectItem value="4">4th Year</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {isEditing && (
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsEditing(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      variant="default"
-                      className="flex-1"
-                      disabled={isSaving}
-                    >
-                      {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Save Changes
-                    </Button>
-                  </div>
-                )}
-              </form>
-            </CardContent>
-          </Card>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  </div>
+</DashboardLayout>
 
           {/* Documents */}
           <Card className="shadow-card bg-card dark:bg-card/80">
