@@ -112,7 +112,7 @@ const Applications = () => {
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle>{application.residence?.name}</CardTitle>
-                        <CardDescription>{application.residence?.location}</CardDescription>
+                        <CardDescription>{application.residence?.address}</CardDescription>
                       </div>
                       {getStatusBadge(application.status)}
                     </div>
@@ -121,7 +121,9 @@ const Applications = () => {
                     <div className="grid md:grid-cols-4 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Price</p>
-                        <p className="font-semibold">{application.residence?.price}</p>
+                        <p className="font-semibold">
+                          R{typeof application.residence?.price === 'number' ? application.residence.price.toLocaleString() : application.residence?.price}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Application Date</p>
