@@ -49,14 +49,14 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
     const fetchResidences = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from('Public_residences').select('*');
+         const { data, error } = await supabase.from('public_residences').select('*');
         if (error) throw error;
         setResidences(data || []);
         // Extract unique campuses from residences
-        const uniqueCampuses = [...new Set(data?.map((r) => r.campus?.trim()))]
-          .filter(Boolean)
-          .sort();
-        setCampusOptions(uniqueCampuses);
+const uniqueCampuses = [...new Set(data.map((r) => r.campus?.trim()))]
+  .filter(Boolean)
+  .sort();
+setCampusOptions(uniqueCampuses);
 
       } catch (error) {
         console.error('Error fetching residences:', error);
@@ -79,7 +79,7 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
           table: 'residences'
         },
         (payload) => {
-          console.log('Residence change detected:', payload);
+           console.log('Residence change detected:', payload);
           
           if (payload.eventType === 'INSERT') {
             setResidences(prev => [...prev, payload.new]);
@@ -158,57 +158,67 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
     setSelectedResidence(residence);
     setShowApplicationModal(true);
   };
-
   const handleViewDetails = (residence: any) => {
     setSelectedResidence(residence);
     setShowDetailsModal(true);
   };
 
   const handleSubmitApplication = async () => {
-    if (!selectedResidence) {
-      toast.error("Please select a residence first.");
+  if (!selectedResidence) {
+    toast.error("Please select a residence first.");
+    return;
+  }
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast.error("You must be logged in to submit an application.");
+      return;
+    }
+    // ✅ Ensure profile exists (avoids foreign key constraint)
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert({
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata?.full_name || "",
+        phone_number: user.user_metadata?.phone_number || "",
+        campus: "",
+        course: "",
+        year_of_study: "",
+        updated_at: new Date().toISOString(),
+      });
+
+    if (profileError) {
+      if (profileError) {
+  console.error("Profile check failed:", profileError);
+  toast.error(`Profile verification failed: ${profileError.message}`);
+  return;
+}
+      toast.error("Could not verify profile before applying.");
       return;
     }
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
+    // ✅ Insert application safely
+    const { error } = await supabase.from("applications").insert({
+      user_id: user.id,
+      residence_id: selectedResidence.id,
+      status: "submitted",
+      notes: applicationNotes || "",
+    });
 
-      if (!user) {
-        toast.error("You must be logged in to submit an application.");
-        return;
-      }
+    if (error) throw error;
 
-      // Check if user already applied to this residence
-      const existingApp = applications.find(app => app.residence_id === selectedResidence.id);
-      if (existingApp) {
-        toast.error("You have already applied to this residence.");
-        return;
-      }
-
-      // Check if user has reached max applications (3)
-      if (applications.length >= 3) {
-        toast.error("You can only submit a maximum of 3 applications.");
-        return;
-      }
-
-      // Insert application
-      const { error } = await supabase.from("applications").insert({
-        user_id: user.id,
-        residence_id: selectedResidence.id,
-        status: "submitted",
-        notes: applicationNotes || "",
-      });
-
-      if (error) throw error;
-
-      toast.success(`Application submitted for ${selectedResidence.name}!`);
-      setApplicationNotes("");
-      setShowApplicationModal(false);
-    } catch (err: any) {
-      console.error("Application submission error:", err);
-      toast.error(err.message || "Error submitting application.");
-    }
-  };
+    toast.success(`Application submitted for ${selectedResidence.name}!`);
+    setApplicationNotes("");
+  } catch (err: any) {
+    console.error("Application submission error:", err);
+    toast.error(err.message || "Error submitting application.");
+  } finally {
+    setShowApplicationModal(false);
+  }
+};
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -248,7 +258,7 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
                     />
                   </div>
                   <Button 
-                    variant="outline" 
+                    variant="outline"
                     size="lg"
                     onClick={() => setShowFilters(!showFilters)}
                     className="gap-2"
@@ -336,7 +346,7 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
                           <div key={amenity} className="flex items-center space-x-2">
                             <Checkbox
                               id={amenity}
-                              checked={selectedAmenities.includes(amenity)}
+                               checked={selectedAmenities.includes(amenity)}
                               onCheckedChange={(checked) => {
                                 if (checked) {
                                   setSelectedAmenities([...selectedAmenities, amenity]);
@@ -366,7 +376,7 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
                     </div>
                   </div>
                 )}
-              </CardContent>
+                </CardContent>
             </Card>
           </div>
         </div>
@@ -389,20 +399,13 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
                         alt={residence.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      <div className="absolute top-3 right-3 flex gap-2">
-                        <Badge className="bg-primary">
-                          Featured
-                        </Badge>
-                        {residence.verified && (
-                          <Badge className="bg-success/90 text-success-foreground">
-                            ✓ Verified
-                          </Badge>
-                        )}
-                      </div>
+                      <Badge className="absolute top-3 right-3 bg-primary">
+                        Featured
+                      </Badge>
                     </div>
                   )}
                   <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
+                     <div className="flex justify-between items-start mb-2">
                       <CardTitle className="text-lg">{residence.name}</CardTitle>
                       <span className="text-lg font-bold text-primary">
                         R{typeof residence.price === 'number' ? residence.price.toLocaleString() : residence.price}
@@ -432,7 +435,7 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
                       <Button 
                         className="flex-1"
                         onClick={() => handleApply(residence)}
-                      >
+                         >
                         Apply Now
                       </Button>
                     </div>
@@ -485,17 +488,10 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
                 <Card key={residence.id} className="hover:shadow-md transition-shadow">
                   <div className="flex flex-col md:flex-row">
                     <CardContent className="flex-1 p-6">
-                         <div className="space-y-4">
+                      <div className="space-y-4">
                         <div className="flex justify-between items-start">
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="text-xl font-bold">{residence.name}</h3>
-                              {residence.verified && (
-                                <Badge className="bg-success/90 text-success-foreground">
-                                  ✓ Verified
-                                </Badge>
-                              )}
-                            </div>
+                            <h3 className="text-xl font-bold mb-1">{residence.name}</h3>
                             <div className="flex items-center text-sm text-muted-foreground gap-1">
                               <MapPin className="w-4 h-4" />
                               <span>{residence.address}</span>
