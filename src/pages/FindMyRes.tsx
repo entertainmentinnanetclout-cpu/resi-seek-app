@@ -211,7 +211,6 @@ setCampusOptions(uniqueCampuses);
     if (error) throw error;
 
     toast.success(`Application submitted for ${selectedResidence.name}!`);
-    window.dispatchEvent(new Event("refreshApplications"));
     setApplicationNotes("");
   } catch (err: any) {
     console.error("Application submission error:", err);
@@ -220,8 +219,6 @@ setCampusOptions(uniqueCampuses);
     setShowApplicationModal(false);
   }
 };
-  // Optional: manually trigger a refetch event for Applications page
-window.dispatchEvent(new Event("refreshApplications"));
 
   const resetFilters = () => {
     setSearchQuery("");
