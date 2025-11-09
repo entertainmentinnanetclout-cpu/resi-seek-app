@@ -46,7 +46,7 @@ const Profile = () => {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "full_name, student_number, email, phone, campus, course, year_of_study"
+          "full_name, student_number, email, phone_number, campus, course, year_of_study"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -74,7 +74,7 @@ const Profile = () => {
           full_name: profile.full_name,
           student_number: profile.student_number,
           email: profile.email,
-          phone: profile.phone,
+          phone_number: profile.phone_number,
           campus: profile.campus,
           course: profile.course,
           year_of_study: profile.year_of_study,
@@ -218,9 +218,9 @@ const Profile = () => {
                       Phone Number
                     </label>
                     <Input
-                      value={profile.phone || ""}
+                      value={profile.phone_number || ""}
                       onChange={(e) =>
-                        setProfile((prev) => ({ ...prev, phone: e.target.value }))
+                        setProfile((prev) => ({ ...prev, phone_number: e.target.value }))
                       }
                       placeholder="Enter your phone number"
                       disabled={!isEditing}
