@@ -10,14 +10,9 @@ export const useRealtimeResidences = () => {
     const fetchResidences = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase.from('public_residences').select('*');
+        const { data, error } = await supabase.from('residences').select('*');
         if (error) throw error;
         setResidences(data || []);
-        // Extract unique campuses from residences
-const uniqueCampuses = [...new Set(data.map((r) => r.campus?.trim()))]
-  .filter(Boolean)
-  .sort();
-setCampusOptions(uniqueCampuses);
       } catch (err: any) {
         toast.error(err.message);
       } finally {

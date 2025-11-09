@@ -39,7 +39,7 @@ const Applications = () => {
 
         // fetch residence info
         const { data: residences, error: resError } = await supabase
-          .from("Public_residences")
+          .from("residences")
           .select("*")
           .in("id", residenceIds);
 
