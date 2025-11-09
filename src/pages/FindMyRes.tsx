@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { MapPin, DollarSign, Users, Search, SlidersHorizontal, Star, Building2, Bed } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MapPin, DollarSign, Users, Search, SlidersHorizontal, Star, Building2, Bed, Ruler } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,20 +16,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { supabase } from "@/integrations/supabase/client";
-import { useVirtual } from "@tanstack/react-virtual";
 
 const FindMyRes = () => {
   const { user } = useAuth();
   const { profile } = useRealtimeProfile(user);
   const { applications } = useRealtimeApplications(user);
-
   const [residences, setResidences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-
+  
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [priceRange, setPriceRange] = useState<string>("");
@@ -37,26 +36,31 @@ const FindMyRes = () => {
   const [roomType, setRoomType] = useState<string>("");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [campus, setCampus] = useState<string>("all");
-  const [campusOptions, setCampusOptions] = useState<string[]>([]);
+const [campusOptions, setCampusOptions] = useState<string[]>([]);
+  
+  // Filtered residences
+  const [filteredResidences, setFilteredResidences] = useState<any[]>([]);
+  const [featuredResidences, setFeaturedResidences] = useState<any[]>([]);
+
+  // Application notes
   const [applicationNotes, setApplicationNotes] = useState("");
 
-  // Fetch residences
   useEffect(() => {
     const fetchResidences = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("public_residences")
-          .select("id, name, price, image_url, campus, amenities, featured, display_order, address, distance_from_campus, room_type, capacity, available_spots, contact_email, contact_phone, description");
+         const { data, error } = await supabase.from('public_residences').select('*');
         if (error) throw error;
-
         setResidences(data || []);
+        // Extract unique campuses from residences
+const uniqueCampuses = [...new Set(data.map((r) => r.campus?.trim()))]
+  .filter(Boolean)
+  .sort();
+setCampusOptions(uniqueCampuses);
 
-        const uniqueCampuses = [...new Set(data.map((r) => r.campus?.trim()))].filter(Boolean).sort();
-        setCampusOptions(uniqueCampuses);
       } catch (error) {
-        console.error("Error fetching residences:", error);
-        toast.error("Failed to load residences.");
+        console.error('Error fetching residences:', error);
+        toast.error('Failed to load residences.');
       } finally {
         setLoading(false);
       }
@@ -64,138 +68,160 @@ const FindMyRes = () => {
 
     fetchResidences();
 
+    // Subscribe to realtime changes
     const channel = supabase
-      .channel("residences-changes")
+      .channel('residences-changes')
       .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "residences" },
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'residences'
+        },
         (payload) => {
-          if (payload.eventType === "INSERT") {
-            setResidences((prev) => [...prev, payload.new]);
-          } else if (payload.eventType === "UPDATE") {
-            setResidences((prev) => prev.map((r) => r.id === payload.new.id ? payload.new : r));
-          } else if (payload.eventType === "DELETE") {
-            setResidences((prev) => prev.filter((r) => r.id !== payload.old.id));
+           console.log('Residence change detected:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setResidences(prev => [...prev, payload.new]);
+          } else if (payload.eventType === 'UPDATE') {
+            setResidences(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
+          } else if (payload.eventType === 'DELETE') {
+            setResidences(prev => prev.filter(r => r.id !== payload.old.id));
           }
         }
       )
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  // Featured residences
-  const featuredResidences = useMemo(() => {
-    return residences
-      .filter((r) => r.featured)
-      .sort((a, b) => a.display_order - b.display_order)
-      .slice(0, 5);
-  }, [residences]);
+  useEffect(() => {
+    if (!residences.length) return;
 
-  // Filtered residences
-  const filteredResidences = useMemo(() => {
+    // Separate featured residences
+    const featured = residences.filter(r => r.featured).sort((a, b) => a.display_order - b.display_order).slice(0, 5);
+    setFeaturedResidences(featured);
+
+    // Apply filters
     let filtered = [...residences];
 
+    // Search query
     if (searchQuery) {
-      filtered = filtered.filter(
-        (r) =>
-          r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          r.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          r.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(r => 
+        r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
+    // Price range
     if (priceRange) {
-      const [min, max] = priceRange.split("-").map((v) => (v === "+" ? Infinity : parseFloat(v)));
-      filtered = filtered.filter((r) => {
-        const price = typeof r.price === "number" ? r.price : parseFloat(r.price?.replace(/[^0-9.-]+/g, "") || "0");
+      const [min, max] = priceRange.split("-").map(v => v === "+" ? Infinity : parseFloat(v));
+      filtered = filtered.filter(r => {
+        const price = typeof r.price === 'number' ? r.price : parseFloat(r.price?.replace(/[^0-9.-]+/g, "") || "0");
         return price >= min && price <= max;
       });
     }
 
+    // Distance
     if (distanceRange && distanceRange !== "all") {
-      const [min, max] = distanceRange.split("-").map((v) => (v === "+" ? Infinity : parseFloat(v)));
-      filtered = filtered.filter((r) => {
+      const [min, max] = distanceRange.split("-").map(v => v === "+" ? Infinity : parseFloat(v));
+      filtered = filtered.filter(r => {
         const distance = r.distance_from_campus || 0;
         return distance >= min && distance <= max;
       });
     }
 
+    // Room type
     if (roomType && roomType !== "all") {
-      filtered = filtered.filter((r) => r.room_type === roomType);
+      filtered = filtered.filter(r => r.room_type === roomType);
     }
 
+    // Campus
     if (campus && campus !== "all") {
-      filtered = filtered.filter((r) => r.campus === campus);
+      filtered = filtered.filter(r => r.campus === campus);
     }
 
+    // Amenities
     if (selectedAmenities.length > 0) {
-      filtered = filtered.filter((r) => selectedAmenities.every((amenity) => r.amenities?.includes(amenity)));
+      filtered = filtered.filter(r => 
+        selectedAmenities.every(amenity => r.amenities?.includes(amenity))
+      );
     }
 
-    return filtered;
+    setFilteredResidences(filtered);
   }, [residences, searchQuery, priceRange, distanceRange, roomType, selectedAmenities, campus]);
-
-  const parentRef = useRef<HTMLDivElement>(null);
-  const rowVirtualizer = useVirtual({
-    size: filteredResidences.length,
-    parentRef,
-    estimateSize: () => 320,
-  });
 
   const handleApply = (residence: any) => {
     setSelectedResidence(residence);
     setShowApplicationModal(true);
   };
-
   const handleViewDetails = (residence: any) => {
     setSelectedResidence(residence);
     setShowDetailsModal(true);
   };
 
   const handleSubmitApplication = async () => {
-    if (!selectedResidence) {
-      toast.error("Please select a residence first.");
+  if (!selectedResidence) {
+    toast.error("Please select a residence first.");
+    return;
+  }
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast.error("You must be logged in to submit an application.");
+      return;
+    }
+    // ✅ Ensure profile exists (avoids foreign key constraint)
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert({
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata?.full_name || "",
+        phone_number: user.user_metadata?.phone_number || "",
+        campus: "",
+        course: "",
+        year_of_study: "",
+        updated_at: new Date().toISOString(),
+      });
+
+    if (profileError) {
+      if (profileError) {
+  console.error("Profile check failed:", profileError);
+  toast.error(`Profile verification failed: ${profileError.message}`);
+  return;
+}
+      toast.error("Could not verify profile before applying.");
       return;
     }
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("You must be logged in to submit an application.");
-        return;
-      }
+    // ✅ Insert application safely
+    const { error } = await supabase.from("applications").insert({
+      user_id: user.id,
+      residence_id: selectedResidence.id,
+      status: "submitted",
+      notes: applicationNotes || "",
+    });
 
-      // Check active applications limit
-      const { data: activeApps } = await supabase
-        .from("applications")
-        .select("*")
-        .eq("user_id", user.id)
-        .in("status", ["submitted", "approved"]);
-      if ((activeApps || []).length >= 3) {
-        toast.error("You can only have 3 active applications at a time.");
-        return;
-      }
+    if (error) throw error;
 
-      const { error } = await supabase.from("applications").insert({
-        user_id: user.id,
-        residence_id: selectedResidence.id,
-        status: "submitted",
-        notes: applicationNotes || "",
-      });
-
-      if (error) throw error;
-
-      toast.success(`Application submitted for ${selectedResidence.name}!`);
-      window.dispatchEvent(new Event("refreshApplications"));
-      setApplicationNotes("");
-    } catch (err: any) {
-      console.error("Application submission error:", err);
-      toast.error(err.message || "Error submitting application.");
-    } finally {
-      setShowApplicationModal(false);
-    }
-  };
+    toast.success(`Application submitted for ${selectedResidence.name}!`);
+    window.dispatchEvent(new Event("refreshApplications"));
+    setApplicationNotes("");
+  } catch (err: any) {
+    console.error("Application submission error:", err);
+    toast.error(err.message || "Error submitting application.");
+  } finally {
+    setShowApplicationModal(false);
+  }
+};
+  // Optional: manually trigger a refetch event for Applications page
+window.dispatchEvent(new Event("refreshApplications"));
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -211,13 +237,18 @@ const FindMyRes = () => {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-background">
-        {/* Hero + Search */}
+        {/* Hero Search Section */}
         <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-            <h1 className="text-4xl font-bold mb-3">Find Your Perfect Residence</h1>
-            <p className="text-muted-foreground text-lg">Browse 400+ verified accommodations across Pretoria & Tshwane</p>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold mb-3">Find Your Perfect Residence</h1>
+              <p className="text-muted-foreground text-lg">
+                Browse 400+ verified accommodations across Pretoria & Tshwane
+              </p>
+            </div>
 
-            <Card className="shadow-lg mt-8">
+            {/* Main Search Bar */}
+            <Card className="shadow-lg">
               <CardContent className="p-6">
                 <div className="flex gap-3">
                   <div className="relative flex-1">
@@ -229,11 +260,18 @@ const FindMyRes = () => {
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
-                  <Button variant="outline" size="lg" onClick={() => setShowFilters(!showFilters)} className="gap-2">
-                    <SlidersHorizontal className="w-4 h-4" /> Filters
+                  <Button 
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="gap-2"
+                  >
+                    <SlidersHorizontal className="w-4 h-4" />
+                    Filters
                   </Button>
                 </div>
 
+                {/* Advanced Filters */}
                 {showFilters && (
                   <div className="mt-6 pt-6 border-t space-y-6">
                     <div className="grid md:grid-cols-4 gap-4">
@@ -252,6 +290,7 @@ const FindMyRes = () => {
                           </SelectContent>
                         </Select>
                       </div>
+
                       <div className="space-y-2">
                         <Label>Distance from Campus</Label>
                         <Select value={distanceRange} onValueChange={setDistanceRange}>
@@ -267,6 +306,7 @@ const FindMyRes = () => {
                           </SelectContent>
                         </Select>
                       </div>
+
                       <div className="space-y-2">
                         <Label>Room Type</Label>
                         <Select value={roomType} onValueChange={setRoomType}>
@@ -282,22 +322,26 @@ const FindMyRes = () => {
                           </SelectContent>
                         </Select>
                       </div>
+
                       <div className="space-y-2">
                         <Label>Campus</Label>
                         <Select value={campus} onValueChange={setCampus}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="All campuses" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All campuses</SelectItem>
-                            {campusOptions.map((c) => (
-                              <SelectItem key={c} value={c}>{c}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+  <SelectTrigger>
+    <SelectValue placeholder="All campuses" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="all">All campuses</SelectItem>
+    {campusOptions.map((campusName) => (
+      <SelectItem key={campusName} value={campusName}>
+        {campusName}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
                       </div>
                     </div>
 
+                    {/* Amenities */}
                     <div className="space-y-3">
                       <Label>Amenities</Label>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -305,188 +349,430 @@ const FindMyRes = () => {
                           <div key={amenity} className="flex items-center space-x-2">
                             <Checkbox
                               id={amenity}
-                              checked={selectedAmenities.includes(amenity)}
+                               checked={selectedAmenities.includes(amenity)}
                               onCheckedChange={(checked) => {
                                 if (checked) {
                                   setSelectedAmenities([...selectedAmenities, amenity]);
                                 } else {
-                                  setSelectedAmenities(selectedAmenities.filter((a) => a !== amenity));
+                                  setSelectedAmenities(selectedAmenities.filter(a => a !== amenity));
                                 }
                               }}
                             />
-                            <label htmlFor={amenity} className="text-sm font-medium cursor-pointer">{amenity}</label>
+                            <label
+                              htmlFor={amenity}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {amenity}
+                            </label>
                           </div>
                         ))}
                       </div>
                     </div>
 
                     <div className="flex gap-3">
-                      <Button variant="outline" onClick={resetFilters}>Reset Filters</Button>
-                      <Button onClick={() => setShowFilters(false)}>Show {filteredResidences.length} Results</Button>
+                      <Button variant="outline" onClick={resetFilters}>
+                        Reset Filters
+                      </Button>
+                      <Button onClick={() => setShowFilters(false)}>
+                        Show {filteredResidences.length} Results
+                      </Button>
                     </div>
                   </div>
                 )}
-              </CardContent>
+                </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Featured Residences */}
+        {/* Top Priority Accommodations */}
         {featuredResidences.length > 0 && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex items-center gap-2 mb-6">
               <Star className="w-6 h-6 text-primary fill-primary" />
               <h2 className="text-2xl font-bold">Top Priority Accommodations</h2>
             </div>
+            
             <div className="grid md:grid-cols-3 gap-6">
-              {featuredResidences.map((res) => (
-                <Card key={res.id} className="overflow-hidden hover:shadow-lg transition-all group">
-                  {res.image_url && (
+              {featuredResidences.map((residence) => (
+                <Card key={residence.id} className="overflow-hidden hover:shadow-lg transition-all group">
+                  {residence.image_url && (
                     <div className="relative h-48 overflow-hidden">
-                      <img src={res.image_url} alt={res.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                      <Badge className="absolute top-3 right-3 bg-primary">Featured</Badge>
+                      <img 
+                        src={residence.image_url} 
+                        alt={residence.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <Badge className="absolute top-3 right-3 bg-primary">
+                        Featured
+                      </Badge>
                     </div>
                   )}
                   <CardHeader>
-                    <div className="flex justify-between items-start mb-2">
-                      <CardTitle className="text-lg">{res.name}</CardTitle>
-                      <span className="text-lg font-bold text-primary">R{typeof res.price === 'number' ? res.price.toLocaleString() : res.price}</span>
+                     <div className="flex justify-between items-start mb-2">
+                      <CardTitle className="text-lg">{residence.name}</CardTitle>
+                      <span className="text-lg font-bold text-primary">
+                        R{typeof residence.price === 'number' ? residence.price.toLocaleString() : residence.price}
+                      </span>
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground gap-1">
                       <MapPin className="w-4 h-4" />
-                      <span>{res.address}</span>
+                      <span>{residence.address}</span>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex flex-wrap gap-2">
-                      {res.amenities?.slice(0, 3).map((amenity: string) => (
-                        <Badge key={amenity} variant="secondary" className="text-xs">{amenity}</Badge>
+                      {residence.amenities?.slice(0, 3).map((amenity: string) => (
+                        <Badge key={amenity} variant="secondary" className="text-xs">
+                          {amenity}
+                        </Badge>
                       ))}
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1" onClick={() => handleViewDetails(res)}>View Details</Button>
-                      <Button className="flex-1" onClick={() => handleApply(res)}>Apply Now</Button>
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => handleViewDetails(residence)}
+                      >
+                        View Details
+                      </Button>
+                      <Button 
+                        className="flex-1"
+                        onClick={() => handleApply(residence)}
+                         >
+                        Apply Now
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
+            
             <Separator className="my-12" />
           </div>
         )}
 
-        {/* All Residences Virtualized */}
+        {/* All Accommodations List */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">All Accommodations ({filteredResidences.length})</h2>
+            <h2 className="text-2xl font-bold">
+              All Accommodations ({filteredResidences.length})
+            </h2>
+            <Select defaultValue="price-asc">
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                <SelectItem value="distance">Distance</SelectItem>
+                <SelectItem value="newest">Newest First</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {loading ? (
-            <div className="text-center py-12"><p className="text-muted-foreground">Loading accommodations...</p></div>
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Loading accommodations...</p>
+            </div>
           ) : filteredResidences.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
                 <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">No accommodations found</h3>
-                <p className="text-muted-foreground mb-4">Try adjusting your filters or search query</p>
+                <p className="text-muted-foreground mb-4">
+                  Try adjusting your filters or search query
+                </p>
                 <Button onClick={resetFilters}>Reset Filters</Button>
               </CardContent>
             </Card>
           ) : (
-            <div ref={parentRef} className="overflow-auto h-[70vh] relative">
-              <div style={{ height: rowVirtualizer.totalSize, position: "relative" }}>
-                {rowVirtualizer.virtualItems.map((virtualRow) => {
-                  const res = filteredResidences[virtualRow.index];
-                  return (
-                    <div key={res.id} style={{ position: "absolute", top: virtualRow.start, width: "100%" }}>
-                      <Card className="hover:shadow-md transition-shadow mb-4 flex flex-col md:flex-row">
-                        <CardContent className="flex-1 p-6">
-                          <div className="space-y-4">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h3 className="text-xl font-bold mb-1">{res.name}</h3>
-                                <div className="flex items-center text-sm text-muted-foreground gap-1">
-                                  <MapPin className="w-4 h-4" />
-                                  <span>{res.address}</span>
-                                </div>
-                              </div>
-                              <span className="text-lg font-bold text-primary">R{typeof res.price === 'number' ? res.price.toLocaleString() : res.price}</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {res.amenities?.slice(0, 3).map((amenity: string) => (
-                                <Badge key={amenity} variant="secondary" className="text-xs">{amenity}</Badge>
-                              ))}
-                            </div>
-                            <div className="flex gap-2">
-                              <Button variant="outline" className="flex-1" onClick={() => handleViewDetails(res)}>View Details</Button>
-                              <Button className="flex-1" onClick={() => handleApply(res)}>Apply Now</Button>
+            <div className="space-y-4">
+              {filteredResidences.map((residence) => (
+                <Card key={residence.id} className="hover:shadow-md transition-shadow">
+                  <div className="flex flex-col md:flex-row">
+                    <CardContent className="flex-1 p-6">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-xl font-bold mb-1">{residence.name}</h3>
+                            <div className="flex items-center text-sm text-muted-foreground gap-1">
+                              <MapPin className="w-4 h-4" />
+                              <span>{residence.address}</span>
                             </div>
                           </div>
-                        </CardContent>
-                        {res.image_url && (
-                          <div className="w-full md:w-48 h-48 overflow-hidden">
-                            <img src={res.image_url} alt={res.name} className="w-full h-full object-cover" loading="lazy" />
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-primary">
+                              R{typeof residence.price === 'number' ? residence.price.toLocaleString() : residence.price}
+                            </div>
+                            <div className="text-xs text-muted-foreground">per month</div>
+                          </div>
+                        </div>
+
+                        {residence.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {residence.description}
+                          </p>
+                        )}
+
+                        <div className="flex flex-wrap gap-4 text-sm">
+                          {residence.distance_from_campus && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4 text-muted-foreground" />
+                              <span>{residence.distance_from_campus}km from campus</span>
+                            </div>
+                          )}
+                          {residence.room_type && (
+                            <div className="flex items-center gap-1">
+                              <Bed className="w-4 h-4 text-muted-foreground" />
+                              <span className="capitalize">{residence.room_type}</span>
+                            </div>
+                          )}
+                          {residence.capacity && (
+                            <div className="flex items-center gap-1">
+                              <Users className="w-4 h-4 text-muted-foreground" />
+                              <span>{residence.available_spots || 0} / {residence.capacity} spots available</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {residence.amenities && residence.amenities.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {residence.amenities.slice(0, 5).map((amenity: string) => (
+                              <Badge key={amenity} variant="outline" className="text-xs">
+                                {amenity}
+                              </Badge>
+                            ))}
+                            {residence.amenities.length > 5 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{residence.amenities.length - 5} more
+                              </Badge>
+                            )}
                           </div>
                         )}
-                      </Card>
-                    </div>
-                  );
-                })}
-              </div>
+
+                        <div className="flex gap-2 pt-2">
+                          <Button 
+                            variant="outline"
+                            onClick={() => handleViewDetails(residence)}
+                          >
+                            View Details
+                          </Button>
+                          <Button 
+                            onClick={() => handleApply(residence)}
+                          >
+                            Apply Now
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </div>
+                </Card>
+              ))}
             </div>
           )}
         </div>
+      </div>
 
-        {/* Application Modal */}
-        <Dialog open={showApplicationModal} onOpenChange={setShowApplicationModal}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Apply for {selectedResidence?.name}</DialogTitle>
-              <DialogDescription>Fill in your details and submit your application.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
+      {/* Application Modal */}
+      <Dialog open={showApplicationModal} onOpenChange={setShowApplicationModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Apply for {selectedResidence?.name}</DialogTitle>
+            <DialogDescription>
+              Review your information and submit your application
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Profile Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Your Profile</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Name:</span>
+                    <p className="font-medium">{profile?.full_name}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Email:</span>
+                    <p className="font-medium">{profile?.email}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Student Number:</span>
+                    <p className="font-medium">{profile?.student_number}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Year of Study:</span>
+                    <p className="font-medium">{profile?.year_of_study}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Residence Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Residence Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-semibold text-lg">{selectedResidence?.name}</p>
+                    <p className="text-sm text-muted-foreground">{selectedResidence?.address}</p>
+                  </div>
+                  <p className="text-xl font-bold text-primary">
+                    R{typeof selectedResidence?.price === 'number' ? selectedResidence.price.toLocaleString() : selectedResidence?.price}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Additional Notes */}
+            <div className="space-y-2">
+              <Label>Additional Notes (Optional)</Label>
               <Textarea
-                placeholder="Any notes or requests..."
+                placeholder="Any special requests or information you'd like to share..."
                 value={applicationNotes}
                 onChange={(e) => setApplicationNotes(e.target.value)}
+                rows={4}
               />
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowApplicationModal(false)}>Cancel</Button>
-                <Button onClick={handleSubmitApplication}>Submit Application</Button>
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setShowApplicationModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1"
+                onClick={handleSubmitApplication}
+              >
+                Submit Application
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Details Modal */}
+      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedResidence?.name}</DialogTitle>
+            <DialogDescription>{selectedResidence?.address}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {selectedResidence?.image_url && (
+              <div className="rounded-lg overflow-hidden">
+                <img 
+                  src={selectedResidence.image_url} 
+                  alt={selectedResidence.name}
+                  className="w-full h-64 object-cover"
+                />
+              </div>
+            )}
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold mb-3">Details</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Price:</span>
+                    <span className="font-semibold text-primary">
+                      R{typeof selectedResidence?.price === 'number' ? selectedResidence.price.toLocaleString() : selectedResidence?.price}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Capacity:</span>
+                    <span>{selectedResidence?.capacity} students</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Available:</span>
+                    <span>{selectedResidence?.available_spots} spots</span>
+                  </div>
+                  {selectedResidence?.distance_from_campus && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Distance:</span>
+                      <span>{selectedResidence.distance_from_campus}km from campus</span>
+                    </div>
+                  )}
+                  {selectedResidence?.room_type && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Room Type:</span>
+                      <span className="capitalize">{selectedResidence.room_type}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-3">Contact</h4>
+                <div className="space-y-2 text-sm">
+                  {selectedResidence?.contact_email && (
+                    <div>
+                      <span className="text-muted-foreground">Email:</span>
+                      <p>{selectedResidence.contact_email}</p>
+                    </div>
+                  )}
+                  {selectedResidence?.contact_phone && (
+                    <div>
+                      <span className="text-muted-foreground">Phone:</span>
+                      <p>{selectedResidence.contact_phone}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
 
-        {/* Details Modal */}
-        <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{selectedResidence?.name}</DialogTitle>
-            </DialogHeader>
-            {selectedResidence?.image_url && (
-              <img src={selectedResidence.image_url} alt={selectedResidence.name} className="w-full h-64 object-cover rounded-md mb-4" />
+            {selectedResidence?.description && (
+              <div>
+                <h4 className="font-semibold mb-3">Description</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {selectedResidence.description}
+                </p>
+              </div>
             )}
-            <p className="mb-2">{selectedResidence?.description}</p>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {selectedResidence?.amenities?.map((amenity: string) => (
-                <Badge key={amenity} variant="secondary" className="text-xs">{amenity}</Badge>
-              ))}
+
+            {selectedResidence?.amenities && selectedResidence.amenities.length > 0 && (
+              <div>
+                <h4 className="font-semibold mb-3">Amenities</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedResidence.amenities.map((amenity: string) => (
+                    <Badge key={amenity} variant="secondary">
+                      {amenity}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-4">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setShowDetailsModal(false)}
+              >
+                Close
+              </Button>
+              <Button 
+                className="flex-1"
+                onClick={() => {
+                  setShowDetailsModal(false);
+                  handleApply(selectedResidence);
+                }}
+              >
+                Apply Now
+              </Button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><strong>Price:</strong> R{selectedResidence?.price}</div>
-              <div><strong>Room Type:</strong> {selectedResidence?.room_type}</div>
-              <div><strong>Capacity:</strong> {selectedResidence?.capacity}</div>
-              <div><strong>Available Spots:</strong> {selectedResidence?.available_spots}</div>
-              <div><strong>Contact Email:</strong> {selectedResidence?.contact_email}</div>
-              <div><strong>Contact Phone:</strong> {selectedResidence?.contact_phone}</div>
-            </div>
-            <div className="flex justify-end mt-6">
-              <Button onClick={() => setShowDetailsModal(false)}>Close</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
