@@ -8,9 +8,9 @@ const Updates = () => {
     {
       id: 1,
       type: "news",
-      title: "Marketing Director BigBoy Maphanga Turns 23",
-      content: "Happy Birthday to our amazing Marketing Director! Wishing you a year full of success and joy!",
-      date: "2025-11-09",
+      title: "New Residence Added: Brooklyn Heights",
+      content: "We've just added a new premium residence in Brooklyn. Check it out in Find My Res!",
+      date: "2025-10-10",
       icon: Info
     },
     {
