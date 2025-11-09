@@ -49,7 +49,7 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
     const fetchResidences = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from('public_residences').select('*');
+         const { data, error } = await supabase.from('public_residences').select('*');
         if (error) throw error;
         setResidences(data || []);
         // Extract unique campuses from residences
@@ -79,7 +79,7 @@ setCampusOptions(uniqueCampuses);
           table: 'residences'
         },
         (payload) => {
-          console.log('Residence change detected:', payload);
+           console.log('Residence change detected:', payload);
           
           if (payload.eventType === 'INSERT') {
             setResidences(prev => [...prev, payload.new]);
@@ -158,7 +158,6 @@ setCampusOptions(uniqueCampuses);
     setSelectedResidence(residence);
     setShowApplicationModal(true);
   };
-
   const handleViewDetails = (residence: any) => {
     setSelectedResidence(residence);
     setShowDetailsModal(true);
@@ -177,7 +176,6 @@ setCampusOptions(uniqueCampuses);
       toast.error("You must be logged in to submit an application.");
       return;
     }
-
     // ✅ Ensure profile exists (avoids foreign key constraint)
     const { error: profileError } = await supabase
       .from("profiles")
@@ -213,6 +211,7 @@ setCampusOptions(uniqueCampuses);
     if (error) throw error;
 
     toast.success(`Application submitted for ${selectedResidence.name}!`);
+    window.dispatchEvent(new Event("refreshApplications"));
     setApplicationNotes("");
   } catch (err: any) {
     console.error("Application submission error:", err);
@@ -221,6 +220,8 @@ setCampusOptions(uniqueCampuses);
     setShowApplicationModal(false);
   }
 };
+  // Optional: manually trigger a refetch event for Applications page
+window.dispatchEvent(new Event("refreshApplications"));
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -260,7 +261,7 @@ setCampusOptions(uniqueCampuses);
                     />
                   </div>
                   <Button 
-                    variant="outline" 
+                    variant="outline"
                     size="lg"
                     onClick={() => setShowFilters(!showFilters)}
                     className="gap-2"
@@ -348,7 +349,7 @@ setCampusOptions(uniqueCampuses);
                           <div key={amenity} className="flex items-center space-x-2">
                             <Checkbox
                               id={amenity}
-                              checked={selectedAmenities.includes(amenity)}
+                               checked={selectedAmenities.includes(amenity)}
                               onCheckedChange={(checked) => {
                                 if (checked) {
                                   setSelectedAmenities([...selectedAmenities, amenity]);
@@ -378,7 +379,7 @@ setCampusOptions(uniqueCampuses);
                     </div>
                   </div>
                 )}
-              </CardContent>
+                </CardContent>
             </Card>
           </div>
         </div>
@@ -407,7 +408,7 @@ setCampusOptions(uniqueCampuses);
                     </div>
                   )}
                   <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
+                     <div className="flex justify-between items-start mb-2">
                       <CardTitle className="text-lg">{residence.name}</CardTitle>
                       <span className="text-lg font-bold text-primary">
                         R{typeof residence.price === 'number' ? residence.price.toLocaleString() : residence.price}
@@ -437,7 +438,7 @@ setCampusOptions(uniqueCampuses);
                       <Button 
                         className="flex-1"
                         onClick={() => handleApply(residence)}
-                      >
+                         >
                         Apply Now
                       </Button>
                     </div>
