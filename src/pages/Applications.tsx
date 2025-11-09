@@ -8,49 +8,41 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { supabase } from "@/integrations/supabase/client";
 
+// Applications page - view all residence applications
 const Applications = () => {
   const { user } = useAuth();
   const { applications, loading: applicationsLoading, error } = useRealtimeApplications(user);
-
   const [detailedApplications, setDetailedApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDetails = async () => {
-      if (applicationsLoading) {
-        setLoading(true);
+      if (applicationsLoading || !applications.length) {
+        setLoading(applicationsLoading);
+        if (!applications.length) setDetailedApplications([]);
         return;
       }
 
-      if (!applications || applications.length === 0) {
-        setDetailedApplications([]);
+      setLoading(true);
+      const residenceIds = applications.map(app => app.residence_id);
+      const { data: residences, error: resError } = await supabase
+        .from('residences')
+        .select('*')
+        .in('id', residenceIds);
+
+      if (resError) {
+        console.error("Error fetching residence details:", resError);
         setLoading(false);
         return;
       }
 
-      try {
-        setLoading(true);
+      const detailed = applications.map(app => {
+        const residence = residences.find(res => res.id === app.residence_id);
+        return { ...app, residence };
+      });
 
-        const residenceIds = applications.map((app) => app.residence_id);
-
-        const { data: residences, error: resError } = await supabase
-          .from("public_residences")
-          .select("*")
-          .in("id", residenceIds);
-
-        if (resError) throw resError;
-
-        const detailed = applications.map((app) => ({
-          ...app,
-          residence: residences?.find((res) => res.id === app.residence_id),
-        }));
-
-        setDetailedApplications(detailed);
-      } catch (err) {
-        console.error("Error fetching details:", err);
-      } finally {
-        setLoading(false);
-      }
+      setDetailedApplications(detailed);
+      setLoading(false);
     };
 
     fetchDetails();
@@ -88,6 +80,7 @@ const Applications = () => {
     <DashboardLayout>
       <div className="p-6 md:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
+          {/* Header */}
           <div>
             <h1 className="text-3xl font-bold mb-2">My Applications</h1>
             <p className="text-muted-foreground">
@@ -95,6 +88,7 @@ const Applications = () => {
             </p>
           </div>
 
+          {/* Applications List */}
           {loading ? (
             <p>Loading applications...</p>
           ) : detailedApplications.length === 0 ? (
@@ -113,10 +107,7 @@ const Applications = () => {
           ) : (
             <div className="space-y-4">
               {detailedApplications.map((application) => (
-                <Card
-                  key={application.id}
-                  className="shadow-card hover:shadow-hover transition-smooth"
-                >
+                <Card key={application.id} className="shadow-card hover:shadow-hover transition-smooth">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
@@ -131,10 +122,7 @@ const Applications = () => {
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Price</p>
                         <p className="font-semibold">
-                          R
-                          {typeof application.residence?.price === "number"
-                            ? application.residence.price.toLocaleString()
-                            : application.residence?.price}
+                          R{typeof application.residence?.price === 'number' ? application.residence.price.toLocaleString() : application.residence?.price}
                         </p>
                       </div>
                       <div>
@@ -145,7 +133,7 @@ const Applications = () => {
                       </div>
                       <div className="md:col-span-2">
                         <p className="text-sm text-muted-foreground mb-1">Notes</p>
-                        <p className="text-sm">{application.notes ?? "No notes provided"}</p>
+                        <p className="text-sm">{application.notes ?? 'No notes provided'}</p>
                       </div>
                     </div>
                     <div className="mt-4 pt-4 border-t">

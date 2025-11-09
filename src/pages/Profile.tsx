@@ -1,21 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useFileUpload } from "@/hooks/useFileUpload";
@@ -30,7 +18,7 @@ const Profile = () => {
     full_name: "",
     student_number: "",
     email: "",
-    phone_number: "",
+    phone: "",
     campus: "",
     course: "",
     year_of_study: "",
@@ -42,69 +30,59 @@ const Profile = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user?.id) return;
-      const { data, error } = await supabase
-        .from("profiles")
-        .select(
-          "full_name, student_number, email, phone_number, campus, course, year_of_study"
-        )
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error(error);
-        toast.error("Could not load your profile.");
-      } else if (data) {
-        setProfile(data);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("full_name, student_number, email, phone, campus, course, year_of_study")
+          .eq("id", user?.id)
+          .maybeSingle();
+        if (error) throw error;
+        if (data) setProfile(data);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast.error("Could not load your profile data.");
       }
     };
 
-    fetchProfile();
+    if (user?.id) fetchProfile();
   }, [user?.id]);
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user?.id) return;
     setIsSaving(true);
     try {
       const { error } = await supabase
         .from("profiles")
-        .upsert({
-          id: user.id,
-          full_name: profile.full_name,
-          student_number: profile.student_number,
-          email: profile.email,
-          phone_number: profile.phone_number,
-          campus: profile.campus,
-          course: profile.course,
-          year_of_study: profile.year_of_study,
-          updated_at: new Date().toISOString(),
-        });
+        .update(profile)
+        .eq("id", user.id)
+        .select();
+
       if (error) throw error;
-      toast.success("Profile saved successfully!");
+
+      toast.success('Profile updated successfully!');
       setIsEditing(false);
-    } catch (err: any) {
-      console.error(err);
-      toast.error("Failed to save profile.");
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error('Failed to save changes. Please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDocumentChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+
+  const handleDocumentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files?.length || !user || !selectedDocType) return;
+    if (!files || files.length === 0 || !user || !selectedDocType) return;
+
     const file = files[0];
-    const allowed = ["pdf", "jpeg", "jpg", "png"];
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    if (!ext || !allowed.includes(ext)) {
-      toast.error("Only PDF, JPG, or PNG files are allowed");
+    const allowedExtensions = ['pdf', 'jpeg', 'jpg', 'png'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      toast.error('Only PDF, JPG, or PNG files are allowed');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("File must be under 10MB");
+      toast.error('File must be under 10MB');
       return;
     }
 
@@ -116,26 +94,29 @@ const Profile = () => {
       reader.onloadend = async () => {
         try {
           const fileData = reader.result as string;
-          const res = await fetch("/api/handler", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+          const response = await fetch('/api/handler', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              action: "uploadFile",
+              action: 'uploadFile',
               user_id: user.id,
               fileName: file.name,
               fileData,
             }),
           });
-          const result = await res.json();
-          if (!res.ok) throw new Error(result.error);
+
+          const result = await response.json();
+
+          if (!response.ok) throw new Error(result.error);
 
           toast.success(`${selectedDocType} uploaded successfully!`);
-
           const updates = {
             [`${selectedDocType.toLowerCase().replace(" ", "_")}_url`]: result.url,
             [`${selectedDocType.toLowerCase().replace(" ", "_")}_status`]: "uploaded",
           };
-          await supabase.from("profiles").update(updates).eq("id", user.id);
+          const { error: updateError } = await supabase.from("profiles").update(updates).eq("id", user.id);
+          if (updateError) throw updateError;
+
         } catch (err: any) {
           toast.error(`Upload failed: ${err.message}`);
         } finally {
@@ -144,10 +125,19 @@ const Profile = () => {
         }
       };
     } catch (err: any) {
-      toast.error(`Unexpected error: ${err.message}`);
+      toast.error(`An unexpected error occurred: ${err.message}`);
       setUploadingDoc(null);
       setSelectedDocType(null);
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setProfile((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -179,9 +169,7 @@ const Profile = () => {
               <form onSubmit={handleSave} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">
-                      Full Name
-                    </label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Full Name</label>
                     <Input
                       value={profile.full_name || ""}
                       onChange={(e) =>
@@ -192,9 +180,7 @@ const Profile = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">
-                      Student Number
-                    </label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Student Number</label>
                     <Input
                       value={profile.student_number || ""}
                       onChange={(e) =>
@@ -208,19 +194,18 @@ const Profile = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">
-                      Email Address
-                    </label>
-                    <Input value={user?.email || ""} disabled />
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Email Address</label>
+                    <Input
+                      value={user?.email || ""}
+                      disabled
+                    />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">
-                      Phone Number
-                    </label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Phone Number</label>
                     <Input
-                      value={profile.phone_number || ""}
+                      value={profile.phone || ""}
                       onChange={(e) =>
-                        setProfile((prev) => ({ ...prev, phone_number: e.target.value }))
+                        setProfile((prev) => ({ ...prev, phone: e.target.value }))
                       }
                       placeholder="Enter your phone number"
                       disabled={!isEditing}
@@ -230,9 +215,7 @@ const Profile = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">
-                      Campus
-                    </label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Campus</label>
                     <Select
                       value={profile.campus || ""}
                       onValueChange={(value) =>
@@ -244,27 +227,14 @@ const Profile = () => {
                         <SelectValue placeholder="Select your campus" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Pretoria West (Main)">
-                          Pretoria West (Main Campus)
-                        </SelectItem>
-                        <SelectItem value="Arcadia Campus">Arcadia Campus</SelectItem>
-                        <SelectItem value="Ga-Rankuwa Campus">Ga-Rankuwa Campus</SelectItem>
-                        <SelectItem value="Mbombela Campus">Mbombela Campus</SelectItem>
-                        <SelectItem value="Polokwane Campus">Polokwane Campus</SelectItem>
-                        <SelectItem value="Soshanguve North Campus">
-                          Soshanguve North Campus
-                        </SelectItem>
-                        <SelectItem value="Soshanguve South Campus">
-                          Soshanguve South Campus
-                        </SelectItem>
-                        <SelectItem value="eMalahleni Campus">eMalahleni Campus</SelectItem>
+                        <SelectItem value="hatfield">Hatfield Campus</SelectItem>
+                        <SelectItem value="mamelodi">Mamelodi Campus</SelectItem>
+                        <SelectItem value="sunnyside">Sunnyside Campus</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">
-                      Course
-                    </label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Course</label>
                     <Input
                       value={profile.course || ""}
                       onChange={(e) =>
@@ -275,9 +245,7 @@ const Profile = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">
-                      Year of Study
-                    </label>
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Year of Study</label>
                     <Select
                       value={profile.year_of_study || ""}
                       onValueChange={(value) =>
@@ -314,7 +282,7 @@ const Profile = () => {
                       className="flex-1"
                       disabled={isSaving}
                     >
-                      {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                       Save Changes
                     </Button>
                   </div>
@@ -347,8 +315,7 @@ const Profile = () => {
                     <div>
                       <p className="font-medium">{doc}</p>
                       <p className="text-sm text-muted-foreground">
-                        {profile?.[`${doc.toLowerCase().replace(" ", "_")}_status`] ===
-                        "uploaded"
+                        {profile?.[`${doc.toLowerCase().replace(" ", "_")}_status`] === "uploaded"
                           ? "Uploaded"
                           : "Not Uploaded"}
                       </p>

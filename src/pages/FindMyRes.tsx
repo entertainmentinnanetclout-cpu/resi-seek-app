@@ -15,14 +15,14 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
-import { useRealtimeResidences } from "@/hooks/useRealtimeResidences";
 import { supabase } from "@/integrations/supabase/client";
 
 const FindMyRes = () => {
   const { user } = useAuth();
   const { profile } = useRealtimeProfile(user);
   const { applications } = useRealtimeApplications(user);
-  const { residences, loading, campusOptions } = useRealtimeResidences();
+  const [residences, setResidences] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
@@ -44,12 +44,52 @@ const FindMyRes = () => {
   // Application notes
   const [applicationNotes, setApplicationNotes] = useState("");
 
+  useEffect(() => {
+    const fetchResidences = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.from('residences').select('*');
+        if (error) throw error;
+        setResidences(data || []);
+      } catch (error) {
+        console.error('Error fetching residences:', error);
+        toast.error('Failed to load residences.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  /**
-   * Filters the list of residences based on the current search query and filter criteria.
-   * This effect runs whenever the source `residences` array or any of the filter
-   * dependencies change. It also separates featured residences.
-   */
+    fetchResidences();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('residences-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'residences'
+        },
+        (payload) => {
+          console.log('Residence change detected:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setResidences(prev => [...prev, payload.new]);
+          } else if (payload.eventType === 'UPDATE') {
+            setResidences(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
+          } else if (payload.eventType === 'DELETE') {
+            setResidences(prev => prev.filter(r => r.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   useEffect(() => {
     if (!residences.length) return;
 
@@ -107,79 +147,35 @@ const FindMyRes = () => {
     setFilteredResidences(filtered);
   }, [residences, searchQuery, priceRange, distanceRange, roomType, selectedAmenities, campus]);
 
-  /**
-   * Sets the selected residence and opens the application modal.
-   * @param {any} residence - The residence object to apply for.
-   */
   const handleApply = (residence: any) => {
     setSelectedResidence(residence);
     setShowApplicationModal(true);
   };
 
-  /**
-   * Sets the selected residence and opens the details modal.
-   * @param {any} residence - The residence object to view details for.
-   */
   const handleViewDetails = (residence: any) => {
     setSelectedResidence(residence);
     setShowDetailsModal(true);
   };
 
-  /**
-   * Handles the submission of a new application. It performs checks to ensure
-   * the user is logged in, has not already applied to the selected residence,
-   * and has not exceeded the maximum number of applications.
-   */
   const handleSubmitApplication = async () => {
-    if (!selectedResidence) {
-      toast.error("Please select a residence first.");
-      return;
-    }
-
+    if (!selectedResidence || !user) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        toast.error("You must be logged in to submit an application.");
-        return;
-      }
-
-      // Check if user already applied to this residence
-      const existingApp = applications.find(app => app.residence_id === selectedResidence.id);
-      if (existingApp) {
-        toast.error("You have already applied to this residence.");
-        return;
-      }
-
-      // Check if user has reached max applications (3)
-      if (applications.length >= 3) {
-        toast.error("You can only submit a maximum of 3 applications.");
-        return;
-      }
-
-      // Insert application
-      const { error } = await supabase.from("applications").insert({
+      const { error } = await supabase.from('applications').insert({
         user_id: user.id,
         residence_id: selectedResidence.id,
-        status: "submitted",
-        notes: applicationNotes || "",
+        status: 'submitted',
+        notes: applicationNotes
       });
-
       if (error) throw error;
-
-      toast.success(`Application submitted for ${selectedResidence.name}!`);
+      toast.success(`Application submitted for ${selectedResidence?.name}!`);
       setApplicationNotes("");
-      setShowApplicationModal(false);
     } catch (err: any) {
-      console.error("Application submission error:", err);
-      toast.error(err.message || "Error submitting application.");
+      toast.error(err.message);
+    } finally {
+      setShowApplicationModal(false);
     }
   };
 
-  /**
-   * Resets all filter states to their default values, effectively clearing
-   * any applied filters.
-   */
   const resetFilters = () => {
     setSearchQuery("");
     setPriceRange("");
@@ -283,18 +279,14 @@ const FindMyRes = () => {
                       <div className="space-y-2">
                         <Label>Campus</Label>
                         <Select value={campus} onValueChange={setCampus}>
-  <SelectTrigger>
-    <SelectValue placeholder="All campuses" />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="all">All campuses</SelectItem>
-    {campusOptions.map((campusName) => (
-      <SelectItem key={campusName} value={campusName}>
-        {campusName}
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="All campuses" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All campuses</SelectItem>
+                            <SelectItem value="Pretoria West">Pretoria West (Main Campus)</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
@@ -359,16 +351,9 @@ const FindMyRes = () => {
                         alt={residence.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      <div className="absolute top-3 right-3 flex gap-2">
-                        <Badge className="bg-primary">
-                          Featured
-                        </Badge>
-                        {residence.verified && (
-                          <Badge className="bg-success/90 text-success-foreground">
-                            ✓ Verified
-                          </Badge>
-                        )}
-                      </div>
+                      <Badge className="absolute top-3 right-3 bg-primary">
+                        Featured
+                      </Badge>
                     </div>
                   )}
                   <CardHeader>
@@ -455,17 +440,10 @@ const FindMyRes = () => {
                 <Card key={residence.id} className="hover:shadow-md transition-shadow">
                   <div className="flex flex-col md:flex-row">
                     <CardContent className="flex-1 p-6">
-                         <div className="space-y-4">
+                      <div className="space-y-4">
                         <div className="flex justify-between items-start">
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="text-xl font-bold">{residence.name}</h3>
-                              {residence.verified && (
-                                <Badge className="bg-success/90 text-success-foreground">
-                                  ✓ Verified
-                                </Badge>
-                              )}
-                            </div>
+                            <h3 className="text-xl font-bold mb-1">{residence.name}</h3>
                             <div className="flex items-center text-sm text-muted-foreground gap-1">
                               <MapPin className="w-4 h-4" />
                               <span>{residence.address}</span>

@@ -96,7 +96,7 @@ const Updates = () => {
                     <p className="text-muted-foreground">{update.content}</p>
                   </CardContent>
                 </Card>
-                );
+              );
             })}
           </div>
         </div>

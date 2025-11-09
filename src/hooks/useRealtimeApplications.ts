@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { type User } from "@supabase/supabase-js";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { type User } from '@supabase/supabase-js';
 
 export function useRealtimeApplications(user: User | null) {
   const [applications, setApplications] = useState<any[]>([]);
@@ -10,77 +10,63 @@ export function useRealtimeApplications(user: User | null) {
   useEffect(() => {
     if (!user) {
       setLoading(false);
-      setApplications([]);
       return;
     }
 
-    // 🧩 Fetch user applications
     const fetchApplications = async () => {
       try {
         setLoading(true);
-
         const { data, error } = await supabase
-          .from("applications")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
+          .from('applications')
+          .select('*')
+          .eq('user_id', user.id);
 
         if (error) throw error;
-
         setApplications(data || []);
       } catch (err: any) {
-        console.error("Error fetching applications:", err);
         setError(err.message);
+        console.error("Error fetching initial applications:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    // 🟢 Initial fetch
     fetchApplications();
 
-    // 🟣 Subscribe to realtime updates
     const channel = supabase
       .channel(`realtime-applications-${user.id}`)
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "*",
-          schema: "public",
-          table: "applications",
+          event: '*',
+          schema: 'public',
+          table: 'applications',
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log("📡 Application change received:", payload);
+          console.log('Application change received!', payload);
+          // Here you might want to refetch or update the applications list
+          // For simplicity, we'll refetch all applications
           fetchApplications();
         }
       )
       .subscribe((status, err) => {
-        if (status === "SUBSCRIBED") {
-          console.log(`✅ Subscribed to realtime updates for user ${user.id}`);
+        if (status === 'SUBSCRIBED') {
+          console.log(`Subscribed to application changes for user ${user.id}`);
           setError(null);
         }
-        if (status === "CHANNEL_ERROR") {
-          console.error("❌ Subscription error:", err);
-          setError("Subscription error occurred.");
+        if (status === 'CHANNEL_ERROR') {
+          setError(`Subscription error: ${err?.message}`);
+          console.error(`Subscription error for user ${user.id}:`, err);
         }
-        if (status === "TIMED_OUT") {
-          console.warn("⚠️ Subscription timed out.");
-          setError("Realtime connection timed out.");
+        if (status === 'TIMED_OUT') {
+          setError('Subscription timed out.');
+          console.error(`Subscription timed out for user ${user.id}`);
         }
       });
 
-    // 🟡 Allow manual refresh from anywhere
-    const handleManualRefresh = () => {
-      console.log("🔄 Manual refresh triggered");
-      fetchApplications();
-    };
-    window.addEventListener("refreshApplications", handleManualRefresh);
-
-    // 🧹 Cleanup on unmount
     return () => {
       supabase.removeChannel(channel);
-      window.removeEventListener("refreshApplications", handleManualRefresh);
     };
   }, [user]);
 
