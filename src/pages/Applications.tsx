@@ -17,15 +17,12 @@ const Applications = () => {
 
   useEffect(() => {
     const fetchDetails = async () => {
-      // wait until realtime hook finishes
       if (applicationsLoading) {
         setLoading(true);
         return;
       }
 
-      // no applications found
       if (!applications || applications.length === 0) {
-        console.warn("No applications found for this user.");
         setDetailedApplications([]);
         setLoading(false);
         return;
@@ -34,10 +31,8 @@ const Applications = () => {
       try {
         setLoading(true);
 
-        // get residence IDs from applications
         const residenceIds = applications.map((app) => app.residence_id);
 
-        // fetch residence info
         const { data: residences, error: resError } = await supabase
           .from("public_residences")
           .select("*")
@@ -45,10 +40,6 @@ const Applications = () => {
 
         if (resError) throw resError;
 
-        console.log("Fetched applications:", applications);
-        console.log("Fetched residences:", residences);
-
-        // merge app + residence details
         const detailed = applications.map((app) => ({
           ...app,
           residence: residences?.find((res) => res.id === app.residence_id),
@@ -104,7 +95,6 @@ const Applications = () => {
             </p>
           </div>
 
-          {/* Applications List */}
           {loading ? (
             <p>Loading applications...</p>
           ) : detailedApplications.length === 0 ? (
