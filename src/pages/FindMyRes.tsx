@@ -19,16 +19,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 const FindMyRes = () => {
   const { user } = useAuth();
-  const { profile } = useRealtimeProfile(user);
-  const { applications } = useRealtimeApplications(user);
+  const { profile } = useRealtimeProfile(user?.id);
+  const { applications } = useRealtimeApplications(user?.id);
+
   const [residences, setResidences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [priceRange, setPriceRange] = useState<string>("");
@@ -36,31 +36,30 @@ const FindMyRes = () => {
   const [roomType, setRoomType] = useState<string>("");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [campus, setCampus] = useState<string>("all");
-const [campusOptions, setCampusOptions] = useState<string[]>([]);
-  
-  // Filtered residences
+  const [campusOptions, setCampusOptions] = useState<string[]>([]);
   const [filteredResidences, setFilteredResidences] = useState<any[]>([]);
   const [featuredResidences, setFeaturedResidences] = useState<any[]>([]);
-
-  // Application notes
   const [applicationNotes, setApplicationNotes] = useState("");
+
+  if (!user) return <DashboardLayout>Loading user...</DashboardLayout>;
 
   useEffect(() => {
     const fetchResidences = async () => {
       setLoading(true);
       try {
-         const { data, error } = await supabase.from('public_residences').select('*');
+        const { data, error } = await supabase.from("public_residences").select("*");
         if (error) throw error;
-        setResidences(data || []);
-        // Extract unique campuses from residences
-const uniqueCampuses = [...new Set(data.map((r) => r.campus?.trim()))]
-  .filter(Boolean)
-  .sort();
-setCampusOptions(uniqueCampuses);
 
+        setResidences(data || []);
+
+        const uniqueCampuses = [...new Set(data.map((r) => r.campus?.trim()))]
+          .filter(Boolean)
+          .sort();
+
+        setCampusOptions(uniqueCampuses);
       } catch (error) {
-        console.error('Error fetching residences:', error);
-        toast.error('Failed to load residences.');
+        console.error("Error fetching residences:", error);
+        toast.error("Failed to load residences.");
       } finally {
         setLoading(false);
       }
@@ -68,26 +67,30 @@ setCampusOptions(uniqueCampuses);
 
     fetchResidences();
 
-    // Subscribe to realtime changes
     const channel = supabase
-      .channel('residences-changes')
+      .channel("residences-changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'residences'
+          event: "*",
+          schema: "public",
+          table: "public_residences", // ✅ fixed table name
         },
         (payload) => {
-           console.log('Residence change detected:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            setResidences(prev => [...prev, payload.new]);
-          } else if (payload.eventType === 'UPDATE') {
-            setResidences(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
-          } else if (payload.eventType === 'DELETE') {
-            setResidences(prev => prev.filter(r => r.id !== payload.old.id));
-          }
+          console.log("Residence change detected:", payload);
+
+          setResidences((prev) => {
+            switch (payload.eventType) {
+              case "INSERT":
+                return [...prev, payload.new];
+              case "UPDATE":
+                return prev.map((r) => (r.id === payload.new.id ? payload.new : r));
+              case "DELETE":
+                return prev.filter((r) => r.id !== payload.old.id);
+              default:
+                return prev;
+            }
+          });
         }
       )
       .subscribe();
@@ -189,8 +192,7 @@ setCampusOptions(uniqueCampuses);
         year_of_study: "",
         updated_at: new Date().toISOString(),
       });
-
-    if (profileError) {
+    
       if (profileError) {
   console.error("Profile check failed:", profileError);
   toast.error(`Profile verification failed: ${profileError.message}`);
