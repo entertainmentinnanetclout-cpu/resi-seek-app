@@ -19,16 +19,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 const FindMyRes = () => {
   const { user } = useAuth();
-  const { profile } = useRealtimeProfile(user?.id);
-  const { applications } = useRealtimeApplications(user?.id);
-
+  const { profile } = useRealtimeProfile(user);
+  const { applications } = useRealtimeApplications(user);
   const [residences, setResidences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-
+  
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [priceRange, setPriceRange] = useState<string>("");
@@ -36,30 +36,31 @@ const FindMyRes = () => {
   const [roomType, setRoomType] = useState<string>("");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [campus, setCampus] = useState<string>("all");
-  const [campusOptions, setCampusOptions] = useState<string[]>([]);
+const [campusOptions, setCampusOptions] = useState<string[]>([]);
+  
+  // Filtered residences
   const [filteredResidences, setFilteredResidences] = useState<any[]>([]);
   const [featuredResidences, setFeaturedResidences] = useState<any[]>([]);
-  const [applicationNotes, setApplicationNotes] = useState("");
 
-  if (!user) return <DashboardLayout>Loading user...</DashboardLayout>;
+  // Application notes
+  const [applicationNotes, setApplicationNotes] = useState("");
 
   useEffect(() => {
     const fetchResidences = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from("public_residences").select("*");
+        const { data, error } = await supabase.from('Public_residences').select('*');
         if (error) throw error;
-
         setResidences(data || []);
-
-        const uniqueCampuses = [...new Set(data.map((r) => r.campus?.trim()))]
+        // Extract unique campuses from residences
+        const uniqueCampuses = [...new Set(data?.map((r) => r.campus?.trim()))]
           .filter(Boolean)
           .sort();
-
         setCampusOptions(uniqueCampuses);
+
       } catch (error) {
-        console.error("Error fetching residences:", error);
-        toast.error("Failed to load residences.");
+        console.error('Error fetching residences:', error);
+        toast.error('Failed to load residences.');
       } finally {
         setLoading(false);
       }
@@ -67,30 +68,26 @@ const FindMyRes = () => {
 
     fetchResidences();
 
+    // Subscribe to realtime changes
     const channel = supabase
-      .channel("residences-changes")
+      .channel('residences-changes')
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "*",
-          schema: "public",
-          table: "public_residences", // ✅ fixed table name
+          event: '*',
+          schema: 'public',
+          table: 'residences'
         },
         (payload) => {
-          console.log("Residence change detected:", payload);
-
-          setResidences((prev) => {
-            switch (payload.eventType) {
-              case "INSERT":
-                return [...prev, payload.new];
-              case "UPDATE":
-                return prev.map((r) => (r.id === payload.new.id ? payload.new : r));
-              case "DELETE":
-                return prev.filter((r) => r.id !== payload.old.id);
-              default:
-                return prev;
-            }
-          });
+          console.log('Residence change detected:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setResidences(prev => [...prev, payload.new]);
+          } else if (payload.eventType === 'UPDATE') {
+            setResidences(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
+          } else if (payload.eventType === 'DELETE') {
+            setResidences(prev => prev.filter(r => r.id !== payload.old.id));
+          }
         }
       )
       .subscribe();
@@ -161,69 +158,57 @@ const FindMyRes = () => {
     setSelectedResidence(residence);
     setShowApplicationModal(true);
   };
+
   const handleViewDetails = (residence: any) => {
     setSelectedResidence(residence);
     setShowDetailsModal(true);
   };
 
   const handleSubmitApplication = async () => {
-  if (!selectedResidence) {
-    toast.error("Please select a residence first.");
-    return;
-  }
-
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      toast.error("You must be logged in to submit an application.");
+    if (!selectedResidence) {
+      toast.error("Please select a residence first.");
       return;
     }
-    // ✅ Ensure profile exists (avoids foreign key constraint)
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .upsert({
-        id: user.id,
-        email: user.email,
-        full_name: user.user_metadata?.full_name || "",
-        phone_number: user.user_metadata?.phone_number || "",
-        campus: "",
-        course: "",
-        year_of_study: "",
-        updated_at: new Date().toISOString(),
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        toast.error("You must be logged in to submit an application.");
+        return;
+      }
+
+      // Check if user already applied to this residence
+      const existingApp = applications.find(app => app.residence_id === selectedResidence.id);
+      if (existingApp) {
+        toast.error("You have already applied to this residence.");
+        return;
+      }
+
+      // Check if user has reached max applications (3)
+      if (applications.length >= 3) {
+        toast.error("You can only submit a maximum of 3 applications.");
+        return;
+      }
+
+      // Insert application
+      const { error } = await supabase.from("applications").insert({
+        user_id: user.id,
+        residence_id: selectedResidence.id,
+        status: "submitted",
+        notes: applicationNotes || "",
       });
-    
-      if (profileError) {
-  console.error("Profile check failed:", profileError);
-  toast.error(`Profile verification failed: ${profileError.message}`);
-  return;
-}
-      toast.error("Could not verify profile before applying.");
-      return;
+
+      if (error) throw error;
+
+      toast.success(`Application submitted for ${selectedResidence.name}!`);
+      setApplicationNotes("");
+      setShowApplicationModal(false);
+    } catch (err: any) {
+      console.error("Application submission error:", err);
+      toast.error(err.message || "Error submitting application.");
     }
-
-    // ✅ Insert application safely
-    const { error } = await supabase.from("applications").insert({
-      user_id: user.id,
-      residence_id: selectedResidence.id,
-      status: "submitted",
-      notes: applicationNotes || "",
-    });
-
-    if (error) throw error;
-
-    toast.success(`Application submitted for ${selectedResidence.name}!`);
-    window.dispatchEvent(new Event("refreshApplications"));
-    setApplicationNotes("");
-  } catch (err: any) {
-    console.error("Application submission error:", err);
-    toast.error(err.message || "Error submitting application.");
-  } finally {
-    setShowApplicationModal(false);
-  }
-};
-  // Optional: manually trigger a refetch event for Applications page
-window.dispatchEvent(new Event("refreshApplications"));
+  };
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -263,7 +248,7 @@ window.dispatchEvent(new Event("refreshApplications"));
                     />
                   </div>
                   <Button 
-                    variant="outline"
+                    variant="outline" 
                     size="lg"
                     onClick={() => setShowFilters(!showFilters)}
                     className="gap-2"
@@ -351,7 +336,7 @@ window.dispatchEvent(new Event("refreshApplications"));
                           <div key={amenity} className="flex items-center space-x-2">
                             <Checkbox
                               id={amenity}
-                               checked={selectedAmenities.includes(amenity)}
+                              checked={selectedAmenities.includes(amenity)}
                               onCheckedChange={(checked) => {
                                 if (checked) {
                                   setSelectedAmenities([...selectedAmenities, amenity]);
@@ -381,7 +366,7 @@ window.dispatchEvent(new Event("refreshApplications"));
                     </div>
                   </div>
                 )}
-                </CardContent>
+              </CardContent>
             </Card>
           </div>
         </div>
@@ -404,13 +389,20 @@ window.dispatchEvent(new Event("refreshApplications"));
                         alt={residence.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      <Badge className="absolute top-3 right-3 bg-primary">
-                        Featured
-                      </Badge>
+                      <div className="absolute top-3 right-3 flex gap-2">
+                        <Badge className="bg-primary">
+                          Featured
+                        </Badge>
+                        {residence.verified && (
+                          <Badge className="bg-success/90 text-success-foreground">
+                            ✓ Verified
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   )}
                   <CardHeader>
-                     <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start mb-2">
                       <CardTitle className="text-lg">{residence.name}</CardTitle>
                       <span className="text-lg font-bold text-primary">
                         R{typeof residence.price === 'number' ? residence.price.toLocaleString() : residence.price}
@@ -440,7 +432,7 @@ window.dispatchEvent(new Event("refreshApplications"));
                       <Button 
                         className="flex-1"
                         onClick={() => handleApply(residence)}
-                         >
+                      >
                         Apply Now
                       </Button>
                     </div>
@@ -493,10 +485,17 @@ window.dispatchEvent(new Event("refreshApplications"));
                 <Card key={residence.id} className="hover:shadow-md transition-shadow">
                   <div className="flex flex-col md:flex-row">
                     <CardContent className="flex-1 p-6">
-                      <div className="space-y-4">
+                         <div className="space-y-4">
                         <div className="flex justify-between items-start">
                           <div>
-                            <h3 className="text-xl font-bold mb-1">{residence.name}</h3>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-xl font-bold">{residence.name}</h3>
+                              {residence.verified && (
+                                <Badge className="bg-success/90 text-success-foreground">
+                                  ✓ Verified
+                                </Badge>
+                              )}
+                            </div>
                             <div className="flex items-center text-sm text-muted-foreground gap-1">
                               <MapPin className="w-4 h-4" />
                               <span>{residence.address}</span>
