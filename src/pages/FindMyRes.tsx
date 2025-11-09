@@ -49,7 +49,7 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
     const fetchResidences = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from('Public_residences').select('*');
+        const { data, error } = await supabase.from('residences').select('*');
         if (error) throw error;
         setResidences(data || []);
         // Extract unique campuses from residences
