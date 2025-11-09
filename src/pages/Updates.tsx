@@ -7,36 +7,12 @@ const Updates = () => {
   const updates = [
     {
       id: 1,
-      type: "news",
-      title: "Convener BigBoy Maphanga Turns 23",
-      content: "We've just added a new premium residence in Brooklyn. Check it out in Find My Res!",
-      date: "2025-10-10",
-      icon: Info
+    type: "news",
+    title: "Marketing Director BigBoy Maphanga Turns 23 🎉",
+    content: "Happy Birthday to our amazing Marketing Director! Wishing you a year full of success and joy.",
+    date: "2025-11-09", // Today's date
+    icon: "Info" // or a suitable icon component
     },
-    {
-      id: 2,
-      type: "job",
-      title: "Part-Time Campus Job Available",
-      content: "Student assistant position open at the library. 15 hours/week, flexible schedule.",
-      date: "2025-10-09",
-      icon: Briefcase
-    },
-    {
-      id: 3,
-      type: "alert",
-      title: "Application Deadline Approaching",
-      content: "Reminder: Applications for first semester 2026 close on October 31st.",
-      date: "2025-10-08",
-      icon: AlertCircle
-    },
-    {
-      id: 4,
-      type: "news",
-      title: "Campus Safety Workshop",
-      content: "Join us for a campus safety and security workshop on October 15th at 14:00.",
-      date: "2025-10-07",
-      icon: Info
-    }
   ];
 
   const getTypeBadge = (type: string) => {
