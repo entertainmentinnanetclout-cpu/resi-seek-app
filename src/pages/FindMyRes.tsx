@@ -45,6 +45,11 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
   // Application notes
   const [applicationNotes, setApplicationNotes] = useState("");
 
+  /**
+   * Fetches all residences from the database on initial component mount and
+   * subscribes to real-time updates to the 'residences' table.
+   * It handles inserts, updates, and deletes to keep the local state in sync.
+   */
   useEffect(() => {
     const fetchResidences = async () => {
       setLoading(true);
@@ -97,6 +102,11 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
     };
   }, []);
 
+  /**
+   * Filters the list of residences based on the current search query and filter criteria.
+   * This effect runs whenever the source `residences` array or any of the filter
+   * dependencies change. It also separates featured residences.
+   */
   useEffect(() => {
     if (!residences.length) return;
 
@@ -154,16 +164,29 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
     setFilteredResidences(filtered);
   }, [residences, searchQuery, priceRange, distanceRange, roomType, selectedAmenities, campus]);
 
+  /**
+   * Sets the selected residence and opens the application modal.
+   * @param {any} residence - The residence object to apply for.
+   */
   const handleApply = (residence: any) => {
     setSelectedResidence(residence);
     setShowApplicationModal(true);
   };
 
+  /**
+   * Sets the selected residence and opens the details modal.
+   * @param {any} residence - The residence object to view details for.
+   */
   const handleViewDetails = (residence: any) => {
     setSelectedResidence(residence);
     setShowDetailsModal(true);
   };
 
+  /**
+   * Handles the submission of a new application. It performs checks to ensure
+   * the user is logged in, has not already applied to the selected residence,
+   * and has not exceeded the maximum number of applications.
+   */
   const handleSubmitApplication = async () => {
     if (!selectedResidence) {
       toast.error("Please select a residence first.");
@@ -210,6 +233,10 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
     }
   };
 
+  /**
+   * Resets all filter states to their default values, effectively clearing
+   * any applied filters.
+   */
   const resetFilters = () => {
     setSearchQuery("");
     setPriceRange("");
