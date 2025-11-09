@@ -1,3 +1,4 @@
+import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Bell, Briefcase, AlertCircle, Info } from "lucide-react";
