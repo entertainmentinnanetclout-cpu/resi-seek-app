@@ -8,7 +8,7 @@ const Updates = () => {
     {
       id: 1,
       type: "news",
-      title: "New Residence Added: Brooklyn Heights",
+      title: "Convener BigBoy Maphanga Turns 23",
       content: "We've just added a new premium residence in Brooklyn. Check it out in Find My Res!",
       date: "2025-10-10",
       icon: Info
