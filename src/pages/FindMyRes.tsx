@@ -48,7 +48,7 @@ const FindMyRes = () => {
     const fetchResidences = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from('residences').select('*');
+        const { data, error } = await supabase.from('public_residences').select('*');
         if (error) throw error;
         setResidences(data || []);
       } catch (error) {
