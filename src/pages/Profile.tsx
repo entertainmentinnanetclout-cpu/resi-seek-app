@@ -30,7 +30,7 @@ const Profile = () => {
     full_name: "",
     student_number: "",
     email: "",
-    phone: "",
+    phone_number: "",
     campus: "",
     course: "",
     year_of_study: "",
