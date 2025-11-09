@@ -200,28 +200,35 @@ setCampusOptions(uniqueCampuses);
       return;
     }
 
-    // ✅ Insert application safely
-    const { error } = await supabase.from("applications").insert({
-      user_id: user.id,
-      residence_id: selectedResidence.id,
-      status: "submitted",
-      notes: applicationNotes || "",
-    });
+   // ✅ Insert application safely
+try {
+  const { error } = await supabase.from("applications").insert({
+    user_id: user.id,
+    residence_id: selectedResidence.id,
+    status: "submitted",
+    notes: applicationNotes || "",
+  });
 
-    if (error) throw error;
-
-    toast.success(`Application submitted for ${selectedResidence.name}!`);
-    window.dispatchEvent(new Event("refreshApplications"));
-    setApplicationNotes("");
-  } catch (err: any) {
-    console.error("Application submission error:", err);
-    toast.error(err.message || "Error submitting application.");
-  } finally {
-    setShowApplicationModal(false);
+  if (error) {
+    // Handle Supabase trigger error message
+    if (error.message.includes("Application limit reached")) {
+      toast.error("You can only have 3 active applications at a time. Withdraw or wait for a decision before applying again.");
+    } else {
+      toast.error("Error submitting application. Please try again.");
+    }
+    throw error;
   }
-};
-  // Optional: manually trigger a refetch event for Applications page
-window.dispatchEvent(new Event("refreshApplications"));
+
+  toast.success(`Application submitted for ${selectedResidence.name}!`);
+  // ✅ Trigger refresh event for applications list
+  window.dispatchEvent(new Event("refreshApplications"));
+  setApplicationNotes("");
+} catch (err: any) {
+  console.error("Application submission error:", err);
+  toast.error(err.message || "Error submitting application.");
+} finally {
+  setShowApplicationModal(false);
+}
 
   const resetFilters = () => {
     setSearchQuery("");
