@@ -15,14 +15,14 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
+import { useRealtimeResidences } from "@/hooks/useRealtimeResidences";
 import { supabase } from "@/integrations/supabase/client";
 
 const FindMyRes = () => {
   const { user } = useAuth();
   const { profile } = useRealtimeProfile(user);
   const { applications } = useRealtimeApplications(user);
-  const [residences, setResidences] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { residences, loading, campusOptions } = useRealtimeResidences();
   
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
@@ -36,7 +36,6 @@ const FindMyRes = () => {
   const [roomType, setRoomType] = useState<string>("");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [campus, setCampus] = useState<string>("all");
-const [campusOptions, setCampusOptions] = useState<string[]>([]);
   
   // Filtered residences
   const [filteredResidences, setFilteredResidences] = useState<any[]>([]);
@@ -45,62 +44,6 @@ const [campusOptions, setCampusOptions] = useState<string[]>([]);
   // Application notes
   const [applicationNotes, setApplicationNotes] = useState("");
 
-  /**
-   * Fetches all residences from the database on initial component mount and
-   * subscribes to real-time updates to the 'residences' table.
-   * It handles inserts, updates, and deletes to keep the local state in sync.
-   */
-  useEffect(() => {
-    const fetchResidences = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase.from('residences').select('*');
-        if (error) throw error;
-        setResidences(data || []);
-        // Extract unique campuses from residences
-        const uniqueCampuses = [...new Set(data?.map((r) => r.campus?.trim()))]
-          .filter(Boolean)
-          .sort();
-        setCampusOptions(uniqueCampuses);
-
-      } catch (error) {
-        console.error('Error fetching residences:', error);
-        toast.error('Failed to load residences.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchResidences();
-
-    // Subscribe to realtime changes
-    const channel = supabase
-      .channel('residences-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'residences'
-        },
-        (payload) => {
-          console.log('Residence change detected:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            setResidences(prev => [...prev, payload.new]);
-          } else if (payload.eventType === 'UPDATE') {
-            setResidences(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
-          } else if (payload.eventType === 'DELETE') {
-            setResidences(prev => prev.filter(r => r.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   /**
    * Filters the list of residences based on the current search query and filter criteria.
