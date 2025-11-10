@@ -32,7 +32,7 @@ const Landing = () => {
   const heroSlides = [
     {
       image: campusDinokeng,
-      title: "Welcome to TUT Dinokeng Campus",
+      title: "Welcome to TUT Main Campus",
       description: "Find your perfect student accommodation near campus - 400+ verified options available",
       cta: {
         text: "Explore Residences",
