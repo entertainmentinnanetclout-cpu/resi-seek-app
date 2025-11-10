@@ -226,8 +226,8 @@ const Landing = () => {
             <div>
               <h4 className="font-semibold mb-4 text-sm md:text-base">Contact</h4>
               <ul className="space-y-2 text-xs md:text-sm text-muted-foreground">
-                <li>Email: info@reskonnect.co.za</li>
-                <li>Phone: +27 12 345 6789</li>
+                <li>Email: ResKonnect@gmail.com</li>
+                <li>Phone: +27 63 732 3192</li>
               </ul>
             </div>
           </div>
