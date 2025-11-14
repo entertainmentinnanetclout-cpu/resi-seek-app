@@ -55,18 +55,8 @@ const CampusNews = () => {
 
   // News Articles
   const newsArticles = [
-    {
+     {
       id: 1,
-      category: "campus-life",
-      title: "Emergency Medical Services Now Available on Campus",
-      author: "Campus Safety Team",
-      date: "2025-11-05",
-      image: emergencyServices,
-      description: "ER24 emergency medical services are now stationed at TUT campuses. In case of medical emergency, call ER24 at 010 205 3087 or dial DID 205 3087 from campus phones.",
-      trending: true
-    },
-    {
-      id: 2,
   category: "safety",
   title: "TUT Launches GBV Prevention Awareness Campaign",
   author: "Student Support & Wellness",
@@ -75,6 +65,17 @@ const CampusNews = () => {
  description: "Last night, students came out in numbers at Pretoria West (Main Campus) to stand united against Gender-Based Violence as part of the ongoing G20 Women’s Shutdown movement. The march saw strong representation from EFF TUT YC leadership, committed ground forces, and West City Students who arrived in large numbers wearing their signature purple residence-branded T-shirts. Their presence demonstrated a shared commitment to making campuses safer for every student. As ResKonnect, we acknowledge, support, and stand firmly with this movement without hesitation or shame. The national Women’s Shutdown is scheduled to take place on the 21st of November, calling for continued solidarity and action.",
  trending: true
     },
+    {
+      id: 2,
+      category: "campus-life",
+      title: "Emergency Medical Services Now Available on Campus",
+      author: "Campus Safety Team",
+      date: "2025-11-05",
+      image: emergencyServices,
+      description: "ER24 emergency medical services are now stationed at TUT campuses. In case of medical emergency, call ER24 at 010 205 3087 or dial DID 205 3087 from campus phones.",
+      trending: true
+    },
+  
     {
       id: 3,
       category: "campus-life",
@@ -274,7 +275,10 @@ const CampusNews = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {newsArticles.filter(article => article.trending).map(article => (
+                  {newsArticles
+  .filter(article => article.trending)
+  .sort((a, b) => new Date(b.date) - new Date(a.date))
+  .map(article => (
                     <div key={article.id} className="flex gap-4 pb-4 border-b last:border-0">
                       <img 
                         src={article.image} 
