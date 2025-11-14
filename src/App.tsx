@@ -21,6 +21,7 @@ import Marketplace from "./pages/Marketplace";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
+import NewsDetails from "@/pages/NewsDetails";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,9 @@ const App = () => {
               </AdminRoute>
             </ProtectedRoute>
           } />
+              <Route path="/news/:id" element={
+                <NewsDetails> 
+                } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
             </Routes>
