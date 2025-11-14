@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Newspaper, Briefcase, Filter, TrendingUp, PenTool, Upload } from "lucide-react";
 import { toast } from "sonner";
-import artsFestival from "@/assets/arts-festival.jpg";
+import say_no_to_gbv from "@/assets/say_no_to_gbv.jpg";
 import heitaMagazine from "@/assets/heita-magazine.jpg";
 import oneRepublicMagazine from "@/assets/one-republic-magazine.png";
 import emergencyServices from "@/assets/emergency-services.png";
@@ -25,9 +25,9 @@ const CampusNews = () => {
   // Hero Carousel Slides
   const heroSlides = [
     {
-      image: artsFestival,
-      title: "TUT Arts & Culture Festival",
-      description: "Celebrating creativity and diversity through vibrant campus arts programs",
+      image: say_no_to_gbv,
+      title: "Say No to GBV",
+      description: "Standing together to protect students and create safer campuses.",
       cta: {
         text: "Learn More",
         action: () => document.getElementById('news-feed')?.scrollIntoView({ behavior: 'smooth' })
@@ -67,13 +67,13 @@ const CampusNews = () => {
     },
     {
       id: 2,
-      category: "culture",
-      title: "TUT Arts Festival Celebrates Cultural Diversity",
-      author: "Arts & Culture Committee",
-      date: "2025-11-04",
-      image: artsFestival,
-      description: "Experience vibrant student creativity through our annual arts festival featuring music, dance, visual arts, and cultural performances from diverse communities.",
-      trending: true
+  category: "safety",
+  title: "TUT Launches GBV Prevention Awareness Campaign",
+  author: "Student Support & Wellness",
+  date: "2025-11-14",
+  image: say_no_to_gbv,
+ description: "Last night, students came out in numbers at Pretoria West (Main Campus) to stand united against Gender-Based Violence as part of the ongoing G20 Women’s Shutdown movement. The march saw strong representation from EFF TUT YC leadership, committed ground forces, and West City Students who arrived in large numbers wearing their signature purple residence-branded T-shirts. Their presence demonstrated a shared commitment to making campuses safer for every student. As ResKonnect, we acknowledge, support, and stand firmly with this movement without hesitation or shame. The national Women’s Shutdown is scheduled to take place on the 21st of November, calling for continued solidarity and action.",
+ trending: true
     },
     {
       id: 3,
