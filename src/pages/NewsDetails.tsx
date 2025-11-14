@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { Copy } from "lucide-react";
 import { useState } from "react";
-import { newsArticles } from "@/data/news"; // adjust path if needed
+import { newsArticles } from "src/data/news"; // adjust path if needed
 
 const NewsDetails = () => {
   const { id } = useParams();
