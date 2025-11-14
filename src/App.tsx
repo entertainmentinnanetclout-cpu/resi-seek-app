@@ -102,9 +102,7 @@ const App = () => {
               </AdminRoute>
             </ProtectedRoute>
           } />
-              <Route path="/news/:id" element={
-                <NewsDetails> 
-                } />
+              <Route path="/news/:id" element={ <NewsDetails />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
             </Routes>
