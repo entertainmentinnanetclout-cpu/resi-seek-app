@@ -231,7 +231,7 @@ const FindMyRes = () => {
                 {showFilters && (
                   <div className="mt-6 pt-6 border-t space-y-6">
                     <div className="grid md:grid-cols-4 gap-4">
-                      {/* Filter controls */}
+                      {/* Filter controls will be rendered here */}
                     </div>
                   </div>
                 )}
@@ -270,21 +270,131 @@ const FindMyRes = () => {
             </div>
             <Separator className="my-12" />
         </div>
-
-        {/* Top Priority Accommodations */}
-        {featuredResidences.length > 0 && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            {/* Featured residences content */}
-          </div>
-        )}
-
+        
         {/* All Accommodations List */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-          {/* All residences content */}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">
+              All Accommodations ({filteredResidences.length})
+            </h2>
+            <Select defaultValue="price-asc">
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                <SelectItem value="distance">Distance</SelectItem>
+                <SelectItem value="newest">Newest First</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Loading accommodations...</p>
+            </div>
+          ) : filteredResidences.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No accommodations found</h3>
+                <p className="text-muted-foreground mb-4">
+                  Try adjusting your filters or search query
+                </p>
+                <Button onClick={resetFilters}>Reset Filters</Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredResidences.map((residence) => (
+                <Card key={residence.id} className="hover:shadow-md transition-shadow">
+                  <div className="flex flex-col md:flex-row">
+                    <CardContent className="flex-1 p-6">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-xl font-bold mb-1">{residence.name}</h3>
+                            <div className="flex items-center text-sm text-muted-foreground gap-1">
+                              <MapPin className="w-4 h-4" />
+                              <span>{residence.address}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-primary">
+                              R{typeof residence.price === 'number' ? residence.price.toLocaleString() : residence.price}
+                            </div>
+                            <div className="text-xs text-muted-foreground">per month</div>
+                          </div>
+                        </div>
+
+                        {residence.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {residence.description}
+                          </p>
+                        )}
+
+                        <div className="flex flex-wrap gap-4 text-sm">
+                          {residence.distance_from_campus && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4 text-muted-foreground" />
+                              <span>{residence.distance_from_campus}km from campus</span>
+                            </div>
+                          )}
+                          {residence.room_type && (
+                            <div className="flex items-center gap-1">
+                              <Bed className="w-4 h-4 text-muted-foreground" />
+                              <span className="capitalize">{residence.room_type}</span>
+                            </div>
+                          )}
+                          {residence.capacity && (
+                            <div className="flex items-center gap-1">
+                              <Users className="w-4 h-4 text-muted-foreground" />
+                              <span>{residence.available_spots || 0} / {residence.capacity} spots available</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {residence.amenities && residence.amenities.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {residence.amenities.slice(0, 5).map((amenity: string) => (
+                              <Badge key={amenity} variant="outline" className="text-xs">
+                                {amenity}
+                              </Badge>
+                            ))}
+                            {residence.amenities.length > 5 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{residence.amenities.length - 5} more
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 pt-2">
+                          <Button 
+                            variant="outline"
+                            onClick={() => handleViewDetails(residence)}
+                          >
+                            View Details
+                          </Button>
+                          <Button 
+                            onClick={() => handleApply(residence)}
+                          >
+                            Apply Now
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Application Modal and Details Modal would be here */}
+      
     </DashboardLayout>
   );
 };
