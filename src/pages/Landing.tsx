@@ -9,7 +9,7 @@ import HeroCarousel from "@/components/HeroCarousel";
 import headerLogo from "@/assets/Main header Desktop.png";
 import footerLogo from "@/assets/FOOTER.png";
 import iconLogo from "@/assets/ICON NO TEXT.png";
-import say_no_to_gbv from "@/say_no_to_gbv.jpg";
+import artsFestival from "@/assets/arts-festival.jpg";
 import campusDinokeng from "@/assets/campus-dinokeng.jpg";
 import studentStudying from "@/assets/student-studying.jpg";
 import studentsCelebration from "@/assets/students-celebration.jpg";
@@ -32,7 +32,7 @@ const Landing = () => {
   const heroSlides = [
     {
       image: campusDinokeng,
-      title: "Welcome to TUT Main Campus",
+      title: "Welcome to TUT Dinokeng Campus",
       description: "Find your perfect student accommodation near campus - 400+ verified options available",
       cta: {
         text: "Explore Residences",
@@ -40,11 +40,11 @@ const Landing = () => {
       }
     },
     {
-      image: say_no_to_gbv,
-      title: "Say No to GBV",
-      description: "Standing together to protect students and create safer campuses.",
+      image: artsFestival,
+      title: "Experience Campus Life",
+      description: "Join vibrant campus activities and cultural celebrations throughout the year",
       cta: {
-        text: "Learn More",
+        text: "Get Started",
         action: () => navigate("/auth")
       }
     },
@@ -226,8 +226,8 @@ const Landing = () => {
             <div>
               <h4 className="font-semibold mb-4 text-sm md:text-base">Contact</h4>
               <ul className="space-y-2 text-xs md:text-sm text-muted-foreground">
-                <li>Email: ResKonnect@gmail.com</li>
-                <li>Phone: +27 63 732 3192</li>
+                <li>Email: info@reskonnect.co.za</li>
+                <li>Phone: +27 12 345 6789</li>
               </ul>
             </div>
           </div>
