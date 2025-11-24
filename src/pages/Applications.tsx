@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, XCircle, Eye, Search, Filter } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, Eye, Search, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Applications = () => {
   const { user } = useAuth();
@@ -16,6 +18,7 @@ const Applications = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [roomTypeFilter, setRoomTypeFilter] = useState("all");
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -26,7 +29,7 @@ const Applications = () => {
       }
 
       setLoading(true);
-      const residenceIds = applications.map(app => app.residence_id);
+      const residenceIds = [...new Set(applications.map(app => app.residence_id))];
       const { data: residences, error: resError } = await supabase
         .from('residences')
         .select('*')
@@ -41,7 +44,7 @@ const Applications = () => {
       const detailed = applications.map(app => {
         const residence = residences.find(res => res.id === app.residence_id);
         return { ...app, residence };
-      });
+      }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       setDetailedApplications(detailed);
       setLoading(false);
@@ -50,12 +53,20 @@ const Applications = () => {
     fetchDetails();
   }, [applications, applicationsLoading]);
 
-  const filteredApplications = detailedApplications.filter(app => {
+  const filteredApplications = useMemo(() => detailedApplications.filter(app => {
       const searchTermLower = searchTerm.toLowerCase();
       const matchesSearch = searchTerm ? app.residence?.name.toLowerCase().includes(searchTermLower) : true;
-      const matchesFilter = statusFilter !== "all" ? app.status === statusFilter : true;
-      return matchesSearch && matchesFilter;
-  });
+      const matchesStatus = statusFilter !== "all" ? app.status === statusFilter : true;
+      const matchesRoomType = roomTypeFilter !== "all" ? app.residence?.room_type === roomTypeFilter : true;
+      return matchesSearch && matchesStatus && matchesRoomType;
+  }), [detailedApplications, searchTerm, statusFilter, roomTypeFilter]);
+  
+  const resetFilter = (filter: 'status' | 'room' | 'search') => {
+      if (filter === 'status') setStatusFilter('all');
+      if (filter === 'room') setRoomTypeFilter('all');
+      if (filter === 'search') setSearchTerm('');
+      toast.info(`Cleared ${filter} filter.`);
+  }
 
   const getStatusProps = (status: string) => {
     switch (status) {
@@ -65,19 +76,19 @@ const Applications = () => {
       default: return { Icon: Clock, color: "gray", label: "Unknown", step: 0 };
     }
   };
-
+  
   const ApplicationCard = ({ application }: { application: any }) => {
       const { Icon, color, label, step } = getStatusProps(application.status);
       const steps = ["Submitted", "Decision"];
       return (
-        <Card className={`bg-surface shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-${color}-500`}>
+        <Card className={`bg-card shadow-sm hover:shadow-xl transition-all duration-300 border-l-4 border-${color}-500 animate-fade-in`}>
             <CardHeader>
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                     <div>
                         <CardTitle className="text-foreground">{application.residence?.name}</CardTitle>
                         <CardDescription>{application.residence?.address}</CardDescription>
                     </div>
-                    <Badge variant="outline" className={`border-${color}-500/50 bg-${color}-500/10 text-${color}-700`}>
+                    <Badge variant="outline" className={`border-${color}-500/50 bg-${color}-500/10 text-${color}-700 shrink-0`}>
                         <Icon className="w-3 h-3 mr-1" />
                         {label}
                     </Badge>
@@ -85,18 +96,18 @@ const Applications = () => {
             </CardHeader>
             <CardContent>
                 <div className="mb-4">
-                    <div className="flex justify-between items-center text-xs text-muted-foreground mb-2">
+                    <div className="flex justify-between items-center text-xs text-muted-foreground mb-2 px-1">
                         {steps.map((s, i) => <span key={i} className={i + 1 <= step ? `text-${color}-600 font-semibold` : ""}>{s}</span>)}
                     </div>
-                    <div className="relative w-full h-1 bg-gray-200 rounded-full">
-                        <div className={`absolute top-0 left-0 h-1 bg-${color}-500 rounded-full transition-all duration-500`} style={{ width: `${step / steps.length * 100}%` }}></div>
+                    <div className="relative w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full">
+                        <div className={`absolute top-0 left-0 h-1.5 bg-${color}-500 rounded-full transition-all duration-500`} style={{ width: `${(step / (steps.length -1)) * 100}%` }}></div>
                     </div>
                 </div>
-                <div className="grid md:grid-cols-4 gap-4">
-                    {/* ... content ... */}
+                <div className="text-sm text-muted-foreground mt-4">
+                    Applied on {new Date(application.created_at).toLocaleDateString()}
                 </div>
                 <div className="mt-4 pt-4 border-t border-border">
-                    <Button variant="outline">View Details</Button>
+                    <Button variant="outline" aria-label={`View details for ${application.residence?.name}`}>View Details</Button>
                 </div>
             </CardContent>
         </Card>
@@ -106,9 +117,9 @@ const Applications = () => {
   const SkeletonLoader = () => (
     <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
-            <Card key={i} className="bg-surface shadow-sm animate-pulse">
-                <CardHeader><div className="h-6 bg-gray-300 rounded w-3/4"></div><div className="h-4 mt-2 bg-gray-300 rounded w-1/2"></div></CardHeader>
-                <CardContent><div className="h-10 bg-gray-300 rounded"></div><div className="mt-4 pt-4 border-t h-8 bg-gray-300 rounded w-24"></div></CardContent>
+            <Card key={i} className="bg-card shadow-sm animate-pulse" aria-hidden="true">
+                <CardHeader><div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div><div className="h-4 mt-2 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div></CardHeader>
+                <CardContent><div className="h-10 bg-gray-300 dark:bg-gray-600 rounded"></div><div className="mt-4 pt-4 border-t h-8 bg-gray-300 dark:bg-gray-600 rounded w-24"></div></CardContent>
             </Card>
         ))}
     </div>
@@ -116,29 +127,38 @@ const Applications = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6 md:p-8 bg-background">
+      <div className="p-4 md:p-8 bg-background">
         <div className="max-w-6xl mx-auto space-y-8">
           <div>
             <h1 className="text-3xl font-bold mb-2 text-foreground">My Applications</h1>
-            <p className="text-muted-foreground">Track your residence applications and their status</p>
+            <p className="text-muted-foreground">Track your residence applications and their status.</p>
           </div>
-          <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                  <Input placeholder="Search by residence name..." className="pl-10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-              </div>
-              <div className="flex gap-2">
-                  <Button variant={statusFilter === "all" ? "default" : "outline"} onClick={() => setStatusFilter("all")}><Filter className="w-4 h-4 mr-2"/>All</Button>
-                  <Button variant={statusFilter === "submitted" ? "default" : "outline"} onClick={() => setStatusFilter("submitted")}>Pending</Button>
-                  <Button variant={statusFilter === "approved" ? "default" : "outline"} onClick={() => setStatusFilter("approved")}>Approved</Button>
-                  <Button variant={statusFilter === "rejected" ? "default" : "outline"} onClick={() => setStatusFilter("rejected")}>Rejected</Button>
-              </div>
-          </div>
+
+          <Card className="p-4 sm:p-6 sticky top-2 z-10 bg-card/80 backdrop-blur-sm">
+            <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                    <label htmlFor="search-applications" className="sr-only">Search by residence</label>
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                    <Input id="search-applications" aria-label="Search by residence name" placeholder="Search by residence name..." className="pl-10 h-11" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="flex-1"><label htmlFor="status-filter" className="sr-only">Filter by status</label><Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger id="status-filter" className="h-11" aria-label="Filter by status"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="submitted">Pending</SelectItem><SelectItem value="approved">Approved</SelectItem><SelectItem value="rejected">Rejected</SelectItem></SelectContent></Select></div>
+                    <div className="flex-1"><label htmlFor="room-type-filter" className="sr-only">Filter by room type</label><Select value={roomTypeFilter} onValueChange={setRoomTypeFilter}><SelectTrigger id="room-type-filter" className="h-11" aria-label="Filter by room type"><SelectValue placeholder="Room Type" /></SelectTrigger><SelectContent><SelectItem value="all">All Room Types</SelectItem><SelectItem value="single">Single</SelectItem><SelectItem value="shared">Shared</SelectItem><SelectItem value="apartment">Apartment</SelectItem></SelectContent></Select></div>
+                </div>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-4">
+                {searchTerm && <Badge variant="secondary" className="pl-2.5">Search: "{searchTerm}" <Button onClick={() => resetFilter('search')} variant="ghost" size="icon" className="h-5 w-5 ml-1"><X className="w-3 h-3"/></Button></Badge>}
+                {statusFilter !== "all" && <Badge variant="secondary" className="pl-2.5 capitalize">Status: {statusFilter} <Button onClick={() => resetFilter('status')} variant="ghost" size="icon" className="h-5 w-5 ml-1"><X className="w-3 h-3"/></Button></Badge>}
+                {roomTypeFilter !== "all" && <Badge variant="secondary" className="pl-2.5 capitalize">Room: {roomTypeFilter} <Button onClick={() => resetFilter('room')} variant="ghost" size="icon" className="h-5 w-5 ml-1"><X className="w-3 h-3"/></Button></Badge>}
+            </div>
+          </Card>
+          
           {loading ? <SkeletonLoader /> : filteredApplications.length === 0 ? (
-            <Card className="bg-surface shadow-sm text-center py-12">
+            <Card className="bg-card shadow-sm text-center py-16 transition-all">
               <Eye className="w-12 h-12 mx-auto text-muted-foreground" />
               <h3 className="mt-4 text-lg font-semibold">No Applications Found</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Your search or filter returned no results.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Your search or filter returned no results. Try adjusting your filters.</p>
+              <Button variant="link" onClick={() => { resetFilter('status'); resetFilter('room'); resetFilter('search');}}>Clear all filters</Button>
             </Card>
           ) : (
             <div className="space-y-4">

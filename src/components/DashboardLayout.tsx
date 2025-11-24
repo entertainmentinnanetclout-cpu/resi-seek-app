@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import desktopLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import mobileLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -34,7 +35,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-white text-foreground">
+    <div className="flex flex-col h-full bg-card text-foreground">
       <div className="p-6 border-b border-border">
         <div className="flex flex-col items-center mb-1">
           <img src={desktopLogo} alt="ResKonnect" className="h-16 w-auto mb-2" />
@@ -65,7 +66,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </nav>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border flex items-center justify-between">
         <Button 
           variant="ghost" 
           className="w-full justify-start" 
@@ -74,6 +75,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <LogOut className="w-5 h-5 mr-3" />
           Logout
         </Button>
+        <ThemeToggle />
       </div>
     </div>
   );
@@ -88,20 +90,23 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Mobile Header */}
-        <header className="md:hidden border-b border-border bg-surface p-4 flex items-center justify-between">
+        <header className="md:hidden border-b border-border bg-card p-4 flex items-center justify-between">
           <div className="flex items-center">
             <img src={mobileLogo} alt="ResKonnect" className="h-8 w-auto" />
           </div>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="w-5 h-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-64 bg-white shadow-lg">
-              <SidebarContent />
-            </SheetContent>
-          </Sheet>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-64 bg-card shadow-lg">
+                <SidebarContent />
+              </SheetContent>
+            </Sheet>
+          </div>
         </header>
 
         {/* Page Content */}
