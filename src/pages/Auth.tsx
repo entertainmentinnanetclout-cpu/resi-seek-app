@@ -224,7 +224,7 @@ const Auth = () => {
               <Button 
                 type="submit" 
                 variant="default" 
-                className="w-full" 
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                 disabled={isLoading}
               >
                 {isLoading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}

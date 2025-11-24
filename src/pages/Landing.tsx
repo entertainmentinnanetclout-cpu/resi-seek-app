@@ -98,7 +98,7 @@ const Landing = () => {
             <Button variant="ghost" onClick={() => navigate("/auth")}>
               Sign In
             </Button>
-            <Button variant="default" onClick={() => navigate("/auth")}>
+            <Button variant="default" onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground hover:bg-primary/90">
               Get Started
             </Button>
           </div>
@@ -142,7 +142,7 @@ const Landing = () => {
               <p className="text-sm md:text-base text-muted-foreground mb-6 leading-relaxed">
                 Our platform streamlines applications, ensures transparency, and puts students first. Whether you're looking for budget-friendly options or premium facilities, we've got you covered.
               </p>
-              <Button variant="default" onClick={() => navigate("/auth")} className="w-full sm:w-auto">
+              <Button variant="default" onClick={() => navigate("/auth")} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
                 Get Started
               </Button>
             </div>

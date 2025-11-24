@@ -153,7 +153,7 @@ const Profile = () => {
               </p>
             </div>
             {!isEditing && (
-              <Button variant="default" onClick={() => setIsEditing(true)}>
+              <Button variant="default" onClick={() => setIsEditing(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
                 Edit Profile
               </Button>
             )}
@@ -279,7 +279,7 @@ const Profile = () => {
                     <Button
                       type="submit"
                       variant="default"
-                      className="flex-1"
+                      className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
                       disabled={isSaving}
                     >
                       {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}

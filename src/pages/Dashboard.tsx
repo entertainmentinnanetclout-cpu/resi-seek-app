@@ -62,7 +62,13 @@ const Dashboard = () => {
       )
     : 0;
   
-  const profileComplete = profileCompletion === 100;
+  const profileIsComplete = 
+    profileData?.full_name &&
+    profileData?.student_number &&
+    profileData?.phone &&
+    profileData?.campus &&
+    profileData?.course &&
+    profileData?.year_of_study;
 
   // Carousel slides for marketing
   const carouselSlides = [
@@ -154,23 +160,23 @@ const Dashboard = () => {
                 <div>
                   <CardTitle className="flex items-center gap-2 text-2xl text-card-foreground">
                     Profile Status
-                    {profileComplete ? (
+                    {profileIsComplete ? (
                       <CheckCircle2 className="w-6 h-6 text-success" />
                     ) : (
                       <AlertCircle className="w-6 h-6 text-warning" />
                     )}
                   </CardTitle>
                   <CardDescription className="text-base mt-1">
-                    {profileComplete 
+                    {profileIsComplete
                       ? "Your profile is complete and you can apply for residences" 
                       : "Complete your profile to start applying"}
                   </CardDescription>
                 </div>
-                {!profileComplete && (
+                {!profileIsComplete && (
                   <Button 
                     variant="premium" 
                     size="lg"
-                    onClick={() => navigate("/setup-profile")}
+                    onClick={() => navigate("/dashboard/profile")}
                     className="w-full md:w-auto"
                   >
                     Complete Profile
@@ -200,7 +206,7 @@ const Dashboard = () => {
               label="Profile Completion"
               gradient="bg-gradient-secondary"
               trend={
-                profileComplete
+                profileIsComplete
                   ? { value: "Complete", positive: true }
                   : undefined
               }
@@ -236,16 +242,30 @@ const Dashboard = () => {
           <div>
             <h2 className="text-3xl font-bold mb-6 font-display text-foreground">Quick Actions</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {quickLinks.map((link) => (
-                <QuickActionCard
-                  key={link.path}
-                  icon={link.icon}
-                  title={link.title}
-                  description={link.description}
-                  gradient={link.gradient}
-                  onClick={() => navigate(link.path)}
-                />
-              ))}
+              {quickLinks.map((link) => {
+                if (link.title === "Find Residences" && !profileIsComplete) {
+                  return (
+                    <QuickActionCard
+                      key="profile-incomplete"
+                      icon={AlertCircle}
+                      title="Profile Incomplete"
+                      description="Please complete your profile before applying for accommodation."
+                      gradient="bg-gradient-to-br from-gray-400 to-gray-500"
+                      onClick={() => navigate('/dashboard/profile')}
+                    />
+                  );
+                }
+                return (
+                  <QuickActionCard
+                    key={link.path}
+                    icon={link.icon}
+                    title={link.title}
+                    description={link.description}
+                    gradient={link.gradient}
+                    onClick={() => navigate(link.path)}
+                  />
+                );
+              })}
             </div>
           </div>
 

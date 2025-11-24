@@ -34,7 +34,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-surface text-foreground">
+    <div className="flex flex-col h-full bg-white text-foreground">
       <div className="p-6 border-b border-border">
         <div className="flex flex-col items-center mb-1">
           <img src={desktopLogo} alt="ResKonnect" className="h-16 w-auto mb-2" />
@@ -98,7 +98,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-64 bg-surface">
+            <SheetContent side="left" className="p-0 w-64 bg-white shadow-lg">
               <SidebarContent />
             </SheetContent>
           </Sheet>

@@ -101,7 +101,7 @@ const Applications = () => {
                 <p className="text-muted-foreground mb-6">
                   You haven't applied to any residences yet. Start browsing to find your perfect accommodation!
                 </p>
-                <Button variant="default">Find Residences</Button>
+                <Button variant="default" className="bg-primary text-primary-foreground hover:bg-primary/90">Find Residences</Button>
               </CardContent>
             </Card>
           ) : (
