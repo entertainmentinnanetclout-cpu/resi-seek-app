@@ -102,34 +102,30 @@ const Dashboard = () => {
   ];
 
   const quickLinks = [
-    {
-      icon: Search,
-      title: "Find Residences",
-      description: "Browse available accommodation",
-      gradient: "bg-gradient-primary",
-      path: "/findmyres"
-    },
-    {
-      icon: Newspaper,
-      title: "Campus News",
-      description: "Latest stories and opportunities",
-      gradient: "bg-gradient-accent",
-      path: "/campus-news"
-    },
-    {
-      icon: FileText,
-      title: "My Applications",
-      description: "Track your residence applications",
-      gradient: "bg-gradient-secondary",
-      path: "/dashboard/applications"
-    },
-    {
-      icon: User,
-      title: "My Profile",
-      description: "Update your information",
-      gradient: "bg-gradient-dark",
-      path: "/dashboard/profile"
-    }
+        {
+            icon: User,
+            title: "Complete Profile",
+            description: "Finish your profile to apply for housing.",
+            gradient: "bg-gradient-to-br from-blue-500 to-indigo-600",
+            path: "/dashboard/profile",
+            action: () => navigate("/dashboard/profile"),
+        },
+        {
+            icon: Search,
+            title: "Apply for Accommodation",
+            description: "Browse and apply to residences.",
+            gradient: "bg-gradient-to-br from-green-500 to-teal-600",
+            path: "/findmyres",
+            action: () => navigate("/findmyres"),
+        },
+        {
+            icon: FileText,
+            title: "Track Applications",
+            description: "Check the status of your applications.",
+            gradient: "bg-gradient-to-br from-purple-500 to-pink-600",
+            path: "/dashboard/applications",
+            action: () => navigate("/dashboard/applications"),
+        },
   ];
 
   if (loading) {
@@ -192,84 +188,35 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              icon={ShoppingBag}
-              value={listingsCount}
-              label="My Marketplace Listings"
-              gradient="bg-gradient-primary"
-            />
-            <StatCard
-              icon={Search}
-              value={profileCompletion}
-              label="Profile Completion"
-              gradient="bg-gradient-secondary"
-              trend={
-                profileIsComplete
-                  ? { value: "Complete", positive: true }
-                  : undefined
-              }
-            />
-            <StatCard
-              icon={Newspaper}
-              value="Live"
-              label="Campus Updates"
-              gradient="bg-gradient-accent"
-            />
-          </div>
-
-          {/* Explore Opportunities Banner */}
-          <Card className="bg-gradient-accent text-foreground shadow-premium border-0 overflow-hidden group cursor-pointer" onClick={() => navigate("/campus-news")}>
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20" />
-            <CardContent className="p-8 relative">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex items-center gap-6 text-center md:text-left">
-                  <Newspaper className="w-16 h-16 text-foreground group-hover:scale-110 transition-transform flex-shrink-0" />
-                  <div>
-                    <h3 className="text-2xl font-bold mb-2 text-foreground">Explore Campus Opportunities</h3>
-                    <p className="text-foreground/80">Latest news, student jobs, and campus events</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="lg" className="bg-foreground text-background hover:bg-foreground/90 border-foreground w-full md:w-auto flex-shrink-0">
-                  Explore Now
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Quick Actions */}
           <div>
             <h2 className="text-3xl font-bold mb-6 font-display text-foreground">Quick Actions</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {quickLinks.map((link) => {
-                if (link.title === "Find Residences" && !profileIsComplete) {
-                  return (
-                    <QuickActionCard
-                      key="profile-incomplete"
-                      icon={AlertCircle}
-                      title="Profile Incomplete"
-                      description="Please complete your profile before applying for accommodation."
-                      gradient="bg-gradient-to-br from-gray-400 to-gray-500"
-                      onClick={() => navigate('/dashboard/profile')}
-                    />
-                  );
-                }
-                return (
-                  <QuickActionCard
-                    key={link.path}
-                    icon={link.icon}
-                    title={link.title}
-                    description={link.description}
-                    gradient={link.gradient}
-                    onClick={() => navigate(link.path)}
-                  />
-                );
-              })}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {quickLinks.map((link) => (
+                  <div
+                      key={link.path}
+                      className={`relative overflow-hidden rounded-lg shadow-lg transform transition-transform hover:scale-105 active:scale-95 cursor-pointer ${link.gradient} text-white p-6 flex flex-col justify-between`}
+                      onClick={link.action}>
+                      <div className="flex items-center gap-4">
+                          <link.icon className="w-8 h-8" />
+                          <div>
+                              <h3 className="text-xl font-bold">{link.title}</h3>
+                              <p className="text-sm opacity-80">{link.description}</p>
+                          </div>
+                      </div>
+                  </div>
+              ))}
             </div>
           </div>
 
         </div>
+      </div>
+      <div className="md:hidden fixed bottom-4 right-4 z-50">
+          <Button
+              onClick={() => navigate("/findmyres")}
+              className="rounded-full shadow-lg text-lg px-6 py-6 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-transform">
+              Apply Now
+          </Button>
       </div>
     </DashboardLayout>
   );

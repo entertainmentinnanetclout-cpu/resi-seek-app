@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const FindMyRes = () => {
   const { user } = useAuth();
@@ -42,16 +43,12 @@ const FindMyRes = () => {
   const [applicationNotes, setApplicationNotes] = useState("");
 
   const trustedPartners = [
-    { name: 'West End Residency', location: '11 President Steyn Street, Pretoria West', image: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?q=80&w=800' },
-    { name: 'Study Haven', location: '29 Carl Street, Pretoria West', image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=800' },
-    { name: 'Ekhaya Junction', location: '41 Justice Mahomed Street, Sunnyside', image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=800' },
-    { name: 'Campus Lodge', location: '115 Walker Street, Sunnyside', image: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?q=80&w=800' },
-    { name: 'Future Heights', location: '28 Klapper Street, Danville', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800' },
-    { name: 'Urban Hub', location: '44 Van der Hoff Road, Pretoria West', image: 'https://images.unsplash.com/photo-1576941089067-2de3c901e126?q=80&w=800' },
-    { name: 'The Lofts', location: '56 Troye Street, Sunnyside', image: 'https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?q=80&w=800' },
-    { name: 'Cedar Place', location: '68 Belvedere Street, Arcadia', image: 'https://images.unsplash.com/photo-1605276374104-5de67d609b8f?q=80&w=800' },
-    { name: 'Kopano Court', location: '93 Hamilton Street, Arcadia', image: 'https://images.unsplash.com/photo-1598228723793-52759bba239c?q=80&w=800' },
-    { name: 'Sunnyside Square', location: 'Corner Reitz & Leyds Street, Sunnyside', image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=800' }
+    { name: 'West End Residency', location: '11 President Steyn Street, Pretoria West', image: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?q=80&w=800', rating: 4.8, verified: true },
+    { name: 'Study Haven', location: '29 Carl Street, Pretoria West', image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=800', rating: 4.9, verified: true },
+    { name: 'Ekhaya Junction', location: '41 Justice Mahomed Street, Sunnyside', image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=800', rating: 4.7, verified: true },
+    { name: 'Campus Lodge', location: '115 Walker Street, Sunnyside', image: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?q=80&w=800', rating: 4.6, verified: true },
+    { name: 'Future Heights', location: '28 Klapper Street, Danville', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800', rating: 4.8, verified: true },
+    { name: 'Urban Hub', location: '44 Van der Hoff Road, Pretoria West', image: 'https://images.unsplash.com/photo-1576941089067-2de3c901e126?q=80&w=800', rating: 4.5, verified: true },
   ];
 
   useEffect(() => {
@@ -182,9 +179,29 @@ const FindMyRes = () => {
     setRoomType("");
     setSelectedAmenities([]);
     setCampus("all");
+    toast.success("Filters reset successfully!");
   };
 
   const amenitiesList = ["WiFi", "Parking", "Security", "Study Room", "Laundry", "Gym", "Pool", "Kitchen"];
+
+  const SkeletonCard = () => (
+    <Card className="overflow-hidden animate-pulse">
+        <div className="flex flex-col md:flex-row">
+            <div className="md:w-1/3 h-48 md:h-auto bg-gray-300"></div>
+            <CardContent className="flex-1 p-4 sm:p-6">
+                <div className="space-y-4">
+                    <div className="h-6 bg-gray-300 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                    <div className="h-4 bg-gray-300 rounded w-full"></div>
+                    <div className="flex gap-2 pt-4">
+                        <div className="h-8 bg-gray-300 rounded w-24"></div>
+                        <div className="h-8 bg-gray-300 rounded w-24"></div>
+                    </div>
+                </div>
+            </CardContent>
+        </div>
+    </Card>
+  );
 
   return (
     <DashboardLayout>
@@ -194,11 +211,10 @@ const FindMyRes = () => {
             <div className="text-center mb-8">
               <h1 className="text-3xl sm:text-4xl font-bold mb-3">Find Your Perfect Residence</h1>
               <p className="text-muted-foreground text-md sm:text-lg">
-                Browse 400+ verified accommodations across Pretoria & Tshwane
+                Browse 360+ verified accommodations across Pretoria & Tshwane
               </p>
             </div>
-            <Card className="shadow-lg">
-              <CardContent className="p-4 sm:p-6">
+            <div className={`sticky top-0 z-40 bg-background/80 backdrop-blur-lg rounded-lg shadow-lg p-4 sm:p-6`}>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
@@ -210,7 +226,7 @@ const FindMyRes = () => {
                     />
                   </div>
                   <Button 
-                    variant="outline" 
+                    variant={showFilters ? "default" : "outline"}
                     size="lg"
                     onClick={() => setShowFilters(!showFilters)}
                     className="gap-2 w-full sm:w-auto flex-shrink-0"
@@ -225,7 +241,7 @@ const FindMyRes = () => {
                       <div className="space-y-2">
                         <Label>Price Range</Label>
                         <Select value={priceRange} onValueChange={setPriceRange}>
-                          <SelectTrigger><SelectValue placeholder="Any price" /></SelectTrigger>
+                          <SelectTrigger className={priceRange ? "border-primary" : ""}><SelectValue placeholder="Any price" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="0-2500">Under R2,500</SelectItem>
                             <SelectItem value="2500-3500">R2,500 - R3,500</SelectItem>
@@ -238,7 +254,7 @@ const FindMyRes = () => {
                       <div className="space-y-2">
                         <Label>Distance</Label>
                         <Select value={distanceRange} onValueChange={setDistanceRange}>
-                          <SelectTrigger><SelectValue placeholder="Any distance" /></SelectTrigger>
+                          <SelectTrigger className={distanceRange ? "border-primary" : ""}><SelectValue placeholder="Any distance" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">Any distance</SelectItem>
                             <SelectItem value="0-1">Within 1km</SelectItem>
@@ -251,7 +267,7 @@ const FindMyRes = () => {
                       <div className="space-y-2">
                         <Label>Room Type</Label>
                         <Select value={roomType} onValueChange={setRoomType}>
-                          <SelectTrigger><SelectValue placeholder="Any type" /></SelectTrigger>
+                          <SelectTrigger className={roomType ? "border-primary" : ""}><SelectValue placeholder="Any type" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">Any type</SelectItem>
                             <SelectItem value="single">Single Room</SelectItem>
@@ -264,7 +280,7 @@ const FindMyRes = () => {
                       <div className="space-y-2">
                         <Label>Campus</Label>
                         <Select value={campus} onValueChange={setCampus}>
-                          <SelectTrigger><SelectValue placeholder="All campuses" /></SelectTrigger>
+                          <SelectTrigger className={campus !== "all" ? "border-primary" : ""}><SelectValue placeholder="All campuses" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All campuses</SelectItem>
                             <SelectItem value="Pretoria West">Pretoria West (Main Campus)</SelectItem>
@@ -289,8 +305,7 @@ const FindMyRes = () => {
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
           </div>
         </div>
 
@@ -304,21 +319,32 @@ const FindMyRes = () => {
                     </div>
                 </div>
             </div>
-            <div className="flex space-x-6 pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 overflow-x-auto">
+            <div className="flex space-x-6 pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 overflow-x-auto snap-x snap-mandatory">
                 {trustedPartners.map((partner, index) => (
-                    <Card key={index} className="min-w-[280px] sm:min-w-[300px] flex-shrink-0 overflow-hidden group cursor-pointer">
-                        <div className="relative h-40 sm:h-48">
-                            <img src={partner.image} alt={partner.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                            <Badge className="absolute top-3 right-3 bg-yellow-400 text-blue-900 font-bold">Trusted Landlord</Badge>
-                        </div>
-                        <CardContent className="p-4">
-                            <h3 className="font-semibold text-lg truncate">{partner.name}</h3>
-                            <div className="flex items-center text-sm text-muted-foreground mt-1">
-                                <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-                                <span className="truncate">{partner.location}</span>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <TooltipProvider key={index}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Card className="min-w-[280px] sm:min-w-[300px] flex-shrink-0 overflow-hidden group cursor-pointer snap-center transform transition-transform hover:scale-105">
+                                    <div className="relative h-40 sm:h-48">
+                                        <img src={partner.image} alt={partner.name} className="w-full h-full object-cover" />
+                                        <Badge className="absolute top-3 right-3 bg-yellow-400 text-blue-900 font-bold flex items-center gap-1">
+                                            <ShieldCheck className="w-4 h-4" /> Trusted Landlord
+                                        </Badge>
+                                    </div>
+                                    <CardContent className="p-4">
+                                        <h3 className="font-semibold text-lg truncate">{partner.name}</h3>
+                                        <div className="flex items-center text-sm text-muted-foreground mt-1">
+                                            <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+                                            <span className="truncate">{partner.location}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{partner.name} - Rating: {partner.rating}/5</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 ))}
             </div>
             <Separator className="my-8 sm:my-12" />
@@ -327,7 +353,7 @@ const FindMyRes = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <h2 className="text-2xl font-bold whitespace-nowrap">
-              All Accommodations ({filteredResidences.length})
+              All Accommodations ({loading ? "..." : filteredResidences.length})
             </h2>
             <Select defaultValue="price-asc">
               <SelectTrigger className="w-full sm:w-48">
@@ -343,7 +369,9 @@ const FindMyRes = () => {
           </div>
 
           {loading ? (
-            <div className="text-center py-12"><p className="text-muted-foreground">Loading accommodations...</p></div>
+            <div className="space-y-4">
+                {[...Array(5)].map((_, i) => <SkeletonCard key={i} />)}
+            </div>
           ) : filteredResidences.length === 0 ? (
             <Card>
               <CardContent className="text-center p-6 sm:py-12">
