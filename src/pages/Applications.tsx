@@ -52,21 +52,21 @@ const Applications = () => {
     switch (status) {
       case "submitted":
         return (
-          <Badge className="bg-warning/10 text-warning border-warning/20">
+          <Badge variant="outline" className="border-yellow-500/50 bg-yellow-500/10 text-yellow-700">
             <Clock className="w-3 h-3 mr-1" />
             Pending
           </Badge>
         );
       case "approved":
         return (
-          <Badge className="bg-success/10 text-success border-success/20">
+          <Badge variant="outline" className="border-green-500/50 bg-green-500/10 text-green-700">
             <CheckCircle2 className="w-3 h-3 mr-1" />
             Approved
           </Badge>
         );
       case "rejected":
         return (
-          <Badge className="bg-destructive/10 text-destructive border-destructive/20">
+          <Badge variant="outline" className="border-red-500/50 bg-red-500/10 text-red-700">
             <XCircle className="w-3 h-3 mr-1" />
             Rejected
           </Badge>
@@ -78,11 +78,11 @@ const Applications = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6 md:p-8">
+      <div className="p-6 md:p-8 bg-background">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Header */}
           <div>
-            <h1 className="text-3xl font-bold mb-2">My Applications</h1>
+            <h1 className="text-3xl font-bold mb-2 text-foreground">My Applications</h1>
             <p className="text-muted-foreground">
               Track your residence applications and their status
             </p>
@@ -92,12 +92,12 @@ const Applications = () => {
           {loading ? (
             <p>Loading applications...</p>
           ) : detailedApplications.length === 0 ? (
-            <Card className="shadow-card">
+            <Card className="bg-surface shadow-sm">
               <CardContent className="p-12 text-center">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Eye className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">No Applications Yet</h3>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">No Applications Yet</h3>
                 <p className="text-muted-foreground mb-6">
                   You haven't applied to any residences yet. Start browsing to find your perfect accommodation!
                 </p>
@@ -107,11 +107,11 @@ const Applications = () => {
           ) : (
             <div className="space-y-4">
               {detailedApplications.map((application) => (
-                <Card key={application.id} className="shadow-card hover:shadow-hover transition-smooth">
+                <Card key={application.id} className="bg-surface shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle>{application.residence?.name}</CardTitle>
+                        <CardTitle className="text-foreground">{application.residence?.name}</CardTitle>
                         <CardDescription>{application.residence?.address}</CardDescription>
                       </div>
                       {getStatusBadge(application.status)}
@@ -121,25 +121,23 @@ const Applications = () => {
                     <div className="grid md:grid-cols-4 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Price</p>
-                        <p className="font-semibold">
+                        <p className="font-semibold text-foreground">
                           R{typeof application.residence?.price === 'number' ? application.residence.price.toLocaleString() : application.residence?.price}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Application Date</p>
-                        <p className="font-semibold">
+                        <p className="font-semibold text-foreground">
                           {new Date(application.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="md:col-span-2">
                         <p className="text-sm text-muted-foreground mb-1">Notes</p>
-                        <p className="text-sm">{application.notes ?? 'No notes provided'}</p>
+                        <p className="text-sm text-foreground">{application.notes ?? 'No notes provided'}</p>
                       </div>
                     </div>
-                    <div className="mt-4 pt-4 border-t">
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <Button variant="outline">View Details</Button>
                     </div>
                   </CardContent>
                 </Card>

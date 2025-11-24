@@ -1,4 +1,4 @@
-import { Shield, MapPin, DollarSign, FileCheck, ArrowRight } from "lucide-react";
+import { Shield, MapPin, DollarSign, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,11 +19,6 @@ const Landing = () => {
 
   const handleContactSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const name = formData.get("name");
-    const email = formData.get("email");
-    const message = formData.get("message");
-    
     // TODO: Send to backend/email service
     toast.success("Thank you! We'll get back to you soon.");
     e.currentTarget.reset();
@@ -92,9 +87,9 @@ const Landing = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Navigation */}
-      <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+      <nav className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <img src={headerLogo} alt="ResKonnect" className="h-10 w-auto" />
@@ -121,10 +116,10 @@ const Landing = () => {
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-8 md:mb-12">Why Choose ResKonnect?</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {features.map((feature, index) => (
-              <Card key={index} className="shadow-card hover:shadow-premium transition-smooth group">
+              <Card key={index} className="bg-surface shadow-sm hover:shadow-lg transition-shadow">
                 <CardContent className="p-6 text-center">
-                  <div className="w-16 h-16 bg-gradient-accent rounded-full flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-smooth">
-                    <feature.icon className="w-8 h-8 text-accent-foreground" />
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <feature.icon className="w-8 h-8 text-primary-foreground" />
                   </div>
                   <h3 className="text-lg md:text-xl font-semibold mb-2">{feature.title}</h3>
                   <p className="text-sm md:text-base text-muted-foreground">{feature.description}</p>
@@ -136,7 +131,7 @@ const Landing = () => {
       </section>
 
       {/* About Section */}
-      <section className="py-12 md:py-20 bg-secondary/30">
+      <section className="py-12 md:py-20 bg-surface">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center max-w-6xl mx-auto">
             <div>
@@ -151,7 +146,7 @@ const Landing = () => {
                 Get Started
               </Button>
             </div>
-            <div className="bg-accent/10 rounded-2xl p-8 h-64 md:h-80 flex items-center justify-center">
+            <div className="bg-primary/10 rounded-2xl p-8 h-64 md:h-80 flex items-center justify-center">
               <img src={iconLogo} alt="ResKonnect Illustration" className="w-32 md:w-48 h-auto opacity-60" />
             </div>
           </div>
@@ -166,7 +161,7 @@ const Landing = () => {
             <p className="text-sm md:text-base text-muted-foreground text-center mb-8">
               Have questions? We're here to help you find your perfect student residence.
             </p>
-            <Card className="shadow-card">
+            <Card className="bg-surface shadow-sm">
               <CardContent className="p-4 md:p-6">
                 <form onSubmit={handleContactSubmit} className="space-y-4">
                   <div>
@@ -193,7 +188,7 @@ const Landing = () => {
                       rows={5}
                     />
                   </div>
-                  <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                     Send Message
                   </Button>
                 </form>
@@ -204,7 +199,7 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-card border-t py-8 md:py-12">
+      <footer className="bg-surface border-t py-8 md:py-12">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">
             <div>
@@ -218,9 +213,9 @@ const Landing = () => {
             <div>
               <h4 className="font-semibold mb-4 text-sm md:text-base">Quick Links</h4>
               <ul className="space-y-2 text-xs md:text-sm text-muted-foreground">
-                <li><button onClick={() => navigate("/auth")} className="hover:text-accent transition-colors">Get Started</button></li>
-                <li><button onClick={() => navigate("/auth")} className="hover:text-accent transition-colors">Sign Up</button></li>
-                <li><button onClick={() => navigate("/auth")} className="hover:text-accent transition-colors">Login</button></li>
+                <li><button onClick={() => navigate("/auth")} className="hover:text-primary transition-colors">Get Started</button></li>
+                <li><button onClick={() => navigate("/auth")} className="hover:text-primary transition-colors">Sign Up</button></li>
+                <li><button onClick={() => navigate("/auth")} className="hover:text-primary transition-colors">Login</button></li>
               </ul>
             </div>
             <div>

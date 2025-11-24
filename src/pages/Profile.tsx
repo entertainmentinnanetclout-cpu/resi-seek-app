@@ -160,7 +160,7 @@ const Profile = () => {
           </div>
 
           {/* Personal Information */}
-          <Card className="shadow-card bg-card dark:bg-card/80">
+          <Card className="shadow-sm bg-surface">
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
               <CardDescription>Your student details</CardDescription>
@@ -292,7 +292,7 @@ const Profile = () => {
           </Card>
 
           {/* Documents */}
-          <Card className="shadow-card bg-card dark:bg-card/80">
+          <Card className="shadow-sm bg-surface">
             <CardHeader>
               <CardTitle>Uploaded Documents</CardTitle>
               <CardDescription>Your verified documents</CardDescription>
@@ -308,7 +308,7 @@ const Profile = () => {
               {["ID Copy", "Proof of Registration", "Proof of Funding"].map((doc) => (
                 <div
                   key={doc}
-                  className="flex items-center justify-between p-4 border rounded-lg bg-background dark:bg-background/50"
+                  className="flex items-center justify-between p-4 border rounded-lg bg-background"
                 >
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5 text-primary" />

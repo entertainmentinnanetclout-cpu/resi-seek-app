@@ -34,8 +34,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      <div className="p-6 border-b">
+    <div className="flex flex-col h-full bg-surface text-foreground">
+      <div className="p-6 border-b border-border">
         <div className="flex flex-col items-center mb-1">
           <img src={desktopLogo} alt="ResKonnect" className="h-16 w-auto mb-2" />
         </div>
@@ -53,8 +53,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 onClick={() => navigate(item.path)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-smooth ${
                   active 
-                    ? "bg-gradient-primary text-primary-foreground shadow-glow" 
-                    : "text-foreground hover:bg-primary/10 hover:text-primary"
+                    ? "bg-primary text-primary-foreground shadow-md" 
+                    : "hover:bg-primary/10"
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -65,7 +65,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </nav>
 
-      <div className="p-4 border-t">
+      <div className="p-4 border-t border-border">
         <Button 
           variant="ghost" 
           className="w-full justify-start" 
@@ -81,14 +81,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:block w-64 border-r bg-card">
+      <aside className="hidden md:block w-64 border-r border-border">
         <SidebarContent />
       </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Mobile Header */}
-        <header className="md:hidden border-b bg-card p-4 flex items-center justify-between">
+        <header className="md:hidden border-b border-border bg-surface p-4 flex items-center justify-between">
           <div className="flex items-center">
             <img src={mobileLogo} alt="ResKonnect" className="h-8 w-auto" />
           </div>
@@ -98,7 +98,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-64">
+            <SheetContent side="left" className="p-0 w-64 bg-surface">
               <SidebarContent />
             </SheetContent>
           </Sheet>

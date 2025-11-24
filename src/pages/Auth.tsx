@@ -122,16 +122,16 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex justify-center mb-4">
             <img src={logo} alt="ResKonnect" className="h-20 w-auto" />
           </div>
-          <p className="text-white/90 text-lg">Your student accommodation portal</p>
+          <p className="text-foreground text-lg">Your student accommodation portal</p>
         </div>
 
-        <Card className="shadow-hover">
+        <Card className="bg-surface shadow-md">
           <CardHeader>
             <CardTitle>{isLogin ? "Welcome Back" : "Create Account"}</CardTitle>
             <CardDescription>
@@ -141,7 +141,7 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {error && <div className="bg-red-500 text-white p-3 rounded-md mb-4">{error}</div>}
+            {error && <div className="bg-destructive text-destructive-foreground p-3 rounded-md mb-4">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <div>
@@ -237,7 +237,7 @@ const Auth = () => {
               </span>{" "}
               <button 
                 onClick={() => setIsLogin(!isLogin)} 
-                className="text-blue-400 hover:text-blue-500 font-semibold underline transition-colors duration-200"
+                className="text-primary hover:underline font-semibold transition-colors duration-200"
               >
                 {isLogin ? "Sign Up" : "Sign In"}
               </button>
@@ -249,7 +249,7 @@ const Auth = () => {
           <Button 
             variant="ghost" 
             onClick={() => navigate("/")}
-            className="text-white hover:bg-white/10"
+            className="text-foreground hover:bg-surface"
           >
             Back to Home
           </Button>
