@@ -9,7 +9,7 @@ import HeroCarousel from "@/components/HeroCarousel";
 import headerLogo from "@/assets/Main header Desktop.png";
 import footerLogo from "@/assets/FOOTER.png";
 import iconLogo from "@/assets/ICON NO TEXT.png";
-import say_no_to_gbv from "@/assets/say_no_to_gbv.jpg";
+import say_no_to_gbv from "@/say_no_to_gbv.jpg";
 import campusDinokeng from "@/assets/campus-dinokeng.jpg";
 import studentStudying from "@/assets/student-studying.jpg";
 import studentsCelebration from "@/assets/students-celebration.jpg";
