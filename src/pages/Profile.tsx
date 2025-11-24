@@ -3,26 +3,17 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, CheckCircle2, Loader2 } from "lucide-react";
+import { Upload, CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { useFileUpload } from "@/hooks/useFileUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
-  const { isUploading, uploadFile } = useFileUpload();
   const { user } = useAuth();
-  const [profile, setProfile] = useState({
-    full_name: "",
-    student_number: "",
-    email: "",
-    phone: "",
-    campus: "",
-    course: "",
-    year_of_study: "",
-  });
+  const [profile, setProfile] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
@@ -31,11 +22,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("full_name, student_number, email, phone, campus, course, year_of_study")
-          .eq("id", user?.id)
-          .maybeSingle();
+        const { data, error } = await supabase.from("profiles").select("*").eq("id", user?.id).maybeSingle();
         if (error) throw error;
         if (data) setProfile(data);
       } catch (error) {
@@ -50,15 +37,10 @@ const Profile = () => {
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
+    const { id, created_at, email, ...updateData } = profile;
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update(profile)
-        .eq("id", user.id)
-        .select();
-
+      const { error } = await supabase.from("profiles").update(updateData).eq("id", user.id);
       if (error) throw error;
-
       toast.success('Profile updated successfully!');
       setIsEditing(false);
     } catch (error) {
@@ -68,7 +50,6 @@ const Profile = () => {
       setIsSaving(false);
     }
   };
-
 
   const handleDocumentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -81,7 +62,7 @@ const Profile = () => {
       toast.error('Only PDF, JPG, or PNG files are allowed');
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
       toast.error('File must be under 10MB');
       return;
     }
@@ -89,256 +70,140 @@ const Profile = () => {
     setUploadingDoc(selectedDocType);
 
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onloadend = async () => {
-        try {
-          const fileData = reader.result as string;
-          const response = await fetch('/api/handler', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'uploadFile',
-              user_id: user.id,
-              fileName: file.name,
-              fileData,
-            }),
-          });
+        // This part would ideally use a serverless function to avoid exposing service keys
+        // For this demo, we are showing the client-side flow
+        const filePath = `${user.id}/${selectedDocType.toLowerCase().replace(/ /g, '_')}-${file.name}`;
+        const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file, { upsert: true });
 
-          const result = await response.json();
+        if (uploadError) throw uploadError;
 
-          if (!response.ok) throw new Error(result.error);
+        const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
 
-          toast.success(`${selectedDocType} uploaded successfully!`);
-          const updates = {
-            [`${selectedDocType.toLowerCase().replace(" ", "_")}_url`]: result.url,
-            [`${selectedDocType.toLowerCase().replace(" ", "_")}_status`]: "uploaded",
-          };
-          const { error: updateError } = await supabase.from("profiles").update(updates).eq("id", user.id);
-          if (updateError) throw updateError;
+        const updates = {
+            [`${selectedDocType.toLowerCase().replace(/ /g, "_")}_url`]: publicUrl,
+            [`${selectedDocType.toLowerCase().replace(/ /g, "_")}_status`]: "uploaded",
+        };
 
-        } catch (err: any) {
-          toast.error(`Upload failed: ${err.message}`);
-        } finally {
-          setUploadingDoc(null);
-          setSelectedDocType(null);
-        }
-      };
+        const { error: dbError } = await supabase.from("profiles").update(updates).eq("id", user.id);
+        if (dbError) throw dbError;
+
+        setProfile(prev => ({...prev, ...updates}));
+        toast.success(`${selectedDocType} uploaded successfully!`);
+
     } catch (err: any) {
-      toast.error(`An unexpected error occurred: ${err.message}`);
-      setUploadingDoc(null);
-      setSelectedDocType(null);
+        toast.error(`Upload failed: ${err.message}`);
+    } finally {
+        setUploadingDoc(null);
+        setSelectedDocType(null);
+        if (documentInputRef.current) {
+            documentInputRef.current.value = "";
+        }
     }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setProfile((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
     <DashboardLayout>
-      <div className="p-6 md:p-8">
-        <div className="max-w-4xl mx-auto space-y-8">
-          {/* Header */}
-          <div className="flex items-center justify-between">
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">My Profile</h1>
-              <p className="text-muted-foreground">
-                Manage your personal information and documents
-              </p>
+              <h1 className="text-2xl sm:text-3xl font-bold">My Profile</h1>
+              <p className="text-muted-foreground mt-1">Manage your personal information and documents.</p>
             </div>
             {!isEditing && (
-              <Button variant="default" onClick={() => setIsEditing(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                Edit Profile
-              </Button>
+              <Button onClick={() => setIsEditing(true)} className="w-full sm:w-auto flex-shrink-0">Edit Profile</Button>
             )}
           </div>
 
-          {/* Personal Information */}
-          <Card className="shadow-sm bg-surface">
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Your student details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSave} className="space-y-4">
+          <form onSubmit={handleSave}>
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle>Personal Information</CardTitle>
+                <CardDescription>Keep your student details up-to-date.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Full Name</label>
-                    <Input
-                      value={profile.full_name || ""}
-                      onChange={(e) =>
-                        setProfile((prev) => ({ ...prev, full_name: e.target.value }))
-                      }
-                      placeholder="Enter your full name"
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Student Number</label>
-                    <Input
-                      value={profile.student_number || ""}
-                      onChange={(e) =>
-                        setProfile((prev) => ({ ...prev, student_number: e.target.value }))
-                      }
-                      placeholder="Enter your student number"
-                      disabled={!isEditing}
-                    />
-                  </div>
+                  <div className="space-y-2"><Label htmlFor="full_name">Full Name</Label><Input id="full_name" value={profile.full_name || ""} onChange={(e) => setProfile(p => ({...p, full_name: e.target.value}))} placeholder="Enter your full name" disabled={!isEditing} /></div>
+                  <div className="space-y-2"><Label htmlFor="student_number">Student Number</Label><Input id="student_number" value={profile.student_number || ""} onChange={(e) => setProfile(p => ({...p, student_number: e.target.value}))} placeholder="Enter your student number" disabled={!isEditing} /></div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Email Address</label>
-                    <Input
-                      value={user?.email || ""}
-                      disabled
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Phone Number</label>
-                    <Input
-                      value={profile.phone || ""}
-                      onChange={(e) =>
-                        setProfile((prev) => ({ ...prev, phone: e.target.value }))
-                      }
-                      placeholder="Enter your phone number"
-                      disabled={!isEditing}
-                    />
-                  </div>
+                  <div className="space-y-2"><Label htmlFor="email">Email Address</Label><Input id="email" value={user?.email || ""} disabled /></div>
+                  <div className="space-y-2"><Label htmlFor="phone">Phone Number</Label><Input id="phone" value={profile.phone || ""} onChange={(e) => setProfile(p => ({...p, phone: e.target.value}))} placeholder="Enter your phone number" disabled={!isEditing} /></div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Campus</label>
-                    <Select
-                      value={profile.campus || ""}
-                      onValueChange={(value) =>
-                        setProfile((prev) => ({ ...prev, campus: value }))
-                      }
-                      disabled={!isEditing}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your campus" />
-                      </SelectTrigger>
+                  <div className="space-y-2">
+                    <Label htmlFor="campus">Campus</Label>
+                    <Select value={profile.campus || ""} onValueChange={(v) => setProfile(p => ({...p, campus: v}))} disabled={!isEditing}>
+                      <SelectTrigger id="campus"><SelectValue placeholder="Select campus" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="hatfield">Hatfield Campus</SelectItem>
-                        <SelectItem value="mamelodi">Mamelodi Campus</SelectItem>
-                        <SelectItem value="sunnyside">Sunnyside Campus</SelectItem>
+                        <SelectItem value="Pretoria West">Pretoria West</SelectItem>
+                        <SelectItem value="Soshanguve">Soshanguve</SelectItem>
+                        <SelectItem value="Ga-Rankuwa">Ga-Rankuwa</SelectItem>
+                        <SelectItem value="Arcadia">Arcadia</SelectItem>
+                        <SelectItem value="eMalahleni">eMalahleni</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Course</label>
-                    <Input
-                      value={profile.course || ""}
-                      onChange={(e) =>
-                        setProfile((prev) => ({ ...prev, course: e.target.value }))
-                      }
-                      placeholder="Enter your course"
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">Year of Study</label>
-                    <Select
-                      value={profile.year_of_study || ""}
-                      onValueChange={(value) =>
-                        setProfile((prev) => ({ ...prev, year_of_study: value }))
-                      }
-                      disabled={!isEditing}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your year of study" />
-                      </SelectTrigger>
+                  <div className="space-y-2"><Label htmlFor="course">Course</Label><Input id="course" value={profile.course || ""} onChange={(e) => setProfile(p => ({...p, course: e.target.value}))} placeholder="e.g. BEng Tech" disabled={!isEditing} /></div>
+                  <div className="space-y-2">
+                    <Label htmlFor="year_of_study">Year of Study</Label>
+                    <Select value={profile.year_of_study || ""} onValueChange={(v) => setProfile(p => ({...p, year_of_study: v}))} disabled={!isEditing}>
+                      <SelectTrigger id="year_of_study"><SelectValue placeholder="Select year" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="1">1st Year</SelectItem>
                         <SelectItem value="2">2nd Year</SelectItem>
                         <SelectItem value="3">3rd Year</SelectItem>
                         <SelectItem value="4">4th Year</SelectItem>
+                        <SelectItem value="Postgraduate">Postgraduate</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-
                 {isEditing && (
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsEditing(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      variant="default"
-                      className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                      disabled={isSaving}
-                    >
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+                    <Button type="button" variant="outline" onClick={() => setIsEditing(false)} className="w-full sm:w-auto flex-1">Cancel</Button>
+                    <Button type="submit" className="w-full sm:w-auto flex-1" disabled={isSaving}>
                       {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                       Save Changes
                     </Button>
                   </div>
                 )}
-              </form>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </form>
 
-          {/* Documents */}
-          <Card className="shadow-sm bg-surface">
+          <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle>Uploaded Documents</CardTitle>
-              <CardDescription>Your verified documents</CardDescription>
+              <CardTitle>Supporting Documents</CardTitle>
+              <CardDescription>Upload copies of your required documents. Max 10MB each (PDF, PNG, JPG).</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <input
-                type="file"
-                ref={documentInputRef}
-                onChange={handleDocumentChange}
-                className="hidden"
-                accept="application/pdf, image/png, image/jpeg"
-              />
-              {["ID Copy", "Proof of Registration", "Proof of Funding"].map((doc) => (
-                <div
-                  key={doc}
-                  className="flex items-center justify-between p-4 border rounded-lg bg-background"
-                >
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium">{doc}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {profile?.[`${doc.toLowerCase().replace(" ", "_")}_status`] === "uploaded"
-                          ? "Uploaded"
-                          : "Not Uploaded"}
-                      </p>
+              <input type="file" ref={documentInputRef} onChange={handleDocumentChange} className="hidden" accept="application/pdf, image/png, image/jpeg" />
+              {["ID Copy", "Proof of Registration", "Proof of Funding"].map((doc) => {
+                const docKey = doc.toLowerCase().replace(/ /g, "_");
+                const status = profile[`${docKey}_status`];
+                return (
+                  <div key={doc} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border rounded-lg bg-background/50">
+                    <div className="flex items-center gap-3">
+                      {status === 'uploaded' ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" /> : <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0" />}
+                      <div>
+                        <p className="font-medium">{doc}</p>
+                        <p className="text-sm capitalize text-muted-foreground">{status || 'Not Uploaded'}</p>
+                      </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full sm:w-auto flex-shrink-0"
+                      onClick={() => { setSelectedDocType(doc); documentInputRef.current?.click(); }}
+                      disabled={uploadingDoc === doc}
+                    >
+                      {uploadingDoc === doc ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                      {status === 'uploaded' ? 'Replace' : 'Upload'}
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedDocType(doc);
-                      documentInputRef.current?.click();
-                    }}
-                    disabled={uploadingDoc === doc}
-                  >
-                    {uploadingDoc === doc ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Upload className="w-4 h-4 mr-2" />
-                    )}
-                    Replace
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         </div>

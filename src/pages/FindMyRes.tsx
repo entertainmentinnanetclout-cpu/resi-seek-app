@@ -29,7 +29,6 @@ const FindMyRes = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   
-  // Search and filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [priceRange, setPriceRange] = useState<string>("");
   const [distanceRange, setDistanceRange] = useState<string>("");
@@ -37,14 +36,11 @@ const FindMyRes = () => {
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [campus, setCampus] = useState<string>("all");
   
-  // Filtered residences
   const [filteredResidences, setFilteredResidences] = useState<any[]>([]);
   const [featuredResidences, setFeaturedResidences] = useState<any[]>([]);
 
-  // Application notes
   const [applicationNotes, setApplicationNotes] = useState("");
 
-  // DEMO DATA - Trusted Landlord Showcase
   const trustedPartners = [
     { name: 'West End Residency', location: '11 President Steyn Street, Pretoria West', image: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?q=80&w=800' },
     { name: 'Study Haven', location: '29 Carl Street, Pretoria West', image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=800' },
@@ -85,8 +81,6 @@ const FindMyRes = () => {
           table: 'residences'
         },
         (payload) => {
-          console.log('Residence change detected:', payload);
-          
           if (payload.eventType === 'INSERT') {
             setResidences(prev => [...prev, payload.new]);
           } else if (payload.eventType === 'UPDATE') {
@@ -104,7 +98,7 @@ const FindMyRes = () => {
   }, []);
 
   useEffect(() => {
-    if (!residences.length) return;
+    if (!residences.length && !loading) return;
 
     const featured = residences.filter(r => r.featured).sort((a, b) => a.display_order - b.display_order).slice(0, 5);
     setFeaturedResidences(featured);
@@ -150,7 +144,7 @@ const FindMyRes = () => {
     }
 
     setFilteredResidences(filtered);
-  }, [residences, searchQuery, priceRange, distanceRange, roomType, selectedAmenities, campus]);
+  }, [residences, searchQuery, priceRange, distanceRange, roomType, selectedAmenities, campus, loading]);
 
   const handleApply = (residence: any) => {
     setSelectedResidence(residence);
@@ -195,24 +189,22 @@ const FindMyRes = () => {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-background">
-        {/* Hero Search Section */}
         <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold mb-3">Find Your Perfect Residence</h1>
-              <p className="text-muted-foreground text-lg">
+              <h1 className="text-3xl sm:text-4xl font-bold mb-3">Find Your Perfect Residence</h1>
+              <p className="text-muted-foreground text-md sm:text-lg">
                 Browse 400+ verified accommodations across Pretoria & Tshwane
               </p>
             </div>
-
             <Card className="shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex gap-3">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
                     <Input
-                      placeholder="Search by name, location, or description..."
-                      className="pl-10 h-12 text-base"
+                      placeholder="Search by name, location..."
+                      className="pl-10 h-12 text-base w-full"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -221,17 +213,79 @@ const FindMyRes = () => {
                     variant="outline" 
                     size="lg"
                     onClick={() => setShowFilters(!showFilters)}
-                    className="gap-2"
+                    className="gap-2 w-full sm:w-auto flex-shrink-0"
                   >
                     <SlidersHorizontal className="w-4 h-4" />
                     Filters
                   </Button>
                 </div>
-
                 {showFilters && (
                   <div className="mt-6 pt-6 border-t space-y-6">
-                    <div className="grid md:grid-cols-4 gap-4">
-                      {/* Filter controls will be rendered here */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                        <Label>Price Range</Label>
+                        <Select value={priceRange} onValueChange={setPriceRange}>
+                          <SelectTrigger><SelectValue placeholder="Any price" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0-2500">Under R2,500</SelectItem>
+                            <SelectItem value="2500-3500">R2,500 - R3,500</SelectItem>
+                            <SelectItem value="3500-4500">R3,500 - R4,500</SelectItem>
+                            <SelectItem value="4500-6000">R4,500 - R6,000</SelectItem>
+                            <SelectItem value="6000-+">Above R6,000</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Distance</Label>
+                        <Select value={distanceRange} onValueChange={setDistanceRange}>
+                          <SelectTrigger><SelectValue placeholder="Any distance" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Any distance</SelectItem>
+                            <SelectItem value="0-1">Within 1km</SelectItem>
+                            <SelectItem value="1-2">1-2km</SelectItem>
+                            <SelectItem value="2-5">2-5km</SelectItem>
+                            <SelectItem value="5-+">5km+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Room Type</Label>
+                        <Select value={roomType} onValueChange={setRoomType}>
+                          <SelectTrigger><SelectValue placeholder="Any type" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Any type</SelectItem>
+                            <SelectItem value="single">Single Room</SelectItem>
+                            <SelectItem value="shared">Shared Room</SelectItem>
+                            <SelectItem value="apartment">Apartment</SelectItem>
+                            <SelectItem value="studio">Studio</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Campus</Label>
+                        <Select value={campus} onValueChange={setCampus}>
+                          <SelectTrigger><SelectValue placeholder="All campuses" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All campuses</SelectItem>
+                            <SelectItem value="Pretoria West">Pretoria West (Main Campus)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <Label>Amenities</Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {amenitiesList.map((amenity) => (
+                          <div key={amenity} className="flex items-center space-x-2">
+                            <Checkbox id={amenity} checked={selectedAmenities.includes(amenity)} onCheckedChange={(checked) => { if (checked) { setSelectedAmenities([...selectedAmenities, amenity]); } else { setSelectedAmenities(selectedAmenities.filter(a => a !== amenity)); } }} />
+                            <label htmlFor={amenity} className="text-sm font-medium leading-none cursor-pointer">{amenity}</label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button variant="outline" onClick={resetFilters}>Reset Filters</Button>
+                      <Button onClick={() => setShowFilters(false)}>Show {filteredResidences.length} Results</Button>
                     </div>
                   </div>
                 )}
@@ -240,21 +294,20 @@ const FindMyRes = () => {
           </div>
         </div>
 
-        {/* Trusted Landlord Showcase */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="flex items-center justify-between mb-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-8 h-8 text-primary" />
+                    <ShieldCheck className="w-8 h-8 text-primary flex-shrink-0" />
                     <div>
                         <h2 className="text-2xl font-bold">Trusted Landlord Showcase</h2>
-                        <p className="text-muted-foreground">Verified accommodation partners for safe and reliable student housing.</p>
+                        <p className="text-muted-foreground">Verified partners for safe student housing.</p>
                     </div>
                 </div>
             </div>
-            <div className="flex space-x-6 pb-4 overflow-x-auto">
+            <div className="flex space-x-6 pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 overflow-x-auto">
                 {trustedPartners.map((partner, index) => (
-                    <Card key={index} className="min-w-[300px] flex-shrink-0 overflow-hidden group cursor-pointer">
-                        <div className="relative h-48">
+                    <Card key={index} className="min-w-[280px] sm:min-w-[300px] flex-shrink-0 overflow-hidden group cursor-pointer">
+                        <div className="relative h-40 sm:h-48">
                             <img src={partner.image} alt={partner.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                             <Badge className="absolute top-3 right-3 bg-yellow-400 text-blue-900 font-bold">Trusted Landlord</Badge>
                         </div>
@@ -268,17 +321,16 @@ const FindMyRes = () => {
                     </Card>
                 ))}
             </div>
-            <Separator className="my-12" />
+            <Separator className="my-8 sm:my-12" />
         </div>
         
-        {/* All Accommodations List */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <h2 className="text-2xl font-bold whitespace-nowrap">
               All Accommodations ({filteredResidences.length})
             </h2>
             <Select defaultValue="price-asc">
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -291,97 +343,68 @@ const FindMyRes = () => {
           </div>
 
           {loading ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Loading accommodations...</p>
-            </div>
+            <div className="text-center py-12"><p className="text-muted-foreground">Loading accommodations...</p></div>
           ) : filteredResidences.length === 0 ? (
             <Card>
-              <CardContent className="text-center py-12">
+              <CardContent className="text-center p-6 sm:py-12">
                 <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">No accommodations found</h3>
-                <p className="text-muted-foreground mb-4">
-                  Try adjusting your filters or search query
-                </p>
+                <p className="text-muted-foreground mb-4">Try adjusting your filters or search query.</p>
                 <Button onClick={resetFilters}>Reset Filters</Button>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-4">
               {filteredResidences.map((residence) => (
-                <Card key={residence.id} className="hover:shadow-md transition-shadow">
+                <Card key={residence.id} className="hover:shadow-md transition-shadow overflow-hidden">
                   <div className="flex flex-col md:flex-row">
-                    <CardContent className="flex-1 p-6">
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="text-xl font-bold mb-1">{residence.name}</h3>
-                            <div className="flex items-center text-sm text-muted-foreground gap-1">
-                              <MapPin className="w-4 h-4" />
-                              <span>{residence.address}</span>
+                    {residence.image_url && (
+                        <div className="md:w-1/3 h-48 md:h-auto flex-shrink-0">
+                            <img src={residence.image_url} alt={residence.name} className="w-full h-full object-cover"/>
+                        </div>
+                    )}
+                    <CardContent className="flex-1 p-4 sm:p-6">
+                      <div className="flex flex-col justify-between h-full">
+                        <div>
+                          <div className="flex flex-col sm:flex-row justify-between items-start mb-2">
+                            <div className="pr-4">
+                              <h3 className="text-xl font-bold mb-1">{residence.name}</h3>
+                              <div className="flex items-center text-sm text-muted-foreground gap-1">
+                                <MapPin className="w-4 h-4 flex-shrink-0" />
+                                <span>{residence.address}</span>
+                              </div>
+                            </div>
+                            <div className="text-left sm:text-right mt-2 sm:mt-0 flex-shrink-0">
+                              <div className="text-2xl font-bold text-primary">R{typeof residence.price === 'number' ? residence.price.toLocaleString() : residence.price}</div>
+                              <div className="text-xs text-muted-foreground">per month</div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-primary">
-                              R{typeof residence.price === 'number' ? residence.price.toLocaleString() : residence.price}
-                            </div>
-                            <div className="text-xs text-muted-foreground">per month</div>
-                          </div>
-                        </div>
-
-                        {residence.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {residence.description}
-                          </p>
-                        )}
-
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          {residence.distance_from_campus && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-4 h-4 text-muted-foreground" />
-                              <span>{residence.distance_from_campus}km from campus</span>
-                            </div>
+                          {residence.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                              {residence.description}
+                            </p>
                           )}
-                          {residence.room_type && (
-                            <div className="flex items-center gap-1">
-                              <Bed className="w-4 h-4 text-muted-foreground" />
-                              <span className="capitalize">{residence.room_type}</span>
-                            </div>
-                          )}
-                          {residence.capacity && (
-                            <div className="flex items-center gap-1">
-                              <Users className="w-4 h-4 text-muted-foreground" />
-                              <span>{residence.available_spots || 0} / {residence.capacity} spots available</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {residence.amenities && residence.amenities.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {residence.amenities.slice(0, 5).map((amenity: string) => (
-                              <Badge key={amenity} variant="outline" className="text-xs">
-                                {amenity}
-                              </Badge>
-                            ))}
-                            {residence.amenities.length > 5 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{residence.amenities.length - 5} more
-                              </Badge>
+                          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm mt-4">
+                            {residence.distance_from_campus && (
+                              <div className="flex items-center gap-1"><MapPin className="w-4 h-4 text-muted-foreground" /><span>{residence.distance_from_campus}km from campus</span></div>
+                            )}
+                            {residence.room_type && (
+                              <div className="flex items-center gap-1"><Bed className="w-4 h-4 text-muted-foreground" /><span className="capitalize">{residence.room_type}</span></div>
+                            )}
+                            {residence.capacity && (
+                              <div className="flex items-center gap-1"><Users className="w-4 h-4 text-muted-foreground" /><span>{residence.available_spots || 0} / {residence.capacity} spots</span></div>
                             )}
                           </div>
-                        )}
-
-                        <div className="flex gap-2 pt-2">
-                          <Button 
-                            variant="outline"
-                            onClick={() => handleViewDetails(residence)}
-                          >
-                            View Details
-                          </Button>
-                          <Button 
-                            onClick={() => handleApply(residence)}
-                          >
-                            Apply Now
-                          </Button>
+                          {residence.amenities && residence.amenities.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-4">
+                              {residence.amenities.slice(0, 4).map((amenity: string) => (<Badge key={amenity} variant="outline" className="text-xs">{amenity}</Badge>))}
+                              {residence.amenities.length > 4 && (<Badge variant="outline" className="text-xs">+{residence.amenities.length - 4} more</Badge>)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2 pt-4 mt-auto">
+                          <Button variant="outline" className="w-full sm:w-auto" onClick={() => handleViewDetails(residence)}>View Details</Button>
+                          <Button className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => handleApply(residence)}>Apply Now</Button>
                         </div>
                       </div>
                     </CardContent>
@@ -393,8 +416,8 @@ const FindMyRes = () => {
         </div>
       </div>
 
-      {/* Application Modal and Details Modal would be here */}
-      
+      <Dialog open={showApplicationModal} onOpenChange={setShowApplicationModal}><DialogContent className="max-w-lg w-[90%]">{/* Modal Content */}</DialogContent></Dialog>
+      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}><DialogContent className="max-w-3xl w-[90%] max-h-[90vh] overflow-y-auto">{/* Modal Content */}</DialogContent></Dialog>
     </DashboardLayout>
   );
 };
