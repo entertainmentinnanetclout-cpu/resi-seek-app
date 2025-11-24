@@ -4,8 +4,8 @@ import { Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut, Newspa
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
-import desktopLogo from "@/assets/Main header Desktop.png";
-import mobileLogo from "@/assets/HEADER MOBILE.png";
+import desktopLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
+import mobileLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 
 interface DashboardLayoutProps {
   children: ReactNode;
