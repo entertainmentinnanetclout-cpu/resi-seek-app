@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -416,8 +416,73 @@ const FindMyRes = () => {
         </div>
       </div>
 
-      <Dialog open={showApplicationModal} onOpenChange={setShowApplicationModal}><DialogContent className="max-w-lg w-[90%]">{/* Modal Content */}</DialogContent></Dialog>
-      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}><DialogContent className="max-w-3xl w-[90%] max-h-[90vh] overflow-y-auto">{/* Modal Content */}</DialogContent></Dialog>
+      <Dialog open={showApplicationModal} onOpenChange={setShowApplicationModal}>
+        <DialogContent className="max-w-lg w-[90%]">
+          <DialogHeader>
+            <DialogTitle>Apply to {selectedResidence?.name}</DialogTitle>
+            <DialogDescription>Submit your application now. A residence representative will contact you.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes for the landlord (Optional)</Label>
+              <Textarea id="notes" placeholder="e.g. I am a first year student looking for a quiet place..." value={applicationNotes} onChange={(e) => setApplicationNotes(e.target.value)} />
+            </div>
+            <div className="flex items-start space-x-2">
+              <Checkbox id="terms-apply" required />
+              <Label htmlFor="terms-apply" className="text-sm text-muted-foreground leading-relaxed -mt-1">By submitting, I confirm that my profile information is up-to-date and I agree to be contacted by the residence manager.</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+            <Button onClick={handleSubmitApplication}>Submit Application</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+        <DialogContent className="max-w-3xl w-[90%] max-h-[90vh] overflow-y-auto">
+            {selectedResidence && (
+                <>
+                    <DialogHeader className="pb-4">
+                        <DialogTitle className="text-2xl">{selectedResidence.name}</DialogTitle>
+                        <DialogDescription className="flex items-center gap-1 pt-1">
+                            <MapPin className="w-4 h-4" /> {selectedResidence.address}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <div className="rounded-lg overflow-hidden border">
+                                <img src={selectedResidence.image_url} alt={selectedResidence.name} className="w-full h-56 object-cover" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className="font-semibold">Monthly Price: <span className="font-bold text-primary text-base">R{selectedResidence.price.toLocaleString()}</span></div>
+                                <div className="font-semibold">Available Spots: <span className="font-bold">{selectedResidence.available_spots || 0}/{selectedResidence.capacity}</span></div>
+                                <div className="font-semibold">Distance: <span className="font-bold">{selectedResidence.distance_from_campus}km</span></div>
+                                <div className="font-semibold">Room Type: <span className="font-bold capitalize">{selectedResidence.room_type}</span></div>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <h4 className="font-semibold text-lg mb-2">Description</h4>
+                                <p className="text-muted-foreground text-sm">{selectedResidence.description}</p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-lg mb-2">Amenities</h4>
+                                {selectedResidence.amenities && selectedResidence.amenities.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedResidence.amenities.map((amenity: string) => <Badge key={amenity} variant="outline">{amenity}</Badge>)}
+                                </div>
+                                ) : <p className="text-sm text-muted-foreground">No amenities listed.</p>}
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter className="pt-6">
+                        <Button className="w-full sm:w-auto" onClick={() => { setShowDetailsModal(false); handleApply(selectedResidence); }}>Apply Now</Button>
+                    </DialogFooter>
+                </>
+            )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
