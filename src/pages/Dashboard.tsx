@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router-dom";
+import SEO from "@/components/SEO";
+import { useNavigate, Link } from "react-router-dom";
 import { CheckCircle2, AlertCircle, FileText, Search, User, X, Plus } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -48,7 +49,7 @@ const Dashboard = () => {
       description: "Discover comfortable, affordable student accommodation near your campus",
       cta: {
         text: "Browse Residences",
-        action: () => navigate("/findmyres")
+        action: () => navigate("/find")
       }
     },
     {
@@ -68,31 +69,31 @@ const Dashboard = () => {
             title: "My Profile",
             description: "Keep your details and documents up-to-date.",
             gradient: "bg-gradient-to-br from-blue-500 to-indigo-600",
-            path: "/dashboard/profile",
-            action: () => navigate("/dashboard/profile"),
+            path: "/profile",
+            action: () => navigate("/profile"),
         },
         {
             icon: Search,
             title: "Find Accommodation",
             description: "Browse and apply to 100+ verified residences.",
             gradient: "bg-gradient-to-br from-green-500 to-teal-600",
-            path: "/findmyres",
-            action: () => navigate("/findmyres"),
+            path: "/find",
+            action: () => navigate("/find"),
         },
         {
             icon: FileText,
             title: "Track Applications",
             description: "Check the status of all your applications.",
             gradient: "bg-gradient-to-br from-purple-500 to-pink-600",
-            path: "/dashboard/applications",
-            action: () => navigate("/dashboard/applications"),
+            path: "/applications",
+            action: () => navigate("/applications"),
         },
   ];
 
   const fabActions = [
-      { icon: Search, label: 'Apply', action: () => navigate('/findmyres') },
-      { icon: FileText, label: 'Track', action: () => navigate('/dashboard/applications') },
-      { icon: User, label: 'Profile', action: () => navigate('/dashboard/profile') },
+      { icon: Search, label: 'Apply', action: () => navigate('/find') },
+      { icon: FileText, label: 'Track', action: () => navigate('/applications') },
+      { icon: User, label: 'Profile', action: () => navigate('/profile') },
   ];
 
   const loading = profileLoading || applicationsLoading;
@@ -112,6 +113,10 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
+      <SEO
+        title="Student Dashboard | Manage Your Accommodation"
+        description="View reservations, documents, notifications…"
+      />
       <div className="p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
           <HeroCarousel slides={carouselSlides} autoPlay={true} interval={6000} />
@@ -134,12 +139,12 @@ const Dashboard = () => {
                                 <span>Rejected: {applications.filter(a => a.status === 'rejected').length}</span>
                             </div>
                             <Progress value={(applications.filter(a => a.status !== 'submitted').length / applications.length) * 100} />
-                            <Button onClick={() => navigate('/dashboard/applications')}>View All Applications</Button>
+                            <Button asChild><Link to="/applications">View All Applications</Link></Button>
                         </div>
                     ) : (
                         <div className="text-center py-4">
                             <p className="text-muted-foreground mb-4">You haven't applied anywhere yet.</p>
-                            <Button onClick={() => navigate('/findmyres')}>Browse Residences</Button>
+                            <Button asChild><Link to="/find">Browse Residences</Link></Button>
                         </div>
                     )}
                   </CardContent>
@@ -172,7 +177,7 @@ const Dashboard = () => {
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => navigate("/dashboard/profile")}
+                        onClick={() => navigate("/profile")}
                         className="w-full mt-4"
                       >
                         Complete Profile
@@ -187,22 +192,29 @@ const Dashboard = () => {
             <h2 className="text-3xl font-bold mb-6">Quick Actions</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {quickLinks.map((link) => (
-                  <div
-                      key={link.path}
-                      className={`relative overflow-hidden rounded-lg shadow-lg transform transition-transform hover:scale-105 active:scale-95 cursor-pointer ${link.gradient} text-white p-6 flex flex-col justify-between h-40`}
-                      onClick={link.action}>
-                      <div className="flex items-center gap-4">
-                          <link.icon className="w-8 h-8 shrink-0" />
-                          <div>
-                              <h3 className="text-xl font-bold">{link.title}</h3>
-                              <p className="text-sm opacity-90">{link.description}</p>
-                          </div>
-                      </div>
-                  </div>
+                  <Link to={link.path} key={link.path}>
+                    <div
+                        className={`relative overflow-hidden rounded-lg shadow-lg transform transition-transform hover:scale-105 active:scale-95 cursor-pointer ${link.gradient} text-white p-6 flex flex-col justify-between h-40`}>
+                        <div className="flex items-center gap-4">
+                            <link.icon className="w-8 h-8 shrink-0" />
+                            <div>
+                                <h3 className="text-xl font-bold">{link.title}</h3>
+                                <p className="text-sm opacity-90">{link.description}</p>
+                            </div>
+                        </div>
+                    </div>
+                  </Link>
               ))}
             </div>
           </div>
-
+            <Card className="bg-card/50">
+                <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold mb-2">Your Student Accommodation Hub</h3>
+                    <p className="text-muted-foreground text-sm">
+                    The ResKonnect dashboard is designed to simplify student housing. Track your applications, manage documents, and stay updated on communication from landlords, all in one place. Our goal is to make your accommodation journey as smooth as possible, allowing you to focus on your studies.
+                    </p>
+                </CardContent>
+            </Card>
         </div>
       </div>
       

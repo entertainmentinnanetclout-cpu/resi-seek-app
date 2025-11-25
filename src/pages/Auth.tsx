@@ -1,3 +1,4 @@
+import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,10 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <SEO
+        title="Login to Your Dashboard | ResKonnect"
+        description="Access your student profile…"
+      />
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <img src={logo} alt="ResKonnect" className="mx-auto h-16 w-auto" />

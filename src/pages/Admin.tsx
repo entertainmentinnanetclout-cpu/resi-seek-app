@@ -1,3 +1,4 @@
+import SEO from "@/components/SEO";
 import { useState } from "react";
 import { Building2, Users, FileText, Home, Settings, LogOut, Eye } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,6 +79,10 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
+      <SEO
+        title="Admin Dashboard | ResKonnect Management"
+        description="Manage student reservations and availability…"
+      />
       {/* Sidebar */}
       <aside className="w-64 border-r bg-card">
         <div className="flex flex-col h-full">

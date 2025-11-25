@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>ResKonnect - Find Student Accommodation In Pretoria</title>
-    <meta name="description" content="Student Hub and Marketplace – campus life, accommodation, and career connection made easy." />
+    <meta name="description" content="Book trusted, safe student accommodation across South Africa." />
     <meta name="author" content="ResKonnect" />
     <meta name="application-name" content="ResKonnect Simplified Portal" />
     <meta name="theme-color" content="#141414" />
@@ -16,18 +16,50 @@
     <link rel="apple-touch-icon" href="/favicon.png" />
     <link rel="manifest" href="/manifest.json" />
 
-    <meta property="og:title" content="ResKonnect Simplified Portal - Student Hub" />
-    <meta property="og:description" content="Student Hub and Marketplace – campus life, accommodation, and career connection made easy." />
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/favicon.png" />
+    <meta property="og:url" content="https://reskonnect.co.za" />
+    <meta property="og:title" content="ResKonnect Student Accommodation" />
+    <meta property="og:description" content="Book trusted, safe student accommodation across South Africa." />
+    <meta property="og:image" content="/og-image.png" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@reskonnect" />
-    <meta name="twitter:image" content="/favicon.png" />
+    <meta name="twitter:title" content="ResKonnect Student Accommodation" />
+    <meta name="twitter:description" content="Find secure & verified student accommodation." />
+    <meta name="twitter:image" content="/og-image.png" />
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "ResKonnect",
+        "url": "https://reskonnect.co.za",
+        "logo": "/logo.png",
+        "sameAs": [
+          "https://www.instagram.com/reskonnect",
+          "https://www.facebook.com/reskonnect"
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "ResKonnect Student Accommodation",
+        "url": "https://reskonnect.co.za",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://reskonnect.co.za/find?query={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
   </head>
 
   <body>

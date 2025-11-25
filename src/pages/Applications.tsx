@@ -1,3 +1,4 @@
+import SEO from "@/components/SEO";
 import { useEffect, useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 const Applications = () => {
   const { user } = useAuth();
@@ -107,7 +110,7 @@ const Applications = () => {
                     Applied on {new Date(application.created_at).toLocaleDateString()}
                 </div>
                 <div className="mt-4 pt-4 border-t border-border">
-                    <Button variant="outline" aria-label={`View details for ${application.residence?.name}`}>View Details</Button>
+                    <Button asChild variant="outline" aria-label={`View details for ${application.residence?.name}`}><Link to={`/res/${application.residence_id}`}>View Details</Link></Button>
                 </div>
             </CardContent>
         </Card>
@@ -127,9 +130,32 @@ const Applications = () => {
 
   return (
     <DashboardLayout>
+      <SEO
+        title="Track Your Applications | ResKonnect"
+        description="Stay updated on the status of your student accommodation applications."
+      />
       <div className="p-4 md:p-8 bg-background">
         <div className="max-w-6xl mx-auto space-y-8">
           <div>
+          <Breadcrumb className="mb-4">
+            <BreadcrumbList>
+                <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                        <Link to="/">Home</Link>
+                    </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                        <Link to="/dashboard">Dashboard</Link>
+                    </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                    <BreadcrumbLink>Applications</BreadcrumbLink>
+                </BreadcrumbItem>
+            </BreadcrumbList>
+        </Breadcrumb>
             <h1 className="text-3xl font-bold mb-2 text-foreground">My Applications</h1>
             <p className="text-muted-foreground">Track your residence applications and their status.</p>
           </div>
@@ -165,6 +191,14 @@ const Applications = () => {
               {filteredApplications.map((application) => <ApplicationCard key={application.id} application={application} />)}
             </div>
           )}
+           <Card className="bg-card/50 mt-8">
+                <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold mb-2">Manage Your Applications</h3>
+                    <p className="text-muted-foreground text-sm">
+                    Your student accommodation applications are displayed here with real-time status, step tracking, and simplified management. ResKonnect provides a centralized place to monitor your application progress, ensuring you never miss an update from a landlord. Stay organized and in control of your housing search.
+                    </p>
+                </CardContent>
+            </Card>
         </div>
       </div>
     </DashboardLayout>

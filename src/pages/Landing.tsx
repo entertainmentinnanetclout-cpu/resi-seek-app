@@ -1,10 +1,11 @@
+import SEO from "@/components/SEO";
 import { Shield, MapPin, DollarSign, FileCheck, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useState } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -23,14 +24,14 @@ const Landing = () => {
 
   const handleContactSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    toast.success("Thank you! We\'ll get back to you soon.");
+    toast.success("Thank you! We'll get back to you soon.");
     e.currentTarget.reset();
   };
 
   const heroSlides = [
-    { image: campusDinokeng, title: "Welcome to TUT Dinokeng Campus", description: "Find your perfect student accommodation near campus - 400+ verified options available", cta: { text: "Explore Residences", action: () => navigate("/auth") } },
+    { image: campusDinokeng, title: "Welcome to TUT Dinokeng Campus", description: "Find your perfect student accommodation near campus - 400+ verified options available", cta: { text: "Explore Residences", action: () => navigate("/find") } },
     { image: artsFestival, title: "Experience Campus Life", description: "Join vibrant campus activities and cultural celebrations throughout the year", cta: { text: "Get Started", action: () => navigate("/auth") } },
-    { image: studentStudying, title: "Study in Comfort", description: "Access quality accommodation that supports your academic success", cta: { text: "Find Your Res", action: () => navigate("/auth") } },
+    { image: studentStudying, title: "Study in Comfort", description: "Access quality accommodation that supports your academic success", cta: { text: "Find Your Res", action: () => navigate("/find") } },
     { image: studentsCelebration, title: "Build Lifelong Connections", description: "Be part of a thriving student community in Pretoria & Tshwane", cta: { text: "Join Now", action: () => navigate("/auth") } }
   ];
 
@@ -43,6 +44,10 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SEO
+        title="Student Accommodation Made Simple | ResKonnect"
+        description="Find secure, affordable, and fully-managed student accommodation..."
+      />
       <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
@@ -102,7 +107,7 @@ const Landing = () => {
               <div className="order-2 md:order-1">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4 md:mb-6">About ResKonnect</h2>
                 <p className="text-muted-foreground mb-4 leading-relaxed">ResKonnect is your trusted partner in finding quality student accommodation. We connect students with verified residences in Pretoria and Tshwane, making the search process simple and stress-free.</p>
-                <p className="text-muted-foreground mb-6 leading-relaxed">Our platform streamlines applications, ensures transparency, and puts students first. Whether you\'re looking for budget-friendly options or premium facilities, we\'ve got you covered.</p>
+                <p className="text-muted-foreground mb-6 leading-relaxed">Our platform streamlines applications, ensures transparency, and puts students first. Whether you're looking for budget-friendly options or premium facilities, we've got you covered.</p>
                 <Button onClick={() => navigate("/auth")} className="w-full sm:w-auto">Get Started</Button>
               </div>
               <div className="order-1 md:order-2 bg-primary/10 rounded-2xl p-8 h-64 md:h-80 flex items-center justify-center">
@@ -116,7 +121,7 @@ const Landing = () => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Get in Touch</h2>
-              <p className="text-muted-foreground text-center mb-8">Have questions? We\'re here to help you find your perfect student residence.</p>
+              <p className="text-muted-foreground text-center mb-8">Have questions? We're here to help you find your perfect student residence.</p>
               <Card className="bg-card shadow-sm">
                 <CardContent className="p-6 md:p-8">
                   <form onSubmit={handleContactSubmit} className="space-y-4">
@@ -130,6 +135,19 @@ const Landing = () => {
             </div>
           </div>
         </section>
+        
+        <section className="py-12 md:py-20 bg-card/50">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                <Card>
+                    <CardContent className="p-6">
+                        <h3 className="text-lg font-semibold mb-2">Connecting Students to their Homes</h3>
+                        <p className="text-muted-foreground text-sm">
+                        ResKonnect connects students with safe, trusted, and affordable accommodation options across South Africa. Our platform simplifies the process of finding, comparing, and booking residences near major universities and colleges. We are dedicated to making the student housing experience seamless and secure, ensuring that every student finds a place they can call home.
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+        </section>
       </main>
 
       <footer className="bg-card/50 border-t">
@@ -142,16 +160,25 @@ const Landing = () => {
             <div>
               <h4 className="font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><button onClick={() => navigate("/auth")} className="hover:text-primary transition-colors">Get Started</button></li>
-                <li><button onClick={() => navigate("/auth")} className="hover:text-primary transition-colors">Sign Up</button></li>
-                <li><button onClick={() => navigate("/auth")} className="hover:text-primary transition-colors">Login</button></li>
+                <li><Link to="/find" className="hover:text-primary transition-colors">Find My Res</Link></li>
+                <li><Link to="/auth" className="hover:text-primary transition-colors">Sign Up</Link></li>
+                <li><Link to="/auth" className="hover:text-primary transition-colors">Login</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><Link to="/about" className="hover:text-primary transition-colors">About Us</Link></li>
+                <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+                <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
+                <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Contact</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Email: info@reskonnect.co.za</li>
-                <li>Phone: +27 12 345 6789</li>
+                <li>Email: Reskonnect@gmail.com</li>
+                <li>Phone: 063 732 3192</li>
               </ul>
             </div>
           </div>

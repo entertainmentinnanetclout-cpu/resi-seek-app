@@ -1,3 +1,4 @@
+import SEO from "@/components/SEO";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare } from "lucide-react";
@@ -6,6 +7,10 @@ import { Button } from "@/components/ui/button";
 const Messages = () => {
   return (
     <DashboardLayout>
+      <SEO
+        title="Your Messages | ResKonnect"
+        description="Communicate with residence administrators and get updates on your applications."
+      />
       <div className="p-6 md:p-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -24,8 +29,8 @@ const Messages = () => {
               </div>
               <h3 className="text-lg font-semibold mb-2">No Messages Yet</h3>
               <p className="text-muted-foreground mb-6">
-                You don't have any messages at the moment. Once you apply for a residence, 
-                you'll be able to communicate with administrators here.
+                You don\'t have any messages at the moment. Once you apply for a residence, 
+                you\'ll be able to communicate with administrators here.
               </p>
               <Button variant="default">Find Residences</Button>
             </CardContent>

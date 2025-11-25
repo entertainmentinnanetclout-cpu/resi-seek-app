@@ -1,3 +1,4 @@
+import SEO from "@/components/SEO";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -168,6 +169,10 @@ const CampusNews = () => {
 
   return (
     <DashboardLayout>
+      <SEO
+        title="Campus News & Events | ResKonnect"
+        description="Stay informed about the latest news, events, and opportunities..."
+      />
       <div className="min-h-screen">
         {/* Hero Carousel */}
         <div className="px-6 md:px-8 pt-6">

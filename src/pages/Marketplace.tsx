@@ -1,3 +1,4 @@
+import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -81,6 +82,10 @@ const Marketplace = () => {
   return (
     <>
       <DashboardLayout>
+        <SEO
+            title="Student Marketplace | Buy & Sell Used Goods"
+            description="Find great deals on textbooks, electronics, and more from fellow students."
+        />
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

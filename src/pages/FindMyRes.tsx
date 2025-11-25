@@ -1,4 +1,7 @@
+
+import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { MapPin, DollarSign, Users, Search, SlidersHorizontal, Star, Building2, Bed, Ruler, ShieldCheck } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,9 +20,11 @@ import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 const FindMyRes = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { profile } = useRealtimeProfile(user);
   const { applications } = useRealtimeApplications(user);
   const [residences, setResidences] = useState<any[]>([]);
@@ -43,12 +48,12 @@ const FindMyRes = () => {
   const [applicationNotes, setApplicationNotes] = useState("");
 
   const trustedPartners = [
-    { name: 'West End Residency', location: '11 President Steyn Street, Pretoria West', image: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?q=80&w=800', rating: 4.8, verified: true },
-    { name: 'Study Haven', location: '29 Carl Street, Pretoria West', image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=800', rating: 4.9, verified: true },
-    { name: 'Ekhaya Junction', location: '41 Justice Mahomed Street, Sunnyside', image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=800', rating: 4.7, verified: true },
-    { name: 'Campus Lodge', location: '115 Walker Street, Sunnyside', image: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?q=80&w=800', rating: 4.6, verified: true },
-    { name: 'Future Heights', location: '28 Klapper Street, Danville', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800', rating: 4.8, verified: true },
-    { name: 'Urban Hub', location: '44 Van der Hoff Road, Pretoria West', image: 'https://images.unsplash.com/photo-1576941089067-2de3c901e126?q=80&w=800', rating: 4.5, verified: true },
+    { id: 'west-end-residency', name: 'West End Residency', location: '11 President Steyn Street, Pretoria West', image: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?q=80&w=800', rating: 4.8, verified: true },
+    { id: 'study-haven', name: 'Study Haven', location: '29 Carl Street, Pretoria West', image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=800', rating: 4.9, verified: true },
+    { id: 'ekhaya-junction', name: 'Ekhaya Junction', location: '41 Justice Mahomed Street, Sunnyside', image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=800', rating: 4.7, verified: true },
+    { id: 'campus-lodge', name: 'Campus Lodge', location: '115 Walker Street, Sunnyside', image: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?q=80&w=800', rating: 4.6, verified: true },
+    { id: 'future-heights', name: 'Future Heights', location: '28 Klapper Street, Danville', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800', rating: 4.8, verified: true },
+    { id: 'urban-hub', name: 'Urban Hub', location: '44 Van der Hoff Road, Pretoria West', image: 'https://images.unsplash.com/photo-1576941089067-2de3c901e126?q=80&w=800', rating: 4.5, verified: true },
   ];
 
   useEffect(() => {
@@ -67,38 +72,10 @@ const FindMyRes = () => {
     };
 
     fetchResidences();
-
-    const channel = supabase
-      .channel('residences-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'residences'
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setResidences(prev => [...prev, payload.new]);
-          } else if (payload.eventType === 'UPDATE') {
-            setResidences(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
-          } else if (payload.eventType === 'DELETE') {
-            setResidences(prev => prev.filter(r => r.id !== (payload.old as any).id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
-  useEffect(() => {
+    useEffect(() => {
     if (!residences.length && !loading) return;
-
-    const featured = residences.filter(r => r.featured).sort((a, b) => a.display_order - b.display_order).slice(0, 5);
-    setFeaturedResidences(featured);
 
     let filtered = [...residences];
 
@@ -109,8 +86,7 @@ const FindMyRes = () => {
         r.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-
-    if (priceRange) {
+        if (priceRange) {
       const [min, max] = priceRange.split("-").map(v => v === "+" ? Infinity : parseFloat(v));
       filtered = filtered.filter(r => {
         const price = typeof r.price === 'number' ? r.price : parseFloat(r.price?.replace(/[^0-9.-]+/g, "") || "0");
@@ -139,8 +115,14 @@ const FindMyRes = () => {
         selectedAmenities.every(amenity => r.amenities?.includes(amenity))
       );
     }
-
+    
     setFilteredResidences(filtered);
+    
+    // Set featured residences (can be a separate logic, here using first few from all residences)
+    if (residences.length > 0) {
+        setFeaturedResidences(residences.slice(0,5));
+    }
+
   }, [residences, searchQuery, priceRange, distanceRange, roomType, selectedAmenities, campus, loading]);
 
   const handleApply = (residence: any) => {
@@ -203,9 +185,43 @@ const FindMyRes = () => {
     </Card>
   );
 
+  const residenceListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Student Residences",
+    "itemListElement": filteredResidences.map((residence, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "url": `https://reskonnect.co.za/res/${residence.id}`
+    }))
+  };
+
   return (
     <DashboardLayout>
+      <SEO
+        title="Find Your Perfect Student Home | ResKonnect"
+        description="Browse hundreds of verified student residences near your campus."
+      >
+        <script type="application/ld+json">
+          {JSON.stringify(residenceListSchema)}
+        </script>
+      </SEO>
       <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <Breadcrumb>
+            <BreadcrumbList>
+                <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                        <Link to="/">Home</Link>
+                    </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                    <BreadcrumbLink>Residences</BreadcrumbLink>
+                </BreadcrumbItem>
+            </BreadcrumbList>
+        </Breadcrumb>
+        </div>
         <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
             <div className="text-center mb-8">
@@ -314,34 +330,34 @@ const FindMyRes = () => {
                 <div className="flex items-center gap-3">
                     <ShieldCheck className="w-8 h-8 text-primary flex-shrink-0" />
                     <div>
-                        <h2 className="text-2xl font-bold">Trusted Landlord Showcase</h2>
-                        <p className="text-muted-foreground">Verified partners for safe student housing.</p>
+                        <h2 className="text-2xl font-bold">Related Residences</h2>
+                        <p className="text-muted-foreground">Other students also viewed these.</p>
                     </div>
                 </div>
             </div>
             <div className="flex space-x-6 pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 overflow-x-auto snap-x snap-mandatory">
-                {trustedPartners.map((partner, index) => (
+                {featuredResidences.map((res, index) => (
                     <TooltipProvider key={index}>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Card className="min-w-[280px] sm:min-w-[300px] flex-shrink-0 overflow-hidden group cursor-pointer snap-center transform transition-transform hover:scale-105">
+                                <Card className="min-w-[280px] sm:min-w-[300px] flex-shrink-0 overflow-hidden group cursor-pointer snap-center transform transition-transform hover:scale-105" onClick={() => handleViewDetails(res)}>
                                     <div className="relative h-40 sm:h-48">
-                                        <img src={partner.image} alt={partner.name} className="w-full h-full object-cover" />
+                                        <img src={res.image_url} alt={res.name} className="w-full h-full object-cover" />
                                         <Badge className="absolute top-3 right-3 bg-yellow-400 text-blue-900 font-bold flex items-center gap-1">
                                             <ShieldCheck className="w-4 h-4" /> Trusted Landlord
                                         </Badge>
                                     </div>
                                     <CardContent className="p-4">
-                                        <h3 className="font-semibold text-lg truncate">{partner.name}</h3>
+                                        <h3 className="font-semibold text-lg truncate">{res.name}</h3>
                                         <div className="flex items-center text-sm text-muted-foreground mt-1">
                                             <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-                                            <span className="truncate">{partner.location}</span>
+                                            <span className="truncate">{res.address}</span>
                                         </div>
                                     </CardContent>
                                 </Card>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>{partner.name} - Rating: {partner.rating}/5</p>
+                                <p>{res.name}</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
@@ -384,7 +400,8 @@ const FindMyRes = () => {
           ) : (
             <div className="space-y-4">
               {filteredResidences.map((residence) => (
-                <Card key={residence.id} className="hover:shadow-md transition-shadow overflow-hidden">
+                <Link to={`/res/${residence.id}`} key={residence.id} className="block">
+                <Card className="hover:shadow-md transition-shadow overflow-hidden">
                   <div className="flex flex-col md:flex-row">
                     {residence.image_url && (
                         <div className="md:w-1/3 h-48 md:h-auto flex-shrink-0">
@@ -426,21 +443,32 @@ const FindMyRes = () => {
                           {residence.amenities && residence.amenities.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-4">
                               {residence.amenities.slice(0, 4).map((amenity: string) => (<Badge key={amenity} variant="outline" className="text-xs">{amenity}</Badge>))}
-                              {residence.amenities.length > 4 && (<Badge variant="outline" className="text-xs">+{residence.amenities.length - 4} more</Badge>)}
+                              {residence.amenities.length > 4 && (<Badge variant="outline" className="text-xs">+{residence.amenities.length - 4} more</Badge>))}
                             </div>
                           )}
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 pt-4 mt-auto">
-                          <Button variant="outline" className="w-full sm:w-auto" onClick={() => handleViewDetails(residence)}>View Details</Button>
-                          <Button className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => handleApply(residence)}>Apply Now</Button>
+                          <Button variant="outline" className="w-full sm:w-auto" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleViewDetails(residence);}}>View Details</Button>
+                          <Button className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleApply(residence);}}>Apply Now</Button>
                         </div>
                       </div>
                     </CardContent>
                   </div>
                 </Card>
+                </Link>
               ))}
             </div>
           )}
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+            <Card className="bg-card/50">
+                <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold mb-2">Find Your Ideal Student Home</h3>
+                    <p className="text-muted-foreground text-sm">
+                    Search verified student residences across Pretoria, Johannesburg, Cape Town, Durban, and more. Each listing includes amenities, pricing, images, and landlord information to help you make an informed decision. ResKonnect is committed to providing a seamless and secure platform for students to find and apply for accommodation. Our verification process ensures that all residences meet our high standards for safety and quality.
+                    </p>
+                </CardContent>
+            </Card>
         </div>
       </div>
 

@@ -1,3 +1,4 @@
+import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Upload, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
@@ -133,6 +134,11 @@ const ProfileSetup = () => {
   };
 
   return (
+    <>
+        <SEO
+            title="Setup Your Profile | ResKonnect"
+            description="Complete your profile to start applying for student accommodations."
+        />
     <div className="min-h-screen bg-background">
       {/* Header */}
       <nav className="border-b bg-card/50 backdrop-blur-sm">
@@ -145,6 +151,7 @@ const ProfileSetup = () => {
 
       {/* ... rest of your component stays exactly the same */}
     </div>
+    </>
   );
 };
 

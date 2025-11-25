@@ -1,3 +1,4 @@
+import SEO from "@/components/SEO";
 import { useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Link } from "react-router-dom";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -155,11 +158,34 @@ const Profile = () => {
 
   return (
     <DashboardLayout>
+        <SEO
+            title="Manage Your Profile | ResKonnect"
+            description="Keep your personal information and documents up-to-date for a seamless application experience."
+        />
       <TooltipProvider>
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
+                <Breadcrumb className="mb-4">
+                    <BreadcrumbList>
+                        <BreadcrumbItem>
+                            <BreadcrumbLink asChild>
+                                <Link to="/">Home</Link>
+                            </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                            <BreadcrumbLink asChild>
+                                <Link to="/dashboard">Dashboard</Link>
+                            </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                            <BreadcrumbLink>Profile</BreadcrumbLink>
+                        </BreadcrumbItem>
+                    </BreadcrumbList>
+                </Breadcrumb>
                 <h1 className="text-2xl sm:text-3xl font-bold">My Profile</h1>
                 <p className="text-muted-foreground mt-1">Manage your personal information and documents.</p>
               </div>
@@ -264,6 +290,14 @@ const Profile = () => {
                     </div>
                 </AccordionItem>
             </form>
+            <Card className="bg-card/50">
+                <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold mb-2">Manage Your Profile Information</h3>
+                    <p className="text-muted-foreground text-sm">
+                    A complete and up-to-date profile is crucial for a successful application. Landlords are more likely to approve applications from students with fully verified and accurate information. By keeping your profile and documents current, you enhance your credibility and increase your chances of securing your preferred accommodation. ResKonnect is committed to protecting your data while streamlining the verification process.
+                    </p>
+                </CardContent>
+            </Card>
           </div>
         </div>
       </TooltipProvider>

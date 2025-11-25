@@ -18,6 +18,7 @@ import Messages from "./pages/Messages";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Marketplace from "./pages/Marketplace";
+import ResidenceDetail from "./pages/ResidenceDetail";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -69,12 +70,12 @@ const App = () => {
               <CampusNews />
             </ProtectedRoute>
           } />
-          <Route path="/dashboard/applications" element={
+          <Route path="/applications" element={
             <ProtectedRoute>
               <Applications />
             </ProtectedRoute>
           } />
-          <Route path="/dashboard/profile" element={
+          <Route path="/profile" element={
             <ProtectedRoute>
               <Profile />
             </ProtectedRoute>
@@ -84,9 +85,14 @@ const App = () => {
               <Messages />
             </ProtectedRoute>
           } />
-          <Route path="/findmyres" element={
+          <Route path="/find" element={
             <ProtectedRoute>
               <FindMyRes />
+            </ProtectedRoute>
+          } />
+          <Route path="/res/:id" element={
+            <ProtectedRoute>
+              <ResidenceDetail />
             </ProtectedRoute>
           } />
           <Route path="/marketplace" element={
