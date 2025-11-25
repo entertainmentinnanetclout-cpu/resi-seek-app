@@ -442,8 +442,16 @@ const FindMyRes = () => {
                           </div>
                           {residence.amenities && residence.amenities.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-4">
-                              {residence.amenities.slice(0, 4).map((amenity: string) => (<Badge key={amenity} variant="outline" className="text-xs">{amenity}</Badge>))}
-                              {residence.amenities.length > 4 && (<Badge variant="outline" className="text-xs">+{residence.amenities.length - 4} more</Badge>)}
+                              {residence.amenities.slice(0, 4).map((amenity: string) => (
+                                <Badge key={amenity} variant="outline" className="text-xs">
+                                  {amenity}
+                                </Badge>
+                              ))}
+                              {residence.amenities.length > 4 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{residence.amenities.length - 4} more
+                                </Badge>
+                              )}
                             </div>
                           )}
                         </div>
