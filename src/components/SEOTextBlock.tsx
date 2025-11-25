@@ -10,7 +10,7 @@ const SEOTextBlock: React.FC<SEOTextBlockProps> = ({ title, content }) => {
   return (
     <Card className="bg-card/50 mt-8">
       <CardHeader>
-        <CardTitle as="h2" className="text-xl font-semibold">{title}</CardTitle>
+        <CardTitle className="text-xl font-semibold">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 text-muted-foreground">
         {content.map((paragraph, index) => (

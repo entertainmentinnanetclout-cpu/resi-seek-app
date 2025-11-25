@@ -23,13 +23,13 @@ const ResidenceDetail = () => {
       if (!id) return;
       setLoading(true);
       try {
-        const { data, error } = await supabase.from('public_residences').select('*').eq('id', id).single();
+        const { data, error } = await supabase.from('residences').select('*').eq('id', id).single();
         if (error) throw error;
         setResidence(data);
 
         if (data) {
           const { data: related, error: relatedError } = await supabase
-            .from('public_residences')
+            .from('residences')
             .select('*')
             .eq('campus', data.campus)
             .neq('id', data.id)
@@ -96,11 +96,7 @@ const ResidenceDetail = () => {
         title={`${residence.name} | ResKonnect`}
         description={residence.description}
         imageUrl={residence.image_url}
-      >
-        <script type="application/ld+json">
-          {JSON.stringify(accommodationSchema)}
-        </script>
-      </SEO>
+      />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Breadcrumb className="mb-4">
             <BreadcrumbList>

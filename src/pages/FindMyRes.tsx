@@ -60,7 +60,7 @@ const FindMyRes = () => {
     const fetchResidences = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from('public_residences').select('*');
+        const { data, error } = await supabase.from('residences').select('*');
         if (error) throw error;
         setResidences(data || []);
       } catch (error) {
@@ -201,11 +201,7 @@ const FindMyRes = () => {
       <SEO
         title="Find Your Perfect Student Home | ResKonnect"
         description="Browse hundreds of verified student residences near your campus."
-      >
-        <script type="application/ld+json">
-          {JSON.stringify(residenceListSchema)}
-        </script>
-      </SEO>
+      />
       <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
         <Breadcrumb>
