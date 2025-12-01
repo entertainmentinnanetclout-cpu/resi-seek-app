@@ -12,8 +12,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 import logo from "@/assets/LIGHT THEME Login Page Icon.png";
 import { Loader2 } from "lucide-react";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { auth } from "@/integrations/firebase/client";
 
 const passwordSchema = z.string()
   .min(8, "Password must be at least 8 characters")
@@ -35,18 +33,6 @@ const Auth = () => {
   useEffect(() => {
     if (!authLoading && user) navigate("/dashboard", { replace: true });
   }, [user, authLoading, navigate]);
-
-  const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      toast.success("Signed in with Google successfully!");
-      navigate("/dashboard");
-    } catch (error) {
-      console.error("Google Sign-In Error:", error);
-      toast.error("Failed to sign in with Google. Please try again.");
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -106,19 +92,6 @@ const Auth = () => {
 
         <Card className="mt-8 mx-auto w-full max-w-md shadow-xl">
           <CardContent className="p-6 sm:p-8">
-            <Button variant="outline" className="w-full mb-4" onClick={handleGoogleSignIn}>
-              Continue with Google
-            </Button>
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
             {error && <div className="bg-destructive/10 border border-destructive/50 text-destructive p-3 rounded-md mb-4 text-sm">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-6">
               {!isLogin && (<div className="space-y-2"><Label htmlFor="fullName">Full Name</Label><Input id="fullName" name="fullName" required placeholder="John Doe" /></div>)}
