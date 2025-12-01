@@ -114,8 +114,9 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <SEO
-        title="Student Dashboard | Manage Your Accommodation"
-        description="View reservations, documents, notifications…"
+        title="Student Dashboard | Manage Your Accommodation | ResKonnect"
+        description="Track your residence applications, manage your profile and documents, and stay connected with landlords on ResKonnect."
+        keywords="student dashboard, accommodation tracker, residence application status"
       />
       <div className="p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">

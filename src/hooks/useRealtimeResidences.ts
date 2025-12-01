@@ -10,7 +10,7 @@ export const useRealtimeResidences = () => {
     const fetchResidences = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase.from('public_residences').select('*');
+        const { data, error } = await supabase.from('residences').select('*');
         if (error) throw error;
         setResidences(data || []);
       } catch (err: any) {

@@ -60,7 +60,7 @@ const FindMyRes = () => {
     const fetchResidences = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from('public_residences').select('*');
+        const { data, error } = await supabase.from('residences').select('*');
         if (error) throw error;
         setResidences(data || []);
       } catch (error) {
@@ -199,8 +199,9 @@ const FindMyRes = () => {
   return (
     <DashboardLayout>
       <SEO
-        title="Find Your Perfect Student Home | ResKonnect"
-        description="Browse hundreds of verified student residences near your campus."
+        title="Find Student Accommodation Near TUT | 360+ Verified Residences | ResKonnect"
+        description="Browse and apply to 360+ verified student residences near TUT campuses in Pretoria West, Arcadia, and Soshanguve. NSFAS approved options available."
+        keywords="TUT accommodation, Pretoria West student res, verified student housing, NSFAS residence"
       />
       <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">

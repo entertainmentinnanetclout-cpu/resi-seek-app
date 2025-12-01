@@ -3,31 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>ResKonnect - Find Student Accommodation In Pretoria</title>
-    <meta name="description" content="Book trusted, safe student accommodation across South Africa." />
+    <title>ResKonnect | Find Student Accommodation in Pretoria & South Africa</title>
+    <meta name="description" content="South Africa's leading student accommodation platform. Find verified, affordable student housing near TUT, UP, and universities across Pretoria, Tshwane & Gauteng. NSFAS approved options available." />
     <meta name="author" content="ResKonnect" />
-    <meta name="application-name" content="ResKonnect Simplified Portal" />
+    <meta name="application-name" content="ResKonnect Student Portal" />
     <meta name="theme-color" content="#141414" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ResKonnect" />
+    <meta name="keywords" content="student accommodation, Pretoria student housing, TUT residence, NSFAS accommodation, university housing South Africa, Tshwane student res, affordable student accommodation, verified residences" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="geo.region" content="ZA-GT" />
+    <meta name="geo.placename" content="Pretoria" />
+    <meta name="geo.position" content="-25.7479;28.2293" />
+    <meta name="ICBM" content="-25.7479, 28.2293" />
     
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="canonical" href="https://reskonnect.co.za" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://reskonnect.co.za" />
-    <meta property="og:title" content="ResKonnect Student Accommodation" />
-    <meta property="og:description" content="Book trusted, safe student accommodation across South Africa." />
-    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:title" content="ResKonnect | Find Student Accommodation in South Africa" />
+    <meta property="og:description" content="South Africa's leading student accommodation platform. Find verified, affordable student housing near TUT, UP, and universities across Pretoria & Gauteng." />
+    <meta property="og:image" content="https://reskonnect.co.za/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="ResKonnect" />
+    <meta property="og:locale" content="en_ZA" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="ResKonnect Student Accommodation" />
-    <meta name="twitter:description" content="Find secure & verified student accommodation." />
-    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:site" content="@ResKonnect" />
+    <meta name="twitter:title" content="ResKonnect | Student Accommodation South Africa" />
+    <meta name="twitter:description" content="Find verified, affordable student accommodation near TUT, UP & other SA universities." />
+    <meta name="twitter:image" content="https://reskonnect.co.za/og-image.png" />
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,7 +53,20 @@
         "@type": "Organization",
         "name": "ResKonnect",
         "url": "https://reskonnect.co.za",
-        "logo": "/logo.png",
+        "logo": "https://reskonnect.co.za/favicon.png",
+        "description": "South Africa's leading student accommodation platform",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Pretoria",
+          "addressRegion": "Gauteng",
+          "addressCountry": "ZA"
+        },
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+27-63-732-3192",
+          "contactType": "customer service",
+          "email": "Reskonnect@gmail.com"
+        },
         "sameAs": [
           "https://www.instagram.com/reskonnect",
           "https://www.facebook.com/reskonnect"
@@ -55,7 +81,10 @@
         "url": "https://reskonnect.co.za",
         "potentialAction": {
           "@type": "SearchAction",
-          "target": "https://reskonnect.co.za/find?query={search_term_string}",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://reskonnect.co.za/find?query={search_term_string}"
+          },
           "query-input": "required name=search_term_string"
         }
       }

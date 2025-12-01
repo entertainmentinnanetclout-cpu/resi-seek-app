@@ -23,9 +23,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: Newspaper, label: "Campus News", path: "/campus-news" },
     { icon: Search, label: "Find My Res", path: "/findmyres" },
     { icon: ShoppingBag, label: "Marketplace", path: "/marketplace" },
-    { icon: FileText, label: "Applications", path: "/dashboard/applications" },
-    { icon: User, label: "Profile", path: "/dashboard/profile" },
-    { icon: MessageSquare, label: "Messages", path: "/dashboard/messages" },
+    { icon: FileText, label: "Applications", path: "/applications" },
+    { icon: User, label: "Profile", path: "/profile" },
+    { icon: MessageSquare, label: "Messages", path: "/messages" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
