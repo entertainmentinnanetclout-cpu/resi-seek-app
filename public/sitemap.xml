@@ -1,38 +1,131 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" 
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <!-- Homepage -->
   <url>
     <loc>https://reskonnect.co.za/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <lastmod>2025-12-01</lastmod>
   </url>
+  
+  <!-- Find Residences -->
   <url>
     <loc>https://reskonnect.co.za/find</loc>
     <changefreq>daily</changefreq>
-    <priority>0.9</priority>
+    <priority>0.95</priority>
+    <lastmod>2025-12-01</lastmod>
   </url>
+  
+  <!-- Authentication -->
+  <url>
+    <loc>https://reskonnect.co.za/auth</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2025-12-01</lastmod>
+  </url>
+  
+  <!-- Student Dashboard -->
+  <url>
+    <loc>https://reskonnect.co.za/dashboard</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2025-12-01</lastmod>
+  </url>
+  
+  <!-- Profile -->
+  <url>
+    <loc>https://reskonnect.co.za/profile</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <lastmod>2025-12-01</lastmod>
+  </url>
+  
+  <!-- Applications -->
+  <url>
+    <loc>https://reskonnect.co.za/applications</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+    <lastmod>2025-12-01</lastmod>
+  </url>
+  
+  <!-- Marketplace -->
+  <url>
+    <loc>https://reskonnect.co.za/marketplace</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+    <lastmod>2025-12-01</lastmod>
+  </url>
+  
+  <!-- Campus News -->
+  <url>
+    <loc>https://reskonnect.co.za/campus-news</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2025-12-01</lastmod>
+  </url>
+  
+  <!-- SEO Landing Pages -->
   <url>
     <loc>https://reskonnect.co.za/student-accommodation-gauteng</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
+    <lastmod>2025-12-01</lastmod>
   </url>
+  
   <url>
     <loc>https://reskonnect.co.za/tut-pretoria-west-accommodation</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
+    <lastmod>2025-12-01</lastmod>
   </url>
+  
   <url>
     <loc>https://reskonnect.co.za/tut-arcadia-accommodation</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
+    <lastmod>2025-12-01</lastmod>
   </url>
+  
+  <url>
+    <loc>https://reskonnect.co.za/tut-soshanguve-accommodation</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <lastmod>2025-12-01</lastmod>
+  </url>
+  
   <url>
     <loc>https://reskonnect.co.za/nsfas-accredited-accommodation</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
+    <lastmod>2025-12-01</lastmod>
   </url>
+  
   <url>
     <loc>https://reskonnect.co.za/south-africa-student-accommodation</loc>
     <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <lastmod>2025-12-01</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://reskonnect.co.za/student-accommodation-limpopo</loc>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <lastmod>2025-12-01</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://reskonnect.co.za/student-accommodation-western-cape</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2025-12-01</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://reskonnect.co.za/student-accommodation-kwazulu-natal</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2025-12-01</lastmod>
   </url>
 </urlset>

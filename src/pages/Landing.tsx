@@ -1,4 +1,5 @@
 import SEO from "@/components/SEO";
+import SEOJsonLd from "@/components/SEOJsonLd";
 import { Shield, MapPin, DollarSign, FileCheck, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,12 +43,80 @@ const Landing = () => {
     { icon: FileCheck, title: "Easy Applications", description: "Apply to multiple residences with our simple step-by-step process." }
   ];
 
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "ResKonnect",
+    "url": "https://reskonnect.co.za",
+    "logo": "https://reskonnect.co.za/logo.png",
+    "description": "South Africa's leading student accommodation platform connecting students with verified residences in Pretoria, Tshwane, and across Gauteng.",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Pretoria",
+      "addressRegion": "Gauteng",
+      "addressCountry": "ZA"
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+27-63-732-3192",
+      "contactType": "customer service",
+      "email": "Reskonnect@gmail.com",
+      "availableLanguage": ["English", "Afrikaans"]
+    },
+    "sameAs": [
+      "https://www.instagram.com/reskonnect",
+      "https://www.facebook.com/reskonnect"
+    ]
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "ResKonnect Student Accommodation",
+    "url": "https://reskonnect.co.za",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://reskonnect.co.za/find?query={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
+  const localBusinessSchema = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "ResKonnect",
+    "@id": "https://reskonnect.co.za",
+    "url": "https://reskonnect.co.za",
+    "telephone": "+27-63-732-3192",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Pretoria",
+      "addressRegion": "Gauteng",
+      "addressCountry": "ZA"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": -25.7479,
+      "longitude": 28.2293
+    },
+    "openingHoursSpecification": {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      "opens": "08:00",
+      "closes": "17:00"
+    },
+    "priceRange": "R2000 - R6000",
+    "areaServed": ["Pretoria", "Tshwane", "Gauteng", "South Africa"]
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="Student Accommodation Made Simple | ResKonnect"
-        description="Find secure, affordable, and fully-managed student accommodation..."
+        title="Find Student Accommodation in Pretoria & Tshwane | ResKonnect South Africa"
+        description="ResKonnect helps South African students find verified, affordable student accommodation near TUT, UP, and other universities in Pretoria, Tshwane & Gauteng. Apply online today!"
+        keywords="Pretoria student accommodation, TUT residence, NSFAS approved accommodation, Tshwane student housing, affordable student res, university accommodation South Africa"
       />
+      <SEOJsonLd schema={[organizationSchema, websiteSchema, localBusinessSchema]} />
       <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Dispatch, SetStateAction } from 'react';
 
-export function useTheme() {
+export function useTheme(): [string, Dispatch<SetStateAction<string>>] {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
   useEffect(() => {
@@ -10,5 +10,5 @@ export function useTheme() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  return [theme, setTheme];
+  return [theme, setTheme] as const;
 }

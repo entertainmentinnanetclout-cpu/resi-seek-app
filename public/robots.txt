@@ -1,3 +1,23 @@
+# robots.txt for ResKonnect
+# https://reskonnect.co.za
+
 User-agent: *
 Allow: /
+
+# Allow all crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Disallow admin and private pages
+Disallow: /admin
+Disallow: /setup-profile
+Disallow: /api/
+
+# Sitemap location
 Sitemap: https://reskonnect.co.za/sitemap.xml
+
+# Crawl-delay (optional, for politeness)
+Crawl-delay: 1
