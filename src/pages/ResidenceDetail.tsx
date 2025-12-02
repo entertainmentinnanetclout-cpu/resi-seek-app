@@ -136,7 +136,15 @@ const ResidenceDetail = () => {
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="md:col-span-2">
-                        <img src={residence.image_url} alt={residence.name} className="w-full h-96 object-cover rounded-lg mb-8" />
+                        <img 
+                          src={residence.image_url || "/placeholder.svg"} 
+                          alt={residence.name} 
+                          className="w-full h-96 object-cover rounded-lg mb-8"
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            target.src = "/placeholder.svg";
+                          }}
+                        />
                         <h3 className="text-xl font-bold mb-4">Description</h3>
                         <p className="text-muted-foreground mb-8">{residence.description}</p>
                         <h3 className="text-xl font-bold mb-4">Amenities</h3>
@@ -186,7 +194,15 @@ const ResidenceDetail = () => {
                 {relatedResidences.map((res) => (
                     <Link to={`/res/${res.id}`} key={res.id}>
                         <Card className="hover:shadow-lg transition-shadow">
-                            <img src={res.image_url} alt={res.name} className="w-full h-48 object-cover rounded-t-lg" />
+                            <img 
+                              src={res.image_url || "/placeholder.svg"} 
+                              alt={res.name} 
+                              className="w-full h-48 object-cover rounded-t-lg"
+                              onError={(e) => {
+                                const target = e.currentTarget as HTMLImageElement;
+                                target.src = "/placeholder.svg";
+                              }}
+                            />
                             <CardContent className="p-4">
                                 <h3 className="text-lg font-bold">{res.name}</h3>
                                 <p className="text-muted-foreground text-sm">{res.address}</p>

@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 import logo from "@/assets/LIGHT THEME Login Page Icon.png";
-import { Loader2 } from "lucide-react";
+import { Loader2, Chrome } from "lucide-react";
 
 const passwordSchema = z.string()
   .min(8, "Password must be at least 8 characters")
@@ -72,6 +72,22 @@ const Auth = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      toast.error(err.message || "Failed to sign in with Google.");
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <SEO
@@ -113,6 +129,30 @@ const Auth = () => {
                   {isLoading ? "Please wait" : isLogin ? "Sign In" : "Create Account"}
                 </Button>
               </div>
+
+              {isLogin && (
+                <>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={handleGoogleLogin}
+                    disabled={isLoading}
+                  >
+                    <Chrome className="h-5 w-5" />
+                    Sign in with Google
+                  </Button>
+                </>
+              )}
             </form>
           </CardContent>
         </Card>

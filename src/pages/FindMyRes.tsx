@@ -333,13 +333,21 @@ const FindMyRes = () => {
                 </div>
             </div>
             <div className="flex space-x-6 pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 overflow-x-auto snap-x snap-mandatory">
-                {featuredResidences.map((res, index) => (
+                {featuredResidences.filter(res => res.image_url).map((res, index) => (
                     <TooltipProvider key={index}>
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Card className="min-w-[280px] sm:min-w-[300px] flex-shrink-0 overflow-hidden group cursor-pointer snap-center transform transition-transform hover:scale-105" onClick={() => handleViewDetails(res)}>
                                     <div className="relative h-40 sm:h-48">
-                                        <img src={res.image_url} alt={res.name} className="w-full h-full object-cover" />
+                                        <img 
+                                          src={res.image_url || "/placeholder.svg"} 
+                                          alt={res.name} 
+                                          className="w-full h-full object-cover"
+                                          onError={(e) => {
+                                            const target = e.currentTarget as HTMLImageElement;
+                                            target.src = "/placeholder.svg";
+                                          }}
+                                        />
                                         <Badge className="absolute top-3 right-3 bg-yellow-400 text-blue-900 font-bold flex items-center gap-1">
                                             <ShieldCheck className="w-4 h-4" /> Trusted Landlord
                                         </Badge>
@@ -402,7 +410,15 @@ const FindMyRes = () => {
                   <div className="flex flex-col md:flex-row">
                     {residence.image_url && (
                         <div className="md:w-1/3 h-48 md:h-auto flex-shrink-0">
-                            <img src={residence.image_url} alt={residence.name} className="w-full h-full object-cover"/>
+                            <img 
+                              src={residence.image_url || "/placeholder.svg"} 
+                              alt={residence.name} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.currentTarget as HTMLImageElement;
+                                target.src = "/placeholder.svg";
+                              }}
+                            />
                         </div>
                     )}
                     <CardContent className="flex-1 p-4 sm:p-6">
@@ -513,7 +529,15 @@ const FindMyRes = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <div className="rounded-lg overflow-hidden border">
-                                <img src={selectedResidence.image_url} alt={selectedResidence.name} className="w-full h-56 object-cover" />
+                                <img 
+                                  src={selectedResidence.image_url || "/placeholder.svg"} 
+                                  alt={selectedResidence.name} 
+                                  className="w-full h-56 object-cover"
+                                  onError={(e) => {
+                                    const target = e.currentTarget as HTMLImageElement;
+                                    target.src = "/placeholder.svg";
+                                  }}
+                                />
                             </div>
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div className="font-semibold">Monthly Price: <span className="font-bold text-primary text-base">R{selectedResidence.price.toLocaleString()}</span></div>
