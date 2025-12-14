@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Preloader from "@/components/Preloader";
+import ResBot from "@/components/ResBot";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import ProfileSetup from "./pages/ProfileSetup";
@@ -15,6 +16,7 @@ import FindMyRes from "./pages/FindMyRes";
 import Applications from "./pages/Applications";
 import Profile from "./pages/Profile";
 import Messages from "./pages/Messages";
+import Favorites from "./pages/Favorites";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Marketplace from "./pages/Marketplace";
@@ -60,6 +62,7 @@ const App = () => {
               <Route path="/find" element={<ProtectedRoute><FindMyRes /></ProtectedRoute>} />
               <Route path="/findmyres" element={<ProtectedRoute><FindMyRes /></ProtectedRoute>} />
               <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+              <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
 
               {/* Other Essential Routes */}
@@ -79,6 +82,8 @@ const App = () => {
               {/* Catch-all Not Found Route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            {/* Global ResBot Chatbot */}
+            <ResBot />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

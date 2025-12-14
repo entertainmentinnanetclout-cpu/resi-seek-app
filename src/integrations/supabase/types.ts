@@ -85,6 +85,49 @@ export type Database = {
         }
         Relationships: []
       }
+      favorites: {
+        Row: {
+          created_at: string
+          id: string
+          residence_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          residence_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          residence_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketplace_listings: {
         Row: {
           category: string
@@ -172,6 +215,55 @@ export type Database = {
         }
         Relationships: []
       }
+      residence_analytics: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          residence_id: string
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          residence_id: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          residence_id?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "residence_analytics_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "residence_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "residence_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       residences: {
         Row: {
           address: string
@@ -192,6 +284,7 @@ export type Database = {
           price: number
           room_type: string | null
           updated_at: string
+          verification_level: string | null
         }
         Insert: {
           address: string
@@ -212,6 +305,7 @@ export type Database = {
           price: number
           room_type?: string | null
           updated_at?: string
+          verification_level?: string | null
         }
         Update: {
           address?: string
@@ -232,8 +326,76 @@ export type Database = {
           price?: number
           room_type?: string | null
           updated_at?: string
+          verification_level?: string | null
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          cons: string[] | null
+          content: string | null
+          created_at: string
+          helpful_count: number | null
+          id: string
+          pros: string[] | null
+          rating: number
+          residence_id: string
+          title: string
+          updated_at: string
+          user_id: string
+          verified_stay: boolean | null
+        }
+        Insert: {
+          cons?: string[] | null
+          content?: string | null
+          created_at?: string
+          helpful_count?: number | null
+          id?: string
+          pros?: string[] | null
+          rating: number
+          residence_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+          verified_stay?: boolean | null
+        }
+        Update: {
+          cons?: string[] | null
+          content?: string | null
+          created_at?: string
+          helpful_count?: number | null
+          id?: string
+          pros?: string[] | null
+          rating?: number
+          residence_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          verified_stay?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
