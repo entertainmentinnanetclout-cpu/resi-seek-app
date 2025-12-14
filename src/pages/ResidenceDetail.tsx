@@ -2,7 +2,7 @@
 import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { MapPin, DollarSign, Users, Bed, ShieldCheck, Wifi, Car, WashingMachine, Dumbbell, Utensils } from "lucide-react";
+import { MapPin, DollarSign, Users, Bed, ShieldCheck, Wifi, Car, WashingMachine, Dumbbell, Utensils, Star, MessageSquare } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,35 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import FavoriteButton from "@/components/FavoriteButton";
+import WhatsAppButton from "@/components/WhatsAppButton";
+import TrustScore from "@/components/TrustScore";
+import ReviewCard from "@/components/ReviewCard";
+import ReviewForm from "@/components/ReviewForm";
+import { useAuth } from "@/contexts/AuthContext";
+import { RESKONNECT_WHATSAPP } from "@/lib/constants";
 
 const ResidenceDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [residence, setResidence] = useState<any>(null);
   const [relatedResidences, setRelatedResidences] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const fetchReviews = async () => {
+    if (!id) return;
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*, user:profiles(full_name)')
+      .eq('residence_id', id)
+      .order('created_at', { ascending: false });
+    if (!error && data) {
+      setReviews(data);
+    }
+  };
 
   useEffect(() => {
     const fetchResidence = async () => {
@@ -38,6 +61,7 @@ const ResidenceDetail = () => {
           setRelatedResidences(related || []);
         }
 
+        await fetchReviews();
       } catch (error) {
         console.error('Error fetching residence:', error);
         toast.error('Failed to load residence details.');
@@ -90,7 +114,23 @@ const ResidenceDetail = () => {
     "Kitchen": <Utensils className="w-4 h-4" />
   };
 
+  const averageRating = reviews.length > 0 
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
+    : 0;
+
+  const handleHelpful = async (reviewId: string) => {
+    const { error } = await supabase
+      .from('reviews')
+      .update({ helpful_count: reviews.find(r => r.id === reviewId)?.helpful_count + 1 || 1 })
+      .eq('id', reviewId);
+    if (!error) {
+      fetchReviews();
+      toast.success('Thanks for your feedback!');
+    }
+  };
+
   return (
+    <TooltipProvider>
     <DashboardLayout>
       <SEO
         title={`${residence.name} | ResKonnect`}
@@ -120,15 +160,24 @@ const ResidenceDetail = () => {
 
           <Card>
             <CardHeader>
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div>
-                      <CardTitle className="text-3xl font-bold">{residence.name}</CardTitle>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <CardTitle className="text-3xl font-bold">{residence.name}</CardTitle>
+                        <TrustScore 
+                          verificationLevel={residence.verification_level || 'basic'}
+                          averageRating={averageRating}
+                          reviewCount={reviews.length}
+                        />
+                      </div>
                       <div className="flex items-center text-muted-foreground mt-2">
                           <MapPin className="w-4 h-4 mr-2" />
                           {residence.address}
                       </div>
                   </div>
-                  <div className="mt-4 md:mt-0">
+                  <div className="mt-4 md:mt-0 flex items-center gap-2 flex-wrap">
+                      <FavoriteButton residenceId={residence.id} />
+                      <WhatsAppButton phone={RESKONNECT_WHATSAPP} residenceName={residence.name} variant="full" />
                       <Button size="lg">Apply Now</Button>
                   </div>
               </div>
@@ -217,6 +266,61 @@ const ResidenceDetail = () => {
             </div>
         </div>
 
+        {/* Reviews Section */}
+        <div className="mt-12">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <MessageSquare className="w-6 h-6 text-primary" />
+              <h2 className="text-2xl font-bold">Reviews ({reviews.length})</h2>
+              {averageRating > 0 && (
+                <div className="flex items-center gap-1 text-warning">
+                  <Star className="w-5 h-5 fill-current" />
+                  <span className="font-semibold">{averageRating.toFixed(1)}</span>
+                </div>
+              )}
+            </div>
+            {user && !showReviewForm && (
+              <Button onClick={() => setShowReviewForm(true)}>Write a Review</Button>
+            )}
+          </div>
+
+          {showReviewForm && (
+            <div className="mb-6">
+              <ReviewForm 
+                residenceId={residence.id}
+                onSuccess={() => {
+                  setShowReviewForm(false);
+                  fetchReviews();
+                }}
+                onCancel={() => setShowReviewForm(false)}
+              />
+            </div>
+          )}
+
+          {reviews.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {reviews.map((review) => (
+                <ReviewCard key={review.id} review={review} onHelpful={handleHelpful} />
+              ))}
+            </div>
+          ) : (
+            <Card className="bg-card/50">
+              <CardContent className="p-8 text-center">
+                <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-semibold mb-2">No Reviews Yet</h3>
+                <p className="text-muted-foreground text-sm mb-4">
+                  Be the first to share your experience at this residence.
+                </p>
+                {user && !showReviewForm && (
+                  <Button variant="outline" onClick={() => setShowReviewForm(true)}>
+                    Write the First Review
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
         <div className="mt-12">
             <Card className="bg-card/50">
                 <CardContent className="p-6">
@@ -230,6 +334,7 @@ const ResidenceDetail = () => {
 
       </div>
     </DashboardLayout>
+    </TooltipProvider>
   );
 };
 

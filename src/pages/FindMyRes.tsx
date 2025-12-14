@@ -2,7 +2,7 @@
 import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MapPin, DollarSign, Users, Search, SlidersHorizontal, Star, Building2, Bed, Ruler, ShieldCheck } from "lucide-react";
+import { MapPin, DollarSign, Users, Search, SlidersHorizontal, Star, Building2, Bed, Ruler, ShieldCheck, Heart, Scale, MessageCircle } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,13 @@ import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import FavoriteButton from "@/components/FavoriteButton";
+import CompareButton from "@/components/CompareButton";
+import CompareDrawer from "@/components/CompareDrawer";
+import WhatsAppButton from "@/components/WhatsAppButton";
+import { RESKONNECT_WHATSAPP } from "@/lib/constants";
+
+const MAX_COMPARE = 3;
 
 const FindMyRes = () => {
   const { user } = useAuth();
@@ -29,6 +36,7 @@ const FindMyRes = () => {
   const { applications } = useRealtimeApplications(user);
   const [residences, setResidences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [compareList, setCompareList] = useState<any[]>([]);
   
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
@@ -47,13 +55,25 @@ const FindMyRes = () => {
 
   const [applicationNotes, setApplicationNotes] = useState("");
 
+  const toggleCompare = (residence: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (compareList.find(r => r.id === residence.id)) {
+      setCompareList(prev => prev.filter(r => r.id !== residence.id));
+    } else if (compareList.length < MAX_COMPARE) {
+      setCompareList(prev => [...prev, residence]);
+    } else {
+      toast.error(`Maximum ${MAX_COMPARE} residences can be compared`);
+    }
+  };
+
   const trustedPartners = [
-    { id: 'west-end-residency', name: 'West End Residency', location: '11 President Steyn Street, Pretoria West', image: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?q=80&w=800', rating: 4.8, verified: true },
-    { id: 'study-haven', name: 'Study Haven', location: '29 Carl Street, Pretoria West', image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=800', rating: 4.9, verified: true },
-    { id: 'ekhaya-junction', name: 'Ekhaya Junction', location: '41 Justice Mahomed Street, Sunnyside', image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=800', rating: 4.7, verified: true },
-    { id: 'campus-lodge', name: 'Campus Lodge', location: '115 Walker Street, Sunnyside', image: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?q=80&w=800', rating: 4.6, verified: true },
-    { id: 'future-heights', name: 'Future Heights', location: '28 Klapper Street, Danville', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800', rating: 4.8, verified: true },
-    { id: 'urban-hub', name: 'Urban Hub', location: '44 Van der Hoff Road, Pretoria West', image: 'https://images.unsplash.com/photo-1576941089067-2de3c901e126?q=80&w=800', rating: 4.5, verified: true },
+    { id: 'west-end-residency', name: 'West End Residency', location: '11 President Steyn Street, Pretoria West', image: '/placeholder.svg', rating: 4.8, verified: true },
+    { id: 'study-haven', name: 'Study Haven', location: '29 Carl Street, Pretoria West', image: '/placeholder.svg', rating: 4.9, verified: true },
+    { id: 'ekhaya-junction', name: 'Ekhaya Junction', location: '41 Justice Mahomed Street, Sunnyside', image: '/placeholder.svg', rating: 4.7, verified: true },
+    { id: 'campus-lodge', name: 'Campus Lodge', location: '115 Walker Street, Sunnyside', image: '/placeholder.svg', rating: 4.6, verified: true },
+    { id: 'future-heights', name: 'Future Heights', location: '28 Klapper Street, Danville', image: '/placeholder.svg', rating: 4.8, verified: true },
+    { id: 'urban-hub', name: 'Urban Hub', location: '44 Van der Hoff Road, Pretoria West', image: '/placeholder.svg', rating: 4.5, verified: true },
   ];
 
   useEffect(() => {
@@ -408,19 +428,28 @@ const FindMyRes = () => {
                 <Link to={`/res/${residence.id}`} key={residence.id} className="block">
                 <Card className="hover:shadow-md transition-shadow overflow-hidden">
                   <div className="flex flex-col md:flex-row">
-                    {residence.image_url && (
-                        <div className="md:w-1/3 h-48 md:h-auto flex-shrink-0">
-                            <img 
-                              src={residence.image_url || "/placeholder.svg"} 
-                              alt={residence.name} 
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.currentTarget as HTMLImageElement;
-                                target.src = "/placeholder.svg";
-                              }}
-                            />
-                        </div>
-                    )}
+                    <div className="md:w-1/3 h-48 md:h-auto flex-shrink-0 relative">
+                      <img 
+                        src={residence.image_url || "/placeholder.svg"} 
+                        alt={residence.name} 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          target.src = "/placeholder.svg";
+                        }}
+                      />
+                      {/* Action buttons overlay */}
+                      <div className="absolute top-2 right-2 flex gap-1.5">
+                        <FavoriteButton residenceId={residence.id} variant="icon" className="bg-background/80 backdrop-blur-sm" />
+                        <CompareButton 
+                          isSelected={!!compareList.find(r => r.id === residence.id)}
+                          disabled={compareList.length >= MAX_COMPARE && !compareList.find(r => r.id === residence.id)}
+                          onClick={(e) => toggleCompare(residence, e)}
+                          className="bg-background/80 backdrop-blur-sm"
+                        />
+                        <WhatsAppButton phone={RESKONNECT_WHATSAPP} residenceName={residence.name} variant="icon" className="bg-background/80 backdrop-blur-sm" />
+                      </div>
+                    </div>
                     <CardContent className="flex-1 p-4 sm:p-6">
                       <div className="flex flex-col justify-between h-full">
                         <div>
@@ -568,6 +597,12 @@ const FindMyRes = () => {
             )}
         </DialogContent>
       </Dialog>
+      
+      <CompareDrawer 
+        compareList={compareList}
+        onRemove={(id) => setCompareList(prev => prev.filter(r => r.id !== id))}
+        onClear={() => setCompareList([])}
+      />
     </DashboardLayout>
   );
 };
