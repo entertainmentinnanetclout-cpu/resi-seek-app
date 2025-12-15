@@ -101,37 +101,90 @@ const Profile = () => {
     if (!files || files.length === 0 || !user || !selectedDocType) return;
 
     const file = files[0];
+    
+    // Validate file
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only PDF, PNG, and JPG files are allowed");
+      return;
+    }
+
     setUploadingDoc(selectedDocType);
 
     try {
-        const filePath = `${user.id}/${selectedDocType.toLowerCase().replace(/ /g, '_')}-${file.name}`;
-        const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file, { upsert: true });
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${selectedDocType.toLowerCase().replace(/ /g, '_')}-${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
 
-        if (uploadError) throw uploadError;
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file, { upsert: true });
 
-        const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
+      if (uploadError) throw uploadError;
 
-        const updates = {
-            [`${selectedDocType.toLowerCase().replace(/ /g, "_")}_url`]: publicUrl,
-            [`${selectedDocType.toLowerCase().replace(/ /g, "_")}_status`]: "uploaded",
-        };
+      // Store document record in documents table
+      const { error: dbError } = await supabase.from("documents").insert({
+        user_id: user.id,
+        document_type: selectedDocType,
+        file_name: file.name,
+        file_path: filePath,
+        file_size: file.size
+      });
 
-        const { error: dbError } = await supabase.from("profiles").update(updates).eq("id", user.id);
-        if (dbError) throw dbError;
+      if (dbError) throw dbError;
 
-        setProfile(prev => ({...prev, ...updates}));
-        toast.success(`${selectedDocType} uploaded successfully!`);
+      toast.success(`${selectedDocType} uploaded successfully!`);
+      
+      // Refresh to show updated status
+      const { data: docs } = await supabase
+        .from("documents")
+        .select("document_type")
+        .eq("user_id", user.id);
+      
+      if (docs) {
+        const uploadedTypes = docs.map(d => d.document_type);
+        setProfile((prev: any) => ({
+          ...prev,
+          uploadedDocuments: uploadedTypes
+        }));
+      }
 
     } catch (err: any) {
-        toast.error(`Upload failed: ${err.message}`);
+      console.error("Upload error:", err);
+      toast.error(`Upload failed: ${err.message}`);
     } finally {
-        setUploadingDoc(null);
-        setSelectedDocType(null);
-        if (documentInputRef.current) {
-            documentInputRef.current.value = "";
-        }
+      setUploadingDoc(null);
+      setSelectedDocType(null);
+      if (documentInputRef.current) {
+        documentInputRef.current.value = "";
+      }
     }
   };
+
+  // Fetch uploaded documents on mount
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from("documents")
+        .select("document_type")
+        .eq("user_id", user.id);
+      
+      if (data) {
+        setProfile((prev: any) => ({
+          ...prev,
+          uploadedDocuments: data.map(d => d.document_type)
+        }));
+      }
+    };
+    fetchDocuments();
+  }, [user?.id]);
   
   const AccordionItem = ({ title, description, id, children }: any) => (
     <Card className="shadow-sm md:shadow-none">
@@ -263,15 +316,14 @@ const Profile = () => {
                     <div className="space-y-3">
                       <input type="file" ref={documentInputRef} onChange={handleDocumentChange} className="hidden" accept="application/pdf, image/png, image/jpeg" />
                       {["ID Copy", "Proof of Registration", "Proof of Funding"].map((doc) => {
-                        const docKey = doc.toLowerCase().replace(/ /g, "_");
-                        const status = profile[`${docKey}_status`];
+                        const isUploaded = profile?.uploadedDocuments?.includes(doc);
                         return (
                           <div key={doc} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border rounded-lg bg-background/50">
                             <div className="flex items-center gap-3">
-                              {status === 'uploaded' ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" /> : <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0" />}
+                              {isUploaded ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" /> : <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0" />}
                               <div>
                                 <p className="font-medium">{doc}</p>
-                                <p className="text-sm capitalize text-muted-foreground">{status || 'Not Uploaded'}</p>
+                                <p className="text-sm capitalize text-muted-foreground">{isUploaded ? 'Uploaded' : 'Not Uploaded'}</p>
                               </div>
                             </div>
                             <Button
@@ -282,7 +334,7 @@ const Profile = () => {
                               disabled={uploadingDoc === doc}
                             >
                               {uploadingDoc === doc ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                              {status === 'uploaded' ? 'Replace' : 'Upload'}
+                              {isUploaded ? 'Replace' : 'Upload'}
                             </Button>
                           </div>
                         );

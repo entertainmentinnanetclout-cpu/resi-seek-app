@@ -282,6 +282,7 @@ export type Database = {
           image_url: string | null
           name: string
           price: number
+          province: string | null
           room_type: string | null
           updated_at: string
           verification_level: string | null
@@ -303,6 +304,7 @@ export type Database = {
           image_url?: string | null
           name: string
           price: number
+          province?: string | null
           room_type?: string | null
           updated_at?: string
           verification_level?: string | null
@@ -324,6 +326,7 @@ export type Database = {
           image_url?: string | null
           name?: string
           price?: number
+          province?: string | null
           room_type?: string | null
           updated_at?: string
           verification_level?: string | null
