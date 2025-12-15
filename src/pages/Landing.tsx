@@ -1,6 +1,6 @@
 import SEO from "@/components/SEO";
 import SEOJsonLd from "@/components/SEOJsonLd";
-import { Shield, MapPin, DollarSign, FileCheck, Menu } from "lucide-react";
+import { Shield, MapPin, DollarSign, FileCheck, Menu, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,10 @@ import { toast } from "sonner";
 import { useState } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import FloatingShapes from "@/components/FloatingShapes";
+import TrustedLandlordsSection from "@/components/TrustedLandlordsSection";
+import LandlordListingForm from "@/components/LandlordListingForm";
 import headerLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import footerLogo from "@/assets/FOOTER.png";
 import iconLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
@@ -122,27 +126,31 @@ const Landing = () => {
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <img src={headerLogo} alt="ResKonnect" className="h-8 sm:h-10 w-auto" />
           </div>
-          <div className="hidden md:flex gap-2">
+          <div className="hidden md:flex items-center gap-2">
+            <ThemeToggle />
             <Button variant="ghost" onClick={() => navigate("/auth")}>Sign In</Button>
             <Button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground hover:bg-primary/90">Get Started</Button>
           </div>
-          <Sheet open={isMenuOpen} onOpenChange={setMenuOpen}>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="outline" size="icon"><Menu className="h-6 w-6" /></Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-full max-w-xs sm:max-w-sm">
-                <div className="p-6">
-                    <div className="flex flex-col gap-4 mt-8">
-                        <SheetClose asChild>
-                            <Button variant="ghost" className="w-full justify-start" onClick={() => navigate("/auth")}>Sign In</Button>
-                        </SheetClose>
-                        <SheetClose asChild>
-                            <Button className="w-full" onClick={() => navigate("/auth")}>Get Started</Button>
-                        </SheetClose>
-                    </div>
-                </div>
-            </SheetContent>
-          </Sheet>
+          <div className="flex items-center gap-2 md:hidden">
+            <ThemeToggle />
+            <Sheet open={isMenuOpen} onOpenChange={setMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon"><Menu className="h-6 w-6" /></Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full max-w-xs sm:max-w-sm">
+                  <div className="p-6">
+                      <div className="flex flex-col gap-4 mt-8">
+                          <SheetClose asChild>
+                              <Button variant="ghost" className="w-full justify-start" onClick={() => navigate("/auth")}>Sign In</Button>
+                          </SheetClose>
+                          <SheetClose asChild>
+                              <Button className="w-full" onClick={() => navigate("/auth")}>Get Started</Button>
+                          </SheetClose>
+                      </div>
+                  </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </header>
 
@@ -151,14 +159,15 @@ const Landing = () => {
           <HeroCarousel slides={heroSlides} autoPlay interval={6000} />
         </section>
 
-        <section className="py-12 md:py-20">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="py-12 md:py-20 relative overflow-hidden">
+          <FloatingShapes />
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-10 md:mb-12">Why Choose ResKonnect?</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
               {features.map((feature, index) => (
-                <Card key={index} className="bg-card shadow-sm hover:shadow-lg transition-shadow text-center">
+                <Card key={index} className="bg-card shadow-sm hover:shadow-lg transition-all card-3d text-center">
                   <CardContent className="p-6">
-                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4 mx-auto animate-float" style={{ animationDelay: `${index * 0.2}s` }}>
                       <feature.icon className="w-8 h-8 text-primary-foreground" />
                     </div>
                     <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
@@ -170,8 +179,13 @@ const Landing = () => {
           </div>
         </section>
 
-        <section className="py-12 md:py-20 bg-card/50">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Trusted Landlords Section */}
+        <TrustedLandlordsSection />
+
+        <section className="py-12 md:py-20 bg-card/50 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center max-w-6xl mx-auto">
               <div className="order-2 md:order-1">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4 md:mb-6">About ResKonnect</h2>
@@ -179,10 +193,25 @@ const Landing = () => {
                 <p className="text-muted-foreground mb-6 leading-relaxed">Our platform streamlines applications, ensures transparency, and puts students first. Whether you're looking for budget-friendly options or premium facilities, we've got you covered.</p>
                 <Button onClick={() => navigate("/auth")} className="w-full sm:w-auto">Get Started</Button>
               </div>
-              <div className="order-1 md:order-2 bg-primary/10 rounded-2xl p-8 h-64 md:h-80 flex items-center justify-center">
-                <img src={iconLogo} alt="ResKonnect Illustration" className="w-32 md:w-48 h-auto opacity-60" />
+              <div className="order-1 md:order-2 bg-primary/10 rounded-2xl p-8 h-64 md:h-80 flex items-center justify-center relative group">
+                <img src={iconLogo} alt="ResKonnect Illustration" className="w-32 md:w-48 h-auto opacity-60 group-hover:scale-110 transition-transform duration-500" />
+                <div className="absolute inset-0 rounded-2xl border border-primary/20 group-hover:border-primary/40 transition-colors" />
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Landlord Listing Form */}
+        <section className="py-12 md:py-20 relative overflow-hidden">
+          <FloatingShapes className="opacity-50" />
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">List Your Property</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Are you a landlord? List your student accommodation on ResKonnect and reach thousands of students looking for quality housing.
+              </p>
+            </div>
+            <LandlordListingForm />
           </div>
         </section>
 
