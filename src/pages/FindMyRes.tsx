@@ -1,4 +1,3 @@
-
 import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -26,12 +25,15 @@ import CompareButton from "@/components/CompareButton";
 import CompareDrawer from "@/components/CompareDrawer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { RESKONNECT_WHATSAPP } from "@/lib/constants";
+import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 
 const MAX_COMPARE = 3;
 
 const FindMyRes = () => {
+  const shouldBlock = useAdminRedirect();
   const { user } = useAuth();
   const navigate = useNavigate();
+  if (shouldBlock) return null;
   const { profile } = useRealtimeProfile(user);
   const { applications } = useRealtimeApplications(user);
   const [residences, setResidences] = useState<any[]>([]);
