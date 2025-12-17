@@ -55,6 +55,96 @@ export type Database = {
           },
         ]
       }
+      bursaries: {
+        Row: {
+          amount: string | null
+          created_at: string
+          deadline: string | null
+          description: string | null
+          fields_of_study: string[] | null
+          id: string
+          is_active: boolean
+          link: string | null
+          name: string
+          provider: string
+          requirements: string[] | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          fields_of_study?: string[] | null
+          id?: string
+          is_active?: boolean
+          link?: string | null
+          name: string
+          provider: string
+          requirements?: string[] | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          fields_of_study?: string[] | null
+          id?: string
+          is_active?: boolean
+          link?: string | null
+          name?: string
+          provider?: string
+          requirements?: string[] | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      campus_news: {
+        Row: {
+          author: string | null
+          category: string
+          content: string
+          created_at: string
+          excerpt: string | null
+          id: string
+          image_url: string | null
+          is_published: boolean
+          published_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string | null
+          category?: string
+          content: string
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          published_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string | null
+          category?: string
+          content?: string
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          published_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           document_type: string
@@ -173,6 +263,45 @@ export type Database = {
           },
         ]
       }
+      hero_slides: {
+        Row: {
+          created_at: string
+          cta_link: string | null
+          cta_text: string | null
+          description: string | null
+          display_order: number
+          id: string
+          image_url: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_link?: string | null
+          cta_text?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_url: string
+          is_active?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_link?: string | null
+          cta_text?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       marketplace_listings: {
         Row: {
           category: string
@@ -215,6 +344,33 @@ export type Database = {
           updated_at?: string
           user_id?: string
           verified?: boolean
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }
@@ -450,6 +606,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      student_discounts: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          discount: string
+          how_to_claim: string | null
+          id: string
+          is_active: boolean
+          is_verified: boolean
+          link: string | null
+          name: string
+          provider: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          discount: string
+          how_to_claim?: string | null
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean
+          link?: string | null
+          name: string
+          provider: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          discount?: string
+          how_to_claim?: string | null
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean
+          link?: string | null
+          name?: string
+          provider?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

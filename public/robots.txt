@@ -11,8 +11,31 @@ Allow: /
 User-agent: Bingbot
 Allow: /
 
+# Explicitly allow public pages
+Allow: /find
+Allow: /res/
+Allow: /bursaries
+Allow: /discounts
+Allow: /events
+Allow: /roommates
+Allow: /marketplace
+Allow: /news
+
+# SEO landing pages
+Allow: /gauteng-student-accommodation
+Allow: /western-cape-student-accommodation
+Allow: /kwazulu-natal-student-accommodation
+Allow: /eastern-cape-student-accommodation
+Allow: /campus/
+Allow: /nsfas-student-accommodation
+
 # Disallow admin and private pages
 Disallow: /admin
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /applications
+Disallow: /messages
+Disallow: /favorites
 Disallow: /setup-profile
 Disallow: /api/
 
