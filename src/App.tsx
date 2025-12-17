@@ -22,6 +22,10 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Marketplace from "./pages/Marketplace";
 import ResidenceDetail from "./pages/ResidenceDetail";
+import BursaryFinder from "./pages/BursaryFinder";
+import StudentDiscounts from "./pages/StudentDiscounts";
+import RoommateFinder from "./pages/RoommateFinder";
+import Events from "./pages/Events";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -66,6 +70,10 @@ const App = () => {
               <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
               <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+              <Route path="/bursaries" element={<ProtectedRoute><BursaryFinder /></ProtectedRoute>} />
+              <Route path="/discounts" element={<ProtectedRoute><StudentDiscounts /></ProtectedRoute>} />
+              <Route path="/roommates" element={<ProtectedRoute><RoommateFinder /></ProtectedRoute>} />
+              <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
 
               {/* Other Essential Routes */}
               <Route path="/auth" element={<Auth />} />

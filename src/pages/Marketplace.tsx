@@ -17,7 +17,7 @@ import { Package, Plus, Search, Filter, X, Image as ImageIcon, Loader2 } from "l
 import { StudentVerificationModal } from "@/components/StudentVerificationModal";
 import { RESKONNECT_WHATSAPP_FORMATTED } from "@/lib/constants";
 
-const categories = ["Books", "Electronics", "Study Materials", "Furniture", "Clothing", "Other"];
+const categories = ["Textbooks", "Study Notes", "Electronics", "Furniture", "Clothing", "Services", "Transport", "Other"];
 const conditions = [
   { value: "new", label: "New" },
   { value: "like_new", label: "Like New" },
