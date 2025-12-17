@@ -187,7 +187,7 @@ const AdminUsers = () => {
                         <TableCell className="text-right">
                           <Select
                             value={user.role}
-                            onValueChange={(value) => updateRole(user.id, value)}
+                            onValueChange={(value) => updateRole(user.id, value as "admin" | "student")}
                           >
                             <SelectTrigger className="w-28">
                               <SelectValue />
