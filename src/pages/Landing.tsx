@@ -33,7 +33,8 @@ const Landing = () => {
     e.currentTarget.reset();
   };
 
-  const heroSlides = [
+  // Fallback slides in case database is empty
+  const fallbackSlides = [
     { image: campusDinokeng, title: "Welcome to TUT Dinokeng Campus", description: "Find your perfect student accommodation near campus - 400+ verified options available", cta: { text: "Explore Residences", action: () => navigate("/find") } },
     { image: artsFestival, title: "Experience Campus Life", description: "Join vibrant campus activities and cultural celebrations throughout the year", cta: { text: "Get Started", action: () => navigate("/auth") } },
     { image: studentStudying, title: "Study in Comfort", description: "Access quality accommodation that supports your academic success", cta: { text: "Find Your Res", action: () => navigate("/find") } },
@@ -156,7 +157,7 @@ const Landing = () => {
 
       <main>
         <section>
-          <HeroCarousel slides={heroSlides} autoPlay interval={6000} />
+          <HeroCarousel slides={fallbackSlides} autoPlay interval={6000} useDatabase={true} />
         </section>
 
         <section className="py-12 md:py-20 relative overflow-hidden">
