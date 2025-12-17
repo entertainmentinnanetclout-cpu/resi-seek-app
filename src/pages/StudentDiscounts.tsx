@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
-import { Search, Percent, ExternalLink, Filter, Tag, ShoppingBag, Utensils, Bus, Gamepad2, Laptop, Heart } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Search, Percent, ExternalLink, Filter, Tag, ShoppingBag, Utensils, Bus, Gamepad2, Laptop, Heart, Loader2, CheckCircle } from "lucide-react";
 import { RESKONNECT_WHATSAPP_FORMATTED } from "@/lib/constants";
 
 interface Discount {
@@ -14,137 +16,16 @@ interface Discount {
   name: string;
   provider: string;
   discount: string;
-  category: "food" | "transport" | "entertainment" | "tech" | "health" | "shopping";
-  description: string;
-  howToClaim: string;
-  link: string;
-  validUntil?: string;
+  category: string;
+  description: string | null;
+  how_to_claim: string | null;
+  link: string | null;
+  valid_until: string | null;
+  is_verified: boolean;
+  is_active: boolean;
 }
 
-const discounts: Discount[] = [
-  {
-    id: "1",
-    name: "Spotify Student",
-    provider: "Spotify",
-    discount: "50% off Premium",
-    category: "entertainment",
-    description: "Get Spotify Premium at half price with a valid student email.",
-    howToClaim: "Sign up with your student email address and verify through SheerID.",
-    link: "https://www.spotify.com/student"
-  },
-  {
-    id: "2",
-    name: "Apple Music Student",
-    provider: "Apple",
-    discount: "50% off subscription",
-    category: "entertainment",
-    description: "Stream unlimited music with Apple Music at student rates.",
-    howToClaim: "Verify student status through UNiDAYS when subscribing.",
-    link: "https://www.apple.com/za/shop/browse/campaigns/students"
-  },
-  {
-    id: "3",
-    name: "Microsoft 365 Education",
-    provider: "Microsoft",
-    discount: "Free for students",
-    category: "tech",
-    description: "Get Word, Excel, PowerPoint, and more completely free.",
-    howToClaim: "Sign up with your university email address (.ac.za domain).",
-    link: "https://www.microsoft.com/en-za/education"
-  },
-  {
-    id: "4",
-    name: "GitHub Student Developer Pack",
-    provider: "GitHub",
-    discount: "Free tools worth $200k+",
-    category: "tech",
-    description: "Access professional developer tools including GitHub Pro, cloud credits, and more.",
-    howToClaim: "Apply with your student email and proof of enrollment.",
-    link: "https://education.github.com/pack"
-  },
-  {
-    id: "5",
-    name: "Steers Student Meals",
-    provider: "Steers",
-    discount: "Up to 20% off",
-    category: "food",
-    description: "Show your student card for discounts on selected meals.",
-    howToClaim: "Present your valid student card when ordering.",
-    link: "https://www.steers.co.za"
-  },
-  {
-    id: "6",
-    name: "McDonald's Student Discount",
-    provider: "McDonald's SA",
-    discount: "10-15% off",
-    category: "food",
-    description: "Student discounts at participating locations.",
-    howToClaim: "Show your student card at checkout.",
-    link: "https://www.mcdonalds.co.za"
-  },
-  {
-    id: "7",
-    name: "Gautrain Student Discount",
-    provider: "Gautrain",
-    discount: "25% off fares",
-    category: "transport",
-    description: "Reduced fares for students traveling on Gautrain.",
-    howToClaim: "Apply for a Gautrain student Gold Card with proof of registration.",
-    link: "https://www.gautrain.co.za"
-  },
-  {
-    id: "8",
-    name: "Ster-Kinekor Student",
-    provider: "Ster-Kinekor",
-    discount: "Up to 30% off tickets",
-    category: "entertainment",
-    description: "Discounted movie tickets on select days and screenings.",
-    howToClaim: "Show student card when purchasing tickets or book online with student promo.",
-    link: "https://www.sterkinekor.com"
-  },
-  {
-    id: "9",
-    name: "Adobe Creative Cloud",
-    provider: "Adobe",
-    discount: "60% off first year",
-    category: "tech",
-    description: "Access Photoshop, Illustrator, Premiere Pro and more.",
-    howToClaim: "Verify student status and sign up for the student plan.",
-    link: "https://www.adobe.com/africa/creativecloud/buy/students.html"
-  },
-  {
-    id: "10",
-    name: "Virgin Active Student",
-    provider: "Virgin Active",
-    discount: "Reduced membership",
-    category: "health",
-    description: "Discounted gym membership for full-time students.",
-    howToClaim: "Visit your nearest branch with student card and proof of registration.",
-    link: "https://www.virginactive.co.za"
-  },
-  {
-    id: "11",
-    name: "Planet Fitness Student",
-    provider: "Planet Fitness",
-    discount: "Special student rates",
-    category: "health",
-    description: "Affordable gym membership with student discount.",
-    howToClaim: "Sign up in-branch with valid student ID.",
-    link: "https://www.planetfitness.co.za"
-  },
-  {
-    id: "12",
-    name: "Takealot Student",
-    provider: "Takealot",
-    discount: "Various deals",
-    category: "shopping",
-    description: "Special student deals and promotions throughout the year.",
-    howToClaim: "Look for student specials during back-to-school seasons.",
-    link: "https://www.takealot.com"
-  }
-];
-
-const categoryIcons = {
+const categoryIcons: Record<string, any> = {
   food: Utensils,
   transport: Bus,
   entertainment: Gamepad2,
@@ -153,7 +34,7 @@ const categoryIcons = {
   shopping: ShoppingBag
 };
 
-const categoryColors = {
+const categoryColors: Record<string, string> = {
   food: "bg-warning/20 text-warning border-warning/30",
   transport: "bg-success/20 text-success border-success/30",
   entertainment: "bg-primary/20 text-primary border-primary/30",
@@ -163,14 +44,47 @@ const categoryColors = {
 };
 
 const StudentDiscounts = () => {
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+
+  useEffect(() => {
+    fetchDiscounts();
+    
+    // Realtime subscription
+    const channel = supabase
+      .channel('discounts-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_discounts' }, () => fetchDiscounts())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchDiscounts = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from("student_discounts")
+      .select("*")
+      .eq("is_active", true)
+      .order("is_verified", { ascending: false });
+
+    if (error) {
+      console.error("Fetch error:", error);
+      toast.error("Failed to load discounts");
+    } else {
+      setDiscounts(data || []);
+    }
+    setIsLoading(false);
+  };
 
   const filteredDiscounts = discounts.filter(discount => {
     const matchesSearch =
       discount.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       discount.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      discount.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (discount.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
 
     const matchesCategory = categoryFilter === "all" || discount.category === categoryFilter;
 
@@ -262,56 +176,83 @@ const StudentDiscounts = () => {
             Found {filteredDiscounts.length} discounts
           </p>
 
-          {/* Discount Cards */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filteredDiscounts.map(discount => {
-              const Icon = categoryIcons[discount.category];
-              return (
-                <Card key={discount.id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1 flex-1">
-                        <CardTitle className="text-lg">{discount.name}</CardTitle>
-                        <CardDescription>{discount.provider}</CardDescription>
-                      </div>
-                      <Badge className={`${categoryColors[discount.category]} capitalize shrink-0`}>
-                        <Icon className="w-3 h-3 mr-1" />
-                        {discount.category}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4 flex-1 flex flex-col">
-                    <div className="bg-primary/10 rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold text-primary">{discount.discount}</p>
-                    </div>
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="text-center py-12">
+              <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading discounts...</p>
+            </div>
+          ) : (
+            <>
+              {/* Discount Cards */}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {filteredDiscounts.map(discount => {
+                  const Icon = categoryIcons[discount.category] || ShoppingBag;
+                  return (
+                    <Card key={discount.id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-1 flex-1">
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-lg">{discount.name}</CardTitle>
+                              {discount.is_verified && (
+                                <CheckCircle className="w-4 h-4 text-success shrink-0" />
+                              )}
+                            </div>
+                            <CardDescription>{discount.provider}</CardDescription>
+                          </div>
+                          <Badge className={`${categoryColors[discount.category] || 'bg-muted'} capitalize shrink-0`}>
+                            <Icon className="w-3 h-3 mr-1" />
+                            {discount.category}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4 flex-1 flex flex-col">
+                        <div className="bg-primary/10 rounded-lg p-3 text-center">
+                          <p className="text-2xl font-bold text-primary">{discount.discount}</p>
+                        </div>
 
-                    <p className="text-sm text-muted-foreground flex-1">{discount.description}</p>
+                        {discount.description && (
+                          <p className="text-sm text-muted-foreground flex-1">{discount.description}</p>
+                        )}
 
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">How to Claim:</p>
-                      <p className="text-sm text-muted-foreground">{discount.howToClaim}</p>
-                    </div>
+                        {discount.how_to_claim && (
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">How to Claim:</p>
+                            <p className="text-sm text-muted-foreground">{discount.how_to_claim}</p>
+                          </div>
+                        )}
 
-                    <Button asChild className="w-full mt-auto">
-                      <a href={discount.link} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Get Discount
-                      </a>
-                    </Button>
+                        {discount.valid_until && (
+                          <p className="text-xs text-muted-foreground">
+                            Valid until: {new Date(discount.valid_until).toLocaleDateString('en-ZA')}
+                          </p>
+                        )}
+
+                        {discount.link && (
+                          <Button asChild className="w-full mt-auto">
+                            <a href={discount.link} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              Get Discount
+                            </a>
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {filteredDiscounts.length === 0 && (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Percent className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No discounts found</h3>
+                    <p className="text-muted-foreground">Try adjusting your search filters</p>
                   </CardContent>
                 </Card>
-              );
-            })}
-          </div>
-
-          {filteredDiscounts.length === 0 && (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Percent className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No discounts found</h3>
-                <p className="text-muted-foreground">Try adjusting your search filters</p>
-              </CardContent>
-            </Card>
+              )}
+            </>
           )}
 
           {/* Partner CTA */}

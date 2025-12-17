@@ -5,136 +5,73 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
-import { Search, Calendar, GraduationCap, ExternalLink, Filter, Clock, Banknote } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Search, Calendar, GraduationCap, ExternalLink, Filter, Clock, Banknote, Loader2 } from "lucide-react";
 
 interface Bursary {
   id: string;
   name: string;
   provider: string;
-  amount: string;
-  deadline: string;
-  fieldsOfStudy: string[];
-  requirements: string[];
-  link: string;
-  type: "government" | "private" | "university" | "ngo";
-  description: string;
+  amount: string | null;
+  deadline: string | null;
+  fields_of_study: string[] | null;
+  requirements: string[] | null;
+  link: string | null;
+  type: string;
+  description: string | null;
+  is_active: boolean;
 }
 
-const bursaries: Bursary[] = [
-  {
-    id: "1",
-    name: "NSFAS Bursary",
-    provider: "National Student Financial Aid Scheme",
-    amount: "Full funding (tuition, accommodation, meals, books)",
-    deadline: "2025-01-31",
-    fieldsOfStudy: ["All fields"],
-    requirements: ["South African citizen", "Household income below R350,000/year", "Accepted at public university/TVET"],
-    link: "https://www.nsfas.org.za",
-    type: "government",
-    description: "Government bursary covering tuition, accommodation, meals, and learning materials for qualifying students."
-  },
-  {
-    id: "2",
-    name: "Funza Lushaka Bursary",
-    provider: "Department of Basic Education",
-    amount: "Full funding + stipend",
-    deadline: "2025-01-15",
-    fieldsOfStudy: ["Education", "Teaching"],
-    requirements: ["South African citizen", "Studying towards teaching qualification", "Commit to teach in public school"],
-    link: "https://www.funzalushaka.doe.gov.za",
-    type: "government",
-    description: "For students pursuing teaching qualifications with a commitment to teach in public schools."
-  },
-  {
-    id: "3",
-    name: "Sasol Bursary",
-    provider: "Sasol",
-    amount: "Full tuition + allowances",
-    deadline: "2025-03-31",
-    fieldsOfStudy: ["Engineering", "Science", "IT", "Finance"],
-    requirements: ["South African citizen", "Minimum 65% average", "Studying relevant field"],
-    link: "https://www.sasol.com/careers/bursaries",
-    type: "private",
-    description: "Corporate bursary for students in STEM and finance fields."
-  },
-  {
-    id: "4",
-    name: "Allan Gray Orbis Foundation Fellowship",
-    provider: "Allan Gray Orbis Foundation",
-    amount: "Full funding + entrepreneurship support",
-    deadline: "2025-02-28",
-    fieldsOfStudy: ["Commerce", "Law", "Engineering", "Science"],
-    requirements: ["South African citizen", "Strong academic record", "Leadership potential", "Entrepreneurial mindset"],
-    link: "https://www.allangrayorbis.org",
-    type: "private",
-    description: "Prestigious fellowship for future entrepreneurs with full funding and business mentorship."
-  },
-  {
-    id: "5",
-    name: "Eskom Bursary",
-    provider: "Eskom",
-    amount: "Full tuition + accommodation + books",
-    deadline: "2025-03-15",
-    fieldsOfStudy: ["Electrical Engineering", "Mechanical Engineering", "Civil Engineering"],
-    requirements: ["South African citizen", "Minimum 60% in Maths & Science", "Studying engineering"],
-    link: "https://www.eskom.co.za/careers",
-    type: "private",
-    description: "Engineering bursary from South Africa's power utility company."
-  },
-  {
-    id: "6",
-    name: "Thuthuka Bursary Fund",
-    provider: "SAICA",
-    amount: "Full funding",
-    deadline: "2025-08-31",
-    fieldsOfStudy: ["Accounting", "Finance"],
-    requirements: ["African or Coloured student", "Studying BCom Accounting", "Minimum 60% average"],
-    link: "https://www.thuthukabursaryfund.co.za",
-    type: "private",
-    description: "For accounting students aiming to become Chartered Accountants."
-  },
-  {
-    id: "7",
-    name: "Anglo American Bursary",
-    provider: "Anglo American",
-    amount: "Full tuition + allowances",
-    deadline: "2025-04-30",
-    fieldsOfStudy: ["Mining Engineering", "Metallurgy", "Geology", "Environmental Science"],
-    requirements: ["South African citizen", "Strong academic record", "Relevant field of study"],
-    link: "https://www.angloamerican.com/careers",
-    type: "private",
-    description: "Mining industry bursary for engineering and science students."
-  },
-  {
-    id: "8",
-    name: "Nedbank Bursary",
-    provider: "Nedbank",
-    amount: "Full tuition",
-    deadline: "2025-05-31",
-    fieldsOfStudy: ["Commerce", "IT", "Data Science", "Actuarial Science"],
-    requirements: ["South African citizen", "Minimum 65% average", "Financial need"],
-    link: "https://www.nedbank.co.za/careers",
-    type: "private",
-    description: "Banking sector bursary for commerce and IT students."
-  }
-];
-
 const BursaryFinder = () => {
+  const [bursaries, setBursaries] = useState<Bursary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [fieldFilter, setFieldFilter] = useState("all");
 
-  const fields = [...new Set(bursaries.flatMap(b => b.fieldsOfStudy))].sort();
+  useEffect(() => {
+    fetchBursaries();
+    
+    // Realtime subscription
+    const channel = supabase
+      .channel('bursaries-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bursaries' }, () => fetchBursaries())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchBursaries = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from("bursaries")
+      .select("*")
+      .eq("is_active", true)
+      .order("deadline", { ascending: true });
+
+    if (error) {
+      console.error("Fetch error:", error);
+      toast.error("Failed to load bursaries");
+    } else {
+      setBursaries(data || []);
+    }
+    setIsLoading(false);
+  };
+
+  const fields = [...new Set(bursaries.flatMap(b => b.fields_of_study || []))].sort();
 
   const filteredBursaries = bursaries.filter(bursary => {
     const matchesSearch = 
       bursary.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       bursary.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bursary.fieldsOfStudy.some(f => f.toLowerCase().includes(searchQuery.toLowerCase()));
+      (bursary.fields_of_study?.some(f => f.toLowerCase().includes(searchQuery.toLowerCase())) ?? false);
     
     const matchesType = typeFilter === "all" || bursary.type === typeFilter;
-    const matchesField = fieldFilter === "all" || bursary.fieldsOfStudy.some(f => f.toLowerCase().includes(fieldFilter.toLowerCase()));
+    const matchesField = fieldFilter === "all" || (bursary.fields_of_study?.some(f => f.toLowerCase().includes(fieldFilter.toLowerCase())) ?? false);
     
     return matchesSearch && matchesType && matchesField;
   });
@@ -149,7 +86,8 @@ const BursaryFinder = () => {
     }
   };
 
-  const getDaysUntilDeadline = (deadline: string) => {
+  const getDaysUntilDeadline = (deadline: string | null) => {
+    if (!deadline) return null;
     const today = new Date();
     const deadlineDate = new Date(deadline);
     const diffTime = deadlineDate.getTime() - today.getTime();
@@ -223,93 +161,115 @@ const BursaryFinder = () => {
             Found {filteredBursaries.length} bursaries
           </p>
 
-          {/* Bursary Cards */}
-          <div className="grid gap-4 sm:gap-6">
-            {filteredBursaries.map(bursary => {
-              const daysUntil = getDaysUntilDeadline(bursary.deadline);
-              const isUrgent = daysUntil <= 30 && daysUntil > 0;
-              const isPast = daysUntil < 0;
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="text-center py-12">
+              <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading bursaries...</p>
+            </div>
+          ) : (
+            <>
+              {/* Bursary Cards */}
+              <div className="grid gap-4 sm:gap-6">
+                {filteredBursaries.map(bursary => {
+                  const daysUntil = getDaysUntilDeadline(bursary.deadline);
+                  const isUrgent = daysUntil !== null && daysUntil <= 30 && daysUntil > 0;
+                  const isPast = daysUntil !== null && daysUntil < 0;
 
-              return (
-                <Card key={bursary.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <CardTitle className="text-xl">{bursary.name}</CardTitle>
-                        <CardDescription className="text-base">{bursary.provider}</CardDescription>
-                      </div>
-                      <Badge className={`${getTypeColor(bursary.type)} capitalize shrink-0`}>
-                        {bursary.type}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-muted-foreground">{bursary.description}</p>
-                    
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div className="flex items-start gap-2">
-                        <Banknote className="w-5 h-5 text-success mt-0.5 shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium">Funding Amount</p>
-                          <p className="text-sm text-muted-foreground">{bursary.amount}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <Clock className={`w-5 h-5 mt-0.5 shrink-0 ${isUrgent ? 'text-warning' : isPast ? 'text-destructive' : 'text-muted-foreground'}`} />
-                        <div>
-                          <p className="text-sm font-medium">Application Deadline</p>
-                          <p className={`text-sm ${isUrgent ? 'text-warning font-medium' : isPast ? 'text-destructive' : 'text-muted-foreground'}`}>
-                            {new Date(bursary.deadline).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}
-                            {isUrgent && ` (${daysUntil} days left!)`}
-                            {isPast && ' (Closed)'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-medium mb-2">Fields of Study</p>
-                      <div className="flex flex-wrap gap-2">
-                        {bursary.fieldsOfStudy.map(field => (
-                          <Badge key={field} variant="outline" className="text-xs">
-                            {field}
+                  return (
+                    <Card key={bursary.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <CardTitle className="text-xl">{bursary.name}</CardTitle>
+                            <CardDescription className="text-base">{bursary.provider}</CardDescription>
+                          </div>
+                          <Badge className={`${getTypeColor(bursary.type)} capitalize shrink-0`}>
+                            {bursary.type}
                           </Badge>
-                        ))}
-                      </div>
-                    </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {bursary.description && (
+                          <p className="text-muted-foreground">{bursary.description}</p>
+                        )}
+                        
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          {bursary.amount && (
+                            <div className="flex items-start gap-2">
+                              <Banknote className="w-5 h-5 text-success mt-0.5 shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium">Funding Amount</p>
+                                <p className="text-sm text-muted-foreground">{bursary.amount}</p>
+                              </div>
+                            </div>
+                          )}
+                          {bursary.deadline && (
+                            <div className="flex items-start gap-2">
+                              <Clock className={`w-5 h-5 mt-0.5 shrink-0 ${isUrgent ? 'text-warning' : isPast ? 'text-destructive' : 'text-muted-foreground'}`} />
+                              <div>
+                                <p className="text-sm font-medium">Application Deadline</p>
+                                <p className={`text-sm ${isUrgent ? 'text-warning font-medium' : isPast ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                  {new Date(bursary.deadline).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                  {isUrgent && ` (${daysUntil} days left!)`}
+                                  {isPast && ' (Closed)'}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
 
-                    <div>
-                      <p className="text-sm font-medium mb-2">Requirements</p>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        {bursary.requirements.map((req, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="text-primary">•</span>
-                            {req}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                        {bursary.fields_of_study && bursary.fields_of_study.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium mb-2">Fields of Study</p>
+                            <div className="flex flex-wrap gap-2">
+                              {bursary.fields_of_study.map(field => (
+                                <Badge key={field} variant="outline" className="text-xs">
+                                  {field}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
-                    <Button asChild className="w-full sm:w-auto" disabled={isPast}>
-                      <a href={bursary.link} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        {isPast ? 'Applications Closed' : 'Apply Now'}
-                      </a>
-                    </Button>
+                        {bursary.requirements && bursary.requirements.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium mb-2">Requirements</p>
+                            <ul className="text-sm text-muted-foreground space-y-1">
+                              {bursary.requirements.map((req, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                  <span className="text-primary">•</span>
+                                  {req}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {bursary.link && (
+                          <Button asChild className="w-full sm:w-auto" disabled={isPast}>
+                            <a href={bursary.link} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              {isPast ? 'Applications Closed' : 'Apply Now'}
+                            </a>
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {filteredBursaries.length === 0 && (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <GraduationCap className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No bursaries found</h3>
+                    <p className="text-muted-foreground">Try adjusting your search filters</p>
                   </CardContent>
                 </Card>
-              );
-            })}
-          </div>
-
-          {filteredBursaries.length === 0 && (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <GraduationCap className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No bursaries found</h3>
-                <p className="text-muted-foreground">Try adjusting your search filters</p>
-              </CardContent>
-            </Card>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface Slide {
   image: string;
@@ -14,17 +16,68 @@ interface Slide {
 }
 
 interface HeroCarouselProps {
-  slides: Slide[];
+  slides?: Slide[];
   autoPlay?: boolean;
   interval?: number;
   className?: string;
+  useDatabase?: boolean;
 }
 
-const HeroCarousel = ({ slides, autoPlay = true, interval = 5000, className }: HeroCarouselProps) => {
+const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, className, useDatabase = false }: HeroCarouselProps) => {
+  const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [slides, setSlides] = useState<Slide[]>(propSlides || []);
+  const [isLoading, setIsLoading] = useState(useDatabase);
 
   useEffect(() => {
-    if (!autoPlay) return;
+    if (useDatabase) {
+      fetchSlides();
+      
+      // Realtime subscription
+      const channel = supabase
+        .channel('hero-slides-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'hero_slides' }, () => fetchSlides())
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else if (propSlides) {
+      setSlides(propSlides);
+    }
+  }, [useDatabase, propSlides]);
+
+  const fetchSlides = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from("hero_slides")
+      .select("*")
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      const formattedSlides: Slide[] = data.map(slide => ({
+        image: slide.image_url,
+        title: slide.title,
+        description: slide.description || "",
+        cta: slide.cta_text && slide.cta_link ? {
+          text: slide.cta_text,
+          action: () => {
+            if (slide.cta_link?.startsWith('http')) {
+              window.open(slide.cta_link, '_blank');
+            } else {
+              navigate(slide.cta_link || '/');
+            }
+          }
+        } : undefined
+      }));
+      setSlides(formattedSlides);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    if (!autoPlay || slides.length === 0) return;
     
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
@@ -44,6 +97,18 @@ const HeroCarousel = ({ slides, autoPlay = true, interval = 5000, className }: H
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
   };
+
+  if (isLoading) {
+    return (
+      <div className={cn("relative w-full h-[500px] md:h-[600px] lg:h-[700px] overflow-hidden rounded-2xl bg-muted flex items-center justify-center", className)}>
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (slides.length === 0) {
+    return null;
+  }
 
   return (
     <div className={cn("relative w-full h-[500px] md:h-[600px] lg:h-[700px] overflow-hidden rounded-2xl group", className)}>
