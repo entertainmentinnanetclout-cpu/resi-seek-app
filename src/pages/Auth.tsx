@@ -25,14 +25,16 @@ const signupSchema = z.object({ fullName: z.string().min(2, "Full name must be a
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isAdmin } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && user) navigate("/dashboard", { replace: true });
-  }, [user, authLoading, navigate]);
+    if (!authLoading && user) {
+      navigate(isAdmin ? "/admin" : "/dashboard", { replace: true });
+    }
+  }, [user, authLoading, isAdmin, navigate]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -53,7 +55,6 @@ const Auth = () => {
             throw error;
         }
         toast.success("Welcome back!");
-        navigate("/dashboard");
       } else {
         const { error } = await supabase.auth.signUp({ email: (validated as any).email, password: (validated as any).password, options: { emailRedirectTo: `${window.location.origin}/dashboard`, data: { full_name: (validated as any).fullName } } });
         if (error) {
@@ -78,7 +79,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/auth`,
         },
       });
       if (error) throw error;
