@@ -57,6 +57,38 @@
     <lastmod>2025-12-01</lastmod>
   </url>
   
+  <!-- Bursary Finder -->
+  <url>
+    <loc>https://reskonnect.co.za/bursaries</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2025-12-17</lastmod>
+  </url>
+  
+  <!-- Student Discounts -->
+  <url>
+    <loc>https://reskonnect.co.za/discounts</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+    <lastmod>2025-12-17</lastmod>
+  </url>
+  
+  <!-- Roommate Finder -->
+  <url>
+    <loc>https://reskonnect.co.za/roommates</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+    <lastmod>2025-12-17</lastmod>
+  </url>
+  
+  <!-- Campus Events -->
+  <url>
+    <loc>https://reskonnect.co.za/events</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+    <lastmod>2025-12-17</lastmod>
+  </url>
+  
   <!-- Campus News -->
   <url>
     <loc>https://reskonnect.co.za/campus-news</loc>
