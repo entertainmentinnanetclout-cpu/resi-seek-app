@@ -68,10 +68,10 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         <Button 
           variant="ghost" 
           className="w-full justify-start"
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/")}
         >
           <Home className="w-5 h-5 mr-3" />
-          Back to App
+          View Public Site
         </Button>
         <Button 
           variant="ghost" 

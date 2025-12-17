@@ -56,7 +56,7 @@ const Auth = () => {
         }
         toast.success("Welcome back!");
       } else {
-        const { error } = await supabase.auth.signUp({ email: (validated as any).email, password: (validated as any).password, options: { emailRedirectTo: `${window.location.origin}/dashboard`, data: { full_name: (validated as any).fullName } } });
+        const { error } = await supabase.auth.signUp({ email: (validated as any).email, password: (validated as any).password, options: { emailRedirectTo: `${window.location.origin}/auth`, data: { full_name: (validated as any).fullName } } });
         if (error) {
             if (error.message.includes("already registered")) throw new Error("This email is already registered. Please login instead.");
             throw error;

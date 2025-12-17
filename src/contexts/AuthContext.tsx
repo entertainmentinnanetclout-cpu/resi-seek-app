@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -18,32 +18,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
-
-  const roleCheckAbortRef = useRef<AbortController | null>(null);
-  const lastRoleCheckUserIdRef = useRef<string | null>(null);
-
   const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
 
-    // 1) Listen FIRST (sync callback only)
+    // Set up auth state listener FIRST (SYNC only)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!mounted) return;
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
-      setAuthReady(true);
     });
 
-    // 2) Then get current session
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
       if (!mounted) return;
       setSession(existingSession);
       setUser(existingSession?.user ?? null);
-      setAuthReady(true);
     });
 
     return () => {
@@ -52,26 +45,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Role check (kept OUTSIDE auth callbacks to avoid auth deadlocks)
+  // Check admin role OUTSIDE auth callbacks to avoid deadlocks/races
   useEffect(() => {
-    if (!authReady) return;
+    let cancelled = false;
 
-    // Cancel any in-flight role check
-    roleCheckAbortRef.current?.abort();
-    const abort = new AbortController();
-    roleCheckAbortRef.current = abort;
-
-    const run = async () => {
+    const checkRole = async () => {
       // Not logged in
       if (!user) {
-        lastRoleCheckUserIdRef.current = null;
         setIsAdmin(false);
-        setIsLoading(false);
-        return;
-      }
-
-      // Avoid duplicate calls for the same user id
-      if (lastRoleCheckUserIdRef.current === user.id) {
         setIsLoading(false);
         return;
       }
@@ -84,33 +65,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           _role: "admin",
         });
 
-        if (abort.signal.aborted) return;
+        if (cancelled) return;
         if (error) throw error;
 
-        lastRoleCheckUserIdRef.current = user.id;
         setIsAdmin(Boolean(data));
-      } catch {
-        // Fail closed: if we can't verify admin, treat as non-admin
-        lastRoleCheckUserIdRef.current = user.id;
-        setIsAdmin(false);
+      } catch (e) {
+        // Fail closed
+        if (!cancelled) setIsAdmin(false);
       } finally {
-        if (!abort.signal.aborted) setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
-    run();
+    checkRole();
 
     return () => {
-      abort.abort();
+      cancelled = true;
     };
-  }, [authReady, user?.id]);
+  }, [user?.id]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setIsAdmin(false);
-    lastRoleCheckUserIdRef.current = null;
     navigate("/auth");
   };
 
