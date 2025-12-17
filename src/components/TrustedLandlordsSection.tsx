@@ -93,8 +93,6 @@ const TrustedLandlordsSection = () => {
   const provinceCounts = getProvinceCounts();
 
   if (loading) {
-
-  if (loading) {
     return (
       <section className="py-16 md:py-24 bg-gradient-to-b from-card/30 to-background">
         <div className="container mx-auto px-4">
