@@ -33,6 +33,17 @@ import ProvinceLanding from "./pages/seo/ProvinceLanding";
 import CampusLanding from "./pages/seo/CampusLanding";
 import NationalLanding from "./pages/seo/NationalLanding";
 import NsfAsLanding from "./pages/seo/NsfAsLanding";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminResidences from "./pages/admin/AdminResidences";
+import AdminApplications from "./pages/admin/AdminApplications";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminSlides from "./pages/admin/AdminSlides";
+import AdminBursaries from "./pages/admin/AdminBursaries";
+import AdminDiscounts from "./pages/admin/AdminDiscounts";
+import AdminEvents from "./pages/admin/AdminEvents";
+import AdminMarketplace from "./pages/admin/AdminMarketplace";
+import AdminNews from "./pages/admin/AdminNews";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -81,7 +92,17 @@ const App = () => {
               <Route path="/dashboard/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
               <Route path="/campus-news" element={<ProtectedRoute><CampusNews /></ProtectedRoute>} />
               <Route path="/res/:id" element={<ProtectedRoute><ResidenceDetail /></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute><AdminRoute><Admin /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/residences" element={<ProtectedRoute><AdminRoute><AdminResidences /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/applications" element={<ProtectedRoute><AdminRoute><AdminApplications /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute><AdminRoute><AdminUsers /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/slides" element={<ProtectedRoute><AdminRoute><AdminSlides /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/bursaries" element={<ProtectedRoute><AdminRoute><AdminBursaries /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/discounts" element={<ProtectedRoute><AdminRoute><AdminDiscounts /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/events" element={<ProtectedRoute><AdminRoute><AdminEvents /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/marketplace" element={<ProtectedRoute><AdminRoute><AdminMarketplace /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/news" element={<ProtectedRoute><AdminRoute><AdminNews /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/settings" element={<ProtectedRoute><AdminRoute><AdminSettings /></AdminRoute></ProtectedRoute>} />
 
               {/* SEO Routes */}
               <Route path="/student-accommodation-:province" element={<ProvinceLanding />} />
