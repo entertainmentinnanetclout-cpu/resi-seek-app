@@ -27,6 +27,7 @@ import StudentDiscounts from "./pages/StudentDiscounts";
 import RoommateFinder from "./pages/RoommateFinder";
 import Events from "./pages/Events";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { StudentRoute } from "@/components/StudentRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProvinceLanding from "./pages/seo/ProvinceLanding";
@@ -71,27 +72,29 @@ const App = () => {
           <BrowserRouter>
             <AuthProvider>
               <Routes>
-              {/* Core App Routes */}
+              {/* Core App Routes - Student Only */}
               <Route path="/" element={<Landing />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
-              <Route path="/find" element={<ProtectedRoute><FindMyRes /></ProtectedRoute>} />
-              <Route path="/findmyres" element={<ProtectedRoute><FindMyRes /></ProtectedRoute>} />
-              <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-              <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
-              <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
-              <Route path="/bursaries" element={<ProtectedRoute><BursaryFinder /></ProtectedRoute>} />
-              <Route path="/discounts" element={<ProtectedRoute><StudentDiscounts /></ProtectedRoute>} />
-              <Route path="/roommates" element={<ProtectedRoute><RoommateFinder /></ProtectedRoute>} />
-              <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<StudentRoute><Dashboard /></StudentRoute>} />
+              <Route path="/profile" element={<StudentRoute><Profile /></StudentRoute>} />
+              <Route path="/applications" element={<StudentRoute><Applications /></StudentRoute>} />
+              <Route path="/find" element={<StudentRoute><FindMyRes /></StudentRoute>} />
+              <Route path="/findmyres" element={<StudentRoute><FindMyRes /></StudentRoute>} />
+              <Route path="/messages" element={<StudentRoute><Messages /></StudentRoute>} />
+              <Route path="/favorites" element={<StudentRoute><Favorites /></StudentRoute>} />
+              <Route path="/marketplace" element={<StudentRoute><Marketplace /></StudentRoute>} />
+              <Route path="/bursaries" element={<StudentRoute><BursaryFinder /></StudentRoute>} />
+              <Route path="/discounts" element={<StudentRoute><StudentDiscounts /></StudentRoute>} />
+              <Route path="/roommates" element={<StudentRoute><RoommateFinder /></StudentRoute>} />
+              <Route path="/events" element={<StudentRoute><Events /></StudentRoute>} />
 
               {/* Other Essential Routes */}
               <Route path="/auth" element={<Auth />} />
-              <Route path="/setup-profile" element={<ProtectedRoute><ProfileSetup /></ProtectedRoute>} />
-              <Route path="/dashboard/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
-              <Route path="/campus-news" element={<ProtectedRoute><CampusNews /></ProtectedRoute>} />
-              <Route path="/res/:id" element={<ProtectedRoute><ResidenceDetail /></ProtectedRoute>} />
+              <Route path="/setup-profile" element={<StudentRoute><ProfileSetup /></StudentRoute>} />
+              <Route path="/dashboard/updates" element={<StudentRoute><Updates /></StudentRoute>} />
+              <Route path="/campus-news" element={<StudentRoute><CampusNews /></StudentRoute>} />
+              <Route path="/res/:id" element={<StudentRoute><ResidenceDetail /></StudentRoute>} />
+              
+              {/* Admin Routes */}
               <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/residences" element={<ProtectedRoute><AdminRoute><AdminResidences /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/applications" element={<ProtectedRoute><AdminRoute><AdminApplications /></AdminRoute></ProtectedRoute>} />
