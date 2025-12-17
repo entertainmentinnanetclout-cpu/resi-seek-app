@@ -85,6 +85,51 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          campus: string | null
+          category: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          event_date: string
+          id: string
+          image_url: string | null
+          interested_count: number | null
+          location: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          campus?: string | null
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_date: string
+          id?: string
+          image_url?: string | null
+          interested_count?: number | null
+          location?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          campus?: string | null
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_date?: string
+          id?: string
+          image_url?: string | null
+          interested_count?: number | null
+          location?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -181,6 +226,8 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          lifestyle_preferences: Json | null
+          looking_for_roommate: boolean | null
           phone: string | null
           profile_picture_url: string | null
           student_number: string | null
@@ -194,6 +241,8 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          lifestyle_preferences?: Json | null
+          looking_for_roommate?: boolean | null
           phone?: string | null
           profile_picture_url?: string | null
           student_number?: string | null
@@ -207,6 +256,8 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          lifestyle_preferences?: Json | null
+          looking_for_roommate?: boolean | null
           phone?: string | null
           profile_picture_url?: string | null
           student_number?: string | null

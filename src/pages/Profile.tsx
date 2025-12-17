@@ -312,6 +312,74 @@ const Profile = () => {
                   </div>
                 </AccordionItem>
 
+                <AccordionItem title="Roommate Preferences" description="Help us find compatible roommates for you." id="roommate_prefs">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Sleep Schedule</Label>
+                          <Select 
+                            value={formData.lifestyle_preferences?.sleepSchedule || ""} 
+                            onValueChange={(v) => setFormData((prev: any) => ({ ...prev, lifestyle_preferences: { ...prev.lifestyle_preferences, sleepSchedule: v } }))}
+                            disabled={!isEditing}
+                          >
+                            <SelectTrigger><SelectValue placeholder="Select preference" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="early_bird">🌅 Early Bird</SelectItem>
+                              <SelectItem value="night_owl">🦉 Night Owl</SelectItem>
+                              <SelectItem value="flexible">⏰ Flexible</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Study Habits</Label>
+                          <Select 
+                            value={formData.lifestyle_preferences?.studyHabits || ""} 
+                            onValueChange={(v) => setFormData((prev: any) => ({ ...prev, lifestyle_preferences: { ...prev.lifestyle_preferences, studyHabits: v } }))}
+                            disabled={!isEditing}
+                          >
+                            <SelectTrigger><SelectValue placeholder="Select preference" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="quiet">🤫 Quiet Study</SelectItem>
+                              <SelectItem value="background_music">🎵 Background Music OK</SelectItem>
+                              <SelectItem value="flexible">📚 Flexible</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Social Level</Label>
+                          <Select 
+                            value={formData.lifestyle_preferences?.socialLevel || ""} 
+                            onValueChange={(v) => setFormData((prev: any) => ({ ...prev, lifestyle_preferences: { ...prev.lifestyle_preferences, socialLevel: v } }))}
+                            disabled={!isEditing}
+                          >
+                            <SelectTrigger><SelectValue placeholder="Select preference" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="introvert">🏠 Introvert</SelectItem>
+                              <SelectItem value="extrovert">🎉 Extrovert</SelectItem>
+                              <SelectItem value="ambivert">😊 Ambivert</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Cleanliness</Label>
+                          <Select 
+                            value={formData.lifestyle_preferences?.cleanliness || ""} 
+                            onValueChange={(v) => setFormData((prev: any) => ({ ...prev, lifestyle_preferences: { ...prev.lifestyle_preferences, cleanliness: v } }))}
+                            disabled={!isEditing}
+                          >
+                            <SelectTrigger><SelectValue placeholder="Select preference" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="very_clean">✨ Very Clean</SelectItem>
+                              <SelectItem value="moderate">🧹 Moderate</SelectItem>
+                              <SelectItem value="relaxed">😌 Relaxed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">💡 These preferences help match you with compatible roommates in the <a href="/roommates" className="text-primary underline">Roommate Finder</a>.</p>
+                    </div>
+                </AccordionItem>
+
                 <AccordionItem title="Supporting Documents" description="Upload copies of your required documents." id="supporting_docs">
                     <div className="space-y-3">
                       <input type="file" ref={documentInputRef} onChange={handleDocumentChange} className="hidden" accept="application/pdf, image/png, image/jpeg" />

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut, Newspaper, ShoppingBag } from "lucide-react";
+import { Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut, Newspaper, ShoppingBag, GraduationCap, Percent, Users, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +23,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: Newspaper, label: "Campus News", path: "/campus-news" },
     { icon: Search, label: "Find My Res", path: "/findmyres" },
     { icon: ShoppingBag, label: "Marketplace", path: "/marketplace" },
+    { icon: GraduationCap, label: "Bursaries", path: "/bursaries" },
+    { icon: Percent, label: "Discounts", path: "/discounts" },
+    { icon: Users, label: "Roommates", path: "/roommates" },
+    { icon: Calendar, label: "Events", path: "/events" },
     { icon: FileText, label: "Applications", path: "/applications" },
     { icon: User, label: "Profile", path: "/profile" },
     { icon: MessageSquare, label: "Messages", path: "/messages" },
