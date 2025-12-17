@@ -13,8 +13,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 
 const Profile = () => {
+  const shouldBlock = useAdminRedirect();
+  if (shouldBlock) return null;
   const [isEditing, setIsEditing] = useState(false);
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>({});

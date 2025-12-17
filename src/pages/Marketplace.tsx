@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Package, Plus, Search, Filter, X, Image as ImageIcon, Loader2 } from "lucide-react";
 import { StudentVerificationModal } from "@/components/StudentVerificationModal";
 import { RESKONNECT_WHATSAPP_FORMATTED } from "@/lib/constants";
+import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 
 const categories = ["Textbooks", "Study Notes", "Electronics", "Furniture", "Clothing", "Services", "Transport", "Other"];
 const conditions = [
@@ -26,6 +27,8 @@ const conditions = [
 ];
 
 const Marketplace = () => {
+  const shouldBlock = useAdminRedirect();
+  if (shouldBlock) return null;
   const { user } = useAuth();
   const [listings, setListings] = useState<any[]>([]);
   const [filteredListings, setFilteredListings] = useState<any[]>([]);

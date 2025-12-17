@@ -13,8 +13,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 
 const Applications = () => {
+  const shouldBlock = useAdminRedirect();
+  if (shouldBlock) return null;
   const { user } = useAuth();
   const { applications, loading: applicationsLoading, error } = useRealtimeApplications(user);
   const [detailedApplications, setDetailedApplications] = useState<any[]>([]);

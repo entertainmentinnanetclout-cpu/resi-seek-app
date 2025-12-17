@@ -9,15 +9,20 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
+import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import { useState, useMemo } from "react";
 import heroAccommodation from "@/assets/hero-accommodation.jpg";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const shouldBlock = useAdminRedirect(); // Hard guard: redirect admins
   const { profile, loading: profileLoading } = useRealtimeProfile(user);
   const { applications, loading: applicationsLoading } = useRealtimeApplications(user);
   const [showFabMenu, setShowFabMenu] = useState(false);
+
+  // Block render if admin
+  if (shouldBlock) return null;
 
   const profileCompletion = useMemo(() => {
       if (!profile) return 0;
