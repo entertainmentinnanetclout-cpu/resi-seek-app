@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Eye, Check, X } from "lucide-react";
+import { Search, Eye, Check, X, CheckCheck, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -31,6 +32,8 @@ const AdminApplications = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
 
   const fetchApplications = async () => {
     try {
@@ -83,6 +86,52 @@ const AdminApplications = () => {
     }
   };
 
+  const bulkUpdateStatus = async (newStatus: string) => {
+    if (selectedIds.size === 0) {
+      toast.error("No applications selected");
+      return;
+    }
+
+    setBulkProcessing(true);
+    try {
+      const { error } = await supabase
+        .from("applications")
+        .update({ status: newStatus })
+        .in("id", Array.from(selectedIds));
+
+      if (error) throw error;
+      toast.success(`${selectedIds.size} applications ${newStatus}`);
+      setSelectedIds(new Set());
+      fetchApplications();
+    } catch (error) {
+      console.error("Error bulk updating applications:", error);
+      toast.error("Failed to update applications");
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const selectAllPending = () => {
+    const pendingIds = filteredApplications
+      .filter(app => app.status === "submitted" || app.status === "pending")
+      .map(app => app.id);
+    setSelectedIds(new Set(pendingIds));
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       submitted: "secondary",
@@ -103,6 +152,10 @@ const AdminApplications = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const pendingCount = filteredApplications.filter(
+    app => app.status === "submitted" || app.status === "pending"
+  ).length;
+
   return (
     <AdminLayout>
       <SEO title="Manage Applications | Admin" description="Review and manage student applications" />
@@ -112,6 +165,40 @@ const AdminApplications = () => {
           <h1 className="text-3xl font-bold">Applications</h1>
           <p className="text-muted-foreground">Review and manage student applications</p>
         </div>
+
+        {/* Bulk Actions Bar */}
+        {selectedIds.size > 0 && (
+          <Card className="border-primary/50 bg-primary/5">
+            <CardContent className="py-3">
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="font-medium">{selectedIds.size} selected</span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => bulkUpdateStatus("approved")}
+                    disabled={bulkProcessing}
+                  >
+                    <CheckCheck className="w-4 h-4 mr-2" />
+                    Approve All
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => bulkUpdateStatus("rejected")}
+                    disabled={bulkProcessing}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Reject All
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={clearSelection}>
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
@@ -137,6 +224,11 @@ const AdminApplications = () => {
                   <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
+              {pendingCount > 0 && (
+                <Button variant="outline" onClick={selectAllPending}>
+                  Select All Pending ({pendingCount})
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -149,6 +241,18 @@ const AdminApplications = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedIds.size === filteredApplications.filter(a => a.status === "submitted" || a.status === "pending").length && selectedIds.size > 0}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              selectAllPending();
+                            } else {
+                              clearSelection();
+                            }
+                          }}
+                        />
+                      </TableHead>
                       <TableHead>Student</TableHead>
                       <TableHead>Residence</TableHead>
                       <TableHead>Date</TableHead>
@@ -158,7 +262,15 @@ const AdminApplications = () => {
                   </TableHeader>
                   <TableBody>
                     {filteredApplications.map((app) => (
-                      <TableRow key={app.id}>
+                      <TableRow key={app.id} className={selectedIds.has(app.id) ? "bg-primary/5" : ""}>
+                        <TableCell>
+                          {(app.status === "submitted" || app.status === "pending") && (
+                            <Checkbox
+                              checked={selectedIds.has(app.id)}
+                              onCheckedChange={() => toggleSelection(app.id)}
+                            />
+                          )}
+                        </TableCell>
                         <TableCell>
                           <div>
                             <p className="font-medium">{app.profile?.full_name || "Unknown"}</p>

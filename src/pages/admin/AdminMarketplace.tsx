@@ -5,12 +5,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Check, X, Eye } from "lucide-react";
+import { Search, Check, X, CheckCheck, XCircle, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 interface MarketplaceListing {
   id: string;
@@ -32,6 +32,9 @@ const AdminMarketplace = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [verifiedFilter, setVerifiedFilter] = useState("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
 
   const fetchListings = async () => {
     try {
@@ -83,13 +86,89 @@ const AdminMarketplace = () => {
     }
   };
 
+  const bulkVerify = async () => {
+    if (selectedIds.size === 0) {
+      toast.error("No listings selected");
+      return;
+    }
+
+    setBulkProcessing(true);
+    try {
+      const { error } = await supabase
+        .from("marketplace_listings")
+        .update({ verified: true })
+        .in("id", Array.from(selectedIds));
+
+      if (error) throw error;
+      toast.success(`${selectedIds.size} listings verified`);
+      setSelectedIds(new Set());
+      fetchListings();
+    } catch (error) {
+      console.error("Error bulk verifying listings:", error);
+      toast.error("Failed to verify listings");
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const bulkRemove = async () => {
+    if (selectedIds.size === 0) {
+      toast.error("No listings selected");
+      return;
+    }
+
+    setBulkProcessing(true);
+    try {
+      const { error } = await supabase
+        .from("marketplace_listings")
+        .update({ status: "removed" })
+        .in("id", Array.from(selectedIds));
+
+      if (error) throw error;
+      toast.success(`${selectedIds.size} listings removed`);
+      setSelectedIds(new Set());
+      fetchListings();
+    } catch (error) {
+      console.error("Error bulk removing listings:", error);
+      toast.error("Failed to remove listings");
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const selectAllUnverified = () => {
+    const unverifiedIds = filteredListings
+      .filter(listing => !listing.verified && listing.status === "active")
+      .map(listing => listing.id);
+    setSelectedIds(new Set(unverifiedIds));
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
   const filteredListings = listings.filter((listing) => {
     const matchesSearch =
       listing.item_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       listing.seller?.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || listing.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesVerified = verifiedFilter === "all" || 
+      (verifiedFilter === "verified" && listing.verified) ||
+      (verifiedFilter === "unverified" && !listing.verified);
+    return matchesSearch && matchesStatus && matchesVerified;
   });
+
+  const unverifiedCount = filteredListings.filter(l => !l.verified && l.status === "active").length;
 
   return (
     <AdminLayout>
@@ -100,6 +179,40 @@ const AdminMarketplace = () => {
           <h1 className="text-3xl font-bold">Marketplace</h1>
           <p className="text-muted-foreground">Moderate and verify marketplace listings</p>
         </div>
+
+        {/* Bulk Actions Bar */}
+        {selectedIds.size > 0 && (
+          <Card className="border-primary/50 bg-primary/5">
+            <CardContent className="py-3">
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="font-medium">{selectedIds.size} selected</span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={bulkVerify}
+                    disabled={bulkProcessing}
+                  >
+                    <ShieldCheck className="w-4 h-4 mr-2" />
+                    Verify All
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={bulkRemove}
+                    disabled={bulkProcessing}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Remove All
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={clearSelection}>
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
@@ -114,8 +227,8 @@ const AdminMarketplace = () => {
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="Filter status" />
+                <SelectTrigger className="w-full sm:w-36">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
@@ -124,6 +237,21 @@ const AdminMarketplace = () => {
                   <SelectItem value="removed">Removed</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={verifiedFilter} onValueChange={setVerifiedFilter}>
+                <SelectTrigger className="w-full sm:w-36">
+                  <SelectValue placeholder="Verified" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="verified">Verified</SelectItem>
+                  <SelectItem value="unverified">Unverified</SelectItem>
+                </SelectContent>
+              </Select>
+              {unverifiedCount > 0 && (
+                <Button variant="outline" onClick={selectAllUnverified}>
+                  Select Unverified ({unverifiedCount})
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -136,6 +264,18 @@ const AdminMarketplace = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedIds.size === unverifiedCount && selectedIds.size > 0}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              selectAllUnverified();
+                            } else {
+                              clearSelection();
+                            }
+                          }}
+                        />
+                      </TableHead>
                       <TableHead>Item</TableHead>
                       <TableHead>Seller</TableHead>
                       <TableHead>Price</TableHead>
@@ -147,7 +287,15 @@ const AdminMarketplace = () => {
                   </TableHeader>
                   <TableBody>
                     {filteredListings.map((listing) => (
-                      <TableRow key={listing.id}>
+                      <TableRow key={listing.id} className={selectedIds.has(listing.id) ? "bg-primary/5" : ""}>
+                        <TableCell>
+                          {!listing.verified && listing.status === "active" && (
+                            <Checkbox
+                              checked={selectedIds.has(listing.id)}
+                              onCheckedChange={() => toggleSelection(listing.id)}
+                            />
+                          )}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             {listing.images?.[0] && (
