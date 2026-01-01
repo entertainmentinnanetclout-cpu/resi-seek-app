@@ -1,8 +1,8 @@
 
 import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { MapPin, DollarSign, Users, Bed, ShieldCheck, Wifi, Car, WashingMachine, Dumbbell, Utensils, Star, MessageSquare } from "lucide-react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { MapPin, DollarSign, Users, Bed, ShieldCheck, Wifi, Car, WashingMachine, Dumbbell, Utensils, Star, MessageSquare, CheckCircle } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,15 +19,23 @@ import ReviewCard from "@/components/ReviewCard";
 import ReviewForm from "@/components/ReviewForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { RESKONNECT_WHATSAPP } from "@/lib/constants";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 const ResidenceDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [residence, setResidence] = useState<any>(null);
   const [relatedResidences, setRelatedResidences] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [applicationNotes, setApplicationNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
 
   const fetchReviews = async () => {
     if (!id) return;
@@ -39,6 +47,17 @@ const ResidenceDetail = () => {
     if (!error && data) {
       setReviews(data);
     }
+  };
+
+  const checkExistingApplication = async () => {
+    if (!user || !id) return;
+    const { data } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('residence_id', id)
+      .maybeSingle();
+    setHasApplied(!!data);
   };
 
   useEffect(() => {
@@ -62,6 +81,7 @@ const ResidenceDetail = () => {
         }
 
         await fetchReviews();
+        await checkExistingApplication();
       } catch (error) {
         console.error('Error fetching residence:', error);
         toast.error('Failed to load residence details.');
@@ -71,7 +91,48 @@ const ResidenceDetail = () => {
     };
 
     fetchResidence();
-  }, [id]);
+  }, [id, user]);
+
+  const handleApply = () => {
+    if (!user) {
+      toast.error("Please sign in to apply");
+      navigate("/auth");
+      return;
+    }
+    if (hasApplied) {
+      toast.info("You have already applied to this residence");
+      return;
+    }
+    setShowApplyModal(true);
+  };
+
+  const handleSubmitApplication = async () => {
+    if (!user || !id) return;
+    
+    setSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('applications')
+        .insert({
+          user_id: user.id,
+          residence_id: id,
+          status: 'submitted',
+          notes: applicationNotes || null,
+        });
+
+      if (error) throw error;
+
+      toast.success("Application submitted successfully!");
+      setShowApplyModal(false);
+      setApplicationNotes("");
+      setHasApplied(true);
+    } catch (error: any) {
+      console.error('Error submitting application:', error);
+      toast.error(error.message || "Failed to submit application");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return <DashboardLayout><div className="p-8">Loading...</div></DashboardLayout>;
@@ -178,7 +239,14 @@ const ResidenceDetail = () => {
                   <div className="mt-4 md:mt-0 flex items-center gap-2 flex-wrap">
                       <FavoriteButton residenceId={residence.id} />
                       <WhatsAppButton phone={RESKONNECT_WHATSAPP} residenceName={residence.name} variant="full" />
-                      <Button size="lg">Apply Now</Button>
+                      {hasApplied ? (
+                        <Button size="lg" variant="outline" disabled className="gap-2">
+                          <CheckCircle className="w-4 h-4" />
+                          Already Applied
+                        </Button>
+                      ) : (
+                        <Button size="lg" onClick={handleApply}>Apply Now</Button>
+                      )}
                   </div>
               </div>
             </CardHeader>
@@ -333,6 +401,44 @@ const ResidenceDetail = () => {
         </div>
 
       </div>
+
+      {/* Application Modal */}
+      <Dialog open={showApplyModal} onOpenChange={setShowApplyModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Apply to {residence?.name}</DialogTitle>
+            <DialogDescription>
+              Submit your application for this residence. We'll review it and get back to you soon.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="notes">Additional Notes (Optional)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Any additional information you'd like to share..."
+                value={applicationNotes}
+                onChange={(e) => setApplicationNotes(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-medium">Application Details:</p>
+              <p className="text-sm text-muted-foreground">Residence: {residence?.name}</p>
+              <p className="text-sm text-muted-foreground">Monthly Rent: R{residence?.price?.toLocaleString()}</p>
+              <p className="text-sm text-muted-foreground">Room Type: {residence?.room_type}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApplyModal(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitApplication} disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit Application"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
     </TooltipProvider>
   );
