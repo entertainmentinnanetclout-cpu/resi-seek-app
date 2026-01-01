@@ -82,11 +82,30 @@ const FindMyRes = () => {
     const fetchResidences = async () => {
       setLoading(true);
       try {
+        console.log('[FindMyRes] Fetching residences...');
+        
         const { data, error } = await supabase.from('residences').select('*');
-        if (error) throw error;
-        setResidences(data || []);
+        
+        if (error) {
+          console.error('[FindMyRes] Fetch error:', error);
+          throw error;
+        }
+        
+        console.log(`[FindMyRes] Fetched ${data?.length || 0} residences`);
+        
+        // Map data with null-safe access for optional columns
+        const safeData = (data || []).map(r => ({
+          ...r,
+          verification_level: r.verification_level || 'basic',
+          province: r.province || 'Gauteng',
+          distance_from_campus: r.distance_from_campus || 0,
+          featured: r.featured || false,
+          display_order: r.display_order || 0,
+        }));
+        
+        setResidences(safeData);
       } catch (error) {
-        console.error('Error fetching residences:', error);
+        console.error('[FindMyRes] Error:', error);
         toast.error('Failed to load residences.');
       } finally {
         setLoading(false);
