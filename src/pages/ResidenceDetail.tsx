@@ -282,10 +282,6 @@ const ResidenceDetail = () => {
                                 </div>
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-muted-foreground">Price</span>
-                                        <span className="font-bold text-primary text-xl">R{residence.price.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
                                         <span className="text-muted-foreground">Available Spots</span>
                                         <span className="font-bold">{residence.available_spots || 0} / {residence.capacity}</span>
                                     </div>
@@ -297,6 +293,12 @@ const ResidenceDetail = () => {
                                         <span className="text-muted-foreground">Room Type</span>
                                         <span className="font-bold capitalize">{residence.room_type}</span>
                                     </div>
+                                </div>
+                                <Separator className="my-4" />
+                                <div>
+                                    <h4 className="font-semibold mb-2">Contact ResKonnect</h4>
+                                    <p className="text-sm text-muted-foreground">Phone: 0637323192</p>
+                                    <p className="text-sm text-muted-foreground">Email: reskonnect@gmail.com</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -323,8 +325,7 @@ const ResidenceDetail = () => {
                             <CardContent className="p-4">
                                 <h3 className="text-lg font-bold">{res.name}</h3>
                                 <p className="text-muted-foreground text-sm">{res.address}</p>
-                                <div className="flex items-center justify-between mt-4">
-                                    <span className="font-bold text-primary">R{res.price.toLocaleString()}</span>
+                                <div className="flex items-center justify-end mt-4">
                                     <Button size="sm" variant="outline">View</Button>
                                 </div>
                             </CardContent>

@@ -197,12 +197,9 @@ const Favorites = () => {
                       <MapPin className="w-4 h-4" />
                       {fav.residence.campus || fav.residence.address}
                     </p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xl font-bold text-primary">
-                        R{fav.residence.price?.toLocaleString()}/mo
-                      </p>
+                    <div className="flex items-center justify-end">
                       <WhatsAppButton
-                        phone={fav.residence.contact_phone}
+                        phone="0637323192"
                         residenceName={fav.residence.name}
                         variant="icon"
                       />
