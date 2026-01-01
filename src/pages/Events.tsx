@@ -51,9 +51,11 @@ const Events = () => {
   const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [campusFilter, setCampusFilter] = useState("all");
+  const [showPastEvents, setShowPastEvents] = useState(false);
   const [interestedEvents, setInterestedEvents] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -63,13 +65,16 @@ const Events = () => {
 
   const fetchEvents = async () => {
     setIsLoading(true);
+    setFetchError(null);
+    // Fetch ALL events instead of just upcoming
     const { data, error } = await supabase
       .from("events")
       .select("*")
-      .gte("event_date", new Date().toISOString())
       .order("event_date", { ascending: true });
 
     if (error) {
+      console.error("Fetch error:", error);
+      setFetchError(error.message);
       toast.error("Failed to load events");
     } else {
       setEvents(data || []);
@@ -130,6 +135,8 @@ const Events = () => {
     window.open(`https://wa.me/${RESKONNECT_WHATSAPP_FORMATTED}?text=${message}`, '_blank');
   };
 
+  const now = new Date();
+  
   const filteredEvents = events.filter(event => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -138,17 +145,26 @@ const Events = () => {
 
     const matchesCategory = categoryFilter === "all" || event.category === categoryFilter;
     const matchesCampus = campusFilter === "all" || event.campus === campusFilter;
+    
+    const eventDate = new Date(event.event_date);
+    const isUpcoming = eventDate >= now;
+    const matchesTimeFilter = showPastEvents || isUpcoming;
 
-    return matchesSearch && matchesCategory && matchesCampus;
+    return matchesSearch && matchesCategory && matchesCampus && matchesTimeFilter;
   });
+
+  const upcomingCount = events.filter(e => new Date(e.event_date) >= now).length;
+  const pastCount = events.filter(e => new Date(e.event_date) < now).length;
 
   const formatEventDate = (dateString: string) => {
     const date = new Date(dateString);
+    const isPast = date < now;
     return {
       day: format(date, "d"),
       month: format(date, "MMM"),
       time: format(date, "h:mm a"),
-      full: format(date, "EEEE, MMMM d, yyyy")
+      full: format(date, "EEEE, MMMM d, yyyy"),
+      isPast
     };
   };
 
@@ -220,6 +236,13 @@ const Events = () => {
 
           {/* Category Quick Filters */}
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant={showPastEvents ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowPastEvents(!showPastEvents)}
+            >
+              {showPastEvents ? "Hide Past Events" : `Show Past Events (${pastCount})`}
+            </Button>
             {categories.map(category => (
               <Button
                 key={category}
@@ -234,8 +257,20 @@ const Events = () => {
 
           {/* Results Count */}
           <p className="text-sm text-muted-foreground">
-            Found {filteredEvents.length} upcoming events
+            Found {filteredEvents.length} {showPastEvents ? "events" : "upcoming events"}
           </p>
+
+          {/* Error State */}
+          {fetchError && (
+            <Card className="border-destructive">
+              <CardContent className="py-6 text-center">
+                <p className="text-destructive mb-4">Failed to load events: {fetchError}</p>
+                <Button onClick={fetchEvents} variant="outline">
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Event Cards */}
           {isLoading ? (
@@ -250,12 +285,13 @@ const Events = () => {
                 const isInterested = interestedEvents.has(event.id);
 
                 return (
-                  <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <Card key={event.id} className={`overflow-hidden hover:shadow-lg transition-shadow ${dateInfo.isPast ? "opacity-70" : ""}`}>
                     <div className="flex flex-col sm:flex-row">
                       {/* Date Box */}
-                      <div className="bg-primary/10 p-4 sm:p-6 flex sm:flex-col items-center justify-center gap-2 sm:gap-1 sm:min-w-[100px]">
-                        <span className="text-3xl sm:text-4xl font-bold text-primary">{dateInfo.day}</span>
-                        <span className="text-sm font-medium text-primary uppercase">{dateInfo.month}</span>
+                      <div className={`${dateInfo.isPast ? "bg-muted" : "bg-primary/10"} p-4 sm:p-6 flex sm:flex-col items-center justify-center gap-2 sm:gap-1 sm:min-w-[100px]`}>
+                        <span className={`text-3xl sm:text-4xl font-bold ${dateInfo.isPast ? "text-muted-foreground" : "text-primary"}`}>{dateInfo.day}</span>
+                        <span className={`text-sm font-medium ${dateInfo.isPast ? "text-muted-foreground" : "text-primary"} uppercase`}>{dateInfo.month}</span>
+                        {dateInfo.isPast && <Badge variant="secondary" className="text-xs">Past</Badge>}
                       </div>
 
                       {/* Content */}

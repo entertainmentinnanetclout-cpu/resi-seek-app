@@ -33,6 +33,7 @@ const Marketplace = () => {
   const [listings, setListings] = useState<any[]>([]);
   const [filteredListings, setFilteredListings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -81,6 +82,7 @@ const Marketplace = () => {
 
   const fetchListings = async () => {
     setIsLoading(true);
+    setFetchError(null);
     const { data, error } = await supabase
       .from("marketplace_listings")
       .select(`*, profiles:user_id (full_name, profile_picture_url)`)
@@ -89,6 +91,7 @@ const Marketplace = () => {
     
     if (error) {
       console.error("Fetch error:", error);
+      setFetchError(error.message);
       toast.error("Failed to load listings");
     } else {
       setListings(data || []);
@@ -434,6 +437,15 @@ const Marketplace = () => {
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
                 <p className="text-muted-foreground">Loading listings...</p>
               </div>
+            ) : fetchError ? (
+              <Card className="shadow-sm border-destructive">
+                <CardContent className="py-8 text-center">
+                  <p className="text-destructive mb-4">Failed to load listings: {fetchError}</p>
+                  <Button onClick={fetchListings} variant="outline">
+                    Retry
+                  </Button>
+                </CardContent>
+              </Card>
             ) : filteredListings.length === 0 ? (
               <Card className="shadow-sm">
                 <CardContent className="py-12 text-center">

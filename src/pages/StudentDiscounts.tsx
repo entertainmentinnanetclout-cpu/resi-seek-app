@@ -46,6 +46,7 @@ const categoryColors: Record<string, string> = {
 const StudentDiscounts = () => {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
@@ -65,6 +66,7 @@ const StudentDiscounts = () => {
 
   const fetchDiscounts = async () => {
     setIsLoading(true);
+    setFetchError(null);
     const { data, error } = await supabase
       .from("student_discounts")
       .select("*")
@@ -73,6 +75,7 @@ const StudentDiscounts = () => {
 
     if (error) {
       console.error("Fetch error:", error);
+      setFetchError(error.message);
       toast.error("Failed to load discounts");
     } else {
       setDiscounts(data || []);
@@ -182,6 +185,15 @@ const StudentDiscounts = () => {
               <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
               <p className="text-muted-foreground">Loading discounts...</p>
             </div>
+          ) : fetchError ? (
+            <Card className="border-destructive">
+              <CardContent className="py-8 text-center">
+                <p className="text-destructive mb-4">Failed to load discounts: {fetchError}</p>
+                <Button onClick={fetchDiscounts} variant="outline">
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <>
               {/* Discount Cards */}

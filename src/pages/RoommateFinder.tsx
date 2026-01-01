@@ -71,6 +71,7 @@ const RoommateFinder = () => {
   const { user } = useAuth();
   const [profiles, setProfiles] = useState<RoommateProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [campusFilter, setCampusFilter] = useState("all");
   const [myProfile, setMyProfile] = useState<RoommateProfile | null>(null);
@@ -97,6 +98,7 @@ const RoommateFinder = () => {
 
   const fetchProfiles = async () => {
     setIsLoading(true);
+    setFetchError(null);
     const { data, error } = await supabase
       .from("profiles")
       .select("id, full_name, campus, course, year_of_study, profile_picture_url, lifestyle_preferences, looking_for_roommate")
@@ -104,6 +106,8 @@ const RoommateFinder = () => {
       .order("updated_at", { ascending: false });
 
     if (error) {
+      console.error("Fetch error:", error);
+      setFetchError(error.message);
       toast.error("Failed to load profiles");
     } else {
       // Filter out current user
@@ -279,6 +283,15 @@ const RoommateFinder = () => {
               <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
               <p className="text-muted-foreground">Finding potential roommates...</p>
             </div>
+          ) : fetchError ? (
+            <Card className="border-destructive">
+              <CardContent className="py-8 text-center">
+                <p className="text-destructive mb-4">Failed to load profiles: {fetchError}</p>
+                <Button onClick={fetchProfiles} variant="outline">
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
           ) : filteredProfiles.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredProfiles.map(profile => {

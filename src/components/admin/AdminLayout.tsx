@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Building2, Users, FileText, Home, Settings, LogOut, Menu, Image, Percent, GraduationCap, Newspaper, Calendar, ShoppingBag, LayoutDashboard } from "lucide-react";
+import { Building2, Users, FileText, Home, Settings, LogOut, Menu, Image, Percent, GraduationCap, Newspaper, Calendar, ShoppingBag, LayoutDashboard, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -33,6 +34,11 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
+  };
+
+  const handleRefresh = () => {
+    toast.info("Refreshing data...");
+    window.location.reload();
   };
 
   const NavContent = () => (
@@ -65,6 +71,14 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       </nav>
 
       <div className="p-4 border-t space-y-2">
+        <Button 
+          variant="outline" 
+          className="w-full justify-start"
+          onClick={handleRefresh}
+        >
+          <RefreshCw className="w-5 h-5 mr-3" />
+          Refresh Data
+        </Button>
         <Button 
           variant="ghost" 
           className="w-full justify-start"
