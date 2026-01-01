@@ -10,7 +10,6 @@ interface Residence {
   id: string;
   name: string;
   address: string;
-  price: number;
   image_url: string | null;
   campus: string | null;
   verification_level: string | null;
@@ -225,10 +224,6 @@ const TrustedLandlordsSection = () => {
                     {residence.address}
                   </p>
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-primary">
-                      R{residence.price.toLocaleString()}
-                      <span className="text-xs text-muted-foreground font-normal">/mo</span>
-                    </span>
                     {residence.available_spots > 0 && (
                       <Badge variant="outline" className="text-success border-success/30">
                         {residence.available_spots} spots
