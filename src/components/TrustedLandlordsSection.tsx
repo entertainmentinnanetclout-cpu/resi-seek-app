@@ -41,17 +41,34 @@ const TrustedLandlordsSection = () => {
   useEffect(() => {
     const fetchTopResidences = async () => {
       try {
+        console.log('[TrustedLandlordsSection] Fetching top residences...');
+        
+        // Select only columns that are guaranteed to exist
         const { data, error } = await supabase
           .from('residences')
-          .select('id, name, address, price, image_url, campus, verification_level, available_spots, province')
+          .select('id, name, address, price, image_url, campus, available_spots, verification_level, province, display_order')
           .order('display_order', { ascending: true })
           .limit(30);
 
-        if (error) throw error;
-        setResidences(data || []);
-        setFilteredResidences(data || []);
+        if (error) {
+          console.error('[TrustedLandlordsSection] Fetch error:', error);
+          throw error;
+        }
+        
+        console.log(`[TrustedLandlordsSection] Fetched ${data?.length || 0} residences`);
+        
+        // Map data with null-safe access for optional columns
+        const safeData = (data || []).map(r => ({
+          ...r,
+          verification_level: r.verification_level || 'basic',
+          province: r.province || 'Gauteng',
+          display_order: r.display_order || 0,
+        }));
+        
+        setResidences(safeData);
+        setFilteredResidences(safeData);
       } catch (err) {
-        console.error('Error fetching residences:', err);
+        console.error('[TrustedLandlordsSection] Error:', err);
       } finally {
         setLoading(false);
       }

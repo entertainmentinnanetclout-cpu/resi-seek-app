@@ -37,12 +37,19 @@ const AdminApplications = () => {
 
   const fetchApplications = async () => {
     try {
+      console.log('[AdminApplications] Fetching applications...');
+      
       const { data, error } = await supabase
         .from("applications")
         .select(`*, residence:residences(name)`)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[AdminApplications] Fetch error:', error);
+        throw error;
+      }
+      
+      console.log(`[AdminApplications] Fetched ${data?.length || 0} applications`);
 
       // Fetch profiles separately
       const appsWithProfiles = await Promise.all(
@@ -58,7 +65,7 @@ const AdminApplications = () => {
 
       setApplications(appsWithProfiles);
     } catch (error) {
-      console.error("Error fetching applications:", error);
+      console.error("[AdminApplications] Error:", error);
       toast.error("Failed to load applications");
     } finally {
       setLoading(false);
@@ -67,6 +74,30 @@ const AdminApplications = () => {
 
   useEffect(() => {
     fetchApplications();
+    
+    // Subscribe to realtime updates for applications
+    const channel = supabase
+      .channel('admin-applications')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'applications' },
+        (payload) => {
+          console.log('[AdminApplications] Realtime update:', payload);
+          fetchApplications();
+        }
+      )
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[AdminApplications] Subscribed to realtime updates');
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.error('[AdminApplications] Subscription error:', err);
+        }
+      });
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const updateStatus = async (id: string, newStatus: string) => {

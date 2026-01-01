@@ -26,6 +26,8 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        console.log('[AdminDashboard] Fetching stats...');
+        
         const [residences, applications, profiles, listings, analytics, bursaries, discounts] = await Promise.all([
           supabase.from("residences").select("id", { count: "exact", head: true }),
           supabase.from("applications").select("id, status"),
@@ -35,6 +37,19 @@ const AdminDashboard = () => {
           supabase.from("bursaries").select("id", { count: "exact", head: true }).eq("is_active", true),
           supabase.from("student_discounts").select("id", { count: "exact", head: true }).eq("is_active", true),
         ]);
+        
+        // Log any errors from individual queries
+        if (residences.error) console.error('[AdminDashboard] Residences error:', residences.error);
+        if (applications.error) console.error('[AdminDashboard] Applications error:', applications.error);
+        if (profiles.error) console.error('[AdminDashboard] Profiles error:', profiles.error);
+        if (listings.error) console.error('[AdminDashboard] Listings error:', listings.error);
+        
+        console.log('[AdminDashboard] Stats loaded:', {
+          residences: residences.count,
+          applications: applications.data?.length,
+          profiles: profiles.count,
+          listings: listings.data?.length,
+        });
 
         const pendingCount = applications.data?.filter(a => a.status === "submitted" || a.status === "pending").length || 0;
         const approvedCount = applications.data?.filter(a => a.status === "approved").length || 0;
