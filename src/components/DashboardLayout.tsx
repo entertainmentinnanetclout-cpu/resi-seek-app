@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut, Newspaper, ShoppingBag, GraduationCap, Percent, Users, Calendar, Shield } from "lucide-react";
+import { Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut, Newspaper, ShoppingBag, GraduationCap, Percent, Users, Calendar, Shield, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import desktopLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import mobileLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { toast } from "sonner";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -45,6 +46,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const handleLogout = async () => {
     await signOut();
+  };
+
+  const handleRefresh = () => {
+    toast.info("Refreshing data...");
+    window.location.reload();
   };
 
   const SidebarContent = () => (
@@ -86,16 +92,26 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </nav>
 
-      <div className="p-4 border-t border-border flex items-center justify-between">
+      <div className="p-4 border-t border-border space-y-2">
         <Button 
-          variant="ghost" 
+          variant="outline" 
           className="w-full justify-start" 
-          onClick={handleLogout}
+          onClick={handleRefresh}
         >
-          <LogOut className="w-5 h-5 mr-3" />
-          Logout
+          <RefreshCw className="w-5 h-5 mr-3" />
+          Refresh
         </Button>
-        <ThemeToggle />
+        <div className="flex items-center justify-between">
+          <Button 
+            variant="ghost" 
+            className="flex-1 justify-start" 
+            onClick={handleLogout}
+          >
+            <LogOut className="w-5 h-5 mr-3" />
+            Logout
+          </Button>
+          <ThemeToggle />
+        </div>
       </div>
     </div>
   );

@@ -27,6 +27,7 @@ interface Bursary {
 const BursaryFinder = () => {
   const [bursaries, setBursaries] = useState<Bursary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [fieldFilter, setFieldFilter] = useState("all");
@@ -47,6 +48,7 @@ const BursaryFinder = () => {
 
   const fetchBursaries = async () => {
     setIsLoading(true);
+    setFetchError(null);
     const { data, error } = await supabase
       .from("bursaries")
       .select("*")
@@ -55,6 +57,7 @@ const BursaryFinder = () => {
 
     if (error) {
       console.error("Fetch error:", error);
+      setFetchError(error.message);
       toast.error("Failed to load bursaries");
     } else {
       setBursaries(data || []);
@@ -167,6 +170,15 @@ const BursaryFinder = () => {
               <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
               <p className="text-muted-foreground">Loading bursaries...</p>
             </div>
+          ) : fetchError ? (
+            <Card className="border-destructive">
+              <CardContent className="py-8 text-center">
+                <p className="text-destructive mb-4">Failed to load bursaries: {fetchError}</p>
+                <Button onClick={fetchBursaries} variant="outline">
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <>
               {/* Bursary Cards */}
