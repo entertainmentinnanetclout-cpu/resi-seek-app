@@ -17,6 +17,7 @@ const navItems = [
   { icon: TrendingUp, label: "Analytics", path: "/admin/analytics" },
   { icon: Building2, label: "Residences", path: "/admin/residences" },
   { icon: FileText, label: "Applications", path: "/admin/applications" },
+  { icon: FileText, label: "Documents", path: "/admin/documents" },
   { icon: Users, label: "Users", path: "/admin/users" },
   { icon: ShoppingBag, label: "Marketplace", path: "/admin/marketplace" },
   { icon: Image, label: "Hero Slides", path: "/admin/slides" },

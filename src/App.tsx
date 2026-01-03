@@ -47,6 +47,8 @@ import AdminNews from "./pages/admin/AdminNews";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminSystemStatus from "./pages/admin/AdminSystemStatus";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminDocuments from "./pages/admin/AdminDocuments";
+import BursaryDetail from "./pages/BursaryDetail";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +87,7 @@ const App = () => {
               <Route path="/favorites" element={<StudentRoute><Favorites /></StudentRoute>} />
               <Route path="/marketplace" element={<StudentRoute><Marketplace /></StudentRoute>} />
               <Route path="/bursaries" element={<StudentRoute><BursaryFinder /></StudentRoute>} />
+              <Route path="/bursary/:id" element={<StudentRoute><BursaryDetail /></StudentRoute>} />
               <Route path="/discounts" element={<StudentRoute><StudentDiscounts /></StudentRoute>} />
               <Route path="/roommates" element={<StudentRoute><RoommateFinder /></StudentRoute>} />
               <Route path="/events" element={<StudentRoute><Events /></StudentRoute>} />
@@ -101,6 +104,7 @@ const App = () => {
               <Route path="/admin/analytics" element={<ProtectedRoute><AdminRoute><AdminAnalytics /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/residences" element={<ProtectedRoute><AdminRoute><AdminResidences /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/applications" element={<ProtectedRoute><AdminRoute><AdminApplications /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/documents" element={<ProtectedRoute><AdminRoute><AdminDocuments /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/users" element={<ProtectedRoute><AdminRoute><AdminUsers /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/slides" element={<ProtectedRoute><AdminRoute><AdminSlides /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/bursaries" element={<ProtectedRoute><AdminRoute><AdminBursaries /></AdminRoute></ProtectedRoute>} />
