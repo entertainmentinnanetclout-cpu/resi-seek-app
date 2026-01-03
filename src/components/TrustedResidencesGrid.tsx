@@ -87,13 +87,13 @@ const TrustedResidencesGrid = () => {
             <p className="text-sm text-muted-foreground">Handpicked verified accommodations</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {[...Array(12)].map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {[...Array(8)].map((_, i) => (
             <Card key={i} className="animate-pulse overflow-hidden">
-              <div className="aspect-[4/3] bg-muted" />
-              <CardContent className="p-3">
-                <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-                <div className="h-3 bg-muted rounded w-1/2" />
+              <div className="aspect-[16/10] bg-muted" />
+              <CardContent className="p-4">
+                <div className="h-5 bg-muted rounded w-3/4 mb-3" />
+                <div className="h-4 bg-muted rounded w-1/2" />
               </CardContent>
             </Card>
           ))}
@@ -141,18 +141,18 @@ const TrustedResidencesGrid = () => {
         </Badge>
       </div>
 
-      {/* Cards Grid - Larger cards with better visibility */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+      {/* Cards Grid - Much larger cards for better visibility */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         {residences.map((residence, index) => (
           <Card
             key={residence.id}
-            className="group overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/50 hover:border-primary/30 relative"
+            className="group overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-border/50 hover:border-primary/40 relative"
             onClick={() => navigate(`/res/${residence.id}`)}
           >
             {/* Rank Badge */}
             {index < 3 && (
-              <div className="absolute top-2 right-2 z-10">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ${
+              <div className="absolute top-3 right-3 z-10">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-lg ${
                   index === 0 ? 'bg-yellow-500 text-yellow-950' :
                   index === 1 ? 'bg-gray-300 text-gray-800' :
                   'bg-amber-600 text-amber-50'
@@ -162,8 +162,8 @@ const TrustedResidencesGrid = () => {
               </div>
             )}
             
-            {/* Image Container - Larger aspect ratio */}
-            <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+            {/* Image Container - Much larger aspect ratio */}
+            <div className="relative aspect-[16/10] overflow-hidden bg-muted">
               <img
                 src={residence.image_url || '/placeholder.svg'}
                 alt={residence.name}
@@ -174,27 +174,39 @@ const TrustedResidencesGrid = () => {
                 }}
               />
               {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
               
               {/* Verification badge */}
-              <div className="absolute top-2 left-2">
+              <div className="absolute top-3 left-3">
                 {getVerificationBadge(residence.verification_level)}
+              </div>
+              
+              {/* Bottom overlay info */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                <h3 className="font-bold text-lg sm:text-xl truncate mb-1 drop-shadow-lg">
+                  {residence.name}
+                </h3>
+                <p className="text-sm flex items-center gap-1.5 text-white/90 drop-shadow-md">
+                  <MapPin className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{(residence.address ?? '').split(',')[0] || 'Location TBA'}</span>
+                </p>
               </div>
             </div>
             
-            {/* Content */}
-            <CardContent className="p-3 sm:p-4">
-              <h3 className="font-semibold text-sm sm:text-base truncate group-hover:text-primary transition-colors mb-1">
-                {residence.name}
-              </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1 truncate">
-                <MapPin className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{(residence.address ?? '').split(',')[0] || 'Location TBA'}</span>
-              </p>
+            {/* Content footer */}
+            <CardContent className="p-4 flex items-center justify-between gap-2">
+              {residence.campus && (
+                <Badge variant="secondary" className="text-xs">
+                  {residence.campus}
+                </Badge>
+              )}
               {residence.available_spots > 0 && (
-                <Badge variant="outline" className="mt-2 text-xs">
+                <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
                   {residence.available_spots} spots left
                 </Badge>
+              )}
+              {!residence.campus && residence.available_spots <= 0 && (
+                <span className="text-xs text-muted-foreground">View details →</span>
               )}
             </CardContent>
           </Card>

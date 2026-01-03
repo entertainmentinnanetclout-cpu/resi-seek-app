@@ -46,6 +46,7 @@ import AdminMarketplace from "./pages/admin/AdminMarketplace";
 import AdminNews from "./pages/admin/AdminNews";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminSystemStatus from "./pages/admin/AdminSystemStatus";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -97,6 +98,7 @@ const App = () => {
               
               {/* Admin Routes */}
               <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/analytics" element={<ProtectedRoute><AdminRoute><AdminAnalytics /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/residences" element={<ProtectedRoute><AdminRoute><AdminResidences /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/applications" element={<ProtectedRoute><AdminRoute><AdminApplications /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/users" element={<ProtectedRoute><AdminRoute><AdminUsers /></AdminRoute></ProtectedRoute>} />
