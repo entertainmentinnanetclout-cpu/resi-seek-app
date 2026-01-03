@@ -9,7 +9,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Eye, Check, X, CheckCheck, XCircle } from "lucide-react";
+import { Search, Eye, Check, X, CheckCheck, XCircle, Clock, FileQuestion, Calendar, Users, MessageSquare } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { safeFormatDate } from "@/lib/utils";
@@ -34,6 +36,19 @@ const AdminApplications = () => {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [statusNote, setStatusNote] = useState("");
+
+  const applicationStatuses = [
+    { value: "submitted", label: "Submitted", color: "secondary", icon: FileQuestion },
+    { value: "under_review", label: "Under Review", color: "default", icon: Eye },
+    { value: "documents_required", label: "Documents Required", color: "warning", icon: FileQuestion },
+    { value: "interview_scheduled", label: "Interview Scheduled", color: "default", icon: Calendar },
+    { value: "waitlisted", label: "Waitlisted", color: "secondary", icon: Users },
+    { value: "conditionally_approved", label: "Conditionally Approved", color: "default", icon: Clock },
+    { value: "approved", label: "Approved", color: "success", icon: Check },
+    { value: "rejected", label: "Rejected", color: "destructive", icon: X },
+    { value: "withdrawn", label: "Withdrawn", color: "outline", icon: XCircle },
+  ] as const;
 
   const fetchApplications = async () => {
     try {
@@ -100,17 +115,26 @@ const AdminApplications = () => {
     };
   }, []);
 
-  const updateStatus = async (id: string, newStatus: string) => {
+  const updateStatus = async (id: string, newStatus: string, note?: string) => {
     try {
+      const updateData: { status: string; notes?: string } = { status: newStatus };
+      if (note) {
+        const app = applications.find(a => a.id === id);
+        const existingNotes = app?.notes || "";
+        const timestamp = new Date().toLocaleString();
+        updateData.notes = existingNotes + `\n[${timestamp}] Status: ${newStatus}${note ? ` - ${note}` : ""}`;
+      }
+      
       const { error } = await supabase
         .from("applications")
-        .update({ status: newStatus })
+        .update(updateData)
         .eq("id", id);
 
       if (error) throw error;
-      toast.success(`Application ${newStatus}`);
+      toast.success(`Application ${newStatus.replace(/_/g, " ")}`);
       fetchApplications();
       setSelectedApplication(null);
+      setStatusNote("");
     } catch (error) {
       console.error("Error updating application:", error);
       toast.error("Failed to update application");
@@ -164,14 +188,21 @@ const AdminApplications = () => {
   };
 
   const getStatusBadge = (status: string) => {
+    const statusConfig = applicationStatuses.find(s => s.value === status);
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       submitted: "secondary",
       pending: "secondary",
+      under_review: "default",
+      documents_required: "secondary",
+      interview_scheduled: "default",
+      waitlisted: "secondary",
+      conditionally_approved: "default",
       approved: "default",
       rejected: "destructive",
       withdrawn: "outline",
     };
-    return <Badge variant={variants[status] || "secondary"}>{status}</Badge>;
+    const displayLabel = statusConfig?.label || status.replace(/_/g, " ");
+    return <Badge variant={variants[status] || "secondary"}>{displayLabel}</Badge>;
   };
 
   const filteredApplications = applications.filter((app) => {
@@ -244,15 +275,14 @@ const AdminApplications = () => {
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-40">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Filter status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="submitted">Submitted</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
+                  {applicationStatuses.map(s => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               {pendingCount > 0 && (
@@ -395,20 +425,36 @@ const AdminApplications = () => {
                 </div>
               )}
 
-              {(selectedApplication.status === "submitted" || selectedApplication.status === "pending") && (
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    variant="destructive"
-                    className="flex-1"
-                    onClick={() => updateStatus(selectedApplication.id, "rejected")}
-                  >
-                    Reject
-                  </Button>
-                  <Button className="flex-1" onClick={() => updateStatus(selectedApplication.id, "approved")}>
-                    Approve
-                  </Button>
+              {/* Status Update Section */}
+              <div className="space-y-3 pt-4 border-t">
+                <Label>Update Status</Label>
+                <Select onValueChange={(value) => updateStatus(selectedApplication.id, value, statusNote)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Change status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {applicationStatuses.map(s => (
+                      <SelectItem key={s.value} value={s.value}>
+                        <span className="flex items-center gap-2">
+                          <s.icon className="w-4 h-4" />
+                          {s.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1">
+                    <MessageSquare className="w-3 h-3" /> Add Note (optional)
+                  </Label>
+                  <Textarea
+                    placeholder="Add a note about this status change..."
+                    value={statusNote}
+                    onChange={(e) => setStatusNote(e.target.value)}
+                    rows={2}
+                  />
                 </div>
-              )}
+              </div>
             </div>
           )}
         </DialogContent>

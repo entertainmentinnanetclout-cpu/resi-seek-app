@@ -45,6 +45,7 @@ import AdminEvents from "./pages/admin/AdminEvents";
 import AdminMarketplace from "./pages/admin/AdminMarketplace";
 import AdminNews from "./pages/admin/AdminNews";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminSystemStatus from "./pages/admin/AdminSystemStatus";
 
 const queryClient = new QueryClient();
 
@@ -105,6 +106,7 @@ const App = () => {
               <Route path="/admin/events" element={<ProtectedRoute><AdminRoute><AdminEvents /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/marketplace" element={<ProtectedRoute><AdminRoute><AdminMarketplace /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/news" element={<ProtectedRoute><AdminRoute><AdminNews /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/system-status" element={<ProtectedRoute><AdminRoute><AdminSystemStatus /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/settings" element={<ProtectedRoute><AdminRoute><AdminSettings /></AdminRoute></ProtectedRoute>} />
 
               {/* SEO Routes */}
