@@ -174,9 +174,9 @@ const TrustedResidencesEditor = () => {
 
   const availableResidences = allResidences.filter(
     r => !trustedList.find(t => t.id === r.id) &&
-    (r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     r.campus?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     r.address.toLowerCase().includes(searchQuery.toLowerCase()))
+    ((r.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+     (r.campus ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+     (r.address ?? '').toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   if (loading) {
