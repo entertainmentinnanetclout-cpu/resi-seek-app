@@ -14,6 +14,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/s
 import { ThemeToggle } from "@/components/ThemeToggle";
 import FloatingShapes from "@/components/FloatingShapes";
 import TrustedLandlordsSection from "@/components/TrustedLandlordsSection";
+import TrustedResidencesGrid from "@/components/TrustedResidencesGrid";
 import LandlordListingForm from "@/components/LandlordListingForm";
 import headerLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import footerLogo from "@/assets/FOOTER.png";
@@ -182,6 +183,13 @@ const Landing = () => {
 
         {/* Trusted Landlords Section */}
         <TrustedLandlordsSection />
+
+        {/* Trusted Residences Grid - Same as Find My Res */}
+        <section className="py-12 md:py-20 bg-card/30">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <TrustedResidencesGrid />
+          </div>
+        </section>
 
         <section className="py-12 md:py-20 bg-card/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
