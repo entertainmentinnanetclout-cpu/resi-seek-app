@@ -364,25 +364,26 @@ const BursaryFinder = () => {
                     return (
                       <Card 
                         key={bursary.id} 
-                        className="overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
+                        className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group hover:-translate-y-1"
                         onClick={() => handleCardClick(bursary.id)}
                       >
                         {/* Image/Logo Header */}
                         <div className={`relative h-32 bg-gradient-to-br ${getGradientForType(bursary.type)} flex items-center justify-center overflow-hidden`}>
-                          {bursary.image_url ? (
-                            <img 
-                              src={bursary.image_url} 
-                              alt={bursary.provider}
-                              className="w-20 h-20 object-contain bg-white rounded-lg p-2 shadow-md group-hover:scale-110 transition-transform"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <div className="w-20 h-20 bg-white/80 rounded-lg flex items-center justify-center">
-                              <GraduationCap className="w-10 h-10 text-muted-foreground" />
-                            </div>
-                          )}
+                          <div className="w-20 h-20 bg-white/90 dark:bg-white rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            {bursary.image_url ? (
+                              <img 
+                                src={bursary.image_url} 
+                                alt={bursary.provider}
+                                className="w-14 h-14 object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <GraduationCap className={`w-10 h-10 text-primary ${bursary.image_url ? 'hidden' : ''}`} />
+                          </div>
                           <Badge className={`absolute top-2 right-2 ${getTypeColor(bursary.type)} capitalize text-xs`}>
                             {bursary.type}
                           </Badge>

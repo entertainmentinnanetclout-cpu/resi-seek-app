@@ -13,7 +13,6 @@ import HeroCarousel from "@/components/HeroCarousel";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import FloatingShapes from "@/components/FloatingShapes";
-import TrustedLandlordsSection from "@/components/TrustedLandlordsSection";
 import TrustedResidencesGrid from "@/components/TrustedResidencesGrid";
 import LandlordListingForm from "@/components/LandlordListingForm";
 import headerLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
@@ -180,9 +179,6 @@ const Landing = () => {
             </div>
           </div>
         </section>
-
-        {/* Trusted Landlords Section */}
-        <TrustedLandlordsSection />
 
         {/* Trusted Residences Grid - Same as Find My Res */}
         <section className="py-12 md:py-20 bg-card/30">

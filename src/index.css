@@ -213,11 +213,12 @@ All colors MUST be HSL.
   }
 
   .card-3d {
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
   .card-3d:hover {
     transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) translateZ(20px) scale(1.02);
+    box-shadow: var(--shadow-hover);
   }
   
   .backdrop-blur-glass {
@@ -233,5 +234,58 @@ All colors MUST be HSL.
 
   .hide-on-mobile-preview {
     display: none;
+  }
+  
+  /* Lively hover animations */
+  .hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+  }
+  
+  .hover-scale-subtle {
+    transition: transform 0.2s ease;
+  }
+  
+  .hover-scale-subtle:hover {
+    transform: scale(1.02);
+  }
+  
+  /* Shimmer loading effect */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  /* Subtle bounce animation */
+  .animate-bounce-subtle {
+    animation: bounce-subtle 2s ease-in-out infinite;
+  }
+  
+  @keyframes bounce-subtle {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
   }
 }
