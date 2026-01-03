@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, Eye, EyeOff, Monitor, Home, Newspaper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -40,6 +42,7 @@ const AdminSlides = () => {
   const [editingSlide, setEditingSlide] = useState<Partial<HeroSlide> | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   const fetchSlides = async () => {
     try {
@@ -72,6 +75,18 @@ const AdminSlides = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Auto-rotate preview
+  useEffect(() => {
+    const activeSlides = slides.filter(s => s.is_active);
+    if (activeSlides.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setPreviewIndex(prev => (prev + 1) % activeSlides.length);
+    }, 4000);
+    
+    return () => clearInterval(interval);
+  }, [slides]);
 
   const handleSave = async () => {
     if (!editingSlide?.title) {
@@ -171,6 +186,8 @@ const AdminSlides = () => {
     }
   };
 
+  const activeSlides = slides.filter(s => s.is_active);
+
   return (
     <AdminLayout>
       <SEO title="Hero Slides | Admin" description="Manage homepage hero carousel slides" />
@@ -178,16 +195,16 @@ const AdminSlides = () => {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Hero Slides</h1>
-            <p className="text-muted-foreground">Manage homepage carousel images</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Hero Slides</h1>
+            <p className="text-sm text-muted-foreground">Manage carousel slides across your site</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => setEditingSlide({ ...emptySlide, display_order: slides.length })}>
+              <Button onClick={() => setEditingSlide({ ...emptySlide, display_order: slides.length })} size="sm">
                 <Plus className="w-4 h-4 mr-2" /> Add Slide
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingSlide?.id ? "Edit Slide" : "Add New Slide"}</DialogTitle>
                 <DialogDescription>Configure the hero carousel slide.</DialogDescription>
@@ -272,51 +289,198 @@ const AdminSlides = () => {
           </Dialog>
         </div>
 
-        <div className="grid gap-4">
-          {loading ? (
-            <p className="text-center py-8 text-muted-foreground">Loading...</p>
-          ) : slides.length === 0 ? (
+        <Tabs defaultValue="manage" className="space-y-4">
+          <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:flex">
+            <TabsTrigger value="manage" className="gap-2">
+              <GripVertical className="w-4 h-4" />
+              <span className="hidden sm:inline">Manage</span> Slides
+            </TabsTrigger>
+            <TabsTrigger value="preview" className="gap-2">
+              <Monitor className="w-4 h-4" />
+              Live Preview
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Manage Tab */}
+          <TabsContent value="manage" className="space-y-4">
+            {/* Where slides appear */}
             <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                No slides yet. Add your first slide to get started.
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Where These Slides Appear</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="gap-1">
+                    <Home className="w-3 h-3" />
+                    Homepage Hero
+                  </Badge>
+                  <Badge variant="outline" className="gap-1">
+                    <Newspaper className="w-3 h-3" />
+                    Landing Page
+                  </Badge>
+                </div>
               </CardContent>
             </Card>
-          ) : (
-            slides.map((slide) => (
-              <Card key={slide.id} className={!slide.is_active ? "opacity-60" : ""}>
-                <CardContent className="p-4">
-                  <div className="flex gap-4">
-                    <div className="flex items-center text-muted-foreground">
-                      <GripVertical className="w-5 h-5" />
-                    </div>
-                    <img src={slide.image_url} alt={slide.title} className="w-32 h-20 object-cover rounded" />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate">{slide.title}</h3>
-                      <p className="text-sm text-muted-foreground truncate">{slide.description}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Order: {slide.display_order}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Switch checked={slide.is_active} onCheckedChange={() => toggleActive(slide.id, slide.is_active)} />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setEditingSlide(slide);
-                          setIsDialogOpen(true);
-                        }}
+
+            {/* Slides List */}
+            <div className="grid gap-3">
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading slides...</div>
+              ) : slides.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    No slides yet. Add your first slide to get started.
+                  </CardContent>
+                </Card>
+              ) : (
+                slides.map((slide) => (
+                  <Card key={slide.id} className={!slide.is_active ? "opacity-60" : ""}>
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex gap-3 sm:gap-4">
+                        <div className="flex items-center text-muted-foreground shrink-0">
+                          <GripVertical className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </div>
+                        <img 
+                          src={slide.image_url} 
+                          alt={slide.title} 
+                          className="w-20 h-14 sm:w-32 sm:h-20 object-cover rounded shrink-0" 
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h3 className="font-semibold text-sm sm:text-base truncate">{slide.title}</h3>
+                              <p className="text-xs sm:text-sm text-muted-foreground truncate hidden sm:block">
+                                {slide.description}
+                              </p>
+                            </div>
+                            <Badge variant={slide.is_active ? "default" : "secondary"} className="shrink-0 text-xs">
+                              #{slide.display_order}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-1 sm:gap-2 mt-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 sm:h-8 sm:w-8"
+                              onClick={() => toggleActive(slide.id, slide.is_active)}
+                              title={slide.is_active ? "Deactivate" : "Activate"}
+                            >
+                              {slide.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 sm:h-8 sm:w-8"
+                              onClick={() => {
+                                setEditingSlide(slide);
+                                setIsDialogOpen(true);
+                              }}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 sm:h-8 sm:w-8 text-destructive" 
+                              onClick={() => handleDelete(slide.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Preview Tab */}
+          <TabsContent value="preview" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Monitor className="w-4 h-4" />
+                  Homepage Preview
+                </CardTitle>
+                <CardDescription>
+                  This is how the carousel appears on your homepage. Updates in real-time.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {activeSlides.length === 0 ? (
+                  <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                    <p className="text-muted-foreground">No active slides to preview</p>
+                  </div>
+                ) : (
+                  <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                    {activeSlides.map((slide, index) => (
+                      <div
+                        key={slide.id}
+                        className={`absolute inset-0 transition-opacity duration-500 ${
+                          index === previewIndex ? 'opacity-100' : 'opacity-0'
+                        }`}
                       >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(slide.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                        <img
+                          src={slide.image_url}
+                          alt={slide.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white">
+                          <h3 className="text-lg sm:text-2xl font-bold mb-1 sm:mb-2">{slide.title}</h3>
+                          {slide.description && (
+                            <p className="text-sm sm:text-base text-white/80 mb-3 line-clamp-2">{slide.description}</p>
+                          )}
+                          {slide.cta_text && (
+                            <Button size="sm" variant="secondary">
+                              {slide.cta_text}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Dots indicator */}
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                      {activeSlides.map((_, index) => (
+                        <button
+                          key={index}
+                          className={`w-2 h-2 rounded-full transition-colors ${
+                            index === previewIndex ? 'bg-white' : 'bg-white/50'
+                          }`}
+                          onClick={() => setPreviewIndex(index)}
+                        />
+                      ))}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Thumbnail strip */}
+            {activeSlides.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {activeSlides.map((slide, index) => (
+                  <button
+                    key={slide.id}
+                    onClick={() => setPreviewIndex(index)}
+                    className={`shrink-0 w-24 sm:w-32 aspect-video rounded-lg overflow-hidden border-2 transition-colors ${
+                      index === previewIndex ? 'border-primary' : 'border-transparent'
+                    }`}
+                  >
+                    <img
+                      src={slide.image_url}
+                      alt={slide.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </AdminLayout>
   );
