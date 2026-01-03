@@ -71,6 +71,18 @@ const AdminDiscounts = () => {
 
   useEffect(() => {
     fetchDiscounts();
+    
+    // Realtime subscription for live updates
+    const channel = supabase
+      .channel('admin-discounts-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_discounts' }, () => {
+        fetchDiscounts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleSave = async () => {

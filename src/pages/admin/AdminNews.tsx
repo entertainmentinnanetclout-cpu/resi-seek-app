@@ -69,6 +69,18 @@ const AdminNews = () => {
 
   useEffect(() => {
     fetchNews();
+    
+    // Realtime subscription for live updates
+    const channel = supabase
+      .channel('admin-news-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'campus_news' }, () => {
+        fetchNews();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleSave = async () => {
