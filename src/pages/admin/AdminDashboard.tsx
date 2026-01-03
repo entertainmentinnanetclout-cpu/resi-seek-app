@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Users, FileText, ShoppingBag, Eye, TrendingUp, Clock, CheckCircle, AlertCircle, Package, Activity, Star, GraduationCap } from "lucide-react";
+import { Building2, Users, FileText, ShoppingBag, Eye, Clock, CheckCircle, AlertCircle, Package, Activity, Star, GraduationCap, Image, Newspaper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,6 @@ const AdminDashboard = () => {
           supabase.from("student_discounts").select("id", { count: "exact", head: true }).eq("is_active", true),
         ]);
         
-        // Log any errors from individual queries
         if (residences.error) console.error('[AdminDashboard] Residences error:', residences.error);
         if (applications.error) console.error('[AdminDashboard] Applications error:', applications.error);
         if (profiles.error) console.error('[AdminDashboard] Profiles error:', profiles.error);
@@ -111,16 +110,16 @@ const AdminDashboard = () => {
   }, []);
 
   const mainStats = [
-    { icon: Building2, label: "Total Residences", value: stats.totalResidences, color: "text-primary", bgColor: "bg-primary/10" },
-    { icon: Users, label: "Registered Users", value: stats.totalUsers, color: "text-green-500", bgColor: "bg-green-500/10" },
-    { icon: ShoppingBag, label: "Marketplace Listings", value: stats.totalListings, color: "text-purple-500", bgColor: "bg-purple-500/10" },
-    { icon: Eye, label: "Total Page Views", value: stats.totalViews, color: "text-cyan-500", bgColor: "bg-cyan-500/10" },
+    { icon: Building2, label: "Residences", value: stats.totalResidences, color: "text-primary", bgColor: "bg-primary/10" },
+    { icon: Users, label: "Users", value: stats.totalUsers, color: "text-green-500", bgColor: "bg-green-500/10" },
+    { icon: ShoppingBag, label: "Listings", value: stats.totalListings, color: "text-purple-500", bgColor: "bg-purple-500/10" },
+    { icon: Eye, label: "Views", value: stats.totalViews, color: "text-cyan-500", bgColor: "bg-cyan-500/10" },
   ];
 
   const alertStats = [
     { 
       icon: Clock, 
-      label: "Pending Applications", 
+      label: "Pending", 
       value: stats.pendingApplications, 
       color: "text-warning", 
       bgColor: "bg-warning/10",
@@ -129,7 +128,7 @@ const AdminDashboard = () => {
     },
     { 
       icon: AlertCircle, 
-      label: "Unverified Listings", 
+      label: "Unverified", 
       value: stats.unverifiedListings, 
       color: "text-destructive", 
       bgColor: "bg-destructive/10",
@@ -138,7 +137,7 @@ const AdminDashboard = () => {
     },
     { 
       icon: CheckCircle, 
-      label: "Approved Applications", 
+      label: "Approved", 
       value: stats.approvedApplications, 
       color: "text-success", 
       bgColor: "bg-success/10",
@@ -146,12 +145,23 @@ const AdminDashboard = () => {
     },
     { 
       icon: FileText, 
-      label: "Total Applications", 
+      label: "Total Apps", 
       value: stats.totalApplications, 
       color: "text-blue-500", 
       bgColor: "bg-blue-500/10",
       link: "/admin/applications"
     },
+  ];
+
+  const quickActions = [
+    { icon: Building2, label: "Residences", path: "/admin/residences", color: "text-primary" },
+    { icon: FileText, label: "Applications", path: "/admin/applications", color: "text-blue-500" },
+    { icon: Star, label: "Top 30", path: "/admin/residences?tab=trusted", color: "text-yellow-500" },
+    { icon: Activity, label: "System", path: "/admin/system-status", color: "text-green-500" },
+    { icon: GraduationCap, label: "Bursaries", path: "/admin/bursaries", color: "text-purple-500" },
+    { icon: Package, label: "Market", path: "/admin/marketplace", color: "text-orange-500" },
+    { icon: Image, label: "Slides", path: "/admin/slides", color: "text-pink-500" },
+    { icon: Newspaper, label: "News", path: "/admin/news", color: "text-teal-500" },
   ];
 
   const getStatusBadgeClass = (status: string) => {
@@ -171,35 +181,36 @@ const AdminDashboard = () => {
         description="Manage ResKonnect platform - residences, applications, users, and content."
       />
       
-      <div className="space-y-8">
+      <div className="space-y-6">
+        {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold mb-2">Dashboard Overview</h1>
-          <p className="text-muted-foreground">
-            Welcome back! Here's what's happening on ResKonnect.
+          <h1 className="text-2xl sm:text-3xl font-bold mb-1">Dashboard</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Welcome back! Here's your overview.
           </p>
         </div>
 
-        {/* Alert Stats - Items needing attention */}
+        {/* Alert Stats - Mobile optimized */}
         {(stats.pendingApplications > 0 || stats.unverifiedListings > 0) && (
           <Card className="border-warning/50 bg-warning/5">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-warning" />
-                Items Requiring Attention
+            <CardHeader className="pb-2 px-4 pt-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-warning" />
+                Needs Attention
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <CardContent className="px-4 pb-4">
+              <div className="grid grid-cols-2 gap-3">
                 {alertStats.filter(s => s.urgent).map((stat, index) => (
                   <Link key={index} to={stat.link || "#"}>
-                    <div className={`p-4 rounded-lg ${stat.bgColor} hover:opacity-80 transition-opacity cursor-pointer`}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                        <span className={`text-2xl font-bold ${stat.color}`}>
+                    <div className={`p-3 rounded-lg ${stat.bgColor} hover:opacity-80 transition-opacity cursor-pointer`}>
+                      <div className="flex items-center gap-2">
+                        <stat.icon className={`w-4 h-4 ${stat.color}`} />
+                        <span className={`text-xl font-bold ${stat.color}`}>
                           {loading ? "..." : stat.value}
                         </span>
                       </div>
-                      <p className="text-sm text-muted-foreground">{stat.label}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
                     </div>
                   </Link>
                 ))}
@@ -208,20 +219,20 @@ const AdminDashboard = () => {
           </Card>
         )}
 
-        {/* Main Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {/* Main Stats Grid - Mobile 2x2 */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           {mainStats.map((stat, index) => (
-            <Card key={index} className="shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
-                    <p className={`text-3xl font-bold ${stat.color}`}>
+            <Card key={index} className="shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 sm:p-3 rounded-full ${stat.bgColor} shrink-0`}>
+                    <stat.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.color}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-xl sm:text-2xl font-bold ${stat.color} truncate`}>
                       {loading ? "..." : stat.value.toLocaleString()}
                     </p>
-                  </div>
-                  <div className={`p-3 rounded-full ${stat.bgColor}`}>
-                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">{stat.label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -229,21 +240,21 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Secondary Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Secondary Stats - Scrollable on mobile */}
+        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-4 sm:overflow-visible">
           {alertStats.map((stat, index) => (
-            <Link key={index} to={stat.link || "#"}>
+            <Link key={index} to={stat.link || "#"} className="flex-shrink-0 w-32 sm:w-auto">
               <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                      <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className={`p-1.5 sm:p-2 rounded-lg ${stat.bgColor}`}>
+                      <stat.icon className={`w-4 h-4 ${stat.color}`} />
                     </div>
-                    <div>
-                      <p className={`text-xl font-bold ${stat.color}`}>
+                    <div className="min-w-0">
+                      <p className={`text-lg sm:text-xl font-bold ${stat.color}`}>
                         {loading ? "..." : stat.value}
                       </p>
-                      <p className="text-xs text-muted-foreground">{stat.label}</p>
+                      <p className="text-xs text-muted-foreground truncate">{stat.label}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -252,30 +263,47 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
+        {/* Quick Actions - Mobile grid */}
+        <Card>
+          <CardHeader className="pb-3 px-4 pt-4">
+            <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="grid grid-cols-4 gap-2 sm:gap-4">
+              {quickActions.map((action, index) => (
+                <Link key={index} to={action.path} className="flex flex-col items-center p-2 sm:p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
+                  <action.icon className={`w-5 h-5 sm:w-7 sm:h-7 mb-1 sm:mb-2 ${action.color}`} />
+                  <span className="text-xs sm:text-sm font-medium truncate w-full">{action.label}</span>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Applications & Content Stats - Stack on mobile */}
+        <div className="grid gap-6 lg:grid-cols-2">
           {/* Recent Applications */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3 px-4 pt-4">
               <div className="flex items-center justify-between">
-                <CardTitle>Recent Applications</CardTitle>
+                <CardTitle className="text-base sm:text-lg">Recent Applications</CardTitle>
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/admin/applications">View All</Link>
                 </Button>
               </div>
-              <CardDescription>Latest student applications</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 pb-4">
               {recentApplications.length === 0 ? (
-                <p className="text-center py-4 text-muted-foreground">No applications yet</p>
+                <p className="text-center py-4 text-muted-foreground text-sm">No applications yet</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {recentApplications.map((app) => (
-                    <div key={app.id} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-                      <div>
-                        <p className="font-medium">{app.profile?.full_name || "Unknown"}</p>
-                        <p className="text-sm text-muted-foreground">{app.residence?.name}</p>
+                    <div key={app.id} className="flex items-center justify-between p-2 sm:p-3 bg-secondary/30 rounded-lg gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">{app.profile?.full_name || "Unknown"}</p>
+                        <p className="text-xs text-muted-foreground truncate">{app.residence?.name}</p>
                       </div>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(app.status)}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium shrink-0 ${getStatusBadgeClass(app.status)}`}>
                         {app.status}
                       </span>
                     </div>
@@ -285,70 +313,34 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
+          {/* Content Overview */}
           <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common tasks and shortcuts</CardDescription>
+            <CardHeader className="pb-3 px-4 pt-4">
+              <CardTitle className="text-base sm:text-lg">Content Overview</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Platform content stats</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <Link to="/admin/residences" className="p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
-                  <Building2 className="w-8 h-8 mx-auto mb-2 text-primary" />
-                  <p className="text-sm font-medium">Manage Residences</p>
-                </Link>
-                <Link to="/admin/applications" className="p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
-                  <FileText className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-                  <p className="text-sm font-medium">Review Applications</p>
-                </Link>
-                <Link to="/admin/residences?tab=trusted" className="p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
-                  <Star className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
-                  <p className="text-sm font-medium">Trusted Top 30</p>
-                </Link>
-                <Link to="/admin/system-status" className="p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
-                  <Activity className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                  <p className="text-sm font-medium">System Status</p>
-                </Link>
-                <Link to="/admin/bursaries" className="p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
-                  <GraduationCap className="w-8 h-8 mx-auto mb-2 text-purple-500" />
-                  <p className="text-sm font-medium">Manage Bursaries</p>
-                </Link>
-                <Link to="/admin/marketplace" className="p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
-                  <Package className="w-8 h-8 mx-auto mb-2 text-orange-500" />
-                  <p className="text-sm font-medium">Moderate Marketplace</p>
-                </Link>
+            <CardContent className="px-4 pb-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-secondary/30 rounded-lg">
+                  <p className="text-xl sm:text-2xl font-bold text-primary">{stats.activeBursaries}</p>
+                  <p className="text-xs text-muted-foreground">Bursaries</p>
+                </div>
+                <div className="text-center p-3 bg-secondary/30 rounded-lg">
+                  <p className="text-xl sm:text-2xl font-bold text-green-500">{stats.activeDiscounts}</p>
+                  <p className="text-xs text-muted-foreground">Discounts</p>
+                </div>
+                <div className="text-center p-3 bg-secondary/30 rounded-lg">
+                  <p className="text-xl sm:text-2xl font-bold text-purple-500">{stats.totalListings}</p>
+                  <p className="text-xs text-muted-foreground">Market Items</p>
+                </div>
+                <div className="text-center p-3 bg-secondary/30 rounded-lg">
+                  <p className="text-xl sm:text-2xl font-bold text-cyan-500">{stats.totalViews}</p>
+                  <p className="text-xs text-muted-foreground">Page Views</p>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Content Stats */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Content Overview</CardTitle>
-            <CardDescription>Platform content statistics</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-secondary/30 rounded-lg">
-                <p className="text-2xl font-bold text-primary">{stats.activeBursaries}</p>
-                <p className="text-sm text-muted-foreground">Active Bursaries</p>
-              </div>
-              <div className="text-center p-4 bg-secondary/30 rounded-lg">
-                <p className="text-2xl font-bold text-green-500">{stats.activeDiscounts}</p>
-                <p className="text-sm text-muted-foreground">Student Discounts</p>
-              </div>
-              <div className="text-center p-4 bg-secondary/30 rounded-lg">
-                <p className="text-2xl font-bold text-purple-500">{stats.totalListings}</p>
-                <p className="text-sm text-muted-foreground">Marketplace Items</p>
-              </div>
-              <div className="text-center p-4 bg-secondary/30 rounded-lg">
-                <p className="text-2xl font-bold text-cyan-500">{stats.totalViews}</p>
-                <p className="text-sm text-muted-foreground">Page Views</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </AdminLayout>
   );
