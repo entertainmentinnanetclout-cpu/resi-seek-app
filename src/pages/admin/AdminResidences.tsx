@@ -182,8 +182,8 @@ const AdminResidences = () => {
   };
 
   const filteredResidences = residences.filter(r =>
-    r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.address.toLowerCase().includes(searchQuery.toLowerCase())
+    (r.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (r.address ?? '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
