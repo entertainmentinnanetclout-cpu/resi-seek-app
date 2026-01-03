@@ -60,6 +60,17 @@ const AdminSlides = () => {
 
   useEffect(() => {
     fetchSlides();
+    
+    const channel = supabase
+      .channel('admin-slides')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hero_slides' }, () => {
+        fetchSlides();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleSave = async () => {

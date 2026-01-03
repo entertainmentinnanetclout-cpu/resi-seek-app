@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Users, FileText, ShoppingBag, Eye, TrendingUp, Clock, CheckCircle, AlertCircle, Package } from "lucide-react";
+import { Building2, Users, FileText, ShoppingBag, Eye, TrendingUp, Clock, CheckCircle, AlertCircle, Package, Activity, Star, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -292,7 +292,7 @@ const AdminDashboard = () => {
               <CardDescription>Common tasks and shortcuts</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <Link to="/admin/residences" className="p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
                   <Building2 className="w-8 h-8 mx-auto mb-2 text-primary" />
                   <p className="text-sm font-medium">Manage Residences</p>
@@ -301,12 +301,20 @@ const AdminDashboard = () => {
                   <FileText className="w-8 h-8 mx-auto mb-2 text-blue-500" />
                   <p className="text-sm font-medium">Review Applications</p>
                 </Link>
-                <Link to="/admin/slides" className="p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
-                  <TrendingUp className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                  <p className="text-sm font-medium">Edit Hero Slides</p>
+                <Link to="/admin/residences?tab=trusted" className="p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
+                  <Star className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
+                  <p className="text-sm font-medium">Trusted Top 30</p>
+                </Link>
+                <Link to="/admin/system-status" className="p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
+                  <Activity className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                  <p className="text-sm font-medium">System Status</p>
+                </Link>
+                <Link to="/admin/bursaries" className="p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
+                  <GraduationCap className="w-8 h-8 mx-auto mb-2 text-purple-500" />
+                  <p className="text-sm font-medium">Manage Bursaries</p>
                 </Link>
                 <Link to="/admin/marketplace" className="p-4 border rounded-lg hover:bg-secondary transition-colors text-center">
-                  <Package className="w-8 h-8 mx-auto mb-2 text-purple-500" />
+                  <Package className="w-8 h-8 mx-auto mb-2 text-orange-500" />
                   <p className="text-sm font-medium">Moderate Marketplace</p>
                 </Link>
               </div>
