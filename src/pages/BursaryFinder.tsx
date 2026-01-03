@@ -369,7 +369,7 @@ const BursaryFinder = () => {
                       >
                         {/* Image/Logo Header */}
                         <div className={`relative h-32 bg-gradient-to-br ${getGradientForType(bursary.type)} flex items-center justify-center overflow-hidden`}>
-                          <div className="w-20 h-20 bg-white/90 dark:bg-white rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <div className="w-20 h-20 bg-white rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 overflow-hidden">
                             {bursary.image_url ? (
                               <img 
                                 src={bursary.image_url} 
@@ -378,11 +378,14 @@ const BursaryFinder = () => {
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
                                   target.style.display = 'none';
-                                  target.nextElementSibling?.classList.remove('hidden');
+                                  const fallback = target.nextElementSibling as HTMLElement;
+                                  if (fallback) fallback.classList.remove('hidden');
                                 }}
                               />
                             ) : null}
-                            <GraduationCap className={`w-10 h-10 text-primary ${bursary.image_url ? 'hidden' : ''}`} />
+                            <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/70 text-white font-bold text-xl ${bursary.image_url ? 'hidden' : ''}`}>
+                              {bursary.provider.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
+                            </div>
                           </div>
                           <Badge className={`absolute top-2 right-2 ${getTypeColor(bursary.type)} capitalize text-xs`}>
                             {bursary.type}
