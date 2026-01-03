@@ -31,13 +31,28 @@ const TrustedResidencesEditor = () => {
 
   const fetchResidences = async () => {
     try {
-      const { data, error } = await supabase
-        .from("residences")
-        .select("id, name, address, image_url, campus, verification_level, is_trusted, display_order")
-        .order("display_order", { ascending: true });
+      // Use a broad select so the page still loads even if some optional
+      // columns (e.g. is_trusted) aren't present yet in the external backend.
+      const { data, error } = await supabase.from("residences").select("*");
 
       if (error) throw error;
-      setResidences(data || []);
+
+      const normalized: Residence[] = (data || []).map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        address: r.address,
+        image_url: r.image_url ?? null,
+        campus: r.campus ?? null,
+        verification_level: r.verification_level ?? null,
+        is_trusted: Boolean(r.is_trusted ?? false),
+        display_order: typeof r.display_order === "number" ? r.display_order : null,
+      }));
+
+      normalized.sort(
+        (a, b) => (a.display_order ?? Number.MAX_SAFE_INTEGER) - (b.display_order ?? Number.MAX_SAFE_INTEGER)
+      );
+
+      setResidences(normalized);
     } catch (error) {
       console.error("Error fetching residences:", error);
       toast.error("Failed to load residences");

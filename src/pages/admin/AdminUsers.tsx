@@ -40,17 +40,22 @@ const AdminUsers = () => {
 
       if (profilesError) throw profilesError;
 
-      // Fetch roles
-      const { data: roles, error: rolesError } = await supabase
+      // Fetch roles (non-blocking: if this fails we still show users)
+      let roles: Array<{ user_id: string; role: string }> = [];
+      const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role");
 
-      if (rolesError) throw rolesError;
+      if (rolesError) {
+        console.warn("AdminUsers: roles query failed, continuing without roles", rolesError);
+      } else {
+        roles = rolesData || [];
+      }
 
       // Merge profiles with roles
       const usersWithRoles = (profiles || []).map((profile) => ({
         ...profile,
-        role: roles?.find((r) => r.user_id === profile.id)?.role || "student",
+        role: roles.find((r) => r.user_id === profile.id)?.role || "student",
       }));
 
       setUsers(usersWithRoles);
