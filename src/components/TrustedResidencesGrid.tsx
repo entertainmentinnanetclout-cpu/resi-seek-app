@@ -27,6 +27,7 @@ const TrustedResidencesGrid = () => {
         const { data, error } = await supabase
           .from('residences')
           .select('id, name, address, image_url, campus, available_spots, verification_level, province, display_order')
+          .eq('is_trusted', true)
           .order('display_order', { ascending: true })
           .limit(30);
 

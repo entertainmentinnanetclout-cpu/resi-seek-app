@@ -487,6 +487,7 @@ export type Database = {
           featured: boolean | null
           id: string
           image_url: string | null
+          is_trusted: boolean | null
           name: string
           price: number
           province: string | null
@@ -509,6 +510,7 @@ export type Database = {
           featured?: boolean | null
           id?: string
           image_url?: string | null
+          is_trusted?: boolean | null
           name: string
           price: number
           province?: string | null
@@ -531,6 +533,7 @@ export type Database = {
           featured?: boolean | null
           id?: string
           image_url?: string | null
+          is_trusted?: boolean | null
           name?: string
           price?: number
           province?: string | null

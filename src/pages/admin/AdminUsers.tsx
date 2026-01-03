@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Shield, User } from "lucide-react";
+import { Search, Shield, User, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { safeFormatDate } from "@/lib/utils";
 import { format } from "date-fns";
 
 interface UserProfile {
@@ -99,6 +100,31 @@ const AdminUsers = () => {
     }
   };
 
+  const exportToCSV = () => {
+    const headers = ['Full Name', 'Email', 'Phone', 'Campus', 'Student Number', 'Role', 'Joined'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredUsers.map(user => [
+        user.full_name || '',
+        user.email || '',
+        user.phone || '',
+        user.campus || '',
+        user.student_number || '',
+        user.role || 'student',
+        safeFormatDate(user.created_at, 'yyyy-MM-dd')
+      ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reskonnect-users-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filteredUsers.length} users to CSV`);
+  };
+
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -113,9 +139,15 @@ const AdminUsers = () => {
       <SEO title="Manage Users | Admin" description="Manage user accounts and roles" />
 
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Users</h1>
-          <p className="text-muted-foreground">Manage user accounts and permissions</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Users</h1>
+            <p className="text-muted-foreground">Manage user accounts and permissions</p>
+          </div>
+          <Button onClick={exportToCSV} variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
         </div>
 
         <Card>
@@ -178,7 +210,7 @@ const AdminUsers = () => {
                           </div>
                         </TableCell>
                         <TableCell>{user.campus || "-"}</TableCell>
-                        <TableCell>{format(new Date(user.created_at), "dd MMM yyyy")}</TableCell>
+                        <TableCell>{safeFormatDate(user.created_at)}</TableCell>
                         <TableCell>
                           <Badge variant={user.role === "admin" ? "default" : "secondary"}>
                             {user.role}
