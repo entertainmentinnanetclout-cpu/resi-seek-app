@@ -83,9 +83,11 @@ const Marketplace = () => {
   const fetchListings = async () => {
     setIsLoading(true);
     setFetchError(null);
+    
+    // Fetch listings without join to avoid FK relationship error
     const { data, error } = await supabase
       .from("marketplace_listings")
-      .select(`*, profiles:user_id (full_name, profile_picture_url)`)
+      .select("*")
       .eq("status", "active")
       .order("created_at", { ascending: false });
     
@@ -93,8 +95,28 @@ const Marketplace = () => {
       console.error("Fetch error:", error);
       setFetchError(error.message);
       toast.error("Failed to load listings");
+      setIsLoading(false);
+      return;
+    }
+    
+    // Fetch seller profiles separately using the view
+    if (data && data.length > 0) {
+      const userIds = [...new Set(data.map(l => l.user_id))];
+      const { data: profiles } = await supabase
+        .from("marketplace_seller_profiles")
+        .select("id, full_name, profile_picture_url")
+        .in("id", userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      
+      const listingsWithProfiles = data.map(listing => ({
+        ...listing,
+        seller: profileMap.get(listing.user_id) || null
+      }));
+      
+      setListings(listingsWithProfiles);
     } else {
-      setListings(data || []);
+      setListings([]);
     }
     setIsLoading(false);
   };
@@ -503,7 +525,7 @@ const Marketplace = () => {
                           {listing.description}
                         </CardDescription>
                         <CardDescription className="text-xs mt-2 text-muted-foreground">
-                          Seller: {listing.profiles?.full_name || 'Student'}
+                          Seller: {listing.seller?.full_name || 'Student'}
                         </CardDescription>
                       </div>
                       <Button 
