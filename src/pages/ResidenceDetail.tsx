@@ -2,7 +2,7 @@
 import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { MapPin, DollarSign, Users, Bed, ShieldCheck, Wifi, Car, WashingMachine, Dumbbell, Utensils, Star, MessageSquare, CheckCircle } from "lucide-react";
+import { MapPin, DollarSign, Users, Bed, ShieldCheck, Wifi, Car, WashingMachine, Dumbbell, Utensils, Star, MessageSquare, CheckCircle, Video } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ const ResidenceDetail = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showVirtualTour, setShowVirtualTour] = useState(false);
   const [applicationNotes, setApplicationNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
@@ -262,6 +263,34 @@ const ResidenceDetail = () => {
                             target.src = "/placeholder.svg";
                           }}
                         />
+                        {/* Virtual Tour Section */}
+                        {residence.virtual_tour_url && (
+                          <div className="mb-8">
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-xl font-bold flex items-center gap-2">
+                                <Video className="w-5 h-5 text-primary" />
+                                3D Virtual Tour
+                              </h3>
+                              <Button
+                                variant={showVirtualTour ? "secondary" : "default"}
+                                onClick={() => setShowVirtualTour(!showVirtualTour)}
+                              >
+                                {showVirtualTour ? "Hide Tour" : "Take Virtual Tour"}
+                              </Button>
+                            </div>
+                            {showVirtualTour && (
+                              <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                                <iframe
+                                  src={residence.virtual_tour_url}
+                                  className="w-full h-full border-0"
+                                  allowFullScreen
+                                  title={`Virtual tour of ${residence.name}`}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         <h3 className="text-xl font-bold mb-4">Description</h3>
                         <p className="text-muted-foreground mb-8">{residence.description}</p>
                         <h3 className="text-xl font-bold mb-4">Amenities</h3>

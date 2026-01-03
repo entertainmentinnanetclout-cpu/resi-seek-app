@@ -33,6 +33,8 @@ interface Residence {
   contact_email: string | null;
   contact_phone: string | null;
   amenities: string[] | null;
+  virtual_tour_url: string | null;
+  virtual_tour_provider: string | null;
 }
 
 const emptyResidence: Partial<Residence> = {
@@ -50,6 +52,8 @@ const emptyResidence: Partial<Residence> = {
   contact_email: "",
   contact_phone: "",
   amenities: [],
+  virtual_tour_url: "",
+  virtual_tour_provider: "",
 };
 
 const AdminResidences = () => {
@@ -124,6 +128,8 @@ const AdminResidences = () => {
         description: editingResidence.description || null,
         contact_email: editingResidence.contact_email || null,
         contact_phone: editingResidence.contact_phone || null,
+        virtual_tour_url: editingResidence.virtual_tour_url || null,
+        virtual_tour_provider: editingResidence.virtual_tour_provider || null,
       };
 
       if (editingResidence.id) {
@@ -387,6 +393,54 @@ const AdminResidences = () => {
                         onChange={(e) => setImageFile(e.target.files?.[0] || null)}
                       />
                     </div>
+                  </div>
+
+                  {/* Virtual Tour Section */}
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-semibold mb-3">3D Virtual Tour</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Tour Provider</Label>
+                        <Select
+                          value={editingResidence.virtual_tour_provider || ""}
+                          onValueChange={(value) => setEditingResidence({ ...editingResidence, virtual_tour_provider: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select provider" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="matterport">Matterport</SelectItem>
+                            <SelectItem value="kuula">Kuula</SelectItem>
+                            <SelectItem value="youtube360">YouTube 360</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2 col-span-2">
+                        <Label>Virtual Tour URL</Label>
+                        <Input
+                          value={editingResidence.virtual_tour_url || ""}
+                          onChange={(e) => setEditingResidence({ ...editingResidence, virtual_tour_url: e.target.value })}
+                          placeholder="https://my.matterport.com/show/?m=..."
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Paste the embed URL from Matterport, Kuula, YouTube 360, or any iframe-compatible tour
+                        </p>
+                      </div>
+                    </div>
+                    {editingResidence.virtual_tour_url && (
+                      <div className="mt-4">
+                        <Label className="mb-2 block">Preview</Label>
+                        <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                          <iframe
+                            src={editingResidence.virtual_tour_url}
+                            className="w-full h-full border-0"
+                            allowFullScreen
+                            title="Virtual Tour Preview"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-end gap-2 pt-4">
