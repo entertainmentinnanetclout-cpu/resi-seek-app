@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Eye, Check, X, CheckCheck, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { safeFormatDate } from "@/lib/utils";
 
 interface Application {
   id: string;
@@ -309,7 +309,7 @@ const AdminApplications = () => {
                           </div>
                         </TableCell>
                         <TableCell>{app.residence?.name || "Unknown"}</TableCell>
-                        <TableCell>{format(new Date(app.application_date), "dd MMM yyyy")}</TableCell>
+                        <TableCell>{safeFormatDate(app.application_date)}</TableCell>
                         <TableCell>{getStatusBadge(app.status)}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="icon" onClick={() => setSelectedApplication(app)}>
@@ -379,7 +379,7 @@ const AdminApplications = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Applied On</p>
-                  <p className="font-medium">{format(new Date(selectedApplication.application_date), "dd MMM yyyy")}</p>
+                  <p className="font-medium">{safeFormatDate(selectedApplication.application_date)}</p>
                 </div>
               </div>
 

@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Search, Upload } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Pencil, Trash2, Search, Upload, Grid3X3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import TrustedResidencesEditor from "@/components/admin/TrustedResidencesEditor";
 
 interface Residence {
   id: string;
@@ -183,17 +185,28 @@ const AdminResidences = () => {
       <SEO title="Manage Residences | Admin" description="Manage residence listings" />
       
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">Residences</h1>
-            <p className="text-muted-foreground">Manage all residence listings</p>
-          </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setEditingResidence(emptyResidence)}>
-                <Plus className="w-4 h-4 mr-2" /> Add Residence
-              </Button>
-            </DialogTrigger>
+        <div>
+          <h1 className="text-3xl font-bold">Residences</h1>
+          <p className="text-muted-foreground">Manage all residence listings</p>
+        </div>
+
+        <Tabs defaultValue="all" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="all">All Residences</TabsTrigger>
+            <TabsTrigger value="trusted" className="gap-2">
+              <Grid3X3 className="w-4 h-4" />
+              Trusted Grid
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="all" className="space-y-4">
+            <div className="flex justify-end">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => setEditingResidence(emptyResidence)}>
+                    <Plus className="w-4 h-4 mr-2" /> Add Residence
+                  </Button>
+                </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingResidence?.id ? "Edit Residence" : "Add New Residence"}</DialogTitle>
@@ -460,6 +473,12 @@ const AdminResidences = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="trusted">
+            <TrustedResidencesEditor />
+          </TabsContent>
+        </Tabs>
       </div>
     </AdminLayout>
   );
