@@ -494,6 +494,8 @@ export type Database = {
           room_type: string | null
           updated_at: string
           verification_level: string | null
+          virtual_tour_provider: string | null
+          virtual_tour_url: string | null
         }
         Insert: {
           address: string
@@ -517,6 +519,8 @@ export type Database = {
           room_type?: string | null
           updated_at?: string
           verification_level?: string | null
+          virtual_tour_provider?: string | null
+          virtual_tour_url?: string | null
         }
         Update: {
           address?: string
@@ -540,6 +544,8 @@ export type Database = {
           room_type?: string | null
           updated_at?: string
           verification_level?: string | null
+          virtual_tour_provider?: string | null
+          virtual_tour_url?: string | null
         }
         Relationships: []
       }
