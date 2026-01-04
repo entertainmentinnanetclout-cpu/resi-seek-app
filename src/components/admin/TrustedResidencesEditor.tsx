@@ -131,13 +131,21 @@ const TrustedResidencesEditor = () => {
 
     setSaving(true);
     try {
-      // First, unmark all as not trusted
-      const { error: resetError } = await supabase
-        .from("residences")
-        .update({ is_trusted: false, display_order: 0 })
-        .neq("id", "00000000-0000-0000-0000-000000000000"); // Dummy condition to update all
-
-      if (resetError) throw resetError;
+      // Get all current trusted IDs to compare
+      const trustedIds = trustedList.map(r => r.id);
+      
+      // First, reset ALL residences that are currently trusted but NOT in our new list
+      const currentlyTrusted = allResidences.filter(r => r.is_trusted && !trustedIds.includes(r.id));
+      for (const res of currentlyTrusted) {
+        const { error } = await supabase
+          .from("residences")
+          .update({ is_trusted: false, display_order: null })
+          .eq("id", res.id);
+        if (error) {
+          console.error("Error resetting residence:", res.id, error);
+          throw error;
+        }
+      }
 
       // Then mark selected as trusted with their order
       for (const res of trustedList) {
@@ -145,15 +153,18 @@ const TrustedResidencesEditor = () => {
           .from("residences")
           .update({ is_trusted: true, display_order: res.display_order })
           .eq("id", res.id);
-        if (error) throw error;
+        if (error) {
+          console.error("Error updating trusted residence:", res.id, error);
+          throw error;
+        }
       }
 
       toast.success(`Saved ${trustedList.length} trusted residences`);
       setHasChanges(false);
-      fetchResidences();
-    } catch (error) {
+      await fetchResidences();
+    } catch (error: any) {
       console.error("Error saving:", error);
-      toast.error("Failed to save changes");
+      toast.error(`Failed to save: ${error.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
