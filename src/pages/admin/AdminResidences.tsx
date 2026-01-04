@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, Search, Upload, Grid3X3 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import TrustedResidencesEditor from "@/components/admin/TrustedResidencesEditor";
@@ -29,6 +29,7 @@ interface Residence {
   verification_level: string | null;
   featured: boolean | null;
   image_url: string | null;
+  images: string[] | null;
   description: string | null;
   contact_email: string | null;
   contact_phone: string | null;
@@ -52,6 +53,7 @@ const emptyResidence: Partial<Residence> = {
   contact_email: "",
   contact_phone: "",
   amenities: [],
+  images: [],
   virtual_tour_url: "",
   virtual_tour_provider: "",
 };
@@ -63,6 +65,7 @@ const AdminResidences = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<Partial<Residence> | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [additionalImages, setAdditionalImages] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
 
   const fetchResidences = async () => {
@@ -95,8 +98,9 @@ const AdminResidences = () => {
     setSaving(true);
     try {
       let imageUrl = editingResidence.image_url;
+      let imagesArray = editingResidence.images || [];
 
-      // Upload image if provided
+      // Upload main image if provided
       if (imageFile) {
         const fileExt = imageFile.name.split(".").pop();
         const fileName = `residence-${Date.now()}.${fileExt}`;
@@ -113,10 +117,33 @@ const AdminResidences = () => {
         imageUrl = urlData.publicUrl;
       }
 
+      // Upload additional images if provided
+      if (additionalImages.length > 0) {
+        const uploadPromises = additionalImages.map(async (file) => {
+          const fileExt = file.name.split(".").pop();
+          const fileName = `residence-gallery-${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage
+            .from("admin-images")
+            .upload(fileName, file);
+
+          if (uploadError) throw uploadError;
+          
+          const { data: urlData } = supabase.storage
+            .from("admin-images")
+            .getPublicUrl(fileName);
+          
+          return urlData.publicUrl;
+        });
+
+        const newUrls = await Promise.all(uploadPromises);
+        imagesArray = [...imagesArray, ...newUrls];
+      }
+
       const residenceData = {
         name: editingResidence.name!,
         address: editingResidence.address!,
         image_url: imageUrl,
+        images: imagesArray,
         price: Number(editingResidence.price) || 0,
         capacity: Number(editingResidence.capacity) || 1,
         available_spots: Number(editingResidence.available_spots) || 0,
@@ -154,6 +181,7 @@ const AdminResidences = () => {
       setIsDialogOpen(false);
       setEditingResidence(null);
       setImageFile(null);
+      setAdditionalImages([]);
       fetchResidences();
     } catch (error: any) {
       console.error("Error saving residence:", error);
@@ -382,7 +410,7 @@ const AdminResidences = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Image</Label>
+                    <Label>Main Image (Cover Photo)</Label>
                     <div className="flex items-center gap-4">
                       {editingResidence.image_url && (
                         <img src={editingResidence.image_url} alt="Preview" className="w-20 h-20 object-cover rounded" />
@@ -392,6 +420,78 @@ const AdminResidences = () => {
                         accept="image/*"
                         onChange={(e) => setImageFile(e.target.files?.[0] || null)}
                       />
+                    </div>
+                  </div>
+
+                  {/* Gallery Images Section */}
+                  <div className="space-y-3 border-t pt-4">
+                    <Label className="flex items-center gap-2">
+                      <Images className="w-4 h-4" />
+                      Gallery Images (Slideshow)
+                    </Label>
+                    
+                    {/* Existing gallery images */}
+                    {editingResidence.images && editingResidence.images.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {editingResidence.images.map((imgUrl, idx) => (
+                          <div key={idx} className="relative group">
+                            <img 
+                              src={imgUrl} 
+                              alt={`Gallery ${idx + 1}`} 
+                              className="w-16 h-16 object-cover rounded border"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newImages = [...(editingResidence.images || [])];
+                                newImages.splice(idx, 1);
+                                setEditingResidence({ ...editingResidence, images: newImages });
+                              }}
+                              className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Add new gallery images */}
+                    <div className="space-y-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          setAdditionalImages(prev => [...prev, ...files]);
+                        }}
+                      />
+                      {additionalImages.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {additionalImages.map((file, idx) => (
+                            <div key={idx} className="relative group">
+                              <img 
+                                src={URL.createObjectURL(file)} 
+                                alt={`New ${idx + 1}`} 
+                                className="w-16 h-16 object-cover rounded border border-primary"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAdditionalImages(prev => prev.filter((_, i) => i !== idx));
+                                }}
+                                className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Add multiple interior/exterior photos. These will appear in a slideshow on the trusted residences grid.
+                      </p>
                     </div>
                   </div>
 
