@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, CheckCircle2, Loader2, AlertTriangle, ChevronDown, FileText, X, Eye } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { ChevronDown, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,15 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Link } from "react-router-dom";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
-
-interface UploadedDocument {
-  id: string;
-  document_type: string;
-  file_name: string;
-  file_path: string;
-  file_size: number;
-  uploaded_at: string;
-}
+import DocumentUploader from "@/components/DocumentUploader";
 
 const Profile = () => {
   const shouldBlock = useAdminRedirect();
@@ -34,13 +25,7 @@ const Profile = () => {
   const [formData, setFormData] = useState<any>({});
   const [errors, setErrors] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
-  const documentInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
-  const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [dragOver, setDragOver] = useState<string | null>(null);
   const [openAccordion, setOpenAccordion] = useState<string | null>("personal_info");
-  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>([]);
   
   // Use refs to prevent keyboard closing on each keystroke
   const inputRefs = useRef<Record<string, string>>({});
@@ -118,191 +103,6 @@ const Profile = () => {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleDocumentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0 || !user) {
-      console.log('[Document Upload] No files or user:', { files: files?.length, userId: user?.id });
-      return;
-    }
-    
-    // Use the currently selected doc type
-    const docType = selectedDocType;
-    if (!docType) {
-      console.log('[Document Upload] No document type selected');
-      toast.error("Please select a document type first");
-      return;
-    }
-
-    const file = files[0];
-    console.log('[Document Upload] Starting upload for:', docType, file.name);
-    
-    // Validate file
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      toast.error("File size must be less than 10MB");
-      return;
-    }
-
-    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Only PDF, PNG, and JPG files are allowed");
-      return;
-    }
-
-    // Set uploading state IMMEDIATELY
-    setUploadingDoc(docType);
-    setUploadProgress(10);
-    
-    // Show immediate feedback
-    toast.loading(`Uploading ${docType}...`, { id: `upload-${docType}` });
-
-    // Simulate progress for better UX
-    const progressInterval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 85) {
-          clearInterval(progressInterval);
-          return 85;
-        }
-        return prev + 15;
-      });
-    }, 200);
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${docType.toLowerCase().replace(/ /g, '_')}-${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      console.log('[Document Upload] Uploading to storage:', filePath);
-
-      const { error: uploadError, data: uploadData } = await supabase.storage
-        .from('documents')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) {
-        console.error('[Document Upload] Storage upload failed:', uploadError);
-        throw new Error(`Storage upload failed: ${uploadError.message}`);
-      }
-      
-      console.log('[Document Upload] Storage upload success:', uploadData);
-      setUploadProgress(90);
-
-      // Store document record in documents table
-      const { error: dbError, data: dbData } = await supabase.from("documents").insert({
-        user_id: user.id,
-        document_type: docType,
-        file_name: file.name,
-        file_path: filePath,
-        file_size: file.size
-      }).select().single();
-
-      if (dbError) {
-        console.error('[Document Upload] Database insert failed:', dbError);
-        throw new Error(`Database insert failed: ${dbError.message}`);
-      }
-      
-      console.log('[Document Upload] Database insert success:', dbData);
-
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-      
-      // Dismiss loading toast and show success
-      toast.dismiss(`upload-${docType}`);
-      toast.success(`${docType} uploaded successfully!`, {
-        description: `${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
-      });
-      
-      // Refresh to show updated status
-      console.log('[Document Upload] Fetching updated documents...');
-      const { data: docs, error: fetchError } = await supabase
-        .from("documents")
-        .select("*")
-        .eq("user_id", user.id);
-      
-      if (fetchError) {
-        console.error('[Document Upload] Fetch error:', fetchError);
-      }
-      
-      if (docs) {
-        console.log('[Document Upload] Documents fetched:', docs.length);
-        setUploadedDocuments(docs as UploadedDocument[]);
-      }
-
-    } catch (err: any) {
-      clearInterval(progressInterval);
-      console.error("[Document Upload] Error:", err);
-      toast.dismiss(`upload-${docType}`);
-      toast.error(`Upload failed: ${err.message}`);
-    } finally {
-      // Keep the uploaded state visible for a moment, then reset
-      setTimeout(() => {
-        setUploadingDoc(null);
-        setUploadProgress(0);
-        if (documentInputRef.current) {
-          documentInputRef.current.value = "";
-        }
-      }, 1000);
-      // Don't reset selectedDocType so user can retry if needed
-    }
-  };
-
-  const handleDrop = (docType: string, e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(null);
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      setSelectedDocType(docType);
-      // Create a synthetic event-like object
-      const input = documentInputRef.current;
-      if (input) {
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        input.files = dt.files;
-        handleDocumentChange({ target: input } as React.ChangeEvent<HTMLInputElement>);
-      }
-    }
-  };
-
-  // Fetch uploaded documents on mount
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      if (!user?.id) return;
-      const { data } = await supabase
-        .from("documents")
-        .select("*")
-        .eq("user_id", user.id);
-      
-      if (data) {
-        setUploadedDocuments(data as UploadedDocument[]);
-        setProfile((prev: any) => ({
-          ...prev,
-          uploadedDocuments: data.map(d => d.document_type)
-        }));
-      }
-    };
-    fetchDocuments();
-  }, [user?.id]);
-
-  // View document handler
-  const handleViewDocument = async (filePath: string, fileName: string) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(filePath, 60); // 60 seconds validity
-      
-      if (error) throw error;
-      if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank');
-      }
-    } catch (err: any) {
-      toast.error(`Could not open document: ${err.message}`);
-    }
-  };
-
-  // Get uploaded document info by type
-  const getUploadedDoc = (docType: string) => {
-    return uploadedDocuments.find(d => d.document_type === docType);
   };
   
   const AccordionItem = ({ title, description, id, children }: any) => (
@@ -531,97 +331,19 @@ const Profile = () => {
                 </AccordionItem>
 
                 <AccordionItem title="Supporting Documents" description="Upload copies of your required documents." id="supporting_docs">
-                    <div className="space-y-3">
-                      <input type="file" ref={documentInputRef} onChange={handleDocumentChange} className="hidden" accept="application/pdf, image/png, image/jpeg" />
-                      {["ID Copy", "Proof of Registration", "Proof of Funding"].map((doc) => {
-                        const uploadedDoc = getUploadedDoc(doc);
-                        const isUploaded = !!uploadedDoc;
-                        const isUploading = uploadingDoc === doc;
-                        const isDraggedOver = dragOver === doc;
-                        return (
-                          <div 
-                            key={doc} 
-                            className={`relative flex flex-col gap-3 p-4 border-2 border-dashed rounded-lg transition-all ${
-                              isDraggedOver ? 'border-primary bg-primary/5' : 
-                              isUploaded ? 'border-green-500/50 bg-green-500/5' : 
-                              'border-border bg-background/50'
-                            }`}
-                            onDragOver={(e) => { e.preventDefault(); setDragOver(doc); }}
-                            onDragLeave={() => setDragOver(null)}
-                            onDrop={(e) => handleDrop(doc, e)}
-                          >
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                              <div className="flex items-center gap-3">
-                                {isUploading ? (
-                                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                                  </div>
-                                ) : isUploaded ? (
-                                  <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                                  </div>
-                                ) : (
-                                  <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
-                                    <FileText className="w-5 h-5 text-yellow-500" />
-                                  </div>
-                                )}
-                                <div>
-                                  <p className="font-medium">{doc}</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {isUploading 
-                                      ? `Uploading... ${uploadProgress}%` 
-                                      : isUploaded 
-                                        ? `Uploaded ✓ ${uploadedDoc.file_name} (${(uploadedDoc.file_size / 1024).toFixed(1)} KB)`
-                                        : 'Drag & drop or click to upload'}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex gap-2 w-full sm:w-auto">
-                                {isUploaded && !isUploading && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="flex-1 sm:flex-initial"
-                                    onClick={() => handleViewDocument(uploadedDoc.file_path, uploadedDoc.file_name)}
-                                  >
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    View
-                                  </Button>
-                                )}
-                                <Button
-                                  type="button"
-                                  variant={isUploaded ? "outline" : "default"}
-                                  size="sm"
-                                  className="flex-1 sm:flex-initial"
-                                  onClick={() => { setSelectedDocType(doc); documentInputRef.current?.click(); }}
-                                  disabled={isUploading}
-                                >
-                                  {isUploading ? (
-                                    <>
-                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                      {uploadProgress}%
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Upload className="w-4 h-4 mr-2" />
-                                      {isUploaded ? 'Replace' : 'Upload'}
-                                    </>
-                                  )}
-                                </Button>
-                              </div>
-                            </div>
-                            
-                            {/* Progress bar */}
-                            {isUploading && (
-                              <Progress value={uploadProgress} className="h-2" />
-                            )}
-                          </div>
-                        );
-                      })}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Accepted formats: PDF, PNG, JPG (max 10MB)
-                      </p>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                          Upload your supporting documents for verification.
+                        </p>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to="/documents">
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            Manage All Documents
+                          </Link>
+                        </Button>
+                      </div>
+                      <DocumentUploader />
                     </div>
                 </AccordionItem>
             </form>

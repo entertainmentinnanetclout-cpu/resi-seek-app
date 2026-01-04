@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Package, Plus, Search, Filter, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Package, Plus, Search, Filter, X, Image as ImageIcon, Loader2, Store } from "lucide-react";
 import { StudentVerificationModal } from "@/components/StudentVerificationModal";
 import { RESKONNECT_WHATSAPP_FORMATTED } from "@/lib/constants";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
@@ -39,6 +39,7 @@ const Marketplace = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [userStore, setUserStore] = useState<any>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,6 +56,7 @@ const Marketplace = () => {
 
   useEffect(() => {
     fetchProfile();
+    fetchUserStore();
     fetchListings();
     const channel = supabase
       .channel('marketplace-changes')
@@ -62,6 +64,16 @@ const Marketplace = () => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  const fetchUserStore = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("stores")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    setUserStore(data);
+  };
 
   useEffect(() => {
     filterListings();
@@ -274,19 +286,35 @@ const Marketplace = () => {
                 <h1 className="text-3xl sm:text-4xl font-bold font-display">Student Marketplace</h1>
                 <p className="text-muted-foreground mt-1">Buy and sell electronics, books, and study materials.</p>
               </div>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    size="lg" 
-                    className="gap-2 w-full sm:w-auto flex-shrink-0" 
-                    onClick={(e) => { 
-                      e.preventDefault(); 
-                      if (checkStudentVerification()) setIsDialogOpen(true); 
-                    }}
-                  >
-                    <Plus className="w-5 h-5" /> Create Listing
+              <div className="flex gap-2 w-full sm:w-auto">
+                {userStore ? (
+                  <Button variant="outline" asChild className="flex-1 sm:flex-initial">
+                    <a href="/my-store">
+                      <Store className="w-4 h-4 mr-2" />
+                      My Store
+                    </a>
                   </Button>
-                </DialogTrigger>
+                ) : (
+                  <Button variant="outline" asChild className="flex-1 sm:flex-initial">
+                    <a href="/store-setup">
+                      <Store className="w-4 h-4 mr-2" />
+                      Create Store
+                    </a>
+                  </Button>
+                )}
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      size="lg" 
+                      className="gap-2 flex-1 sm:flex-initial" 
+                      onClick={(e) => { 
+                        e.preventDefault(); 
+                        if (checkStudentVerification()) setIsDialogOpen(true); 
+                      }}
+                    >
+                      <Plus className="w-5 h-5" /> Create Listing
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-lg w-[95%] max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Create New Listing</DialogTitle>
@@ -424,6 +452,7 @@ const Marketplace = () => {
                   </form>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
 
             <Card className="shadow-sm">
