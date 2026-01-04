@@ -30,6 +30,7 @@ import Documents from "./pages/Documents";
 import StoreSetup from "./pages/StoreSetup";
 import MyStore from "./pages/MyStore";
 import Store from "./pages/Store";
+import Orders from "./pages/Orders";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { StudentRoute } from "@/components/StudentRoute";
 import { AdminRoute } from "@/components/AdminRoute";
@@ -52,6 +53,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminSystemStatus from "./pages/admin/AdminSystemStatus";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminDocuments from "./pages/admin/AdminDocuments";
+import AdminStores from "./pages/admin/AdminStores";
 import BursaryDetail from "./pages/BursaryDetail";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -101,6 +103,7 @@ const App = () => {
               <Route path="/store-setup" element={<StudentRoute><StoreSetup /></StudentRoute>} />
               <Route path="/my-store" element={<StudentRoute><MyStore /></StudentRoute>} />
               <Route path="/store/:storeId" element={<StudentRoute><Store /></StudentRoute>} />
+              <Route path="/orders" element={<StudentRoute><Orders /></StudentRoute>} />
 
               {/* Other Essential Routes */}
               <Route path="/auth" element={<Auth />} />
@@ -123,6 +126,7 @@ const App = () => {
               <Route path="/admin/discounts" element={<ProtectedRoute><AdminRoute><AdminDiscounts /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/events" element={<ProtectedRoute><AdminRoute><AdminEvents /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/marketplace" element={<ProtectedRoute><AdminRoute><AdminMarketplace /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/stores" element={<ProtectedRoute><AdminRoute><AdminStores /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/news" element={<ProtectedRoute><AdminRoute><AdminNews /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/system-status" element={<ProtectedRoute><AdminRoute><AdminSystemStatus /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/settings" element={<ProtectedRoute><AdminRoute><AdminSettings /></AdminRoute></ProtectedRoute>} />
