@@ -62,8 +62,12 @@ export function useRealtimeApplications(user: User | null) {
           if (oldStatus && oldStatus !== newApp.status) {
             const statusLabels: Record<string, string> = {
               submitted: 'Pending',
+              under_review: 'Under Review 🔍',
+              documents_required: 'Documents Required 📄',
               approved: 'Approved ✅',
-              rejected: 'Rejected ❌'
+              rejected: 'Rejected ❌',
+              waitlisted: 'Waitlisted ⏳',
+              cancelled: 'Cancelled'
             };
             toast.info(`Application status updated to: ${statusLabels[newApp.status] || newApp.status}`, {
               description: 'Your residence application has been reviewed.',
