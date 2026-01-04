@@ -26,6 +26,10 @@ import BursaryFinder from "./pages/BursaryFinder";
 import StudentDiscounts from "./pages/StudentDiscounts";
 import RoommateFinder from "./pages/RoommateFinder";
 import Events from "./pages/Events";
+import Documents from "./pages/Documents";
+import StoreSetup from "./pages/StoreSetup";
+import MyStore from "./pages/MyStore";
+import Store from "./pages/Store";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { StudentRoute } from "@/components/StudentRoute";
 import { AdminRoute } from "@/components/AdminRoute";
@@ -93,6 +97,10 @@ const App = () => {
               <Route path="/discounts" element={<StudentRoute><StudentDiscounts /></StudentRoute>} />
               <Route path="/roommates" element={<StudentRoute><RoommateFinder /></StudentRoute>} />
               <Route path="/events" element={<StudentRoute><Events /></StudentRoute>} />
+              <Route path="/documents" element={<StudentRoute><Documents /></StudentRoute>} />
+              <Route path="/store-setup" element={<StudentRoute><StoreSetup /></StudentRoute>} />
+              <Route path="/my-store" element={<StudentRoute><MyStore /></StudentRoute>} />
+              <Route path="/store/:storeId" element={<StudentRoute><Store /></StudentRoute>} />
 
               {/* Other Essential Routes */}
               <Route path="/auth" element={<Auth />} />

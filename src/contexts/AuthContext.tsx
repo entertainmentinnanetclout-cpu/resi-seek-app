@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -18,26 +18,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const navigate = useNavigate();
+  const initRef = useRef(false);
 
   useEffect(() => {
+    // Prevent double initialization in strict mode
+    if (initRef.current) return;
+    initRef.current = true;
+
     let mounted = true;
 
-    // Set up auth state listener FIRST (SYNC only)
+    const initAuth = async () => {
+      try {
+        // Get existing session FIRST
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        if (existingSession) {
+          setSession(existingSession);
+          setUser(existingSession.user);
+        }
+      } catch (error) {
+        console.error("Auth init error:", error);
+      } finally {
+        if (mounted) {
+          setSessionChecked(true);
+        }
+      }
+    };
+
+    // Set up auth state listener
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
+      
+      // Update state synchronously
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
+      
+      // Mark session as checked after first auth state change
+      setSessionChecked(true);
     });
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      if (!mounted) return;
-      setSession(existingSession);
-      setUser(existingSession?.user ?? null);
-    });
+    // Initialize
+    initAuth();
 
     return () => {
       mounted = false;
@@ -50,6 +77,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     let cancelled = false;
 
     const checkRole = async () => {
+      // Wait for session check to complete
+      if (!sessionChecked) return;
+      
       // Not logged in
       if (!user) {
         setIsAdmin(false);
@@ -57,6 +87,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
+      // Keep loading true while checking role
       setIsLoading(true);
 
       try {
@@ -82,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, sessionChecked]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

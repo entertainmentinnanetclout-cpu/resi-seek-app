@@ -316,6 +316,7 @@ export type Database = {
           item_name: string
           price: number
           status: string
+          store_id: string | null
           updated_at: string
           user_id: string
           verified: boolean
@@ -330,6 +331,7 @@ export type Database = {
           item_name: string
           price: number
           status?: string
+          store_id?: string | null
           updated_at?: string
           user_id: string
           verified?: boolean
@@ -344,11 +346,20 @@ export type Database = {
           item_name?: string
           price?: number
           status?: string
+          store_id?: string | null
           updated_at?: string
           user_id?: string
           verified?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_listings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -654,6 +665,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      stores: {
+        Row: {
+          campus: string | null
+          contact_email: string | null
+          contact_whatsapp: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          rating: number | null
+          store_banner_url: string | null
+          store_description: string | null
+          store_logo_url: string | null
+          store_name: string
+          total_sales: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          campus?: string | null
+          contact_email?: string | null
+          contact_whatsapp?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          rating?: number | null
+          store_banner_url?: string | null
+          store_description?: string | null
+          store_logo_url?: string | null
+          store_name: string
+          total_sales?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          campus?: string | null
+          contact_email?: string | null
+          contact_whatsapp?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          rating?: number | null
+          store_banner_url?: string | null
+          store_description?: string | null
+          store_logo_url?: string | null
+          store_name?: string
+          total_sales?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       student_discounts: {
         Row: {
