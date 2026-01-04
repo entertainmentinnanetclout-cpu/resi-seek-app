@@ -13,6 +13,9 @@ import { z } from "zod";
 import logo from "@/assets/LIGHT THEME Login Page Icon.png";
 import { Loader2, Chrome } from "lucide-react";
 
+import { TUT_CAMPUSES } from "@/lib/campuses";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 const passwordSchema = z.string()
   .min(8, "Password must be at least 8 characters")
   .regex(/[A-Z]/, "Must contain at least one uppercase letter")
@@ -20,8 +23,15 @@ const passwordSchema = z.string()
   .regex(/[0-9]/, "Must contain at least one number");
 
 const loginSchema = z.object({ email: z.string().email("Invalid email address"), password: z.string().min(1, "Password is required") });
-const signupSchema = z.object({ fullName: z.string().min(2, "Full name must be at least 2 characters"), email: z.string().email("Invalid email address"), password: passwordSchema, confirmPassword: z.string() })
-  .refine((data) => data.password === data.confirmPassword, { message: "Passwords don't match", path: ["confirmPassword"] });
+const signupSchema = z.object({ 
+  fullName: z.string().min(2, "Full name must be at least 2 characters"), 
+  email: z.string().email("Invalid email address"), 
+  password: passwordSchema, 
+  confirmPassword: z.string(),
+  studentNumber: z.string().min(5, "Student number is required"),
+  campus: z.string().min(1, "Please select your campus"),
+  phoneNumber: z.string().regex(/^(\+27|0)[6-8][0-9]{8}$/, "Invalid SA phone number (e.g., 0821234567)")
+}).refine((data) => data.password === data.confirmPassword, { message: "Passwords don't match", path: ["confirmPassword"] });
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -29,6 +39,7 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCampus, setSelectedCampus] = useState("");
 
   useEffect(() => {
     // Wait for both auth and admin check to complete before redirecting
@@ -48,7 +59,17 @@ const Auth = () => {
     const formData = new FormData(e.currentTarget);
     
     try {
-      const data = { email: formData.get("email") as string, password: formData.get("password") as string, ...(!isLogin && { fullName: formData.get("fullName") as string, confirmPassword: formData.get("confirmPassword") as string }) };
+      const data = { 
+        email: formData.get("email") as string, 
+        password: formData.get("password") as string, 
+        ...(!isLogin && { 
+          fullName: formData.get("fullName") as string, 
+          confirmPassword: formData.get("confirmPassword") as string,
+          studentNumber: formData.get("studentNumber") as string,
+          campus: selectedCampus,
+          phoneNumber: formData.get("phoneNumber") as string
+        }) 
+      };
       const schema = isLogin ? loginSchema : signupSchema;
       const validated = schema.parse(data);
 
@@ -61,7 +82,20 @@ const Auth = () => {
         }
         toast.success("Welcome back!");
       } else {
-        const { error } = await supabase.auth.signUp({ email: (validated as any).email, password: (validated as any).password, options: { emailRedirectTo: `${window.location.origin}/auth`, data: { full_name: (validated as any).fullName } } });
+        const signupData = validated as z.infer<typeof signupSchema>;
+        const { error } = await supabase.auth.signUp({ 
+          email: signupData.email, 
+          password: signupData.password, 
+          options: { 
+            emailRedirectTo: `${window.location.origin}/auth`, 
+            data: { 
+              full_name: signupData.fullName,
+              student_number: signupData.studentNumber,
+              campus: signupData.campus,
+              phone: signupData.phoneNumber
+            } 
+          } 
+        });
         if (error) {
             if (error.message.includes("already registered")) throw new Error("This email is already registered. Please login instead.");
             throw error;
@@ -116,14 +150,62 @@ const Auth = () => {
           <CardContent className="p-6 sm:p-8">
             {error && <div className="bg-destructive/10 border border-destructive/50 text-destructive p-3 rounded-md mb-4 text-sm">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-6">
-              {!isLogin && (<div className="space-y-2"><Label htmlFor="fullName">Full Name</Label><Input id="fullName" name="fullName" required placeholder="John Doe" /></div>)}
-              <div className="space-y-2"><Label htmlFor="email">Email Address</Label><Input id="email" name="email" type="email" autoComplete="email" required placeholder="john@student.ac.za" /></div>
-              <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" name="password" type="password" autoComplete="current-password" required placeholder="••••••••" /></div>
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name <span className="text-destructive">*</span></Label>
+                  <Input id="fullName" name="fullName" required placeholder="John Doe" />
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address <span className="text-destructive">*</span></Label>
+                <Input id="email" name="email" type="email" autoComplete="email" required placeholder="john@student.ac.za" />
+              </div>
+              
+              {!isLogin && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="studentNumber">Student Number <span className="text-destructive">*</span></Label>
+                    <Input id="studentNumber" name="studentNumber" required placeholder="e.g., 221234567" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="campus">Campus <span className="text-destructive">*</span></Label>
+                    <Select value={selectedCampus} onValueChange={setSelectedCampus} required>
+                      <SelectTrigger id="campus">
+                        <SelectValue placeholder="Select your campus" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TUT_CAMPUSES.map((campus) => (
+                          <SelectItem key={campus.value} value={campus.value}>
+                            {campus.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Phone Number <span className="text-destructive">*</span></Label>
+                    <Input id="phoneNumber" name="phoneNumber" required placeholder="e.g., 0821234567" />
+                  </div>
+                </>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
+                <Input id="password" name="password" type="password" autoComplete={isLogin ? "current-password" : "new-password"} required placeholder="••••••••" />
+              </div>
 
               {!isLogin && (
                 <>
-                  <div className="space-y-2"><Label htmlFor="confirmPassword">Confirm Password</Label><Input id="confirmPassword" name="confirmPassword" type="password" required placeholder="••••••••" /></div>
-                  <div className="flex items-start gap-3"><Checkbox id="terms" required /><Label htmlFor="terms" className="text-sm text-muted-foreground -mt-1">I agree to the <a href="/terms" className="underline hover:text-primary">Terms</a> and <a href="/privacy" className="underline hover:text-primary">Privacy Policy</a>.</Label></div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password <span className="text-destructive">*</span></Label>
+                    <Input id="confirmPassword" name="confirmPassword" type="password" required placeholder="••••••••" />
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Checkbox id="terms" required />
+                    <Label htmlFor="terms" className="text-sm text-muted-foreground -mt-1">
+                      I agree to the <a href="/terms" className="underline hover:text-primary">Terms</a> and <a href="/privacy" className="underline hover:text-primary">Privacy Policy</a>.
+                    </Label>
+                  </div>
                 </>
               )}
 
