@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, CheckCircle2, Loader2, AlertTriangle, ChevronDown } from "lucide-react";
+import { Upload, CheckCircle2, Loader2, AlertTriangle, ChevronDown, FileText, X } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,8 @@ const Profile = () => {
   const documentInputRef = useRef<HTMLInputElement>(null);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [dragOver, setDragOver] = useState<string | null>(null);
   const [openAccordion, setOpenAccordion] = useState<string | null>("personal_info");
 
   useEffect(() => {
@@ -119,6 +122,18 @@ const Profile = () => {
     }
 
     setUploadingDoc(selectedDocType);
+    setUploadProgress(0);
+
+    // Simulate progress for better UX
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 100);
 
     try {
       const fileExt = file.name.split('.').pop();
@@ -142,7 +157,12 @@ const Profile = () => {
 
       if (dbError) throw dbError;
 
-      toast.success(`${selectedDocType} uploaded successfully!`);
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      toast.success(`${selectedDocType} uploaded successfully!`, {
+        description: `${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
+      });
       
       // Refresh to show updated status
       const { data: docs } = await supabase
@@ -159,13 +179,34 @@ const Profile = () => {
       }
 
     } catch (err: any) {
+      clearInterval(progressInterval);
       console.error("Upload error:", err);
       toast.error(`Upload failed: ${err.message}`);
     } finally {
-      setUploadingDoc(null);
-      setSelectedDocType(null);
-      if (documentInputRef.current) {
-        documentInputRef.current.value = "";
+      setTimeout(() => {
+        setUploadingDoc(null);
+        setSelectedDocType(null);
+        setUploadProgress(0);
+        if (documentInputRef.current) {
+          documentInputRef.current.value = "";
+        }
+      }, 500);
+    }
+  };
+
+  const handleDrop = (docType: string, e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(null);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      setSelectedDocType(docType);
+      // Create a synthetic event-like object
+      const input = documentInputRef.current;
+      if (input) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        handleDocumentChange({ target: input } as React.ChangeEvent<HTMLInputElement>);
       }
     }
   };
@@ -279,9 +320,15 @@ const Profile = () => {
                         <Select value={formData.campus || ""} onValueChange={(v) => handleSelectChange("campus", v)} disabled={!isEditing}>
                           <SelectTrigger id="campus"><SelectValue placeholder="Select campus" /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Pretoria West">Pretoria West</SelectItem>
-                            <SelectItem value="Soshanguve">Soshanguve</SelectItem>
-                            <SelectItem value="Ga-Rankuwa">Ga-Rankuwa</SelectItem>
+                            <SelectItem value="Pretoria West">Pretoria West Campus</SelectItem>
+                            <SelectItem value="Arts (Pretoria)">Arts Campus (Pretoria)</SelectItem>
+                            <SelectItem value="Arcadia">Arcadia Campus</SelectItem>
+                            <SelectItem value="Soshanguve North">Soshanguve North Campus</SelectItem>
+                            <SelectItem value="Soshanguve South">Soshanguve South Campus</SelectItem>
+                            <SelectItem value="Ga-Rankuwa">Ga-Rankuwa Campus</SelectItem>
+                            <SelectItem value="Polokwane">Polokwane Campus</SelectItem>
+                            <SelectItem value="Mbombela">Mbombela Campus (Nelspruit)</SelectItem>
+                            <SelectItem value="eMalahleni">eMalahleni Campus (Witbank)</SelectItem>
                           </SelectContent>
                         </Select>
                         {errors.campus && <p className="text-sm text-red-500">{errors.campus}</p>}
@@ -388,28 +435,73 @@ const Profile = () => {
                       <input type="file" ref={documentInputRef} onChange={handleDocumentChange} className="hidden" accept="application/pdf, image/png, image/jpeg" />
                       {["ID Copy", "Proof of Registration", "Proof of Funding"].map((doc) => {
                         const isUploaded = profile?.uploadedDocuments?.includes(doc);
+                        const isUploading = uploadingDoc === doc;
+                        const isDraggedOver = dragOver === doc;
                         return (
-                          <div key={doc} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border rounded-lg bg-background/50">
-                            <div className="flex items-center gap-3">
-                              {isUploaded ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" /> : <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0" />}
-                              <div>
-                                <p className="font-medium">{doc}</p>
-                                <p className="text-sm capitalize text-muted-foreground">{isUploaded ? 'Uploaded' : 'Not Uploaded'}</p>
+                          <div 
+                            key={doc} 
+                            className={`relative flex flex-col gap-3 p-4 border-2 border-dashed rounded-lg transition-all ${
+                              isDraggedOver ? 'border-primary bg-primary/5' : 
+                              isUploaded ? 'border-green-500/50 bg-green-500/5' : 
+                              'border-border bg-background/50'
+                            }`}
+                            onDragOver={(e) => { e.preventDefault(); setDragOver(doc); }}
+                            onDragLeave={() => setDragOver(null)}
+                            onDrop={(e) => handleDrop(doc, e)}
+                          >
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                {isUploading ? (
+                                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                                  </div>
+                                ) : isUploaded ? (
+                                  <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                  </div>
+                                ) : (
+                                  <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                                    <FileText className="w-5 h-5 text-yellow-500" />
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-medium">{doc}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {isUploading ? 'Uploading...' : isUploaded ? 'Uploaded ✓' : 'Drag & drop or click to upload'}
+                                  </p>
+                                </div>
                               </div>
+                              <Button
+                                variant={isUploaded ? "outline" : "default"}
+                                size="sm"
+                                className="w-full sm:w-auto flex-shrink-0"
+                                onClick={() => { setSelectedDocType(doc); documentInputRef.current?.click(); }}
+                                disabled={isUploading}
+                              >
+                                {isUploading ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    {uploadProgress}%
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="w-4 h-4 mr-2" />
+                                    {isUploaded ? 'Replace' : 'Upload'}
+                                  </>
+                                )}
+                              </Button>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full sm:w-auto flex-shrink-0"
-                              onClick={() => { setSelectedDocType(doc); documentInputRef.current?.click(); }}
-                              disabled={uploadingDoc === doc}
-                            >
-                              {uploadingDoc === doc ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                              {isUploaded ? 'Replace' : 'Upload'}
-                            </Button>
+                            
+                            {/* Progress bar */}
+                            {isUploading && (
+                              <Progress value={uploadProgress} className="h-2" />
+                            )}
                           </div>
                         );
                       })}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Accepted formats: PDF, PNG, JPG (max 10MB)
+                      </p>
                     </div>
                 </AccordionItem>
             </form>

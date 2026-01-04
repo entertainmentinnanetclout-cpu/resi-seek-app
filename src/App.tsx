@@ -49,6 +49,8 @@ import AdminSystemStatus from "./pages/admin/AdminSystemStatus";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminDocuments from "./pages/admin/AdminDocuments";
 import BursaryDetail from "./pages/BursaryDetail";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 
 const queryClient = new QueryClient();
 
@@ -94,6 +96,8 @@ const App = () => {
 
               {/* Other Essential Routes */}
               <Route path="/auth" element={<Auth />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="/setup-profile" element={<StudentRoute><ProfileSetup /></StudentRoute>} />
               <Route path="/dashboard/updates" element={<StudentRoute><Updates /></StudentRoute>} />
               <Route path="/campus-news" element={<StudentRoute><CampusNews /></StudentRoute>} />

@@ -117,9 +117,9 @@ const AdminApplications = () => {
 
   const updateStatus = async (id: string, newStatus: string, note?: string) => {
     try {
+      const app = applications.find(a => a.id === id);
       const updateData: { status: string; notes?: string } = { status: newStatus };
       if (note) {
-        const app = applications.find(a => a.id === id);
         const existingNotes = app?.notes || "";
         const timestamp = new Date().toLocaleString();
         updateData.notes = existingNotes + `\n[${timestamp}] Status: ${newStatus}${note ? ` - ${note}` : ""}`;
@@ -131,6 +131,19 @@ const AdminApplications = () => {
         .eq("id", id);
 
       if (error) throw error;
+
+      // Create notification for the student
+      if (app?.user_id) {
+        const statusLabel = applicationStatuses.find(s => s.value === newStatus)?.label || newStatus;
+        await supabase.from("notifications").insert({
+          user_id: app.user_id,
+          type: "application_status",
+          title: `Application ${statusLabel}`,
+          message: `Your application for ${app.residence?.name || 'accommodation'} has been updated to: ${statusLabel}${note ? `. Note: ${note}` : ''}`,
+          metadata: { application_id: id, status: newStatus, residence_name: app.residence?.name }
+        });
+      }
+
       toast.success(`Application ${newStatus.replace(/_/g, " ")}`);
       fetchApplications();
       setSelectedApplication(null);
