@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Building2, Users, FileText, Home, Settings, LogOut, Menu, Image, Percent, GraduationCap, Newspaper, Calendar, ShoppingBag, LayoutDashboard, RefreshCw, Activity, TrendingUp } from "lucide-react";
+import { Building2, Users, FileText, Home, Settings, LogOut, Menu, Image, Percent, GraduationCap, Newspaper, Calendar, ShoppingBag, LayoutDashboard, RefreshCw, Activity, TrendingUp, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -20,6 +20,7 @@ const navItems = [
   { icon: FileText, label: "Documents", path: "/admin/documents" },
   { icon: Users, label: "Users", path: "/admin/users" },
   { icon: ShoppingBag, label: "Marketplace", path: "/admin/marketplace" },
+  { icon: Store, label: "Stores", path: "/admin/stores" },
   { icon: Image, label: "Hero Slides", path: "/admin/slides" },
   { icon: GraduationCap, label: "Bursaries", path: "/admin/bursaries" },
   { icon: Percent, label: "Discounts", path: "/admin/discounts" },

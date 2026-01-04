@@ -8,8 +8,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Store as StoreIcon, MapPin, MessageCircle, Star, Package, ArrowLeft } from "lucide-react";
+import { Store as StoreIcon, MapPin, MessageCircle, Star, Package, ArrowLeft, ShieldCheck } from "lucide-react";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
+import { useAuth } from "@/contexts/AuthContext";
+import StoreReviewForm from "@/components/StoreReviewForm";
+import StoreReviews from "@/components/StoreReviews";
 
 interface StoreData {
   id: string;
@@ -23,6 +26,8 @@ interface StoreData {
   total_sales: number;
   rating: number;
   is_active: boolean;
+  verified?: boolean;
+  user_id: string;
 }
 
 interface Listing {
@@ -39,14 +44,21 @@ const Store = () => {
   const shouldBlock = useAdminRedirect();
   const { storeId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [store, setStore] = useState<StoreData | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [existingReview, setExistingReview] = useState<any>(null);
+  const [reviewRefresh, setReviewRefresh] = useState(0);
 
   useEffect(() => {
     if (storeId) fetchStore();
   }, [storeId]);
+
+  useEffect(() => {
+    if (storeId && user) fetchExistingReview();
+  }, [storeId, user]);
 
   const fetchStore = async () => {
     setIsLoading(true);
@@ -78,6 +90,19 @@ const Store = () => {
 
     setListings(listingsData || []);
     setIsLoading(false);
+  };
+
+  const fetchExistingReview = async () => {
+    if (!user || !storeId) return;
+
+    const { data } = await supabase
+      .from("store_reviews")
+      .select("id, rating, comment")
+      .eq("store_id", storeId)
+      .eq("reviewer_id", user.id)
+      .maybeSingle();
+
+    setExistingReview(data);
   };
 
   const handleContactSeller = () => {
@@ -155,7 +180,7 @@ const Store = () => {
                 )}
                 <div className="flex-1 pt-4 sm:pt-8">
                   <h1 className="text-2xl sm:text-3xl font-bold">{store.store_name}</h1>
-                  <div className="flex flex-wrap items-center gap-3 mt-2">
+                <div className="flex flex-wrap items-center gap-3 mt-2">
                     {store.campus && (
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <MapPin className="w-4 h-4" />
@@ -169,6 +194,12 @@ const Store = () => {
                       </div>
                     )}
                     <Badge variant="secondary">{store.total_sales} sales</Badge>
+                    {store.verified && (
+                      <Badge className="bg-green-600">
+                        <ShieldCheck className="w-3 h-3 mr-1" />
+                        Verified Seller
+                      </Badge>
+                    )}
                   </div>
                   {store.store_description && (
                     <p className="text-muted-foreground mt-3">{store.store_description}</p>
@@ -224,6 +255,23 @@ const Store = () => {
                   </Card>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Reviews Section */}
+          <div className="space-y-4">
+            <StoreReviews storeId={storeId!} refreshTrigger={reviewRefresh} />
+            
+            {/* Review Form - only show if user is not the store owner */}
+            {user && store.user_id !== user.id && (
+              <StoreReviewForm
+                storeId={storeId!}
+                existingReview={existingReview}
+                onReviewSubmitted={() => {
+                  fetchExistingReview();
+                  setReviewRefresh((prev) => prev + 1);
+                }}
+              />
             )}
           </div>
         </div>

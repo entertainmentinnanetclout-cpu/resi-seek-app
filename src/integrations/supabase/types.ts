@@ -69,6 +69,7 @@ export type Database = {
           name: string
           provider: string
           requirements: string[] | null
+          slug: string | null
           type: string
           updated_at: string
         }
@@ -85,6 +86,7 @@ export type Database = {
           name: string
           provider: string
           requirements?: string[] | null
+          slug?: string | null
           type?: string
           updated_at?: string
         }
@@ -101,6 +103,7 @@ export type Database = {
           name?: string
           provider?: string
           requirements?: string[] | null
+          slug?: string | null
           type?: string
           updated_at?: string
         }
@@ -357,6 +360,59 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_orders: {
+        Row: {
+          buyer_id: string
+          buyer_notes: string | null
+          buyer_phone: string | null
+          created_at: string | null
+          delivery_address: string | null
+          id: string
+          listing_id: string
+          quantity: number | null
+          seller_id: string
+          status: string
+          total_price: number
+          updated_at: string | null
+        }
+        Insert: {
+          buyer_id: string
+          buyer_notes?: string | null
+          buyer_phone?: string | null
+          created_at?: string | null
+          delivery_address?: string | null
+          id?: string
+          listing_id: string
+          quantity?: number | null
+          seller_id: string
+          status?: string
+          total_price: number
+          updated_at?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          buyer_notes?: string | null
+          buyer_phone?: string | null
+          created_at?: string | null
+          delivery_address?: string | null
+          id?: string
+          listing_id?: string
+          quantity?: number | null
+          seller_id?: string
+          status?: string
+          total_price?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_orders_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
             referencedColumns: ["id"]
           },
         ]
@@ -666,6 +722,44 @@ export type Database = {
           },
         ]
       }
+      store_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          rating: number
+          reviewer_id: string
+          store_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating: number
+          reviewer_id: string
+          store_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number
+          reviewer_id?: string
+          store_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_reviews_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           campus: string | null
@@ -682,6 +776,7 @@ export type Database = {
           total_sales: number | null
           updated_at: string | null
           user_id: string
+          verified: boolean | null
         }
         Insert: {
           campus?: string | null
@@ -698,6 +793,7 @@ export type Database = {
           total_sales?: number | null
           updated_at?: string | null
           user_id: string
+          verified?: boolean | null
         }
         Update: {
           campus?: string | null
@@ -714,6 +810,7 @@ export type Database = {
           total_sales?: number | null
           updated_at?: string | null
           user_id?: string
+          verified?: boolean | null
         }
         Relationships: []
       }

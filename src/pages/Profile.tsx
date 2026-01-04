@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import DocumentUploader from "@/components/DocumentUploader";
+import ProfilePictureUpload from "@/components/ProfilePictureUpload";
 
 const Profile = () => {
   const shouldBlock = useAdminRedirect();
@@ -167,6 +168,19 @@ const Profile = () => {
             </div>
 
             <form onSubmit={handleSave} className="space-y-4 md:space-y-0 md:bg-card md:rounded-lg md:shadow-sm">
+              <AccordionItem title="Profile Picture" description="Add a photo to help roommates and sellers recognize you." id="profile_picture">
+                <div className="flex justify-center py-4">
+                  <ProfilePictureUpload
+                    currentPictureUrl={profile.profile_picture_url}
+                    fullName={profile.full_name || ""}
+                    onPictureUpdated={(newUrl) => {
+                      setProfile((prev: any) => ({ ...prev, profile_picture_url: newUrl }));
+                      setFormData((prev: any) => ({ ...prev, profile_picture_url: newUrl }));
+                    }}
+                  />
+                </div>
+              </AccordionItem>
+
               <AccordionItem title="Personal Information" description="Keep your student details up-to-date." id="personal_info">
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
