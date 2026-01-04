@@ -122,9 +122,21 @@ const Profile = () => {
 
   const handleDocumentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0 || !user || !selectedDocType) return;
+    if (!files || files.length === 0 || !user) {
+      console.log('[Document Upload] No files or user:', { files: files?.length, userId: user?.id });
+      return;
+    }
+    
+    // Use the currently selected doc type
+    const docType = selectedDocType;
+    if (!docType) {
+      console.log('[Document Upload] No document type selected');
+      toast.error("Please select a document type first");
+      return;
+    }
 
     const file = files[0];
+    console.log('[Document Upload] Starting upload for:', docType, file.name);
     
     // Validate file
     const maxSize = 10 * 1024 * 1024; // 10MB
@@ -139,26 +151,30 @@ const Profile = () => {
       return;
     }
 
-    setUploadingDoc(selectedDocType);
-    setUploadProgress(0);
+    // Set uploading state IMMEDIATELY
+    setUploadingDoc(docType);
+    setUploadProgress(10);
+    
+    // Show immediate feedback
+    toast.loading(`Uploading ${docType}...`, { id: `upload-${docType}` });
 
     // Simulate progress for better UX
     const progressInterval = setInterval(() => {
       setUploadProgress(prev => {
-        if (prev >= 90) {
+        if (prev >= 85) {
           clearInterval(progressInterval);
-          return 90;
+          return 85;
         }
-        return prev + 10;
+        return prev + 15;
       });
-    }, 100);
+    }, 200);
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${selectedDocType.toLowerCase().replace(/ /g, '_')}-${Date.now()}.${fileExt}`;
+      const fileName = `${docType.toLowerCase().replace(/ /g, '_')}-${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      console.log('[Document Upload] Starting upload:', { docType: selectedDocType, filePath, fileSize: file.size });
+      console.log('[Document Upload] Uploading to storage:', filePath);
 
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('documents')
@@ -166,15 +182,16 @@ const Profile = () => {
 
       if (uploadError) {
         console.error('[Document Upload] Storage upload failed:', uploadError);
-        throw uploadError;
+        throw new Error(`Storage upload failed: ${uploadError.message}`);
       }
       
       console.log('[Document Upload] Storage upload success:', uploadData);
+      setUploadProgress(90);
 
       // Store document record in documents table
       const { error: dbError, data: dbData } = await supabase.from("documents").insert({
         user_id: user.id,
-        document_type: selectedDocType,
+        document_type: docType,
         file_name: file.name,
         file_path: filePath,
         file_size: file.size
@@ -182,7 +199,7 @@ const Profile = () => {
 
       if (dbError) {
         console.error('[Document Upload] Database insert failed:', dbError);
-        throw dbError;
+        throw new Error(`Database insert failed: ${dbError.message}`);
       }
       
       console.log('[Document Upload] Database insert success:', dbData);
@@ -190,37 +207,43 @@ const Profile = () => {
       clearInterval(progressInterval);
       setUploadProgress(100);
       
-      toast.success(`${selectedDocType} uploaded successfully!`, {
+      // Dismiss loading toast and show success
+      toast.dismiss(`upload-${docType}`);
+      toast.success(`${docType} uploaded successfully!`, {
         description: `${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
       });
       
-      // Refresh to show updated status - fetch full document data
-      const { data: docs } = await supabase
+      // Refresh to show updated status
+      console.log('[Document Upload] Fetching updated documents...');
+      const { data: docs, error: fetchError } = await supabase
         .from("documents")
         .select("*")
         .eq("user_id", user.id);
       
+      if (fetchError) {
+        console.error('[Document Upload] Fetch error:', fetchError);
+      }
+      
       if (docs) {
+        console.log('[Document Upload] Documents fetched:', docs.length);
         setUploadedDocuments(docs as UploadedDocument[]);
-        setProfile((prev: any) => ({
-          ...prev,
-          uploadedDocuments: docs.map(d => d.document_type)
-        }));
       }
 
     } catch (err: any) {
       clearInterval(progressInterval);
-      console.error("Upload error:", err);
+      console.error("[Document Upload] Error:", err);
+      toast.dismiss(`upload-${docType}`);
       toast.error(`Upload failed: ${err.message}`);
     } finally {
+      // Keep the uploaded state visible for a moment, then reset
       setTimeout(() => {
         setUploadingDoc(null);
-        setSelectedDocType(null);
         setUploadProgress(0);
         if (documentInputRef.current) {
           documentInputRef.current.value = "";
         }
-      }, 500);
+      }, 1000);
+      // Don't reset selectedDocType so user can retry if needed
     }
   };
 

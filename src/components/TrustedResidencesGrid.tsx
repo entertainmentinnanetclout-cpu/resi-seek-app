@@ -4,12 +4,14 @@ import { Badge } from '@/components/ui/badge';
 import { MapPin, Shield, Star, Building2, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import ResidenceImageSlideshow from './ResidenceImageSlideshow';
 
 interface Residence {
   id: string;
   name: string;
   address: string;
   image_url: string | null;
+  images: string[] | null;
   campus: string | null;
   verification_level: string | null;
   available_spots: number;
@@ -26,7 +28,7 @@ const TrustedResidencesGrid = () => {
       try {
         const { data, error } = await supabase
           .from('residences')
-          .select('id, name, address, image_url, campus, available_spots, verification_level, province, display_order')
+          .select('id, name, address, image_url, images, campus, available_spots, verification_level, province, display_order')
           .eq('is_trusted', true)
           .order('display_order', { ascending: true })
           .limit(30);
@@ -37,6 +39,7 @@ const TrustedResidencesGrid = () => {
           ...r,
           verification_level: r.verification_level || 'basic',
           province: r.province || 'Gauteng',
+          images: r.images || [],
         }));
 
         setResidences(safeData);
@@ -162,27 +165,25 @@ const TrustedResidencesGrid = () => {
               </div>
             )}
             
-            {/* Image Container - Much larger aspect ratio */}
+            {/* Image Container with Slideshow */}
             <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-              <img
-                src={residence.image_url || '/placeholder.svg'}
+              <ResidenceImageSlideshow
+                mainImage={residence.image_url}
+                images={residence.images}
                 alt={residence.name}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                loading="lazy"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/placeholder.svg';
-                }}
+                autoPlay={true}
+                interval={3000}
               />
               {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
               
               {/* Verification badge */}
-              <div className="absolute top-3 left-3">
+              <div className="absolute top-3 left-3 z-10 pointer-events-none">
                 {getVerificationBadge(residence.verification_level)}
               </div>
               
               {/* Bottom overlay info */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+              <div className="absolute bottom-0 left-0 right-0 p-4 text-white pointer-events-none">
                 <h3 className="font-bold text-lg sm:text-xl truncate mb-1 drop-shadow-lg">
                   {residence.name}
                 </h3>

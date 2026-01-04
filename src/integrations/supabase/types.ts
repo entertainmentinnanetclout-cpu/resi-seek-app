@@ -523,6 +523,7 @@ export type Database = {
           featured: boolean | null
           id: string
           image_url: string | null
+          images: string[] | null
           is_trusted: boolean | null
           name: string
           price: number
@@ -548,6 +549,7 @@ export type Database = {
           featured?: boolean | null
           id?: string
           image_url?: string | null
+          images?: string[] | null
           is_trusted?: boolean | null
           name: string
           price: number
@@ -573,6 +575,7 @@ export type Database = {
           featured?: boolean | null
           id?: string
           image_url?: string | null
+          images?: string[] | null
           is_trusted?: boolean | null
           name?: string
           price?: number
