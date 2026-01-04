@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, CheckCircle2, Loader2, AlertTriangle, ChevronDown, FileText, X } from "lucide-react";
+import { Upload, CheckCircle2, Loader2, AlertTriangle, ChevronDown, FileText, X, Eye } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +15,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Link } from "react-router-dom";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
+
+interface UploadedDocument {
+  id: string;
+  document_type: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  uploaded_at: string;
+}
 
 const Profile = () => {
   const shouldBlock = useAdminRedirect();
@@ -31,6 +40,10 @@ const Profile = () => {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [dragOver, setDragOver] = useState<string | null>(null);
   const [openAccordion, setOpenAccordion] = useState<string | null>("personal_info");
+  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>([]);
+  
+  // Use refs to prevent keyboard closing on each keystroke
+  const inputRefs = useRef<Record<string, string>>({});
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -72,8 +85,13 @@ const Profile = () => {
     setErrors((prev: any) => ({ ...prev, [name]: error }));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
+  // Handle input change without re-rendering - store in ref
+  const handleInputChange = (id: string, value: string) => {
+    inputRefs.current[id] = value;
+  };
+
+  // Update formData only on blur to prevent keyboard closing
+  const handleInputBlur = (id: string, value: string) => {
     setFormData((prev: any) => ({ ...prev, [id]: value }));
     validateField(id, value);
   };
@@ -164,17 +182,17 @@ const Profile = () => {
         description: `${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
       });
       
-      // Refresh to show updated status
+      // Refresh to show updated status - fetch full document data
       const { data: docs } = await supabase
         .from("documents")
-        .select("document_type")
+        .select("*")
         .eq("user_id", user.id);
       
       if (docs) {
-        const uploadedTypes = docs.map(d => d.document_type);
+        setUploadedDocuments(docs as UploadedDocument[]);
         setProfile((prev: any) => ({
           ...prev,
-          uploadedDocuments: uploadedTypes
+          uploadedDocuments: docs.map(d => d.document_type)
         }));
       }
 
@@ -217,10 +235,11 @@ const Profile = () => {
       if (!user?.id) return;
       const { data } = await supabase
         .from("documents")
-        .select("document_type")
+        .select("*")
         .eq("user_id", user.id);
       
       if (data) {
+        setUploadedDocuments(data as UploadedDocument[]);
         setProfile((prev: any) => ({
           ...prev,
           uploadedDocuments: data.map(d => d.document_type)
@@ -229,6 +248,27 @@ const Profile = () => {
     };
     fetchDocuments();
   }, [user?.id]);
+
+  // View document handler
+  const handleViewDocument = async (filePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .createSignedUrl(filePath, 60); // 60 seconds validity
+      
+      if (error) throw error;
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      }
+    } catch (err: any) {
+      toast.error(`Could not open document: ${err.message}`);
+    }
+  };
+
+  // Get uploaded document info by type
+  const getUploadedDoc = (docType: string) => {
+    return uploadedDocuments.find(d => d.document_type === docType);
+  };
   
   const AccordionItem = ({ title, description, id, children }: any) => (
     <Card className="shadow-sm md:shadow-none">
@@ -297,12 +337,24 @@ const Profile = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Tooltip><TooltipTrigger asChild><Label htmlFor="full_name">Full Name</Label></TooltipTrigger><TooltipContent><p>As it appears on your ID.</p></TooltipContent></Tooltip>
-                        <Input id="full_name" value={formData.full_name || ""} onChange={handleChange} placeholder="Enter your full name" disabled={!isEditing} />
+                        <Input 
+                          id="full_name" 
+                          defaultValue={formData.full_name || ""} 
+                          onBlur={(e) => handleInputBlur("full_name", e.target.value)} 
+                          placeholder="Enter your full name" 
+                          disabled={!isEditing} 
+                        />
                         {errors.full_name && <p className="text-sm text-red-500">{errors.full_name}</p>}
                       </div>
                       <div className="space-y-2">
                         <Tooltip><TooltipTrigger asChild><Label htmlFor="student_number">Student Number</Label></TooltipTrigger><TooltipContent><p>Your official university student number.</p></TooltipContent></Tooltip>
-                        <Input id="student_number" value={formData.student_number || ""} onChange={handleChange} placeholder="Enter your student number" disabled={!isEditing} />
+                        <Input 
+                          id="student_number" 
+                          defaultValue={formData.student_number || ""} 
+                          onBlur={(e) => handleInputBlur("student_number", e.target.value)} 
+                          placeholder="Enter your student number" 
+                          disabled={!isEditing} 
+                        />
                         {errors.student_number && <p className="text-sm text-red-500">{errors.student_number}</p>}
                       </div>
                     </div>
@@ -310,7 +362,13 @@ const Profile = () => {
                       <div className="space-y-2"><Label htmlFor="email">Email Address</Label><Input id="email" value={user?.email || ""} disabled /></div>
                       <div className="space-y-2">
                         <Tooltip><TooltipTrigger asChild><Label htmlFor="phone">Phone Number</Label></TooltipTrigger><TooltipContent><p>A valid SA number (e.g., 0821234567).</p></TooltipContent></Tooltip>
-                        <Input id="phone" value={formData.phone || ""} onChange={handleChange} placeholder="Enter your phone number" disabled={!isEditing} />
+                        <Input 
+                          id="phone" 
+                          defaultValue={formData.phone || ""} 
+                          onBlur={(e) => handleInputBlur("phone", e.target.value)} 
+                          placeholder="Enter your phone number" 
+                          disabled={!isEditing} 
+                        />
                         {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
                       </div>
                     </div>
@@ -334,7 +392,14 @@ const Profile = () => {
                         {errors.campus && <p className="text-sm text-red-500">{errors.campus}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="course">Course</Label><Input id="course" value={formData.course || ""} onChange={handleChange} placeholder="e.g. BEng Tech" disabled={!isEditing} />
+                        <Label htmlFor="course">Course</Label>
+                        <Input 
+                          id="course" 
+                          defaultValue={formData.course || ""} 
+                          onBlur={(e) => handleInputBlur("course", e.target.value)} 
+                          placeholder="e.g. BEng Tech" 
+                          disabled={!isEditing} 
+                        />
                         {errors.course && <p className="text-sm text-red-500">{errors.course}</p>}
                       </div>
                       <div className="space-y-2">
@@ -434,7 +499,8 @@ const Profile = () => {
                     <div className="space-y-3">
                       <input type="file" ref={documentInputRef} onChange={handleDocumentChange} className="hidden" accept="application/pdf, image/png, image/jpeg" />
                       {["ID Copy", "Proof of Registration", "Proof of Funding"].map((doc) => {
-                        const isUploaded = profile?.uploadedDocuments?.includes(doc);
+                        const uploadedDoc = getUploadedDoc(doc);
+                        const isUploaded = !!uploadedDoc;
                         const isUploading = uploadingDoc === doc;
                         const isDraggedOver = dragOver === doc;
                         return (
@@ -467,29 +533,48 @@ const Profile = () => {
                                 <div>
                                   <p className="font-medium">{doc}</p>
                                   <p className="text-sm text-muted-foreground">
-                                    {isUploading ? 'Uploading...' : isUploaded ? 'Uploaded ✓' : 'Drag & drop or click to upload'}
+                                    {isUploading 
+                                      ? `Uploading... ${uploadProgress}%` 
+                                      : isUploaded 
+                                        ? `Uploaded ✓ ${uploadedDoc.file_name} (${(uploadedDoc.file_size / 1024).toFixed(1)} KB)`
+                                        : 'Drag & drop or click to upload'}
                                   </p>
                                 </div>
                               </div>
-                              <Button
-                                variant={isUploaded ? "outline" : "default"}
-                                size="sm"
-                                className="w-full sm:w-auto flex-shrink-0"
-                                onClick={() => { setSelectedDocType(doc); documentInputRef.current?.click(); }}
-                                disabled={isUploading}
-                              >
-                                {isUploading ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    {uploadProgress}%
-                                  </>
-                                ) : (
-                                  <>
-                                    <Upload className="w-4 h-4 mr-2" />
-                                    {isUploaded ? 'Replace' : 'Upload'}
-                                  </>
+                              <div className="flex gap-2 w-full sm:w-auto">
+                                {isUploaded && !isUploading && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="flex-1 sm:flex-initial"
+                                    onClick={() => handleViewDocument(uploadedDoc.file_path, uploadedDoc.file_name)}
+                                  >
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    View
+                                  </Button>
                                 )}
-                              </Button>
+                                <Button
+                                  type="button"
+                                  variant={isUploaded ? "outline" : "default"}
+                                  size="sm"
+                                  className="flex-1 sm:flex-initial"
+                                  onClick={() => { setSelectedDocType(doc); documentInputRef.current?.click(); }}
+                                  disabled={isUploading}
+                                >
+                                  {isUploading ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      {uploadProgress}%
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-4 h-4 mr-2" />
+                                      {isUploaded ? 'Replace' : 'Upload'}
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
                             </div>
                             
                             {/* Progress bar */}
