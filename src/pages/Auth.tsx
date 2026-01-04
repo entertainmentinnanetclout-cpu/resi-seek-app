@@ -31,8 +31,13 @@ const Auth = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Wait for both auth and admin check to complete before redirecting
     if (!authLoading && user) {
-      navigate(isAdmin ? "/admin" : "/dashboard", { replace: true });
+      // Small delay to ensure isAdmin check has completed
+      const timer = setTimeout(() => {
+        navigate(isAdmin ? "/admin" : "/dashboard", { replace: true });
+      }, 150);
+      return () => clearTimeout(timer);
     }
   }, [user, authLoading, isAdmin, navigate]);
 
@@ -118,7 +123,7 @@ const Auth = () => {
               {!isLogin && (
                 <>
                   <div className="space-y-2"><Label htmlFor="confirmPassword">Confirm Password</Label><Input id="confirmPassword" name="confirmPassword" type="password" required placeholder="••••••••" /></div>
-                  <div className="flex items-start gap-3"><Checkbox id="terms" required /><Label htmlFor="terms" className="text-sm text-muted-foreground -mt-1">I agree to the <a href="#" className="underline hover:text-primary">Terms</a> and <a href="#" className="underline hover:text-primary">Privacy Policy</a>.</Label></div>
+                  <div className="flex items-start gap-3"><Checkbox id="terms" required /><Label htmlFor="terms" className="text-sm text-muted-foreground -mt-1">I agree to the <a href="/terms" className="underline hover:text-primary">Terms</a> and <a href="/privacy" className="underline hover:text-primary">Privacy Policy</a>.</Label></div>
                 </>
               )}
 
