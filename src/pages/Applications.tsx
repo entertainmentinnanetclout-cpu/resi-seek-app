@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, XCircle, Eye, Search, Filter, X } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, Eye, Search, Filter, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -77,9 +77,13 @@ const Applications = () => {
   const getStatusProps = (status: string) => {
     switch (status) {
       case "submitted": return { Icon: Clock, color: "yellow", label: "Pending", step: 1 };
+      case "under_review": return { Icon: Clock, color: "blue", label: "Under Review", step: 1 };
+      case "documents_required": return { Icon: AlertCircle, color: "orange", label: "Documents Required", step: 1 };
       case "approved": return { Icon: CheckCircle2, color: "green", label: "Approved", step: 2 };
       case "rejected": return { Icon: XCircle, color: "red", label: "Rejected", step: 2 };
-      default: return { Icon: Clock, color: "gray", label: "Unknown", step: 0 };
+      case "waitlisted": return { Icon: Clock, color: "purple", label: "Waitlisted", step: 1 };
+      case "cancelled": return { Icon: XCircle, color: "gray", label: "Cancelled", step: 2 };
+      default: return { Icon: Clock, color: "gray", label: status || "Unknown", step: 0 };
     }
   };
   
@@ -171,7 +175,7 @@ const Applications = () => {
                     <Input id="search-applications" aria-label="Search by residence name" placeholder="Search by residence name..." className="pl-10 h-11" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="flex-1"><label htmlFor="status-filter" className="sr-only">Filter by status</label><Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger id="status-filter" className="h-11" aria-label="Filter by status"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="submitted">Pending</SelectItem><SelectItem value="approved">Approved</SelectItem><SelectItem value="rejected">Rejected</SelectItem></SelectContent></Select></div>
+                    <div className="flex-1"><label htmlFor="status-filter" className="sr-only">Filter by status</label><Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger id="status-filter" className="h-11" aria-label="Filter by status"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="submitted">Pending</SelectItem><SelectItem value="under_review">Under Review</SelectItem><SelectItem value="documents_required">Documents Required</SelectItem><SelectItem value="approved">Approved</SelectItem><SelectItem value="rejected">Rejected</SelectItem><SelectItem value="waitlisted">Waitlisted</SelectItem><SelectItem value="cancelled">Cancelled</SelectItem></SelectContent></Select></div>
                     <div className="flex-1"><label htmlFor="room-type-filter" className="sr-only">Filter by room type</label><Select value={roomTypeFilter} onValueChange={setRoomTypeFilter}><SelectTrigger id="room-type-filter" className="h-11" aria-label="Filter by room type"><SelectValue placeholder="Room Type" /></SelectTrigger><SelectContent><SelectItem value="all">All Room Types</SelectItem><SelectItem value="single">Single</SelectItem><SelectItem value="shared">Shared</SelectItem><SelectItem value="apartment">Apartment</SelectItem></SelectContent></Select></div>
                 </div>
             </div>

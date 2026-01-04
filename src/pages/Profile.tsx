@@ -158,22 +158,34 @@ const Profile = () => {
       const fileName = `${selectedDocType.toLowerCase().replace(/ /g, '_')}-${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      console.log('[Document Upload] Starting upload:', { docType: selectedDocType, filePath, fileSize: file.size });
+
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('documents')
         .upload(filePath, file, { upsert: true });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('[Document Upload] Storage upload failed:', uploadError);
+        throw uploadError;
+      }
+      
+      console.log('[Document Upload] Storage upload success:', uploadData);
 
       // Store document record in documents table
-      const { error: dbError } = await supabase.from("documents").insert({
+      const { error: dbError, data: dbData } = await supabase.from("documents").insert({
         user_id: user.id,
         document_type: selectedDocType,
         file_name: file.name,
         file_path: filePath,
         file_size: file.size
-      });
+      }).select().single();
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('[Document Upload] Database insert failed:', dbError);
+        throw dbError;
+      }
+      
+      console.log('[Document Upload] Database insert success:', dbData);
 
       clearInterval(progressInterval);
       setUploadProgress(100);
