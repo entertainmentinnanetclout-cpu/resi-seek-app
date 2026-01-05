@@ -1,6 +1,7 @@
 import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { RESKONNECT_WHATSAPP_FORMATTED } from "@/lib/constants";
 
 interface WhatsAppButtonProps {
   phone?: string;
@@ -18,14 +19,9 @@ const WhatsAppButton = ({
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // Format phone number (remove spaces, add country code if needed)
-    let formattedPhone = phone?.replace(/\s+/g, "") || "";
-    if (formattedPhone.startsWith("0")) {
-      formattedPhone = "27" + formattedPhone.slice(1);
-    }
-    if (!formattedPhone.startsWith("+") && !formattedPhone.startsWith("27")) {
-      formattedPhone = "27" + formattedPhone;
-    }
+    // SECURITY: Always use ResKonnect's official number for residence inquiries
+    // This prevents landlord contact details from being exposed in the code
+    const formattedPhone = RESKONNECT_WHATSAPP_FORMATTED;
 
     const message = encodeURIComponent(
       `Hi! I'm interested in ${residenceName} on ResKonnect. I'd like to learn more about availability and booking.`
@@ -34,8 +30,6 @@ const WhatsAppButton = ({
     const whatsappUrl = `https://wa.me/${formattedPhone}?text=${message}`;
     window.open(whatsappUrl, "_blank");
   };
-
-  if (!phone) return null;
 
   if (variant === "icon") {
     return (

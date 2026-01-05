@@ -9,12 +9,21 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Eye, Check, X, CheckCheck, XCircle, Clock, FileQuestion, Calendar, Users, MessageSquare } from "lucide-react";
+import { Search, Eye, Check, X, CheckCheck, XCircle, Clock, FileQuestion, Calendar, Users, MessageSquare, FileText, Download, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { safeFormatDate } from "@/lib/utils";
+
+interface UserDocument {
+  id: string;
+  document_type: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  uploaded_at: string;
+}
 
 interface Application {
   id: string;
@@ -37,6 +46,8 @@ const AdminApplications = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [statusNote, setStatusNote] = useState("");
+  const [userDocuments, setUserDocuments] = useState<UserDocument[]>([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
 
   const applicationStatuses = [
     { value: "submitted", label: "Submitted", color: "secondary", icon: FileQuestion },
@@ -114,6 +125,35 @@ const AdminApplications = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Fetch user documents when an application is selected
+  useEffect(() => {
+    const fetchUserDocuments = async () => {
+      if (!selectedApplication?.user_id) {
+        setUserDocuments([]);
+        return;
+      }
+
+      setLoadingDocuments(true);
+      try {
+        const { data, error } = await supabase
+          .from("documents")
+          .select("*")
+          .eq("user_id", selectedApplication.user_id)
+          .order("uploaded_at", { ascending: false });
+
+        if (error) throw error;
+        setUserDocuments(data || []);
+      } catch (error) {
+        console.error("Error fetching user documents:", error);
+        setUserDocuments([]);
+      } finally {
+        setLoadingDocuments(false);
+      }
+    };
+
+    fetchUserDocuments();
+  }, [selectedApplication?.user_id]);
 
   const updateStatus = async (id: string, newStatus: string, note?: string) => {
     try {
@@ -437,6 +477,60 @@ const AdminApplications = () => {
                   <p className="text-sm">{selectedApplication.notes}</p>
                 </div>
               )}
+
+              {/* User Documents Section */}
+              <div className="pt-4 border-t">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="w-4 h-4 text-primary" />
+                  <Label className="text-sm font-semibold">Uploaded Documents</Label>
+                </div>
+                
+                {loadingDocuments ? (
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading documents...
+                  </div>
+                ) : userDocuments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2">
+                    No documents uploaded by this student yet.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {userDocuments.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate capitalize">
+                            {doc.document_type.replace(/_/g, " ")}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {doc.file_name}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={async () => {
+                            try {
+                              const { data, error } = await supabase.storage
+                                .from("documents")
+                                .createSignedUrl(doc.file_path, 3600);
+                              if (error) throw error;
+                              window.open(data.signedUrl, "_blank");
+                            } catch (error) {
+                              toast.error("Failed to open document");
+                            }
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Status Update Section */}
               <div className="space-y-3 pt-4 border-t">
