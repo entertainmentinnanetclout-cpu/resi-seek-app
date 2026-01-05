@@ -52,9 +52,13 @@ const LandlordListingForm = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Build WhatsApp message
+    // Generate unique reference for this submission
+    const referenceId = `RK-${Date.now().toString(36).toUpperCase()}`;
+
+    // Build WhatsApp message - NO landlord contact details exposed
     const message = `
 🏠 *New Property Listing Request*
+📋 Reference: ${referenceId}
 
 *Property Details:*
 📍 Name: ${formData.propertyName}
@@ -71,10 +75,7 @@ ${formData.description}
 *Amenities:*
 ${formData.amenities.join(', ')}
 
-*Contact Information:*
-👤 Name: ${formData.contactName}
-📞 Phone: ${formData.contactPhone}
-📧 Email: ${formData.contactEmail}
+_Landlord contact details submitted securely. ResKonnect team will reach out to verify this property._
     `.trim();
 
     const encodedMessage = encodeURIComponent(message);

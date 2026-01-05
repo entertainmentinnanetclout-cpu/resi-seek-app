@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, XCircle, Eye, Search, Filter, X, AlertCircle } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, Eye, Search, Filter, X, AlertCircle, FileText, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +15,11 @@ import { Link } from "react-router-dom";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 
+interface UserDocument {
+  id: string;
+  document_type: string;
+}
+
 const Applications = () => {
   const shouldBlock = useAdminRedirect();
   if (shouldBlock) return null;
@@ -25,6 +30,25 @@ const Applications = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [roomTypeFilter, setRoomTypeFilter] = useState("all");
+  const [userDocuments, setUserDocuments] = useState<UserDocument[]>([]);
+
+  // Fetch user's uploaded documents
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("documents")
+        .select("id, document_type")
+        .eq("user_id", user.id);
+      setUserDocuments(data || []);
+    };
+    fetchDocuments();
+  }, [user]);
+
+  const requiredDocTypes = ["student_card", "proof_of_registration"];
+  const hasRequiredDocs = requiredDocTypes.every(type =>
+    userDocuments.some(doc => doc.document_type === type)
+  );
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -116,8 +140,34 @@ const Applications = () => {
                 <div className="text-sm text-muted-foreground mt-4">
                     Applied on {new Date(application.created_at).toLocaleDateString()}
                 </div>
-                <div className="mt-4 pt-4 border-t border-border">
-                    <Button asChild variant="outline" aria-label={`View details for ${application.residence?.name}`}><Link to={`/res/${application.residence_id}`}>View Details</Link></Button>
+                
+                {/* Document Status Indicator */}
+                <div className="mt-3 flex items-center gap-2 text-sm">
+                  {hasRequiredDocs ? (
+                    <Badge variant="outline" className="border-green-500/50 bg-green-500/10 text-green-700">
+                      <FileText className="w-3 h-3 mr-1" />
+                      Documents Complete
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="border-orange-500/50 bg-orange-500/10 text-orange-700">
+                      <Upload className="w-3 h-3 mr-1" />
+                      Documents Missing
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-border flex gap-2">
+                    <Button asChild variant="outline" aria-label={`View details for ${application.residence?.name}`}>
+                      <Link to={`/res/${application.residence_id}`}>View Details</Link>
+                    </Button>
+                    {!hasRequiredDocs && (
+                      <Button asChild variant="secondary" size="sm">
+                        <Link to="/documents">
+                          <Upload className="w-4 h-4 mr-1" />
+                          Upload Docs
+                        </Link>
+                      </Button>
+                    )}
                 </div>
             </CardContent>
         </Card>
