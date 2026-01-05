@@ -1,11 +1,11 @@
 import SEO from "@/components/SEO";
 import { useNavigate, Link } from "react-router-dom";
-import { CheckCircle2, AlertCircle, FileText, Search, User, X, Plus } from "lucide-react";
+import { Search, User, X, Plus, FileText, Heart, ShoppingBag, GraduationCap } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import HeroCarousel from "@/components/HeroCarousel";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import SmartDashboard from "@/components/SmartDashboard";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
@@ -16,36 +16,33 @@ import heroAccommodation from "@/assets/hero-accommodation.jpg";
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const shouldBlock = useAdminRedirect(); // Hard guard: redirect admins
+  const shouldBlock = useAdminRedirect();
   const { profile, loading: profileLoading } = useRealtimeProfile(user);
   const { applications, loading: applicationsLoading } = useRealtimeApplications(user);
   const [showFabMenu, setShowFabMenu] = useState(false);
 
-  // Block render if admin
   if (shouldBlock) return null;
 
   const profileCompletion = useMemo(() => {
-      if (!profile) return 0;
-      const fields = [
-          { name: 'full_name', weight: 20 },
-          { name: 'student_number', weight: 20 },
-          { name: 'phone', weight: 15 },
-          { name: 'campus', weight: 15 },
-          { name: 'course', weight: 10 },
-          { name: 'year_of_study', weight: 10 },
-          { name: 'id_copy_status', weight: 5 },
-          { name: 'proof_of_registration_status', weight: 5 },
-      ];
-      const completedValue = fields.reduce((acc, field) => {
-          if (profile[field.name] && profile[field.name] !== '') {
-              return acc + field.weight;
-          }
-          return acc;
-      }, 0);
-      return Math.round(completedValue);
+    if (!profile) return 0;
+    const fields = [
+      { name: "full_name", weight: 20 },
+      { name: "student_number", weight: 20 },
+      { name: "phone", weight: 15 },
+      { name: "campus", weight: 15 },
+      { name: "course", weight: 10 },
+      { name: "year_of_study", weight: 10 },
+      { name: "id_copy_status", weight: 5 },
+      { name: "proof_of_registration_status", weight: 5 },
+    ];
+    const completedValue = fields.reduce((acc, field) => {
+      if (profile[field.name] && profile[field.name] !== "") {
+        return acc + field.weight;
+      }
+      return acc;
+    }, 0);
+    return Math.round(completedValue);
   }, [profile]);
-
-  const profileIsComplete = profileCompletion >= 90;
 
   const carouselSlides = [
     {
@@ -54,8 +51,8 @@ const Dashboard = () => {
       description: "Discover comfortable, affordable student accommodation near your campus",
       cta: {
         text: "Browse Residences",
-        action: () => navigate("/find")
-      }
+        action: () => navigate("/findmyres"),
+      },
     },
     {
       image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=600&fit=crop",
@@ -63,42 +60,60 @@ const Dashboard = () => {
       description: "Save up to 30% on grocery hampers specially curated for students",
       cta: {
         text: "Get Discounts",
-        action: () => navigate("/campus-news")
-      }
+        action: () => navigate("/discounts"),
+      },
     },
   ];
 
   const quickLinks = [
-        {
-            icon: User,
-            title: "My Profile",
-            description: "Keep your details and documents up-to-date.",
-            gradient: "bg-gradient-to-br from-blue-500 to-indigo-600",
-            path: "/profile",
-            action: () => navigate("/profile"),
-        },
-        {
-            icon: Search,
-            title: "Find Accommodation",
-            description: "Browse and apply to 100+ verified residences.",
-            gradient: "bg-gradient-to-br from-green-500 to-teal-600",
-            path: "/find",
-            action: () => navigate("/find"),
-        },
-        {
-            icon: FileText,
-            title: "Track Applications",
-            description: "Check the status of all your applications.",
-            gradient: "bg-gradient-to-br from-purple-500 to-pink-600",
-            path: "/applications",
-            action: () => navigate("/applications"),
-        },
+    {
+      icon: Search,
+      title: "Find Accommodation",
+      description: "Browse verified residences near your campus",
+      gradient: "bg-gradient-to-br from-green-500 to-teal-600",
+      path: "/findmyres",
+    },
+    {
+      icon: FileText,
+      title: "My Applications",
+      description: "Track your application status",
+      gradient: "bg-gradient-to-br from-purple-500 to-pink-600",
+      path: "/applications",
+    },
+    {
+      icon: User,
+      title: "My Profile",
+      description: "Update your details and documents",
+      gradient: "bg-gradient-to-br from-blue-500 to-indigo-600",
+      path: "/profile",
+    },
+    {
+      icon: Heart,
+      title: "Favorites",
+      description: "View saved residences",
+      gradient: "bg-gradient-to-br from-rose-500 to-red-600",
+      path: "/favorites",
+    },
+    {
+      icon: ShoppingBag,
+      title: "Marketplace",
+      description: "Buy and sell student essentials",
+      gradient: "bg-gradient-to-br from-orange-500 to-amber-600",
+      path: "/marketplace",
+    },
+    {
+      icon: GraduationCap,
+      title: "Bursaries",
+      description: "Find funding opportunities",
+      gradient: "bg-gradient-to-br from-cyan-500 to-blue-600",
+      path: "/bursaries",
+    },
   ];
 
   const fabActions = [
-      { icon: Search, label: 'Apply', action: () => navigate('/find') },
-      { icon: FileText, label: 'Track', action: () => navigate('/applications') },
-      { icon: User, label: 'Profile', action: () => navigate('/profile') },
+    { icon: Search, label: "Apply", action: () => navigate("/findmyres") },
+    { icon: FileText, label: "Track", action: () => navigate("/applications") },
+    { icon: User, label: "Profile", action: () => navigate("/profile") },
   ];
 
   const loading = profileLoading || applicationsLoading;
@@ -125,125 +140,77 @@ const Dashboard = () => {
       />
       <div className="p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
+          {/* Hero Carousel */}
           <HeroCarousel slides={carouselSlides} autoPlay={true} interval={6000} />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-                <Card className="shadow-lg border-l-4 border-l-primary">
-                  <CardHeader>
-                    <CardTitle className="text-2xl">Application Status</CardTitle>
-                    <CardDescription>
-                      You have {applications.length} active application{applications.length !== 1 && 's'}.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {applications.length > 0 ? (
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center text-sm font-medium">
-                                <span>Pending: {applications.filter(a => a.status === 'submitted').length}</span>
-                                <span>Approved: {applications.filter(a => a.status === 'approved').length}</span>
-                                <span>Rejected: {applications.filter(a => a.status === 'rejected').length}</span>
-                            </div>
-                            <Progress value={(applications.filter(a => a.status !== 'submitted').length / applications.length) * 100} />
-                            <Button asChild><Link to="/applications">View All Applications</Link></Button>
-                        </div>
-                    ) : (
-                        <div className="text-center py-4">
-                            <p className="text-muted-foreground mb-4">You haven't applied anywhere yet.</p>
-                            <Button asChild><Link to="/find">Browse Residences</Link></Button>
-                        </div>
-                    )}
-                  </CardContent>
-                </Card>
-            </div>
-            
-            <div className="lg:col-span-1">
-              <Card className="shadow-lg border-l-4 border-l-accent">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-2xl">
-                    Profile Status
-                    {profileIsComplete ? (
-                      <CheckCircle2 className="w-6 h-6 text-green-500" />
-                    ) : (
-                      <AlertCircle className="w-6 h-6 text-yellow-500" />
-                    )}
-                  </CardTitle>
-                  <CardDescription>
-                    {profileIsComplete
-                      ? "Your profile is ready for applications."
-                      : "Complete your profile to start applying."}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4">
-                    <Progress value={profileCompletion} className="flex-1 h-3" />
-                    <span className="text-lg font-bold text-accent">{profileCompletion}%</span>
-                  </div>
-                   {!profileIsComplete && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => navigate("/profile")}
-                        className="w-full mt-4"
-                      >
-                        Complete Profile
-                      </Button>
-                    )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          {/* Smart Dashboard - Contextual Section */}
+          <SmartDashboard
+            profile={profile}
+            applications={applications}
+            profileCompletion={profileCompletion}
+          />
 
+          {/* Quick Actions Grid */}
           <div>
-            <h2 className="text-3xl font-bold mb-6">Quick Actions</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {quickLinks.map((link) => (
-                  <Link to={link.path} key={link.path}>
-                    <div
-                        className={`relative overflow-hidden rounded-lg shadow-lg transform transition-transform hover:scale-105 active:scale-95 cursor-pointer ${link.gradient} text-white p-6 flex flex-col justify-between h-40`}>
-                        <div className="flex items-center gap-4">
-                            <link.icon className="w-8 h-8 shrink-0" />
-                            <div>
-                                <h3 className="text-xl font-bold">{link.title}</h3>
-                                <p className="text-sm opacity-90">{link.description}</p>
-                            </div>
-                        </div>
+                <Link to={link.path} key={link.path}>
+                  <div
+                    className={`relative overflow-hidden rounded-xl shadow-lg transform transition-all hover:scale-[1.02] active:scale-95 cursor-pointer ${link.gradient} text-white p-4 sm:p-5 flex flex-col justify-between h-28 sm:h-32`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <link.icon className="w-6 h-6 sm:w-7 sm:h-7 shrink-0" />
+                      <div>
+                        <h3 className="text-sm sm:text-base font-bold leading-tight">{link.title}</h3>
+                        <p className="text-xs sm:text-sm opacity-90 mt-0.5 line-clamp-2">{link.description}</p>
+                      </div>
                     </div>
-                  </Link>
+                  </div>
+                </Link>
               ))}
             </div>
           </div>
-            <Card className="bg-card/50">
-                <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold mb-2">Your Student Accommodation Hub</h3>
-                    <p className="text-muted-foreground text-sm">
-                    The ResKonnect dashboard is designed to simplify student housing. Track your applications, manage documents, and stay updated on communication from landlords, all in one place. Our goal is to make your accommodation journey as smooth as possible, allowing you to focus on your studies.
-                    </p>
-                </CardContent>
-            </Card>
+
+          {/* SEO Text Block */}
+          <Card className="bg-card/50">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-2">Your Student Accommodation Hub</h3>
+              <p className="text-muted-foreground text-sm">
+                The ResKonnect dashboard is designed to simplify student housing. Track your applications, manage documents, and stay updated on communication from landlords, all in one place. Our AI-powered ResBot is available 24/7 to answer your questions about accommodation, NSFAS, and more.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
-      
-      <div className="md:hidden fixed bottom-6 right-6 z-50">
-          {showFabMenu && (
-              <div className="flex flex-col items-center gap-3 mb-3">
-                  {fabActions.map((fab, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                          <span className="bg-card text-card-foreground text-sm py-1 px-3 rounded-lg shadow-md">{fab.label}</span>
-                          <Button onClick={fab.action} size="icon" className="rounded-full shadow-lg bg-secondary text-secondary-foreground">
-                              <fab.icon className="w-5 h-5"/>
-                          </Button>
-                      </div>
-                  ))}
-              </div>
-          )}
-          <Button
-              onClick={() => setShowFabMenu(!showFabMenu)}
-              className="rounded-full shadow-lg w-16 h-16 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-transform">
-              {showFabMenu ? <X className="w-7 h-7" /> : <Plus className="w-7 h-7" />}
-          </Button>
-      </div>
 
+      {/* Mobile FAB Menu */}
+      <div className="md:hidden fixed bottom-6 right-6 z-40">
+        {showFabMenu && (
+          <div className="flex flex-col items-center gap-3 mb-3">
+            {fabActions.map((fab, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <span className="bg-card text-card-foreground text-sm py-1 px-3 rounded-lg shadow-md">
+                  {fab.label}
+                </span>
+                <Button
+                  onClick={fab.action}
+                  size="icon"
+                  className="rounded-full shadow-lg bg-secondary text-secondary-foreground"
+                >
+                  <fab.icon className="w-5 h-5" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+        <Button
+          onClick={() => setShowFabMenu(!showFabMenu)}
+          className="rounded-full shadow-lg w-14 h-14 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-transform"
+        >
+          {showFabMenu ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+        </Button>
+      </div>
     </DashboardLayout>
   );
 };
