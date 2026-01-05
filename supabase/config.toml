@@ -1,1 +1,4 @@
 project_id = "vmqqkebojldjsyxcewdb"
+
+[functions.resbot-ai]
+verify_jwt = false

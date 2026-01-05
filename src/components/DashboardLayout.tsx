@@ -9,6 +9,8 @@ import desktopLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import mobileLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
+import NotificationCenter from "@/components/NotificationCenter";
+import CommandPalette from "@/components/CommandPalette";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -125,6 +127,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
+        {/* Desktop Top Bar */}
+        <header className="hidden md:flex border-b border-border bg-card p-4 items-center justify-between">
+          <CommandPalette />
+          <div className="flex items-center gap-2">
+            <NotificationCenter />
+            <ThemeToggle />
+          </div>
+        </header>
+
         {/* Mobile Header */}
         <header className="md:hidden border-b border-border bg-card p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -137,6 +148,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <NotificationCenter />
             <ThemeToggle />
             <Sheet>
               <SheetTrigger asChild>
