@@ -19,6 +19,10 @@ export type Database = {
           application_date: string
           created_at: string
           id: string
+          last_contacted_at: string | null
+          move_in_confirmed: boolean | null
+          move_in_date: string | null
+          moved_in: boolean | null
           notes: string | null
           residence_id: string
           status: string
@@ -29,6 +33,10 @@ export type Database = {
           application_date?: string
           created_at?: string
           id?: string
+          last_contacted_at?: string | null
+          move_in_confirmed?: boolean | null
+          move_in_date?: string | null
+          moved_in?: boolean | null
           notes?: string | null
           residence_id: string
           status?: string
@@ -39,6 +47,10 @@ export type Database = {
           application_date?: string
           created_at?: string
           id?: string
+          last_contacted_at?: string | null
+          move_in_confirmed?: boolean | null
+          move_in_date?: string | null
+          moved_in?: boolean | null
           notes?: string | null
           residence_id?: string
           status?: string
@@ -108,6 +120,54 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      call_logs: {
+        Row: {
+          admin_id: string
+          call_type: string
+          created_at: string | null
+          follow_up_date: string | null
+          id: string
+          notes: string | null
+          outcome: string | null
+          student_id: string
+        }
+        Insert: {
+          admin_id: string
+          call_type?: string
+          created_at?: string | null
+          follow_up_date?: string | null
+          id?: string
+          notes?: string | null
+          outcome?: string | null
+          student_id: string
+        }
+        Update: {
+          admin_id?: string
+          call_type?: string
+          created_at?: string | null
+          follow_up_date?: string | null
+          id?: string
+          notes?: string | null
+          outcome?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       campus_news: {
         Row: {
@@ -596,6 +656,7 @@ export type Database = {
           price: number
           province: string | null
           room_type: string | null
+          room_types: string[] | null
           updated_at: string
           verification_level: string | null
           virtual_tour_provider: string | null
@@ -622,6 +683,7 @@ export type Database = {
           price: number
           province?: string | null
           room_type?: string | null
+          room_types?: string[] | null
           updated_at?: string
           verification_level?: string | null
           virtual_tour_provider?: string | null
@@ -648,6 +710,7 @@ export type Database = {
           price?: number
           province?: string | null
           room_type?: string | null
+          room_types?: string[] | null
           updated_at?: string
           verification_level?: string | null
           virtual_tour_provider?: string | null

@@ -54,6 +54,7 @@ import AdminSystemStatus from "./pages/admin/AdminSystemStatus";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminDocuments from "./pages/admin/AdminDocuments";
 import AdminStores from "./pages/admin/AdminStores";
+import AdminFollowUp from "./pages/admin/AdminFollowUp";
 import BursaryDetail from "./pages/BursaryDetail";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -120,6 +121,7 @@ const App = () => {
               <Route path="/admin/residences" element={<ProtectedRoute><AdminRoute><AdminResidences /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/applications" element={<ProtectedRoute><AdminRoute><AdminApplications /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/documents" element={<ProtectedRoute><AdminRoute><AdminDocuments /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/follow-up" element={<ProtectedRoute><AdminRoute><AdminFollowUp /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/users" element={<ProtectedRoute><AdminRoute><AdminUsers /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/slides" element={<ProtectedRoute><AdminRoute><AdminSlides /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/bursaries" element={<ProtectedRoute><AdminRoute><AdminBursaries /></AdminRoute></ProtectedRoute>} />
