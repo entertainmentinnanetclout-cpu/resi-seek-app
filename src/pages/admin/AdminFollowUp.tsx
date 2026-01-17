@@ -39,7 +39,7 @@ const AdminFollowUp = () => {
 
   const fetchFollowUpData = async () => {
     try {
-      // Fetch applications with profile and residence data
+      // Fetch ALL applications with residence data
       const { data: applications, error: appError } = await supabase
         .from("applications")
         .select(`
@@ -78,22 +78,7 @@ const AdminFollowUp = () => {
         docCounts.set(doc.user_id, (docCounts.get(doc.user_id) || 0) + 1);
       });
 
-      // Generate call list with priorities
-      const callListData = (applications || []).map(app => {
-        const profile = profileMap.get(app.user_id);
-        return {
-          studentName: profile?.full_name || 'Unknown',
-          phone: profile?.phone || null,
-          email: profile?.email || null,
-          residenceName: app.residence?.name || null,
-          status: app.status,
-          applicationDate: app.application_date,
-        };
-      });
-
-      const prioritizedList = generateCallList(callListData);
-
-      // Map to full student data
+      // Map ALL applications (no restrictive filter)
       const now = new Date();
       const followUpStudents: FollowUpStudent[] = (applications || [])
         .map(app => {
@@ -101,20 +86,19 @@ const AdminFollowUp = () => {
           const appDate = new Date(app.application_date);
           const daysSinceApplication = Math.floor((now.getTime() - appDate.getTime()) / (1000 * 60 * 60 * 24));
           
-          // Find priority from call list
-          const priorityInfo = prioritizedList.find(
-            p => p.studentName === profile?.full_name && p.residenceName === app.residence?.name
-          );
-
           let priority: 'urgent' | 'high' | 'normal' = 'normal';
           let reason = '';
 
+          // Priority logic - GOD MODE: includes all, prioritizes appropriately
           if (app.status === 'approved' && !app.move_in_confirmed && daysSinceApplication > 7) {
             priority = 'urgent';
             reason = 'Approved 7+ days ago - confirm move-in';
           } else if (app.status === 'documents_required') {
             priority = 'urgent';
             reason = 'Documents required';
+          } else if (app.status === 'rejected') {
+            priority = 'normal';
+            reason = 'Application rejected';
           } else if ((app.status === 'submitted' || app.status === 'pending') && daysSinceApplication > 5) {
             priority = 'high';
             reason = 'Pending > 5 days';
@@ -124,16 +108,21 @@ const AdminFollowUp = () => {
           } else if (app.status === 'submitted' || app.status === 'pending') {
             priority = 'normal';
             reason = 'Pending review';
+          } else if (app.status === 'approved' && app.moved_in) {
+            priority = 'normal';
+            reason = 'Moved in ✓';
+          } else {
+            reason = app.status;
           }
 
           return {
             id: profile?.id || app.user_id,
-            name: profile?.full_name || 'Unknown',
+            name: profile?.full_name || 'Unknown Student',
             phone: profile?.phone || null,
             email: profile?.email || null,
             campus: profile?.campus || null,
             studentNumber: profile?.student_number || null,
-            residenceApplied: app.residence?.name || null,
+            residenceApplied: app.residence?.name || 'Unknown Residence',
             status: app.status,
             applicationDate: app.application_date,
             documentsCount: docCounts.get(app.user_id) || 0,
@@ -144,8 +133,7 @@ const AdminFollowUp = () => {
             moveInConfirmed: app.move_in_confirmed,
             movedIn: app.moved_in,
           };
-        })
-        .filter(s => s.reason && s.phone); // Only include actionable items with phone
+        });
 
       setStudents(followUpStudents);
     } catch (error) {
@@ -239,6 +227,10 @@ const AdminFollowUp = () => {
         <div className="text-center py-12 text-muted-foreground">
           <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p>No students in this category</p>
+          <p className="text-sm mt-2">Students will appear here when they submit applications</p>
+          <Button variant="outline" className="mt-4" onClick={() => window.location.href = '/admin/applications'}>
+            View All Applications
+          </Button>
         </div>
       );
     }

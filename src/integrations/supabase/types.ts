@@ -655,6 +655,7 @@ export type Database = {
           name: string
           price: number
           province: string | null
+          quality_grade: string | null
           room_type: string | null
           room_types: string[] | null
           updated_at: string
@@ -682,6 +683,7 @@ export type Database = {
           name: string
           price: number
           province?: string | null
+          quality_grade?: string | null
           room_type?: string | null
           room_types?: string[] | null
           updated_at?: string
@@ -709,6 +711,7 @@ export type Database = {
           name?: string
           price?: number
           province?: string | null
+          quality_grade?: string | null
           room_type?: string | null
           room_types?: string[] | null
           updated_at?: string
@@ -885,6 +888,7 @@ export type Database = {
           discount: string
           how_to_claim: string | null
           id: string
+          image_url: string | null
           is_active: boolean
           is_verified: boolean
           link: string | null
@@ -900,6 +904,7 @@ export type Database = {
           discount: string
           how_to_claim?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_verified?: boolean
           link?: string | null
@@ -915,6 +920,7 @@ export type Database = {
           discount?: string
           how_to_claim?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_verified?: boolean
           link?: string | null

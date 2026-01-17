@@ -2,7 +2,7 @@
 import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { MapPin, DollarSign, Users, Bed, ShieldCheck, Wifi, Car, WashingMachine, Dumbbell, Utensils, Star, MessageSquare, CheckCircle, Video } from "lucide-react";
+import { MapPin, DollarSign, Users, Bed, ShieldCheck, Wifi, Car, WashingMachine, Dumbbell, Utensils, Star, MessageSquare, CheckCircle, Video, ChevronLeft, ChevronRight, X, Award } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbS
 import { TooltipProvider } from "@/components/ui/tooltip";
 import FavoriteButton from "@/components/FavoriteButton";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import ShareButton from "@/components/ShareButton";
 import TrustScore from "@/components/TrustScore";
 import ReviewCard from "@/components/ReviewCard";
 import ReviewForm from "@/components/ReviewForm";
@@ -34,6 +35,8 @@ const ResidenceDetail = () => {
   const [loading, setLoading] = useState(true);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showVirtualTour, setShowVirtualTour] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [applicationNotes, setApplicationNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
@@ -239,6 +242,12 @@ const ResidenceDetail = () => {
                   </div>
                   <div className="mt-4 md:mt-0 flex items-center gap-2 flex-wrap">
                       <FavoriteButton residenceId={residence.id} />
+                      <ShareButton 
+                        title={`${residence.name} - Student Accommodation`}
+                        text={`Check out ${residence.name} on ResKonnect! R${residence.price?.toLocaleString()}/month. ${residence.address}`}
+                        imageUrl={residence.image_url}
+                        variant="icon"
+                      />
                       <WhatsAppButton phone={RESKONNECT_WHATSAPP} residenceName={residence.name} variant="full" />
                       {hasApplied ? (
                         <Button size="lg" variant="outline" disabled className="gap-2">
@@ -254,15 +263,67 @@ const ResidenceDetail = () => {
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="md:col-span-2">
-                        <img 
-                          src={residence.image_url || "/placeholder.svg"} 
-                          alt={residence.name} 
-                          className="w-full h-96 object-cover rounded-lg mb-8"
-                          onError={(e) => {
-                            const target = e.currentTarget as HTMLImageElement;
-                            target.src = "/placeholder.svg";
-                          }}
-                        />
+                        {/* GOD MODE Image Gallery with Slideshow */}
+                        {(() => {
+                          const allImages = [residence.image_url, ...(residence.images || [])].filter(Boolean);
+                          return (
+                            <div className="space-y-4 mb-8">
+                              {/* Main Image */}
+                              <div 
+                                className="relative aspect-[16/9] cursor-pointer group"
+                                onClick={() => { setLightboxIndex(0); setShowLightbox(true); }}
+                              >
+                                <img 
+                                  src={allImages[0] || "/placeholder.svg"} 
+                                  alt={residence.name} 
+                                  className="w-full h-full object-cover rounded-lg"
+                                  onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                                />
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                                  <span className="text-white font-medium">Click to view gallery</span>
+                                </div>
+                                {allImages.length > 1 && (
+                                  <Badge className="absolute top-4 right-4 bg-black/70">
+                                    {allImages.length} Photos
+                                  </Badge>
+                                )}
+                                {/* Quality Grade Badge */}
+                                {residence.quality_grade && (
+                                  <Badge 
+                                    className={`absolute top-4 left-4 ${
+                                      residence.quality_grade === 'luxury' ? 'bg-purple-500' :
+                                      residence.quality_grade === 'premium' ? 'bg-amber-500' :
+                                      residence.quality_grade === 'standard' ? 'bg-blue-500' : 'bg-muted'
+                                    }`}
+                                  >
+                                    <Award className="w-3 h-3 mr-1" />
+                                    {residence.quality_grade.charAt(0).toUpperCase() + residence.quality_grade.slice(1)}
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              {/* Thumbnail Strip */}
+                              {allImages.length > 1 && (
+                                <div className="flex gap-2 overflow-x-auto pb-2">
+                                  {allImages.map((img, idx) => (
+                                    <button
+                                      key={idx}
+                                      onClick={() => { setLightboxIndex(idx); setShowLightbox(true); }}
+                                      className="flex-shrink-0 w-24 h-16 rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-colors"
+                                    >
+                                      <img 
+                                        src={img} 
+                                        alt={`${residence.name} ${idx + 1}`} 
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                         {/* Virtual Tour Section */}
                         {residence.virtual_tour_url && (
                           <div className="mb-8">
@@ -319,8 +380,15 @@ const ResidenceDetail = () => {
                                         <span className="font-bold">{residence.distance_from_campus}km</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-muted-foreground">Room Type</span>
-                                        <span className="font-bold capitalize">{residence.room_type}</span>
+                                        <span className="text-muted-foreground">Room Types</span>
+                                        <div className="flex gap-1 flex-wrap justify-end">
+                                          {(residence.room_types && residence.room_types.length > 0 
+                                            ? residence.room_types 
+                                            : [residence.room_type]
+                                          ).filter(Boolean).map((type: string) => (
+                                            <Badge key={type} variant="secondary" className="capitalize text-xs">{type}</Badge>
+                                          ))}
+                                        </div>
                                     </div>
                                 </div>
                                 <Separator className="my-4" />
@@ -469,6 +537,45 @@ const ResidenceDetail = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* GOD MODE Lightbox */}
+      {showLightbox && (() => {
+        const allImages = [residence.image_url, ...(residence.images || [])].filter(Boolean);
+        return (
+          <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
+            <button 
+              onClick={() => setShowLightbox(false)}
+              className="absolute top-4 right-4 text-white hover:text-white/80 z-10"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            
+            <button 
+              onClick={() => setLightboxIndex((prev) => (prev - 1 + allImages.length) % allImages.length)}
+              className="absolute left-4 text-white hover:text-white/80 p-2"
+            >
+              <ChevronLeft className="w-10 h-10" />
+            </button>
+            
+            <img 
+              src={allImages[lightboxIndex]} 
+              alt={`${residence.name} ${lightboxIndex + 1}`}
+              className="max-h-[90vh] max-w-[90vw] object-contain"
+            />
+            
+            <button 
+              onClick={() => setLightboxIndex((prev) => (prev + 1) % allImages.length)}
+              className="absolute right-4 text-white hover:text-white/80 p-2"
+            >
+              <ChevronRight className="w-10 h-10" />
+            </button>
+            
+            <div className="absolute bottom-4 text-white text-sm">
+              {lightboxIndex + 1} / {allImages.length}
+            </div>
+          </div>
+        );
+      })()}
     </DashboardLayout>
     </TooltipProvider>
   );
