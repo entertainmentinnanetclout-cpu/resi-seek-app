@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Upload, Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -27,6 +27,7 @@ interface StudentDiscount {
   valid_until: string | null;
   is_verified: boolean;
   is_active: boolean;
+  image_url: string | null;
 }
 
 const emptyDiscount: Partial<StudentDiscount> = {
@@ -40,6 +41,7 @@ const emptyDiscount: Partial<StudentDiscount> = {
   valid_until: "",
   is_verified: false,
   is_active: true,
+  image_url: "",
 };
 
 const categories = ["Food", "Transport", "Entertainment", "Tech", "Health", "Shopping", "Education", "Fitness"];
@@ -51,6 +53,7 @@ const AdminDiscounts = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<Partial<StudentDiscount> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const fetchDiscounts = async () => {
     try {
@@ -93,6 +96,25 @@ const AdminDiscounts = () => {
 
     setSaving(true);
     try {
+      let imageUrl = editingDiscount.image_url;
+
+      // Upload image if provided
+      if (imageFile) {
+        const fileExt = imageFile.name.split(".").pop();
+        const fileName = `discount-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("admin-images")
+          .upload(fileName, imageFile);
+
+        if (uploadError) throw uploadError;
+        
+        const { data: urlData } = supabase.storage
+          .from("admin-images")
+          .getPublicUrl(fileName);
+        
+        imageUrl = urlData.publicUrl;
+      }
+
       const discountData = {
         name: editingDiscount.name,
         provider: editingDiscount.provider,
@@ -104,6 +126,7 @@ const AdminDiscounts = () => {
         valid_until: editingDiscount.valid_until || null,
         is_verified: editingDiscount.is_verified ?? false,
         is_active: editingDiscount.is_active ?? true,
+        image_url: imageUrl || null,
       };
 
       if (editingDiscount.id) {
@@ -118,6 +141,7 @@ const AdminDiscounts = () => {
 
       setIsDialogOpen(false);
       setEditingDiscount(null);
+      setImageFile(null);
       fetchDiscounts();
     } catch (error: any) {
       toast.error(error.message || "Failed to save discount");
@@ -250,6 +274,31 @@ const AdminDiscounts = () => {
                     </div>
                   </div>
 
+                  {/* Image Upload - GOD MODE */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Image className="w-4 h-4" />
+                      Discount Image
+                    </Label>
+                    <div className="flex items-center gap-4">
+                      {(editingDiscount.image_url || imageFile) && (
+                        <img 
+                          src={imageFile ? URL.createObjectURL(imageFile) : editingDiscount.image_url || ''} 
+                          alt="Preview" 
+                          className="w-20 h-20 object-cover rounded border"
+                        />
+                      )}
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Upload a logo or promotional image for this discount
+                    </p>
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <Label>Verified Partner</Label>
                     <Switch
@@ -300,6 +349,7 @@ const AdminDiscounts = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Image</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Provider</TableHead>
                       <TableHead>Discount</TableHead>
@@ -311,6 +361,15 @@ const AdminDiscounts = () => {
                   <TableBody>
                     {filteredDiscounts.map((discount) => (
                       <TableRow key={discount.id}>
+                        <TableCell>
+                          {discount.image_url ? (
+                            <img src={discount.image_url} alt={discount.name} className="w-12 h-12 object-cover rounded" />
+                          ) : (
+                            <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                              <Image className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="font-medium">{discount.name}</TableCell>
                         <TableCell>{discount.provider}</TableCell>
                         <TableCell>{discount.discount}</TableCell>

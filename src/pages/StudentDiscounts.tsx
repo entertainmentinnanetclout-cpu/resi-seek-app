@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Search, Percent, ExternalLink, Filter, Tag, ShoppingBag, Utensils, Bus, Gamepad2, Laptop, Heart, Loader2, CheckCircle } from "lucide-react";
+import { Search, Percent, ExternalLink, Filter, Tag, ShoppingBag, Utensils, Bus, Gamepad2, Laptop, Heart, Loader2, CheckCircle, Image } from "lucide-react";
 import { RESKONNECT_WHATSAPP_FORMATTED } from "@/lib/constants";
+import ShareButton from "@/components/ShareButton";
 
 interface Discount {
   id: string;
@@ -23,6 +24,7 @@ interface Discount {
   valid_until: string | null;
   is_verified: boolean;
   is_active: boolean;
+  image_url: string | null;
 }
 
 const categoryIcons: Record<string, any> = {
@@ -196,12 +198,36 @@ const StudentDiscounts = () => {
             </Card>
           ) : (
             <>
-              {/* Discount Cards */}
+              {/* Discount Cards - GOD MODE with Images */}
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {filteredDiscounts.map(discount => {
                   const Icon = categoryIcons[discount.category] || ShoppingBag;
                   return (
                     <Card key={discount.id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+                      {/* Discount Image */}
+                      {discount.image_url ? (
+                        <div className="relative h-40 bg-muted">
+                          <img 
+                            src={discount.image_url} 
+                            alt={discount.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                          <Badge className={`absolute top-2 right-2 ${categoryColors[discount.category] || 'bg-muted'} capitalize`}>
+                            <Icon className="w-3 h-3 mr-1" />
+                            {discount.category}
+                          </Badge>
+                        </div>
+                      ) : (
+                        <div className="relative h-32 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                          <Icon className="w-12 h-12 text-primary/30" />
+                          <Badge className={`absolute top-2 right-2 ${categoryColors[discount.category] || 'bg-muted'} capitalize`}>
+                            <Icon className="w-3 h-3 mr-1" />
+                            {discount.category}
+                          </Badge>
+                        </div>
+                      )}
+                      
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="space-y-1 flex-1">
@@ -213,10 +239,12 @@ const StudentDiscounts = () => {
                             </div>
                             <CardDescription>{discount.provider}</CardDescription>
                           </div>
-                          <Badge className={`${categoryColors[discount.category] || 'bg-muted'} capitalize shrink-0`}>
-                            <Icon className="w-3 h-3 mr-1" />
-                            {discount.category}
-                          </Badge>
+                          <ShareButton 
+                            title={`${discount.discount} off at ${discount.provider}!`}
+                            text={`Get ${discount.discount} at ${discount.provider} with ResKonnect Student Discounts! ${discount.description || ''}`}
+                            imageUrl={discount.image_url || undefined}
+                            variant="icon"
+                          />
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4 flex-1 flex flex-col">

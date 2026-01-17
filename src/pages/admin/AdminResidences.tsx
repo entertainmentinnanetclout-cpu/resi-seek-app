@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import TrustedResidencesEditor from "@/components/admin/TrustedResidencesEditor";
@@ -26,6 +27,8 @@ interface Residence {
   campus: string | null;
   province: string | null;
   room_type: string | null;
+  room_types: string[] | null;
+  quality_grade: string | null;
   verification_level: string | null;
   featured: boolean | null;
   image_url: string | null;
@@ -38,6 +41,14 @@ interface Residence {
   virtual_tour_provider: string | null;
 }
 
+const ROOM_TYPE_OPTIONS = ["Single", "Sharing", "Bachelor", "Commune"];
+const QUALITY_GRADES = [
+  { value: "basic", label: "Basic (Budget)", color: "bg-muted" },
+  { value: "standard", label: "Standard", color: "bg-blue-500" },
+  { value: "premium", label: "Premium", color: "bg-amber-500" },
+  { value: "luxury", label: "Luxury", color: "bg-purple-500" },
+];
+
 const emptyResidence: Partial<Residence> = {
   name: "",
   address: "",
@@ -47,6 +58,8 @@ const emptyResidence: Partial<Residence> = {
   campus: "",
   province: "Gauteng",
   room_type: "single",
+  room_types: [],
+  quality_grade: "standard",
   verification_level: "basic",
   featured: false,
   description: "",
@@ -150,6 +163,8 @@ const AdminResidences = () => {
         campus: editingResidence.campus || null,
         province: editingResidence.province || null,
         room_type: editingResidence.room_type || null,
+        room_types: editingResidence.room_types || [],
+        quality_grade: editingResidence.quality_grade || 'standard',
         verification_level: editingResidence.verification_level || null,
         featured: editingResidence.featured || false,
         description: editingResidence.description || null,
@@ -311,7 +326,7 @@ const AdminResidences = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Capacity</Label>
                       <Input
@@ -328,22 +343,66 @@ const AdminResidences = () => {
                         onChange={(e) => setEditingResidence({ ...editingResidence, available_spots: Number(e.target.value) })}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Room Type</Label>
-                      <Select
-                        value={editingResidence.room_type || "single"}
-                        onValueChange={(value) => setEditingResidence({ ...editingResidence, room_type: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="single">Single</SelectItem>
-                          <SelectItem value="sharing">Sharing</SelectItem>
-                          <SelectItem value="bachelor">Bachelor</SelectItem>
-                        </SelectContent>
-                      </Select>
+                  </div>
+
+                  {/* Multi-select Room Types - GOD MODE */}
+                  <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+                    <Label className="text-base font-semibold">Room Types Available</Label>
+                    <p className="text-xs text-muted-foreground">Select all room types this residence offers</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {ROOM_TYPE_OPTIONS.map((type) => {
+                        const isSelected = editingResidence.room_types?.includes(type.toLowerCase()) || false;
+                        return (
+                          <div key={type} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`room-${type}`}
+                              checked={isSelected}
+                              onCheckedChange={(checked) => {
+                                const current = editingResidence.room_types || [];
+                                const typeValue = type.toLowerCase();
+                                const newTypes = checked 
+                                  ? [...current, typeValue]
+                                  : current.filter(t => t !== typeValue);
+                                setEditingResidence({ ...editingResidence, room_types: newTypes });
+                              }}
+                            />
+                            <label htmlFor={`room-${type}`} className="text-sm font-medium cursor-pointer">
+                              {type}
+                            </label>
+                          </div>
+                        );
+                      })}
                     </div>
+                    {editingResidence.room_types && editingResidence.room_types.length > 0 && (
+                      <div className="flex gap-1 flex-wrap mt-2">
+                        {editingResidence.room_types.map(t => (
+                          <Badge key={t} variant="secondary" className="capitalize">{t}</Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quality Grade - GOD MODE */}
+                  <div className="space-y-2">
+                    <Label>Quality Grade</Label>
+                    <Select
+                      value={editingResidence.quality_grade || "standard"}
+                      onValueChange={(value) => setEditingResidence({ ...editingResidence, quality_grade: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {QUALITY_GRADES.map((grade) => (
+                          <SelectItem key={grade.value} value={grade.value}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${grade.color}`} />
+                              {grade.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
