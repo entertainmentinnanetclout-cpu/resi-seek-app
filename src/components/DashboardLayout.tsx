@@ -35,6 +35,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: FileText, label: "Applications", path: "/applications" },
     { icon: User, label: "Profile", path: "/profile" },
     { icon: MessageSquare, label: "Messages", path: "/messages" },
+    { icon: GraduationCap, label: "Student Hamper", path: "/hamper" },
   ];
 
   // Admin gets a minimal nav (redirect to admin portal)
