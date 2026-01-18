@@ -55,10 +55,14 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminDocuments from "./pages/admin/AdminDocuments";
 import AdminStores from "./pages/admin/AdminStores";
 import AdminFollowUp from "./pages/admin/AdminFollowUp";
+import AdminWhatsAppTemplates from "./pages/admin/AdminWhatsAppTemplates";
+import AdminDiscountOrders from "./pages/admin/AdminDiscountOrders";
+import AdminHamperItems from "./pages/admin/AdminHamperItems";
 import BursaryDetail from "./pages/BursaryDetail";
+import StudentHamper from "./pages/StudentHamper";
+import MyDiscountOrders from "./pages/MyDiscountOrders";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
-
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -105,7 +109,8 @@ const App = () => {
               <Route path="/my-store" element={<StudentRoute><MyStore /></StudentRoute>} />
               <Route path="/store/:storeId" element={<StudentRoute><Store /></StudentRoute>} />
               <Route path="/orders" element={<StudentRoute><Orders /></StudentRoute>} />
-
+              <Route path="/hamper" element={<StudentRoute><StudentHamper /></StudentRoute>} />
+              <Route path="/my-discount-orders" element={<StudentRoute><MyDiscountOrders /></StudentRoute>} />
               {/* Other Essential Routes */}
               <Route path="/auth" element={<Auth />} />
               <Route path="/terms" element={<Terms />} />
@@ -126,9 +131,12 @@ const App = () => {
               <Route path="/admin/slides" element={<ProtectedRoute><AdminRoute><AdminSlides /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/bursaries" element={<ProtectedRoute><AdminRoute><AdminBursaries /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/discounts" element={<ProtectedRoute><AdminRoute><AdminDiscounts /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/discount-orders" element={<ProtectedRoute><AdminRoute><AdminDiscountOrders /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/events" element={<ProtectedRoute><AdminRoute><AdminEvents /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/marketplace" element={<ProtectedRoute><AdminRoute><AdminMarketplace /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/stores" element={<ProtectedRoute><AdminRoute><AdminStores /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/hamper-items" element={<ProtectedRoute><AdminRoute><AdminHamperItems /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/whatsapp-templates" element={<ProtectedRoute><AdminRoute><AdminWhatsAppTemplates /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/news" element={<ProtectedRoute><AdminRoute><AdminNews /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/system-status" element={<ProtectedRoute><AdminRoute><AdminSystemStatus /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/settings" element={<ProtectedRoute><AdminRoute><AdminSettings /></AdminRoute></ProtectedRoute>} />

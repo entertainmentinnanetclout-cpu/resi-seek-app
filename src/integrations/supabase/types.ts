@@ -211,6 +211,59 @@ export type Database = {
         }
         Relationships: []
       }
+      discount_orders: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          delivery_address: string | null
+          discount_id: string
+          id: string
+          notes: string | null
+          phone: string | null
+          quantity: number
+          status: string
+          total_price: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          delivery_address?: string | null
+          discount_id: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          quantity?: number
+          status?: string
+          total_price: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          delivery_address?: string | null
+          discount_id?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          quantity?: number
+          status?: string
+          total_price?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_orders_discount_id_fkey"
+            columns: ["discount_id"]
+            isOneToOne: false
+            referencedRelation: "student_discounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           document_type: string
@@ -328,6 +381,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      hamper_items: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          estimated_price: number | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          estimated_price?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          estimated_price?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
       }
       hero_slides: {
         Row: {
@@ -884,52 +970,102 @@ export type Database = {
         Row: {
           category: string
           created_at: string
+          delivery_info: string | null
           description: string | null
           discount: string
           how_to_claim: string | null
           id: string
           image_url: string | null
           is_active: boolean
+          is_orderable: boolean | null
           is_verified: boolean
           link: string | null
           name: string
+          original_price: number | null
+          price: number | null
           provider: string
+          stock_quantity: number | null
           updated_at: string
           valid_until: string | null
         }
         Insert: {
           category: string
           created_at?: string
+          delivery_info?: string | null
           description?: string | null
           discount: string
           how_to_claim?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_orderable?: boolean | null
           is_verified?: boolean
           link?: string | null
           name: string
+          original_price?: number | null
+          price?: number | null
           provider: string
+          stock_quantity?: number | null
           updated_at?: string
           valid_until?: string | null
         }
         Update: {
           category?: string
           created_at?: string
+          delivery_info?: string | null
           description?: string | null
           discount?: string
           how_to_claim?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_orderable?: boolean | null
           is_verified?: boolean
           link?: string | null
           name?: string
+          original_price?: number | null
+          price?: number | null
           provider?: string
+          stock_quantity?: number | null
           updated_at?: string
           valid_until?: string | null
         }
         Relationships: []
+      }
+      student_hamper_preferences: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_id: string
+          preference: string
+          priority: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_id: string
+          preference?: string
+          priority?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          preference?: string
+          priority?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_hamper_preferences_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "hamper_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -949,6 +1085,36 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_templates: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          template_key: string
+          template_name: string
+          template_text: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          template_key: string
+          template_name: string
+          template_text: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          template_key?: string
+          template_name?: string
+          template_text?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
