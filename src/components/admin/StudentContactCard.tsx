@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Phone, MessageSquare, Mail, User, Building2, FileText, Clock, ClipboardList } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/exportHelpers";
 import CallLogDialog from "./CallLogDialog";
+import WhatsAppTemplateSelector from "./WhatsAppTemplateSelector";
 
 interface StudentContactCardProps {
   student: {
@@ -46,13 +47,6 @@ const StudentContactCard = ({ student, onLogSuccess }: StudentContactCardProps) 
       case 'pending': return 'bg-blue-500/20 text-blue-500';
       default: return 'bg-muted text-muted-foreground';
     }
-  };
-
-  const handleWhatsApp = () => {
-    const message = encodeURIComponent(
-      `Hi ${student.name}, this is ResKonnect following up on your accommodation application${student.residenceApplied ? ` for ${student.residenceApplied}` : ''}. How can we assist you today?`
-    );
-    window.open(`https://wa.me/${formattedPhone.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
   };
 
   const handleCall = () => {
@@ -133,9 +127,13 @@ const StudentContactCard = ({ student, onLogSuccess }: StudentContactCardProps) 
                   <Button size="sm" variant="outline" onClick={handleCall} title="Call">
                     <Phone className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="outline" className="text-green-600 hover:text-green-700" onClick={handleWhatsApp} title="WhatsApp">
-                    <MessageSquare className="w-4 h-4" />
-                  </Button>
+                  <WhatsAppTemplateSelector
+                    student={{
+                      name: student.name,
+                      phone: student.phone,
+                      residenceApplied: student.residenceApplied
+                    }}
+                  />
                 </>
               )}
               {student.email && (
