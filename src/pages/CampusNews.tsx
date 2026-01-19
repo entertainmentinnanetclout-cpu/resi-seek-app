@@ -1,5 +1,5 @@
 import SEO from "@/components/SEO";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -9,113 +9,182 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Newspaper, Briefcase, Filter, TrendingUp, PenTool, Upload } from "lucide-react";
+import { Newspaper, Briefcase, Filter, TrendingUp, PenTool, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+// Fallback images for when no database images exist
 import artsFestival from "@/assets/arts-festival.jpg";
 import heitaMagazine from "@/assets/heita-magazine.jpg";
-import oneRepublicMagazine from "@/assets/one-republic-magazine.png";
 import emergencyServices from "@/assets/emergency-services.png";
 import studentPortalPromo from "@/assets/student-portal-promo.jpg";
-import campusDinokeng from "@/assets/campus-dinokeng.jpg";
-import studentStudying from "@/assets/student-studying.jpg";
+
+interface HeroSlide {
+  id: string;
+  image_url: string;
+  title: string;
+  description: string | null;
+  cta_text: string | null;
+  cta_link: string | null;
+  display_order: number;
+}
+
+interface NewsArticle {
+  id: string;
+  title: string;
+  content: string;
+  excerpt: string | null;
+  image_url: string | null;
+  category: string;
+  author: string | null;
+  published_at: string | null;
+  created_at: string;
+  is_published: boolean;
+}
 
 const CampusNews = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
+  const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Hero Carousel Slides
-  const heroSlides = [
-    {
-      image: artsFestival,
-      title: "TUT Arts & Culture Festival",
-      description: "Celebrating creativity and diversity through vibrant campus arts programs",
-      cta: {
-        text: "Learn More",
-        action: () => document.getElementById('news-feed')?.scrollIntoView({ behavior: 'smooth' })
-      }
-    },
-    {
-      image: heitaMagazine,
-      title: "HEITA! Student Magazine",
-      description: "Legacy & Learning - Reflecting on heritage and progress at TUT",
-      cta: {
-        text: "Read Magazine",
-        action: () => document.getElementById('news-feed')?.scrollIntoView({ behavior: 'smooth' })
-      }
-    },
-    {
-      image: oneRepublicMagazine,
-      title: "1Republic Campus Magazine",
-      description: "Featured stories from Soshanguve Campus - Volume 2, Issue 3",
-      cta: {
-        text: "View Issue",
-        action: () => document.getElementById('jobs-section')?.scrollIntoView({ behavior: 'smooth' })
-      }
+  useEffect(() => {
+    fetchData();
+
+    // Realtime subscriptions
+    const slidesChannel = supabase
+      .channel('hero-slides-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hero_slides' }, () => fetchHeroSlides())
+      .subscribe();
+
+    const newsChannel = supabase
+      .channel('campus-news-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'campus_news' }, () => fetchNewsArticles())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(slidesChannel);
+      supabase.removeChannel(newsChannel);
+    };
+  }, []);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    await Promise.all([fetchHeroSlides(), fetchNewsArticles()]);
+    setIsLoading(false);
+  };
+
+  const fetchHeroSlides = async () => {
+    const { data, error } = await supabase
+      .from("hero_slides")
+      .select("*")
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
+
+    if (!error && data) {
+      setHeroSlides(data);
     }
-  ];
+  };
 
-  // News Articles
-  const newsArticles = [
+  const fetchNewsArticles = async () => {
+    const { data, error } = await supabase
+      .from("campus_news")
+      .select("*")
+      .eq("is_published", true)
+      .order("published_at", { ascending: false });
+
+    if (!error && data) {
+      setNewsArticles(data);
+    }
+  };
+
+  // Convert database slides to carousel format
+  const carouselSlides = heroSlides.length > 0 
+    ? heroSlides.map(slide => ({
+        image: slide.image_url,
+        title: slide.title,
+        description: slide.description || "",
+        cta: slide.cta_text ? {
+          text: slide.cta_text,
+          action: () => {
+            if (slide.cta_link) {
+              if (slide.cta_link.startsWith('http')) {
+                window.open(slide.cta_link, '_blank');
+              } else if (slide.cta_link.startsWith('#')) {
+                document.getElementById(slide.cta_link.substring(1))?.scrollIntoView({ behavior: 'smooth' });
+              } else {
+                navigate(slide.cta_link);
+              }
+            }
+          }
+        } : undefined
+      }))
+    : [
+        // Fallback slides if no database content
+        {
+          image: artsFestival,
+          title: "TUT Arts & Culture Festival",
+          description: "Celebrating creativity and diversity through vibrant campus arts programs",
+          cta: {
+            text: "Learn More",
+            action: () => document.getElementById('news-feed')?.scrollIntoView({ behavior: 'smooth' })
+          }
+        },
+        {
+          image: heitaMagazine,
+          title: "HEITA! Student Magazine",
+          description: "Legacy & Learning - Reflecting on heritage and progress at TUT",
+          cta: {
+            text: "Read Magazine",
+            action: () => document.getElementById('news-feed')?.scrollIntoView({ behavior: 'smooth' })
+          }
+        }
+      ];
+
+  // Fallback news if database is empty
+  const fallbackNews: NewsArticle[] = [
     {
-      id: 1,
+      id: '1',
       category: "campus-life",
       title: "Emergency Medical Services Now Available on Campus",
       author: "Campus Safety Team",
-      date: "2025-11-05",
-      image: emergencyServices,
-      description: "ER24 emergency medical services are now stationed at TUT campuses. In case of medical emergency, call ER24 at 010 205 3087 or dial DID 205 3087 from campus phones.",
-      trending: true
+      published_at: "2025-11-05",
+      created_at: "2025-11-05",
+      image_url: emergencyServices,
+      excerpt: "ER24 emergency medical services are now stationed at TUT campuses.",
+      content: "ER24 emergency medical services are now stationed at TUT campuses. In case of medical emergency, call ER24 at 010 205 3087.",
+      is_published: true
     },
     {
-      id: 2,
+      id: '2',
       category: "culture",
       title: "TUT Arts Festival Celebrates Cultural Diversity",
       author: "Arts & Culture Committee",
-      date: "2025-11-04",
-      image: artsFestival,
-      description: "Experience vibrant student creativity through our annual arts festival featuring music, dance, visual arts, and cultural performances from diverse communities.",
-      trending: true
+      published_at: "2025-11-04",
+      created_at: "2025-11-04",
+      image_url: artsFestival,
+      excerpt: "Experience vibrant student creativity through our annual arts festival.",
+      content: "Experience vibrant student creativity through our annual arts festival featuring music, dance, visual arts, and cultural performances.",
+      is_published: true
     },
     {
-      id: 3,
+      id: '3',
       category: "campus-life",
       title: "New Student Portal Launched - myTUT",
       author: "IT Services",
-      date: "2025-11-03",
-      image: studentPortalPromo,
-      description: "Access the new myTUT Student Portal at https://mytut.tut.ac.za. Features include e-Learning, e-Admin, MyLife, WiFi access, exam timetables, and results viewing.",
-      trending: true
-    },
-    {
-      id: 4,
-      category: "research",
-      title: "Post-Graduate Study Opportunities Available",
-      author: "Admissions Office",
-      date: "2025-11-02",
-      image: campusDinokeng,
-      description: "Are you aspiring to pursue a Post Graduate qualification? TUT offers comprehensive postgraduate programs across all faculties. Contact admissions for detailed information.",
-    },
-    {
-      id: 5,
-      category: "campus-life",
-      title: "HEITA! Magazine: Legacy & Learning Edition",
-      author: "Student Publications",
-      date: "2025-11-01",
-      image: heitaMagazine,
-      description: "The latest edition of HEITA! explores the intersection of heritage and progress at TUT, featuring inspiring student stories and academic achievements.",
-    },
-    {
-      id: 6,
-      category: "culture",
-      title: "1Republic Magazine Features Campus Stories",
-      author: "Soshanguve Campus",
-      date: "2025-10-31",
-      image: oneRepublicMagazine,
-      description: "Volume 2, Issue 3 of 1Republic magazine highlights inspiring student journeys, club activities, and campus achievements from Soshanguve.",
+      published_at: "2025-11-03",
+      created_at: "2025-11-03",
+      image_url: studentPortalPromo,
+      excerpt: "Access the new myTUT Student Portal for all your academic needs.",
+      content: "Access the new myTUT Student Portal at https://mytut.tut.ac.za. Features include e-Learning, e-Admin, and more.",
+      is_published: true
     }
   ];
 
-  // Student Jobs
+  const displayArticles = newsArticles.length > 0 ? newsArticles : fallbackNews;
+
+  // Student Jobs (static for now, can be moved to database later)
   const studentJobs = [
     {
       id: 1,
@@ -156,16 +225,32 @@ const CampusNews = () => {
     { id: "campus-life", name: "Campus Life" },
     { id: "research", name: "Research" },
     { id: "culture", name: "Culture" },
+    { id: "general", name: "General" },
   ];
 
   const filteredArticles = selectedCategory === "all" 
-    ? newsArticles 
-    : newsArticles.filter(article => article.category === selectedCategory);
+    ? displayArticles 
+    : displayArticles.filter(article => article.category === selectedCategory);
+
+  const trendingArticles = displayArticles.slice(0, 3); // First 3 as trending
 
   const handleJournalistSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     toast.success("Application received! We'll review your portfolio and get back to you soon.");
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading campus news...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -176,7 +261,7 @@ const CampusNews = () => {
       <div className="min-h-screen">
         {/* Hero Carousel */}
         <div className="px-6 md:px-8 pt-6">
-          <HeroCarousel slides={heroSlides} />
+          <HeroCarousel slides={carouselSlides} />
         </div>
 
         {/* Main Content */}
@@ -270,44 +355,56 @@ const CampusNews = () => {
             </div>
 
             {/* Trending Section */}
-            <Card className="bg-gradient-card shadow-card border-l-4 border-l-accent">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-accent" />
-                  Trending Now
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {newsArticles.filter(article => article.trending).map(article => (
-                    <div key={article.id} className="flex gap-4 pb-4 border-b last:border-0">
-                      <img 
-                        src={article.image} 
-                        alt={article.title}
-                        className="w-24 h-24 object-cover rounded-lg"
-                      />
-                      <div className="flex-1">
-                        <h4 className="font-semibold mb-1 hover:text-primary cursor-pointer transition-colors">
-                          {article.title}
-                        </h4>
-                        <p className="text-sm text-muted-foreground">By {article.author} • {new Date(article.date).toLocaleDateString()}</p>
+            {trendingArticles.length > 0 && (
+              <Card className="bg-gradient-card shadow-card border-l-4 border-l-accent">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-accent" />
+                    Trending Now
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {trendingArticles.map(article => (
+                      <div key={article.id} className="flex gap-4 pb-4 border-b last:border-0">
+                        {article.image_url && (
+                          <img 
+                            src={article.image_url} 
+                            alt={article.title}
+                            className="w-24 h-24 object-cover rounded-lg"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-semibold mb-1 hover:text-primary cursor-pointer transition-colors">
+                            {article.title}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            By {article.author || 'ResKonnect'} • {new Date(article.published_at || article.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Articles Grid */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredArticles.map(article => (
                 <Card key={article.id} className="shadow-card hover:shadow-hover transition-smooth group cursor-pointer overflow-hidden">
                   <div className="relative h-48 overflow-hidden">
-                    <img 
-                      src={article.image} 
-                      alt={article.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
+                    {article.image_url ? (
+                      <img 
+                        src={article.image_url} 
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                        <Newspaper className="w-12 h-12 text-primary/30" />
+                      </div>
+                    )}
                     <div className="absolute top-3 right-3">
                       <Badge className="capitalize bg-primary/90 backdrop-blur-sm">
                         {article.category.replace('-', ' ')}
@@ -319,17 +416,27 @@ const CampusNews = () => {
                       {article.title}
                     </CardTitle>
                     <CardDescription>
-                      By {article.author} • {new Date(article.date).toLocaleDateString()}
+                      By {article.author || 'ResKonnect'} • {new Date(article.published_at || article.created_at).toLocaleDateString()}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground text-sm line-clamp-2">
-                      {article.description}
+                      {article.excerpt || article.content.substring(0, 150)}
                     </p>
                   </CardContent>
                 </Card>
               ))}
             </div>
+
+            {filteredArticles.length === 0 && (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Newspaper className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">No articles found</h3>
+                  <p className="text-muted-foreground">Check back later for more news</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Student Jobs Section */}
