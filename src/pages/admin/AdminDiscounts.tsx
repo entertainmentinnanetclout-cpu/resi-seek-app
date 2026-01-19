@@ -28,6 +28,11 @@ interface StudentDiscount {
   is_verified: boolean;
   is_active: boolean;
   image_url: string | null;
+  price: number | null;
+  original_price: number | null;
+  is_orderable: boolean | null;
+  stock_quantity: number | null;
+  delivery_info: string | null;
 }
 
 const emptyDiscount: Partial<StudentDiscount> = {
@@ -42,6 +47,11 @@ const emptyDiscount: Partial<StudentDiscount> = {
   is_verified: false,
   is_active: true,
   image_url: "",
+  price: null,
+  original_price: null,
+  is_orderable: false,
+  stock_quantity: 0,
+  delivery_info: "",
 };
 
 const categories = ["Food", "Transport", "Entertainment", "Tech", "Health", "Shopping", "Education", "Fitness"];
@@ -127,6 +137,11 @@ const AdminDiscounts = () => {
         is_verified: editingDiscount.is_verified ?? false,
         is_active: editingDiscount.is_active ?? true,
         image_url: imageUrl || null,
+        price: editingDiscount.price || null,
+        original_price: editingDiscount.original_price || null,
+        is_orderable: editingDiscount.is_orderable ?? false,
+        stock_quantity: editingDiscount.stock_quantity ?? 0,
+        delivery_info: editingDiscount.delivery_info || null,
       };
 
       if (editingDiscount.id) {
@@ -233,6 +248,62 @@ const AdminDiscounts = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+
+                  {/* Pricing Section - GOD MODE */}
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-semibold mb-3 text-sm">Pricing & Ordering</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Price (R)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={editingDiscount.price ?? ""}
+                          onChange={(e) => setEditingDiscount({ ...editingDiscount, price: e.target.value ? parseFloat(e.target.value) : null })}
+                          placeholder="49.99"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Original Price (R)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={editingDiscount.original_price ?? ""}
+                          onChange={(e) => setEditingDiscount({ ...editingDiscount, original_price: e.target.value ? parseFloat(e.target.value) : null })}
+                          placeholder="99.99"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div className="space-y-2">
+                        <Label>Stock Quantity</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={editingDiscount.stock_quantity ?? 0}
+                          onChange={(e) => setEditingDiscount({ ...editingDiscount, stock_quantity: parseInt(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between pt-6">
+                        <Label>Orderable</Label>
+                        <Switch
+                          checked={editingDiscount.is_orderable ?? false}
+                          onCheckedChange={(checked) => setEditingDiscount({ ...editingDiscount, is_orderable: checked })}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2 mt-4">
+                      <Label>Delivery Info</Label>
+                      <Textarea
+                        value={editingDiscount.delivery_info || ""}
+                        onChange={(e) => setEditingDiscount({ ...editingDiscount, delivery_info: e.target.value })}
+                        rows={2}
+                        placeholder="Campus delivery available, 2-3 business days"
+                      />
                     </div>
                   </div>
 
@@ -353,6 +424,8 @@ const AdminDiscounts = () => {
                       <TableHead>Name</TableHead>
                       <TableHead>Provider</TableHead>
                       <TableHead>Discount</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Stock</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -373,6 +446,29 @@ const AdminDiscounts = () => {
                         <TableCell className="font-medium">{discount.name}</TableCell>
                         <TableCell>{discount.provider}</TableCell>
                         <TableCell>{discount.discount}</TableCell>
+                        <TableCell>
+                          {discount.price ? (
+                            <div className="text-sm">
+                              <span className="font-semibold">R{discount.price}</span>
+                              {discount.original_price && (
+                                <span className="text-muted-foreground line-through ml-1 text-xs">
+                                  R{discount.original_price}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {discount.is_orderable ? (
+                            <Badge variant={discount.stock_quantity && discount.stock_quantity > 0 ? "default" : "destructive"}>
+                              {discount.stock_quantity ?? 0} in stock
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">N/A</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Badge variant="secondary">{discount.category}</Badge>
                         </TableCell>
