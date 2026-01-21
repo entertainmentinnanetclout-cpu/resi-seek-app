@@ -14,10 +14,162 @@ export type Database = {
   }
   public: {
     Tables: {
+      application_activity_log: {
+        Row: {
+          action_type: string
+          actor_type: string
+          actor_user_id: string | null
+          application_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          residence_id: string
+        }
+        Insert: {
+          action_type: string
+          actor_type: string
+          actor_user_id?: string | null
+          application_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          residence_id: string
+        }
+        Update: {
+          action_type?: string
+          actor_type?: string
+          actor_user_id?: string | null
+          application_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          residence_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_activity_log_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_activity_log_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_documents: {
+        Row: {
+          application_id: string
+          doc_type: string
+          file_path: string
+          id: string
+          original_filename: string | null
+          rejection_reason: string | null
+          residence_id: string
+          status: string
+          uploaded_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          application_id: string
+          doc_type: string
+          file_path: string
+          id?: string
+          original_filename?: string | null
+          rejection_reason?: string | null
+          residence_id: string
+          status?: string
+          uploaded_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          application_id?: string
+          doc_type?: string
+          file_path?: string
+          id?: string
+          original_filename?: string | null
+          rejection_reason?: string | null
+          residence_id?: string
+          status?: string
+          uploaded_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_documents_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_messages: {
+        Row: {
+          application_id: string
+          created_at: string
+          id: string
+          message: string
+          residence_id: string
+          sender_type: string
+          sender_user_id: string | null
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          id?: string
+          message: string
+          residence_id: string
+          sender_type: string
+          sender_user_id?: string | null
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          residence_id?: string
+          sender_type?: string
+          sender_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_messages_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_messages_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applications: {
         Row: {
           application_date: string
           created_at: string
+          desired_move_in: string | null
+          funding_type: string
           id: string
           last_contacted_at: string | null
           move_in_confirmed: boolean | null
@@ -26,12 +178,15 @@ export type Database = {
           notes: string | null
           residence_id: string
           status: string
+          student_profile: Json | null
           updated_at: string
           user_id: string
         }
         Insert: {
           application_date?: string
           created_at?: string
+          desired_move_in?: string | null
+          funding_type?: string
           id?: string
           last_contacted_at?: string | null
           move_in_confirmed?: boolean | null
@@ -40,12 +195,15 @@ export type Database = {
           notes?: string | null
           residence_id: string
           status?: string
+          student_profile?: Json | null
           updated_at?: string
           user_id: string
         }
         Update: {
           application_date?: string
           created_at?: string
+          desired_move_in?: string | null
+          funding_type?: string
           id?: string
           last_contacted_at?: string | null
           move_in_confirmed?: boolean | null
@@ -54,6 +212,7 @@ export type Database = {
           notes?: string | null
           residence_id?: string
           status?: string
+          student_profile?: Json | null
           updated_at?: string
           user_id?: string
         }
@@ -671,6 +830,60 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_claims: {
+        Row: {
+          academic_year: number
+          application_id: string
+          claim_amount: number | null
+          claim_status: string
+          created_at: string
+          funding_type: string
+          id: string
+          paid_at: string | null
+          residence_id: string
+          student_ref: string | null
+        }
+        Insert: {
+          academic_year?: number
+          application_id: string
+          claim_amount?: number | null
+          claim_status?: string
+          created_at?: string
+          funding_type: string
+          id?: string
+          paid_at?: string | null
+          residence_id: string
+          student_ref?: string | null
+        }
+        Update: {
+          academic_year?: number
+          application_id?: string
+          claim_amount?: number | null
+          claim_status?: string
+          created_at?: string
+          funding_type?: string
+          id?: string
+          paid_at?: string | null
+          residence_id?: string
+          student_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_claims_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_claims_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       residence_analytics: {
         Row: {
           created_at: string
@@ -716,6 +929,41 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      residence_portal_accounts: {
+        Row: {
+          created_at: string
+          email: string
+          is_active: boolean
+          residence_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          is_active?: boolean
+          residence_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          is_active?: boolean
+          residence_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "residence_portal_accounts_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: true
+            referencedRelation: "residences"
             referencedColumns: ["id"]
           },
         ]
@@ -1140,6 +1388,8 @@ export type Database = {
       }
     }
     Functions: {
+      generate_ref_code: { Args: { app_id: string }; Returns: string }
+      get_user_residence_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1147,9 +1397,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_authorized_residence_user: {
+        Args: { target_residence_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      app_role: "admin" | "student"
+      app_role: "admin" | "student" | "residence_portal"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1277,7 +1531,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "student"],
+      app_role: ["admin", "student", "residence_portal"],
     },
   },
 } as const
