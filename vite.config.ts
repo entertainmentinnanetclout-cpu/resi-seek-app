@@ -4,23 +4,10 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
-// HARD-CODED external Supabase credentials - overrides Lovable Cloud .env
-// This ensures both preview and production use the same backend
-const EXTERNAL_SUPABASE_URL = "https://mefjzkhobkltlbmhusdh.supabase.co";
-const EXTERNAL_SUPABASE_PUBLISHABLE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lZmp6a2hvYmtsdGxibWh1c2RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzMTE5ODYsImV4cCI6MjA3NTg4Nzk4Nn0.h9VlKqtA4QMidLh_FbIiNviZRzeLe4OsBs1omh3Jy6U";
-
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
 
   return {
-    define: {
-      // Force external Supabase - ignore any .env values from Lovable Cloud
-      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(EXTERNAL_SUPABASE_URL),
-      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
-        EXTERNAL_SUPABASE_PUBLISHABLE_KEY
-      ),
-    },
     server: {
       host: "::",
       port: 8080,
@@ -97,13 +84,6 @@ export default defineConfig(({ mode }) => {
     ].filter(Boolean),
     resolve: {
       alias: [
-        {
-          find: "@/integrations/supabase/client",
-          replacement: path.resolve(
-            __dirname,
-            "./src/integrations/supabase/clientRuntime.ts"
-          ),
-        },
         {
           find: "@",
           replacement: path.resolve(__dirname, "./src"),
