@@ -58,11 +58,19 @@ import AdminFollowUp from "./pages/admin/AdminFollowUp";
 import AdminWhatsAppTemplates from "./pages/admin/AdminWhatsAppTemplates";
 import AdminDiscountOrders from "./pages/admin/AdminDiscountOrders";
 import AdminHamperItems from "./pages/admin/AdminHamperItems";
+import AdminResidencePortals from "./pages/admin/AdminResidencePortals";
 import BursaryDetail from "./pages/BursaryDetail";
 import StudentHamper from "./pages/StudentHamper";
 import MyDiscountOrders from "./pages/MyDiscountOrders";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import ResidenceLogin from "./pages/residence/ResidenceLogin";
+import ResidenceLayout from "./pages/residence/ResidenceLayout";
+import ResidenceDashboard from "./pages/residence/ResidenceDashboard";
+import ResidenceInbox from "./pages/residence/ResidenceInbox";
+import ResidenceApplicationDetail from "./pages/residence/ResidenceApplicationDetail";
+import ResidenceAnalytics from "./pages/residence/ResidenceAnalytics";
+import { ResidenceRoute } from "./components/ResidenceRoute";
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -140,6 +148,16 @@ const App = () => {
               <Route path="/admin/news" element={<ProtectedRoute><AdminRoute><AdminNews /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/system-status" element={<ProtectedRoute><AdminRoute><AdminSystemStatus /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/settings" element={<ProtectedRoute><AdminRoute><AdminSettings /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/residence-portals" element={<ProtectedRoute><AdminRoute><AdminResidencePortals /></AdminRoute></ProtectedRoute>} />
+
+              {/* Residence Portal Routes */}
+              <Route path="/residence/login" element={<ResidenceLogin />} />
+              <Route path="/residence" element={<ResidenceRoute><ResidenceLayout /></ResidenceRoute>}>
+                <Route index element={<ResidenceDashboard />} />
+                <Route path="inbox" element={<ResidenceInbox />} />
+                <Route path="application/:id" element={<ResidenceApplicationDetail />} />
+                <Route path="analytics" element={<ResidenceAnalytics />} />
+              </Route>
 
               {/* SEO Routes */}
               <Route path="/student-accommodation-:province" element={<ProvinceLanding />} />
