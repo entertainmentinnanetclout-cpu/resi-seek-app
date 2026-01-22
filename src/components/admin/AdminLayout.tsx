@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Building2, Users, FileText, Home, Settings, LogOut, Menu, Image, Percent, GraduationCap, Newspaper, Calendar, ShoppingBag, LayoutDashboard, RefreshCw, Activity, TrendingUp, Store, MessageSquare, Gift } from "lucide-react";
+import { Building2, Users, FileText, Home, Settings, LogOut, Menu, Image, Percent, GraduationCap, Newspaper, Calendar, ShoppingBag, LayoutDashboard, RefreshCw, Activity, TrendingUp, Store, MessageSquare, Gift, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -16,6 +16,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/admin" },
   { icon: TrendingUp, label: "Analytics", path: "/admin/analytics" },
   { icon: Building2, label: "Residences", path: "/admin/residences" },
+  { icon: KeyRound, label: "Residence Portals", path: "/admin/residence-portals" },
   { icon: FileText, label: "Applications", path: "/admin/applications" },
   { icon: Users, label: "Follow-Up", path: "/admin/follow-up" },
   { icon: FileText, label: "Documents", path: "/admin/documents" },
