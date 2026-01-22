@@ -71,35 +71,34 @@ const AdminResidencePortals = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch portal accounts with residence info
+      // Fetch all residences first
+      const { data: allResidences } = await supabase
+        .from('residences')
+        .select('id, name')
+        .order('name');
+      
+      setResidences(allResidences || []);
+      const residenceMap = new Map((allResidences || []).map(r => [r.id, r.name]));
+
+      // Fetch portal accounts
       const { data: accountsData, error: accountsError } = await supabase
         .from('residence_portal_accounts')
-        .select(`
-          residence_id, user_id, email, is_active, created_at, updated_at,
-          residence:residence_id(name)
-        `)
+        .select('residence_id, user_id, email, is_active, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (accountsError) throw accountsError;
 
-      // Transform data to handle the nested residence object
+      // Transform data to include residence name
       const transformedAccounts = (accountsData || []).map(account => ({
         ...account,
-        residence: Array.isArray(account.residence) ? account.residence[0] : account.residence
+        residence: { name: residenceMap.get(account.residence_id) || 'Unknown' }
       }));
       setAccounts(transformedAccounts);
-
-      // Fetch all residences
-      const { data: residencesData } = await supabase
-        .from('residences')
-        .select('id, name')
-        .order('name');
-      setResidences(residencesData || []);
 
       // Filter out residences that already have accounts
       const usedResidenceIds = new Set(transformedAccounts.map(a => a.residence_id));
       setAvailableResidences(
-        (residencesData || []).filter(r => !usedResidenceIds.has(r.id))
+        (allResidences || []).filter(r => !usedResidenceIds.has(r.id))
       );
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -263,7 +262,7 @@ const AdminResidencePortals = () => {
               <CardTitle className="text-sm font-medium">Active</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-success">
                 {accounts.filter(a => a.is_active).length}
               </div>
             </CardContent>
@@ -341,7 +340,7 @@ const AdminResidencePortals = () => {
                             onClick={() => toggleAccountStatus(account)}
                           >
                             {account.is_active ? (
-                              <ToggleRight className="h-4 w-4 text-green-500" />
+                              <ToggleRight className="h-4 w-4 text-success" />
                             ) : (
                               <ToggleLeft className="h-4 w-4 text-muted-foreground" />
                             )}
