@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Building2, Plus, Search, UserCog, ToggleLeft, ToggleRight, 
   Mail, Trash2, RefreshCw, Loader2, CheckCircle
@@ -42,8 +43,12 @@ interface PortalAccount {
   email: string;
   is_active: boolean;
   created_at: string;
-  updated_at: string;
-  residence?: { name: string };
+  residences?: {
+    id: string;
+    name: string;
+    campus: string | null;
+    province: string | null;
+  } | null;
 }
 
 interface Residence {
@@ -52,6 +57,7 @@ interface Residence {
 }
 
 const AdminResidencePortals = () => {
+  const navigate = useNavigate();
   const [accounts, setAccounts] = useState<PortalAccount[]>([]);
   const [residences, setResidences] = useState<Residence[]>([]);
   const [availableResidences, setAvailableResidences] = useState<Residence[]>([]);
@@ -71,28 +77,50 @@ const AdminResidencePortals = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch all residences first
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        toast.error("Session expired. Please login again.");
+        navigate("/auth");
+        return;
+      }
+
+      if (import.meta.env.DEV) {
+        console.log('Admin session user:', session.user.id);
+      }
+
+      // Fetch all residences for the dropdown
       const { data: allResidences } = await supabase
         .from('residences')
         .select('id, name')
         .order('name');
       
       setResidences(allResidences || []);
-      const residenceMap = new Map((allResidences || []).map(r => [r.id, r.name]));
 
-      // Fetch portal accounts
+      // Fetch portal accounts with joined residence data
       const { data: accountsData, error: accountsError } = await supabase
         .from('residence_portal_accounts')
-        .select('residence_id, user_id, email, is_active, created_at, updated_at')
+        .select(`
+          residence_id,
+          user_id,
+          email,
+          is_active,
+          created_at,
+          residences (
+            id,
+            name,
+            campus,
+            province
+          )
+        `)
         .order('created_at', { ascending: false });
 
-      if (accountsError) throw accountsError;
+      if (accountsError) {
+        console.error('Load portal accounts error:', accountsError);
+        throw accountsError;
+      }
 
-      // Transform data to include residence name
-      const transformedAccounts = (accountsData || []).map(account => ({
-        ...account,
-        residence: { name: residenceMap.get(account.residence_id) || 'Unknown' }
-      }));
+      const transformedAccounts = (accountsData || []) as unknown as PortalAccount[];
       setAccounts(transformedAccounts);
 
       // Filter out residences that already have accounts
@@ -191,7 +219,7 @@ const AdminResidencePortals = () => {
   };
 
   const deleteAccount = async (account: PortalAccount) => {
-    if (!confirm(`Are you sure you want to delete the portal account for ${account.residence?.name}?`)) {
+    if (!confirm(`Are you sure you want to delete the portal account for ${account.residences?.name}?`)) {
       return;
     }
 
@@ -216,7 +244,9 @@ const AdminResidencePortals = () => {
     const query = searchQuery.toLowerCase();
     return (
       account.email.toLowerCase().includes(query) ||
-      account.residence?.name?.toLowerCase().includes(query)
+      account.residences?.name?.toLowerCase().includes(query) ||
+      account.residences?.campus?.toLowerCase().includes(query) ||
+      account.residences?.province?.toLowerCase().includes(query)
     );
   });
 
@@ -300,14 +330,30 @@ const AdminResidencePortals = () => {
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : filteredAccounts.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No portal accounts found
+              <div className="text-center py-12 space-y-4">
+                <div className="flex justify-center">
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                    <UserCog className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-lg font-medium">No portal accounts found</p>
+                  <p className="text-sm text-muted-foreground">
+                    Get started by creating a new residence portal account.
+                  </p>
+                </div>
+                <Button onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Portal Account
+                </Button>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Residence</TableHead>
+                    <TableHead>Campus</TableHead>
+                    <TableHead>Province</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
@@ -320,9 +366,11 @@ const AdminResidencePortals = () => {
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-muted-foreground" />
-                          {account.residence?.name || 'Unknown'}
+                          {account.residences?.name || 'Unknown'}
                         </div>
                       </TableCell>
+                      <TableCell>{account.residences?.campus || '-'}</TableCell>
+                      <TableCell>{account.residences?.province || '-'}</TableCell>
                       <TableCell>{account.email}</TableCell>
                       <TableCell>
                         <Badge variant={account.is_active ? "default" : "secondary"}>
