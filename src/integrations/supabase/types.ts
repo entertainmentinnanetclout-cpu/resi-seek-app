@@ -939,7 +939,6 @@ export type Database = {
           email: string
           is_active: boolean
           residence_id: string
-          updated_at: string
           user_id: string | null
         }
         Insert: {
@@ -947,7 +946,6 @@ export type Database = {
           email: string
           is_active?: boolean
           residence_id: string
-          updated_at?: string
           user_id?: string | null
         }
         Update: {
@@ -955,7 +953,6 @@ export type Database = {
           email?: string
           is_active?: boolean
           residence_id?: string
-          updated_at?: string
           user_id?: string | null
         }
         Relationships: [
@@ -964,6 +961,13 @@ export type Database = {
             columns: ["residence_id"]
             isOneToOne: true
             referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "residence_portal_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
