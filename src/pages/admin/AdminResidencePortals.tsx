@@ -68,6 +68,7 @@ const AdminResidencePortals = () => {
   const [selectedResidence, setSelectedResidence] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
@@ -137,7 +138,7 @@ const AdminResidencePortals = () => {
   };
 
   const handleCreateAccount = async () => {
-    if (!selectedResidence || !newEmail || !newPassword) {
+    if (!selectedResidence || !newEmail || !newPassword || !confirmPassword) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -147,51 +148,30 @@ const AdminResidencePortals = () => {
       return;
     }
 
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
     setIsCreating(true);
     try {
-      // Create the auth user with admin API
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newEmail,
-        password: newPassword,
-        email_confirm: true,
+      const { data, error } = await supabase.functions.invoke('create_residence_portal_user', {
+        body: {
+          residence_id: selectedResidence,
+          email: newEmail,
+          password: newPassword
+        }
       });
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error('Failed to create user');
-      }
-
-      // Assign residence_portal role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: authData.user.id,
-          role: 'residence_portal'
-        });
-
-      if (roleError) {
-        console.error('Role assignment error:', roleError);
-        // Continue anyway, role can be assigned manually
-      }
-
-      // Create portal account record
-      const { error: portalError } = await supabase
-        .from('residence_portal_accounts')
-        .insert({
-          residence_id: selectedResidence,
-          user_id: authData.user.id,
-          email: newEmail,
-          is_active: true
-        });
-
-      if (portalError) throw portalError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast.success('Portal account created successfully');
       setShowCreateDialog(false);
       setSelectedResidence("");
       setNewEmail("");
       setNewPassword("");
+      setConfirmPassword("");
       fetchData();
     } catch (err: any) {
       console.error('Error creating account:', err);
@@ -461,6 +441,22 @@ const AdminResidencePortals = () => {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
+              <p className="text-[10px] text-muted-foreground">
+                Must be at least 8 characters long.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Confirm Password</Label>
+              <Input
+                type="password"
+                placeholder="Re-enter password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+              {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                <p className="text-xs text-destructive">Passwords do not match</p>
+              )}
             </div>
           </div>
 
