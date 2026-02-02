@@ -1,7 +1,7 @@
 import SEO from "@/components/SEO";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MapPin, Users, Search, SlidersHorizontal, Building2, Bed, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
+import { MapPin, Users, Search, SlidersHorizontal, Building2, Bed, ShieldCheck, ChevronDown, ChevronUp, LayoutGrid, List, ArrowUpDown } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,10 +27,49 @@ import CompareButton from "@/components/CompareButton";
 import CompareDrawer from "@/components/CompareDrawer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import TrustedResidencesGrid from "@/components/TrustedResidencesGrid";
+import ResidenceSectionGrid from "@/components/ResidenceSectionGrid";
 import { RESKONNECT_WHATSAPP } from "@/lib/constants";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 
 const MAX_COMPARE = 3;
+
+// Section categories for filtering
+const SECTION_TABS = [
+  { value: "all", label: "All" },
+  { value: "Soshanguve", label: "Soshanguve" },
+  { value: "Pretoria West", label: "Pretoria West" },
+  { value: "Arcadia", label: "Arcadia" },
+  { value: "Arts", label: "Arts" },
+  { value: "Ga-Rankuwa", label: "Ga-Rankuwa" },
+  { value: "ARLC", label: "ARLC" },
+  { value: "Other", label: "Other" },
+];
+
+// Sorting options
+const SORT_OPTIONS = [
+  { value: "price-asc", label: "Price: Low to High" },
+  { value: "price-desc", label: "Price: High to Low" },
+  { value: "distance", label: "Nearest First" },
+  { value: "availability", label: "Most Available" },
+  { value: "newest", label: "Newest First" },
+];
+
+// Derive section from campus or section_category
+function deriveSection(residence: any): string {
+  if (residence.section_category) return residence.section_category;
+  
+  const campus = residence.campus?.toLowerCase() || '';
+  if (campus.includes('soshanguve')) return 'Soshanguve';
+  if (campus.includes('arts')) return 'Arts';
+  if (campus.includes('arcadia')) return 'Arcadia';
+  if (campus.includes('pretoria west') || campus.includes('pretoria-west')) return 'Pretoria West';
+  if (campus.includes('ga-rankuwa') || campus.includes('garankuwa')) return 'Ga-Rankuwa';
+  if (campus.includes('polokwane')) return 'Polokwane';
+  if (campus.includes('mbombela') || campus.includes('nelspruit')) return 'Mbombela';
+  if (campus.includes('emalahleni') || campus.includes('witbank')) return 'eMalahleni';
+  
+  return 'Other';
+}
 
 const FindMyRes = () => {
   const shouldBlock = useAdminRedirect();
@@ -47,6 +87,9 @@ const FindMyRes = () => {
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'sections' | 'list'>('sections');
+  const [sectionFilter, setSectionFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("price-asc");
   
   const [searchQuery, setSearchQuery] = useState("");
   const [priceRange, setPriceRange] = useState<string>("");
@@ -54,8 +97,6 @@ const FindMyRes = () => {
   const [roomType, setRoomType] = useState<string>("");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [campus, setCampus] = useState<string>("all");
-  
-  const [filteredResidences, setFilteredResidences] = useState<any[]>([]);
 
   const [applicationNotes, setApplicationNotes] = useState("");
 
@@ -107,9 +148,8 @@ const FindMyRes = () => {
     fetchResidences();
   }, []);
 
-  useEffect(() => {
-    if (!residences.length && !loading) return;
-
+  // Enhanced filtering with section support
+  const filteredAndSortedResidences = useMemo(() => {
     let filtered = [...residences];
 
     if (searchQuery) {
@@ -144,14 +184,41 @@ const FindMyRes = () => {
       filtered = filtered.filter(r => r.campus === campus);
     }
 
+    // Section filter (new)
+    if (sectionFilter && sectionFilter !== "all") {
+      filtered = filtered.filter(r => deriveSection(r) === sectionFilter);
+    }
+
     if (selectedAmenities.length > 0) {
       filtered = filtered.filter(r => 
         selectedAmenities.every(amenity => r.amenities?.includes(amenity))
       );
     }
+
+    // Apply sorting
+    switch (sortBy) {
+      case 'price-asc':
+        filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
+        break;
+      case 'price-desc':
+        filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
+        break;
+      case 'distance':
+        filtered.sort((a, b) => (a.distance_from_campus || 999) - (b.distance_from_campus || 999));
+        break;
+      case 'availability':
+        filtered.sort((a, b) => (b.available_spots || 0) - (a.available_spots || 0));
+        break;
+      case 'newest':
+        filtered.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+        break;
+    }
     
-    setFilteredResidences(filtered);
-  }, [residences, searchQuery, priceRange, distanceRange, roomType, selectedAmenities, campus, loading]);
+    return filtered;
+  }, [residences, searchQuery, priceRange, distanceRange, roomType, selectedAmenities, campus, sectionFilter, sortBy]);
+
+  // Keep filteredResidences for backward compatibility
+  const filteredResidences = filteredAndSortedResidences;
 
   const handleApply = (residence: any) => {
     setSelectedResidence(residence);

@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { safeFormatDate } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 
 interface UserDocument {
   id: string;
@@ -315,6 +316,39 @@ const AdminApplications = () => {
           </Card>
         )}
 
+        {/* Handover Pack Download */}
+        <Card className="bg-muted/30 border-dashed">
+          <CardContent className="py-3">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="font-medium">Download Handover Pack</p>
+                <p className="text-sm text-muted-foreground">Get all applications with student info for a residence</p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const { data, error } = await supabase.functions.invoke('download-handover-pack', {
+                      body: { application_ids: filteredApplications.map(a => a.id) }
+                    });
+                    if (error) throw error;
+                    // Open in new tab
+                    const blob = new Blob([data], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                    toast.success('Handover pack generated!');
+                  } catch (err: any) {
+                    toast.error(err.message || 'Failed to generate handover pack');
+                  }
+                }}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Pack ({filteredApplications.length})
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -369,7 +403,7 @@ const AdminApplications = () => {
                       </TableHead>
                       <TableHead>Student</TableHead>
                       <TableHead>Residence</TableHead>
-                      <TableHead>Date</TableHead>
+                      <TableHead>Applied</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -392,7 +426,14 @@ const AdminApplications = () => {
                           </div>
                         </TableCell>
                         <TableCell>{app.residence?.name || "Unknown"}</TableCell>
-                        <TableCell>{safeFormatDate(app.application_date)}</TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-sm">{safeFormatDate(app.application_date, "dd MMM yyyy, HH:mm")}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(app.application_date), { addSuffix: true })}
+                            </p>
+                          </div>
+                        </TableCell>
                         <TableCell>{getStatusBadge(app.status)}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="icon" onClick={() => setSelectedApplication(app)}>

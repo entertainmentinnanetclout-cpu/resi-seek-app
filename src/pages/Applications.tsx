@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, XCircle, Eye, Search, Filter, X, AlertCircle, FileText, Upload } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, Eye, Search, Filter, X, AlertCircle, FileText, Upload, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -114,6 +114,27 @@ const Applications = () => {
   const ApplicationCard = ({ application }: { application: any }) => {
       const { Icon, color, label, step } = getStatusProps(application.status);
       const steps = ["Submitted", "Decision"];
+      const [downloadingSlip, setDownloadingSlip] = useState(false);
+
+      const handleDownloadSlip = async () => {
+        setDownloadingSlip(true);
+        try {
+          const { data, error } = await supabase.functions.invoke('generate-booking-slip', {
+            body: { application_id: application.id }
+          });
+          if (error) throw error;
+          // Open HTML in new tab
+          const blob = new Blob([data], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          toast.success('Booking slip generated!');
+        } catch (err: any) {
+          toast.error(err.message || 'Failed to generate booking slip');
+        } finally {
+          setDownloadingSlip(false);
+        }
+      };
+
       return (
         <Card className={`bg-card shadow-sm hover:shadow-xl transition-all duration-300 border-l-4 border-${color}-500 animate-fade-in`}>
             <CardHeader>
@@ -156,7 +177,7 @@ const Applications = () => {
                   )}
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-border flex gap-2">
+                <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-2">
                     <Button asChild variant="outline" aria-label={`View details for ${application.residence?.name}`}>
                       <Link to={`/res/${application.residence_id}`}>View Details</Link>
                     </Button>
@@ -168,6 +189,20 @@ const Applications = () => {
                         </Link>
                       </Button>
                     )}
+                    {/* Booking Slip Download */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadSlip}
+                      disabled={downloadingSlip}
+                    >
+                      {downloadingSlip ? (
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4 mr-1" />
+                      )}
+                      Booking Slip
+                    </Button>
                 </div>
             </CardContent>
         </Card>
