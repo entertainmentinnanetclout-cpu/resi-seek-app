@@ -155,7 +155,7 @@ const AdminResidencePortals = () => {
 
     setIsCreating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create_residence_portal_user', {
+      const { data, error } = await supabase.functions.invoke('create-residence-portal-user', {
         body: {
           residence_id: selectedResidence,
           email: newEmail,

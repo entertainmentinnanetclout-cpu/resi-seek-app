@@ -2,3 +2,12 @@ project_id = "vmqqkebojldjsyxcewdb"
 
 [functions.resbot-ai]
 verify_jwt = false
+
+[functions.create-residence-portal-user]
+verify_jwt = false
+
+[functions.generate-booking-slip]
+verify_jwt = false
+
+[functions.download-handover-pack]
+verify_jwt = false
