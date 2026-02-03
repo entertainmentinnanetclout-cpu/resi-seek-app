@@ -21,8 +21,8 @@ interface UserDocument {
 }
 
 const Applications = () => {
+  // ALL hooks must be called unconditionally before any early returns
   const shouldBlock = useAdminRedirect();
-  if (shouldBlock) return null;
   const { user } = useAuth();
   const { applications, loading: applicationsLoading, error } = useRealtimeApplications(user);
   const [detailedApplications, setDetailedApplications] = useState<any[]>([]);
@@ -90,6 +90,9 @@ const Applications = () => {
       const matchesRoomType = roomTypeFilter !== "all" ? app.residence?.room_type === roomTypeFilter : true;
       return matchesSearch && matchesStatus && matchesRoomType;
   }), [detailedApplications, searchTerm, statusFilter, roomTypeFilter]);
+
+  // Early return AFTER all hooks are called (React rules of hooks)
+  if (shouldBlock) return null;
   
   const resetFilter = (filter: 'status' | 'room' | 'search') => {
       if (filter === 'status') setStatusFilter('all');
