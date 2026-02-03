@@ -72,10 +72,10 @@ function deriveSection(residence: any): string {
 }
 
 const FindMyRes = () => {
+  // ALL hooks must be called unconditionally before any early returns
   const shouldBlock = useAdminRedirect();
   const { user } = useAuth();
   const navigate = useNavigate();
-  if (shouldBlock) return null;
   const { profile } = useRealtimeProfile(user);
   const { applications } = useRealtimeApplications(user);
   const [residences, setResidences] = useState<any[]>([]);
@@ -219,6 +219,9 @@ const FindMyRes = () => {
 
   // Keep filteredResidences for backward compatibility
   const filteredResidences = filteredAndSortedResidences;
+
+  // Early return AFTER all hooks are called (React rules of hooks)
+  if (shouldBlock) return null;
 
   const handleApply = (residence: any) => {
     setSelectedResidence(residence);
@@ -437,14 +440,16 @@ const FindMyRes = () => {
                 </Button>
               </CollapsibleTrigger>
               {isListOpen && (
-                <Select defaultValue="price-asc">
+                <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="w-full sm:w-48">
+                    <ArrowUpDown className="w-4 h-4 mr-2" />
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="price-asc">Price: Low to High</SelectItem>
                     <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                    <SelectItem value="distance">Distance</SelectItem>
+                    <SelectItem value="distance">Nearest First</SelectItem>
+                    <SelectItem value="availability">Most Available</SelectItem>
                     <SelectItem value="newest">Newest First</SelectItem>
                   </SelectContent>
                 </Select>
