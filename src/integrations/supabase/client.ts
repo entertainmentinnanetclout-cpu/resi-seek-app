@@ -21,4 +21,4 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 });
 
-console.log("Supabase client initialized successfully. Connection will be established on the first request.");
+console.log("Supabase client initialized successfully. Build timestamp:", Date.now());

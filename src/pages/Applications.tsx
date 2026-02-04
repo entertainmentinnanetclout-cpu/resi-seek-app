@@ -21,7 +21,7 @@ interface UserDocument {
 }
 
 const Applications = () => {
-  // ALL hooks must be called unconditionally before any early returns
+  // ALL hooks must be called unconditionally before any early returns (fixed 2026-02-03)
   const shouldBlock = useAdminRedirect();
   const { user } = useAuth();
   const { applications, loading: applicationsLoading, error } = useRealtimeApplications(user);
