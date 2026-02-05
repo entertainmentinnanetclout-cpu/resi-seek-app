@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -257,11 +257,25 @@ const AdminNews = () => {
 
                   <div className="space-y-2">
                     <Label>Featured Image</Label>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {editingNews.image_url && (
-                        <img src={editingNews.image_url} alt="Preview" className="w-full h-32 object-cover rounded" />
+                        <div className="relative group">
+                          <img src={editingNews.image_url} alt="Preview" className="w-full h-32 object-cover rounded" />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => setEditingNews({ ...editingNews, image_url: "" })}
+                          >
+                            <X className="w-3 h-3 mr-1" /> Remove
+                          </Button>
+                        </div>
                       )}
-                      <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+                      <div className="space-y-1">
+                        <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+                        <p className="text-xs text-muted-foreground">Upload a new image or replace the existing one</p>
+                      </div>
                     </div>
                   </div>
 

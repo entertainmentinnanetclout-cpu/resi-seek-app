@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const VERSION = "v2.0.0-external";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -18,26 +20,38 @@ const ALLOWED_STATUSES = [
 ];
 
 serve(async (req) => {
+  console.log(`[${VERSION}] update-application-status request`);
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // Use EXTERNAL Supabase credentials
+    const supabaseUrl = Deno.env.get('EXTERNAL_SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseAnonKey = Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+      console.error(`[${VERSION}] Missing external Supabase credentials`);
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error', _version: VERSION }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     // Get auth token from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
+        JSON.stringify({ error: 'Missing authorization header', _version: VERSION }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Create client with user's auth token
-    const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
@@ -48,7 +62,7 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
     if (userError || !user) {
       return new Response(
-        JSON.stringify({ error: 'Invalid or expired token' }),
+        JSON.stringify({ error: 'Invalid or expired token', _version: VERSION }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -59,7 +73,7 @@ serve(async (req) => {
     // Validate status
     if (!ALLOWED_STATUSES.includes(new_status)) {
       return new Response(
-        JSON.stringify({ error: `Invalid status: ${new_status}` }),
+        JSON.stringify({ error: `Invalid status: ${new_status}`, _version: VERSION }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -78,7 +92,7 @@ serve(async (req) => {
 
     if (!portalAccount && !isAdmin) {
       return new Response(
-        JSON.stringify({ error: 'Not authorized to update applications' }),
+        JSON.stringify({ error: 'Not authorized to update applications', _version: VERSION }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -92,7 +106,7 @@ serve(async (req) => {
 
     if (appError || !application) {
       return new Response(
-        JSON.stringify({ error: 'Application not found' }),
+        JSON.stringify({ error: 'Application not found', _version: VERSION }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -100,7 +114,7 @@ serve(async (req) => {
     // Check if residence portal user is authorized for this specific application
     if (portalAccount && application.residence_id !== portalAccount.residence_id) {
       return new Response(
-        JSON.stringify({ error: 'Not authorized for this residence' }),
+        JSON.stringify({ error: 'Not authorized for this residence', _version: VERSION }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -211,21 +225,24 @@ serve(async (req) => {
         });
     }
 
+    console.log(`[${VERSION}] Status updated: ${old_status} -> ${new_status}`);
+
     return new Response(
       JSON.stringify({ 
         success: true, 
         old_status, 
         new_status,
-        referral_claim_created: new_status === 'provisionally_approved' && application.funding_type === 'nsfas'
+        referral_claim_created: new_status === 'provisionally_approved' && application.funding_type === 'nsfas',
+        _version: VERSION
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: unknown) {
-    console.error('Error updating application status:', error);
+    console.error(`[${VERSION}] Error:`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: errorMessage, _version: VERSION }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
