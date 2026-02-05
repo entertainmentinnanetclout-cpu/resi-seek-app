@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const VERSION = "v2.0.0-external";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -50,23 +52,35 @@ function formatCurrency(amount: number): string {
 }
 
 serve(async (req) => {
+  console.log(`[${VERSION}] generate-booking-slip request`);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // Use EXTERNAL Supabase credentials
+    const supabaseUrl = Deno.env.get('EXTERNAL_SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseAnonKey = Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+      console.error(`[${VERSION}] Missing external Supabase credentials`);
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error', _version: VERSION }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
+        JSON.stringify({ error: 'Missing authorization header', _version: VERSION }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
@@ -74,7 +88,7 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
     if (userError || !user) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized', _version: VERSION }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -82,7 +96,7 @@ serve(async (req) => {
     const { application_id } = await req.json();
     if (!application_id) {
       return new Response(
-        JSON.stringify({ error: 'Missing application_id' }),
+        JSON.stringify({ error: 'Missing application_id', _version: VERSION }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -96,7 +110,7 @@ serve(async (req) => {
 
     if (appError || !application) {
       return new Response(
-        JSON.stringify({ error: 'Application not found' }),
+        JSON.stringify({ error: 'Application not found', _version: VERSION }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -109,7 +123,7 @@ serve(async (req) => {
       
       if (!isAdmin) {
         return new Response(
-          JSON.stringify({ error: 'Not authorized to access this application' }),
+          JSON.stringify({ error: 'Not authorized to access this application', _version: VERSION }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -256,10 +270,13 @@ serve(async (req) => {
       }
     });
 
-  } catch (error: any) {
-    console.error('Error generating booking slip:', error);
+    console.log(`[${VERSION}] Booking slip generated for ${application.id}`);
+
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+    console.error(`[${VERSION}] Error:`, errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal Server Error' }),
+      JSON.stringify({ error: errorMessage, _version: VERSION }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

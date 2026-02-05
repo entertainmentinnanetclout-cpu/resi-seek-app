@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const VERSION = "v2.0.0-external";
+const DEPLOYED_AT = new Date().toISOString();
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -13,23 +16,39 @@ interface CreateUserRequest {
 }
 
 serve(async (req) => {
+  console.log(`[${VERSION}] create-residence-portal-user request`);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // Use EXTERNAL Supabase credentials
+    const supabaseUrl = Deno.env.get('EXTERNAL_SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseAnonKey = Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+      console.error(`[${VERSION}] Missing external Supabase credentials:`, {
+        hasUrl: !!supabaseUrl,
+        hasServiceKey: !!supabaseServiceKey,
+        hasAnonKey: !!supabaseAnonKey
+      });
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error - missing external database credentials', _version: VERSION }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
+        JSON.stringify({ error: 'Missing authorization header', _version: VERSION }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
@@ -38,7 +57,7 @@ serve(async (req) => {
     const { data: { user: caller }, error: userError } = await supabaseUser.auth.getUser();
     if (userError || !caller) {
       return new Response(
-        JSON.stringify({ error: 'Invalid or expired token' }),
+        JSON.stringify({ error: 'Invalid or expired token', _version: VERSION }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -49,7 +68,7 @@ serve(async (req) => {
 
     if (roleError || !isAdmin) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized: Admin role required' }),
+        JSON.stringify({ error: 'Unauthorized: Admin role required', _version: VERSION }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -58,7 +77,7 @@ serve(async (req) => {
 
     if (!residence_id || !email || !password) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Missing required fields', _version: VERSION }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -72,7 +91,7 @@ serve(async (req) => {
 
     if (authError) {
       return new Response(
-        JSON.stringify({ error: authError.message }),
+        JSON.stringify({ error: authError.message, _version: VERSION }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -80,6 +99,8 @@ serve(async (req) => {
     const newUserId = authData.user.id;
 
     try {
+      console.log(`[${VERSION}] Created user ${newUserId}, assigning role...`);
+
       // 2. Assign Role
       const { error: roleInsertError } = await supabaseAdmin
         .from('user_roles')
@@ -102,17 +123,20 @@ serve(async (req) => {
 
       if (portalInsertError) {
         if (portalInsertError.code === '23505') { // Unique constraint violation
-           throw new Error('This residence already has a portal account or email is already in use.');
+          throw new Error('This residence already has a portal account or email is already in use.');
         }
         throw portalInsertError;
       }
+
+      console.log(`[${VERSION}] Portal account created successfully`);
 
       return new Response(
         JSON.stringify({
           success: true,
           user_id: newUserId,
           residence_id,
-          email
+          email,
+          _version: VERSION
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -124,7 +148,7 @@ serve(async (req) => {
       const isConflict = dbError.message?.includes('already has') || dbError.message?.includes('already in use');
 
       return new Response(
-        JSON.stringify({ error: dbError.message || 'Failed to create database records' }),
+        JSON.stringify({ error: dbError.message || 'Failed to create database records', _version: VERSION }),
         {
           status: isConflict ? 409 : 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -132,10 +156,11 @@ serve(async (req) => {
       );
     }
 
-  } catch (error: any) {
-    console.error('Error in create-residence-portal-user:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+    console.error(`[${VERSION}] Error:`, errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal Server Error' }),
+      JSON.stringify({ error: errorMessage, _version: VERSION }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

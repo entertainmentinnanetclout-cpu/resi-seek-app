@@ -1,12 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.79.0";
 
+const VERSION = "v2.0.0-external";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
+  console.log(`[${VERSION}] resbot-ai request`);
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -19,9 +23,15 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Initialize Supabase client to fetch context
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Use EXTERNAL Supabase credentials
+    const supabaseUrl = Deno.env.get("EXTERNAL_SUPABASE_URL");
+    const supabaseKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error(`[${VERSION}] Missing external Supabase credentials`);
+      throw new Error("External database not configured");
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch user profile for personalization
@@ -113,7 +123,7 @@ Guidelines:
 7. Use markdown formatting for better readability (bold, lists, etc.)
 8. Be accurate - don't make up residence names or prices not in the data`;
 
-    console.log("Calling Lovable AI with message:", message.substring(0, 100));
+    console.log(`[${VERSION}] Calling AI with message:`, message.substring(0, 100));
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -159,18 +169,19 @@ Guidelines:
     const data = await response.json();
     const aiResponse = data.choices?.[0]?.message?.content || "I'm having trouble understanding. Could you rephrase that?";
 
-    console.log("AI response received successfully");
+    console.log(`[${VERSION}] AI response received`);
 
     return new Response(
-      JSON.stringify({ response: aiResponse }),
+      JSON.stringify({ response: aiResponse, _version: VERSION }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("ResBot AI error:", error);
+    console.error(`[${VERSION}] ResBot AI error:`, error);
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : "Unknown error",
-        fallback: "Oops! Something went wrong. 😕 Try asking about residences, NSFAS, or how to apply!"
+        fallback: "Oops! Something went wrong. 😕 Try asking about residences, NSFAS, or how to apply!",
+        _version: VERSION
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

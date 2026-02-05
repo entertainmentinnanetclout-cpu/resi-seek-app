@@ -1,5 +1,5 @@
 import SEO from "@/components/SEO";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -114,29 +114,41 @@ const Applications = () => {
     }
   };
   
-  const ApplicationCard = ({ application }: { application: any }) => {
+      const ApplicationCard = ({ application }: { application: any }) => {
       const { Icon, color, label, step } = getStatusProps(application.status);
       const steps = ["Submitted", "Decision"];
       const [downloadingSlip, setDownloadingSlip] = useState(false);
 
-      const handleDownloadSlip = async () => {
+      const handleDownloadSlip = useCallback(async () => {
         setDownloadingSlip(true);
         try {
           const { data, error } = await supabase.functions.invoke('generate-booking-slip', {
             body: { application_id: application.id }
           });
-          if (error) throw error;
+          
+          if (error) {
+            console.error('Booking slip error:', error);
+            throw new Error(error.message || 'Failed to generate booking slip');
+          }
+          
+          // Check if response is an error JSON
+          if (typeof data === 'object' && data?.error) {
+            throw new Error(data.error);
+          }
+          
           // Open HTML in new tab
           const blob = new Blob([data], { type: 'text/html' });
           const url = URL.createObjectURL(blob);
           window.open(url, '_blank');
           toast.success('Booking slip generated!');
-        } catch (err: any) {
-          toast.error(err.message || 'Failed to generate booking slip');
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : 'Failed to generate booking slip';
+          console.error('Booking slip download failed:', errorMessage);
+          toast.error(errorMessage);
         } finally {
           setDownloadingSlip(false);
         }
-      };
+      }, [application.id]);
 
       return (
         <Card className={`bg-card shadow-sm hover:shadow-xl transition-all duration-300 border-l-4 border-${color}-500 animate-fade-in`}>

@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, GripVertical, Eye, EyeOff, Monitor, Home, Newspaper } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, Eye, EyeOff, Monitor, Home, Newspaper, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -259,13 +259,27 @@ const AdminSlides = () => {
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label>Image *</Label>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {editingSlide.image_url && (
-                        <img src={editingSlide.image_url} alt="Preview" className="w-full h-32 object-cover rounded" />
+                        <div className="relative group">
+                          <img src={editingSlide.image_url} alt="Preview" className="w-full h-32 object-cover rounded" />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => setEditingSlide({ ...editingSlide, image_url: "" })}
+                          >
+                            <X className="w-3 h-3 mr-1" /> Remove
+                          </Button>
+                        </div>
                       )}
-                      <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+                      <div className="space-y-1">
+                        <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+                        <p className="text-xs text-muted-foreground">Upload a new image or replace the existing one</p>
+                      </div>
                     </div>
                   </div>
 

@@ -8,7 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Check, X, CheckCheck, XCircle, ShieldCheck } from "lucide-react";
+import { Search, Check, X, CheckCheck, XCircle, ShieldCheck, Images, Eye } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -35,6 +42,7 @@ const AdminMarketplace = () => {
   const [verifiedFilter, setVerifiedFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [viewingListing, setViewingListing] = useState<MarketplaceListing | null>(null);
 
   const fetchListings = async () => {
     try {
@@ -299,11 +307,21 @@ const AdminMarketplace = () => {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             {listing.images?.[0] && (
-                              <img
-                                src={listing.images[0]}
-                                alt={listing.item_name}
-                                className="w-10 h-10 object-cover rounded"
-                              />
+                              <button
+                                onClick={() => setViewingListing(listing)}
+                                className="relative group cursor-pointer"
+                              >
+                                <img
+                                  src={listing.images[0]}
+                                  alt={listing.item_name}
+                                  className="w-10 h-10 object-cover rounded"
+                                />
+                                {listing.images.length > 1 && (
+                                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] px-1 rounded-full">
+                                    +{listing.images.length - 1}
+                                  </span>
+                                )}
+                              </button>
                             )}
                             <div>
                               <p className="font-medium">{listing.item_name}</p>
@@ -354,6 +372,14 @@ const AdminMarketplace = () => {
                               <X className="w-4 h-4" />
                             </Button>
                           )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setViewingListing(listing)}
+                          title="View images"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -364,6 +390,37 @@ const AdminMarketplace = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Image Viewer Dialog */}
+      <Dialog open={!!viewingListing} onOpenChange={() => setViewingListing(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Images className="w-5 h-5" />
+              {viewingListing?.item_name} - Images
+            </DialogTitle>
+            <DialogDescription>
+              {viewingListing?.images?.length || 0} image(s) for this listing
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            {viewingListing?.images?.map((imgUrl, idx) => (
+              <div key={idx} className="relative aspect-square">
+                <img
+                  src={imgUrl}
+                  alt={`${viewingListing.item_name} ${idx + 1}`}
+                  className="w-full h-full object-cover rounded-lg"
+                />
+                <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                  Image {idx + 1}
+                </span>
+              </div>
+            )) || (
+              <p className="col-span-2 text-center text-muted-foreground py-8">No images</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
