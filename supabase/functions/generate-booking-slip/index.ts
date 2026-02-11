@@ -262,6 +262,8 @@ serve(async (req) => {
 </html>
 `;
 
+    console.log(`[${VERSION}] Booking slip generated for ${application.id}`);
+
     return new Response(html, {
       headers: {
         ...corsHeaders,
@@ -269,8 +271,6 @@ serve(async (req) => {
         'Content-Disposition': `attachment; filename="BookingSlip_${refCode}.html"`
       }
     });
-
-    console.log(`[${VERSION}] Booking slip generated for ${application.id}`);
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';

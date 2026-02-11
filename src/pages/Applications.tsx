@@ -150,15 +150,37 @@ const Applications = () => {
         }
       }, [application.id]);
 
+      const borderColorMap: Record<string, string> = {
+        yellow: "border-l-yellow-500", blue: "border-l-blue-500", orange: "border-l-orange-500",
+        green: "border-l-green-500", red: "border-l-red-500", purple: "border-l-purple-500", gray: "border-l-gray-500"
+      };
+      const badgeColorMap: Record<string, string> = {
+        yellow: "border-yellow-500/50 bg-yellow-500/10 text-yellow-700",
+        blue: "border-blue-500/50 bg-blue-500/10 text-blue-700",
+        orange: "border-orange-500/50 bg-orange-500/10 text-orange-700",
+        green: "border-green-500/50 bg-green-500/10 text-green-700",
+        red: "border-red-500/50 bg-red-500/10 text-red-700",
+        purple: "border-purple-500/50 bg-purple-500/10 text-purple-700",
+        gray: "border-gray-500/50 bg-gray-500/10 text-gray-700"
+      };
+      const stepTextMap: Record<string, string> = {
+        yellow: "text-yellow-600 font-semibold", blue: "text-blue-600 font-semibold", orange: "text-orange-600 font-semibold",
+        green: "text-green-600 font-semibold", red: "text-red-600 font-semibold", purple: "text-purple-600 font-semibold", gray: "text-gray-600 font-semibold"
+      };
+      const barColorMap: Record<string, string> = {
+        yellow: "bg-yellow-500", blue: "bg-blue-500", orange: "bg-orange-500",
+        green: "bg-green-500", red: "bg-red-500", purple: "bg-purple-500", gray: "bg-gray-500"
+      };
+
       return (
-        <Card className={`bg-card shadow-sm hover:shadow-xl transition-all duration-300 border-l-4 border-${color}-500 animate-fade-in`}>
+        <Card className={`bg-card shadow-sm hover:shadow-xl transition-all duration-300 border-l-4 ${borderColorMap[color] || "border-l-gray-500"} animate-fade-in`}>
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                     <div>
                         <CardTitle className="text-foreground">{application.residence?.name}</CardTitle>
                         <CardDescription>{application.residence?.address}</CardDescription>
                     </div>
-                    <Badge variant="outline" className={`border-${color}-500/50 bg-${color}-500/10 text-${color}-700 shrink-0`}>
+                    <Badge variant="outline" className={`${badgeColorMap[color] || badgeColorMap.gray} shrink-0`}>
                         <Icon className="w-3 h-3 mr-1" />
                         {label}
                     </Badge>
@@ -167,10 +189,10 @@ const Applications = () => {
             <CardContent>
                 <div className="mb-4">
                     <div className="flex justify-between items-center text-xs text-muted-foreground mb-2 px-1">
-                        {steps.map((s, i) => <span key={i} className={i + 1 <= step ? `text-${color}-600 font-semibold` : ""}>{s}</span>)}
+                        {steps.map((s, i) => <span key={i} className={i + 1 <= step ? stepTextMap[color] || "" : ""}>{s}</span>)}
                     </div>
                     <div className="relative w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full">
-                        <div className={`absolute top-0 left-0 h-1.5 bg-${color}-500 rounded-full transition-all duration-500`} style={{ width: `${(step / (steps.length -1)) * 100}%` }}></div>
+                        <div className={`absolute top-0 left-0 h-1.5 ${barColorMap[color] || "bg-gray-500"} rounded-full transition-all duration-500`} style={{ width: `${(step / (steps.length -1)) * 100}%` }}></div>
                     </div>
                 </div>
                 <div className="text-sm text-muted-foreground mt-4">

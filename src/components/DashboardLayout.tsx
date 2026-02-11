@@ -29,13 +29,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: Search, label: "Find My Res", path: "/findmyres" },
     { icon: ShoppingBag, label: "Marketplace", path: "/marketplace" },
     { icon: GraduationCap, label: "Bursaries", path: "/bursaries" },
-    { icon: Percent, label: "Discounts", path: "/discounts" },
+    { icon: Percent, label: "Deals & Hamper", path: "/discounts" },
     { icon: Users, label: "Roommates", path: "/roommates" },
     { icon: Calendar, label: "Events", path: "/events" },
     { icon: FileText, label: "Applications", path: "/applications" },
     { icon: User, label: "Profile", path: "/profile" },
     { icon: MessageSquare, label: "Messages", path: "/messages" },
-    { icon: GraduationCap, label: "Student Hamper", path: "/hamper" },
   ];
 
   // Admin gets a minimal nav (redirect to admin portal)
