@@ -23,7 +23,7 @@ import NotFound from "./pages/NotFound";
 import Marketplace from "./pages/Marketplace";
 import ResidenceDetail from "./pages/ResidenceDetail";
 import BursaryFinder from "./pages/BursaryFinder";
-import StudentDiscounts from "./pages/StudentDiscounts";
+import StudentDeals from "./pages/StudentDeals";
 import RoommateFinder from "./pages/RoommateFinder";
 import Events from "./pages/Events";
 import Documents from "./pages/Documents";
@@ -60,7 +60,6 @@ import AdminDiscountOrders from "./pages/admin/AdminDiscountOrders";
 import AdminHamperItems from "./pages/admin/AdminHamperItems";
 import AdminResidencePortals from "./pages/admin/AdminResidencePortals";
 import BursaryDetail from "./pages/BursaryDetail";
-import StudentHamper from "./pages/StudentHamper";
 import MyDiscountOrders from "./pages/MyDiscountOrders";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -109,7 +108,7 @@ const App = () => {
               <Route path="/marketplace" element={<StudentRoute><Marketplace /></StudentRoute>} />
               <Route path="/bursaries" element={<StudentRoute><BursaryFinder /></StudentRoute>} />
               <Route path="/bursary/:id" element={<StudentRoute><BursaryDetail /></StudentRoute>} />
-              <Route path="/discounts" element={<StudentRoute><StudentDiscounts /></StudentRoute>} />
+              <Route path="/discounts" element={<StudentRoute><StudentDeals /></StudentRoute>} />
               <Route path="/roommates" element={<StudentRoute><RoommateFinder /></StudentRoute>} />
               <Route path="/events" element={<StudentRoute><Events /></StudentRoute>} />
               <Route path="/documents" element={<StudentRoute><Documents /></StudentRoute>} />
@@ -117,7 +116,7 @@ const App = () => {
               <Route path="/my-store" element={<StudentRoute><MyStore /></StudentRoute>} />
               <Route path="/store/:storeId" element={<StudentRoute><Store /></StudentRoute>} />
               <Route path="/orders" element={<StudentRoute><Orders /></StudentRoute>} />
-              <Route path="/hamper" element={<StudentRoute><StudentHamper /></StudentRoute>} />
+              <Route path="/hamper" element={<StudentRoute><StudentDeals /></StudentRoute>} />
               <Route path="/my-discount-orders" element={<StudentRoute><MyDiscountOrders /></StudentRoute>} />
               {/* Other Essential Routes */}
               <Route path="/auth" element={<Auth />} />
