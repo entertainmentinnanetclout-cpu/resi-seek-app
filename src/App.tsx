@@ -70,6 +70,8 @@ import ResidenceInbox from "./pages/residence/ResidenceInbox";
 import ResidenceApplicationDetail from "./pages/residence/ResidenceApplicationDetail";
 import ResidenceAnalytics from "./pages/residence/ResidenceAnalytics";
 import { ResidenceRoute } from "./components/ResidenceRoute";
+import MyWIL from "./pages/MyWIL";
+import AdminWIL from "./pages/admin/AdminWIL";
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -118,6 +120,7 @@ const App = () => {
               <Route path="/orders" element={<StudentRoute><Orders /></StudentRoute>} />
               <Route path="/hamper" element={<StudentRoute><StudentDeals /></StudentRoute>} />
               <Route path="/my-discount-orders" element={<StudentRoute><MyDiscountOrders /></StudentRoute>} />
+              <Route path="/wil" element={<StudentRoute><MyWIL /></StudentRoute>} />
               {/* Other Essential Routes */}
               <Route path="/auth" element={<Auth />} />
               <Route path="/terms" element={<Terms />} />
@@ -148,6 +151,7 @@ const App = () => {
               <Route path="/admin/system-status" element={<ProtectedRoute><AdminRoute><AdminSystemStatus /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/settings" element={<ProtectedRoute><AdminRoute><AdminSettings /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/residence-portals" element={<ProtectedRoute><AdminRoute><AdminResidencePortals /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/wil" element={<ProtectedRoute><AdminRoute><AdminWIL /></AdminRoute></ProtectedRoute>} />
 
               {/* Residence Portal Routes */}
               <Route path="/residence/login" element={<ResidenceLogin />} />

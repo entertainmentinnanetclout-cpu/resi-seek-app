@@ -1369,6 +1369,162 @@ export type Database = {
         }
         Relationships: []
       }
+      wil_admin_notes: {
+        Row: {
+          admin_id: string
+          application_id: string
+          created_at: string
+          id: string
+          note: string
+        }
+        Insert: {
+          admin_id: string
+          application_id: string
+          created_at?: string
+          id?: string
+          note: string
+        }
+        Update: {
+          admin_id?: string
+          application_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wil_admin_notes_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "wil_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wil_applications: {
+        Row: {
+          campus: string
+          course: string
+          created_at: string
+          full_name: string
+          funding_status: string
+          id: string
+          notes: string | null
+          preferred_area: string | null
+          status: string
+          student_id: string
+          student_number: string
+          updated_at: string
+          wil_duration: string
+          year_level: number
+        }
+        Insert: {
+          campus: string
+          course: string
+          created_at?: string
+          full_name: string
+          funding_status: string
+          id?: string
+          notes?: string | null
+          preferred_area?: string | null
+          status?: string
+          student_id: string
+          student_number: string
+          updated_at?: string
+          wil_duration: string
+          year_level: number
+        }
+        Update: {
+          campus?: string
+          course?: string
+          created_at?: string
+          full_name?: string
+          funding_status?: string
+          id?: string
+          notes?: string | null
+          preferred_area?: string | null
+          status?: string
+          student_id?: string
+          student_number?: string
+          updated_at?: string
+          wil_duration?: string
+          year_level?: number
+        }
+        Relationships: []
+      }
+      wil_assignments: {
+        Row: {
+          application_id: string
+          assigned_at: string
+          assigned_by: string
+          assigned_to: string
+          id: string
+        }
+        Insert: {
+          application_id: string
+          assigned_at?: string
+          assigned_by: string
+          assigned_to: string
+          id?: string
+        }
+        Update: {
+          application_id?: string
+          assigned_at?: string
+          assigned_by?: string
+          assigned_to?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wil_assignments_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "wil_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wil_documents: {
+        Row: {
+          application_id: string
+          doc_type: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          student_id: string
+          uploaded_at: string
+        }
+        Insert: {
+          application_id: string
+          doc_type: string
+          file_name: string
+          file_path: string
+          file_size?: number
+          id?: string
+          student_id: string
+          uploaded_at?: string
+        }
+        Update: {
+          application_id?: string
+          doc_type?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          student_id?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wil_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "wil_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       marketplace_seller_profiles: {
