@@ -1,7 +1,21 @@
 import SEO from "@/components/SEO";
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MapPin, Users, Search, SlidersHorizontal, Building2, Bed, ShieldCheck, ChevronDown, ChevronUp, LayoutGrid, List, ArrowUpDown } from "lucide-react";
+import {
+  MapPin,
+  Users,
+  Search,
+  SlidersHorizontal,
+  Building2,
+  Bed,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+  LayoutGrid,
+  List,
+  ArrowUpDown,
+  Tag
+} from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +29,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
@@ -32,6 +52,31 @@ import { RESKONNECT_WHATSAPP } from "@/lib/constants";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 
 const MAX_COMPARE = 3;
+
+export interface Residence {
+  id: string;
+  name: string;
+  address: string;
+  price: number;
+  available_spots: number;
+  capacity: number;
+  image_url?: string | null;
+  images?: string[] | null;
+  description?: string | null;
+  campus?: string | null;
+  province?: string | null;
+  room_type?: string | null;
+  room_types?: string[] | null;
+  verification_level?: string | null;
+  distance_from_campus?: number | null;
+  is_nsfas?: boolean | null;
+  type?: string | null;
+  tags?: string[] | null;
+  is_trusted?: boolean | null;
+  section_category?: string | null;
+  created_at?: string;
+  amenities?: string[] | null;
+}
 
 // Section categories for filtering
 const SECTION_TABS = [
@@ -55,7 +100,7 @@ const SORT_OPTIONS = [
 ];
 
 // Derive section from campus or section_category
-function deriveSection(residence: any): string {
+function deriveSection(residence: Residence): string {
   if (residence.section_category) return residence.section_category;
   
   const campus = residence.campus?.toLowerCase() || '';
@@ -78,12 +123,23 @@ const FindMyRes = () => {
   const navigate = useNavigate();
   const { profile } = useRealtimeProfile(user);
   const { applications } = useRealtimeApplications(user);
-  const [residences, setResidences] = useState<any[]>([]);
+  const [residences, setResidences] = useState<Residence[]>([]);
   const [loading, setLoading] = useState(true);
-  const [compareList, setCompareList] = useState<any[]>([]);
+
+  // Grouped residences for categorized browsing
+  const categorizedResidences = useMemo(() => {
+    return {
+      nsfas: residences.filter(r => r.is_nsfas === true),
+      private: residences.filter(r => r.type === 'private'),
+      communes: residences.filter(r => r.type === 'commune'),
+      apartments: residences.filter(r => r.type === 'apartment'),
+      studentHouses: residences.filter(r => r.type === 'student_house'),
+    };
+  }, [residences]);
+  const [compareList, setCompareList] = useState<Residence[]>([]);
   const [isListOpen, setIsListOpen] = useState(false);
   
-  const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
+  const [selectedResidence, setSelectedResidence] = useState<Residence | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -100,7 +156,7 @@ const FindMyRes = () => {
 
   const [applicationNotes, setApplicationNotes] = useState("");
 
-  const toggleCompare = (residence: any, e: React.MouseEvent) => {
+  const toggleCompare = (residence: Residence, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (compareList.find(r => r.id === residence.id)) {
@@ -223,12 +279,12 @@ const FindMyRes = () => {
   // Early return AFTER all hooks are called (React rules of hooks)
   if (shouldBlock) return null;
 
-  const handleApply = (residence: any) => {
+  const handleApply = (residence: Residence) => {
     setSelectedResidence(residence);
     setShowApplicationModal(true);
   };
 
-  const handleViewDetails = (residence: any) => {
+  const handleViewDetails = (residence: Residence) => {
     setSelectedResidence(residence);
     setShowDetailsModal(true);
   };
@@ -245,8 +301,9 @@ const FindMyRes = () => {
       if (error) throw error;
       toast.success(`Application submitted for ${selectedResidence?.name}!`);
       setApplicationNotes("");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      const error = err as Error;
+      toast.error(error.message);
     } finally {
       setShowApplicationModal(false);
     }
@@ -422,10 +479,144 @@ const FindMyRes = () => {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-          {/* Trusted Residences Grid - Top 30 in 3 rows of 10 */}
-          <TrustedResidencesGrid />
+          {/* Categorized Browsing Section */}
+          <div className="mb-12 space-y-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-8 w-1 bg-primary rounded-full" />
+              <h2 className="text-2xl font-bold">Browse by Category</h2>
+            </div>
 
-          <Separator className="my-8" />
+            <Accordion type="single" collapsible className="w-full space-y-3">
+              <AccordionItem value="nsfas" className="border rounded-xl px-4 bg-card/50 shadow-sm overflow-hidden">
+                <AccordionTrigger className="hover:no-underline py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div className="text-left">
+                      <span className="font-bold text-lg block">NSFAS Accommodation</span>
+                      <span className="text-xs text-muted-foreground">{categorizedResidences.nsfas.length} options available</span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-4">
+                  <ResidenceSectionGrid
+                    residences={categorizedResidences.nsfas}
+                    compareList={compareList}
+                    onToggleCompare={toggleCompare}
+                    onApply={handleApply}
+                    onViewDetails={handleViewDetails}
+                    maxCompare={MAX_COMPARE}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="private" className="border rounded-xl px-4 bg-card/50 shadow-sm overflow-hidden">
+                <AccordionTrigger className="hover:no-underline py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <div className="text-left">
+                      <span className="font-bold text-lg block">Private Accommodation</span>
+                      <span className="text-xs text-muted-foreground">{categorizedResidences.private.length} options available</span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-4">
+                  <ResidenceSectionGrid
+                    residences={categorizedResidences.private}
+                    compareList={compareList}
+                    onToggleCompare={toggleCompare}
+                    onApply={handleApply}
+                    onViewDetails={handleViewDetails}
+                    maxCompare={MAX_COMPARE}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="communes" className="border rounded-xl px-4 bg-card/50 shadow-sm overflow-hidden">
+                <AccordionTrigger className="hover:no-underline py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div className="text-left">
+                      <span className="font-bold text-lg block">Communes</span>
+                      <span className="text-xs text-muted-foreground">{categorizedResidences.communes.length} options available</span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-4">
+                  <ResidenceSectionGrid
+                    residences={categorizedResidences.communes}
+                    compareList={compareList}
+                    onToggleCompare={toggleCompare}
+                    onApply={handleApply}
+                    onViewDetails={handleViewDetails}
+                    maxCompare={MAX_COMPARE}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="apartments" className="border rounded-xl px-4 bg-card/50 shadow-sm overflow-hidden">
+                <AccordionTrigger className="hover:no-underline py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                      <LayoutGrid className="w-5 h-5" />
+                    </div>
+                    <div className="text-left">
+                      <span className="font-bold text-lg block">Apartments</span>
+                      <span className="text-xs text-muted-foreground">{categorizedResidences.apartments.length} options available</span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-4">
+                  <ResidenceSectionGrid
+                    residences={categorizedResidences.apartments}
+                    compareList={compareList}
+                    onToggleCompare={toggleCompare}
+                    onApply={handleApply}
+                    onViewDetails={handleViewDetails}
+                    maxCompare={MAX_COMPARE}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="studentHouses" className="border rounded-xl px-4 bg-card/50 shadow-sm overflow-hidden">
+                <AccordionTrigger className="hover:no-underline py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-rose-500/10 text-rose-500">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <div className="text-left">
+                      <span className="font-bold text-lg block">Student Houses</span>
+                      <span className="text-xs text-muted-foreground">{categorizedResidences.studentHouses.length} options available</span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-4">
+                  <ResidenceSectionGrid
+                    residences={categorizedResidences.studentHouses}
+                    compareList={compareList}
+                    onToggleCompare={toggleCompare}
+                    onApply={handleApply}
+                    onViewDetails={handleViewDetails}
+                    maxCompare={MAX_COMPARE}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+
+          <Separator className="my-16" />
+
+          {/* Trusted Residences Grid - Top 30 in 3 rows of 10 */}
+          <div id="trusted-grid" className="scroll-mt-20">
+            <TrustedResidencesGrid />
+          </div>
+
+          <Separator className="my-16" />
 
           {/* Collapsible All Accommodations List */}
           <Collapsible open={isListOpen} onOpenChange={setIsListOpen}>

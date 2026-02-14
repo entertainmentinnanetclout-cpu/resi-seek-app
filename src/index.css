@@ -131,6 +131,19 @@ All colors MUST be HSL.
     border-color: theme('colors.border');
   }
 
+  @media (max-width: 640px) {
+    button:not(.w-fit):not(.inline-flex),
+    [role="button"]:not(.w-fit),
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    input, select, textarea {
+      font-size: 16px !important; /* Prevent zoom on iOS */
+      min-height: 44px;
+    }
+  }
+
   body {
     background-color: theme('colors.background');
     color: theme('colors.foreground');

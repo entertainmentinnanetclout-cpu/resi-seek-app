@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star, ShieldCheck, Tag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import TrustedResidencesEditor from "@/components/admin/TrustedResidencesEditor";
@@ -39,6 +40,9 @@ interface Residence {
   amenities: string[] | null;
   virtual_tour_url: string | null;
   virtual_tour_provider: string | null;
+  is_nsfas: boolean | null;
+  type: string | null;
+  tags: string[] | null;
 }
 
 const ROOM_TYPE_OPTIONS = ["Single", "Sharing", "Bachelor", "Commune"];
@@ -69,6 +73,9 @@ const emptyResidence: Partial<Residence> = {
   images: [],
   virtual_tour_url: "",
   virtual_tour_provider: "",
+  is_nsfas: false,
+  type: "private",
+  tags: [],
 };
 
 const AdminResidences = () => {
@@ -172,6 +179,9 @@ const AdminResidences = () => {
         contact_phone: editingResidence.contact_phone || null,
         virtual_tour_url: editingResidence.virtual_tour_url || null,
         virtual_tour_provider: editingResidence.virtual_tour_provider || null,
+        is_nsfas: editingResidence.is_nsfas || false,
+        type: editingResidence.type || 'private',
+        tags: editingResidence.tags || [],
       };
 
       if (editingResidence.id) {
@@ -224,10 +234,19 @@ const AdminResidences = () => {
     }
   };
 
-  const filteredResidences = residences.filter(r =>
-    (r.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (r.address ?? '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [nsfasFilter, setNsfasFilter] = useState<string>("all");
+
+  const filteredResidences = residences.filter(r => {
+    const matchesSearch = (r.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (r.address ?? '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = typeFilter === "all" || r.type === typeFilter;
+    const matchesNsfas = nsfasFilter === "all" ||
+                        (nsfasFilter === "yes" && r.is_nsfas) ||
+                        (nsfasFilter === "no" && !r.is_nsfas);
+
+    return matchesSearch && matchesType && matchesNsfas;
+  });
 
   return (
     <AdminLayout>
@@ -403,6 +422,98 @@ const AdminResidences = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Category Management - GOD MODE */}
+                  <div className="space-y-4 border rounded-lg p-4 bg-primary/5 border-primary/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Tag className="w-5 h-5 text-primary" />
+                      <h4 className="font-bold text-lg">Category Management</h4>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label className="text-base">NSFAS Accommodation</Label>
+                        <div className="flex items-center space-x-2 bg-background p-3 rounded-md border shadow-sm">
+                          <Switch
+                            checked={editingResidence.is_nsfas || false}
+                            onCheckedChange={(checked) => setEditingResidence({ ...editingResidence, is_nsfas: checked })}
+                          />
+                          <Label className="cursor-pointer">Enable NSFAS Category</Label>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label className="text-base">Residence Type</Label>
+                        <Select
+                          value={editingResidence.type || "private"}
+                          onValueChange={(value) => setEditingResidence({ ...editingResidence, type: value })}
+                        >
+                          <SelectTrigger className="bg-background shadow-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="private">Private Accommodation</SelectItem>
+                            <SelectItem value="commune">Commune</SelectItem>
+                            <SelectItem value="apartment">Apartment</SelectItem>
+                            <SelectItem value="student_house">Student House</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-base">Tags (Additional Categories)</Label>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {(editingResidence.tags || []).map((tag, idx) => (
+                          <Badge key={idx} variant="secondary" className="pl-3 pr-1 py-1 gap-1">
+                            {tag}
+                            <button
+                              onClick={() => {
+                                const newTags = [...(editingResidence.tags || [])];
+                                newTags.splice(idx, 1);
+                                setEditingResidence({ ...editingResidence, tags: newTags });
+                              }}
+                              className="hover:bg-destructive hover:text-destructive-foreground rounded-full p-0.5 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Add new tag..."
+                          className="bg-background"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const val = e.currentTarget.value.trim();
+                              if (val && !(editingResidence.tags || []).includes(val)) {
+                                setEditingResidence({
+                                  ...editingResidence,
+                                  tags: [...(editingResidence.tags || []), val]
+                                });
+                                e.currentTarget.value = '';
+                              }
+                            }
+                          }}
+                        />
+                        <Button variant="secondary" onClick={(e) => {
+                          e.preventDefault();
+                          const input = (e.currentTarget.previousSibling as HTMLInputElement);
+                          const val = input.value.trim();
+                          if (val && !(editingResidence.tags || []).includes(val)) {
+                            setEditingResidence({
+                              ...editingResidence,
+                              tags: [...(editingResidence.tags || []), val]
+                            });
+                            input.value = '';
+                          }
+                        }}>Add</Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Press Enter or click Add to save a tag.</p>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -616,15 +727,39 @@ const AdminResidences = () => {
 
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="relative col-span-1 md:col-span-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search residences..."
+                  placeholder="Search by name or address..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-10"
                 />
+              </div>
+              <div className="flex gap-4 col-span-1 md:col-span-2">
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="private">Private</SelectItem>
+                    <SelectItem value="commune">Commune</SelectItem>
+                    <SelectItem value="apartment">Apartment</SelectItem>
+                    <SelectItem value="student_house">Student House</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={nsfasFilter} onValueChange={setNsfasFilter}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="NSFAS Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">NSFAS: All</SelectItem>
+                    <SelectItem value="yes">NSFAS Only</SelectItem>
+                    <SelectItem value="no">Non-NSFAS</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardHeader>
@@ -637,24 +772,60 @@ const AdminResidences = () => {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Campus</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Available</TableHead>
-                      <TableHead>Status</TableHead>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-[30%]">Residence Info</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Finances</TableHead>
+                      <TableHead>Capacity</TableHead>
+                      <TableHead>Verification</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredResidences.map((residence) => (
-                      <TableRow key={residence.id}>
-                        <TableCell className="font-medium">{residence.name}</TableCell>
-                        <TableCell>{residence.campus || "-"}</TableCell>
-                        <TableCell>R{residence.price.toLocaleString()}</TableCell>
-                        <TableCell>{residence.available_spots}/{residence.capacity}</TableCell>
+                      <TableRow key={residence.id} className="hover:bg-muted/30">
                         <TableCell>
-                          <Badge variant={residence.verification_level === "verified" || residence.verification_level === "premium" ? "default" : "secondary"}>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-base">{residence.name}</span>
+                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">{residence.address}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              {residence.is_nsfas && (
+                                <Badge className="bg-blue-500 text-[10px] px-1.5 py-0">NSFAS</Badge>
+                              )}
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">{residence.type || 'private'}</Badge>
+                            </div>
+                            {residence.tags && residence.tags.length > 0 && (
+                              <div className="flex gap-1 flex-wrap">
+                                {residence.tags.slice(0, 2).map(t => (
+                                  <span key={t} className="text-[9px] text-muted-foreground">#{t}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-primary text-sm">R{residence.price.toLocaleString()}</span>
+                            <span className="text-[10px] text-muted-foreground">per month</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="text-sm">{residence.available_spots}/{residence.capacity}</span>
+                            <div className="w-16 h-1 bg-muted rounded-full mt-1 overflow-hidden">
+                              <div
+                                className="h-full bg-primary"
+                                style={{ width: `${Math.min(100, (residence.available_spots / residence.capacity) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={residence.verification_level === "verified" || residence.verification_level === "premium" || residence.verification_level === "trusted_partner" ? "default" : "secondary"} className="capitalize text-[10px]">
                             {residence.verification_level || "basic"}
                           </Badge>
                         </TableCell>

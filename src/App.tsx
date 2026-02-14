@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Preloader from "@/components/Preloader";
 import ResBot from "@/components/ResBot";
+import { OnboardingModal } from "@/components/OnboardingModal";
+import { FloatingCTA } from "@/components/FloatingCTA";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import ProfileSetup from "./pages/ProfileSetup";
@@ -171,6 +173,9 @@ const App = () => {
               {/* Catch-all Not Found Route */}
               <Route path="*" element={<NotFound />} />
               </Routes>
+              {/* Global Onboarding & CTA */}
+              <OnboardingModal />
+              <FloatingCTA />
               {/* Global ResBot Chatbot */}
               <ResBot />
             </AuthProvider>
