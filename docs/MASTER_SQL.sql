@@ -1,8 +1,9 @@
 -- =====================================================
 -- RESKONNECT MASTER SQL SCRIPT
--- Version: 3.0 (February 2026)
+-- Version: 4.0 (March 2026)
 -- Run this on your EXTERNAL Supabase project
 -- Covers ALL tables, functions, triggers, RLS, storage
+-- Safe to rerun (idempotent)
 -- =====================================================
 
 -- ─────────────────────────────────────────────────────
@@ -417,7 +418,59 @@ CREATE TABLE IF NOT EXISTS public.store_reviews (
 );
 
 -- ─────────────────────────────────────────────────────
--- 5. ADMIN/SYSTEM TABLES
+-- 5. WIL (WORK INTEGRATED LEARNING) TABLES
+-- ─────────────────────────────────────────────────────
+
+-- WIL Applications
+CREATE TABLE IF NOT EXISTS public.wil_applications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name TEXT NOT NULL,
+  student_number TEXT NOT NULL,
+  course TEXT NOT NULL,
+  year_level INTEGER NOT NULL,
+  wil_duration TEXT NOT NULL,
+  funding_status TEXT NOT NULL,
+  campus TEXT NOT NULL,
+  preferred_area TEXT,
+  notes TEXT,
+  status TEXT DEFAULT 'submitted' NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- WIL Documents
+CREATE TABLE IF NOT EXISTS public.wil_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  application_id UUID NOT NULL REFERENCES public.wil_applications(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  doc_type TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  file_size INTEGER DEFAULT 0 NOT NULL,
+  uploaded_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- WIL Admin Notes
+CREATE TABLE IF NOT EXISTS public.wil_admin_notes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  application_id UUID NOT NULL REFERENCES public.wil_applications(id) ON DELETE CASCADE,
+  admin_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  note TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- WIL Assignments
+CREATE TABLE IF NOT EXISTS public.wil_assignments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  application_id UUID NOT NULL REFERENCES public.wil_applications(id) ON DELETE CASCADE,
+  assigned_to UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  assigned_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  assigned_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- ─────────────────────────────────────────────────────
+-- 6. ADMIN/SYSTEM TABLES
 -- ─────────────────────────────────────────────────────
 
 -- WhatsApp Templates
@@ -454,7 +507,7 @@ CREATE TABLE IF NOT EXISTS public.platform_settings (
 );
 
 -- ─────────────────────────────────────────────────────
--- 6. VIEWS
+-- 7. VIEWS
 -- ─────────────────────────────────────────────────────
 
 CREATE OR REPLACE VIEW public.marketplace_seller_profiles AS
@@ -462,7 +515,7 @@ SELECT id, full_name, profile_picture_url
 FROM public.profiles;
 
 -- ─────────────────────────────────────────────────────
--- 7. FUNCTIONS
+-- 8. FUNCTIONS
 -- ─────────────────────────────────────────────────────
 
 -- has_role (CRITICAL for RLS)
@@ -562,7 +615,7 @@ END;
 $$;
 
 -- ─────────────────────────────────────────────────────
--- 8. ENABLE RLS ON ALL TABLES
+-- 9. ENABLE RLS ON ALL TABLES
 -- ─────────────────────────────────────────────────────
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -594,9 +647,13 @@ ALTER TABLE public.store_reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.whatsapp_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.call_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wil_applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wil_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wil_admin_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wil_assignments ENABLE ROW LEVEL SECURITY;
 
 -- ─────────────────────────────────────────────────────
--- 9. RLS POLICIES
+-- 10. RLS POLICIES
 -- ─────────────────────────────────────────────────────
 
 -- ── PROFILES ──
@@ -817,6 +874,9 @@ CREATE POLICY "Users can update their own events" ON public.events FOR UPDATE US
 DROP POLICY IF EXISTS "Users can delete their own events" ON public.events;
 CREATE POLICY "Users can delete their own events" ON public.events FOR DELETE USING (auth.uid() = created_by);
 
+DROP POLICY IF EXISTS "Admins can manage events" ON public.events;
+CREATE POLICY "Admins can manage events" ON public.events FOR ALL USING (has_role(auth.uid(), 'admin'));
+
 -- ── BURSARIES ──
 DROP POLICY IF EXISTS "Anyone can view active bursaries" ON public.bursaries;
 CREATE POLICY "Anyone can view active bursaries" ON public.bursaries FOR SELECT USING (is_active = true);
@@ -958,8 +1018,49 @@ DROP POLICY IF EXISTS "Admins can manage settings" ON public.platform_settings;
 CREATE POLICY "Admins can manage settings" ON public.platform_settings FOR ALL
   USING (has_role(auth.uid(), 'admin'));
 
+-- ── WIL APPLICATIONS ──
+DROP POLICY IF EXISTS "students_insert_own_wil" ON public.wil_applications;
+CREATE POLICY "students_insert_own_wil" ON public.wil_applications FOR INSERT
+  TO authenticated WITH CHECK (auth.uid() = student_id);
+
+DROP POLICY IF EXISTS "students_select_own_wil" ON public.wil_applications;
+CREATE POLICY "students_select_own_wil" ON public.wil_applications FOR SELECT
+  TO authenticated USING (auth.uid() = student_id OR has_role(auth.uid(), 'admin'));
+
+DROP POLICY IF EXISTS "students_update_own_wil" ON public.wil_applications;
+CREATE POLICY "students_update_own_wil" ON public.wil_applications FOR UPDATE
+  TO authenticated USING (auth.uid() = student_id AND status = 'submitted')
+  WITH CHECK (auth.uid() = student_id AND status = 'submitted');
+
+DROP POLICY IF EXISTS "admins_all_wil_applications" ON public.wil_applications;
+CREATE POLICY "admins_all_wil_applications" ON public.wil_applications FOR ALL
+  TO authenticated USING (has_role(auth.uid(), 'admin')) WITH CHECK (has_role(auth.uid(), 'admin'));
+
+-- ── WIL DOCUMENTS ──
+DROP POLICY IF EXISTS "students_insert_own_wil_docs" ON public.wil_documents;
+CREATE POLICY "students_insert_own_wil_docs" ON public.wil_documents FOR INSERT
+  TO authenticated WITH CHECK (auth.uid() = student_id);
+
+DROP POLICY IF EXISTS "students_select_own_wil_docs" ON public.wil_documents;
+CREATE POLICY "students_select_own_wil_docs" ON public.wil_documents FOR SELECT
+  TO authenticated USING (auth.uid() = student_id OR has_role(auth.uid(), 'admin'));
+
+DROP POLICY IF EXISTS "admins_all_wil_documents" ON public.wil_documents;
+CREATE POLICY "admins_all_wil_documents" ON public.wil_documents FOR ALL
+  TO authenticated USING (has_role(auth.uid(), 'admin')) WITH CHECK (has_role(auth.uid(), 'admin'));
+
+-- ── WIL ADMIN NOTES ──
+DROP POLICY IF EXISTS "admins_all_wil_notes" ON public.wil_admin_notes;
+CREATE POLICY "admins_all_wil_notes" ON public.wil_admin_notes FOR ALL
+  TO authenticated USING (has_role(auth.uid(), 'admin')) WITH CHECK (has_role(auth.uid(), 'admin'));
+
+-- ── WIL ASSIGNMENTS ──
+DROP POLICY IF EXISTS "admins_all_wil_assignments" ON public.wil_assignments;
+CREATE POLICY "admins_all_wil_assignments" ON public.wil_assignments FOR ALL
+  TO authenticated USING (has_role(auth.uid(), 'admin')) WITH CHECK (has_role(auth.uid(), 'admin'));
+
 -- ─────────────────────────────────────────────────────
--- 10. TRIGGERS
+-- 11. TRIGGERS
 -- ─────────────────────────────────────────────────────
 
 -- Updated_at triggers
@@ -991,6 +1092,10 @@ DROP TRIGGER IF EXISTS update_residence_portal_accounts_updated_at ON public.res
 CREATE TRIGGER update_residence_portal_accounts_updated_at BEFORE UPDATE ON public.residence_portal_accounts
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_wil_applications_updated_at ON public.wil_applications;
+CREATE TRIGGER update_wil_applications_updated_at BEFORE UPDATE ON public.wil_applications
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
 -- New user trigger (auto-create profile + student role)
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -1004,7 +1109,34 @@ CREATE TRIGGER prevent_last_admin_delete
   FOR EACH ROW EXECUTE FUNCTION public.prevent_last_admin_deletion();
 
 -- ─────────────────────────────────────────────────────
--- 11. STORAGE BUCKETS
+-- 12. INDEXES (Performance)
+-- ─────────────────────────────────────────────────────
+
+CREATE INDEX IF NOT EXISTS idx_applications_user_id ON public.applications(user_id);
+CREATE INDEX IF NOT EXISTS idx_applications_residence_id ON public.applications(residence_id);
+CREATE INDEX IF NOT EXISTS idx_applications_status ON public.applications(status);
+CREATE INDEX IF NOT EXISTS idx_documents_user_id ON public.documents(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON public.favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON public.notifications(is_read);
+CREATE INDEX IF NOT EXISTS idx_reviews_residence_id ON public.reviews(residence_id);
+CREATE INDEX IF NOT EXISTS idx_residence_analytics_residence_id ON public.residence_analytics(residence_id);
+CREATE INDEX IF NOT EXISTS idx_marketplace_listings_store_id ON public.marketplace_listings(store_id);
+CREATE INDEX IF NOT EXISTS idx_marketplace_listings_status ON public.marketplace_listings(status);
+CREATE INDEX IF NOT EXISTS idx_marketplace_orders_buyer_id ON public.marketplace_orders(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_marketplace_orders_seller_id ON public.marketplace_orders(seller_id);
+CREATE INDEX IF NOT EXISTS idx_discount_orders_user_id ON public.discount_orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_wil_applications_student_id ON public.wil_applications(student_id);
+CREATE INDEX IF NOT EXISTS idx_wil_documents_application_id ON public.wil_documents(application_id);
+CREATE INDEX IF NOT EXISTS idx_application_documents_application_id ON public.application_documents(application_id);
+CREATE INDEX IF NOT EXISTS idx_application_messages_application_id ON public.application_messages(application_id);
+CREATE INDEX IF NOT EXISTS idx_referral_claims_residence_id ON public.referral_claims(residence_id);
+CREATE INDEX IF NOT EXISTS idx_call_logs_student_id ON public.call_logs(student_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON public.user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_stores_user_id ON public.stores(user_id);
+
+-- ─────────────────────────────────────────────────────
+-- 13. STORAGE BUCKETS
 -- ─────────────────────────────────────────────────────
 
 INSERT INTO storage.buckets (id, name, public) VALUES ('documents', 'documents', false) ON CONFLICT (id) DO NOTHING;
@@ -1013,8 +1145,13 @@ INSERT INTO storage.buckets (id, name, public) VALUES ('profile-pictures', 'prof
 INSERT INTO storage.buckets (id, name, public) VALUES ('admin-images', 'admin-images', true) ON CONFLICT (id) DO NOTHING;
 INSERT INTO storage.buckets (id, name, public) VALUES ('marketplace', 'marketplace', true) ON CONFLICT (id) DO NOTHING;
 INSERT INTO storage.buckets (id, name, public) VALUES ('store-assets', 'store-assets', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('wil-documents', 'wil-documents', false) ON CONFLICT (id) DO NOTHING;
 
--- Storage policies for profile pictures
+-- ─────────────────────────────────────────────────────
+-- 14. STORAGE POLICIES
+-- ─────────────────────────────────────────────────────
+
+-- Profile pictures
 DROP POLICY IF EXISTS "Users can upload their own profile picture" ON storage.objects;
 CREATE POLICY "Users can upload their own profile picture" ON storage.objects
   FOR INSERT WITH CHECK (bucket_id = 'profile-pictures' AND auth.uid()::text = (storage.foldername(name))[1]);
@@ -1023,24 +1160,28 @@ DROP POLICY IF EXISTS "Users can update their own profile picture" ON storage.ob
 CREATE POLICY "Users can update their own profile picture" ON storage.objects
   FOR UPDATE USING (bucket_id = 'profile-pictures' AND auth.uid()::text = (storage.foldername(name))[1]);
 
+DROP POLICY IF EXISTS "Users can delete their own profile picture" ON storage.objects;
+CREATE POLICY "Users can delete their own profile picture" ON storage.objects
+  FOR DELETE USING (bucket_id = 'profile-pictures' AND auth.uid()::text = (storage.foldername(name))[1]);
+
 DROP POLICY IF EXISTS "Profile pictures are publicly accessible" ON storage.objects;
 CREATE POLICY "Profile pictures are publicly accessible" ON storage.objects
   FOR SELECT USING (bucket_id = 'profile-pictures');
 
--- Storage policies for documents
+-- Documents bucket
 DROP POLICY IF EXISTS "Users can upload their own documents" ON storage.objects;
 CREATE POLICY "Users can upload their own documents" ON storage.objects
   FOR INSERT WITH CHECK (bucket_id = 'documents' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 DROP POLICY IF EXISTS "Users can view their own documents" ON storage.objects;
 CREATE POLICY "Users can view their own documents" ON storage.objects
-  FOR SELECT USING (bucket_id = 'documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+  FOR SELECT USING (bucket_id = 'documents' AND (auth.uid()::text = (storage.foldername(name))[1] OR has_role(auth.uid(), 'admin')));
 
 DROP POLICY IF EXISTS "Users can delete their own documents" ON storage.objects;
 CREATE POLICY "Users can delete their own documents" ON storage.objects
-  FOR DELETE USING (bucket_id = 'documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+  FOR DELETE USING (bucket_id = 'documents' AND (auth.uid()::text = (storage.foldername(name))[1] OR has_role(auth.uid(), 'admin')));
 
--- Storage policies for admin images
+-- Admin images
 DROP POLICY IF EXISTS "Admin images are publicly accessible" ON storage.objects;
 CREATE POLICY "Admin images are publicly accessible" ON storage.objects
   FOR SELECT USING (bucket_id = 'admin-images');
@@ -1053,7 +1194,7 @@ DROP POLICY IF EXISTS "Admins can delete admin images" ON storage.objects;
 CREATE POLICY "Admins can delete admin images" ON storage.objects
   FOR DELETE USING (bucket_id = 'admin-images' AND has_role(auth.uid(), 'admin'));
 
--- Storage policies for marketplace
+-- Marketplace
 DROP POLICY IF EXISTS "Marketplace images are publicly accessible" ON storage.objects;
 CREATE POLICY "Marketplace images are publicly accessible" ON storage.objects
   FOR SELECT USING (bucket_id = 'marketplace');
@@ -1062,7 +1203,11 @@ DROP POLICY IF EXISTS "Users can upload marketplace images" ON storage.objects;
 CREATE POLICY "Users can upload marketplace images" ON storage.objects
   FOR INSERT WITH CHECK (bucket_id = 'marketplace' AND auth.uid() IS NOT NULL);
 
--- Storage policies for store assets
+DROP POLICY IF EXISTS "Users can delete marketplace images" ON storage.objects;
+CREATE POLICY "Users can delete marketplace images" ON storage.objects
+  FOR DELETE USING (bucket_id = 'marketplace' AND auth.uid() IS NOT NULL);
+
+-- Store assets
 DROP POLICY IF EXISTS "Store assets are publicly accessible" ON storage.objects;
 CREATE POLICY "Store assets are publicly accessible" ON storage.objects
   FOR SELECT USING (bucket_id = 'store-assets');
@@ -1071,7 +1216,7 @@ DROP POLICY IF EXISTS "Users can upload store assets" ON storage.objects;
 CREATE POLICY "Users can upload store assets" ON storage.objects
   FOR INSERT WITH CHECK (bucket_id = 'store-assets' AND auth.uid() IS NOT NULL);
 
--- Storage policies for application documents
+-- Application documents
 DROP POLICY IF EXISTS "Users can upload application documents" ON storage.objects;
 CREATE POLICY "Users can upload application documents" ON storage.objects
   FOR INSERT WITH CHECK (bucket_id = 'application-documents' AND auth.uid() IS NOT NULL);
@@ -1080,22 +1225,52 @@ DROP POLICY IF EXISTS "Users can view application documents" ON storage.objects;
 CREATE POLICY "Users can view application documents" ON storage.objects
   FOR SELECT USING (bucket_id = 'application-documents' AND auth.uid() IS NOT NULL);
 
+-- WIL documents
+DROP POLICY IF EXISTS "Students can upload WIL documents" ON storage.objects;
+CREATE POLICY "Students can upload WIL documents" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'wil-documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+DROP POLICY IF EXISTS "Students can view own WIL documents" ON storage.objects;
+CREATE POLICY "Students can view own WIL documents" ON storage.objects
+  FOR SELECT USING (bucket_id = 'wil-documents' AND (auth.uid()::text = (storage.foldername(name))[1] OR has_role(auth.uid(), 'admin')));
+
+DROP POLICY IF EXISTS "Students can delete own WIL documents" ON storage.objects;
+CREATE POLICY "Students can delete own WIL documents" ON storage.objects
+  FOR DELETE USING (bucket_id = 'wil-documents' AND (auth.uid()::text = (storage.foldername(name))[1] OR has_role(auth.uid(), 'admin')));
+
 -- ─────────────────────────────────────────────────────
--- 12. REALTIME
+-- 15. REALTIME
 -- ─────────────────────────────────────────────────────
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.applications;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.application_messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.application_documents;
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.applications;
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.application_messages;
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.application_documents;
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- ─────────────────────────────────────────────────────
--- 13. REFRESH SCHEMA CACHE
+-- 16. REFRESH SCHEMA CACHE
 -- ─────────────────────────────────────────────────────
 
 NOTIFY pgrst, 'reload schema';
 
 -- =====================================================
--- END OF MASTER SQL v3.0
--- Run this in your external Supabase SQL Editor
+-- END OF MASTER SQL v4.0
+-- 34 tables | 7 functions | 7 storage buckets
+-- All policies use has_role() to avoid recursion
+-- Safe to rerun on external Supabase
 -- =====================================================
