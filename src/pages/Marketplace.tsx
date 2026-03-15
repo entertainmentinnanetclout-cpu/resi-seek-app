@@ -33,10 +33,6 @@ const Marketplace = () => {
 
   if (shouldBlock) return null;
 
-  useEffect(() => {
-    fetchCategories();
-    fetchProducts();
-  }, []);
 
   const fetchCategories = async () => {
     const { data } = await supabase
