@@ -370,6 +370,73 @@ export type Database = {
         }
         Relationships: []
       }
+      cart: {
+        Row: {
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cart_items: {
+        Row: {
+          cart_id: string
+          created_at: string | null
+          id: string
+          product_id: string
+          quantity: number | null
+          variant_id: string | null
+        }
+        Insert: {
+          cart_id: string
+          created_at?: string | null
+          id?: string
+          product_id: string
+          quantity?: number | null
+          variant_id?: string | null
+        }
+        Update: {
+          cart_id?: string
+          created_at?: string | null
+          id?: string
+          product_id?: string
+          quantity?: number | null
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "cart"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discount_orders: {
         Row: {
           admin_notes: string | null
@@ -541,6 +608,38 @@ export type Database = {
           },
         ]
       }
+      hamper_bundle_items: {
+        Row: {
+          created_at: string | null
+          hamper_id: string
+          id: string
+          item_name: string
+          quantity: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          hamper_id: string
+          id?: string
+          item_name: string
+          quantity?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          hamper_id?: string
+          id?: string
+          item_name?: string
+          quantity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hamper_bundle_items_hamper_id_fkey"
+            columns: ["hamper_id"]
+            isOneToOne: false
+            referencedRelation: "hampers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hamper_items: {
         Row: {
           category: string
@@ -571,6 +670,129 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           name?: string
+        }
+        Relationships: []
+      }
+      hamper_order_items: {
+        Row: {
+          created_at: string | null
+          hamper_id: string
+          id: string
+          order_id: string
+          price: number
+          quantity: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          hamper_id: string
+          id?: string
+          order_id: string
+          price: number
+          quantity?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          hamper_id?: string
+          id?: string
+          order_id?: string
+          price?: number
+          quantity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hamper_order_items_hamper_id_fkey"
+            columns: ["hamper_id"]
+            isOneToOne: false
+            referencedRelation: "hampers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hamper_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "hamper_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hamper_orders: {
+        Row: {
+          created_at: string | null
+          delivery_address: string | null
+          delivery_phone: string | null
+          id: string
+          order_number: string
+          payment_method: string | null
+          payment_status: string | null
+          status: string | null
+          total_amount: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_address?: string | null
+          delivery_phone?: string | null
+          id?: string
+          order_number: string
+          payment_method?: string | null
+          payment_status?: string | null
+          status?: string | null
+          total_amount: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          delivery_address?: string | null
+          delivery_phone?: string | null
+          id?: string
+          order_number?: string
+          payment_method?: string | null
+          payment_status?: string | null
+          status?: string | null
+          total_amount?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      hampers: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+          price: number
+          stock_quantity: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+          price: number
+          stock_quantity?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          stock_quantity?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -755,6 +977,82 @@ export type Database = {
         }
         Relationships: []
       }
+      order_status_history: {
+        Row: {
+          created_at: string | null
+          id: string
+          note: string | null
+          order_id: string
+          status: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          order_id: string
+          status: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          order_id?: string
+          status?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "shop_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          order_id: string
+          payment_gateway: string | null
+          payment_method: string
+          payment_status: string | null
+          transaction_reference: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          order_id: string
+          payment_gateway?: string | null
+          payment_method: string
+          payment_status?: string | null
+          transaction_reference?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          order_id?: string
+          payment_gateway?: string | null
+          payment_method?: string
+          payment_status?: string | null
+          transaction_reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "shop_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           description: string | null
@@ -781,6 +1079,154 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      product_categories: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          image_url: string | null
+          name: string
+          parent_id: string | null
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          name: string
+          parent_id?: string | null
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          parent_id?: string | null
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variants: {
+        Row: {
+          created_at: string | null
+          id: string
+          price: number
+          product_id: string
+          sku: string | null
+          stock_quantity: number | null
+          variant_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          price: number
+          product_id: string
+          sku?: string | null
+          stock_quantity?: number | null
+          variant_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          price?: number
+          product_id?: string
+          sku?: string | null
+          stock_quantity?: number | null
+          variant_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          brand: string | null
+          category_id: string | null
+          compare_at_price: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          images: string[] | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          name: string
+          price: number
+          sku: string | null
+          stock_quantity: number | null
+          store_id: string
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          brand?: string | null
+          category_id?: string | null
+          compare_at_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name: string
+          price: number
+          sku?: string | null
+          stock_quantity?: number | null
+          store_id: string
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          brand?: string | null
+          category_id?: string | null
+          compare_at_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name?: string
+          price?: number
+          sku?: string | null
+          stock_quantity?: number | null
+          store_id?: string
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1124,6 +1570,113 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shop_order_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          order_id: string
+          price: number
+          product_id: string
+          quantity: number
+          store_id: string
+          variant_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          order_id: string
+          price: number
+          product_id: string
+          quantity?: number
+          store_id: string
+          variant_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          order_id?: string
+          price?: number
+          product_id?: string
+          quantity?: number
+          store_id?: string
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "shop_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_order_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_orders: {
+        Row: {
+          created_at: string | null
+          delivery_address: string | null
+          delivery_phone: string | null
+          id: string
+          notes: string | null
+          order_number: string
+          payment_method: string | null
+          payment_status: string | null
+          status: string
+          total_amount: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_address?: string | null
+          delivery_phone?: string | null
+          id?: string
+          notes?: string | null
+          order_number: string
+          payment_method?: string | null
+          payment_status?: string | null
+          status?: string
+          total_amount: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          delivery_address?: string | null
+          delivery_phone?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: string
+          payment_method?: string | null
+          payment_status?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       store_reviews: {
         Row: {
