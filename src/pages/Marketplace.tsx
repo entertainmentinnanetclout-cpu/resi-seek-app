@@ -26,6 +26,11 @@ const Marketplace = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
 
+  useEffect(() => {
+    fetchCategories();
+    fetchProducts();
+  }, []);
+
   if (shouldBlock) return null;
 
   useEffect(() => {
