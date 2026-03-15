@@ -53,11 +53,12 @@ const ProductDetail = () => {
     setVariants(variantData || []);
 
     // Fetch related products
-    if (data.category_id) {
+    const productData = data as any;
+    if (productData.category_id) {
       const { data: related } = await supabase
         .from("products" as any)
         .select("*, stores(store_name)")
-        .eq("category_id", data.category_id)
+        .eq("category_id", productData.category_id)
         .eq("is_active", true)
         .neq("id", id)
         .limit(4);
