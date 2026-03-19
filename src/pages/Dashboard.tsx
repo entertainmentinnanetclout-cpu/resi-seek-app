@@ -26,8 +26,6 @@ const Dashboard = () => {
   const [campusNews, setCampusNews] = useState<any[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
 
-  if (shouldBlock) return null;
-
   const profileCompletion = useMemo(() => {
     if (!profile) return 0;
     const fields = [
