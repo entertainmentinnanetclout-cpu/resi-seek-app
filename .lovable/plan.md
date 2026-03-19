@@ -1,123 +1,241 @@
+# ResKonnect Phase 1 Updates — Implementation Plan
 
+## Summary
 
-# WIL (Work Integrated Learning) Module - Implementation Plan
-
-## Overview
-Build a complete WIL Placement Assistance module with a student-facing form page and an admin management dashboard, fully integrated with the database backend.
-
----
-
-## 1. Database Changes (Migration)
-
-Create 4 new tables and a storage bucket via migration:
-
-### Tables
-- **wil_applications** - Student WIL submissions (student_id, full_name, student_number, course, year_level, wil_duration, funding_status, campus, preferred_area, notes, status, doc_type)
-- **wil_documents** - File metadata linked to WIL applications (application_id, file_name, file_url, doc_type, uploaded_at)
-- **wil_admin_notes** - Internal admin notes per application (application_id, admin_id, note)
-- **wil_assignments** - Staff assignment tracking (application_id, assigned_to, assigned_by)
-
-### RLS Policies (using `has_role()` function - no direct table queries)
-- Students: INSERT/SELECT/UPDATE own WIL application only
-- Admins: ALL access on all 4 tables
-- Students: INSERT/SELECT own WIL documents
-- Admins: ALL access on wil_documents, wil_admin_notes, wil_assignments
-
-### Storage
-- Create `wil-documents` bucket (private)
-- RLS: students upload to own folder, admins can read all
-
-### Trigger
-- `update_updated_at` trigger on wil_applications
+Based on the PDF document and full codebase audit, this plan addresses: sidebar reorganization, critical bug fixes (edge functions, follow-up data, missing foreign keys), FindMyRes filter improvements, commerce hub merge, and full backend stabilization.
 
 ---
 
-## 2. Student Page: "My WIL" (`src/pages/MyWIL.tsx`)
+## Critical Issue: Zero Foreign Keys
 
-### Layout
-Uses `DashboardLayout` wrapper (same as all student pages).
+The database has **no foreign key constraints** on any table. This breaks all PostgREST relationship queries (e.g., `products -> stores`, `cart_items -> products`, `shop_order_items -> products`). Every join in the Marketplace, Cart, Orders, and Applications pages silently fails.
 
-### Form Sections
-1. **Personal Info** (auto-filled from profile): Full Name, Student Number
-2. **Academic Info**: Course (text input), Year Level (dropdown 1-4), Campus (dropdown from `TUT_CAMPUSES`)
-3. **WIL Details**: Duration (1/3/6/12 months dropdown), Funding Status (NSFAS/Self-Funded), Preferred Placement Area (text), Additional Notes (textarea)
-4. **Document Uploads**: Reuses the same `DocumentUploader` pattern - upload to `wil-documents` bucket with types: ID, Proof of Registration, CV, Academic Record, Placement Letter Request, Motivation Letter
-
-### Behavior
-- Fetches existing WIL application on load (one per student)
-- If exists and status is "submitted", allow editing
-- If status is "processing"/"placed"/"not_suitable", show read-only view with status badge
-- Form validation before submit
-- Toast confirmation on submit/update
-- Status timeline display (Submitted -> Processing -> Placed)
+**Fix**: A single migration adds all required FK constraints.
 
 ---
 
-## 3. Admin Page: "WIL Management" (`src/pages/admin/AdminWIL.tsx`)
+## Phase 1A — Backend Stabilization (Migration)
 
-### List View
-- Table with columns: Student Name, Student Number, Course, Year, Duration, Funding, Campus, Status, Date Submitted, Actions
-- Search by name/student number
-- Filter by status, campus, funding type
-- Bulk select with checkboxes
-- Export to CSV button
+One migration to add all missing foreign keys and fix structural issues:
 
-### Detail Dialog
-When admin clicks "View":
-- Full student info card
-- All uploaded WIL documents (downloadable via signed URLs)
-- Admin notes section (add/view internal notes)
-- Status change dropdown (Submitted/Processing/Placed/Not Suitable)
-- Assignment section - assign to staff member (dropdown of admin users)
-- Activity timeline
-- "Mark as Placed" quick button
-- Export individual application to PDF (HTML printable view)
+### Foreign Keys to Add
 
-### Status Badges
-- Submitted: yellow
-- Processing: blue
-- Placed: green
-- Not Suitable: red
+- `products.store_id -> stores.id`
+- `products.category_id -> product_categories.id`
+- `product_variants.product_id -> products.id`
+- `cart.user_id -> profiles.id` (was missing)
+- `cart_items.cart_id -> cart.id`
+- `cart_items.product_id -> products.id`
+- `cart_items.variant_id -> product_variants.id`
+- `shop_orders.user_id -> profiles.id`
+- `shop_order_items.order_id -> shop_orders.id`
+- `shop_order_items.product_id -> products.id`
+- `shop_order_items.variant_id -> product_variants.id`
+- `shop_order_items.store_id -> stores.id`
+- `order_status_history.order_id -> shop_orders.id`
+- `payments.order_id -> shop_orders.id`
+- `hamper_bundle_items.hamper_id -> hampers.id`
+- `hamper_orders.user_id -> profiles.id`
+- `hamper_order_items.order_id -> hamper_orders.id`
+- `hamper_order_items.hamper_id -> hampers.id`
+- `applications.user_id -> profiles.id`
+- `applications.residence_id -> residences.id`
+- `favorites.user_id -> profiles.id`
+- `favorites.residence_id -> residences.id`
+- `reviews.user_id -> profiles.id`
+- `reviews.residence_id -> residences.id`
+- `documents.user_id -> profiles.id`
+- `wil_applications.student_id -> profiles.id`
+- `wil_documents.application_id -> wil_applications.id`
+- `wil_admin_notes.application_id -> wil_applications.id`
+- `wil_assignments.application_id -> wil_applications.id`
+- `residence_portal_accounts.residence_id -> residences.id`
+- `application_documents.application_id -> applications.id`
+- `application_messages.application_id -> applications.id`
+- `referral_claims.application_id -> applications.id`
+- `referral_claims.residence_id -> residences.id`
+- `residence_analytics.residence_id -> residences.id`
+- `discount_orders.user_id -> profiles.id`
+- `discount_orders.discount_id -> student_discounts.id`
+- `marketplace_listings.user_id -> profiles.id`
+- `marketplace_listings.store_id -> stores.id`
+- `marketplace_orders.listing_id -> marketplace_listings.id`
+- `marketplace_orders.buyer_id -> profiles.id`
+- `marketplace_orders.seller_id -> profiles.id`
+- `notifications.user_id -> profiles.id` (if column exists)
 
----
-
-## 4. Routing and Navigation
-
-### App.tsx
-- Add route: `/wil` -> `StudentRoute` -> `MyWIL`
-- Add route: `/admin/wil` -> `AdminRoute` -> `AdminWIL`
-
-### DashboardLayout.tsx (Student sidebar)
-- Add nav item: `{ icon: Briefcase, label: "My WIL", path: "/wil" }`
-
-### AdminLayout.tsx (Admin sidebar)
-- Add nav item: `{ icon: Briefcase, label: "WIL Management", path: "/admin/wil" }`
-
----
-
-## 5. Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/pages/MyWIL.tsx` | Student WIL form page |
-| `src/pages/admin/AdminWIL.tsx` | Admin WIL management page |
-
-## 6. Files to Modify
-
-| File | Change |
-|------|--------|
-| `src/App.tsx` | Add 2 new routes |
-| `src/components/DashboardLayout.tsx` | Add "My WIL" nav item |
-| `src/components/admin/AdminLayout.tsx` | Add "WIL Management" nav item |
+This single migration fixes all broken PostgREST joins across the entire app.
 
 ---
 
-## 7. Technical Notes
+## Phase 1B — Edge Function Fix
 
-- All database queries use the existing `supabase` client from `@/integrations/supabase/client`
-- RLS policies use `has_role(auth.uid(), 'admin')` to avoid recursive policy issues
-- WIL document uploads follow the same pattern as `DocumentUploader` component (upload to storage bucket, save metadata to DB)
-- The types file will auto-regenerate after migration - until then, queries will use `.from('wil_applications' as any)` casting
-- No collision with existing tables - all prefixed with `wil_`
-- CSV export reuses patterns from `src/lib/exportHelpers.ts`
+**Bug**: `/admin/residence-portals` → "Failed to send request to edge function"
 
+The `create-residence-portal-user` edge function has no logs, meaning it's likely not deployed or not reaching the external Supabase. 
+
+**Fix**: Redeploy the edge function. The code already uses `EXTERNAL_SUPABASE_*` env vars correctly.
+
+---
+
+## Phase 1C — Sidebar Reorganization
+
+Per the PDF document:
+
+### Student Sidebar (`DashboardLayout.tsx`)
+
+**Remove** from sidebar: Roommates, Events, Messages, Updates
+**Merge**: Campus News into Home/Dashboard page (not a separate nav item)
+**Merge**: Deals & Hamper into Marketplace (single "Marketplace" nav item)
+**Move**: Profile to top-right corner icon (next to notifications)
+
+New student sidebar items:
+
+1. Home (Dashboard — includes Campus News section)
+2. Find My Res
+3. Marketplace (includes Deals, Hampers, Stores, Orders)
+4. Bursaries
+5. My WIL
+6. Applications
+
+Top bar gains: Profile icon (avatar), Notifications icon (existing)
+
+### Routes remain accessible
+
+Roommates, Events, Messages, Updates pages still exist at their URLs — they're just removed from the sidebar nav. Students can still reach them via search or direct links.
+
+---
+
+## Phase 1D — Dashboard Campus News Merge
+
+Move the Campus News content into the Dashboard page:
+
+- Add a "Campus News" section below the Quick actions tabs on Dashboard
+- Fetch from `campus_news` table
+- Show latest 4-6 news cards with images
+- "View All" link goes to `/campus-news` page
+
+---
+
+## Phase 1E — Marketplace Commerce Hub Merge
+
+The Marketplace page becomes the central commerce hub. Add tabs or sections:
+
+- **Products** (existing product grid)
+- **Deals & Discounts** (from StudentDeals discounts tab)
+- **Hampers** (from StudentDeals hamper tab)
+- **My Orders** (link to Orders page)
+- **My Store** (link to store management)
+
+The `/discounts` and `/hamper` routes will redirect to `/marketplace?tab=deals` and `/marketplace?tab=hampers`.
+
+---
+
+## Phase 1F — FindMyRes Filter Improvements
+
+Per the PDF: "Dropdowns should be manageable filters linked to filter tool on the page"
+
+**Changes to FindMyRes page**:
+
+1. Add `section_category` filter dropdown with categories: FLATS, COMMUNES, RENTALS (managed via the existing `section_category` column on residences)
+2. Add "Singles Available" indicator on residence cards (check `room_types` array for "single")
+3. Add blinking "FULL" badge on cards where `available_spots = 0`
+4. Make all filter dropdowns (campus, price, type) consistent UI with the same Select component pattern
+
+---
+
+## Phase 1G — Admin Follow-Up Fix
+
+The `/admin/follow-up` page fetches applications with a join `residence:residences(name)`. This join fails without FK constraints.
+
+**Fix**: The FK migration in Phase 1A (`applications.residence_id -> residences.id`) fixes this automatically. No frontend changes needed.
+
+---
+
+## Phase 1H — Applications Handover Pack
+
+Add to the admin Applications page:
+
+- "Export Handover Pack" button that generates a CSV/PDF with: Student Number, Name, Surname, Source of Funding, Application Date
+- "Download Documents Pack" per building — downloads all application documents for a selected residence as a ZIP
+- Download pack per student
+
+This uses existing `download-handover-pack` edge function or extends it.
+
+Ensure All Existant sliders (Landing Page,Dashboard & Campus News) Are appearing on admin side And Managable,replacable in realtime on admin ui) with clear directions of quality recommendation,size/dimension required,ratio and etc on best cropping positioning. so i need to see all the used asset iamges in hero sliders show up on admin so they an be replaed cause so far none of the already used images are managable.
+
+## Phase 1I — SLIDER CONTROL SYSTEM (CRITICAL)
+
+Add Admin Panel:
+
+### `/admin/sliders`
+
+Features:
+
+- View all slides
+- Upload image
+- Replace image
+- Toggle active
+- Set order
+- Delete slide
+
+---
+
+## 🧪 Phase 1J — SYSTEM TEST
+
+Test:
+
+- Landing page sliders ✅
+- Dashboard sliders ✅
+- Campus news images ✅
+- Admin slider control ✅
+
+---
+
+# ⚠️ FINAL WARNINGS (IMPORTANT)
+
+### 1. Without FK → Marketplace will ALWAYS break
+
+✔ You fixed this
+
+### 2. Without slider fix → UI looks broken
+
+✔ Now fixed
+
+### 3. Without admin visibility → you lose control
+
+✔ Now fixed
+
+---
+
+## Files to Modify
+
+
+| File                                    | Changes                                                    |
+| --------------------------------------- | ---------------------------------------------------------- |
+| Migration SQL                           | Add all FK constraints                                     |
+| `src/components/DashboardLayout.tsx`    | Reorganize sidebar, add profile icon to top bar            |
+| `src/pages/Dashboard.tsx`               | Add Campus News section                                    |
+| `src/pages/Marketplace.tsx`             | Add tabs for Deals/Hampers commerce hub                    |
+| `src/pages/FindMyRes.tsx`               | Add section_category filter, FULL badge, singles indicator |
+| `src/App.tsx`                           | Update redirect routes for `/discounts` → marketplace tab  |
+| `src/pages/admin/AdminApplications.tsx` | Add handover pack export button                            |
+
+
+## Files to Deploy
+
+
+| Edge Function                  | Action   |
+| ------------------------------ | -------- |
+| `create-residence-portal-user` | Redeploy |
+
+
+---
+
+## Technical Notes
+
+- All FK constraints use `ON DELETE CASCADE` or `ON DELETE SET NULL` as appropriate
+- Migration is idempotent — uses `DO $$ ... IF NOT EXISTS` pattern for each constraint
+- No existing data or tables are modified — only constraints are added
+- The `as any` casts in TypeScript remain until the types file auto-regenerates
+- Admin pages remain untouched structurally — the FK fix resolves their data loading issues
