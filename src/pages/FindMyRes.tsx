@@ -542,8 +542,12 @@ const FindMyRes = () => {
                                   {residence.room_type && (
                                     <div className="flex items-center gap-1"><Bed className="w-4 h-4 text-muted-foreground" /><span className="capitalize">{residence.room_type}</span></div>
                                   )}
-                                  {residence.capacity && (
+                                   {residence.capacity && (
                                     <div className="flex items-center gap-1"><Users className="w-4 h-4 text-muted-foreground" /><span>{residence.available_spots || 0} / {residence.capacity} spots</span></div>
+                                  )}
+                                  {residence.room_types?.some((t: string) => t.toLowerCase().includes('single')) && (
+                                    <Badge variant="outline" className="text-xs border-green-500 text-green-600">Singles Available</Badge>
+                                  )}
                                   )}
                                 </div>
                                 {residence.amenities && residence.amenities.length > 0 && (
