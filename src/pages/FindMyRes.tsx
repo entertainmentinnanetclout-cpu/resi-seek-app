@@ -349,7 +349,19 @@ const FindMyRes = () => {
               </div>
               {showFilters && (
                 <div className="mt-6 pt-6 border-t space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="space-y-2">
+                      <Label>Category</Label>
+                      <Select value={sectionFilter} onValueChange={setSectionFilter}>
+                        <SelectTrigger className={sectionFilter !== "all" ? "border-primary" : ""}><SelectValue placeholder="All types" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Types</SelectItem>
+                          <SelectItem value="FLATS">Flats</SelectItem>
+                          <SelectItem value="COMMUNES">Communes</SelectItem>
+                          <SelectItem value="RENTALS">Rentals</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="space-y-2">
                       <Label>Price Range</Label>
                       <Select value={priceRange} onValueChange={setPriceRange}>
