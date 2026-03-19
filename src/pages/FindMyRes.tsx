@@ -520,10 +520,15 @@ const FindMyRes = () => {
                                       <span>{residence.address}</span>
                                     </div>
                                   </div>
-                                  <Badge variant="secondary" className="mt-2 sm:mt-0">
+                                   <Badge variant="secondary" className="mt-2 sm:mt-0">
                                     <ShieldCheck className="w-3 h-3 mr-1" />
                                     Verified
                                   </Badge>
+                                  {residence.available_spots === 0 && (
+                                    <Badge variant="destructive" className="mt-2 sm:mt-0 animate-pulse">
+                                      FULL
+                                    </Badge>
+                                  )}
                                 </div>
                                 {residence.description && (
                                   <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
