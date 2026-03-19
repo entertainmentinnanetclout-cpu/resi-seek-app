@@ -548,7 +548,6 @@ const FindMyRes = () => {
                                   {residence.room_types?.some((t: string) => t.toLowerCase().includes('single')) && (
                                     <Badge variant="outline" className="text-xs border-green-500 text-green-600">Singles Available</Badge>
                                   )}
-                                  )}
                                 </div>
                                 {residence.amenities && residence.amenities.length > 0 && (
                                   <div className="flex flex-wrap gap-2 mt-4">
