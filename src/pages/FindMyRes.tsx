@@ -349,7 +349,19 @@ const FindMyRes = () => {
               </div>
               {showFilters && (
                 <div className="mt-6 pt-6 border-t space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="space-y-2">
+                      <Label>Category</Label>
+                      <Select value={sectionFilter} onValueChange={setSectionFilter}>
+                        <SelectTrigger className={sectionFilter !== "all" ? "border-primary" : ""}><SelectValue placeholder="All types" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Types</SelectItem>
+                          <SelectItem value="FLATS">Flats</SelectItem>
+                          <SelectItem value="COMMUNES">Communes</SelectItem>
+                          <SelectItem value="RENTALS">Rentals</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="space-y-2">
                       <Label>Price Range</Label>
                       <Select value={priceRange} onValueChange={setPriceRange}>
@@ -508,10 +520,15 @@ const FindMyRes = () => {
                                       <span>{residence.address}</span>
                                     </div>
                                   </div>
-                                  <Badge variant="secondary" className="mt-2 sm:mt-0">
+                                   <Badge variant="secondary" className="mt-2 sm:mt-0">
                                     <ShieldCheck className="w-3 h-3 mr-1" />
                                     Verified
                                   </Badge>
+                                  {residence.available_spots === 0 && (
+                                    <Badge variant="destructive" className="mt-2 sm:mt-0 animate-pulse">
+                                      FULL
+                                    </Badge>
+                                  )}
                                 </div>
                                 {residence.description && (
                                   <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
@@ -525,8 +542,11 @@ const FindMyRes = () => {
                                   {residence.room_type && (
                                     <div className="flex items-center gap-1"><Bed className="w-4 h-4 text-muted-foreground" /><span className="capitalize">{residence.room_type}</span></div>
                                   )}
-                                  {residence.capacity && (
+                                   {residence.capacity && (
                                     <div className="flex items-center gap-1"><Users className="w-4 h-4 text-muted-foreground" /><span>{residence.available_spots || 0} / {residence.capacity} spots</span></div>
+                                  )}
+                                  {residence.room_types?.some((t: string) => t.toLowerCase().includes('single')) && (
+                                    <Badge variant="outline" className="text-xs border-green-500 text-green-600">Singles Available</Badge>
                                   )}
                                 </div>
                                 {residence.amenities && residence.amenities.length > 0 && (

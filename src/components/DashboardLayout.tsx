@@ -1,9 +1,10 @@
 import { ReactNode } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Bell, Search, FileText, User, Menu, MessageSquare, LogOut, Newspaper, ShoppingBag, GraduationCap, Percent, Users, Calendar, Shield, RefreshCw, Briefcase, ShoppingCart } from "lucide-react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { Home, Bell, Search, FileText, User, Menu, LogOut, ShoppingBag, GraduationCap, Shield, RefreshCw, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import desktopLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import mobileLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
@@ -11,6 +12,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import NotificationCenter from "@/components/NotificationCenter";
 import CommandPalette from "@/components/CommandPalette";
+import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -19,23 +21,17 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signOut, isAdmin } = useAuth();
+  const { signOut, isAdmin, user } = useAuth();
+  const { profile } = useRealtimeProfile(user);
 
-  // Student-only navigation items (hidden for admins)
+  // Streamlined student nav — Phase 1C
   const studentNavItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
-    { icon: Bell, label: "Updates", path: "/dashboard/updates" },
-    { icon: Newspaper, label: "Campus News", path: "/campus-news" },
     { icon: Search, label: "Find My Res", path: "/findmyres" },
     { icon: ShoppingBag, label: "Marketplace", path: "/marketplace" },
     { icon: GraduationCap, label: "Bursaries", path: "/bursaries" },
-    { icon: Percent, label: "Deals & Hamper", path: "/discounts" },
-    { icon: Users, label: "Roommates", path: "/roommates" },
-    { icon: Calendar, label: "Events", path: "/events" },
     { icon: Briefcase, label: "My WIL", path: "/wil" },
     { icon: FileText, label: "Applications", path: "/applications" },
-    { icon: User, label: "Profile", path: "/profile" },
-    { icon: MessageSquare, label: "Messages", path: "/messages" },
   ];
 
   // Admin gets a minimal nav (redirect to admin portal)
@@ -55,6 +51,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     toast.info("Refreshing data...");
     window.location.reload();
   };
+
+  const profileInitials = profile?.full_name
+    ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "U";
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-card text-foreground">
@@ -134,6 +134,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="flex items-center gap-2">
             <NotificationCenter />
             <ThemeToggle />
+            <button onClick={() => navigate("/profile")} className="ml-1">
+              <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                <AvatarImage src={profile?.profile_picture_url || undefined} />
+                <AvatarFallback className="text-xs bg-primary text-primary-foreground">{profileInitials}</AvatarFallback>
+              </Avatar>
+            </button>
           </div>
         </header>
 
@@ -150,7 +156,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
           <div className="flex items-center gap-2">
             <NotificationCenter />
-            <ThemeToggle />
+            <button onClick={() => navigate("/profile")}>
+              <Avatar className="h-7 w-7">
+                <AvatarImage src={profile?.profile_picture_url || undefined} />
+                <AvatarFallback className="text-xs bg-primary text-primary-foreground">{profileInitials}</AvatarFallback>
+              </Avatar>
+            </button>
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">

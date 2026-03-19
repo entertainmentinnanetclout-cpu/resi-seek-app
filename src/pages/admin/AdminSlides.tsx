@@ -278,7 +278,12 @@ const AdminSlides = () => {
                       )}
                       <div className="space-y-1">
                         <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
-                        <p className="text-xs text-muted-foreground">Upload a new image or replace the existing one</p>
+                        <div className="rounded bg-muted/50 p-2 mt-1 space-y-0.5">
+                          <p className="text-xs font-medium text-foreground">📐 Image Guidelines</p>
+                          <p className="text-xs text-muted-foreground">• Recommended size: <strong>1200×600px</strong> (2:1 ratio)</p>
+                          <p className="text-xs text-muted-foreground">• Min width: 800px, Max: 2MB (JPG/PNG/WebP)</p>
+                          <p className="text-xs text-muted-foreground">• Crop focus: center — text overlays at bottom-left</p>
+                        </div>
                       </div>
                     </div>
                   </div>
