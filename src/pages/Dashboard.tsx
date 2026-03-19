@@ -62,6 +62,8 @@ const Dashboard = () => {
     fetchNews();
   }, []);
 
+  if (shouldBlock) return null;
+
   const carouselSlides = [
     {
       image: heroAccommodation,
