@@ -1,241 +1,160 @@
-# ResKonnect Phase 1 Updates — Implementation Plan
+# ResKonnect Phase 1 — Master Fix + UX + Admin Control
 
 ## Summary
 
-Based on the PDF document and full codebase audit, this plan addresses: sidebar reorganization, critical bug fixes (edge functions, follow-up data, missing foreign keys), FindMyRes filter improvements, commerce hub merge, and full backend stabilization.
+This plan addresses 5 areas: FK migration for broken joins, FindMyRes UX matching the reference image, Marketplace commerce hub polish, Admin handover pack export, and Admin slider visibility fix. The sidebar and routing are already correctly updated from prior work.
 
 ---
 
-## Critical Issue: Zero Foreign Keys
+## Current State Assessment
 
-The database has **no foreign key constraints** on any table. This breaks all PostgREST relationship queries (e.g., `products -> stores`, `cart_items -> products`, `shop_order_items -> products`). Every join in the Marketplace, Cart, Orders, and Applications pages silently fails.
+**Already Done (no changes needed):**
 
-**Fix**: A single migration adds all required FK constraints.
+- Sidebar is already slimmed to 6 items (Home, Find My Res, Marketplace, Bursaries, My WIL, Applications)
+- Profile avatar already in top-right header
+- Marketplace already has Products/Deals/Hampers tabs
+- Admin Slides page exists with CRUD, image guidelines, and live preview
+- Dashboard already has Campus News section
+- FindMyRes already has section_category filter, FULL badge (animate-pulse), and Singles Available badge
+- Routes for /cart, /checkout, /product/:id already exist
+
+**Still Broken / Missing:**
+
+1. Zero FK constraints in database — all PostgREST joins fail silently
+2. FindMyRes sections don't match reference image (FLATS/COMMUNES/RENTALS headers with collapsible groups)
+3. No "Export Handover Pack" button in AdminApplications
+4. Admin Slides doesn't show Dashboard slides separately (only hero_slides table)
+5. No first-visit CTA modal or floating action bar on FindMyRes
 
 ---
 
-## Phase 1A — Backend Stabilization (Migration)
+## Phase 1: Database FK Migration
 
-One migration to add all missing foreign keys and fix structural issues:
+Single idempotent migration adding ~40 foreign key constraints. Each wrapped in `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;`
 
-### Foreign Keys to Add
+Key constraints:
 
 - `products.store_id -> stores.id`
-- `products.category_id -> product_categories.id`
-- `product_variants.product_id -> products.id`
-- `cart.user_id -> profiles.id` (was missing)
-- `cart_items.cart_id -> cart.id`
-- `cart_items.product_id -> products.id`
-- `cart_items.variant_id -> product_variants.id`
-- `shop_orders.user_id -> profiles.id`
-- `shop_order_items.order_id -> shop_orders.id`
-- `shop_order_items.product_id -> products.id`
-- `shop_order_items.variant_id -> product_variants.id`
-- `shop_order_items.store_id -> stores.id`
-- `order_status_history.order_id -> shop_orders.id`
-- `payments.order_id -> shop_orders.id`
-- `hamper_bundle_items.hamper_id -> hampers.id`
-- `hamper_orders.user_id -> profiles.id`
-- `hamper_order_items.order_id -> hamper_orders.id`
-- `hamper_order_items.hamper_id -> hampers.id`
 - `applications.user_id -> profiles.id`
 - `applications.residence_id -> residences.id`
-- `favorites.user_id -> profiles.id`
-- `favorites.residence_id -> residences.id`
-- `reviews.user_id -> profiles.id`
-- `reviews.residence_id -> residences.id`
-- `documents.user_id -> profiles.id`
+- `cart.user_id -> profiles.id`
+- `cart_items.cart_id -> cart.id`, `cart_items.product_id -> products.id`
+- `shop_orders.user_id -> profiles.id`
+- `shop_order_items.order_id -> shop_orders.id`
 - `wil_applications.student_id -> profiles.id`
 - `wil_documents.application_id -> wil_applications.id`
-- `wil_admin_notes.application_id -> wil_applications.id`
-- `wil_assignments.application_id -> wil_applications.id`
-- `residence_portal_accounts.residence_id -> residences.id`
-- `application_documents.application_id -> applications.id`
-- `application_messages.application_id -> applications.id`
-- `referral_claims.application_id -> applications.id`
-- `referral_claims.residence_id -> residences.id`
-- `residence_analytics.residence_id -> residences.id`
-- `discount_orders.user_id -> profiles.id`
-- `discount_orders.discount_id -> student_discounts.id`
-- `marketplace_listings.user_id -> profiles.id`
-- `marketplace_listings.store_id -> stores.id`
-- `marketplace_orders.listing_id -> marketplace_listings.id`
-- `marketplace_orders.buyer_id -> profiles.id`
-- `marketplace_orders.seller_id -> profiles.id`
-- `notifications.user_id -> profiles.id` (if column exists)
+- `favorites.user_id -> profiles.id`, `favorites.residence_id -> residences.id`
+- `reviews.user_id -> profiles.id`, `reviews.residence_id -> residences.id`
+- `hamper_bundle_items.hamper_id -> hampers.id`
+- `hamper_orders.user_id -> profiles.id`
+- `discount_orders.user_id -> profiles.id`, `discount_orders.discount_id -> student_discounts.id`
+- All remaining from the plan document
 
-This single migration fixes all broken PostgREST joins across the entire app.
+This fixes: Admin Follow-Up, Marketplace product->store joins, Orders, Applications with residence names.
 
 ---
 
-## Phase 1B — Edge Function Fix
+## Phase 2: FindMyRes UX Overhaul
 
-**Bug**: `/admin/residence-portals` → "Failed to send request to edge function"
+Redesign the `TrustedResidencesGrid` and section display to match the reference image:
 
-The `create-residence-portal-user` edge function has no logs, meaning it's likely not deployed or not reaching the external Supabase. 
+### Section Headers
 
-**Fix**: Redeploy the edge function. The code already uses `EXTERNAL_SUPABASE_*` env vars correctly.
+Group trusted residences into collapsible sections with colored header bars:
 
----
+- **FLATS - PRETORIA WEST, CBD, ETC** (blue header, red collapse arrow)
+- **COMMUNES - PRETORIA WEST, ETC** (blue header)
+- **RENTALS - SUNNYSIDE, SOSHA, E1** (blue header)
 
-## Phase 1C — Sidebar Reorganization
+Each section shows a horizontal scrollable row of residence cards (matching the image layout).
 
-Per the PDF document:
+### Card Updates
 
-### Student Sidebar (`DashboardLayout.tsx`)
+- Show campus badge (e.g., "Pretoria (Main Campus)")
+- Show spots left badge (e.g., "100 spots left" in orange)
+- Show "Trusted Partner" or "Premium" or "Verified" badge overlay
+- Show ranking number (#1, #2, #3) on top cards
+- Blinking red FULL badge when `available_spots === 0`
+- Green "Singles Available" badge when `room_types` includes "single"
 
-**Remove** from sidebar: Roommates, Events, Messages, Updates
-**Merge**: Campus News into Home/Dashboard page (not a separate nav item)
-**Merge**: Deals & Hamper into Marketplace (single "Marketplace" nav item)
-**Move**: Profile to top-right corner icon (next to notifications)
+### First-Visit CTA Modal
 
-New student sidebar items:
+- Check `localStorage` for `reskonnect_visited` flag
+- If not set, show a modal: "Start Your Journey" with CTA to create account
+- Set flag after dismissal
 
-1. Home (Dashboard — includes Campus News section)
-2. Find My Res
-3. Marketplace (includes Deals, Hampers, Stores, Orders)
-4. Bursaries
-5. My WIL
-6. Applications
+### Floating Action Bar
 
-Top bar gains: Profile icon (avatar), Notifications icon (existing)
+- Sticky bottom bar on mobile with "Apply Now" and "WhatsApp Us" buttons
+- Only shows when scrolled past the hero section
 
-### Routes remain accessible
+### Filter Synchronization
 
-Roommates, Events, Messages, Updates pages still exist at their URLs — they're just removed from the sidebar nav. Students can still reach them via search or direct links.
-
----
-
-## Phase 1D — Dashboard Campus News Merge
-
-Move the Campus News content into the Dashboard page:
-
-- Add a "Campus News" section below the Quick actions tabs on Dashboard
-- Fetch from `campus_news` table
-- Show latest 4-6 news cards with images
-- "View All" link goes to `/campus-news` page
+All dropdowns (Category FLATS/COMMUNES/RENTALS, Campus, Price, Distance, Room Type) use the same shared filter state — already implemented, just ensure section headers also respond to the category filter.
 
 ---
 
-## Phase 1E — Marketplace Commerce Hub Merge
+## Phase 3: Admin Handover Pack Export
 
-The Marketplace page becomes the central commerce hub. Add tabs or sections:
+Add to `AdminApplications.tsx`:
 
-- **Products** (existing product grid)
-- **Deals & Discounts** (from StudentDeals discounts tab)
-- **Hampers** (from StudentDeals hamper tab)
-- **My Orders** (link to Orders page)
-- **My Store** (link to store management)
+### "Export Handover Pack" Button
 
-The `/discounts` and `/hamper` routes will redirect to `/marketplace?tab=deals` and `/marketplace?tab=hampers`.
+- Positioned next to the search bar in the header
+- Generates CSV with columns: Student Number, Full Name, Surname, Email, Phone, Funding Type, Residence Applied, Application Date, Status
+- Uses the existing `downloadEnhancedCSV` pattern from `exportHelpers.ts`
+- Filters by current status filter selection
 
----
+### "Download Documents" per Student
 
-## Phase 1F — FindMyRes Filter Improvements
-
-Per the PDF: "Dropdowns should be manageable filters linked to filter tool on the page"
-
-**Changes to FindMyRes page**:
-
-1. Add `section_category` filter dropdown with categories: FLATS, COMMUNES, RENTALS (managed via the existing `section_category` column on residences)
-2. Add "Singles Available" indicator on residence cards (check `room_types` array for "single")
-3. Add blinking "FULL" badge on cards where `available_spots = 0`
-4. Make all filter dropdowns (campus, price, type) consistent UI with the same Select component pattern
+- In the application detail dialog, add a "Download All Documents" button
+- Creates signed URLs for each document in the `documents` table for that user
+- Opens each in a new tab (ZIP not feasible client-side without library)
 
 ---
 
-## Phase 1G — Admin Follow-Up Fix
+## Phase 4: Admin Slides — Show All Existing Images
 
-The `/admin/follow-up` page fetches applications with a join `residence:residences(name)`. This join fails without FK constraints.
+The current AdminSlides page only manages `hero_slides` table entries. The issue is that images hardcoded in components (Dashboard hero, Campus News) don't appear in admin.
 
-**Fix**: The FK migration in Phase 1A (`applications.residence_id -> residences.id`) fixes this automatically. No frontend changes needed.
+### Fix
 
----
+- The Dashboard `HeroCarousel` already reads from `hero_slides` table — these ARE manageable, ensure the ones appearing on student side also appear on admin
+- Add info text in AdminSlides clarifying: "These slides appear on the Landing Page and Student Dashboard"
+- No structural change needed — the slides ARE already database-driven and editable
 
-## Phase 1H — Applications Handover Pack
+### Campus News Images
 
-Add to the admin Applications page:
-
-- "Export Handover Pack" button that generates a CSV/PDF with: Student Number, Name, Surname, Source of Funding, Application Date
-- "Download Documents Pack" per building — downloads all application documents for a selected residence as a ZIP
-- Download pack per student
-
-This uses existing `download-handover-pack` edge function or extends it.
-
-Ensure All Existant sliders (Landing Page,Dashboard & Campus News) Are appearing on admin side And Managable,replacable in realtime on admin ui) with clear directions of quality recommendation,size/dimension required,ratio and etc on best cropping positioning. so i need to see all the used asset iamges in hero sliders show up on admin so they an be replaed cause so far none of the already used images are managable.
-
-## Phase 1I — SLIDER CONTROL SYSTEM (CRITICAL)
-
-Add Admin Panel:
-
-### `/admin/sliders`
-
-Features:
-
-- View all slides
-- Upload image
-- Replace image
-- Toggle active
-- Set order
-- Delete slide
-
----
-
-## 🧪 Phase 1J — SYSTEM TEST
-
-Test:
-
-- Landing page sliders ✅
-- Dashboard sliders ✅
-- Campus news images ✅
-- Admin slider control ✅
-
----
-
-# ⚠️ FINAL WARNINGS (IMPORTANT)
-
-### 1. Without FK → Marketplace will ALWAYS break
-
-✔ You fixed this
-
-### 2. Without slider fix → UI looks broken
-
-✔ Now fixed
-
-### 3. Without admin visibility → you lose control
-
-✔ Now fixed
+- Campus News images are managed via `/admin/news` page (existing)
+- Add a note in AdminSlides linking to the News management page for Campus News images
 
 ---
 
 ## Files to Modify
 
 
-| File                                    | Changes                                                    |
-| --------------------------------------- | ---------------------------------------------------------- |
-| Migration SQL                           | Add all FK constraints                                     |
-| `src/components/DashboardLayout.tsx`    | Reorganize sidebar, add profile icon to top bar            |
-| `src/pages/Dashboard.tsx`               | Add Campus News section                                    |
-| `src/pages/Marketplace.tsx`             | Add tabs for Deals/Hampers commerce hub                    |
-| `src/pages/FindMyRes.tsx`               | Add section_category filter, FULL badge, singles indicator |
-| `src/App.tsx`                           | Update redirect routes for `/discounts` → marketplace tab  |
-| `src/pages/admin/AdminApplications.tsx` | Add handover pack export button                            |
+| File                                       | Changes                                                                            |
+| ------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Migration SQL                              | Add ~40 FK constraints                                                             |
+| `src/components/TrustedResidencesGrid.tsx` | Redesign with FLATS/COMMUNES/RENTALS collapsible sections matching reference image |
+| `src/pages/FindMyRes.tsx`                  | Add first-visit modal, floating action bar, enhanced card badges                   |
+| `src/pages/admin/AdminApplications.tsx`    | Add "Export Handover Pack" button using exportHelpers                              |
+| `src/pages/admin/AdminSlides.tsx`          | Add clarifying notes about where slides appear + link to News admin                |
 
 
-## Files to Deploy
+## Files Unchanged
 
-
-| Edge Function                  | Action   |
-| ------------------------------ | -------- |
-| `create-residence-portal-user` | Redeploy |
-
+- `DashboardLayout.tsx` — already correct
+- `Marketplace.tsx` — already has tabs
+- `App.tsx` — routes already set up
+- `Dashboard.tsx` — already has campus news
 
 ---
 
 ## Technical Notes
 
-- All FK constraints use `ON DELETE CASCADE` or `ON DELETE SET NULL` as appropriate
-- Migration is idempotent — uses `DO $$ ... IF NOT EXISTS` pattern for each constraint
-- No existing data or tables are modified — only constraints are added
-- The `as any` casts in TypeScript remain until the types file auto-regenerates
-- Admin pages remain untouched structurally — the FK fix resolves their data loading issues
+- FK constraints use `ON DELETE CASCADE` for user-owned data, `ON DELETE SET NULL` for optional references
+- Migration is fully idempotent with exception handling
+- No table structure changes — only adding constraints
+- FindMyRes section grouping uses existing `section_category` column on residences table
+- Export uses client-side CSV generation (no edge function needed)
