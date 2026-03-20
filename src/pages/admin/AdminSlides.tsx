@@ -327,17 +327,24 @@ const AdminSlides = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Where These Slides Appear</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className="gap-1">
                     <Home className="w-3 h-3" />
-                    Homepage Hero
+                    Landing Page Hero
                   </Badge>
                   <Badge variant="outline" className="gap-1">
-                    <Newspaper className="w-3 h-3" />
-                    Landing Page
+                    <Monitor className="w-3 h-3" />
+                    Student Dashboard
                   </Badge>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  These slides appear on both the public Landing Page and the Student Dashboard hero carousel. Any changes update in real-time.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  📰 <strong>Campus News images</strong> are managed separately via{' '}
+                  <a href="/admin/news" className="text-primary underline underline-offset-2 hover:text-primary/80">Admin → News</a>.
+                </p>
               </CardContent>
             </Card>
 

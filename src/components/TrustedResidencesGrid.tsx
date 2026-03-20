@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Shield, Star, Building2, Sparkles } from 'lucide-react';
+import { MapPin, Shield, Star, Building2, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import ResidenceImageSlideshow from './ResidenceImageSlideshow';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Residence {
   id: string;
@@ -16,11 +17,26 @@ interface Residence {
   verification_level: string | null;
   available_spots: number;
   province: string | null;
+  section_category: string | null;
+  room_types: string[] | null;
 }
+
+interface SectionConfig {
+  key: string;
+  label: string;
+  subtitle: string;
+}
+
+const SECTIONS: SectionConfig[] = [
+  { key: 'FLATS', label: 'FLATS', subtitle: 'PRETORIA WEST, CBD, ETC' },
+  { key: 'COMMUNES', label: 'COMMUNES', subtitle: 'PRETORIA WEST, ETC' },
+  { key: 'RENTALS', label: 'RENTALS', subtitle: 'SUNNYSIDE, SOSHA, E1' },
+];
 
 const TrustedResidencesGrid = () => {
   const [residences, setResidences] = useState<Residence[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ FLATS: true, COMMUNES: true, RENTALS: true });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,21 +44,21 @@ const TrustedResidencesGrid = () => {
       try {
         const { data, error } = await supabase
           .from('residences')
-          .select('id, name, address, image_url, images, campus, available_spots, verification_level, province, display_order')
+          .select('id, name, address, image_url, images, campus, available_spots, verification_level, province, display_order, section_category, room_types')
           .eq('is_trusted', true)
           .order('display_order', { ascending: true })
           .limit(30);
 
         if (error) throw error;
 
-        const safeData = (data || []).map(r => ({
+        setResidences((data || []).map(r => ({
           ...r,
           verification_level: r.verification_level || 'basic',
           province: r.province || 'Gauteng',
           images: r.images || [],
-        }));
-
-        setResidences(safeData);
+          section_category: r.section_category || 'FLATS',
+          room_types: r.room_types || [],
+        })));
       } catch (err) {
         console.error('[TrustedResidencesGrid] Error:', err);
       } finally {
@@ -52,7 +68,6 @@ const TrustedResidencesGrid = () => {
 
     fetchTopResidences();
 
-    // Realtime subscription
     const channel = supabase
       .channel('trusted-residences')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'residences' }, () => {
@@ -60,9 +75,7 @@ const TrustedResidencesGrid = () => {
       })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const getVerificationBadge = (level: string | null) => {
@@ -78,10 +91,14 @@ const TrustedResidencesGrid = () => {
     }
   };
 
+  const toggleSection = (key: string) => {
+    setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   if (loading) {
     return (
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="mb-8 space-y-6">
+        <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5">
             <Sparkles className="w-6 h-6 text-primary" />
           </div>
@@ -90,17 +107,16 @@ const TrustedResidencesGrid = () => {
             <p className="text-sm text-muted-foreground">Handpicked verified accommodations</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Card key={i} className="animate-pulse overflow-hidden">
-              <div className="aspect-[16/10] bg-muted" />
-              <CardContent className="p-4">
-                <div className="h-5 bg-muted rounded w-3/4 mb-3" />
-                <div className="h-4 bg-muted rounded w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="animate-pulse">
+            <div className="h-10 bg-muted rounded-lg mb-3" />
+            <div className="flex gap-4 overflow-hidden">
+              {[...Array(4)].map((_, j) => (
+                <div key={j} className="min-w-[260px] h-48 bg-muted rounded-lg" />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -125,6 +141,18 @@ const TrustedResidencesGrid = () => {
     );
   }
 
+  // Group residences by section_category
+  const grouped: Record<string, Residence[]> = {};
+  for (const section of SECTIONS) {
+    grouped[section.key] = residences.filter(r => (r.section_category || 'FLATS').toUpperCase() === section.key);
+  }
+  // Uncategorized go into FLATS
+  const categorized = new Set(Object.values(grouped).flat().map(r => r.id));
+  const uncategorized = residences.filter(r => !categorized.has(r.id));
+  if (uncategorized.length > 0) {
+    grouped['FLATS'] = [...(grouped['FLATS'] || []), ...uncategorized];
+  }
+
   return (
     <div className="mb-8">
       {/* Header */}
@@ -144,74 +172,120 @@ const TrustedResidencesGrid = () => {
         </Badge>
       </div>
 
-      {/* Cards Grid - Much larger cards for better visibility */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-        {residences.map((residence, index) => (
-          <Card
-            key={residence.id}
-            className="group overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-border/50 hover:border-primary/40 relative"
-            onClick={() => navigate(`/res/${residence.id}`)}
-          >
-            {/* Rank Badge */}
-            {index < 3 && (
-              <div className="absolute top-3 right-3 z-10">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-lg ${
-                  index === 0 ? 'bg-yellow-500 text-yellow-950' :
-                  index === 1 ? 'bg-gray-300 text-gray-800' :
-                  'bg-amber-600 text-amber-50'
-                }`}>
-                  #{index + 1}
+      {/* Sections */}
+      <div className="space-y-4">
+        {SECTIONS.map((section) => {
+          const sectionResidences = grouped[section.key] || [];
+          if (sectionResidences.length === 0) return null;
+          const isOpen = openSections[section.key];
+
+          return (
+            <Collapsible key={section.key} open={isOpen} onOpenChange={() => toggleSection(section.key)}>
+              <CollapsibleTrigger asChild>
+                <button className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm sm:text-base tracking-wide">
+                      {section.label} — {section.subtitle}
+                    </span>
+                    <Badge variant="secondary" className="text-xs bg-primary-foreground/20 text-primary-foreground border-0">
+                      {sectionResidences.length}
+                    </Badge>
+                  </div>
+                  {isOpen ? (
+                    <ChevronDown className="w-5 h-5 text-destructive" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-destructive" />
+                  )}
+                </button>
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                <div className="flex gap-4 overflow-x-auto py-4 pb-2 scrollbar-thin scrollbar-thumb-muted">
+                  {sectionResidences.map((residence, index) => (
+                    <Card
+                      key={residence.id}
+                      className="group min-w-[260px] max-w-[280px] flex-shrink-0 overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border-border/50 hover:border-primary/40 relative"
+                      onClick={() => navigate(`/res/${residence.id}`)}
+                    >
+                      {/* Rank Badge for top 3 overall */}
+                      {residences.indexOf(residence) < 3 && (
+                        <div className="absolute top-3 right-3 z-10">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ${
+                            residences.indexOf(residence) === 0 ? 'bg-yellow-500 text-yellow-950' :
+                            residences.indexOf(residence) === 1 ? 'bg-gray-300 text-gray-800' :
+                            'bg-amber-600 text-amber-50'
+                          }`}>
+                            #{residences.indexOf(residence) + 1}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Image */}
+                      <div className="relative aspect-[16/10] overflow-hidden bg-muted">
+                        <ResidenceImageSlideshow
+                          mainImage={residence.image_url}
+                          images={residence.images}
+                          alt={residence.name}
+                          autoPlay={true}
+                          interval={3000}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+
+                        {/* Verification badge */}
+                        <div className="absolute top-3 left-3 z-10 pointer-events-none">
+                          {getVerificationBadge(residence.verification_level)}
+                        </div>
+
+                        {/* FULL badge */}
+                        {residence.available_spots === 0 && (
+                          <div className="absolute top-3 left-3 z-20 pointer-events-none" style={{ top: residence.verification_level && residence.verification_level !== 'basic' ? '40px' : '12px' }}>
+                            <Badge variant="destructive" className="animate-pulse text-xs font-bold">
+                              FULL
+                            </Badge>
+                          </div>
+                        )}
+
+                        {/* Bottom overlay */}
+                        <div className="absolute bottom-0 left-0 right-0 p-3 text-white pointer-events-none">
+                          <h3 className="font-bold text-sm sm:text-base truncate mb-0.5 drop-shadow-lg">
+                            {residence.name}
+                          </h3>
+                          <p className="text-xs flex items-center gap-1 text-white/90 drop-shadow-md">
+                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{(residence.address ?? '').split(',')[0] || 'Location TBA'}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Footer */}
+                      <CardContent className="p-3 flex items-center justify-between gap-2">
+                        <div className="flex gap-1.5 flex-wrap">
+                          {residence.campus && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {residence.campus}
+                            </Badge>
+                          )}
+                          {residence.room_types?.some((t: string) => t.toLowerCase().includes('single')) && (
+                            <Badge variant="outline" className="text-[10px] border-success text-success">
+                              Singles
+                            </Badge>
+                          )}
+                        </div>
+                        {residence.available_spots > 0 ? (
+                          <Badge variant="outline" className="text-[10px] bg-success/10 text-success border-success/30 whitespace-nowrap">
+                            {residence.available_spots} spots
+                          </Badge>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">View →</span>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              </div>
-            )}
-            
-            {/* Image Container with Slideshow */}
-            <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-              <ResidenceImageSlideshow
-                mainImage={residence.image_url}
-                images={residence.images}
-                alt={residence.name}
-                autoPlay={true}
-                interval={3000}
-              />
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
-              
-              {/* Verification badge */}
-              <div className="absolute top-3 left-3 z-10 pointer-events-none">
-                {getVerificationBadge(residence.verification_level)}
-              </div>
-              
-              {/* Bottom overlay info */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 text-white pointer-events-none">
-                <h3 className="font-bold text-lg sm:text-xl truncate mb-1 drop-shadow-lg">
-                  {residence.name}
-                </h3>
-                <p className="text-sm flex items-center gap-1.5 text-white/90 drop-shadow-md">
-                  <MapPin className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate">{(residence.address ?? '').split(',')[0] || 'Location TBA'}</span>
-                </p>
-              </div>
-            </div>
-            
-            {/* Content footer */}
-            <CardContent className="p-4 flex items-center justify-between gap-2">
-              {residence.campus && (
-                <Badge variant="secondary" className="text-xs">
-                  {residence.campus}
-                </Badge>
-              )}
-              {residence.available_spots > 0 && (
-                <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
-                  {residence.available_spots} spots left
-                </Badge>
-              )}
-              {!residence.campus && residence.available_spots <= 0 && (
-                <span className="text-xs text-muted-foreground">View details →</span>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })}
       </div>
     </div>
   );
