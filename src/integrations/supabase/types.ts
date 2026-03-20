@@ -60,6 +60,20 @@ export type Database = {
             referencedRelation: "residences"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_activity_log_application"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_activity_log_residence"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
         ]
       }
       application_documents: {
@@ -117,6 +131,20 @@ export type Database = {
             referencedRelation: "residences"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_app_docs_application"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_app_docs_residence"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
         ]
       }
       application_messages: {
@@ -157,6 +185,20 @@ export type Database = {
           },
           {
             foreignKeyName: "application_messages_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_app_messages_application"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_app_messages_residence"
             columns: ["residence_id"]
             isOneToOne: false
             referencedRelation: "residences"
@@ -222,6 +264,27 @@ export type Database = {
             columns: ["residence_id"]
             isOneToOne: false
             referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_applications_residence"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_applications_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_applications_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -326,6 +389,20 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_call_logs_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_call_logs_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       campus_news: {
@@ -386,7 +463,22 @@ export type Database = {
           id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_cart_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cart_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cart_items: {
         Row: {
@@ -430,6 +522,27 @@ export type Database = {
           },
           {
             foreignKeyName: "cart_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cart_items_cart"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "cart"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cart_items_product"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cart_items_variant"
             columns: ["variant_id"]
             isOneToOne: false
             referencedRelation: "product_variants"
@@ -488,6 +601,27 @@ export type Database = {
             referencedRelation: "student_discounts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_discount_orders_discount"
+            columns: ["discount_id"]
+            isOneToOne: false
+            referencedRelation: "student_discounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_discount_orders_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_discount_orders_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       documents: {
@@ -518,7 +652,22 @@ export type Database = {
           uploaded_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_documents_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_documents_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       events: {
         Row: {
@@ -606,6 +755,27 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_favorites_residence"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_favorites_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_favorites_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       hamper_bundle_items: {
@@ -631,6 +801,13 @@ export type Database = {
           quantity?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_hamper_bundle_items_hamper"
+            columns: ["hamper_id"]
+            isOneToOne: false
+            referencedRelation: "hampers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "hamper_bundle_items_hamper_id_fkey"
             columns: ["hamper_id"]
@@ -700,6 +877,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_hamper_order_items_hamper"
+            columns: ["hamper_id"]
+            isOneToOne: false
+            referencedRelation: "hampers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_hamper_order_items_order"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "hamper_orders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "hamper_order_items_hamper_id_fkey"
             columns: ["hamper_id"]
             isOneToOne: false
@@ -755,7 +946,22 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_hamper_orders_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_hamper_orders_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       hampers: {
         Row: {
@@ -883,6 +1089,27 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_marketplace_listings_store"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_marketplace_listings_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_marketplace_listings_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "marketplace_listings_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
@@ -936,6 +1163,41 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_marketplace_orders_buyer"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_marketplace_orders_buyer"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_marketplace_orders_listing"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_marketplace_orders_seller"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_marketplace_orders_seller"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "marketplace_orders_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
@@ -975,7 +1237,22 @@ export type Database = {
           type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_notifications_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_notifications_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_status_history: {
         Row: {
@@ -1003,6 +1280,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_order_status_history_order"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "shop_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_status_history_order_id_fkey"
             columns: ["order_id"]
@@ -1044,6 +1328,13 @@ export type Database = {
           transaction_reference?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_payments_order"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "shop_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_order_id_fkey"
             columns: ["order_id"]
@@ -1148,6 +1439,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_product_variants_product"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "product_variants_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -1212,6 +1510,20 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_products_category"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_products_store"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]
@@ -1315,6 +1627,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_referral_claims_application"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_referral_claims_residence"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "referral_claims_application_id_fkey"
             columns: ["application_id"]
             isOneToOne: true
@@ -1356,6 +1682,27 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_residence_analytics_residence"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_residence_analytics_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_residence_analytics_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "residence_analytics_residence_id_fkey"
             columns: ["residence_id"]
@@ -1405,6 +1752,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_portal_accounts_residence"
+            columns: ["residence_id"]
+            isOneToOne: true
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "residence_portal_accounts_residence_id_fkey"
             columns: ["residence_id"]
@@ -1549,6 +1903,27 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_reviews_residence"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_reviews_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_reviews_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reviews_residence_id_fkey"
             columns: ["residence_id"]
             isOneToOne: false
@@ -1603,6 +1978,34 @@ export type Database = {
           variant_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_shop_order_items_order"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "shop_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_shop_order_items_product"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_shop_order_items_store"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_shop_order_items_variant"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "shop_order_items_order_id_fkey"
             columns: ["order_id"]
@@ -1676,7 +2079,22 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_shop_orders_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_shop_orders_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       store_reviews: {
         Row: {
@@ -1707,6 +2125,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_store_reviews_store"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "store_reviews_store_id_fkey"
             columns: ["store_id"]
@@ -1863,6 +2288,27 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_hamper_prefs_item"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "hamper_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_hamper_prefs_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_hamper_prefs_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "student_hamper_preferences_item_id_fkey"
             columns: ["item_id"]
             isOneToOne: false
@@ -2003,7 +2449,22 @@ export type Database = {
           wil_duration?: string
           year_level?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_wil_applications_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_wil_applications_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wil_assignments: {
         Row: {
@@ -2028,6 +2489,13 @@ export type Database = {
           id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_wil_assignments_application"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "wil_applications"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wil_assignments_application_id_fkey"
             columns: ["application_id"]
@@ -2069,6 +2537,13 @@ export type Database = {
           uploaded_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_wil_documents_application"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "wil_applications"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wil_documents_application_id_fkey"
             columns: ["application_id"]

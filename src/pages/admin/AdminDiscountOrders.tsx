@@ -55,7 +55,7 @@ const AdminDiscountOrders = () => {
         .from("discount_orders")
         .select(`
           *,
-          discount:student_discounts(name, provider)
+          discount:student_discounts!fk_discount_orders_discount(name, provider)
         `)
         .order("created_at", { ascending: false });
 

@@ -46,7 +46,7 @@ const MyDiscountOrders = () => {
         .from("discount_orders")
         .select(`
           *,
-          discount:student_discounts(name, provider, image_url)
+          discount:student_discounts!fk_discount_orders_discount(name, provider, image_url)
         `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });

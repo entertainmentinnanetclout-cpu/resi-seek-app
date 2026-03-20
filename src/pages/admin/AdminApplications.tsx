@@ -9,12 +9,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Eye, Check, X, CheckCheck, XCircle, Clock, FileQuestion, Calendar, Users, MessageSquare, FileText, Download, Loader2 } from "lucide-react";
+import { Search, Eye, Check, X, CheckCheck, XCircle, Clock, FileQuestion, Calendar, Users, MessageSquare, FileText, Download, Loader2, FileDown } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { safeFormatDate } from "@/lib/utils";
+import { downloadEnhancedCSV } from "@/lib/exportHelpers";
 
 interface UserDocument {
   id: string;
@@ -67,7 +68,7 @@ const AdminApplications = () => {
       
       const { data, error } = await supabase
         .from("applications")
-        .select(`*, residence:residences(name)`)
+        .select(`*, residence:residences!fk_applications_residence(name)`)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -343,6 +344,26 @@ const AdminApplications = () => {
                   Select All Pending ({pendingCount})
                 </Button>
               )}
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  const exportData = filteredApplications.map(app => ({
+                    name: app.profile?.full_name || 'Unknown',
+                    phone: app.profile?.phone || null,
+                    email: app.profile?.email || null,
+                    studentNumber: app.profile?.student_number || null,
+                    residenceApplied: app.residence?.name || 'Unknown',
+                    status: app.status,
+                    applicationDate: app.application_date,
+                  }));
+                  downloadEnhancedCSV(exportData, `handover-pack-${new Date().toISOString().split('T')[0]}.csv`);
+                  toast.success(`Exported ${exportData.length} applications`);
+                }}
+              >
+                <FileDown className="w-4 h-4" />
+                Export Handover Pack
+              </Button>
             </div>
           </CardHeader>
           <CardContent>

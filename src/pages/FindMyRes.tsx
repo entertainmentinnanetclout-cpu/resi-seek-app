@@ -82,6 +82,8 @@ const FindMyRes = () => {
   const [loading, setLoading] = useState(true);
   const [compareList, setCompareList] = useState<any[]>([]);
   const [isListOpen, setIsListOpen] = useState(false);
+  const [showFirstVisitModal, setShowFirstVisitModal] = useState(false);
+  const [showFloatingBar, setShowFloatingBar] = useState(false);
   
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
@@ -112,20 +114,32 @@ const FindMyRes = () => {
     }
   };
 
+  // First-visit CTA modal
+  useEffect(() => {
+    if (!user) {
+      const visited = localStorage.getItem('reskonnect_visited');
+      if (!visited) {
+        const timer = setTimeout(() => setShowFirstVisitModal(true), 2000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [user]);
+
+  // Floating bar on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowFloatingBar(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     const fetchResidences = async () => {
       setLoading(true);
       try {
-        console.log('[FindMyRes] Fetching residences...');
-        
         const { data, error } = await supabase.from('residences').select('*');
-        
-        if (error) {
-          console.error('[FindMyRes] Fetch error:', error);
-          throw error;
-        }
-        
-        console.log(`[FindMyRes] Fetched ${data?.length || 0} residences`);
+        if (error) throw error;
         
         const safeData = (data || []).map(r => ({
           ...r,
@@ -678,6 +692,45 @@ const FindMyRes = () => {
         onRemove={(id) => setCompareList(prev => prev.filter(r => r.id !== id))}
         onClear={() => setCompareList([])}
       />
+
+      {/* First-Visit CTA Modal */}
+      <Dialog open={showFirstVisitModal} onOpenChange={(open) => {
+        setShowFirstVisitModal(open);
+        if (!open) localStorage.setItem('reskonnect_visited', 'true');
+      }}>
+        <DialogContent className="max-w-md text-center">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Start Your Journey 🎓</DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              Find verified student accommodation near TUT campuses. Create a free account to apply, save favorites, and get notified about new listings.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button className="w-full" onClick={() => { setShowFirstVisitModal(false); localStorage.setItem('reskonnect_visited', 'true'); navigate('/auth'); }}>
+              Create Free Account
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => { setShowFirstVisitModal(false); localStorage.setItem('reskonnect_visited', 'true'); }}>
+              Browse First
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Floating Action Bar (Mobile) */}
+      {showFloatingBar && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-background/95 backdrop-blur-lg border-t shadow-lg sm:hidden">
+          <div className="flex gap-2 max-w-lg mx-auto">
+            <Button className="flex-1" onClick={() => user ? navigate('/applications') : navigate('/auth')}>
+              Apply Now
+            </Button>
+            <Button variant="outline" className="flex-1" asChild>
+              <a href={`https://wa.me/${RESKONNECT_WHATSAPP}`} target="_blank" rel="noopener noreferrer">
+                WhatsApp Us
+              </a>
+            </Button>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };
