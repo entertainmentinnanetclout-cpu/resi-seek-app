@@ -68,7 +68,7 @@ const AdminApplications = () => {
       
       const { data, error } = await supabase
         .from("applications")
-        .select(`*, residence:residences(name)`)
+        .select(`*, residence:residences!fk_applications_residence(name)`)
         .order("created_at", { ascending: false });
 
       if (error) {

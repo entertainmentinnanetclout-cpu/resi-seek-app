@@ -94,7 +94,7 @@ const AdminDocuments = () => {
       // Fetch applications to link with profiles
       const { data: applications } = await supabase
         .from("applications")
-        .select("user_id, status, residence:residences(name)");
+        .select("user_id, status, residence:residences!fk_applications_residence(name)");
 
       const appMap = new Map<string, { status: string; residenceName: string }>();
       applications?.forEach(app => {

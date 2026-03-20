@@ -49,7 +49,7 @@ const AdminFollowUp = () => {
           application_date,
           move_in_confirmed,
           moved_in,
-          residence:residences(name)
+          residence:residences!fk_applications_residence(name)
         `)
         .order("application_date", { ascending: false });
 

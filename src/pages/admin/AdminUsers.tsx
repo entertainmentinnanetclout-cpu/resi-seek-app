@@ -59,7 +59,7 @@ const AdminUsers = () => {
       // Fetch applications for each user
       const { data: applications } = await supabase
         .from("applications")
-        .select("user_id, status, residence:residences(name)")
+        .select("user_id, status, residence:residences!fk_applications_residence(name)")
         .order("created_at", { ascending: false });
 
       // Fetch document counts
