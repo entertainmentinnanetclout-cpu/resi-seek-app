@@ -114,20 +114,32 @@ const FindMyRes = () => {
     }
   };
 
+  // First-visit CTA modal
+  useEffect(() => {
+    if (!user) {
+      const visited = localStorage.getItem('reskonnect_visited');
+      if (!visited) {
+        const timer = setTimeout(() => setShowFirstVisitModal(true), 2000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [user]);
+
+  // Floating bar on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowFloatingBar(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     const fetchResidences = async () => {
       setLoading(true);
       try {
-        console.log('[FindMyRes] Fetching residences...');
-        
         const { data, error } = await supabase.from('residences').select('*');
-        
-        if (error) {
-          console.error('[FindMyRes] Fetch error:', error);
-          throw error;
-        }
-        
-        console.log(`[FindMyRes] Fetched ${data?.length || 0} residences`);
+        if (error) throw error;
         
         const safeData = (data || []).map(r => ({
           ...r,
