@@ -70,7 +70,7 @@ const AdminDashboard = () => {
         // Fetch recent applications
         const { data: recentApps } = await supabase
           .from("applications")
-          .select("*, residence:residences(name)")
+          .select("*, residence:residences!fk_applications_residence(name)")
           .order("created_at", { ascending: false })
           .limit(5);
 
