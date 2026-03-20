@@ -344,6 +344,26 @@ const AdminApplications = () => {
                   Select All Pending ({pendingCount})
                 </Button>
               )}
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  const exportData = filteredApplications.map(app => ({
+                    name: app.profile?.full_name || 'Unknown',
+                    phone: app.profile?.phone || null,
+                    email: app.profile?.email || null,
+                    studentNumber: app.profile?.student_number || null,
+                    residenceApplied: app.residence?.name || 'Unknown',
+                    status: app.status,
+                    applicationDate: app.application_date,
+                  }));
+                  downloadEnhancedCSV(exportData, `handover-pack-${new Date().toISOString().split('T')[0]}.csv`);
+                  toast.success(`Exported ${exportData.length} applications`);
+                }}
+              >
+                <FileDown className="w-4 h-4" />
+                Export Handover Pack
+              </Button>
             </div>
           </CardHeader>
           <CardContent>

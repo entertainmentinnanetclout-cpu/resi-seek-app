@@ -82,6 +82,8 @@ const FindMyRes = () => {
   const [loading, setLoading] = useState(true);
   const [compareList, setCompareList] = useState<any[]>([]);
   const [isListOpen, setIsListOpen] = useState(false);
+  const [showFirstVisitModal, setShowFirstVisitModal] = useState(false);
+  const [showFloatingBar, setShowFloatingBar] = useState(false);
   
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
