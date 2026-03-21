@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Search, ShoppingCart, Star, Filter, Package, Store, Flame, Sparkles, Percent, Gift } from "lucide-react";
-import { useAdminRedirect } from "@/hooks/useAdminRedirect";
+
 import { useCartCount } from "@/hooks/useCart";
 
 const Marketplace = () => {
