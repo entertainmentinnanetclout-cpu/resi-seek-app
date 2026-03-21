@@ -56,7 +56,7 @@ interface Residence {
   name: string;
 }
 
-const AdminResidencePortals = () => {
+export const AdminResidencePortalsContent = () => {
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState<PortalAccount[]>([]);
   const [residences, setResidences] = useState<Residence[]>([]);
