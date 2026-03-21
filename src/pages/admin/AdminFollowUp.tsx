@@ -31,7 +31,7 @@ interface FollowUpStudent {
   movedIn?: boolean;
 }
 
-const AdminFollowUp = () => {
+export const AdminFollowUpContent = () => {
   const [students, setStudents] = useState<FollowUpStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
