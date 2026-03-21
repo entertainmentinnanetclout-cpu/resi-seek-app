@@ -3,11 +3,14 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
+export type StaffRole = 'admin' | 'operations_lead' | 'commerce_lead' | 'growth_lead' | 'system_operator' | 'support_agent' | null;
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
+  staffRole: StaffRole;
   signOut: () => Promise<void>;
 }
 
@@ -18,12 +21,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [staffRole, setStaffRole] = useState<StaffRole>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
   const navigate = useNavigate();
   const initRef = useRef(false);
 
   useEffect(() => {
-    // Prevent double initialization in strict mode
     if (initRef.current) return;
     initRef.current = true;
 
@@ -31,11 +34,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const initAuth = async () => {
       try {
-        // Get existing session FIRST
         const { data: { session: existingSession } } = await supabase.auth.getSession();
-        
         if (!mounted) return;
-        
         if (existingSession) {
           setSession(existingSession);
           setUser(existingSession.user);
@@ -43,27 +43,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (error) {
         console.error("Auth init error:", error);
       } finally {
-        if (mounted) {
-          setSessionChecked(true);
-        }
+        if (mounted) setSessionChecked(true);
       }
     };
 
-    // Set up auth state listener
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
-      
-      // Update state synchronously
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
-      
-      // Mark session as checked after first auth state change
       setSessionChecked(true);
     });
 
-    // Initialize
     initAuth();
 
     return () => {
@@ -72,37 +62,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Check admin role OUTSIDE auth callbacks to avoid deadlocks/races
+  // Check staff role OUTSIDE auth callbacks
   useEffect(() => {
     let cancelled = false;
 
     const checkRole = async () => {
-      // Wait for session check to complete
       if (!sessionChecked) return;
-      
-      // Not logged in
       if (!user) {
         setIsAdmin(false);
+        setStaffRole(null);
         setIsLoading(false);
         return;
       }
 
-      // Keep loading true while checking role
       setIsLoading(true);
 
       try {
-        const { data, error } = await supabase.rpc("has_role", {
+        const { data, error } = await supabase.rpc("get_user_staff_role", {
           _user_id: user.id,
-          _role: "admin",
         });
 
         if (cancelled) return;
         if (error) throw error;
 
-        setIsAdmin(Boolean(data));
+        const role = (data as string | null) as StaffRole;
+        setStaffRole(role);
+        setIsAdmin(role === 'admin');
       } catch (e) {
-        // Fail closed
-        if (!cancelled) setIsAdmin(false);
+        if (!cancelled) {
+          setIsAdmin(false);
+          setStaffRole(null);
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -110,9 +100,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     checkRole();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [user?.id, sessionChecked]);
 
   const signOut = async () => {
@@ -120,11 +108,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setSession(null);
     setIsAdmin(false);
+    setStaffRole(null);
     navigate("/auth");
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, isAdmin, signOut }}>
+    <AuthContext.Provider value={{ user, session, isLoading, isAdmin, staffRole, signOut }}>
       {children}
     </AuthContext.Provider>
   );
