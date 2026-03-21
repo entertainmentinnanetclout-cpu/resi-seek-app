@@ -16,7 +16,7 @@ import { Search, ShoppingCart, Star, Filter, Package, Store, Flame, Sparkles, Pe
 import { useCartCount } from "@/hooks/useCart";
 
 const Marketplace = () => {
-  const shouldBlock = useAdminRedirect();
+  
   const navigate = useNavigate();
   const { user } = useAuth();
   const cartCount = useCartCount();
