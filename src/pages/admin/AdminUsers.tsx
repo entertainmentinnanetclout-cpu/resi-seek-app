@@ -29,7 +29,7 @@ interface UserProfile {
   documentsCount?: number;
 }
 
-const AdminUsers = () => {
+export const AdminUsersContent = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
