@@ -51,7 +51,7 @@ interface StudentWithDocs {
   residenceApplied?: string;
 }
 
-const AdminDocuments = () => {
+export const AdminDocumentsContent = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [studentsWithDocs, setStudentsWithDocs] = useState<StudentWithDocs[]>([]);
   const [loading, setLoading] = useState(true);
