@@ -34,7 +34,7 @@ interface MarketplaceListing {
   seller?: { full_name: string; email: string } | null;
 }
 
-const AdminMarketplace = () => {
+export const AdminMarketplaceContent = () => {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
