@@ -41,7 +41,7 @@ interface Listing {
 }
 
 const Store = () => {
-  const shouldBlock = useAdminRedirect();
+  
   const { storeId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();

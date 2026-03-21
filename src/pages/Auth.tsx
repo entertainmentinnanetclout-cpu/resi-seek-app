@@ -44,15 +44,17 @@ const Auth = () => {
   const returnTo = searchParams.get("returnTo");
 
   useEffect(() => {
-    // Wait for both auth and admin check to complete before redirecting
     if (!authLoading && user) {
-      // Small delay to ensure isAdmin check has completed
       const timer = setTimeout(() => {
-        navigate(isAdmin ? "/admin" : "/dashboard", { replace: true });
+        if (isAdmin) {
+          navigate("/admin", { replace: true });
+        } else {
+          navigate(returnTo || "/dashboard", { replace: true });
+        }
       }, 150);
       return () => clearTimeout(timer);
     }
-  }, [user, authLoading, isAdmin, navigate]);
+  }, [user, authLoading, isAdmin, navigate, returnTo]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

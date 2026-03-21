@@ -73,7 +73,7 @@ function deriveSection(residence: any): string {
 
 const FindMyRes = () => {
   // ALL hooks must be called unconditionally before any early returns
-  const shouldBlock = useAdminRedirect();
+  
   const { user } = useAuth();
   const navigate = useNavigate();
   const { profile } = useRealtimeProfile(user);

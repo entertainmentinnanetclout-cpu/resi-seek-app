@@ -44,11 +44,7 @@ const FavoriteButton = ({ residenceId, variant = "icon", className }: FavoriteBu
     e.stopPropagation();
     
     if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to save favorites",
-        variant: "destructive",
-      });
+      navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`);
       return;
     }
 

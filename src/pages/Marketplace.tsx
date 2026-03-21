@@ -45,7 +45,7 @@ const Marketplace = () => {
     fetchHampers();
   }, []);
 
-  if (shouldBlock) return null;
+  
 
   const fetchCategories = async () => {
     const { data } = await supabase.from("product_categories" as any).select("*").order("display_order");

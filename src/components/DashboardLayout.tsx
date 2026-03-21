@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Home, Bell, Search, FileText, User, Menu, LogOut, ShoppingBag, GraduationCap, Shield, RefreshCw, Briefcase } from "lucide-react";
+import { Home, Bell, Search, FileText, User, Menu, LogOut, ShoppingBag, GraduationCap, Shield, RefreshCw, Briefcase, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -24,12 +24,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { signOut, isAdmin, user } = useAuth();
   const { profile } = useRealtimeProfile(user);
 
-  // Streamlined student nav — Phase 1C
-  const studentNavItems = [
-    { icon: Home, label: "Home", path: "/dashboard" },
+  // Public browse items (always visible)
+  const publicNavItems = [
     { icon: Search, label: "Find My Res", path: "/findmyres" },
     { icon: ShoppingBag, label: "Marketplace", path: "/marketplace" },
     { icon: GraduationCap, label: "Bursaries", path: "/bursaries" },
+  ];
+
+  // Auth-required items (only for logged-in students)
+  const authNavItems = [
+    { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Briefcase, label: "My WIL", path: "/wil" },
     { icon: FileText, label: "Applications", path: "/applications" },
   ];
@@ -39,7 +43,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: Shield, label: "Admin Portal", path: "/admin" },
   ];
 
-  const navItems = isAdmin ? adminNavItems : studentNavItems;
+  const navItems = isAdmin
+    ? adminNavItems
+    : user
+      ? [...authNavItems.slice(0, 1), ...publicNavItems, ...authNavItems.slice(1)]
+      : publicNavItems;
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -67,8 +75,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <Shield className="w-3.5 h-3.5" />
             Admin Mode
           </Badge>
-        ) : (
+        ) : user ? (
           <p className="text-sm text-muted-foreground text-center">Student Portal</p>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center">Browse Residences</p>
         )}
       </div>
 
@@ -96,25 +106,50 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </nav>
 
       <div className="p-4 border-t border-border space-y-2">
-        <Button 
-          variant="outline" 
-          className="w-full justify-start" 
-          onClick={handleRefresh}
-        >
-          <RefreshCw className="w-5 h-5 mr-3" />
-          Refresh
-        </Button>
-        <div className="flex items-center justify-between">
-          <Button 
-            variant="ghost" 
-            className="flex-1 justify-start" 
-            onClick={handleLogout}
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Logout
-          </Button>
-          <ThemeToggle />
-        </div>
+        {user ? (
+          <>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start" 
+              onClick={handleRefresh}
+            >
+              <RefreshCw className="w-5 h-5 mr-3" />
+              Refresh
+            </Button>
+            <div className="flex items-center justify-between">
+              <Button 
+                variant="ghost" 
+                className="flex-1 justify-start" 
+                onClick={handleLogout}
+              >
+                <LogOut className="w-5 h-5 mr-3" />
+                Logout
+              </Button>
+              <ThemeToggle />
+            </div>
+          </>
+        ) : (
+          <>
+            <Button 
+              className="w-full justify-start" 
+              onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`)}
+            >
+              <LogIn className="w-5 h-5 mr-3" />
+              Sign In
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start" 
+              onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`)}
+            >
+              <UserPlus className="w-5 h-5 mr-3" />
+              Get Started
+            </Button>
+            <div className="flex justify-end">
+              <ThemeToggle />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -132,14 +167,20 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <header className="hidden md:flex border-b border-border bg-card p-4 items-center justify-between">
           <CommandPalette />
           <div className="flex items-center gap-2">
-            <NotificationCenter />
+            {user && <NotificationCenter />}
             <ThemeToggle />
-            <button onClick={() => navigate("/profile")} className="ml-1">
-              <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
-                <AvatarImage src={profile?.profile_picture_url || undefined} />
-                <AvatarFallback className="text-xs bg-primary text-primary-foreground">{profileInitials}</AvatarFallback>
-              </Avatar>
-            </button>
+            {user ? (
+              <button onClick={() => navigate("/profile")} className="ml-1">
+                <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                  <AvatarImage src={profile?.profile_picture_url || undefined} />
+                  <AvatarFallback className="text-xs bg-primary text-primary-foreground">{profileInitials}</AvatarFallback>
+                </Avatar>
+              </button>
+            ) : (
+              <Button size="sm" onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`)}>
+                Sign In
+              </Button>
+            )}
           </div>
         </header>
 
@@ -155,13 +196,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <NotificationCenter />
-            <button onClick={() => navigate("/profile")}>
-              <Avatar className="h-7 w-7">
-                <AvatarImage src={profile?.profile_picture_url || undefined} />
-                <AvatarFallback className="text-xs bg-primary text-primary-foreground">{profileInitials}</AvatarFallback>
-              </Avatar>
-            </button>
+            {user && <NotificationCenter />}
+            {user ? (
+              <button onClick={() => navigate("/profile")}>
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={profile?.profile_picture_url || undefined} />
+                  <AvatarFallback className="text-xs bg-primary text-primary-foreground">{profileInitials}</AvatarFallback>
+                </Avatar>
+              </button>
+            ) : (
+              <Button size="sm" variant="default" onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`)}>
+                Sign In
+              </Button>
+            )}
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
