@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Users, FileText, ShoppingBag, Eye, Clock, CheckCircle, AlertCircle, Package, Activity, Star, GraduationCap, Image, Newspaper, Briefcase, Store, KeyRound, Gift, Percent, TrendingUp, Zap } from "lucide-react";
+import { Building2, Users, FileText, ShoppingBag, Eye, Clock, CheckCircle, AlertCircle, Package, Activity, Star, GraduationCap, Image, Newspaper, Briefcase, Store, KeyRound, Gift, Percent, TrendingUp, Zap, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
