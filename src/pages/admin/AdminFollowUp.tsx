@@ -427,8 +427,12 @@ const AdminFollowUp = () => {
           </Tabs>
         )}
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminFollowUp = () => (
+  <AdminLayout><AdminFollowUpContent /></AdminLayout>
+);
 
 export default AdminFollowUp;

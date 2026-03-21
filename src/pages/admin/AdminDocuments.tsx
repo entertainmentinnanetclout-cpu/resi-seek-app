@@ -686,8 +686,12 @@ const AdminDocuments = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminDocuments = () => (
+  <AdminLayout><AdminDocumentsContent /></AdminLayout>
+);
 
 export default AdminDocuments;

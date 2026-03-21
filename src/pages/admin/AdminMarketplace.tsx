@@ -421,8 +421,12 @@ const AdminMarketplace = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminMarketplace = () => (
+  <AdminLayout><AdminMarketplaceContent /></AdminLayout>
+);
 
 export default AdminMarketplace;

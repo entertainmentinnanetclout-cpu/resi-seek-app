@@ -377,8 +377,12 @@ const AdminNews = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminNews = () => (
+  <AdminLayout><AdminNewsContent /></AdminLayout>
+);
 
 export default AdminNews;

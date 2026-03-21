@@ -350,8 +350,12 @@ const AdminBursaries = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminBursaries = () => (
+  <AdminLayout><AdminBursariesContent /></AdminLayout>
+);
 
 export default AdminBursaries;

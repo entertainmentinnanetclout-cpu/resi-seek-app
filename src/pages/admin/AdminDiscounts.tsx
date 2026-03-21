@@ -509,8 +509,12 @@ const AdminDiscounts = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminDiscounts = () => (
+  <AdminLayout><AdminDiscountsContent /></AdminLayout>
+);
 
 export default AdminDiscounts;

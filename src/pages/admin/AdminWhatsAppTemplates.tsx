@@ -318,8 +318,12 @@ const AdminWhatsAppTemplates = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminWhatsAppTemplates = () => (
+  <AdminLayout><AdminWhatsAppTemplatesContent /></AdminLayout>
+);
 
 export default AdminWhatsAppTemplates;

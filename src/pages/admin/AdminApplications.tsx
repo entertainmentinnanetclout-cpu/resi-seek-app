@@ -587,8 +587,12 @@ const AdminApplications = () => {
           )}
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminApplications = () => (
+  <AdminLayout><AdminApplicationsContent /></AdminLayout>
+);
 
 export default AdminApplications;

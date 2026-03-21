@@ -223,8 +223,12 @@ const AdminSystemStatus = () => {
           ))}
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminSystemStatus = () => (
+  <AdminLayout><AdminSystemStatusContent /></AdminLayout>
+);
 
 export default AdminSystemStatus;

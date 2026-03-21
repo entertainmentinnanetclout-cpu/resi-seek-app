@@ -360,8 +360,12 @@ const AdminUsers = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminUsers = () => (
+  <AdminLayout><AdminUsersContent /></AdminLayout>
+);
 
 export default AdminUsers;

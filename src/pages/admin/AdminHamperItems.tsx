@@ -388,8 +388,12 @@ const AdminHamperItems = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminHamperItems = () => (
+  <AdminLayout><AdminHamperItemsContent /></AdminLayout>
+);
 
 export default AdminHamperItems;

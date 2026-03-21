@@ -693,8 +693,12 @@ export const AdminResidencesContent = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminResidences = () => (
+  <AdminLayout><AdminResidencesContent /></AdminLayout>
+);
 
 export default AdminResidences;

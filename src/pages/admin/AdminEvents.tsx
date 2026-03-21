@@ -336,8 +336,12 @@ const AdminEvents = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminEvents = () => (
+  <AdminLayout><AdminEventsContent /></AdminLayout>
+);
 
 export default AdminEvents;

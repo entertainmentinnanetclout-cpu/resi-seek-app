@@ -139,8 +139,12 @@ const AdminSettings = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminSettings = () => (
+  <AdminLayout><AdminSettingsContent /></AdminLayout>
+);
 
 export default AdminSettings;

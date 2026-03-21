@@ -428,8 +428,12 @@ const AdminDiscountOrders = () => {
           )}
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminDiscountOrders = () => (
+  <AdminLayout><AdminDiscountOrdersContent /></AdminLayout>
+);
 
 export default AdminDiscountOrders;

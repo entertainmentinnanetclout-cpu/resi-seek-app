@@ -508,8 +508,12 @@ const AdminSlides = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminSlides = () => (
+  <AdminLayout><AdminSlidesContent /></AdminLayout>
+);
 
 export default AdminSlides;

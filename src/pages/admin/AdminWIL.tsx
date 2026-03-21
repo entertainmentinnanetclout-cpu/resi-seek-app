@@ -349,8 +349,12 @@ const AdminWIL = () => {
           )}
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminWIL = () => (
+  <AdminLayout><AdminWILContent /></AdminLayout>
+);
 
 export default AdminWIL;

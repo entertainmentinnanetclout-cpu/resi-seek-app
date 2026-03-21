@@ -474,8 +474,12 @@ const AdminResidencePortals = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminResidencePortals = () => (
+  <AdminLayout><AdminResidencePortalsContent /></AdminLayout>
+);
 
 export default AdminResidencePortals;

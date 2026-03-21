@@ -338,8 +338,12 @@ const AdminStores = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminStores = () => (
+  <AdminLayout><AdminStoresContent /></AdminLayout>
+);
 
 export default AdminStores;
