@@ -63,23 +63,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       </div>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {/* Standalone items */}
-        {standaloneItems.map((item) => (
+        {navItems.map((item) => (
           <NavLink key={item.path} item={item} onClick={() => setIsOpen(false)} />
-        ))}
-
-        {/* Grouped sections */}
-        {navSections.map((section) => (
-          <div key={section.label} className="pt-4">
-            <p className="px-3 pb-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {section.label}
-            </p>
-            <div className="space-y-0.5">
-              {section.items.map((item) => (
-                <NavLink key={item.path} item={item} onClick={() => setIsOpen(false)} />
-              ))}
-            </div>
-          </div>
         ))}
       </nav>
 
