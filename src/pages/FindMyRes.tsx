@@ -234,8 +234,6 @@ const FindMyRes = () => {
   // Keep filteredResidences for backward compatibility
   const filteredResidences = filteredAndSortedResidences;
 
-  // Early return AFTER all hooks are called (React rules of hooks)
-  if (shouldBlock) return null;
 
   const handleApply = (residence: any) => {
     setSelectedResidence(residence);

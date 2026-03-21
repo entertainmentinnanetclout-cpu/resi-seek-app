@@ -120,7 +120,7 @@ const Store = () => {
     }
   };
 
-  if (shouldBlock) return null;
+  
 
   if (isLoading) {
     return (
