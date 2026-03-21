@@ -38,7 +38,7 @@ interface Application {
   profile?: { full_name: string; email: string; phone: string | null; student_number: string | null };
 }
 
-const AdminApplications = () => {
+export const AdminApplicationsContent = () => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
