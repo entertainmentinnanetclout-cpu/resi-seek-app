@@ -145,7 +145,7 @@ export const AdminEventsContent = () => {
   );
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Manage Events | Admin" description="Manage campus events" />
 
       <div className="space-y-6">

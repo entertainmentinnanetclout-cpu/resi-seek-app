@@ -231,7 +231,7 @@ export const AdminResidencePortalsContent = () => {
   });
 
   return (
-    <AdminLayout>
+    <>
       <SEO 
         title="Residence Portals | Admin | ResKonnect"
         description="Manage residence portal accounts"

@@ -149,7 +149,7 @@ export const AdminSystemStatusContent = () => {
   const pendingCount = checks.filter((c) => c.status === "pending").length;
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="System Status | Admin" description="Check backend system health and connectivity" />
 
       <div className="space-y-6">

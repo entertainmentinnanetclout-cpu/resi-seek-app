@@ -170,7 +170,7 @@ export const AdminDiscountOrdersContent = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Discount Orders | Admin" description="Manage student discount orders" />
 
       <div className="space-y-6">

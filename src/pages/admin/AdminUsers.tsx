@@ -188,7 +188,7 @@ export const AdminUsersContent = () => {
   });
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Manage Users | Admin" description="Manage user accounts and roles" />
 
       <div className="space-y-6">

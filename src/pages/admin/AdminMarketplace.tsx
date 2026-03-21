@@ -179,7 +179,7 @@ export const AdminMarketplaceContent = () => {
   const unverifiedCount = filteredListings.filter(l => !l.verified && l.status === "active").length;
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Marketplace Moderation | Admin" description="Moderate marketplace listings" />
 
       <div className="space-y-6">

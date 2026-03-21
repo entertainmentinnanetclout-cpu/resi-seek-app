@@ -144,7 +144,7 @@ export const AdminStoresContent = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Store Management | Admin" description="Manage marketplace stores" />
 
       <div className="space-y-6">

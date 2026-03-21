@@ -184,7 +184,7 @@ export const AdminDiscountsContent = () => {
   );
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Manage Discounts | Admin" description="Manage student discount listings" />
 
       <div className="space-y-6">

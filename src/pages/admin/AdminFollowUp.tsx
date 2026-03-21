@@ -271,7 +271,7 @@ export const AdminFollowUpContent = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Student Follow-Up | Admin" description="Smart student follow-up system" />
 
       <div className="space-y-6">

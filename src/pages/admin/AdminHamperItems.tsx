@@ -178,7 +178,7 @@ export const AdminHamperItemsContent = () => {
     : items.filter(item => item.category === categoryFilter);
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Hamper Items | Admin" description="Manage student hamper item catalog" />
 
       <div className="space-y-6">

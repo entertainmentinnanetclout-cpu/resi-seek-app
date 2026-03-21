@@ -230,7 +230,7 @@ export const AdminResidencesContent = () => {
   );
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Manage Residences | Admin" description="Manage residence listings" />
       
       <div className="space-y-6">

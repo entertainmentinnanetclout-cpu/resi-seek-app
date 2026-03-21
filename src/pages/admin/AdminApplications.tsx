@@ -273,7 +273,7 @@ export const AdminApplicationsContent = () => {
   ).length;
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Manage Applications | Admin" description="Review and manage student applications" />
 
       <div className="space-y-6">

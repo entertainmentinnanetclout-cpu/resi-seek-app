@@ -162,7 +162,7 @@ export const AdminWhatsAppTemplatesContent = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="WhatsApp Templates | Admin" description="Manage WhatsApp message templates" />
 
       <div className="space-y-6">

@@ -176,7 +176,7 @@ export const AdminNewsContent = () => {
   );
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Campus News | Admin" description="Manage campus news articles" />
 
       <div className="space-y-6">

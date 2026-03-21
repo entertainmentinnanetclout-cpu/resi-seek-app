@@ -189,7 +189,7 @@ export const AdminSlidesContent = () => {
   const activeSlides = slides.filter(s => s.is_active);
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Hero Slides | Admin" description="Manage homepage hero carousel slides" />
 
       <div className="space-y-6">

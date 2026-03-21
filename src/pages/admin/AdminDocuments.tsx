@@ -303,7 +303,7 @@ export const AdminDocumentsContent = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Document Review | Admin" description="Review and verify student documents" />
 
       <div className="space-y-6">

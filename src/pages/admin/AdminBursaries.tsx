@@ -143,7 +143,7 @@ export const AdminBursariesContent = () => {
   );
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Manage Bursaries | Admin" description="Manage bursary listings" />
 
       <div className="space-y-6">
