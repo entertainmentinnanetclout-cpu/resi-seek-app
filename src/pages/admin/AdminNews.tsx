@@ -41,7 +41,7 @@ const emptyNews: Partial<CampusNews> = {
 
 const categories = ["general", "academic", "sports", "events", "announcements", "student-life"];
 
-const AdminNews = () => {
+export const AdminNewsContent = () => {
   const [news, setNews] = useState<CampusNews[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
