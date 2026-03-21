@@ -29,7 +29,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import TrustedResidencesGrid from "@/components/TrustedResidencesGrid";
 import ResidenceSectionGrid from "@/components/ResidenceSectionGrid";
 import { RESKONNECT_WHATSAPP } from "@/lib/constants";
-import { useAdminRedirect } from "@/hooks/useAdminRedirect";
+
 
 const MAX_COMPARE = 3;
 
