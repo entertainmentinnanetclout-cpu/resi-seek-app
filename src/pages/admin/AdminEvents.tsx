@@ -39,7 +39,7 @@ const emptyEvent: Partial<Event> = {
 
 const categories = ["Academic", "Social", "Career", "Sports", "Cultural", "Workshop", "Other"];
 
-const AdminEvents = () => {
+export const AdminEventsContent = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
