@@ -41,7 +41,7 @@ interface StoreData {
   listings_count?: number;
 }
 
-const AdminStores = () => {
+export const AdminStoresContent = () => {
   const [stores, setStores] = useState<StoreData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
