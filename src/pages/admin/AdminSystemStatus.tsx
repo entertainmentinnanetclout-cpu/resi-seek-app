@@ -15,7 +15,7 @@ interface HealthCheck {
   fix?: string;
 }
 
-const AdminSystemStatus = () => {
+export const AdminSystemStatusContent = () => {
   const [checks, setChecks] = useState<HealthCheck[]>([
     { name: "User Roles Table", icon: Users, status: "pending" },
     { name: "Profiles Table", icon: Users, status: "pending" },
