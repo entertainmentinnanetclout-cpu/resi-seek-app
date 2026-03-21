@@ -41,7 +41,7 @@ interface StoreData {
   listings_count?: number;
 }
 
-const AdminStores = () => {
+export const AdminStoresContent = () => {
   const [stores, setStores] = useState<StoreData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -144,7 +144,7 @@ const AdminStores = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Store Management | Admin" description="Manage marketplace stores" />
 
       <div className="space-y-6">
@@ -338,8 +338,12 @@ const AdminStores = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminStores = () => (
+  <AdminLayout><AdminStoresContent /></AdminLayout>
+);
 
 export default AdminStores;

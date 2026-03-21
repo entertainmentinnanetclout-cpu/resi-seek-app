@@ -34,7 +34,7 @@ interface MarketplaceListing {
   seller?: { full_name: string; email: string } | null;
 }
 
-const AdminMarketplace = () => {
+export const AdminMarketplaceContent = () => {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -179,7 +179,7 @@ const AdminMarketplace = () => {
   const unverifiedCount = filteredListings.filter(l => !l.verified && l.status === "active").length;
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Marketplace Moderation | Admin" description="Moderate marketplace listings" />
 
       <div className="space-y-6">
@@ -421,8 +421,12 @@ const AdminMarketplace = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminMarketplace = () => (
+  <AdminLayout><AdminMarketplaceContent /></AdminLayout>
+);
 
 export default AdminMarketplace;

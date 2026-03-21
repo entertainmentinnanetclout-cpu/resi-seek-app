@@ -31,7 +31,7 @@ interface FollowUpStudent {
   movedIn?: boolean;
 }
 
-const AdminFollowUp = () => {
+export const AdminFollowUpContent = () => {
   const [students, setStudents] = useState<FollowUpStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -271,7 +271,7 @@ const AdminFollowUp = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Student Follow-Up | Admin" description="Smart student follow-up system" />
 
       <div className="space-y-6">
@@ -427,8 +427,12 @@ const AdminFollowUp = () => {
           </Tabs>
         )}
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminFollowUp = () => (
+  <AdminLayout><AdminFollowUpContent /></AdminLayout>
+);
 
 export default AdminFollowUp;

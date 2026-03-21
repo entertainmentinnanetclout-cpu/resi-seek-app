@@ -56,7 +56,7 @@ interface Residence {
   name: string;
 }
 
-const AdminResidencePortals = () => {
+export const AdminResidencePortalsContent = () => {
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState<PortalAccount[]>([]);
   const [residences, setResidences] = useState<Residence[]>([]);
@@ -231,7 +231,7 @@ const AdminResidencePortals = () => {
   });
 
   return (
-    <AdminLayout>
+    <>
       <SEO 
         title="Residence Portals | Admin | ResKonnect"
         description="Manage residence portal accounts"
@@ -474,8 +474,12 @@ const AdminResidencePortals = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminResidencePortals = () => (
+  <AdminLayout><AdminResidencePortalsContent /></AdminLayout>
+);
 
 export default AdminResidencePortals;

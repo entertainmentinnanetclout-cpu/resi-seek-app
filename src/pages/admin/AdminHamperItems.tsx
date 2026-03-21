@@ -34,7 +34,7 @@ const categories = [
   { value: "bedding", label: "Bedding & Linen", icon: Bed },
 ];
 
-const AdminHamperItems = () => {
+export const AdminHamperItemsContent = () => {
   const [items, setItems] = useState<HamperItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -178,7 +178,7 @@ const AdminHamperItems = () => {
     : items.filter(item => item.category === categoryFilter);
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Hamper Items | Admin" description="Manage student hamper item catalog" />
 
       <div className="space-y-6">
@@ -388,8 +388,12 @@ const AdminHamperItems = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminHamperItems = () => (
+  <AdminLayout><AdminHamperItemsContent /></AdminLayout>
+);
 
 export default AdminHamperItems;

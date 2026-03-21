@@ -51,7 +51,7 @@ interface StudentWithDocs {
   residenceApplied?: string;
 }
 
-const AdminDocuments = () => {
+export const AdminDocumentsContent = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [studentsWithDocs, setStudentsWithDocs] = useState<StudentWithDocs[]>([]);
   const [loading, setLoading] = useState(true);
@@ -303,7 +303,7 @@ const AdminDocuments = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Document Review | Admin" description="Review and verify student documents" />
 
       <div className="space-y-6">
@@ -686,8 +686,12 @@ const AdminDocuments = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminDocuments = () => (
+  <AdminLayout><AdminDocumentsContent /></AdminLayout>
+);
 
 export default AdminDocuments;

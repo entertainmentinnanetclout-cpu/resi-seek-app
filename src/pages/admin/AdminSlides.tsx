@@ -35,7 +35,7 @@ const emptySlide: Partial<HeroSlide> = {
   is_active: true,
 };
 
-const AdminSlides = () => {
+export const AdminSlidesContent = () => {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -189,7 +189,7 @@ const AdminSlides = () => {
   const activeSlides = slides.filter(s => s.is_active);
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Hero Slides | Admin" description="Manage homepage hero carousel slides" />
 
       <div className="space-y-6">
@@ -508,8 +508,12 @@ const AdminSlides = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminSlides = () => (
+  <AdminLayout><AdminSlidesContent /></AdminLayout>
+);
 
 export default AdminSlides;

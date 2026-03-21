@@ -8,13 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
-const AdminSettings = () => {
+export const AdminSettingsContent = () => {
   const handleSave = () => {
     toast.success("Settings saved successfully");
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Platform Settings | Admin" description="Configure platform settings" />
 
       <div className="space-y-6">
@@ -139,8 +139,12 @@ const AdminSettings = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminSettings = () => (
+  <AdminLayout><AdminSettingsContent /></AdminLayout>
+);
 
 export default AdminSettings;

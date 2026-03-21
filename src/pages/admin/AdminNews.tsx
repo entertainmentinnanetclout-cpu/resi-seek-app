@@ -41,7 +41,7 @@ const emptyNews: Partial<CampusNews> = {
 
 const categories = ["general", "academic", "sports", "events", "announcements", "student-life"];
 
-const AdminNews = () => {
+export const AdminNewsContent = () => {
   const [news, setNews] = useState<CampusNews[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -176,7 +176,7 @@ const AdminNews = () => {
   );
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Campus News | Admin" description="Manage campus news articles" />
 
       <div className="space-y-6">
@@ -377,8 +377,12 @@ const AdminNews = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminNews = () => (
+  <AdminLayout><AdminNewsContent /></AdminLayout>
+);
 
 export default AdminNews;

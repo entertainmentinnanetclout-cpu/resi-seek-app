@@ -43,7 +43,7 @@ const emptyBursary: Partial<Bursary> = {
   is_active: true,
 };
 
-const AdminBursaries = () => {
+export const AdminBursariesContent = () => {
   const [bursaries, setBursaries] = useState<Bursary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -143,7 +143,7 @@ const AdminBursaries = () => {
   );
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Manage Bursaries | Admin" description="Manage bursary listings" />
 
       <div className="space-y-6">
@@ -350,8 +350,12 @@ const AdminBursaries = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminBursaries = () => (
+  <AdminLayout><AdminBursariesContent /></AdminLayout>
+);
 
 export default AdminBursaries;

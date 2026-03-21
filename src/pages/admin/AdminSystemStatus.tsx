@@ -15,7 +15,7 @@ interface HealthCheck {
   fix?: string;
 }
 
-const AdminSystemStatus = () => {
+export const AdminSystemStatusContent = () => {
   const [checks, setChecks] = useState<HealthCheck[]>([
     { name: "User Roles Table", icon: Users, status: "pending" },
     { name: "Profiles Table", icon: Users, status: "pending" },
@@ -149,7 +149,7 @@ const AdminSystemStatus = () => {
   const pendingCount = checks.filter((c) => c.status === "pending").length;
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="System Status | Admin" description="Check backend system health and connectivity" />
 
       <div className="space-y-6">
@@ -223,8 +223,12 @@ const AdminSystemStatus = () => {
           ))}
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminSystemStatus = () => (
+  <AdminLayout><AdminSystemStatusContent /></AdminLayout>
+);
 
 export default AdminSystemStatus;

@@ -23,7 +23,7 @@ interface WhatsAppTemplate {
   created_at: string;
 }
 
-const AdminWhatsAppTemplates = () => {
+export const AdminWhatsAppTemplatesContent = () => {
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -162,7 +162,7 @@ const AdminWhatsAppTemplates = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="WhatsApp Templates | Admin" description="Manage WhatsApp message templates" />
 
       <div className="space-y-6">
@@ -318,8 +318,12 @@ const AdminWhatsAppTemplates = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminWhatsAppTemplates = () => (
+  <AdminLayout><AdminWhatsAppTemplatesContent /></AdminLayout>
+);
 
 export default AdminWhatsAppTemplates;

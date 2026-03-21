@@ -71,7 +71,7 @@ const emptyResidence: Partial<Residence> = {
   virtual_tour_provider: "",
 };
 
-const AdminResidences = () => {
+export const AdminResidencesContent = () => {
   const [residences, setResidences] = useState<Residence[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -230,7 +230,7 @@ const AdminResidences = () => {
   );
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Manage Residences | Admin" description="Manage residence listings" />
       
       <div className="space-y-6">
@@ -693,8 +693,12 @@ const AdminResidences = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminResidences = () => (
+  <AdminLayout><AdminResidencesContent /></AdminLayout>
+);
 
 export default AdminResidences;

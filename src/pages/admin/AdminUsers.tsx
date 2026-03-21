@@ -29,7 +29,7 @@ interface UserProfile {
   documentsCount?: number;
 }
 
-const AdminUsers = () => {
+export const AdminUsersContent = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -188,7 +188,7 @@ const AdminUsers = () => {
   });
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Manage Users | Admin" description="Manage user accounts and roles" />
 
       <div className="space-y-6">
@@ -360,8 +360,12 @@ const AdminUsers = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminUsers = () => (
+  <AdminLayout><AdminUsersContent /></AdminLayout>
+);
 
 export default AdminUsers;

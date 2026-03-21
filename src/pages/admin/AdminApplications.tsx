@@ -38,7 +38,7 @@ interface Application {
   profile?: { full_name: string; email: string; phone: string | null; student_number: string | null };
 }
 
-const AdminApplications = () => {
+export const AdminApplicationsContent = () => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -273,7 +273,7 @@ const AdminApplications = () => {
   ).length;
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Manage Applications | Admin" description="Review and manage student applications" />
 
       <div className="space-y-6">
@@ -587,8 +587,12 @@ const AdminApplications = () => {
           )}
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminApplications = () => (
+  <AdminLayout><AdminApplicationsContent /></AdminLayout>
+);
 
 export default AdminApplications;

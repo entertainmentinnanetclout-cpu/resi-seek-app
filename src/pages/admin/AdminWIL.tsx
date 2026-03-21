@@ -24,7 +24,7 @@ const STATUS_OPTIONS = [
   { value: "not_suitable", label: "Not Suitable", className: "bg-destructive text-white" },
 ];
 
-const AdminWIL = () => {
+export const AdminWILContent = () => {
   const { user } = useAuth();
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,7 +151,7 @@ const AdminWIL = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
@@ -349,8 +349,12 @@ const AdminWIL = () => {
           )}
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminWIL = () => (
+  <AdminLayout><AdminWILContent /></AdminLayout>
+);
 
 export default AdminWIL;

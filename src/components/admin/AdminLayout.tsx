@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Building2, Users, FileText, Home, Settings, LogOut, Menu, Image, Percent, GraduationCap, Newspaper, Calendar, ShoppingBag, LayoutDashboard, RefreshCw, Activity, TrendingUp, Store, MessageSquare, Gift, KeyRound, Briefcase } from "lucide-react";
+import { Building2, Home, Settings, LogOut, Menu, LayoutDashboard, RefreshCw, TrendingUp, Boxes, ShoppingCart, Film, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -12,51 +12,13 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-const standaloneItems = [
+const navItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/admin" },
   { icon: TrendingUp, label: "Analytics", path: "/admin/analytics" },
-];
-
-const navSections = [
-  {
-    label: "Operations Hub",
-    items: [
-      { icon: Building2, label: "Residences", path: "/admin/residences" },
-      { icon: KeyRound, label: "Residence Portals", path: "/admin/residence-portals" },
-      { icon: FileText, label: "Applications", path: "/admin/applications" },
-      { icon: Users, label: "Follow-Up", path: "/admin/follow-up" },
-      { icon: FileText, label: "Documents", path: "/admin/documents" },
-      { icon: Users, label: "Users", path: "/admin/users" },
-    ],
-  },
-  {
-    label: "Commerce Hub",
-    items: [
-      { icon: ShoppingBag, label: "Marketplace", path: "/admin/marketplace" },
-      { icon: Store, label: "Stores", path: "/admin/stores" },
-      { icon: Percent, label: "Discounts", path: "/admin/discounts" },
-      { icon: ShoppingBag, label: "Discount Orders", path: "/admin/discount-orders" },
-      { icon: Gift, label: "Hamper Items", path: "/admin/hamper-items" },
-    ],
-  },
-  {
-    label: "Media Hub",
-    items: [
-      { icon: Image, label: "Hero Slides", path: "/admin/slides" },
-      { icon: Newspaper, label: "News", path: "/admin/news" },
-      { icon: Calendar, label: "Events", path: "/admin/events" },
-      { icon: GraduationCap, label: "Bursaries", path: "/admin/bursaries" },
-    ],
-  },
-  {
-    label: "System Hub",
-    items: [
-      { icon: Briefcase, label: "WIL Management", path: "/admin/wil" },
-      { icon: MessageSquare, label: "WhatsApp Templates", path: "/admin/whatsapp-templates" },
-      { icon: Activity, label: "System Status", path: "/admin/system-status" },
-      { icon: Settings, label: "Settings", path: "/admin/settings" },
-    ],
-  },
+  { icon: Boxes, label: "Operations Hub", path: "/admin/operations" },
+  { icon: ShoppingCart, label: "Commerce Hub", path: "/admin/commerce" },
+  { icon: Film, label: "Media Hub", path: "/admin/media" },
+  { icon: Cpu, label: "System Hub", path: "/admin/system" },
 ];
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
@@ -101,23 +63,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       </div>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {/* Standalone items */}
-        {standaloneItems.map((item) => (
+        {navItems.map((item) => (
           <NavLink key={item.path} item={item} onClick={() => setIsOpen(false)} />
-        ))}
-
-        {/* Grouped sections */}
-        {navSections.map((section) => (
-          <div key={section.label} className="pt-4">
-            <p className="px-3 pb-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {section.label}
-            </p>
-            <div className="space-y-0.5">
-              {section.items.map((item) => (
-                <NavLink key={item.path} item={item} onClick={() => setIsOpen(false)} />
-              ))}
-            </div>
-          </div>
         ))}
       </nav>
 

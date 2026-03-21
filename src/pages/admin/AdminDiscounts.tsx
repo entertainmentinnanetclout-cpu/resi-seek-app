@@ -56,7 +56,7 @@ const emptyDiscount: Partial<StudentDiscount> = {
 
 const categories = ["Food", "Transport", "Entertainment", "Tech", "Health", "Shopping", "Education", "Fitness"];
 
-const AdminDiscounts = () => {
+export const AdminDiscountsContent = () => {
   const [discounts, setDiscounts] = useState<StudentDiscount[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -184,7 +184,7 @@ const AdminDiscounts = () => {
   );
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Manage Discounts | Admin" description="Manage student discount listings" />
 
       <div className="space-y-6">
@@ -509,8 +509,12 @@ const AdminDiscounts = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminDiscounts = () => (
+  <AdminLayout><AdminDiscountsContent /></AdminLayout>
+);
 
 export default AdminDiscounts;

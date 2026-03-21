@@ -39,7 +39,7 @@ const emptyEvent: Partial<Event> = {
 
 const categories = ["Academic", "Social", "Career", "Sports", "Cultural", "Workshop", "Other"];
 
-const AdminEvents = () => {
+export const AdminEventsContent = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -145,7 +145,7 @@ const AdminEvents = () => {
   );
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Manage Events | Admin" description="Manage campus events" />
 
       <div className="space-y-6">
@@ -336,8 +336,12 @@ const AdminEvents = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminEvents = () => (
+  <AdminLayout><AdminEventsContent /></AdminLayout>
+);
 
 export default AdminEvents;

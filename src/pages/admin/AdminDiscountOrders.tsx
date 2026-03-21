@@ -40,7 +40,7 @@ const orderStatuses = [
   { value: "cancelled", label: "Cancelled", color: "destructive", icon: Clock },
 ];
 
-const AdminDiscountOrders = () => {
+export const AdminDiscountOrdersContent = () => {
   const [orders, setOrders] = useState<DiscountOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -170,7 +170,7 @@ const AdminDiscountOrders = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEO title="Discount Orders | Admin" description="Manage student discount orders" />
 
       <div className="space-y-6">
@@ -428,8 +428,12 @@ const AdminDiscountOrders = () => {
           )}
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminDiscountOrders = () => (
+  <AdminLayout><AdminDiscountOrdersContent /></AdminLayout>
+);
 
 export default AdminDiscountOrders;
