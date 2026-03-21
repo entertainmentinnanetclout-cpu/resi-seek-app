@@ -40,7 +40,7 @@ const orderStatuses = [
   { value: "cancelled", label: "Cancelled", color: "destructive", icon: Clock },
 ];
 
-const AdminDiscountOrders = () => {
+export const AdminDiscountOrdersContent = () => {
   const [orders, setOrders] = useState<DiscountOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
