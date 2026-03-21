@@ -24,7 +24,7 @@ const STATUS_OPTIONS = [
   { value: "not_suitable", label: "Not Suitable", className: "bg-destructive text-white" },
 ];
 
-const AdminWIL = () => {
+export const AdminWILContent = () => {
   const { user } = useAuth();
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
