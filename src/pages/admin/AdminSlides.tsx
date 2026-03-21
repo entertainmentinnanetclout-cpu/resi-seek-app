@@ -35,7 +35,7 @@ const emptySlide: Partial<HeroSlide> = {
   is_active: true,
 };
 
-const AdminSlides = () => {
+export const AdminSlidesContent = () => {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
