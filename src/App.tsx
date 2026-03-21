@@ -75,6 +75,10 @@ import ResidenceAnalytics from "./pages/residence/ResidenceAnalytics";
 import { ResidenceRoute } from "./components/ResidenceRoute";
 import MyWIL from "./pages/MyWIL";
 import AdminWIL from "./pages/admin/AdminWIL";
+import AdminOperationsHub from "./pages/admin/AdminOperationsHub";
+import AdminCommerceHub from "./pages/admin/AdminCommerceHub";
+import AdminMediaHub from "./pages/admin/AdminMediaHub";
+import AdminSystemHub from "./pages/admin/AdminSystemHub";
 const queryClient = new QueryClient();
 
 const App = () => {
