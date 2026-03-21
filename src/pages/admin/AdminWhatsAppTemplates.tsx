@@ -23,7 +23,7 @@ interface WhatsAppTemplate {
   created_at: string;
 }
 
-const AdminWhatsAppTemplates = () => {
+export const AdminWhatsAppTemplatesContent = () => {
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
