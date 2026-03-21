@@ -43,7 +43,7 @@ const emptyBursary: Partial<Bursary> = {
   is_active: true,
 };
 
-const AdminBursaries = () => {
+export const AdminBursariesContent = () => {
   const [bursaries, setBursaries] = useState<Bursary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
