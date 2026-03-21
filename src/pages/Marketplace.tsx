@@ -12,11 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Search, ShoppingCart, Star, Filter, Package, Store, Flame, Sparkles, Percent, Gift } from "lucide-react";
-import { useAdminRedirect } from "@/hooks/useAdminRedirect";
+
 import { useCartCount } from "@/hooks/useCart";
 
 const Marketplace = () => {
-  const shouldBlock = useAdminRedirect();
+  
   const navigate = useNavigate();
   const { user } = useAuth();
   const cartCount = useCartCount();
@@ -45,7 +45,7 @@ const Marketplace = () => {
     fetchHampers();
   }, []);
 
-  if (shouldBlock) return null;
+  
 
   const fetchCategories = async () => {
     const { data } = await supabase.from("product_categories" as any).select("*").order("display_order");

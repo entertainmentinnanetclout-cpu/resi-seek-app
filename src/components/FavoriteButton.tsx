@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,8 @@ interface FavoriteButtonProps {
 const FavoriteButton = ({ residenceId, variant = "icon", className }: FavoriteButtonProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,11 +44,7 @@ const FavoriteButton = ({ residenceId, variant = "icon", className }: FavoriteBu
     e.stopPropagation();
     
     if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to save favorites",
-        variant: "destructive",
-      });
+      navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`);
       return;
     }
 

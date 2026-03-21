@@ -29,7 +29,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import TrustedResidencesGrid from "@/components/TrustedResidencesGrid";
 import ResidenceSectionGrid from "@/components/ResidenceSectionGrid";
 import { RESKONNECT_WHATSAPP } from "@/lib/constants";
-import { useAdminRedirect } from "@/hooks/useAdminRedirect";
+
 
 const MAX_COMPARE = 3;
 
@@ -73,7 +73,7 @@ function deriveSection(residence: any): string {
 
 const FindMyRes = () => {
   // ALL hooks must be called unconditionally before any early returns
-  const shouldBlock = useAdminRedirect();
+  
   const { user } = useAuth();
   const navigate = useNavigate();
   const { profile } = useRealtimeProfile(user);
@@ -234,8 +234,6 @@ const FindMyRes = () => {
   // Keep filteredResidences for backward compatibility
   const filteredResidences = filteredAndSortedResidences;
 
-  // Early return AFTER all hooks are called (React rules of hooks)
-  if (shouldBlock) return null;
 
   const handleApply = (residence: any) => {
     setSelectedResidence(residence);

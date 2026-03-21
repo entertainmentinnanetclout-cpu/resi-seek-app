@@ -1,6 +1,6 @@
 import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,17 +40,21 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCampus, setSelectedCampus] = useState("");
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
 
   useEffect(() => {
-    // Wait for both auth and admin check to complete before redirecting
     if (!authLoading && user) {
-      // Small delay to ensure isAdmin check has completed
       const timer = setTimeout(() => {
-        navigate(isAdmin ? "/admin" : "/dashboard", { replace: true });
+        if (isAdmin) {
+          navigate("/admin", { replace: true });
+        } else {
+          navigate(returnTo || "/dashboard", { replace: true });
+        }
       }, 150);
       return () => clearTimeout(timer);
     }
-  }, [user, authLoading, isAdmin, navigate]);
+  }, [user, authLoading, isAdmin, navigate, returnTo]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

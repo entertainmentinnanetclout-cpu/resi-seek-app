@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Store as StoreIcon, MapPin, MessageCircle, Star, Package, ArrowLeft, ShieldCheck } from "lucide-react";
-import { useAdminRedirect } from "@/hooks/useAdminRedirect";
+
 import { useAuth } from "@/contexts/AuthContext";
 import StoreReviewForm from "@/components/StoreReviewForm";
 import StoreReviews from "@/components/StoreReviews";
@@ -41,7 +41,7 @@ interface Listing {
 }
 
 const Store = () => {
-  const shouldBlock = useAdminRedirect();
+  
   const { storeId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -120,7 +120,7 @@ const Store = () => {
     }
   };
 
-  if (shouldBlock) return null;
+  
 
   if (isLoading) {
     return (

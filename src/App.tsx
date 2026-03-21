@@ -105,40 +105,38 @@ const App = () => {
           <BrowserRouter>
             <AuthProvider>
               <Routes>
-              {/* Core App Routes - Student Only */}
+              {/* Public Browse Routes (shareable, no auth required) */}
               <Route path="/" element={<Landing />} />
+              <Route path="/find" element={<FindMyRes />} />
+              <Route path="/findmyres" element={<FindMyRes />} />
+              <Route path="/res/:id" element={<ResidenceDetail />} />
+              <Route path="/bursaries" element={<BursaryFinder />} />
+              <Route path="/bursary/:id" element={<BursaryDetail />} />
+              <Route path="/marketplace" element={<Marketplace />} />
+              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/store/:storeId" element={<Store />} />
+              <Route path="/discounts" element={<StudentDeals />} />
+              <Route path="/hamper" element={<StudentDeals />} />
+              <Route path="/events" element={<Events />} />
+              <Route path="/campus-news" element={<CampusNews />} />
+              <Route path="/roommates" element={<RoommateFinder />} />
+
+              {/* Protected Student Routes (require auth) */}
               <Route path="/dashboard" element={<StudentRoute><Dashboard /></StudentRoute>} />
               <Route path="/profile" element={<StudentRoute><Profile /></StudentRoute>} />
               <Route path="/applications" element={<StudentRoute><Applications /></StudentRoute>} />
-              <Route path="/find" element={<StudentRoute><FindMyRes /></StudentRoute>} />
-              <Route path="/findmyres" element={<StudentRoute><FindMyRes /></StudentRoute>} />
               <Route path="/messages" element={<StudentRoute><Messages /></StudentRoute>} />
               <Route path="/favorites" element={<StudentRoute><Favorites /></StudentRoute>} />
-              <Route path="/marketplace" element={<StudentRoute><Marketplace /></StudentRoute>} />
-              <Route path="/bursaries" element={<StudentRoute><BursaryFinder /></StudentRoute>} />
-              <Route path="/bursary/:id" element={<StudentRoute><BursaryDetail /></StudentRoute>} />
-              <Route path="/discounts" element={<StudentRoute><StudentDeals /></StudentRoute>} />
-              <Route path="/roommates" element={<StudentRoute><RoommateFinder /></StudentRoute>} />
-              <Route path="/events" element={<StudentRoute><Events /></StudentRoute>} />
               <Route path="/documents" element={<StudentRoute><Documents /></StudentRoute>} />
               <Route path="/store-setup" element={<StudentRoute><StoreSetup /></StudentRoute>} />
               <Route path="/my-store" element={<StudentRoute><MyStore /></StudentRoute>} />
-              <Route path="/store/:storeId" element={<StudentRoute><Store /></StudentRoute>} />
               <Route path="/orders" element={<StudentRoute><Orders /></StudentRoute>} />
-              <Route path="/product/:id" element={<StudentRoute><ProductDetail /></StudentRoute>} />
               <Route path="/cart" element={<StudentRoute><Cart /></StudentRoute>} />
               <Route path="/checkout" element={<StudentRoute><Checkout /></StudentRoute>} />
-              <Route path="/hamper" element={<StudentRoute><StudentDeals /></StudentRoute>} />
               <Route path="/my-discount-orders" element={<StudentRoute><MyDiscountOrders /></StudentRoute>} />
               <Route path="/wil" element={<StudentRoute><MyWIL /></StudentRoute>} />
-              {/* Other Essential Routes */}
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
               <Route path="/setup-profile" element={<StudentRoute><ProfileSetup /></StudentRoute>} />
               <Route path="/dashboard/updates" element={<StudentRoute><Updates /></StudentRoute>} />
-              <Route path="/campus-news" element={<StudentRoute><CampusNews /></StudentRoute>} />
-              <Route path="/res/:id" element={<StudentRoute><ResidenceDetail /></StudentRoute>} />
               
               {/* Admin Hub Routes */}
               <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
