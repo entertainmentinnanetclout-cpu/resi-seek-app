@@ -12,28 +12,51 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
+const standaloneItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/admin" },
   { icon: TrendingUp, label: "Analytics", path: "/admin/analytics" },
-  { icon: Building2, label: "Residences", path: "/admin/residences" },
-  { icon: KeyRound, label: "Residence Portals", path: "/admin/residence-portals" },
-  { icon: FileText, label: "Applications", path: "/admin/applications" },
-  { icon: Users, label: "Follow-Up", path: "/admin/follow-up" },
-  { icon: FileText, label: "Documents", path: "/admin/documents" },
-  { icon: Users, label: "Users", path: "/admin/users" },
-  { icon: ShoppingBag, label: "Marketplace", path: "/admin/marketplace" },
-  { icon: Store, label: "Stores", path: "/admin/stores" },
-  { icon: Image, label: "Hero Slides", path: "/admin/slides" },
-  { icon: GraduationCap, label: "Bursaries", path: "/admin/bursaries" },
-  { icon: Percent, label: "Discounts", path: "/admin/discounts" },
-  { icon: ShoppingBag, label: "Discount Orders", path: "/admin/discount-orders" },
-  { icon: Gift, label: "Hamper Items", path: "/admin/hamper-items" },
-  { icon: Calendar, label: "Events", path: "/admin/events" },
-  { icon: Newspaper, label: "News", path: "/admin/news" },
-  { icon: MessageSquare, label: "WhatsApp Templates", path: "/admin/whatsapp-templates" },
-  { icon: Briefcase, label: "WIL Management", path: "/admin/wil" },
-  { icon: Activity, label: "System Status", path: "/admin/system-status" },
-  { icon: Settings, label: "Settings", path: "/admin/settings" },
+];
+
+const navSections = [
+  {
+    label: "Operations Hub",
+    items: [
+      { icon: Building2, label: "Residences", path: "/admin/residences" },
+      { icon: KeyRound, label: "Residence Portals", path: "/admin/residence-portals" },
+      { icon: FileText, label: "Applications", path: "/admin/applications" },
+      { icon: Users, label: "Follow-Up", path: "/admin/follow-up" },
+      { icon: FileText, label: "Documents", path: "/admin/documents" },
+      { icon: Users, label: "Users", path: "/admin/users" },
+    ],
+  },
+  {
+    label: "Commerce Hub",
+    items: [
+      { icon: ShoppingBag, label: "Marketplace", path: "/admin/marketplace" },
+      { icon: Store, label: "Stores", path: "/admin/stores" },
+      { icon: Percent, label: "Discounts", path: "/admin/discounts" },
+      { icon: ShoppingBag, label: "Discount Orders", path: "/admin/discount-orders" },
+      { icon: Gift, label: "Hamper Items", path: "/admin/hamper-items" },
+    ],
+  },
+  {
+    label: "Media Hub",
+    items: [
+      { icon: Image, label: "Hero Slides", path: "/admin/slides" },
+      { icon: Newspaper, label: "News", path: "/admin/news" },
+      { icon: Calendar, label: "Events", path: "/admin/events" },
+      { icon: GraduationCap, label: "Bursaries", path: "/admin/bursaries" },
+    ],
+  },
+  {
+    label: "System Hub",
+    items: [
+      { icon: Briefcase, label: "WIL Management", path: "/admin/wil" },
+      { icon: MessageSquare, label: "WhatsApp Templates", path: "/admin/whatsapp-templates" },
+      { icon: Activity, label: "System Status", path: "/admin/system-status" },
+      { icon: Settings, label: "Settings", path: "/admin/settings" },
+    ],
+  },
 ];
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
@@ -51,6 +74,22 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     window.location.reload();
   };
 
+  const NavLink = ({ item, onClick }: { item: { icon: any; label: string; path: string }; onClick?: () => void }) => (
+    <Link
+      to={item.path}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm",
+        location.pathname === item.path
+          ? "bg-primary text-primary-foreground"
+          : "hover:bg-secondary text-muted-foreground hover:text-foreground"
+      )}
+    >
+      <item.icon className="w-4 h-4 shrink-0" />
+      {item.label}
+    </Link>
+  );
+
   const NavContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-6 border-b">
@@ -58,25 +97,27 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           <Building2 className="w-8 h-8 text-primary" />
           <span className="text-xl font-bold">ResKonnect</span>
         </div>
-        <p className="text-sm text-muted-foreground">Admin Dashboard</p>
+        <p className="text-sm text-muted-foreground">God Mode Admin</p>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            onClick={() => setIsOpen(false)}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
-              location.pathname === item.path
-                ? "bg-primary text-primary-foreground"
-                : "hover:bg-secondary text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <item.icon className="w-5 h-5" />
-            {item.label}
-          </Link>
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        {/* Standalone items */}
+        {standaloneItems.map((item) => (
+          <NavLink key={item.path} item={item} onClick={() => setIsOpen(false)} />
+        ))}
+
+        {/* Grouped sections */}
+        {navSections.map((section) => (
+          <div key={section.label} className="pt-4">
+            <p className="px-3 pb-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              {section.label}
+            </p>
+            <div className="space-y-0.5">
+              {section.items.map((item) => (
+                <NavLink key={item.path} item={item} onClick={() => setIsOpen(false)} />
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
