@@ -40,6 +40,8 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCampus, setSelectedCampus] = useState("");
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
 
   useEffect(() => {
     // Wait for both auth and admin check to complete before redirecting
