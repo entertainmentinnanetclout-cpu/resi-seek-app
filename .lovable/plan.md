@@ -1,95 +1,249 @@
+&nbsp;
+
+Below is a **refined, industry-grade structure** built for a startup scaling toward 10k–100k users without bloating staff.
+
+---
+
+# 🔥 RESKONNECT — HIGH-LEVERAGE OPERATING STRUCTURE (ELITE VERSION)
+
+## ⚠️ Key Shift From Your Current Model
+
+Your current model = **role-based execution**
+
+New model = **ownership-based pods + automation-first ops**
+
+👉 Fewer people  
+👉 Clear KPIs  
+👉 Each role directly tied to revenue or growth
+
+---
+
+# 🧠 FINAL STRUCTURE (6–7 PEOPLE MAX)
+
+## 1. CEO / Founder (YOU)
+
+**Role Type:** Strategic + Product Owner  
+**Access:** God Mode (All Hubs)
+
+### Responsibilities:
+
+- Partnerships (NSFAS, landlords, brands)
+- Product direction (what gets built next)
+- Revenue strategy (pricing, % models)
+- Final approvals
+
+👉 You do **NOT** manage operations daily.
+
+---
+
+# ⚙️ 2. OPERATIONS LEAD (Accommodation Engine Owner)
+
+**Replaces:** Operations Manager + both Accommodation Agents
+
+**Access:** Full Operations Hub
+
+### Responsibilities:
+
+- Residence onboarding pipeline
+- Portal account creation + fixing issues
+- Application flow optimization
+- Student placement conversion rates
+- Follow-ups + occupancy tracking
+
+### KPI:
+
+- % occupancy across all buildings
+- &nbsp;
+
+# of active residences onboarded
+
+- Application → placement conversion rate
+
+👉 This role **owns ALL accommodation performance**
+
+---
+
+# 🏪 3. COMMERCE LEAD (Revenue Engine Owner)
+
+**Replaces:** Commerce Manager + Retail Agents
+
+**Access:** Full Commerce Hub
+
+### Responsibilities:
+
+- Marketplace growth (stores + products)
+- Hampers strategy (bundles = HIGH MARGIN)
+- Discounts partnerships
+- Order fulfillment systems
+
+### KPI:
+
+- Monthly GMV (Gross Merchandise Value)
+- Hampers revenue (critical)
+- &nbsp;
+
+# of active sellers
+
+👉 This is your **direct cash generator role**
+
+---
+
+# 📈 4. GROWTH LEAD (Acquisition + Brand)
+
+**Replaces:** Growth Manager + Marketing Agent
+
+**Access:** Media Hub + Analytics
+
+### Responsibilities:
+
+- User acquisition (students)
+- Social media + content
+- Campus activation strategy
+- Bursaries + news (SEO + engagement)
+
+### KPI:
+
+- Daily active users
+- Signups per day
+- Cost per acquisition (CPA)
+
+👉 This role feeds BOTH:
+
+- Accommodation pipeline
+- Marketplace traffic
+
+---
+
+# 🧩 5. PRODUCT / SYSTEM OPERATOR (CRITICAL ROLE)
+
+**New Role (You currently don’t have this properly defined)**
+
+**Access:** System Hub + All Admin (technical side)
+
+### Responsibilities:
+
+- Works with Lovable + Supabase
+- Runs SQL migrations
+- Fixes bugs (edge functions, FK issues, etc.)
+- Maintains admin dashboards
+- Ensures everything actually works
+
+### KPI:
+
+- System uptime
+- Bugs resolved per week
+- Feature deployment speed
+
+👉 This role replaces:
+
+- Dev confusion
+- Broken admin pages
+- Integration failures
+
+---
+
+# 📞 6. SUPPORT & OPERATIONS ASSISTANT (Optional Early Stage)
+
+**Access:** Limited Operations + Commerce
+
+### Responsibilities:
+
+- Student WhatsApp support
+- Basic application help
+- Order tracking responses
+
+👉 Can be added later or outsourced
+
+---
+
+# 💡 OPTIONAL (ONLY WHEN SCALING)
+
+## 7. PARTNERSHIPS / SALES REP
+
+- Focus: bringing in residences + brands
+- Commission-based
+
+---
+
+# 🧠 FINAL STRUCTURE VISUAL
+
+```
+                CEO (You)
+                   │
+    ┌──────────────┼──────────────┐
+    │              │              │
+Operations     Commerce       Growth
+   Lead          Lead           Lead
+    │              │              │
+    └──────┬───────┴──────┬───────┘
+           │              │
+     Product/System    Support
+        Operator      (Optional)
+
+```
+
+---
+
+# 🔥 WHY THIS STRUCTURE IS BETTER
+
+## 1. You eliminate role overlap
+
+- No more 2 agents doing fragmented work
+- Each lead OWNS an entire system
+
+## 2. You reduce team size (9 → 5–6)
+
+👉 Lower cost, higher efficiency
+
+## 3. You align everything to MONEY + GROWTH
+
+- Ops → occupancy (money)
+- Commerce → sales (money)
+- Growth → users (fuel)
+
+## 4. You remove your biggest bottleneck:
+
+👉 **Technical instability**
+
+The **Product/System Operator** ensures:
+
+- Supabase always works
+- Admin dashboard never breaks
+- Edge functions are deployed correctly
+
+---
+
+# ⚠️ CRITICAL FIX YOU MUST IMPLEMENT
+
+Your system issues (like):
+
+- ❌ “Failed to load follow-up data”
+- ❌ “Edge function not working”
+- ❌ “Portal accounts not loading”
+
+👉 These are NOT “feature problems”  
+👉 They are **ownership problems**
+
+No one currently owns:
+
+- Backend stability
+- Supabase schema integrity
+- Edge deployment
+
+---
+
+# 🧩 ROLE → ADMIN HUB MAPPING (UPDATED)
 
 
-# Make Content Pages Publicly Accessible (Share-Friendly)
+| Role                    | Access                            |
+| ----------------------- | --------------------------------- |
+| CEO                     | All Hubs (God Mode)               |
+| Operations Lead         | Operations Hub                    |
+| Commerce Lead           | Commerce Hub                      |
+| Growth Lead             | Media Hub + Analytics             |
+| Product/System Operator | System Hub (Full Backend Control) |
+| Support                 | Limited Ops + Orders              |
 
-## Problem
-Currently, all content pages (residences, bursaries, events, news, marketplace, deals) are wrapped in `StudentRoute`, which forces login before viewing. Users can't share links — recipients get redirected to `/auth`.
 
-## Solution
-Make browse/view pages public. Only require auth when users take actions (apply, favorite, review, order, etc.).
-
-## Routes to Make Public (remove `StudentRoute` wrapper)
-
-These are **read-only browsing** pages — no auth needed to view:
-
-| Route | Page | Currently |
-|-------|------|-----------|
-| `/find`, `/findmyres` | FindMyRes | `StudentRoute` → **Public** |
-| `/res/:id` | ResidenceDetail | `StudentRoute` → **Public** |
-| `/bursaries` | BursaryFinder | `StudentRoute` → **Public** |
-| `/bursary/:id` | BursaryDetail | `StudentRoute` → **Public** |
-| `/marketplace` | Marketplace | `StudentRoute` → **Public** |
-| `/product/:id` | ProductDetail | `StudentRoute` → **Public** |
-| `/store/:storeId` | Store | `StudentRoute` → **Public** |
-| `/discounts` | StudentDeals | `StudentRoute` → **Public** |
-| `/hamper` | StudentDeals | `StudentRoute` → **Public** |
-| `/events` | Events | `StudentRoute` → **Public** |
-| `/campus-news` | CampusNews | `StudentRoute` → **Public** |
-| `/roommates` | RoommateFinder | `StudentRoute` → **Public** |
-
-## Routes That Stay Protected (require auth)
-
-| Route | Reason |
-|-------|--------|
-| `/dashboard` | Personal dashboard |
-| `/profile` | Personal data |
-| `/applications` | Personal applications |
-| `/messages` | Personal messages |
-| `/favorites` | Personal favorites |
-| `/documents` | Personal documents |
-| `/orders` | Personal orders |
-| `/cart`, `/checkout` | Purchase flow |
-| `/wil` | Personal WIL application |
-| `/my-store`, `/store-setup` | Store owner actions |
-| `/my-discount-orders` | Personal orders |
-| `/setup-profile` | Profile setup |
-| All `/admin/*` | Admin only |
-
-## Layout Change for Public Pages
-
-These pages currently use `DashboardLayout` which depends on `useAuth()` for user data. Two approaches:
-
-**Chosen approach**: Make `DashboardLayout` gracefully handle unauthenticated users:
-- If `user` is null, show a simplified header with Sign In / Get Started buttons (similar to `PublicLayout`)
-- Hide sidebar nav items that require auth (Applications, My WIL)
-- Show all browse items (Find My Res, Marketplace, Bursaries)
-- Replace profile avatar with Sign In button when not logged in
-
-This avoids rewriting every page to conditionally pick a layout.
-
-## Action Gating (Auth Prompts)
-
-On public pages, when an unauthenticated user tries to:
-- **Apply** to a residence → redirect to `/auth` with return URL
-- **Favorite** a residence → redirect to `/auth`
-- **Submit a review** → redirect to `/auth`
-- **Add to cart** → redirect to `/auth`
-- **Order a deal/hamper** → redirect to `/auth`
-- **RSVP to event** → redirect to `/auth`
-
-Each action component already checks `user` from `useAuth()` — just need to ensure they redirect to `/auth?returnTo=<current_path>` instead of silently failing.
-
-## Auth Page: Return URL Support
-
-Update `Auth.tsx` to read `returnTo` query param and redirect there after successful login instead of always going to `/dashboard`.
-
-## Files to Modify
-
-| File | Change |
-|------|--------|
-| `src/App.tsx` | Remove `StudentRoute` wrapper from 12 browse routes |
-| `src/components/DashboardLayout.tsx` | Handle unauthenticated users gracefully (show sign-in header instead of crashing) |
-| `src/pages/ResidenceDetail.tsx` | Gate apply/favorite/review actions with auth redirect |
-| `src/pages/FindMyRes.tsx` | Remove `useAdminRedirect`, gate actions with auth check |
-| `src/pages/Marketplace.tsx` | Remove `useAdminRedirect`, gate cart/order actions |
-| `src/pages/ProductDetail.tsx` | Gate add-to-cart with auth redirect |
-| `src/pages/Events.tsx` | Gate RSVP/interest with auth redirect |
-| `src/pages/StudentDeals.tsx` | Gate order actions with auth redirect |
-| `src/pages/Auth.tsx` | Support `returnTo` query param for post-login redirect |
-| `src/components/FavoriteButton.tsx` | Redirect to auth if not logged in |
-| `src/components/ReviewForm.tsx` | Redirect to auth if not logged in |
-
-## No Database Changes Needed
-
-All the browse tables (residences, bursaries, events, campus_news, student_discounts, marketplace_listings, products) already have public SELECT RLS policies. No migration required.
+---
 
