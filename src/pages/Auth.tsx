@@ -43,18 +43,29 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo");
 
+  const { staffRole } = useAuth();
+
   useEffect(() => {
     if (!authLoading && user) {
       const timer = setTimeout(() => {
-        if (isAdmin) {
-          navigate("/admin", { replace: true });
+        if (staffRole) {
+          // Staff roles get routed to their default hub
+          const hubMap: Record<string, string> = {
+            admin: "/admin",
+            operations_lead: "/admin/operations",
+            commerce_lead: "/admin/commerce",
+            growth_lead: "/admin/media",
+            system_operator: "/admin/system",
+            support_agent: "/admin/operations",
+          };
+          navigate(hubMap[staffRole] || "/admin", { replace: true });
         } else {
           navigate(returnTo || "/dashboard", { replace: true });
         }
       }, 150);
       return () => clearTimeout(timer);
     }
-  }, [user, authLoading, isAdmin, navigate, returnTo]);
+  }, [user, authLoading, staffRole, navigate, returnTo]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
