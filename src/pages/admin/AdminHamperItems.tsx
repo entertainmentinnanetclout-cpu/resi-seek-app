@@ -34,7 +34,7 @@ const categories = [
   { value: "bedding", label: "Bedding & Linen", icon: Bed },
 ];
 
-const AdminHamperItems = () => {
+export const AdminHamperItemsContent = () => {
   const [items, setItems] = useState<HamperItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
