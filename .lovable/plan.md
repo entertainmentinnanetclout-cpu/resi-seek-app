@@ -1,55 +1,27 @@
-# Admin Sidebar Restructure — 4 Hubs
+# Admin Hub Pages — Merge Sub-Pages Into Tabbed Hubs
 
-## Overview
+## Status: ✅ Complete
 
-Reorganize the flat 20-item admin sidebar into 4 grouped sections with collapsible headers, plus 2 standalone top-level items (Overview and Analytics). No routes or pages change — purely sidebar UI reorganization.
-
-## New Sidebar Structure
+## Structure
 
 ```text
-Overview              (standalone)
-Analytics             (standalone)
-
-── OPERATIONS HUB ──────────
-  Residences
-  Residence Portals
-  Applications
-  Follow-Up
-  Documents
-  Users
-
-── COMMERCE HUB ────────────
-  Marketplace
-  Stores
-  Discounts
-  Discount Orders
-  Hamper Items
-
-── MEDIA HUB ───────────────
-  Hero Slides
-  News
-  Events
-  Bursaries
-
-── SYSTEM HUB ──────────────
-  WIL Management
-  WhatsApp Templates
-  System Status
-  Settings
+Overview           /admin
+Analytics          /admin/analytics
+Operations Hub     /admin/operations   (Residences | Portals | Applications | Follow-Up | Documents | Users)
+Commerce Hub       /admin/commerce     (Marketplace | Stores | Discounts | Discount Orders | Hamper Items)
+Media Hub          /admin/media        (Hero Slides | News | Events | Bursaries)
+System Hub         /admin/system       (WIL Management | WhatsApp Templates | System Status | Settings)
 ```
 
-## Changes
+6 sidebar items. Each hub is a tabbed page embedding existing admin content components.
 
-### File: `src/components/admin/AdminLayout.tsx`
+## Files Created
+- `src/pages/admin/AdminOperationsHub.tsx`
+- `src/pages/admin/AdminCommerceHub.tsx`
+- `src/pages/admin/AdminMediaHub.tsx`
+- `src/pages/admin/AdminSystemHub.tsx`
 
-- Replace flat `navItems` array with a grouped structure: an array of sections, each with a `label` (string or null for standalone items) and `items` array.
-- Standalone items (Overview, Analytics) rendered at top without a section header.
-- Each hub section gets a muted uppercase label divider (e.g., `text-xs font-semibold text-muted-foreground uppercase tracking-wider`) followed by its nav links.
-- No collapsible/accordion behavior needed — just visual grouping with label dividers.
-- All existing paths, icons, and labels stay identical.
-- fix all missing routes and provide full fk sql fo all missing tables,poliies shemas and everything missing
-- turn the admij dahsboard into god mode dashborad 
-
-### No other files modified
-
-All admin pages, routes, and `App.tsx` remain unchanged.
+## Files Modified
+- All 16 admin sub-pages: exported `Content` component, removed `AdminLayout` wrapper from content
+- `src/components/admin/AdminLayout.tsx`: Simplified sidebar to 6 items
+- `src/App.tsx`: Added 4 hub routes, kept legacy routes for backward compatibility
