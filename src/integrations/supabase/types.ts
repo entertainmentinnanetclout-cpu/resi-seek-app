@@ -2612,6 +2612,7 @@ export type Database = {
     Functions: {
       generate_ref_code: { Args: { app_id: string }; Returns: string }
       get_user_residence_id: { Args: never; Returns: string }
+      get_user_staff_role: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

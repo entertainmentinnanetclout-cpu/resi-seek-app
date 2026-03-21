@@ -3,20 +3,25 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
- * Hard guard hook that redirects admin users to /admin.
- * Use this inside student-only pages as a belt-and-suspenders
- * measure in case the route wrapper fails.
+ * Hard guard hook that redirects staff users to their admin hub.
  */
 export const useAdminRedirect = () => {
-  const { isAdmin, isLoading } = useAuth();
+  const { staffRole, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && isAdmin) {
-      navigate("/admin", { replace: true });
+    if (!isLoading && staffRole) {
+      const hubMap: Record<string, string> = {
+        admin: "/admin",
+        operations_lead: "/admin/operations",
+        commerce_lead: "/admin/commerce",
+        growth_lead: "/admin/media",
+        system_operator: "/admin/system",
+        support_agent: "/admin/operations",
+      };
+      navigate(hubMap[staffRole] || "/admin", { replace: true });
     }
-  }, [isAdmin, isLoading, navigate]);
+  }, [staffRole, isLoading, navigate]);
 
-  // Return true if we should block rendering (admin detected)
-  return !isLoading && isAdmin;
+  return !isLoading && !!staffRole;
 };
