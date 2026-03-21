@@ -16,6 +16,8 @@ interface FavoriteButtonProps {
 const FavoriteButton = ({ residenceId, variant = "icon", className }: FavoriteButtonProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
