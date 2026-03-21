@@ -56,7 +56,7 @@ const emptyDiscount: Partial<StudentDiscount> = {
 
 const categories = ["Food", "Transport", "Entertainment", "Tech", "Health", "Shopping", "Education", "Fitness"];
 
-const AdminDiscounts = () => {
+export const AdminDiscountsContent = () => {
   const [discounts, setDiscounts] = useState<StudentDiscount[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
