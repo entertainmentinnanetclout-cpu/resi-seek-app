@@ -2392,6 +2392,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_wil_notes_application"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "wil_applications"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "wil_admin_notes_application_id_fkey"
             columns: ["application_id"]
             isOneToOne: false
@@ -2464,6 +2471,20 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_wil_apps_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_wil_apps_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       wil_assignments: {
@@ -2489,6 +2510,13 @@ export type Database = {
           id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_wil_assign_application"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "wil_applications"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_wil_assignments_application"
             columns: ["application_id"]
@@ -2537,6 +2565,13 @@ export type Database = {
           uploaded_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_wil_docs_application"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "wil_applications"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_wil_documents_application"
             columns: ["application_id"]
