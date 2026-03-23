@@ -107,6 +107,9 @@ const App = () => {
               <Routes>
               {/* Public Browse Routes (shareable, no auth required) */}
               <Route path="/" element={<Landing />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="/find" element={<FindMyRes />} />
               <Route path="/findmyres" element={<FindMyRes />} />
               <Route path="/res/:id" element={<ResidenceDetail />} />
