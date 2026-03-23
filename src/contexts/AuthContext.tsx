@@ -86,9 +86,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (error) throw error;
 
         const role = (data as string | null) as StaffRole;
+        console.log("[AuthContext] Role check:", { email: user.email, userId: user.id, resolvedRole: role });
         setStaffRole(role);
         setIsAdmin(role === 'admin');
       } catch (e) {
+        console.error("[AuthContext] Role check failed:", e, { email: user.email, userId: user.id });
         if (!cancelled) {
           setIsAdmin(false);
           setStaffRole(null);

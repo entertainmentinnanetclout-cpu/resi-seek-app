@@ -44,9 +44,11 @@ const Auth = () => {
   const returnTo = searchParams.get("returnTo");
 
   const { staffRole } = useAuth();
+  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
+      console.log("[Auth] Routing decision:", { email: user.email, staffRole, userId: user.id });
       const timer = setTimeout(() => {
         if (staffRole) {
           // Staff roles get routed to their default hub
