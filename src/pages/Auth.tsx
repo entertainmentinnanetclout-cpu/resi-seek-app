@@ -44,9 +44,11 @@ const Auth = () => {
   const returnTo = searchParams.get("returnTo");
 
   const { staffRole } = useAuth();
+  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
+      console.log("[Auth] Routing decision:", { email: user.email, staffRole, userId: user.id });
       const timer = setTimeout(() => {
         if (staffRole) {
           // Staff roles get routed to their default hub
@@ -260,8 +262,28 @@ const Auth = () => {
           </CardContent>
         </Card>
 
-        <div className="text-center mt-8">
+        <div className="text-center mt-8 space-y-2">
           <Button variant="ghost" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground">Back to Home</Button>
+          
+          {user && (
+            <div className="mt-4">
+              <button 
+                onClick={() => setShowDebug(!showDebug)} 
+                className="text-xs text-muted-foreground/50 hover:text-muted-foreground"
+              >
+                {showDebug ? 'Hide' : 'Show'} debug info
+              </button>
+              {showDebug && (
+                <div className="mt-2 p-3 bg-muted rounded-md text-xs text-left space-y-1 font-mono">
+                  <p><span className="text-muted-foreground">Email:</span> {user.email}</p>
+                  <p><span className="text-muted-foreground">User ID:</span> {user.id}</p>
+                  <p><span className="text-muted-foreground">Staff Role:</span> <span className={staffRole ? 'text-green-600 font-bold' : 'text-destructive font-bold'}>{staffRole || 'null (student)'}</span></p>
+                  <p><span className="text-muted-foreground">Loading:</span> {authLoading ? 'true' : 'false'}</p>
+                  <p><span className="text-muted-foreground">Backend:</span> {import.meta.env.VITE_SUPABASE_URL || 'hardcoded'}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
