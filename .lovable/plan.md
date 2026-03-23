@@ -1,43 +1,51 @@
 
-Goal: explain exactly which role grants admin access and why you may still land on student.
 
-1) Required role for admin access
-- The app checks `staffRole` from `get_user_staff_role`.
-- Any of these roles is treated as staff and allowed into admin pages:
-  - `admin`
-  - `operations_lead`
-  - `commerce_lead`
-  - `growth_lead`
-  - `system_operator`
-  - `support_agent`
-- If `staffRole` is `null`, the user is routed to `/dashboard` (student side).
+# Update KNOWLEDGE_BASE.md — Current State Refresh
 
-2) What I verified in your current connected backend
-- `43v3r2a11@gmail.com` has role `admin` in `public.user_roles`.
-- `reskonnect@gmail.com` also has role `admin`.
-- `public.get_user_staff_role(...)` returns `admin` for both user IDs.
+## Sections to Update
 
-3) Why you can still land on student despite admin role existing
-- Most likely causes:
-  - You are logging into a different account than the one updated.
-  - The app is pointed at a different backend than the one where role SQL was run.
-  - Session/account mix-up (old token, different provider/account during login).
+### 1. Section 5: Authentication & Authorization
+**Current state**: Only lists `student` and `admin` roles. No mention of staff roles, `get_user_staff_role` RPC, public access strategy, or `StudentRoute`/`AdminRoute` guard components.
 
-4) Fast validation SQL (run on the backend your app is actually using)
-```sql
-select
-  u.id,
-  u.email,
-  array_remove(array_agg(ur.role::text), null) as roles,
-  public.get_user_staff_role(u.id) as resolved_staff_role
-from auth.users u
-left join public.user_roles ur on ur.user_id = u.id
-where lower(u.email) = lower('43v3r2a11@gmail.com')
-group by u.id, u.email;
-```
-Expected: `roles` includes `admin` and `resolved_staff_role = 'admin'`.
+**Update to**:
+- Add full staff role table: `admin`, `operations_lead`, `commerce_lead`, `growth_lead`, `system_operator`, `support_agent`
+- Document `get_user_staff_role` RPC and priority order
+- Replace route guard examples with current `StudentRoute`, `AdminRoute` pattern
+- Add **Public Access Strategy** subsection: browse pages are public, actions gate with `/auth?returnTo=`
 
-5) Implementation plan to permanently prevent this confusion
-- Add a small auth-debug panel (dev/admin only) showing: logged-in email, user_id, resolved `staffRole`, and active backend URL.
-- Add explicit error toast on `/auth` when RPC returns null/error for a supposed staff account.
-- Keep routing guard unchanged (server-backed role check remains authoritative).
+### 2. New Section: Company Structure & Staff Roles (insert after Auth, before Core Features)
+Add the 6-person operating structure:
+
+| Role | Hub Access | Responsibilities |
+|------|-----------|-----------------|
+| CEO/Founder | All Hubs (God Mode) | Partnerships, product direction, revenue strategy |
+| Operations Lead | Operations Hub | Residence onboarding, applications, placements |
+| Commerce Lead | Commerce Hub | Marketplace, hampers, discounts, orders |
+| Growth Lead | Media Hub + Analytics | User acquisition, content, campus activations |
+| System Operator | System Hub | Technical stability, migrations, edge functions |
+| Support Agent | Limited Ops + Orders | WhatsApp support, basic application help |
+
+### 3. New Section: Admin Hub Architecture (replace old admin references in Core Features)
+Document the 4-hub layout:
+
+- **Operations Hub** (`/admin/operations`): Residences, Portals, Applications, Follow-Up, Documents, Users
+- **Commerce Hub** (`/admin/commerce`): Marketplace, Stores, Discounts, Discount Orders, Hamper Items
+- **Media Hub** (`/admin/media`): Hero Slides, News, Events, Bursaries
+- **System Hub** (`/admin/system`): WIL, WhatsApp Templates, System Status, Settings
+
+Sidebar: Overview, Analytics, + 4 Hubs (6 items total)
+
+### 4. Section 4: Database Schema — user_roles update
+Change `user_roles` description from "Role assignments (admin/student)" to list all 6 staff roles plus the `app_role` enum.
+
+### 5. Header metadata
+Update "Last Updated" to March 2026, version to 3.0.
+
+### 6. Roadmap
+Mark completed items: public access strategy, hub architecture, role-based dashboards.
+
+## File Modified
+| File | Change |
+|------|--------|
+| `KNOWLEDGE_BASE.md` | Rewrite sections 5, add sections 5.5 and 6.9, update section 4 supporting tables, update header and roadmap |
+
