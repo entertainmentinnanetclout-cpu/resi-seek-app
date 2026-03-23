@@ -1,35 +1,21 @@
 
-# ResKonnect — Role-Based Dashboard System
 
-## Implemented
+# Fix: Missing `/auth` Route in App.tsx
 
-### Database Roles (app_role enum)
-- `admin` — CEO/Founder, God Mode (all hubs)
-- `operations_lead` — Operations Lead (Operations Hub)
-- `commerce_lead` — Commerce Lead (Commerce Hub)
-- `growth_lead` — Growth Lead (Media Hub + Analytics)
-- `system_operator` — Product/System Operator (System Hub)
-- `support_agent` — Support (Limited Ops + Commerce)
+## Root Cause
+The `/auth` route was accidentally removed from `App.tsx` during the public routes reorganization. Any navigation to `/auth` (login, signup, redirects from protected routes) hits the `*` catch-all and shows the 404 page.
 
-### Database Function
-- `get_user_staff_role(uuid)` — Returns highest-priority staff role for a user
+## Fix
 
-### Role → Hub Access Mapping
+### File: `src/App.tsx`
 
-| Role | Overview | Analytics | Operations | Commerce | Media | System |
-|------|----------|-----------|------------|----------|-------|--------|
-| admin | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| operations_lead | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| commerce_lead | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| growth_lead | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
-| system_operator | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| support_agent | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ |
+Add the missing auth route back into the public routes section:
 
-### Post-Login Routing
-Each staff role auto-redirects to their primary hub after login.
-
-### Assigning Roles
-Use SQL or the admin Users page to assign roles:
-```sql
-INSERT INTO user_roles (user_id, role) VALUES ('<user-uuid>', 'operations_lead');
+```tsx
+<Route path="/auth" element={<Auth />} />
 ```
+
+Place it right after the landing route (`/`) and before the other public browse routes. Also add `/terms` and `/privacy` routes if missing.
+
+One line addition. No other changes needed.
+
