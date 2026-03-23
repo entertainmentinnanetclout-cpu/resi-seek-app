@@ -1,21 +1,19 @@
+# Fix: Restore Admin Role for [43v3r2a11@gmail.com](mailto:43v3r2a11@gmail.com)
 
+## Problem
 
-# Fix: Missing `/auth` Route in App.tsx
-
-## Root Cause
-The `/auth` route was accidentally removed from `App.tsx` during the public routes reorganization. Any navigation to `/auth` (login, signup, redirects from protected routes) hits the `*` catch-all and shows the 404 page.
+The user `43v3r2a11@gmail.com` (user_id: `cbdb123f-d3bb-4a10-8144-670cc594ef95`) currently has only the `student` role. They should have `admin` only.
 
 ## Fix
 
-### File: `src/App.tsx`
+Single data operation via the insert tool:
 
-Add the missing auth route back into the public routes section:
+1. Delete the `student` role row for this user
+2. Insert the `admin` role
 
-```tsx
-<Route path="/auth" element={<Auth />} />
+```sql
+DELETE FROM user_roles WHERE user_id = 'cbdb123f-d3bb-4a10-8144-670cc594ef95' AND role = 'student';
+INSERT INTO user_roles (user_id, role) VALUES ('cbdb123f-d3bb-4a10-8144-670cc594ef95', 'admin') ON CONFLICT DO NOTHING;
 ```
 
-Place it right after the landing route (`/`) and before the other public browse routes. Also add `/terms` and `/privacy` routes if missing.
-
-One line addition. No other changes needed.
-
+No code changes needed. After this, the user will be routed to `/admin` on login as expected. also provide rerunnable sql for external supabase to ensure thats also inplace
