@@ -412,6 +412,30 @@ export const AdminResidencesContent = () => {
                     </Select>
                   </div>
 
+                  {/* Section Category */}
+                  <div className="space-y-2">
+                    <Label>Section Category</Label>
+                    <Select
+                      value={(editingResidence as any).section_category || "none"}
+                      onValueChange={(value) => setEditingResidence({ ...editingResidence, section_category: value === "none" ? null : value } as any)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select section" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No section</SelectItem>
+                        {dbSections.map((s) => (
+                          <SelectItem key={s.id} value={s.slug}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${s.color}`} />
+                              {s.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Verification Level</Label>
