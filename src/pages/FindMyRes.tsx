@@ -361,9 +361,9 @@ const FindMyRes = () => {
                         <SelectTrigger className={sectionFilter !== "all" ? "border-primary" : ""}><SelectValue placeholder="All types" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Types</SelectItem>
-                          <SelectItem value="FLATS">Flats</SelectItem>
-                          <SelectItem value="COMMUNES">Communes</SelectItem>
-                          <SelectItem value="RENTALS">Rentals</SelectItem>
+                          {dbSections.map((s) => (
+                            <SelectItem key={s.id} value={s.slug}>{s.name}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
