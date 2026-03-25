@@ -1768,6 +1768,42 @@ export type Database = {
           },
         ]
       }
+      residence_sections: {
+        Row: {
+          applies_to: string | null
+          color: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          slug: string
+          subtitle: string | null
+        }
+        Insert: {
+          applies_to?: string | null
+          color?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          slug: string
+          subtitle?: string | null
+        }
+        Update: {
+          applies_to?: string | null
+          color?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          slug?: string
+          subtitle?: string | null
+        }
+        Relationships: []
+      }
       residences: {
         Row: {
           address: string
