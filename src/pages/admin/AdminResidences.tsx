@@ -698,6 +698,10 @@ export const AdminResidencesContent = () => {
           <TabsContent value="trusted">
             <TrustedResidencesEditor />
           </TabsContent>
+
+          <TabsContent value="sections">
+            <SectionsManager />
+          </TabsContent>
         </Tabs>
       </div>
     </>
