@@ -1,68 +1,69 @@
-# Enhance Admin Marketplace into a Takealot-Style Store Manager
+
+
+# Admin-Managed Section Tabs for Residences
 
 ## Problem
+The collapsible section tabs ("FLATS", "COMMUNES", "RENTALS" on Top 30; campus-based sections on FindMyRes) are hardcoded. Admin cannot add, rename, reorder, or assign residences to custom categories like "Private Accommodations", "Communes", "Student Houses", etc.
 
-The admin marketplace tab only moderates student `marketplace_listings`. It cannot create products in the `products` table (the newer commerce model that the Marketplace page actually fetches from). Admin has no way to list products as the "ResKonnect Store."
-
-## Architecture
-
-The admin needs a **ResKonnect Official Store** — a store owned by the admin user, just like any student store, but with elevated capabilities. The Commerce Hub marketplace tab will be rebuilt to:
-
-1. **Auto-create a "ResKonnect Store"** for the admin user if one does not exist
-2. **Full Product CRUD** — add, edit, delete products in the `products` table (not `marketplace_listings`)
-3. **Category management** — manage `product_categories`
-4. **Image uploads** to the existing `product-images` bucket
-5. **Inventory & variants** — set stock, price, compare-at-price, SKU, variants
-6. **Legacy moderation** — keep a sub-tab for moderating student `marketplace_listings`
+## Solution
+Create a `residence_sections` database table so admin can fully manage section tabs. Both `TrustedResidencesGrid` and `ResidenceSectionGrid`/`FindMyRes` will read sections from the database instead of hardcoded arrays.
 
 ## Plan
 
-### 1. Rewrite `AdminMarketplace.tsx` with two sub-tabs
+### 1. Create `residence_sections` table (migration)
+```sql
+CREATE TABLE public.residence_sections (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  slug text NOT NULL UNIQUE,
+  subtitle text,
+  display_order integer DEFAULT 0,
+  color text DEFAULT 'bg-blue-500',
+  is_active boolean DEFAULT true,
+  applies_to text DEFAULT 'both', -- 'trusted', 'findmyres', 'both'
+  created_at timestamptz DEFAULT now()
+);
 
-- **"ResKonnect Store"** (default): Full product management UI
-  - Product grid/table with add/edit/delete
-  - "Add Product" dialog/form: name, description, price, compare-at-price, category, images (multi-upload), stock, SKU, tags, is_featured toggle
-  - Edit inline or via dialog
-  - Image upload to `product-images` bucket
-  - Category selector from `product_categories`
-  - Quick toggle for `is_active` and `is_featured`
-- **"Student Listings"**: Current moderation table (verify/remove student `marketplace_listings`)
+ALTER TABLE public.residence_sections ENABLE ROW LEVEL SECURITY;
 
-### 2. Ensure admin has a store record
+CREATE POLICY "Anyone can view active sections" ON public.residence_sections
+  FOR SELECT USING (is_active = true);
 
-- On mount, check if admin's user has a store. If not, auto-create one named "ResKonnect Store" with `verified: true` and `is_active: true`.
-- Store the admin's `store_id` for all product inserts.
+CREATE POLICY "Admins manage sections" ON public.residence_sections
+  FOR ALL TO authenticated USING (has_role(auth.uid(), 'admin'::app_role))
+  WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
 
-### 3. Product CRUD operations
+-- Seed defaults
+INSERT INTO public.residence_sections (name, slug, subtitle, display_order, color) VALUES
+  ('Flats', 'FLATS', 'Pretoria West, CBD, etc', 1, 'bg-blue-500'),
+  ('Communes', 'COMMUNES', 'Pretoria West, etc', 2, 'bg-emerald-500'),
+  ('Rentals', 'RENTALS', 'Sunnyside, Sosha, E1', 3, 'bg-purple-500'),
+  ('Private Accommodations', 'PRIVATE', 'Premium private residences', 4, 'bg-amber-500');
+```
 
-- **Create**: Insert into `products` with `store_id` = admin's store
-- **Update**: Edit price, stock, images, featured status, active status
-- **Delete**: Delete from `products`
-- All operations use existing RLS policies (`admins_manage_all_products`)
+### 2. Add "Sections" tab to `AdminResidences.tsx`
+Add a third tab alongside "All Residences" and "Top 30 Trusted":
+- **Sections Manager**: CRUD for section tabs — add/edit/delete/reorder sections
+- Each section row: name, subtitle, color picker, display order, active toggle
+- Drag-to-reorder support (same pattern as TrustedResidencesEditor)
 
-### 4. Category management (inline)
+### 3. Add `section_category` selector to residence edit form
+In the residence add/edit dialog within AdminResidences, add a dropdown that pulls from `residence_sections` so admin can assign any residence to a section.
 
-- Small "Manage Categories" section or button to add/edit categories in `product_categories`
+### 4. Update `TrustedResidencesGrid.tsx`
+- Replace hardcoded `SECTIONS` array with a fetch from `residence_sections` where `applies_to IN ('trusted', 'both')`
+- Use `slug` for grouping, `name` + `subtitle` for display, `color` for styling
 
-### 5. No database changes needed
-
-- `products`, `product_categories`, `product_variants` tables already exist with proper admin RLS policies
-- `product-images` storage bucket already exists and is public
-
-6.products must have product pages with full detail,sizes,texture ,etc.
+### 5. Update `ResidenceSectionGrid.tsx` and `FindMyRes.tsx`
+- Replace hardcoded `SECTION_ORDER` and `SECTION_COLORS` with database-driven sections where `applies_to IN ('findmyres', 'both')`
+- Keep campus-based fallback logic for residences without `section_category`
 
 ## Files Modified
+| File | Change |
+|------|--------|
+| Migration SQL | Create `residence_sections` table with seed data |
+| `src/pages/admin/AdminResidences.tsx` | Add "Sections" tab with CRUD manager; add section dropdown to residence form |
+| `src/components/TrustedResidencesGrid.tsx` | Fetch sections from DB instead of hardcoded array |
+| `src/components/ResidenceSectionGrid.tsx` | Fetch sections from DB instead of hardcoded constants |
+| `src/pages/FindMyRes.tsx` | Use DB sections for `deriveSection` and section filter |
 
-
-| File                                   | Change                                                                                                                 |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `src/pages/admin/AdminMarketplace.tsx` | Full rewrite: two sub-tabs (ResKonnect Store + Student Listings), product CRUD form, image upload, category management |
-
-
-## Technical Details
-
-- Uses `supabase.storage.from('product-images').upload()` for images
-- Queries `products` table with `store_id` filter for admin's store
-- Categories from `product_categories`
-- Products auto-verified and active when admin creates them
-- Existing `AdminMarketplaceContent` moderation code preserved as "Student Listings" sub-tab
