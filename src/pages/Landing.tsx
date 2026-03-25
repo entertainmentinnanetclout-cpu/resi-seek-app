@@ -157,7 +157,7 @@ const Landing = () => {
 
       <main>
         <section>
-          <HeroCarousel slides={fallbackSlides} autoPlay interval={6000} useDatabase={true} />
+          <HeroCarousel slides={fallbackSlides} autoPlay interval={6000} useDatabase={true} location="landing" />
         </section>
 
         <section className="py-12 md:py-20 relative overflow-hidden">

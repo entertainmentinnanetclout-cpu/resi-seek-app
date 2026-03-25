@@ -50,11 +50,16 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
 
   const fetchSlides = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("hero_slides")
       .select("*")
-      .eq("is_active", true)
-      .order("display_order", { ascending: true });
+      .eq("is_active", true);
+
+    if (location) {
+      query = query.in("slide_location", [location, "all"]);
+    }
+
+    const { data, error } = await query.order("display_order", { ascending: true });
 
     if (!error && data && data.length > 0) {
       const formattedSlides: Slide[] = data.map(slide => ({
