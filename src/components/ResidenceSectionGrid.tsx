@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp, MapPin, Users, Bed, ShieldCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import FavoriteButton from "@/components/FavoriteButton";
 import CompareButton from "@/components/CompareButton";
+import { useResidenceSections, type ResidenceSection } from "@/hooks/useResidenceSections";
 
 interface Residence {
   id: string;
@@ -32,55 +33,6 @@ interface ResidenceSectionGridProps {
   maxCompare: number;
 }
 
-// Derive section from campus or section_category
-function deriveSection(residence: Residence): string {
-  // Manual override takes priority
-  if (residence.section_category) {
-    return residence.section_category;
-  }
-  
-  const campus = residence.campus?.toLowerCase() || '';
-  
-  if (campus.includes('soshanguve')) return 'Soshanguve';
-  if (campus.includes('arts')) return 'Arts';
-  if (campus.includes('arcadia')) return 'Arcadia';
-  if (campus.includes('pretoria west') || campus.includes('pretoria-west')) return 'Pretoria West';
-  if (campus.includes('ga-rankuwa') || campus.includes('garankuwa')) return 'Ga-Rankuwa';
-  if (campus.includes('polokwane')) return 'Polokwane';
-  if (campus.includes('mbombela') || campus.includes('nelspruit')) return 'Mbombela';
-  if (campus.includes('emalahleni') || campus.includes('witbank')) return 'eMalahleni';
-  
-  return 'Other';
-}
-
-// Section order for display
-const SECTION_ORDER = [
-  'Soshanguve',
-  'Pretoria West',
-  'Arcadia',
-  'Arts',
-  'Ga-Rankuwa',
-  'ARLC',
-  'Polokwane',
-  'Mbombela',
-  'eMalahleni',
-  'Other'
-];
-
-// Section colors
-const SECTION_COLORS: Record<string, string> = {
-  'Soshanguve': 'bg-blue-500',
-  'Pretoria West': 'bg-emerald-500',
-  'Arcadia': 'bg-purple-500',
-  'Arts': 'bg-pink-500',
-  'Ga-Rankuwa': 'bg-amber-500',
-  'ARLC': 'bg-red-500',
-  'Polokwane': 'bg-cyan-500',
-  'Mbombela': 'bg-lime-500',
-  'eMalahleni': 'bg-orange-500',
-  'Other': 'bg-gray-500'
-};
-
 export default function ResidenceSectionGrid({
   residences,
   compareList,
@@ -89,20 +41,40 @@ export default function ResidenceSectionGrid({
   onViewDetails,
   maxCompare
 }: ResidenceSectionGridProps) {
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set(SECTION_ORDER.slice(0, 3)));
+  const { sections, loading: sectionsLoading } = useResidenceSections("findmyres");
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
+
+  // Auto-open first 3 sections once loaded
+  useEffect(() => {
+    if (sections.length > 0 && openSections.size === 0) {
+      setOpenSections(new Set(sections.slice(0, 3).map(s => s.slug)));
+    }
+  }, [sections]);
+
+  // Derive section from section_category or campus fallback
+  function deriveSection(residence: Residence): string {
+    if (residence.section_category) return residence.section_category.toUpperCase();
+    
+    const campus = residence.campus?.toLowerCase() || '';
+    if (campus.includes('soshanguve')) return 'RENTALS';
+    if (campus.includes('pretoria west') || campus.includes('pretoria-west')) return 'FLATS';
+    if (campus.includes('arcadia') || campus.includes('arts')) return 'FLATS';
+    
+    return sections.length > 0 ? sections[0].slug : 'OTHER';
+  }
 
   // Group residences by section
-  const groupedResidences = residences.reduce((acc, residence) => {
-    const section = deriveSection(residence);
-    if (!acc[section]) {
-      acc[section] = [];
+  const groupedResidences: Record<string, Residence[]> = {};
+  for (const section of sections) {
+    groupedResidences[section.slug] = [];
+  }
+  for (const residence of residences) {
+    const slug = deriveSection(residence);
+    if (!groupedResidences[slug]) {
+      groupedResidences[slug] = [];
     }
-    acc[section].push(residence);
-    return acc;
-  }, {} as Record<string, Residence[]>);
-
-  // Sort sections by predefined order
-  const sortedSections = SECTION_ORDER.filter(section => groupedResidences[section]?.length > 0);
+    groupedResidences[slug].push(residence);
+  }
 
   const toggleSection = (section: string) => {
     setOpenSections(prev => {
@@ -171,7 +143,13 @@ export default function ResidenceSectionGrid({
     );
   };
 
-  if (sortedSections.length === 0) {
+  if (sectionsLoading) {
+    return <div className="text-center py-12 text-muted-foreground">Loading sections...</div>;
+  }
+
+  const activeSections = sections.filter(s => (groupedResidences[s.slug]?.length || 0) > 0);
+
+  if (activeSections.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         No residences found matching your criteria.
@@ -181,21 +159,23 @@ export default function ResidenceSectionGrid({
 
   return (
     <div className="space-y-6">
-      {sortedSections.map(section => {
-        const sectionResidences = groupedResidences[section];
-        const isOpen = openSections.has(section);
-        const sectionColor = SECTION_COLORS[section] || 'bg-gray-500';
+      {activeSections.map(section => {
+        const sectionResidences = groupedResidences[section.slug];
+        const isOpen = openSections.has(section.slug);
         
         return (
-          <Collapsible key={section} open={isOpen} onOpenChange={() => toggleSection(section)}>
+          <Collapsible key={section.id} open={isOpen} onOpenChange={() => toggleSection(section.slug)}>
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"
                 className="w-full justify-between p-4 h-auto hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${sectionColor}`} />
-                  <span className="text-lg font-semibold">{section}</span>
+                  <div className={`w-3 h-3 rounded-full ${section.color}`} />
+                  <span className="text-lg font-semibold">{section.name}</span>
+                  {section.subtitle && (
+                    <span className="text-sm text-muted-foreground hidden sm:inline">— {section.subtitle}</span>
+                  )}
                   <Badge variant="secondary">{sectionResidences.length}</Badge>
                 </div>
                 {isOpen ? (

@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import ResidenceImageSlideshow from './ResidenceImageSlideshow';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useResidenceSections, type ResidenceSection } from '@/hooks/useResidenceSections';
 
 interface Residence {
   id: string;
@@ -21,23 +22,21 @@ interface Residence {
   room_types: string[] | null;
 }
 
-interface SectionConfig {
-  key: string;
-  label: string;
-  subtitle: string;
-}
-
-const SECTIONS: SectionConfig[] = [
-  { key: 'FLATS', label: 'FLATS', subtitle: 'PRETORIA WEST, CBD, ETC' },
-  { key: 'COMMUNES', label: 'COMMUNES', subtitle: 'PRETORIA WEST, ETC' },
-  { key: 'RENTALS', label: 'RENTALS', subtitle: 'SUNNYSIDE, SOSHA, E1' },
-];
-
 const TrustedResidencesGrid = () => {
   const [residences, setResidences] = useState<Residence[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ FLATS: true, COMMUNES: true, RENTALS: true });
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
+  const { sections, loading: sectionsLoading } = useResidenceSections("trusted");
+
+  // Auto-open first 3 sections
+  useEffect(() => {
+    if (sections.length > 0 && Object.keys(openSections).length === 0) {
+      const initial: Record<string, boolean> = {};
+      sections.slice(0, 3).forEach(s => { initial[s.slug] = true; });
+      setOpenSections(initial);
+    }
+  }, [sections]);
 
   useEffect(() => {
     const fetchTopResidences = async () => {
@@ -56,7 +55,7 @@ const TrustedResidencesGrid = () => {
           verification_level: r.verification_level || 'basic',
           province: r.province || 'Gauteng',
           images: r.images || [],
-          section_category: r.section_category || 'FLATS',
+          section_category: r.section_category || null,
           room_types: r.room_types || [],
         })));
       } catch (err) {
@@ -95,7 +94,7 @@ const TrustedResidencesGrid = () => {
     setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  if (loading) {
+  if (loading || sectionsLoading) {
     return (
       <div className="mb-8 space-y-6">
         <div className="flex items-center gap-3">
@@ -141,21 +140,21 @@ const TrustedResidencesGrid = () => {
     );
   }
 
-  // Group residences by section_category
+  // Group residences by section_category using DB sections
   const grouped: Record<string, Residence[]> = {};
-  for (const section of SECTIONS) {
-    grouped[section.key] = residences.filter(r => (r.section_category || 'FLATS').toUpperCase() === section.key);
+  for (const section of sections) {
+    grouped[section.slug] = residences.filter(r => (r.section_category || '').toUpperCase() === section.slug);
   }
-  // Uncategorized go into FLATS
-  const categorized = new Set(Object.values(grouped).flat().map(r => r.id));
-  const uncategorized = residences.filter(r => !categorized.has(r.id));
-  if (uncategorized.length > 0) {
-    grouped['FLATS'] = [...(grouped['FLATS'] || []), ...uncategorized];
+  // Uncategorised go into first section
+  const categorisedIds = new Set(Object.values(grouped).flat().map(r => r.id));
+  const uncategorised = residences.filter(r => !categorisedIds.has(r.id));
+  if (uncategorised.length > 0 && sections.length > 0) {
+    const firstSlug = sections[0].slug;
+    grouped[firstSlug] = [...(grouped[firstSlug] || []), ...uncategorised];
   }
 
   return (
     <div className="mb-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/10">
@@ -172,20 +171,20 @@ const TrustedResidencesGrid = () => {
         </Badge>
       </div>
 
-      {/* Sections */}
       <div className="space-y-4">
-        {SECTIONS.map((section) => {
-          const sectionResidences = grouped[section.key] || [];
+        {sections.map((section) => {
+          const sectionResidences = grouped[section.slug] || [];
           if (sectionResidences.length === 0) return null;
-          const isOpen = openSections[section.key];
+          const isOpen = openSections[section.slug] ?? false;
 
           return (
-            <Collapsible key={section.key} open={isOpen} onOpenChange={() => toggleSection(section.key)}>
+            <Collapsible key={section.id} open={isOpen} onOpenChange={() => toggleSection(section.slug)}>
               <CollapsibleTrigger asChild>
                 <button className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
                   <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${section.color}`} />
                     <span className="font-bold text-sm sm:text-base tracking-wide">
-                      {section.label} — {section.subtitle}
+                      {section.name}{section.subtitle ? ` — ${section.subtitle}` : ''}
                     </span>
                     <Badge variant="secondary" className="text-xs bg-primary-foreground/20 text-primary-foreground border-0">
                       {sectionResidences.length}
@@ -201,13 +200,12 @@ const TrustedResidencesGrid = () => {
 
               <CollapsibleContent>
                 <div className="flex gap-4 overflow-x-auto py-4 pb-2 scrollbar-thin scrollbar-thumb-muted">
-                  {sectionResidences.map((residence, index) => (
+                  {sectionResidences.map((residence) => (
                     <Card
                       key={residence.id}
                       className="group min-w-[260px] max-w-[280px] flex-shrink-0 overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border-border/50 hover:border-primary/40 relative"
                       onClick={() => navigate(`/res/${residence.id}`)}
                     >
-                      {/* Rank Badge for top 3 overall */}
                       {residences.indexOf(residence) < 3 && (
                         <div className="absolute top-3 right-3 z-10">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ${
@@ -220,7 +218,6 @@ const TrustedResidencesGrid = () => {
                         </div>
                       )}
 
-                      {/* Image */}
                       <div className="relative aspect-[16/10] overflow-hidden bg-muted">
                         <ResidenceImageSlideshow
                           mainImage={residence.image_url}
@@ -231,12 +228,10 @@ const TrustedResidencesGrid = () => {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
 
-                        {/* Verification badge */}
                         <div className="absolute top-3 left-3 z-10 pointer-events-none">
                           {getVerificationBadge(residence.verification_level)}
                         </div>
 
-                        {/* FULL badge */}
                         {residence.available_spots === 0 && (
                           <div className="absolute top-3 left-3 z-20 pointer-events-none" style={{ top: residence.verification_level && residence.verification_level !== 'basic' ? '40px' : '12px' }}>
                             <Badge variant="destructive" className="animate-pulse text-xs font-bold">
@@ -245,7 +240,6 @@ const TrustedResidencesGrid = () => {
                           </div>
                         )}
 
-                        {/* Bottom overlay */}
                         <div className="absolute bottom-0 left-0 right-0 p-3 text-white pointer-events-none">
                           <h3 className="font-bold text-sm sm:text-base truncate mb-0.5 drop-shadow-lg">
                             {residence.name}
@@ -257,7 +251,6 @@ const TrustedResidencesGrid = () => {
                         </div>
                       </div>
 
-                      {/* Footer */}
                       <CardContent className="p-3 flex items-center justify-between gap-2">
                         <div className="flex gap-1.5 flex-wrap">
                           {residence.campus && (
