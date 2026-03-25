@@ -144,6 +144,7 @@ export const AdminSlidesContent = () => {
         cta_link: editingSlide.cta_link || null,
         display_order: editingSlide.display_order || 0,
         is_active: editingSlide.is_active ?? true,
+        slide_location: editingSlide.slide_location || "landing",
       };
 
       if (editingSlide.id) {
