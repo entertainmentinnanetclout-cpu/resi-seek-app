@@ -276,6 +276,25 @@ export const AdminSlidesContent = () => {
                     />
                   </div>
 
+                  <div className="space-y-2">
+                    <Label>Show On</Label>
+                    <Select
+                      value={editingSlide.slide_location || "landing"}
+                      onValueChange={(v) => setEditingSlide({ ...editingSlide, slide_location: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LOCATION_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-3">
                     <Label>Image *</Label>
                     <div className="space-y-3">
