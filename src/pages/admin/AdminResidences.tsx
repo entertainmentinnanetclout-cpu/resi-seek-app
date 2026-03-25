@@ -249,6 +249,10 @@ export const AdminResidencesContent = () => {
               <Grid3X3 className="w-4 h-4" />
               Trusted Grid
             </TabsTrigger>
+            <TabsTrigger value="sections" className="gap-2">
+              <LayoutList className="w-4 h-4" />
+              Sections
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-4">
