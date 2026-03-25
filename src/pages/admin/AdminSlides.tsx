@@ -203,6 +203,7 @@ export const AdminSlidesContent = () => {
     }
   };
 
+  const filteredSlides = locationFilter === "all_filter" ? slides : slides.filter(s => s.slide_location === locationFilter);
   const activeSlides = slides.filter(s => s.is_active);
 
   return (
