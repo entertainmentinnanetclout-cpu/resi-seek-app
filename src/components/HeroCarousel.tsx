@@ -24,7 +24,7 @@ interface HeroCarouselProps {
   location?: string;
 }
 
-const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, className, useDatabase = false }: HeroCarouselProps) => {
+const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, className, useDatabase = false, location }: HeroCarouselProps) => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slides, setSlides] = useState<Slide[]>(propSlides || []);
