@@ -12,10 +12,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star, LayoutList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import TrustedResidencesEditor from "@/components/admin/TrustedResidencesEditor";
+import SectionsManager from "@/components/admin/SectionsManager";
+import { useResidenceSections } from "@/hooks/useResidenceSections";
 
 interface Residence {
   id: string;
@@ -80,6 +82,7 @@ export const AdminResidencesContent = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [additionalImages, setAdditionalImages] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
+  const { sections: dbSections } = useResidenceSections();
 
   const fetchResidences = async () => {
     try {
@@ -172,6 +175,7 @@ export const AdminResidencesContent = () => {
         contact_phone: editingResidence.contact_phone || null,
         virtual_tour_url: editingResidence.virtual_tour_url || null,
         virtual_tour_provider: editingResidence.virtual_tour_provider || null,
+        section_category: (editingResidence as any).section_category || null,
       };
 
       if (editingResidence.id) {
@@ -245,6 +249,10 @@ export const AdminResidencesContent = () => {
             <TabsTrigger value="trusted" className="gap-2">
               <Grid3X3 className="w-4 h-4" />
               Trusted Grid
+            </TabsTrigger>
+            <TabsTrigger value="sections" className="gap-2">
+              <LayoutList className="w-4 h-4" />
+              Sections
             </TabsTrigger>
           </TabsList>
 
@@ -398,6 +406,30 @@ export const AdminResidencesContent = () => {
                             <div className="flex items-center gap-2">
                               <div className={`w-3 h-3 rounded-full ${grade.color}`} />
                               {grade.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Section Category */}
+                  <div className="space-y-2">
+                    <Label>Section Category</Label>
+                    <Select
+                      value={(editingResidence as any).section_category || "none"}
+                      onValueChange={(value) => setEditingResidence({ ...editingResidence, section_category: value === "none" ? null : value } as any)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select section" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No section</SelectItem>
+                        {dbSections.map((s) => (
+                          <SelectItem key={s.id} value={s.slug}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${s.color}`} />
+                              {s.name}
                             </div>
                           </SelectItem>
                         ))}
@@ -690,6 +722,10 @@ export const AdminResidencesContent = () => {
 
           <TabsContent value="trusted">
             <TrustedResidencesEditor />
+          </TabsContent>
+
+          <TabsContent value="sections">
+            <SectionsManager />
           </TabsContent>
         </Tabs>
       </div>

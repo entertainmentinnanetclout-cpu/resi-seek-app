@@ -29,21 +29,13 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import TrustedResidencesGrid from "@/components/TrustedResidencesGrid";
 import ResidenceSectionGrid from "@/components/ResidenceSectionGrid";
 import { RESKONNECT_WHATSAPP } from "@/lib/constants";
+import { useResidenceSections } from "@/hooks/useResidenceSections";
 
 
 const MAX_COMPARE = 3;
 
 // Section categories for filtering
-const SECTION_TABS = [
-  { value: "all", label: "All" },
-  { value: "Soshanguve", label: "Soshanguve" },
-  { value: "Pretoria West", label: "Pretoria West" },
-  { value: "Arcadia", label: "Arcadia" },
-  { value: "Arts", label: "Arts" },
-  { value: "Ga-Rankuwa", label: "Ga-Rankuwa" },
-  { value: "ARLC", label: "ARLC" },
-  { value: "Other", label: "Other" },
-];
+// Section tabs now loaded dynamically from DB via useResidenceSections
 
 // Sorting options
 const SORT_OPTIONS = [
@@ -78,6 +70,7 @@ const FindMyRes = () => {
   const navigate = useNavigate();
   const { profile } = useRealtimeProfile(user);
   const { applications } = useRealtimeApplications(user);
+  const { sections: dbSections } = useResidenceSections("findmyres");
   const [residences, setResidences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [compareList, setCompareList] = useState<any[]>([]);
@@ -368,9 +361,9 @@ const FindMyRes = () => {
                         <SelectTrigger className={sectionFilter !== "all" ? "border-primary" : ""}><SelectValue placeholder="All types" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Types</SelectItem>
-                          <SelectItem value="FLATS">Flats</SelectItem>
-                          <SelectItem value="COMMUNES">Communes</SelectItem>
-                          <SelectItem value="RENTALS">Rentals</SelectItem>
+                          {dbSections.map((s) => (
+                            <SelectItem key={s.id} value={s.slug}>{s.name}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
