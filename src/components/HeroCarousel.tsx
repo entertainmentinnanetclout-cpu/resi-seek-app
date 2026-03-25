@@ -21,9 +21,10 @@ interface HeroCarouselProps {
   interval?: number;
   className?: string;
   useDatabase?: boolean;
+  location?: string;
 }
 
-const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, className, useDatabase = false }: HeroCarouselProps) => {
+const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, className, useDatabase = false, location }: HeroCarouselProps) => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slides, setSlides] = useState<Slide[]>(propSlides || []);
@@ -49,11 +50,16 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
 
   const fetchSlides = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("hero_slides")
       .select("*")
-      .eq("is_active", true)
-      .order("display_order", { ascending: true });
+      .eq("is_active", true);
+
+    if (location) {
+      query = query.in("slide_location", [location, "all"]);
+    }
+
+    const { data, error } = await query.order("display_order", { ascending: true });
 
     if (!error && data && data.length > 0) {
       const formattedSlides: Slide[] = data.map(slide => ({

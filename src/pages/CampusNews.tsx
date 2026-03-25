@@ -261,7 +261,7 @@ const CampusNews = () => {
       <div className="min-h-screen">
         {/* Hero Carousel */}
         <div className="px-6 md:px-8 pt-6">
-          <HeroCarousel slides={carouselSlides} />
+          <HeroCarousel slides={carouselSlides} useDatabase={true} location="news" />
         </div>
 
         {/* Main Content */}

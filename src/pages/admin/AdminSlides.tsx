@@ -10,7 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, GripVertical, Eye, EyeOff, Monitor, Home, Newspaper, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Pencil, Trash2, GripVertical, Eye, EyeOff, Monitor, Home, Newspaper, X, LayoutGrid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -23,7 +24,20 @@ interface HeroSlide {
   cta_link: string | null;
   display_order: number;
   is_active: boolean;
+  slide_location: string;
 }
+
+const LOCATION_OPTIONS = [
+  { value: "landing", label: "Landing Page", icon: Home },
+  { value: "dashboard", label: "Dashboard", icon: Monitor },
+  { value: "news", label: "Campus News", icon: Newspaper },
+  { value: "all", label: "All Pages", icon: LayoutGrid },
+];
+
+const getLocationBadge = (location: string) => {
+  const opt = LOCATION_OPTIONS.find(o => o.value === location);
+  return opt?.label || location;
+};
 
 const emptySlide: Partial<HeroSlide> = {
   title: "",
@@ -33,6 +47,7 @@ const emptySlide: Partial<HeroSlide> = {
   cta_link: "",
   display_order: 0,
   is_active: true,
+  slide_location: "landing",
 };
 
 export const AdminSlidesContent = () => {
@@ -43,6 +58,7 @@ export const AdminSlidesContent = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [locationFilter, setLocationFilter] = useState<string>("all_filter");
 
   const fetchSlides = async () => {
     try {
@@ -128,6 +144,7 @@ export const AdminSlidesContent = () => {
         cta_link: editingSlide.cta_link || null,
         display_order: editingSlide.display_order || 0,
         is_active: editingSlide.is_active ?? true,
+        slide_location: editingSlide.slide_location || "landing",
       };
 
       if (editingSlide.id) {
@@ -186,6 +203,7 @@ export const AdminSlidesContent = () => {
     }
   };
 
+  const filteredSlides = locationFilter === "all_filter" ? slides : slides.filter(s => s.slide_location === locationFilter);
   const activeSlides = slides.filter(s => s.is_active);
 
   return (
@@ -259,6 +277,25 @@ export const AdminSlidesContent = () => {
                     />
                   </div>
 
+                  <div className="space-y-2">
+                    <Label>Show On</Label>
+                    <Select
+                      value={editingSlide.slide_location || "landing"}
+                      onValueChange={(v) => setEditingSlide({ ...editingSlide, slide_location: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LOCATION_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-3">
                     <Label>Image *</Label>
                     <div className="space-y-3">
@@ -322,44 +359,34 @@ export const AdminSlidesContent = () => {
 
           {/* Manage Tab */}
           <TabsContent value="manage" className="space-y-4">
-            {/* Where slides appear */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Where These Slides Appear</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="gap-1">
-                    <Home className="w-3 h-3" />
-                    Landing Page Hero
-                  </Badge>
-                  <Badge variant="outline" className="gap-1">
-                    <Monitor className="w-3 h-3" />
-                    Student Dashboard
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  These slides appear on both the public Landing Page and the Student Dashboard hero carousel. Any changes update in real-time.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  📰 <strong>Campus News images</strong> are managed separately via{' '}
-                  <a href="/admin/news" className="text-primary underline underline-offset-2 hover:text-primary/80">Admin → News</a>.
-                </p>
-              </CardContent>
-            </Card>
+            {/* Filter by location */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Filter:</span>
+              <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_filter">All Locations</SelectItem>
+                  {LOCATION_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Slides List */}
             <div className="grid gap-3">
               {loading ? (
                 <div className="text-center py-8 text-muted-foreground">Loading slides...</div>
-              ) : slides.length === 0 ? (
+              ) : filteredSlides.length === 0 ? (
                 <Card>
                   <CardContent className="py-8 text-center text-muted-foreground">
-                    No slides yet. Add your first slide to get started.
+                    No slides found. Add your first slide to get started.
                   </CardContent>
                 </Card>
               ) : (
-                slides.map((slide) => (
+                filteredSlides.map((slide) => (
                   <Card key={slide.id} className={!slide.is_active ? "opacity-60" : ""}>
                     <CardContent className="p-3 sm:p-4">
                       <div className="flex gap-3 sm:gap-4">
@@ -379,9 +406,12 @@ export const AdminSlidesContent = () => {
                                 {slide.description}
                               </p>
                             </div>
-                            <Badge variant={slide.is_active ? "default" : "secondary"} className="shrink-0 text-xs">
-                              #{slide.display_order}
-                            </Badge>
+                            <div className="flex gap-1 shrink-0">
+                              <Badge variant="outline" className="text-xs">{getLocationBadge(slide.slide_location)}</Badge>
+                              <Badge variant={slide.is_active ? "default" : "secondary"} className="text-xs">
+                                #{slide.display_order}
+                              </Badge>
+                            </div>
                           </div>
                           <div className="flex items-center gap-1 sm:gap-2 mt-2">
                             <Button

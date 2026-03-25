@@ -118,7 +118,7 @@ const Dashboard = () => {
       />
       <div className="p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
-          <HeroCarousel slides={carouselSlides} autoPlay={true} interval={6000} />
+          <HeroCarousel slides={carouselSlides} autoPlay={true} interval={6000} useDatabase={true} location="dashboard" />
 
           <SmartDashboard profile={profile} applications={applications} profileCompletion={profileCompletion} />
 
