@@ -24,7 +24,20 @@ interface HeroSlide {
   cta_link: string | null;
   display_order: number;
   is_active: boolean;
+  slide_location: string;
 }
+
+const LOCATION_OPTIONS = [
+  { value: "landing", label: "Landing Page", icon: Home },
+  { value: "dashboard", label: "Dashboard", icon: Monitor },
+  { value: "news", label: "Campus News", icon: Newspaper },
+  { value: "all", label: "All Pages", icon: LayoutGrid },
+];
+
+const getLocationBadge = (location: string) => {
+  const opt = LOCATION_OPTIONS.find(o => o.value === location);
+  return opt?.label || location;
+};
 
 const emptySlide: Partial<HeroSlide> = {
   title: "",
@@ -34,6 +47,7 @@ const emptySlide: Partial<HeroSlide> = {
   cta_link: "",
   display_order: 0,
   is_active: true,
+  slide_location: "landing",
 };
 
 export const AdminSlidesContent = () => {
