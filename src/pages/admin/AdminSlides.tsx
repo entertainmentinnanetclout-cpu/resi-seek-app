@@ -58,6 +58,7 @@ export const AdminSlidesContent = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [locationFilter, setLocationFilter] = useState<string>("all_filter");
 
   const fetchSlides = async () => {
     try {
