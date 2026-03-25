@@ -21,6 +21,7 @@ interface HeroCarouselProps {
   interval?: number;
   className?: string;
   useDatabase?: boolean;
+  location?: string;
 }
 
 const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, className, useDatabase = false }: HeroCarouselProps) => {
