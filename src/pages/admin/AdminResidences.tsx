@@ -12,10 +12,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star, LayoutList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import TrustedResidencesEditor from "@/components/admin/TrustedResidencesEditor";
+import SectionsManager from "@/components/admin/SectionsManager";
+import { useResidenceSections } from "@/hooks/useResidenceSections";
 
 interface Residence {
   id: string;
