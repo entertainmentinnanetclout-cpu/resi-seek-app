@@ -1012,6 +1012,7 @@ export type Database = {
           id: string
           image_url: string
           is_active: boolean
+          slide_location: string
           title: string
           updated_at: string
         }
@@ -1024,6 +1025,7 @@ export type Database = {
           id?: string
           image_url: string
           is_active?: boolean
+          slide_location?: string
           title: string
           updated_at?: string
         }
@@ -1036,6 +1038,7 @@ export type Database = {
           id?: string
           image_url?: string
           is_active?: boolean
+          slide_location?: string
           title?: string
           updated_at?: string
         }
