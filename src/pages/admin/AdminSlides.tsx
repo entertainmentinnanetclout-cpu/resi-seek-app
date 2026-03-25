@@ -406,9 +406,12 @@ export const AdminSlidesContent = () => {
                                 {slide.description}
                               </p>
                             </div>
-                            <Badge variant={slide.is_active ? "default" : "secondary"} className="shrink-0 text-xs">
-                              #{slide.display_order}
-                            </Badge>
+                            <div className="flex gap-1 shrink-0">
+                              <Badge variant="outline" className="text-xs">{getLocationBadge(slide.slide_location)}</Badge>
+                              <Badge variant={slide.is_active ? "default" : "secondary"} className="text-xs">
+                                #{slide.display_order}
+                              </Badge>
+                            </div>
                           </div>
                           <div className="flex items-center gap-1 sm:gap-2 mt-2">
                             <Button
