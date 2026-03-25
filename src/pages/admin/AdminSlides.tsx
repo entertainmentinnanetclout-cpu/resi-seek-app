@@ -359,44 +359,34 @@ export const AdminSlidesContent = () => {
 
           {/* Manage Tab */}
           <TabsContent value="manage" className="space-y-4">
-            {/* Where slides appear */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Where These Slides Appear</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="gap-1">
-                    <Home className="w-3 h-3" />
-                    Landing Page Hero
-                  </Badge>
-                  <Badge variant="outline" className="gap-1">
-                    <Monitor className="w-3 h-3" />
-                    Student Dashboard
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  These slides appear on both the public Landing Page and the Student Dashboard hero carousel. Any changes update in real-time.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  📰 <strong>Campus News images</strong> are managed separately via{' '}
-                  <a href="/admin/news" className="text-primary underline underline-offset-2 hover:text-primary/80">Admin → News</a>.
-                </p>
-              </CardContent>
-            </Card>
+            {/* Filter by location */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Filter:</span>
+              <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <SelectTrigger className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_filter">All Locations</SelectItem>
+                  {LOCATION_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Slides List */}
             <div className="grid gap-3">
               {loading ? (
                 <div className="text-center py-8 text-muted-foreground">Loading slides...</div>
-              ) : slides.length === 0 ? (
+              ) : filteredSlides.length === 0 ? (
                 <Card>
                   <CardContent className="py-8 text-center text-muted-foreground">
-                    No slides yet. Add your first slide to get started.
+                    No slides found. Add your first slide to get started.
                   </CardContent>
                 </Card>
               ) : (
-                slides.map((slide) => (
+                filteredSlides.map((slide) => (
                   <Card key={slide.id} className={!slide.is_active ? "opacity-60" : ""}>
                     <CardContent className="p-3 sm:p-4">
                       <div className="flex gap-3 sm:gap-4">
