@@ -34,16 +34,7 @@ import { RESKONNECT_WHATSAPP } from "@/lib/constants";
 const MAX_COMPARE = 3;
 
 // Section categories for filtering
-const SECTION_TABS = [
-  { value: "all", label: "All" },
-  { value: "Soshanguve", label: "Soshanguve" },
-  { value: "Pretoria West", label: "Pretoria West" },
-  { value: "Arcadia", label: "Arcadia" },
-  { value: "Arts", label: "Arts" },
-  { value: "Ga-Rankuwa", label: "Ga-Rankuwa" },
-  { value: "ARLC", label: "ARLC" },
-  { value: "Other", label: "Other" },
-];
+// Section tabs now loaded dynamically from DB via useResidenceSections
 
 // Sorting options
 const SORT_OPTIONS = [

@@ -175,6 +175,7 @@ export const AdminResidencesContent = () => {
         contact_phone: editingResidence.contact_phone || null,
         virtual_tour_url: editingResidence.virtual_tour_url || null,
         virtual_tour_provider: editingResidence.virtual_tour_provider || null,
+        section_category: (editingResidence as any).section_category || null,
       };
 
       if (editingResidence.id) {
