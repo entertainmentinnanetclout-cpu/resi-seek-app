@@ -82,6 +82,7 @@ export const AdminResidencesContent = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [additionalImages, setAdditionalImages] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
+  const { sections: dbSections } = useResidenceSections();
 
   const fetchResidences = async () => {
     try {
