@@ -70,6 +70,7 @@ const FindMyRes = () => {
   const navigate = useNavigate();
   const { profile } = useRealtimeProfile(user);
   const { applications } = useRealtimeApplications(user);
+  const { sections: dbSections } = useResidenceSections("findmyres");
   const [residences, setResidences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [compareList, setCompareList] = useState<any[]>([]);
