@@ -100,11 +100,15 @@ const ResidenceDetail = () => {
   const handleApply = () => {
     if (!user) {
       toast.error("Please sign in to apply");
-      navigate("/auth");
+      navigate("/auth?returnTo=/res/" + id);
       return;
     }
     if (hasApplied) {
       toast.info("You have already applied to this residence");
+      return;
+    }
+    if ((residence?.available_spots || 0) === 0) {
+      toast.error("This residence is fully booked");
       return;
     }
     setShowApplyModal(true);
@@ -254,6 +258,10 @@ const ResidenceDetail = () => {
                           <CheckCircle className="w-4 h-4" />
                           Already Applied
                         </Button>
+                      ) : (residence?.available_spots || 0) === 0 ? (
+                        <Button size="lg" variant="outline" disabled className="gap-2 opacity-60">
+                          Fully Booked
+                        </Button>
                       ) : (
                         <Button size="lg" onClick={handleApply}>Apply Now</Button>
                       )}
@@ -370,6 +378,31 @@ const ResidenceDetail = () => {
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-lg font-bold">Details</h3>
                                 </div>
+
+                                {/* Availability Status */}
+                                <div className="mb-4">
+                                  {(residence.available_spots || 0) === 0 ? (
+                                    <Badge className="bg-destructive text-destructive-foreground animate-pulse w-full justify-center py-1.5 text-sm">
+                                      FULLY BOOKED
+                                    </Badge>
+                                  ) : (residence.available_spots || 0) <= 5 ? (
+                                    <Badge className="bg-yellow-500 text-yellow-950 w-full justify-center py-1.5 text-sm">
+                                      Only {residence.available_spots} spots left!
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-green-500 text-white w-full justify-center py-1.5 text-sm">
+                                      Available
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {/* Pricing Breakdown */}
+                                <div className="bg-primary/5 rounded-lg p-4 mb-4">
+                                  <p className="text-2xl font-bold text-primary">
+                                    R{Number(residence.price || 0).toLocaleString()}<span className="text-sm font-normal text-muted-foreground">/month</span>
+                                  </p>
+                                </div>
+
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <span className="text-muted-foreground">Available Spots</span>
@@ -390,6 +423,12 @@ const ResidenceDetail = () => {
                                           ))}
                                         </div>
                                     </div>
+                                    {residence.is_trusted && (
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-muted-foreground">NSFAS</span>
+                                        <Badge variant="outline" className="border-green-500 text-green-600">Accredited ✓</Badge>
+                                      </div>
+                                    )}
                                 </div>
                                 <Separator className="my-4" />
                                 <div>
@@ -404,33 +443,55 @@ const ResidenceDetail = () => {
             </CardContent>
           </Card>
 
-        <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-4">Related Residences</h2>
+        {relatedResidences.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold mb-2">Similar Residences</h2>
+            <p className="text-muted-foreground text-sm mb-6">Other options near {residence.campus || "this campus"}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {relatedResidences.map((res) => (
+                {relatedResidences.map((res) => {
+                  const resSpots = res.available_spots || 0;
+                  const resFull = resSpots === 0;
+                  return (
                     <Link to={`/res/${res.id}`} key={res.id}>
-                        <Card className="hover:shadow-lg transition-shadow">
-                            <img 
-                              src={res.image_url || "/placeholder.svg"} 
-                              alt={res.name} 
-                              className="w-full h-48 object-cover rounded-t-lg"
-                              onError={(e) => {
-                                const target = e.currentTarget as HTMLImageElement;
-                                target.src = "/placeholder.svg";
-                              }}
-                            />
+                        <Card className="hover:shadow-lg transition-shadow overflow-hidden group">
+                            <div className="relative">
+                              <img 
+                                src={res.image_url || "/placeholder.svg"} 
+                                alt={res.name} 
+                                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+                                loading="lazy"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src = "/placeholder.svg";
+                                }}
+                              />
+                              <div className="absolute top-2 right-2">
+                                {resFull ? (
+                                  <Badge className="bg-destructive text-destructive-foreground animate-pulse text-xs">FULL</Badge>
+                                ) : resSpots <= 5 ? (
+                                  <Badge className="bg-yellow-500 text-yellow-950 text-xs">{resSpots} spots</Badge>
+                                ) : (
+                                  <Badge className="bg-green-500 text-white text-xs">Available</Badge>
+                                )}
+                              </div>
+                            </div>
                             <CardContent className="p-4">
-                                <h3 className="text-lg font-bold">{res.name}</h3>
-                                <p className="text-muted-foreground text-sm">{res.address}</p>
-                                <div className="flex items-center justify-end mt-4">
-                                    <Button size="sm" variant="outline">View</Button>
+                                <p className="text-lg font-bold text-primary">R{Number(res.price || 0).toLocaleString()}<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+                                <h3 className="font-semibold mt-1">{res.name}</h3>
+                                <p className="text-muted-foreground text-sm line-clamp-1">{res.address}</p>
+                                <div className="flex items-center justify-between mt-3">
+                                  {res.distance_from_campus && (
+                                    <span className="text-xs text-muted-foreground">{res.distance_from_campus}km away</span>
+                                  )}
+                                  <Button size="sm" variant="outline">View</Button>
                                 </div>
                             </CardContent>
                         </Card>
                     </Link>
-                ))}
+                  );
+                })}
             </div>
-        </div>
+          </div>
+        )}
 
         {/* Reviews Section */}
         <div className="mt-12">
