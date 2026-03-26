@@ -258,6 +258,10 @@ const ResidenceDetail = () => {
                           <CheckCircle className="w-4 h-4" />
                           Already Applied
                         </Button>
+                      ) : (residence?.available_spots || 0) === 0 ? (
+                        <Button size="lg" variant="outline" disabled className="gap-2 opacity-60">
+                          Fully Booked
+                        </Button>
                       ) : (
                         <Button size="lg" onClick={handleApply}>Apply Now</Button>
                       )}
