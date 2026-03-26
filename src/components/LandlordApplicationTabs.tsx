@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Building2, Shield, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CAMPUSES } from "@/lib/campuses";
+import { TUT_CAMPUSES } from "@/lib/campuses";
 
 interface FormData {
   application_type: string;
