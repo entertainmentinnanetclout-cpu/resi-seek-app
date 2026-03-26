@@ -100,11 +100,15 @@ const ResidenceDetail = () => {
   const handleApply = () => {
     if (!user) {
       toast.error("Please sign in to apply");
-      navigate("/auth");
+      navigate("/auth?returnTo=/res/" + id);
       return;
     }
     if (hasApplied) {
       toast.info("You have already applied to this residence");
+      return;
+    }
+    if ((residence?.available_spots || 0) === 0) {
+      toast.error("This residence is fully booked");
       return;
     }
     setShowApplyModal(true);
