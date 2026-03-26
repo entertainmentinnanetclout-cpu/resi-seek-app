@@ -47,6 +47,7 @@ const AdminOperationsHub = () => {
           <TabsContent value="residences"><AdminResidencesContent /></TabsContent>
           <TabsContent value="portals"><AdminResidencePortalsContent /></TabsContent>
           <TabsContent value="applications"><AdminApplicationsContent /></TabsContent>
+          <TabsContent value="landlord-apps"><AdminLandlordApplicationsContent /></TabsContent>
           <TabsContent value="follow-up"><AdminFollowUpContent /></TabsContent>
           <TabsContent value="documents"><AdminDocumentsContent /></TabsContent>
           <TabsContent value="users"><AdminUsersContent /></TabsContent>
