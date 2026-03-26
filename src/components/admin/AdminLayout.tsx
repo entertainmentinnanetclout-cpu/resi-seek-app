@@ -1,14 +1,26 @@
-import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Building2, Home, LogOut, Menu, LayoutDashboard, RefreshCw, TrendingUp, Boxes, ShoppingCart, Film, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth, StaffRole } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -32,11 +44,11 @@ const roleLabels: Record<string, string> = {
   support_agent: "Support Agent",
 };
 
-const AdminLayout = ({ children }: AdminLayoutProps) => {
+const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
-  const { staffRole } = useAuth();
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
 
   const navItems = allNavItems.filter(
     (item) => staffRole && item.roles.includes(staffRole)
@@ -52,101 +64,98 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     window.location.reload();
   };
 
-  const NavLink = ({ item, onClick }: { item: typeof allNavItems[0]; onClick?: () => void }) => (
-    <Link
-      to={item.path}
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm",
-        location.pathname === item.path
-          ? "bg-primary text-primary-foreground"
-          : "hover:bg-secondary text-muted-foreground hover:text-foreground"
-      )}
-    >
-      <item.icon className="w-4 h-4 shrink-0" />
-      {item.label}
-    </Link>
-  );
-
-  const NavContent = () => (
-    <div className="flex flex-col h-full">
-      <div className="p-6 border-b">
-        <div className="flex items-center gap-2 mb-1">
-          <Building2 className="w-8 h-8 text-primary" />
-          <span className="text-xl font-bold">ResKonnect</span>
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b p-4">
+        <div className="flex items-center gap-2">
+          <Building2 className="w-7 h-7 text-primary shrink-0" />
+          {!collapsed && (
+            <div className="min-w-0">
+              <span className="text-lg font-bold block leading-tight">ResKonnect</span>
+              <Badge variant="outline" className="text-[10px] mt-0.5">
+                {roleLabels[staffRole || "admin"]}
+              </Badge>
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-2 mt-1">
-          <Badge variant="outline" className="text-xs">
-            {roleLabels[staffRole || "admin"]}
-          </Badge>
-        </div>
-      </div>
+      </SidebarHeader>
 
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
-          <NavLink key={item.path} item={item} onClick={() => setIsOpen(false)} />
-        ))}
-      </nav>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={item.label}
+                    >
+                      <Link to={item.path}>
+                        <item.icon className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
 
-      <div className="p-4 border-t space-y-2">
-        <Button variant="outline" className="w-full justify-start" onClick={handleRefresh}>
-          <RefreshCw className="w-5 h-5 mr-3" />
-          Refresh Data
-        </Button>
-        <Button variant="ghost" className="w-full justify-start" onClick={() => navigate("/")}>
-          <Home className="w-5 h-5 mr-3" />
-          View Public Site
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-destructive hover:text-destructive"
-          onClick={handleLogout}
-        >
-          <LogOut className="w-5 h-5 mr-3" />
-          Logout
-        </Button>
-      </div>
-    </div>
+      <SidebarFooter className="border-t p-2 space-y-1">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleRefresh} tooltip="Refresh Data">
+              <RefreshCw className="w-4 h-4" />
+              <span>Refresh Data</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={() => navigate("/")} tooltip="Public Site">
+              <Home className="w-4 h-4" />
+              <span>View Public Site</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={handleLogout}
+              tooltip="Logout"
+              className="text-destructive hover:text-destructive"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
   );
+};
+
+const AdminLayout = ({ children }: AdminLayoutProps) => {
+  const { staffRole } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <aside className="hidden lg:block w-64 border-r bg-card fixed h-full">
-        <NavContent />
-      </aside>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AdminSidebar staffRole={staffRole} />
 
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background border-b px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Building2 className="w-6 h-6 text-primary" />
-          <span className="font-bold">Admin</span>
-          <Badge variant="outline" className="text-xs ml-1">
-            {roleLabels[staffRole || "admin"]}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
-              <NavContent />
-            </SheetContent>
-          </Sheet>
-        </div>
-      </header>
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-12 flex items-center justify-between border-b bg-card px-4 shrink-0 sticky top-0 z-40">
+            <SidebarTrigger />
+            <ThemeToggle />
+          </header>
 
-      <main className="flex-1 lg:ml-64">
-        <div className="hidden lg:flex items-center justify-end p-4 border-b bg-card">
-          <ThemeToggle />
+          <main className="flex-1 p-4 md:p-6 lg:p-8">
+            {children}
+          </main>
         </div>
-        <div className="pt-16 lg:pt-0 p-4 md:p-6 lg:p-8">
-          {children}
-        </div>
-      </main>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 };
 
