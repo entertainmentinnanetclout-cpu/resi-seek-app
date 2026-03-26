@@ -180,7 +180,8 @@ export const ProductFormDialog = ({
       onOpenChange(false);
     } catch (error: unknown) {
       console.error("Save error:", error);
-      toast.error("Failed to save product");
+      const msg = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to save product: ${msg}`);
     } finally {
       setSaving(false);
     }
