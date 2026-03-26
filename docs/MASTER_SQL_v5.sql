@@ -454,6 +454,22 @@ CREATE TABLE IF NOT EXISTS public.product_categories (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Ensure columns exist on pre-existing product_categories tables
+DO $$ BEGIN
+  ALTER TABLE public.product_categories ADD COLUMN slug TEXT UNIQUE;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE public.product_categories ADD COLUMN display_order INTEGER DEFAULT 0;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE public.product_categories ADD COLUMN image_url TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
 -- Products (NEW in v5)
 CREATE TABLE IF NOT EXISTS public.products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
