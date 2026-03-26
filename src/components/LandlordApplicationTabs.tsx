@@ -168,8 +168,8 @@ const LandlordApplicationTabs = () => {
           <Select value={form.nearest_campus} onValueChange={(v) => update("nearest_campus", v)}>
             <SelectTrigger><SelectValue placeholder="Select campus" /></SelectTrigger>
             <SelectContent>
-              {CAMPUSES.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
+              {TUT_CAMPUSES.map((c) => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
