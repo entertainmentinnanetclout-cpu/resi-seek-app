@@ -1,138 +1,456 @@
+# Upgrade Admin Layout: Collapsible Sidebar + Enhanced Dashboard
+
+## Problem
+
+The current `AdminLayout` uses a fixed 64px-wide sidebar on desktop and a Sheet drawer on mobile. It cannot be collapsed, so admin content is always constrained. The dashboard also needs to reflect the newly updated FindMyRes page management (residence sections, availability, filters).
+
+## Solution
+
+SECTION A
+
+### 1. Replace AdminLayout sidebar with collapsible Shadcn Sidebar
+
+Rewrite `AdminLayout.tsx` to use `SidebarProvider` + `Sidebar` with `collapsible="icon"`:
+
+- **Expanded**: Shows icons + labels (w-64)
+- **Collapsed**: Shows icons only (w-14), giving full-width content area
+- **Mobile**: Uses Sheet (offcanvas) with `SidebarTrigger` always visible in header
+- `SidebarTrigger` placed in the top header bar so it's always accessible
+
+### 2. Enhance AdminDashboard with FindMyRes management stats
+
+Add new stat cards for:
+
+- **Residence Sections** count (from `residence_sections` table)
+- **Available Spots** total across all residences
+- **Full Residences** count (where `available_spots = 0`)
+- Quick action link to "Manage Sections" (routes to Operations Hub > Residences > Sections tab)
+
+### 3. Update all Hub pages
+
+All 4 hub pages (`AdminOperationsHub`, `AdminCommerceHub`, `AdminMediaHub`, `AdminSystemHub`) already use `<AdminLayout>` as wrapper — they'll automatically get the collapsible sidebar with no changes needed.
+
+## Files Modified
 
 
-# Rebuild FindMyRes as a High-Conversion Student Housing Decision Engine
+| File                                   | Change                                                                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `src/components/admin/AdminLayout.tsx` | Full rewrite: replace fixed sidebar with Shadcn `Sidebar` + `SidebarProvider`, `collapsible="icon"`, `SidebarTrigger` in header |
+| `src/pages/admin/AdminDashboard.tsx`   | Add FindMyRes management stats (sections count, available spots, full residences), update quick actions                         |
 
-## Overview
-Complete rewrite of `FindMyRes.tsx` from a basic listings page into a Property24/Amberstudent-inspired smart matching system with persistent sidebar filters, real-time availability, match scoring, and optimized property cards. The ResidenceDetail page gets upgraded with a proper gallery, pricing breakdown, and "Similar Residences" section.
-
-## Architecture
-
-```text
-┌─────────────────────────────────────────────────────────┐
-│  Smart Search Bar (Campus, Budget, Room Type, NSFAS)    │
-├──────────────┬──────────────────────────────────────────┤
-│  Filter      │  Results Grid                            │
-│  Sidebar     │  ┌──────┐ ┌──────┐ ┌──────┐             │
-│  (desktop)   │  │ Card │ │ Card │ │ Card │             │
-│              │  └──────┘ └──────┘ └──────┘             │
-│  - Campus    │  ┌──────┐ ┌──────┐ ┌──────┐             │
-│  - Distance  │  │ Card │ │ Card │ │ Card │             │
-│  - Price     │  └──────┘ └──────┘ └──────┘             │
-│  - Section   │                                          │
-│  - Room Type │  Sort: Price | Distance | Match Score    │
-│  - NSFAS     │  Results count + active filter chips     │
-│  - Avail.    │                                          │
-├──────────────┴──────────────────────────────────────────┤
-│  Mobile: Bottom sheet filter drawer                     │
-└─────────────────────────────────────────────────────────┘
-```
-
-## Files to Create/Modify
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/pages/FindMyRes.tsx` | **Full rewrite** | Two-column layout, smart search hero, sidebar filters, grid results |
-| `src/components/findmyres/SmartSearchBar.tsx` | **Create** | Guided search: campus, budget slider, room type, NSFAS toggle |
-| `src/components/findmyres/FilterSidebar.tsx` | **Create** | Desktop sidebar with all filter controls + price/distance sliders |
-| `src/components/findmyres/FilterBottomSheet.tsx` | **Create** | Mobile bottom sheet version of filters |
-| `src/components/findmyres/ResidencePropertyCard.tsx` | **Create** | Property24-style card with availability badge, match score, image |
-| `src/components/findmyres/ActiveFilterChips.tsx` | **Create** | Removable filter chips showing active filters |
-| `src/pages/ResidenceDetail.tsx` | **Enhance** | Better gallery, pricing breakdown, "Similar Residences" carousel, block apply when FULL |
-| `src/hooks/useResidenceFilters.ts` | **Create** | Centralized filter state + memoized filtering logic |
-
-## Detailed Plan
-
-### 1. Smart Search Bar (`SmartSearchBar.tsx`)
-- Hero section with 4 guided inputs in a single row (desktop) / stacked (mobile):
-  - Campus dropdown (from `TUT_CAMPUSES`)
-  - Budget range dual slider (R1,000 - R10,000)
-  - Room type toggle (Single / Sharing / Any)
-  - NSFAS toggle switch
-- "Search" button applies all at once
-- Results count shown: "Showing X of Y residences"
-
-### 2. Filter Sidebar (`FilterSidebar.tsx`)
-Desktop: sticky left sidebar (w-72). Filters:
-- **Campus** — checkbox list from `TUT_CAMPUSES`
-- **Distance** — range slider (0-10km) using Slider component
-- **Price Range** — dual-thumb slider (R1,000 - R10,000)
-- **Section Category** — checkbox list from `residence_sections` DB table
-- **Room Type** — checkbox list (Single, Sharing, Bachelor, Studio)
-- **NSFAS Accredited** — toggle (filters `is_trusted = true` as proxy)
-- **Availability** — radio: All / Available Only / Few Spots Left
-- **Amenities** — expandable checkbox list
-- All filters apply instantly (no submit button, reactive via state)
-- "Clear All" button
-
-### 3. Mobile Filter Bottom Sheet (`FilterBottomSheet.tsx`)
-- Sheet component triggered by floating filter button
-- Same filter controls as sidebar
-- "Show X Results" sticky button at bottom
-- Filter count badge on trigger button
-
-### 4. Property Cards (`ResidencePropertyCard.tsx`)
-Each card (grid layout, 3 cols desktop, 2 tablet, 1 mobile):
-- Large image (aspect-video, lazy loaded with `loading="lazy"`)
-- **Availability badge** (top-right):
-  - Green "Available" when spots > 5
-  - Yellow "Few Spots" when spots 1-5
-  - Red pulsing "FULL" when spots = 0
-- Price bold: `R{price}/mo`
-- Distance: `{distance}km from {campus}`
-- Room types as small badges
-- "Singles Available" green indicator (from `room_types` array)
-- **Match score** (optional): calculated from user's search criteria match %
-- Favorite button + WhatsApp button overlay
-- Click navigates to `/res/{id}`
-- **Disable "Apply Now" when FULL** — show "Fully Booked" greyed out
-
-### 5. Match Score Calculation
-Client-side scoring based on active filters:
-- Campus match: +30%
-- Price within budget: +25%
-- Room type match: +20%
-- Distance within range: +15%
-- Has requested amenities: +10%
-- Display as circular badge on card when filters are active
-
-### 6. Results Area
-- Top bar: result count, sort dropdown, grid/list toggle
-- Active filter chips (removable)
-- Infinite scroll or "Load More" (groups of 20)
-- Empty state with illustration
-
-### 7. ResidenceDetail Page Upgrades
-- Block apply button when `available_spots === 0` (already partially done, enforce consistently)
-- "Similar Residences" section at bottom (already fetches related by campus — enhance with cards)
-- Pricing breakdown card: monthly rent, deposit info if available
-- Verified/accredited badges more prominent
-
-### 8. Shortlist / Favorites
-Already implemented via `FavoriteButton` + `favorites` table. No changes needed — integrated into new cards.
-
-### 9. Real-time Availability
-- Use existing Supabase realtime subscription on `residences` table
-- Subscribe to changes on the FindMyRes page to auto-update `available_spots`
-- Already have `useRealtimeResidences` hook — integrate it
-
-### 10. Performance
-- `loading="lazy"` on all card images
-- Memoize filtered results with `useMemo`
-- Virtualize list if > 50 results (optional, defer)
-
-### 11. No SQL Changes Needed
-All required DB columns already exist:
-- `available_spots`, `distance_from_campus`, `price`, `campus`, `room_type`, `room_types`, `section_category`, `is_trusted`, `amenities`, `image_url`, `images`
-- `residence_sections` table already exists for section categories
-- `favorites` table already exists for shortlisting
-- RLS policies already in place
-
-The existing schema fully supports all filter requirements. No migration needed.
 
 ## Technical Details
-- Slider component already exists at `src/components/ui/slider.tsx`
-- Sheet component exists at `src/components/ui/sheet.tsx`
-- All campus values from `src/lib/campuses.ts`
-- Filters are pure client-side on already-fetched data (residences table is small enough)
-- Realtime via `useRealtimeResidences` hook for live availability updates
 
+**AdminLayout structure:**
+
+```text
+<SidebarProvider>
+  <div className="min-h-screen flex w-full">
+    <Sidebar collapsible="icon">
+      <SidebarHeader> Logo + Role badge </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup> Nav items </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter> Refresh, Public Site, Logout </SidebarFooter>
+    </Sidebar>
+    <div className="flex-1 flex flex-col">
+      <header> <SidebarTrigger /> <ThemeToggle /> </header>
+      <main> {children} </main>
+    </div>
+  </div>
+</SidebarProvider>
+```
+
+- Nav items use `SidebarMenuItem` + `SidebarMenuButton` with active state highlighting
+- Collapsed mode hides labels, shows only icons via Sidebar's built-in behavior
+- Role badge shown in header when collapsed, in sidebar header when expanded
+- All existing nav items and role filtering preserved
+
+**Dashboard additions:**
+
+- 3 new queries: `residence_sections` count, sum of `available_spots`, count where `available_spots = 0`
+- New "FindMyRes" section in the dashboard grid between Operations and Commerce hubs
+- Quick action for "Sections" linking to `/admin/operations?tab=residences`
+
+&nbsp;
+
+settion b 
+
+Now we move from “good system” → **enterprise-grade operational infrastructure**.
+
+What IM asking for is not just SQL — this is:  
+👉 **A unified, deduplicated, self-healing backend architecture for Supabase AND UI , UX**
+
+YOU SHOULD GIVE ME
+
+1. 🧠 Enterprise architecture rules (Lovable MUST follow)
+2. 🧱 Master re-runnable SQL (idempotent, safe)
+3. 🔄 Deduplication enforcement (NO duplicate modules/tabs)
+4. ⚡ Event + analytics system (for your admin intelligence)
+5. 🔐 RLS + performance layer
+6. 🚨 Auto-detection of conflicts
+7. FULLY UPDATED INTELLIGENT ADMIN DASH
+
+---
+
+# 🧠 1. NON-NEGOTIABLE RULES (ADD TO LOVABLE PROMPT)
+
+Use this EXACTLY:
+
+```txt
+SYSTEM RULES (CRITICAL):
+
+1. ALWAYS use external Supabase (no local schema assumptions)
+
+2. ALL SQL MUST be:
+   - Re-runnable (idempotent)
+   - Use IF NOT EXISTS / DO $$ blocks
+   - Never duplicate tables, enums, or columns
+
+3. BEFORE creating ANY table/feature:
+   - Check if similar structure already exists
+   - Reuse existing tables/functions if possible
+   - Extend instead of duplicating
+
+4. NEVER create duplicate modules:
+   Example:
+   - If "applications" exists → DO NOT create "student_applications"
+   - If "orders" exists → DO NOT create "marketplace_orders_v2"
+
+5. ALWAYS unify:
+   - Applications = ONE system
+   - Orders = ONE system
+   - Users = ONE system
+
+6. If duplicate logic is found:
+   - Merge into single source of truth
+   - Add compatibility layer if needed
+
+7. ALWAYS provide:
+   - SQL migrations
+   - indexes
+   - RLS policies
+   - triggers (if needed)
+
+8. All admin features must connect to SAME backend tables
+   (no parallel systems)
+
+FINAL RULE:
+→ ONE SYSTEM PER DOMAIN (NO DUPLICATION)
+
+```
+
+---
+
+# 🧱 2. MASTER ENTERPRISE SQL (RE-RUNNABLE)
+
+This is your **core upgrade layer**.
+
+---
+
+## 🔹 2.1 SYSTEM EVENTS (FOR REAL-TIME ADMIN INTELLIGENCE)
+
+```sql
+-- EVENT LOG SYSTEM (GLOBAL TRACKING)
+CREATE TABLE IF NOT EXISTS system_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  type text NOT NULL,
+  entity text,
+  entity_id uuid,
+  metadata jsonb,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_system_events_type ON system_events(type);
+CREATE INDEX IF NOT EXISTS idx_system_events_created_at ON system_events(created_at DESC);
+
+```
+
+---
+
+## 🔹 2.2 AUTO EVENT TRIGGERS
+
+### Applications
+
+```sql
+CREATE OR REPLACE FUNCTION log_application_event()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO system_events(type, entity, entity_id, metadata)
+  VALUES (
+    'NEW_APPLICATION',
+    'applications',
+    NEW.id,
+    jsonb_build_object('user_id', NEW.user_id)
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_application_event ON applications;
+
+CREATE TRIGGER trg_application_event
+AFTER INSERT ON applications
+FOR EACH ROW
+EXECUTE FUNCTION log_application_event();
+
+```
+
+---
+
+### Orders
+
+```sql
+CREATE OR REPLACE FUNCTION log_order_event()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO system_events(type, entity, entity_id)
+  VALUES ('NEW_ORDER', 'shop_orders', NEW.id);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_order_event ON shop_orders;
+
+CREATE TRIGGER trg_order_event
+AFTER INSERT ON shop_orders
+FOR EACH ROW
+EXECUTE FUNCTION log_order_event();
+
+```
+
+---
+
+### Residences FULL detection
+
+```sql
+CREATE OR REPLACE FUNCTION detect_full_residence()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.available_spots = 0 THEN
+    INSERT INTO system_events(type, entity, entity_id)
+    VALUES ('RESIDENCE_FULL', 'residences', NEW.id);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_residence_full ON residences;
+
+CREATE TRIGGER trg_residence_full
+AFTER UPDATE ON residences
+FOR EACH ROW
+EXECUTE FUNCTION detect_full_residence();
+
+```
+
+---
+
+# 🔥 3. ADMIN ALERT SYSTEM
+
+```sql
+CREATE TABLE IF NOT EXISTS admin_alerts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title text,
+  description text,
+  severity text DEFAULT 'info',
+  resolved boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_alerts_resolved ON admin_alerts(resolved);
+
+```
+
+---
+
+### Auto alert example (stuck applications)
+
+```sql
+INSERT INTO admin_alerts (title, description, severity)
+SELECT 
+  'Stuck Application',
+  'Application pending over 48 hours',
+  'warning'
+WHERE EXISTS (
+  SELECT 1 FROM applications
+  WHERE created_at < now() - interval '48 hours'
+);
+
+```
+
+---
+
+# 🔥 4. RESIDENCE PERFORMANCE TABLE (ANALYTICS LAYER)
+
+```sql
+CREATE TABLE IF NOT EXISTS residence_analytics (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  residence_id uuid,
+  views integer DEFAULT 0,
+  applications integer DEFAULT 0,
+  created_at timestamptz DEFAULT now()
+);
+
+```
+
+---
+
+### Indexes
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_residence_analytics_residence 
+ON residence_analytics(residence_id);
+
+```
+
+---
+
+# 🔥 5. FILTER CONFIG SYSTEM (ADMIN CONTROL)
+
+```sql
+CREATE TABLE IF NOT EXISTS filter_config (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text UNIQUE,
+  enabled boolean DEFAULT true,
+  position integer DEFAULT 0
+);
+
+```
+
+---
+
+👉 This controls:
+
+- FindMyRes filters
+- Ordering
+- Visibility
+
+---
+
+# 🔥 6. GLOBAL SEARCH INDEX TABLE (FOR ADMIN COMMAND BAR)
+
+```sql
+CREATE TABLE IF NOT EXISTS global_search (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity text,
+  entity_id uuid,
+  label text,
+  metadata jsonb
+);
+
+CREATE INDEX IF NOT EXISTS idx_global_search_label 
+ON global_search USING gin (to_tsvector('english', label));
+
+```
+
+---
+
+# 🔐 7. RLS (BASIC ENTERPRISE SETUP)
+
+```sql
+ALTER TABLE system_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_alerts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins only"
+ON system_events
+FOR SELECT
+USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Admins alerts access"
+ON admin_alerts
+FOR ALL
+USING (auth.role() = 'authenticated');
+
+```
+
+---
+
+# ⚡ 8. REALTIME ENABLEMENT
+
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE system_events;
+ALTER PUBLICATION supabase_realtime ADD TABLE admin_alerts;
+
+```
+
+---
+
+# 🚨 9. DUPLICATION DETECTION (CRITICAL)
+
+This is your **anti-chaos layer**.
+
+```sql
+-- Detect duplicate tables
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+GROUP BY table_name
+HAVING COUNT(*) > 1;
+
+```
+
+---
+
+👉 Lovable must:
+
+- NOT create new tables if similar exist
+- Extend existing schema
+
+---
+
+# 🧠 10. WHAT THIS GIVES YOU
+
+After this:
+
+### You now have:
+
+✔ Real-time admin activity feed  
+✔ Event tracking system  
+✔ Alert engine  
+✔ Analytics foundation  
+✔ Filter control system  
+✔ Global search backend  
+✔ Anti-duplication enforcement
+
+---
+
+# ⚡ FINAL MASTER PROMPT ADD-ON
+
+```txt
+ENTERPRISE UPGRADE REQUIREMENTS:
+
+- Convert admin into operational intelligence system
+- Implement system_events logging
+- Implement admin_alerts system
+- Implement residence analytics tracking
+- Implement global search index
+
+CRITICAL:
+- NEVER duplicate systems
+- ALWAYS reuse existing tables
+- If a similar feature exists → extend it
+
+ALL BACKEND:
+- Must use external Supabase
+- Must be re-runnable SQL
+- Must include indexes and RLS
+
+GOAL:
+→ ONE UNIFIED SYSTEM (NO DUPLICATION, NO FRAGMENTATION)
+
+```
+
+---
+
+# 🔥 NEXT LEVEL SECTION C
+
+If you want to go even further:
+
+  
+✅ Full **event tracking (views, clicks, conversions)**  
+✅ AI-based **residence ranking algorithm**  
+✅ Automated **matching engine scoring system**  
+✅ Revenue + occupancy forecasting
+
+&nbsp;
