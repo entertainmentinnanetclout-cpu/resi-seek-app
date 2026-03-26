@@ -378,6 +378,31 @@ const ResidenceDetail = () => {
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-lg font-bold">Details</h3>
                                 </div>
+
+                                {/* Availability Status */}
+                                <div className="mb-4">
+                                  {(residence.available_spots || 0) === 0 ? (
+                                    <Badge className="bg-destructive text-destructive-foreground animate-pulse w-full justify-center py-1.5 text-sm">
+                                      FULLY BOOKED
+                                    </Badge>
+                                  ) : (residence.available_spots || 0) <= 5 ? (
+                                    <Badge className="bg-yellow-500 text-yellow-950 w-full justify-center py-1.5 text-sm">
+                                      Only {residence.available_spots} spots left!
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-green-500 text-white w-full justify-center py-1.5 text-sm">
+                                      Available
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {/* Pricing Breakdown */}
+                                <div className="bg-primary/5 rounded-lg p-4 mb-4">
+                                  <p className="text-2xl font-bold text-primary">
+                                    R{Number(residence.price || 0).toLocaleString()}<span className="text-sm font-normal text-muted-foreground">/month</span>
+                                  </p>
+                                </div>
+
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <span className="text-muted-foreground">Available Spots</span>
@@ -398,6 +423,12 @@ const ResidenceDetail = () => {
                                           ))}
                                         </div>
                                     </div>
+                                    {residence.is_trusted && (
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-muted-foreground">NSFAS</span>
+                                        <Badge variant="outline" className="border-green-500 text-green-600">Accredited ✓</Badge>
+                                      </div>
+                                    )}
                                 </div>
                                 <Separator className="my-4" />
                                 <div>
