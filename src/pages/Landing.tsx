@@ -1,6 +1,6 @@
 import SEO from "@/components/SEO";
 import SEOJsonLd from "@/components/SEOJsonLd";
-import { Shield, MapPin, DollarSign, FileCheck, Menu, Users, Building2, Award } from "lucide-react";
+import { Shield, MapPin, DollarSign, FileCheck, Menu, Users, Building2, Award, ShoppingBag, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import HeroCarousel from "@/components/HeroCarousel";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
