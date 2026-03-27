@@ -99,29 +99,27 @@ const Checkout = () => {
 
       // If Yoco, create checkout session and redirect
       if (paymentMethod === "yoco") {
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const baseUrl = `https://${projectId}.supabase.co/functions/v1`;
-        const { data: { session } } = await supabase.auth.getSession();
-
-        const res = await fetch(`${baseUrl}/yoco-checkout`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({
+        const { data: functionData, error: functionError } = await supabase.functions.invoke('quick-service', {
+          body: {
             order_id: (order as any).id,
+            amount: Math.round(total * 100), // convert to cents
+            currency: "ZAR",
             success_url: `${window.location.origin}/orders`,
             cancel_url: `${window.location.origin}/checkout`,
-          }),
+            customer_email: user.email,
+            metadata: {
+              user_id: user.id,
+              order_number: orderNumber
+            }
+          }
         });
 
-        const yocoData = await res.json();
-        if (!res.ok) throw new Error(yocoData.error || "Failed to create payment session");
+        if (functionError) throw functionError;
+        if (!functionData?.redirectUrl) throw new Error("No redirect URL returned from payment service");
 
         // Clear cart before redirect
         await clearCart();
-        window.location.href = yocoData.redirectUrl;
+        window.location.href = functionData.redirectUrl;
         return;
       }
 
