@@ -207,6 +207,9 @@ const Landing = () => {
           </div>
         </section>
 
+        {/* ── Featured Marketplace ───────────────────────── */}
+        <FeaturedMarketplace />
+
         {/* ── About + Dual CTA ──────────────────────────── */}
         <section className="py-12 md:py-20 bg-card/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />

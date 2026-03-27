@@ -77,10 +77,14 @@ Deno.serve(async (req) => {
       throw new Error(yocoBody?.displayMessage || "Failed to create Yoco checkout");
     }
 
-    // Update order with Yoco checkout ID
+    // Update order with Yoco checkout ID and payment info
     await supabase
       .from("shop_orders")
-      .update({ payment_method: "yoco", payment_status: "awaiting_payment" })
+      .update({
+        payment_method: "yoco",
+        payment_status: "awaiting_payment",
+        yoco_checkout_id: yocoBody.id,
+      })
       .eq("id", order_id);
 
     return new Response(

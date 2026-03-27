@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.yoco-webhook]
 verify_jwt = false
+
+[functions.yoco-verify-payment]
+verify_jwt = false
