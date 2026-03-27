@@ -1,21 +1,69 @@
 
 
-# Landlord Application System + Landing Page Conversion Upgrade
+# Fix: Landlord Applications, Product Listing, Follow-Up Query, Landing Layout
 
-## Overview
+## 4 Issues Identified
 
-Replace the static `LandlordListingForm` with a tabbed **Landlord Application Portal** that saves to a new `landlord_applications` table (not WhatsApp). Add an admin management tab for reviewing these applications. Enhance the landing page to convert visitors without requiring login first.
+### 1. Landlord Accreditation Form — `landlord_applications` table not in Lovable Cloud
+The `landlord_applications` table only exists on the external Supabase. The Lovable Cloud types don't include it, so the code uses `as never` casts. The form itself looks correct — the real issue is the table likely hasn't been created on external Supabase yet (user needs to run `docs/LANDLORD_SQL.sql`). However, the code can be improved: remove `as never` and instead use a raw `.rpc()` or keep the cast but add better error logging to surface the actual DB error.
 
-## Database: `landlord_applications` Table
+**Fix**: Keep `as never` cast (unavoidable since table is external-only) but improve error handling to show the exact error. Also verify the accreditation tab works — the form logic looks correct, the `handleSubmit` receives `"accreditation"` type. The issue is likely just that the SQL hasn't been run on external Supabase.
 
-New table on external Supabase with full SQL in `docs/LANDLORD_SQL.sql`:
+**Action**: Add a diagnostic toast showing the exact error message. Provide updated SQL inline for the user to run.
+
+### 2. Admin Product Listing — RLS or missing `products` table columns
+The `ProductFormDialog` inserts into `products` with fields like `compare_at_price`, `sku`, `brand`, `is_featured`, `tags`. The `products` table exists in the Lovable Cloud types and has all these columns. The insert uses `store_id` which comes from `ResKonnectStoreManager.ensureStore()`.
+
+**Root cause**: The `products` table on external Supabase likely has RLS enabled but policies weren't applied (the MARKETPLACE_FIX.sql may not have been run fully). The `products` RLS needs an admin ALL policy.
+
+**Fix**: Provide the exact RLS policy SQL to run. Also add `verified: true` to the insert payload since the admin store products should be auto-verified.
+
+### 3. Follow-Up Page Not Loading — FK join syntax
+The query uses `residence:residences!fk_applications_residence(name)`. The FK `fk_applications_residence` exists in the types. The issue is that `app.residence?.name` assumes the join returns an object, but PostgREST may return `null` if the residence was deleted or the FK doesn't exist on external Supabase.
+
+**Fix**: Change the query to fetch `residence_id` separately and do a second query for residences, OR use a simpler join without the FK hint (since there's only one FK from applications to residences). Also add null-safe access and better error logging.
+
+### 4. Landing Page — "Why Choose" block above forms
+Currently the order is: Hero → Stats → **Why Choose** → Trusted Residences → About → Landlord Portal → Contact.
+
+User wants: Hero → Stats → Trusted Residences → About → Landlord Portal → **Why Choose** → Contact.
+
+**Fix**: Move the "Why Choose" section below the Landlord Application Portal section in `Landing.tsx`.
+
+## Files Modified
+
+| File | Change |
+|------|--------|
+| `src/components/LandlordApplicationTabs.tsx` | Better error messages showing exact DB error |
+| `src/components/admin/ResKonnectStoreManager.tsx` | No changes needed — logic is correct |
+| `src/components/admin/ProductFormDialog.tsx` | Add `verified: true` to insert payload |
+| `src/pages/admin/AdminFollowUp.tsx` | Simplify residence join — remove FK hint, add null safety |
+| `src/pages/Landing.tsx` | Move "Why Choose" section below Landlord Portal |
+
+## SQL for External Supabase
+
+User must run on external Supabase to fix products and landlord applications:
 
 ```sql
+-- 1. Products RLS (if missing)
+DROP POLICY IF EXISTS "admins_manage_products" ON products;
+CREATE POLICY "admins_manage_products" ON products FOR ALL
+USING (has_role(auth.uid(), 'admin')) WITH CHECK (has_role(auth.uid(), 'admin'));
+
+DROP POLICY IF EXISTS "anyone_view_active_products" ON products;
+CREATE POLICY "anyone_view_active_products" ON products FOR SELECT
+USING (is_active = true);
+
+DROP POLICY IF EXISTS "store_owners_manage_products" ON products;
+CREATE POLICY "store_owners_manage_products" ON products FOR ALL
+USING (EXISTS (SELECT 1 FROM stores WHERE stores.id = products.store_id AND stores.user_id = auth.uid()))
+WITH CHECK (EXISTS (SELECT 1 FROM stores WHERE stores.id = products.store_id AND stores.user_id = auth.uid()));
+
+-- 2. Landlord applications table (idempotent)
 CREATE TABLE IF NOT EXISTS public.landlord_applications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  application_type text NOT NULL DEFAULT 'listing', -- 'listing', 'accreditation', 'both'
-  status text NOT NULL DEFAULT 'pending', -- 'pending', 'under_review', 'approved', 'rejected'
-  -- Property details
+  application_type text NOT NULL DEFAULT 'listing',
+  status text NOT NULL DEFAULT 'pending',
   property_name text NOT NULL,
   address text NOT NULL,
   nearest_campus text,
@@ -26,19 +74,15 @@ CREATE TABLE IF NOT EXISTS public.landlord_applications (
   description text,
   amenities text[] DEFAULT '{}',
   province text DEFAULT 'Gauteng',
-  -- Landlord contact (stored securely, admin-only visible)
   contact_name text NOT NULL,
   contact_phone text NOT NULL,
   contact_email text NOT NULL,
   company_name text,
-  -- Accreditation fields
   registration_number text,
   nsfas_accredited boolean DEFAULT false,
   years_operating integer,
   total_properties integer DEFAULT 1,
-  -- Documents
   documents jsonb DEFAULT '[]',
-  -- Admin
   admin_notes text,
   reviewed_by uuid,
   reviewed_at timestamptz,
@@ -46,78 +90,25 @@ CREATE TABLE IF NOT EXISTS public.landlord_applications (
   updated_at timestamptz DEFAULT now()
 );
 
--- RLS: anyone can INSERT (public form), only admins can SELECT/UPDATE/DELETE
--- Indexes on status, created_at, application_type
+ALTER TABLE public.landlord_applications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "public_insert_landlord_apps" ON landlord_applications;
+CREATE POLICY "public_insert_landlord_apps" ON landlord_applications
+FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "admins_manage_landlord_apps" ON landlord_applications;
+CREATE POLICY "admins_manage_landlord_apps" ON landlord_applications
+FOR ALL USING (has_role(auth.uid(), 'admin')) WITH CHECK (has_role(auth.uid(), 'admin'));
+
+CREATE INDEX IF NOT EXISTS idx_landlord_apps_status ON landlord_applications(status);
+CREATE INDEX IF NOT EXISTS idx_landlord_apps_created ON landlord_applications(created_at DESC);
 ```
-
-RLS policies:
-- **Public INSERT** (no auth required — this is a landing page form)
-- **Admin SELECT/UPDATE/DELETE** via `has_role(auth.uid(), 'admin')`
-
-## Landing Page Changes
-
-### 1. Replace `LandlordListingForm` with `LandlordApplicationTabs`
-
-New component with 3 tabs:
-- **List My Property** — property details form (similar to current but saves to DB)
-- **Get Accredited** — accreditation application (registration number, NSFAS status, years operating)
-- **Both** — combined form
-
-All forms save directly to `landlord_applications` table via Supabase insert (no WhatsApp redirect). Show success state with reference number.
-
-### 2. Landing Page Conversion Improvements
-
-Make the page convert visitors into action-takers without requiring login:
-
-- **Header**: Add quick nav links — "Find Accommodation", "List Property", "Bursaries", "Marketplace" (anchor/route links visible to everyone)
-- **Hero section**: Keep as-is (already good)
-- **"Why Choose" section**: Add CTA buttons inside each feature card linking to relevant pages
-- **Trusted Residences**: Add inline "Apply Now" buttons on cards that route to `/res/{id}` (public page)
-- **About section**: Replace generic "Get Started" with dual CTAs — "I'm a Student" → `/find`, "I'm a Landlord" → scroll to landlord section
-- **Contact form**: Keep but make more compact
-- **Remove**: The separate "Connecting Students" SEO text block (redundant with About)
-- **Add**: Stats counter section (animated numbers) — "500+ Students Housed", "30+ Verified Residences", "9 Provinces"
-
-### 3. Mobile nav improvements
-
-Add more links to mobile sheet menu: "Find Accommodation", "Bursaries", "Marketplace", "List Property"
-
-## Admin: Landlord Applications Tab
-
-### Add to Operations Hub
-
-Add a new tab "Landlord Apps" to `AdminOperationsHub.tsx`:
-- Icon: `Building2` or `ClipboardList`
-- Content component: `AdminLandlordApplicationsContent`
-
-### `AdminLandlordApplications.tsx`
-
-- Table view of all `landlord_applications` ordered by `created_at DESC`
-- Columns: Reference, Property Name, Type (badge), Status (badge), Contact, Date
-- Filter by status and type
-- Click to expand/edit:
-  - View full details
-  - Update status (pending → under_review → approved/rejected)
-  - Add admin notes
-  - If approved + type is "listing": quick action to create residence from application data
-
-## Files
-
-| File | Action |
-|------|--------|
-| `docs/LANDLORD_SQL.sql` | **Create**: Full idempotent SQL for `landlord_applications` table, RLS, indexes |
-| `src/components/LandlordApplicationTabs.tsx` | **Create**: Replace old form with tabbed application portal (listing/accreditation/both) |
-| `src/pages/Landing.tsx` | **Rewrite**: Better conversion flow, replace LandlordListingForm import, add nav links, stats section, dual CTAs |
-| `src/pages/admin/AdminLandlordApplications.tsx` | **Create**: Admin management page with table + detail dialog |
-| `src/pages/admin/AdminOperationsHub.tsx` | **Update**: Add "Landlord Apps" tab |
-| `src/components/LandlordListingForm.tsx` | Keep file but no longer imported from Landing |
 
 ## Technical Details
 
-- Landlord form uses `supabase.from('landlord_applications').insert()` with no auth required (public RLS INSERT policy)
-- Contact details stored in DB only — never exposed in frontend (per privacy constraint)
-- Admin uses standard Supabase queries with admin RLS
-- "Convert residence" action on approved listing apps copies property data into `residences` table
-- Stats section uses static numbers initially (can be made dynamic later)
-- All SQL is idempotent with `IF NOT EXISTS` and `DO $$ EXCEPTION` patterns
+**Follow-up fix**: The join `residences!fk_applications_residence(name)` fails silently when the FK constraint doesn't exist on external Supabase. Change to a simple `residence:residences(name)` without FK hint — PostgREST will use the `residence_id` column automatically since there's only one FK relationship.
+
+**Landing reorder**: Move lines 202-222 (Why Choose section) to after line 271 (after Landlord Portal section).
+
+**Product insert**: Add `verified: true` so admin products don't need separate verification.
 
