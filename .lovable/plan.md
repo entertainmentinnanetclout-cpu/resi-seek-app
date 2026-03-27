@@ -1,68 +1,70 @@
+# Yoco Payment Gateway + Product Checkout Links Integration
 
+## Overview
 
-# Fix Profile Picture Upload + Order Tracking System
+While keeping the cash on delivery Integrate Yoco as the card payment gateway for the marketplace checkout, add per-product checkout link support (admin-configurable), and implement smart payment routing. This is a hybrid system: embedded Yoco payments for on-platform card checkout, and external checkout URLs for products where the admin has set a link.
 
-## Issues
+## Architecture
 
-1. **Profile picture upload fails** — the `profile-pictures` storage bucket and RLS policies likely don't exist on the external Supabase. The code is correct but the bucket/policies need to be created.
-
-2. **No order tracking for students** — the Orders page shows orders but has no delivery tracking timeline. The `order_status_history` table exists but isn't queried or displayed.
-
-3. **No admin shop order management** — admin Commerce Hub has no tab for managing shop orders (only discount orders). Admin needs to view all shop orders and update statuses.
-
-## Plan
-
-### 1. External SQL — Storage + Order Tracking
-
-Generate `docs/ORDER_TRACKING_SQL.sql` with:
-- `profile-pictures` bucket creation + storage RLS policies (INSERT, UPDATE, DELETE for owners, SELECT for public)
-- `order_status_history` table (already exists in Lovable Cloud, ensure external has it)
-- `shop_orders` and `shop_order_items` tables with all columns
-- Admin RLS policies for shop orders
-- Add `tracking_number` and `estimated_delivery` columns to `shop_orders`
-
-### 2. Student Order Tracking — `src/pages/Orders.tsx`
-
-- Fetch `order_status_history` for each order
-- Add an expandable tracking timeline showing each status change with timestamp
-- Show estimated delivery date and tracking number if available
-- Visual step indicator (Pending → Confirmed → Processing → In Transit → Delivered)
-
-### 3. Admin Shop Orders Management — New `src/pages/admin/AdminShopOrders.tsx`
-
-- Table view of all shop orders with search, status filter
-- Order detail dialog showing items, buyer info, delivery address
-- Status update dropdown (pending → confirmed → processing → in_transit → delivered → completed)
-- On status change: update `shop_orders.status` + insert into `order_status_history`
-- Add tracking number and estimated delivery fields
-- Add to Commerce Hub as new "Shop Orders" tab
-
-### 4. Profile Picture Fix
-
-- No code changes needed — the `ProfilePictureUpload.tsx` component is correct
-- The fix is purely SQL: create the bucket + storage policies on external Supabase
-
-## Files
-
-| File | Action |
-|------|--------|
-| `docs/ORDER_TRACKING_SQL.sql` | Create: full idempotent SQL for external Supabase |
-| `src/pages/Orders.tsx` | Update: add tracking timeline, fetch status history |
-| `src/pages/admin/AdminShopOrders.tsx` | Create: admin order management page |
-| `src/pages/admin/AdminCommerceHub.tsx` | Update: add "Shop Orders" tab |
-
-## SQL Summary
-
-```sql
--- Profile pictures bucket + policies
-INSERT INTO storage.buckets (id, name, public) VALUES ('profile-pictures', 'profile-pictures', true) ON CONFLICT DO NOTHING;
--- Storage RLS for upload/delete/view
-
--- shop_orders: add tracking columns
-ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS tracking_number text;
-ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS estimated_delivery date;
-
--- order_status_history: ensure exists with correct schema
--- All admin RLS policies for shop_orders management
+```text
+User clicks "Buy Now"
+       │
+       ▼
+┌──────────────────┐
+│ Product has       │
+│ checkout_url?     │
+├────┬─────────────┤
+│ YES│     NO      │
+│    │             │
+│ Redirect to      │ Show checkout page
+│ external URL     │ with payment options:
+│                  │  - COD (existing)
+│                  │  - Yoco Card Payment
+└────┘             └──────────────┘
+                          │
+                    ┌─────┴──────┐
+                    │ Yoco       │
+                    │ selected   │
+                    ▼            │
+              Edge function      │
+              creates Yoco       │
+              checkout session   │
+                    │            │
+              Return checkout    │
+              URL → redirect     │
+                    │            │
+              Yoco webhook       │
+              confirms payment   │
+              → update order     │
+                    └────────────┘
 ```
 
+## Database Changes (External SQL)
+
+Add two columns to `products` table and create a `webhook_events` table for audit:
+
+```sql
+-- products: payment routing fields
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS payment_type text DEFAULT 'standard';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS checkout_url text;
+
+-- webhook audit log
+CREATE TABLE IF NOT EXISTS public.webhook_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  provider text NOT NULL,
+  event_type text NOT NULL,
+  payload jsonb NOT NULL DEFAULT '{}',
+  processed boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.webhook_events ENABLE ROW LEVEL SECURITY;
+-- Admin-only access
+CREATE POLICY "admins_manage_webhooks" ON public.webhook_events
+FOR ALL TO authenticated
+USING (has_role(auth.uid(), 'admin'))
+WITH CHECK (has_role(auth.uid(), 'admin'));
+
+NOTIFY pgrst, 'reload schema';
+```
+
+Full idempotent SQL will be generated as `docs/
