@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Package, ShoppingBag, Clock, CheckCircle, Truck, XCircle, ChevronDown, MapPin } from "lucide-react";
+import { Package, ShoppingBag, Clock, CheckCircle, Truck, XCircle, ChevronDown, MapPin, Loader2 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 
@@ -33,12 +33,53 @@ const Orders = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  // Verify Yoco payment on return
+  const verifyPayment = useCallback(async (orderId: string) => {
+    setIsVerifying(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      const res = await fetch(
+        `https://vmqqkebojldjsyxcewdb.supabase.co/functions/v1/yoco-verify-payment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtcXFrZWJvamxkanN5eGNld2RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyNjE3OTUsImV4cCI6MjA3NTgzNzc5NX0.5NvBH0YOpV0ePVJrOrFalImCTuMtozY4Ah2G_l0tH7o",
+          },
+          body: JSON.stringify({ order_id: orderId }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (result.verified) {
+        toast.success("Payment confirmed! Your order has been processed.");
+      } else if (result.error) {
+        toast.error(`Payment verification issue: ${result.error}`);
+      } else {
+        toast.info("Payment is still being processed. Check back shortly.");
+      }
+    } catch (err: any) {
+      console.error("Payment verification error:", err);
+      toast.error("Could not verify payment. Please check your order status.");
+    } finally {
+      setIsVerifying(false);
+    }
+  }, []);
 
   // Handle Yoco payment return
   useEffect(() => {
     const paymentStatus = searchParams.get("payment");
-    if (paymentStatus === "success") {
-      toast.success("Payment successful! Your order has been confirmed.");
+    const orderId = searchParams.get("order_id");
+
+    if (paymentStatus === "success" && orderId) {
+      verifyPayment(orderId);
       searchParams.delete("payment");
       searchParams.delete("order_id");
       setSearchParams(searchParams, { replace: true });
@@ -114,7 +155,6 @@ const Orders = () => {
 
     return (
       <div className="space-y-4 pt-4">
-        {/* Step indicator */}
         {!isCancelled && (
           <div className="flex items-center justify-between px-2">
             {trackingSteps.map((step, i) => (
@@ -129,15 +169,11 @@ const Orders = () => {
                 <span className={`text-[10px] mt-1 text-center ${i <= currentStep ? "text-primary font-medium" : "text-muted-foreground"}`}>
                   {step}
                 </span>
-                {i < trackingSteps.length - 1 && (
-                  <div className={`absolute h-0.5 ${i < currentStep ? "bg-primary" : "bg-border"}`} />
-                )}
               </div>
             ))}
           </div>
         )}
 
-        {/* Tracking info */}
         {(order.tracking_number || order.estimated_delivery) && (
           <div className="flex flex-wrap gap-4 text-sm bg-muted/50 rounded-lg p-3">
             {order.tracking_number && (
@@ -157,7 +193,6 @@ const Orders = () => {
           </div>
         )}
 
-        {/* Status history timeline */}
         {order.statusHistory && order.statusHistory.length > 0 && (
           <div className="border-l-2 border-border ml-4 space-y-3 pl-4">
             {order.statusHistory.map((entry: any) => {
@@ -236,7 +271,9 @@ const Orders = () => {
             </div>
 
             <div className="flex justify-between items-center mt-3 pt-3 border-t">
-              <span className="text-sm text-muted-foreground">{order.payment_method === "cod" ? "Cash on Delivery" : "PayFast"}</span>
+              <span className="text-sm text-muted-foreground">
+                {order.payment_method === "cod" ? "Cash on Delivery" : order.payment_method === "yoco" ? "Card (Yoco)" : order.payment_method}
+              </span>
               <span className="font-bold text-primary">R{Number(order.total_amount).toFixed(2)}</span>
             </div>
 
@@ -294,6 +331,15 @@ const Orders = () => {
             <h1 className="text-2xl sm:text-3xl font-bold">My Orders</h1>
             <p className="text-muted-foreground mt-1">Track your marketplace purchases</p>
           </div>
+
+          {isVerifying && (
+            <Card>
+              <CardContent className="p-6 flex items-center justify-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <span className="text-muted-foreground">Verifying your payment…</span>
+              </CardContent>
+            </Card>
+          )}
 
           {isLoading ? (
             <div className="space-y-4">
