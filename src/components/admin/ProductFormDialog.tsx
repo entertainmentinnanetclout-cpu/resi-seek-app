@@ -181,7 +181,9 @@ export const ProductFormDialog = ({
       onOpenChange(false);
     } catch (error: unknown) {
       console.error("Save error:", error);
-      const msg = error instanceof Error ? error.message : String(error);
+      const msg = error && typeof error === 'object' && 'message' in error
+        ? (error as { message: string }).message
+        : String(error);
       toast.error(`Failed to save product: ${msg}`);
     } finally {
       setSaving(false);
