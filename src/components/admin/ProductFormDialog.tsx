@@ -161,7 +161,6 @@ export const ProductFormDialog = ({
         is_active: form.is_active,
         is_featured: form.is_featured,
         store_id: storeId,
-        verified: true,
       };
 
       if (isEditing && product?.id) {
@@ -181,9 +180,19 @@ export const ProductFormDialog = ({
       onOpenChange(false);
     } catch (error: unknown) {
       console.error("Save error:", error);
-      const msg = error && typeof error === 'object' && 'message' in error
-        ? (error as { message: string }).message
-        : String(error);
+
+      let msg = "Unknown error";
+      if (error && typeof error === "object") {
+        const err = error as { message?: unknown; details?: unknown; code?: unknown };
+        const message = typeof err.message === "string" ? err.message : null;
+        const details = typeof err.details === "string" ? err.details : null;
+        const code = typeof err.code === "string" ? err.code : null;
+
+        msg = [message, details, code ? `(${code})` : null].filter(Boolean).join(" ") || JSON.stringify(error);
+      } else {
+        msg = String(error);
+      }
+
       toast.error(`Failed to save product: ${msg}`);
     } finally {
       setSaving(false);
