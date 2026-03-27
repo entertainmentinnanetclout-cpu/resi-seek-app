@@ -2,16 +2,18 @@ import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingBag, Store, Percent, ShoppingCart, Gift } from "lucide-react";
+import { ShoppingBag, Store, Percent, ShoppingCart, Gift, Truck } from "lucide-react";
 import { AdminMarketplaceContent } from "./AdminMarketplace";
 import { AdminStoresContent } from "./AdminStores";
 import { AdminDiscountsContent } from "./AdminDiscounts";
 import { AdminDiscountOrdersContent } from "./AdminDiscountOrders";
 import { AdminHamperItemsContent } from "./AdminHamperItems";
+import { AdminShopOrdersContent } from "./AdminShopOrders";
 
 const tabs = [
   { value: "marketplace", label: "Marketplace", icon: ShoppingBag },
   { value: "stores", label: "Stores", icon: Store },
+  { value: "shop-orders", label: "Shop Orders", icon: Truck },
   { value: "discounts", label: "Discounts", icon: Percent },
   { value: "discount-orders", label: "Discount Orders", icon: ShoppingCart },
   { value: "hamper-items", label: "Hamper Items", icon: Gift },
