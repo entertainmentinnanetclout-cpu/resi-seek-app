@@ -94,14 +94,18 @@ const LandlordApplicationTabs = () => {
         .select("id")
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Landlord application error:", error);
+        throw new Error(error.message || "Database error");
+      }
       const id = (data as { id: string })?.id || "";
       setRefId(id.slice(0, 8).toUpperCase());
       setSubmitted(true);
       toast.success("Application submitted successfully!");
     } catch (err: unknown) {
+      console.error("Landlord submission error:", err);
       const msg = err instanceof Error ? err.message : "Submission failed";
-      toast.error(msg);
+      toast.error(`Application failed: ${msg}`);
     } finally {
       setSubmitting(false);
     }
