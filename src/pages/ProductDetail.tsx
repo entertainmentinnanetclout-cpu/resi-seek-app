@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShoppingCart, Store, Star, Minus, Plus, Package, ArrowLeft, Truck, Shield, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShoppingCart, Store, Star, Minus, Plus, Package, ArrowLeft, Truck, Shield, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { useAddToCart } from "@/hooks/useCart";
 
 const ProductDetail = () => {
