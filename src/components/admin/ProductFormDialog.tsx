@@ -147,7 +147,7 @@ export const ProductFormDialog = ({
         .map((t) => t.trim())
         .filter(Boolean);
 
-      const payload = {
+      const payload: Record<string, unknown> = {
         name: form.name.trim(),
         description: form.description.trim() || null,
         price: form.price,
@@ -161,6 +161,8 @@ export const ProductFormDialog = ({
         is_active: form.is_active,
         is_featured: form.is_featured,
         store_id: storeId,
+        payment_type: (form as any).payment_type || "standard",
+        checkout_url: (form as any).payment_type === "checkout_link" ? ((form as any).checkout_url || null) : null,
       };
 
       if (isEditing && product?.id) {
