@@ -1,34 +1,35 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, ShoppingBag, Clock, CheckCircle, Truck, XCircle } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Package, ShoppingBag, Clock, CheckCircle, Truck, XCircle, ChevronDown, MapPin } from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
-import { useNavigate } from "react-router-dom";
 
-const statusConfig: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  pending: { label: "Pending", icon: Clock, variant: "secondary" },
-  confirmed: { label: "Confirmed", icon: CheckCircle, variant: "default" },
-  processing: { label: "Processing", icon: Package, variant: "default" },
-  in_transit: { label: "In Transit", icon: Truck, variant: "default" },
-  delivered: { label: "Delivered", icon: CheckCircle, variant: "default" },
-  completed: { label: "Completed", icon: CheckCircle, variant: "default" },
-  cancelled: { label: "Cancelled", icon: XCircle, variant: "destructive" },
+const statusConfig: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "destructive" | "outline"; step: number }> = {
+  pending: { label: "Pending", icon: Clock, variant: "secondary", step: 0 },
+  confirmed: { label: "Confirmed", icon: CheckCircle, variant: "default", step: 1 },
+  processing: { label: "Processing", icon: Package, variant: "default", step: 2 },
+  in_transit: { label: "In Transit", icon: Truck, variant: "default", step: 3 },
+  delivered: { label: "Delivered", icon: CheckCircle, variant: "default", step: 4 },
+  completed: { label: "Completed", icon: CheckCircle, variant: "default", step: 4 },
+  cancelled: { label: "Cancelled", icon: XCircle, variant: "destructive", step: -1 },
 };
+
+const trackingSteps = ["Pending", "Confirmed", "Processing", "In Transit", "Delivered"];
 
 const Orders = () => {
   const shouldBlock = useAdminRedirect();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchOrders();
@@ -40,29 +41,31 @@ const Orders = () => {
     if (!user) return;
     setIsLoading(true);
 
-    // Fetch from new shop_orders table
     const { data: shopOrders, error: shopError } = await supabase
       .from("shop_orders" as any)
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (shopError) {
-      console.error("Error fetching orders:", shopError);
-    }
+    if (shopError) console.error("Error fetching orders:", shopError);
 
-    // Fetch order items for each order
     const ordersWithItems = await Promise.all(
       (shopOrders || []).map(async (order: any) => {
-        const { data: items } = await supabase
-          .from("shop_order_items" as any)
-          .select("*, products(name, images, price, stores(store_name))")
-          .eq("order_id", order.id);
-        return { ...order, items: items || [] };
+        const [{ data: items }, { data: history }] = await Promise.all([
+          supabase
+            .from("shop_order_items" as any)
+            .select("*, products(name, images, price, stores(store_name))")
+            .eq("order_id", order.id),
+          supabase
+            .from("order_status_history")
+            .select("*")
+            .eq("order_id", order.id)
+            .order("created_at", { ascending: true }),
+        ]);
+        return { ...order, items: items || [], statusHistory: history || [] };
       })
     );
 
-    // Also fetch legacy marketplace_orders
     const { data: legacyOrders } = await supabase
       .from("marketplace_orders")
       .select("*")
@@ -87,54 +90,144 @@ const Orders = () => {
   const activeOrders = orders.filter(o => !["completed", "cancelled", "delivered"].includes(o.status));
   const pastOrders = orders.filter(o => ["completed", "cancelled", "delivered"].includes(o.status));
 
-  const renderNewOrder = (order: any) => {
-    const status = statusConfig[order.status] || statusConfig.pending;
-    const StatusIcon = status.icon;
-    const firstItem = order.items?.[0];
+  const renderTrackingTimeline = (order: any) => {
+    const currentStep = statusConfig[order.status]?.step ?? 0;
+    const isCancelled = order.status === "cancelled";
 
     return (
-      <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow">
-        <CardContent className="p-4">
-          <div className="flex justify-between items-start mb-3">
-            <div>
-              <p className="text-sm font-mono text-muted-foreground">#{order.order_number}</p>
-              <p className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}
-              </p>
-            </div>
-            <Badge variant={status.variant}>
-              <StatusIcon className="w-3 h-3 mr-1" />
-              {status.label}
-            </Badge>
-          </div>
-          <div className="space-y-2">
-            {order.items?.map((item: any) => (
-              <div key={item.id} className="flex gap-3">
-                <div className="w-12 h-12 rounded bg-muted overflow-hidden flex-shrink-0">
-                  {item.products?.images?.[0] ? (
-                    <img src={item.products.images[0]} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                  )}
+      <div className="space-y-4 pt-4">
+        {/* Step indicator */}
+        {!isCancelled && (
+          <div className="flex items-center justify-between px-2">
+            {trackingSteps.map((step, i) => (
+              <div key={step} className="flex flex-col items-center flex-1">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${
+                  i <= currentStep
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted text-muted-foreground border-border"
+                }`}>
+                  {i < currentStep ? "✓" : i + 1}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{item.products?.name || "Product"}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {item.products?.stores?.store_name} · Qty: {item.quantity}
-                  </p>
-                </div>
-                <p className="text-sm font-semibold">R{Number(item.price * item.quantity).toFixed(2)}</p>
+                <span className={`text-[10px] mt-1 text-center ${i <= currentStep ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                  {step}
+                </span>
+                {i < trackingSteps.length - 1 && (
+                  <div className={`absolute h-0.5 ${i < currentStep ? "bg-primary" : "bg-border"}`} />
+                )}
               </div>
             ))}
           </div>
-          <div className="flex justify-between items-center mt-3 pt-3 border-t">
-            <span className="text-sm text-muted-foreground">{order.payment_method === "cod" ? "Cash on Delivery" : "PayFast"}</span>
-            <span className="font-bold text-primary">R{Number(order.total_amount).toFixed(2)}</span>
+        )}
+
+        {/* Tracking info */}
+        {(order.tracking_number || order.estimated_delivery) && (
+          <div className="flex flex-wrap gap-4 text-sm bg-muted/50 rounded-lg p-3">
+            {order.tracking_number && (
+              <div className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Tracking:</span>
+                <span className="font-mono font-medium">{order.tracking_number}</span>
+              </div>
+            )}
+            {order.estimated_delivery && (
+              <div className="flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Est. delivery:</span>
+                <span className="font-medium">{format(new Date(order.estimated_delivery), "dd MMM yyyy")}</span>
+              </div>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        {/* Status history timeline */}
+        {order.statusHistory && order.statusHistory.length > 0 && (
+          <div className="border-l-2 border-border ml-4 space-y-3 pl-4">
+            {order.statusHistory.map((entry: any) => {
+              const cfg = statusConfig[entry.status] || statusConfig.pending;
+              const Icon = cfg.icon;
+              return (
+                <div key={entry.id} className="flex items-start gap-2 relative">
+                  <div className="absolute -left-[1.35rem] top-0.5 w-3 h-3 rounded-full bg-primary border-2 border-background" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium capitalize">{cfg.label}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(entry.created_at), "dd MMM yyyy, HH:mm")}
+                      </span>
+                    </div>
+                    {entry.note && <p className="text-xs text-muted-foreground mt-0.5">{entry.note}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderNewOrder = (order: any) => {
+    const status = statusConfig[order.status] || statusConfig.pending;
+    const StatusIcon = status.icon;
+    const isExpanded = expandedOrder === order.id;
+
+    return (
+      <Collapsible key={order.id} open={isExpanded} onOpenChange={() => setExpandedOrder(isExpanded ? null : order.id)}>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4">
+            <CollapsibleTrigger className="w-full text-left">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <p className="text-sm font-mono text-muted-foreground">#{order.order_number}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={status.variant}>
+                    <StatusIcon className="w-3 h-3 mr-1" />
+                    {status.label}
+                  </Badge>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                </div>
+              </div>
+            </CollapsibleTrigger>
+
+            <div className="space-y-2">
+              {order.items?.map((item: any) => (
+                <div key={item.id} className="flex gap-3">
+                  <div className="w-12 h-12 rounded bg-muted overflow-hidden flex-shrink-0">
+                    {item.products?.images?.[0] ? (
+                      <img src={item.products.images[0]} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{item.products?.name || "Product"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.products?.stores?.store_name} · Qty: {item.quantity}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold">R{Number(item.price * item.quantity).toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-between items-center mt-3 pt-3 border-t">
+              <span className="text-sm text-muted-foreground">{order.payment_method === "cod" ? "Cash on Delivery" : "PayFast"}</span>
+              <span className="font-bold text-primary">R{Number(order.total_amount).toFixed(2)}</span>
+            </div>
+
+            <CollapsibleContent>
+              {renderTrackingTimeline(order)}
+            </CollapsibleContent>
+          </CardContent>
+        </Card>
+      </Collapsible>
     );
   };
 
