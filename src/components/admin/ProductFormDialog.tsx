@@ -333,6 +333,39 @@ export const ProductFormDialog = ({
             />
           </div>
 
+          {/* Payment Configuration */}
+          <div className="grid gap-2">
+            <Label>Payment Type</Label>
+            <Select
+              value={(form as any).payment_type || "standard"}
+              onValueChange={(v) => setForm((p) => ({ ...p, payment_type: v } as any))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select payment type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">Standard (Cart + COD/Yoco)</SelectItem>
+                <SelectItem value="checkout_link">External Checkout Link</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {(form as any).payment_type === "checkout_link" && (
+            <div className="grid gap-2">
+              <Label htmlFor="checkout_url">Checkout URL</Label>
+              <Input
+                id="checkout_url"
+                type="url"
+                value={(form as any).checkout_url || ""}
+                onChange={(e) => setForm((p) => ({ ...p, checkout_url: e.target.value } as any))}
+                placeholder="https://pay.yoco.com/your-link or any payment URL"
+              />
+              <p className="text-xs text-muted-foreground">
+                Users will be redirected to this link when they click "Buy Now"
+              </p>
+            </div>
+          )}
+
           {/* Toggles */}
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
