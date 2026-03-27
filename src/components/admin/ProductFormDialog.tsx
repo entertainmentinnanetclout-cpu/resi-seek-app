@@ -168,12 +168,12 @@ export const ProductFormDialog = ({
       if (isEditing && product?.id) {
         const { error } = await supabase
           .from("products")
-          .update(payload)
+          .update(payload as any)
           .eq("id", product.id);
         if (error) throw error;
         toast.success("Product updated");
       } else {
-        const { error } = await supabase.from("products").insert(payload);
+        const { error } = await supabase.from("products").insert(payload as any);
         if (error) throw error;
         toast.success("Product created");
       }
