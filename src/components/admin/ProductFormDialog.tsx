@@ -161,6 +161,7 @@ export const ProductFormDialog = ({
         is_active: form.is_active,
         is_featured: form.is_featured,
         store_id: storeId,
+        verified: true,
       };
 
       if (isEditing && product?.id) {

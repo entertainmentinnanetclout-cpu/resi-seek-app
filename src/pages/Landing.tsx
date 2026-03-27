@@ -199,28 +199,6 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* ── Why Choose ────────────────────────────────── */}
-        <section className="py-12 md:py-20 relative overflow-hidden">
-          <FloatingShapes />
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">Why Choose ResKonnect?</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {features.map((f, i) => (
-                <Card key={i} className="bg-card shadow-sm hover:shadow-lg transition-all text-center">
-                  <CardContent className="p-6 flex flex-col items-center">
-                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4 animate-float" style={{ animationDelay: `${i * 0.2}s` }}>
-                      <f.icon className="w-8 h-8 text-primary-foreground" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">{f.title}</h3>
-                    <p className="text-muted-foreground mb-3 text-sm">{f.description}</p>
-                    <Button variant="link" size="sm" onClick={() => navigate(f.cta.to)} className="text-primary p-0">{f.cta.label} →</Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ── Trusted Residences ────────────────────────── */}
         <section className="py-12 md:py-20 bg-card/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -268,6 +246,28 @@ const Landing = () => {
               </p>
             </div>
             <LandlordApplicationTabs />
+          </div>
+        </section>
+
+        {/* ── Why Choose ────────────────────────────────── */}
+        <section className="py-12 md:py-20 relative overflow-hidden">
+          <FloatingShapes />
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">Why Choose ResKonnect?</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {features.map((f, i) => (
+                <Card key={i} className="bg-card shadow-sm hover:shadow-lg transition-all text-center">
+                  <CardContent className="p-6 flex flex-col items-center">
+                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4 animate-float" style={{ animationDelay: `${i * 0.2}s` }}>
+                      <f.icon className="w-8 h-8 text-primary-foreground" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">{f.title}</h3>
+                    <p className="text-muted-foreground mb-3 text-sm">{f.description}</p>
+                    <Button variant="link" size="sm" onClick={() => navigate(f.cta.to)} className="text-primary p-0">{f.cta.label} →</Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </section>
 
