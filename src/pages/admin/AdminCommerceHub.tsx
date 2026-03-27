@@ -44,6 +44,7 @@ const AdminCommerceHub = () => {
 
           <TabsContent value="marketplace"><AdminMarketplaceContent /></TabsContent>
           <TabsContent value="stores"><AdminStoresContent /></TabsContent>
+          <TabsContent value="shop-orders"><AdminShopOrdersContent /></TabsContent>
           <TabsContent value="discounts"><AdminDiscountsContent /></TabsContent>
           <TabsContent value="discount-orders"><AdminDiscountOrdersContent /></TabsContent>
           <TabsContent value="hamper-items"><AdminHamperItemsContent /></TabsContent>
