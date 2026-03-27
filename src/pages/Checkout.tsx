@@ -223,13 +223,13 @@ const Checkout = () => {
                         </div>
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-3 p-4 border rounded-lg cursor-not-allowed opacity-50">
-                      <RadioGroupItem value="payfast" id="payfast" disabled />
-                      <Label htmlFor="payfast" className="flex items-center gap-3 flex-1">
-                        <CreditCard className="w-5 h-5" />
+                    <div className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50">
+                      <RadioGroupItem value="yoco" id="yoco" />
+                      <Label htmlFor="yoco" className="flex items-center gap-3 cursor-pointer flex-1">
+                        <CreditCard className="w-5 h-5 text-primary" />
                         <div>
-                          <p className="font-medium">PayFast</p>
-                          <p className="text-sm text-muted-foreground">Coming soon</p>
+                          <p className="font-medium">Pay with Card (Yoco)</p>
+                          <p className="text-sm text-muted-foreground">Visa, Mastercard — secure checkout</p>
                         </div>
                       </Label>
                     </div>
