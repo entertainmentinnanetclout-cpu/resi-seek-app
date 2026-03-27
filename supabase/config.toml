@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.download-handover-pack]
 verify_jwt = false
+
+[functions.yoco-checkout]
+verify_jwt = false
+
+[functions.yoco-webhook]
+verify_jwt = false

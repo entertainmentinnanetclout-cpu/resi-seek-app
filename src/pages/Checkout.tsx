@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, CreditCard, Banknote, Loader2, CheckCircle } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 
@@ -54,7 +55,7 @@ const Checkout = () => {
           order_number: orderNumber,
           status: "pending",
           payment_method: paymentMethod,
-          payment_status: paymentMethod === "cod" ? "pending" : "pending",
+          payment_status: paymentMethod === "cod" ? "pending" : "awaiting_payment",
           total_amount: total,
           delivery_address: formData.delivery_address,
           delivery_phone: formData.delivery_phone,
@@ -83,7 +84,7 @@ const Checkout = () => {
       await supabase.from("payments" as any).insert({
         order_id: (order as any).id,
         payment_method: paymentMethod,
-        payment_gateway: paymentMethod === "cod" ? null : "payfast",
+        payment_gateway: paymentMethod === "yoco" ? "yoco" : null,
         payment_status: "pending",
         amount: total,
       } as any);
@@ -96,14 +97,44 @@ const Checkout = () => {
         note: "Order placed",
       } as any);
 
-      // Clear cart
-      await clearCart();
+      // If Yoco, create checkout session and redirect
+      if (paymentMethod === "yoco") {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const baseUrl = `https://${projectId}.supabase.co/functions/v1`;
+        const { data: { session } } = await supabase.auth.getSession();
 
+        const res = await fetch(`${baseUrl}/yoco-checkout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({
+            order_id: (order as any).id,
+            success_url: `${window.location.origin}/orders`,
+            cancel_url: `${window.location.origin}/checkout`,
+          }),
+        });
+
+        const yocoData = await res.json();
+        if (!res.ok) throw new Error(yocoData.error || "Failed to create payment session");
+
+        // Clear cart before redirect
+        await clearCart();
+        window.location.href = yocoData.redirectUrl;
+        return;
+      }
+
+      // COD flow
+      await clearCart();
       toast.success("Order placed successfully!");
       navigate("/orders");
     } catch (error: any) {
       console.error("Checkout error:", error);
-      toast.error(error.message || "Failed to place order");
+      const msg = error && typeof error === "object" && "message" in error
+        ? (error as any).message
+        : String(error);
+      toast.error(msg || "Failed to place order");
     } finally {
       setIsSubmitting(false);
     }
@@ -192,13 +223,13 @@ const Checkout = () => {
                         </div>
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-3 p-4 border rounded-lg cursor-not-allowed opacity-50">
-                      <RadioGroupItem value="payfast" id="payfast" disabled />
-                      <Label htmlFor="payfast" className="flex items-center gap-3 flex-1">
-                        <CreditCard className="w-5 h-5" />
+                    <div className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50">
+                      <RadioGroupItem value="yoco" id="yoco" />
+                      <Label htmlFor="yoco" className="flex items-center gap-3 cursor-pointer flex-1">
+                        <CreditCard className="w-5 h-5 text-primary" />
                         <div>
-                          <p className="font-medium">PayFast</p>
-                          <p className="text-sm text-muted-foreground">Coming soon</p>
+                          <p className="font-medium">Pay with Card (Yoco)</p>
+                          <p className="text-sm text-muted-foreground">Visa, Mastercard — secure checkout</p>
                         </div>
                       </Label>
                     </div>

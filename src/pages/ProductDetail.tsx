@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShoppingCart, Store, Star, Minus, Plus, Package, ArrowLeft, Truck, Shield, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShoppingCart, Store, Star, Minus, Plus, Package, ArrowLeft, Truck, Shield, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { useAddToCart } from "@/hooks/useCart";
 
 const ProductDetail = () => {
@@ -243,16 +243,27 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* Add to Cart */}
-              <Button
-                size="lg"
-                className="w-full gap-2"
-                onClick={handleAddToCart}
-                disabled={currentStock <= 0}
-              >
-                <ShoppingCart className="w-5 h-5" />
-                Add to Cart — R{(Number(currentPrice) * quantity).toFixed(2)}
-              </Button>
+              {/* Add to Cart / Buy Now */}
+              {product.payment_type === "checkout_link" && product.checkout_url ? (
+                <Button
+                  size="lg"
+                  className="w-full gap-2"
+                  onClick={() => window.open(product.checkout_url, "_blank")}
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  Buy Now — R{(Number(currentPrice) * quantity).toFixed(2)}
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  className="w-full gap-2"
+                  onClick={handleAddToCart}
+                  disabled={currentStock <= 0}
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  Add to Cart — R{(Number(currentPrice) * quantity).toFixed(2)}
+                </Button>
+              )}
 
               {/* Trust badges */}
               <div className="grid grid-cols-2 gap-3">
