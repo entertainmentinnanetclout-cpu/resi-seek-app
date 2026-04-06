@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { CreditCard, Banknote, ExternalLink } from "lucide-react";
 
 export const AdminSettingsContent = () => {
   const handleSave = () => {
@@ -49,47 +51,110 @@ export const AdminSettingsContent = () => {
             </CardContent>
           </Card>
 
+          {/* Payment Gateway Configuration */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Payment Gateways
+              </CardTitle>
+              <CardDescription>Configure payment methods for the marketplace</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Yoco */}
+              <div className="flex items-start justify-between p-4 border rounded-lg">
+                <div className="flex items-start gap-3">
+                  <CreditCard className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-base font-semibold">Yoco</Label>
+                      <Badge variant="default" className="text-xs">Active</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Card payments via Yoco Checkout. Supports Visa, Mastercard.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Mode: Redirect + Verify (no webhooks — sole proprietor)
+                    </p>
+                  </div>
+                </div>
+                <Switch defaultChecked />
+              </div>
+
+              {/* COD */}
+              <div className="flex items-start justify-between p-4 border rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Banknote className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-base font-semibold">Cash on Delivery</Label>
+                      <Badge variant="default" className="text-xs">Active</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Students pay on delivery. Admin confirms payment manually.
+                    </p>
+                  </div>
+                </div>
+                <Switch defaultChecked />
+              </div>
+
+              {/* Checkout Links */}
+              <div className="flex items-start justify-between p-4 border rounded-lg">
+                <div className="flex items-start gap-3">
+                  <ExternalLink className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-base font-semibold">Product Checkout Links</Label>
+                      <Badge variant="default" className="text-xs">Active</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Per-product external checkout URLs. Set in product form.
+                    </p>
+                  </div>
+                </div>
+                <Switch defaultChecked />
+              </div>
+
+              {/* Future Gateways */}
+              <div className="flex items-start justify-between p-4 border rounded-lg opacity-60">
+                <div className="flex items-start gap-3">
+                  <CreditCard className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-base font-semibold">PayFast / Stripe</Label>
+                      <Badge variant="outline" className="text-xs">Coming Soon</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Additional payment gateways for future expansion.
+                    </p>
+                  </div>
+                </div>
+                <Switch disabled />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Feature Toggles</CardTitle>
               <CardDescription>Enable or disable platform features</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Marketplace</Label>
-                  <p className="text-sm text-muted-foreground">Allow students to buy/sell items</p>
+              {[
+                { label: "Marketplace", desc: "Allow students to buy/sell items" },
+                { label: "Roommate Finder", desc: "Enable roommate matching feature" },
+                { label: "Events Calendar", desc: "Show campus events" },
+                { label: "Bursary Finder", desc: "Show bursary opportunities" },
+                { label: "Student Discounts", desc: "Show student discount directory" },
+              ].map((feature) => (
+                <div key={feature.label} className="flex items-center justify-between">
+                  <div>
+                    <Label>{feature.label}</Label>
+                    <p className="text-sm text-muted-foreground">{feature.desc}</p>
+                  </div>
+                  <Switch defaultChecked />
                 </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Roommate Finder</Label>
-                  <p className="text-sm text-muted-foreground">Enable roommate matching feature</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Events Calendar</Label>
-                  <p className="text-sm text-muted-foreground">Show campus events</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Bursary Finder</Label>
-                  <p className="text-sm text-muted-foreground">Show bursary opportunities</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Student Discounts</Label>
-                  <p className="text-sm text-muted-foreground">Show student discount directory</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
+              ))}
             </CardContent>
           </Card>
 

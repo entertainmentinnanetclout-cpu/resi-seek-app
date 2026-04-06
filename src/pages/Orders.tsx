@@ -1,16 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import SEO from "@/components/SEO";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Package, ShoppingBag, Clock, CheckCircle, Truck, XCircle, ChevronDown, MapPin, Loader2 } from "lucide-react";
+import { Package, ShoppingBag, Clock, CheckCircle, Truck, XCircle, ChevronDown, MapPin, Loader2, Upload, FileText } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 
@@ -34,23 +37,33 @@ const Orders = () => {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyFailed, setVerifyFailed] = useState<string | null>(null);
+
+  // PoP upload state
+  const [popOrderId, setPopOrderId] = useState<string | null>(null);
+  const [popFile, setPopFile] = useState<File | null>(null);
+  const [popRef, setPopRef] = useState("");
+  const [isSubmittingPop, setIsSubmittingPop] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Verify Yoco payment on return
   const verifyPayment = useCallback(async (orderId: string) => {
     setIsVerifying(true);
+    setVerifyFailed(null);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
       if (!token) throw new Error("Not authenticated");
 
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(
-        `https://vmqqkebojldjsyxcewdb.supabase.co/functions/v1/yoco-verify-payment`,
+        `https://${projectId}.supabase.co/functions/v1/yoco-verify-payment`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
-            apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtcXFrZWJvamxkanN5eGNld2RiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyNjE3OTUsImV4cCI6MjA3NTgzNzc5NX0.5NvBH0YOpV0ePVJrOrFalImCTuMtozY4Ah2G_l0tH7o",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({ order_id: orderId }),
         }
@@ -60,14 +73,15 @@ const Orders = () => {
 
       if (result.verified) {
         toast.success("Payment confirmed! Your order has been processed.");
-      } else if (result.error) {
-        toast.error(`Payment verification issue: ${result.error}`);
+        setVerifyFailed(null);
       } else {
-        toast.info("Payment is still being processed. Check back shortly.");
+        setVerifyFailed(orderId);
+        toast.info("Payment not yet confirmed. You can upload proof of payment below.");
       }
     } catch (err: any) {
       console.error("Payment verification error:", err);
-      toast.error("Could not verify payment. Please check your order status.");
+      setVerifyFailed(orderId);
+      toast.error("Could not verify payment automatically.");
     } finally {
       setIsVerifying(false);
     }
@@ -144,6 +158,59 @@ const Orders = () => {
 
     setOrders([...ordersWithItems, ...legacyWithItems]);
     setIsLoading(false);
+  };
+
+  const handleSubmitPop = async () => {
+    if (!user || !popOrderId) return;
+    if (!popFile && !popRef) {
+      toast.error("Please upload a screenshot or enter a reference number");
+      return;
+    }
+
+    setIsSubmittingPop(true);
+    try {
+      let imageUrl: string | null = null;
+
+      if (popFile) {
+        const ext = popFile.name.split(".").pop();
+        const path = `pop/${user.id}/${popOrderId}-${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("product-images")
+          .upload(path, popFile);
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+        imageUrl = urlData.publicUrl;
+      }
+
+      const { error } = await supabase.from("payment_proofs" as any).insert({
+        order_id: popOrderId,
+        user_id: user.id,
+        image_url: imageUrl,
+        reference_number: popRef || null,
+        status: "pending",
+      } as any);
+
+      if (error) throw error;
+
+      // Update order status
+      await supabase
+        .from("shop_orders" as any)
+        .update({ payment_status: "awaiting_verification", updated_at: new Date().toISOString() } as any)
+        .eq("id", popOrderId);
+
+      toast.success("Proof of payment submitted! Admin will review shortly.");
+      setPopOrderId(null);
+      setPopFile(null);
+      setPopRef("");
+      setVerifyFailed(null);
+      fetchOrders();
+    } catch (err: any) {
+      const msg = err && typeof err === "object" && "message" in err ? err.message : String(err);
+      toast.error(`Failed to submit: ${msg}`);
+    } finally {
+      setIsSubmittingPop(false);
+    }
   };
 
   const activeOrders = orders.filter(o => !["completed", "cancelled", "delivered"].includes(o.status));
@@ -224,6 +291,9 @@ const Orders = () => {
     const status = statusConfig[order.status] || statusConfig.pending;
     const StatusIcon = status.icon;
     const isExpanded = expandedOrder === order.id;
+    const needsPop = order.payment_method === "yoco" && 
+      ["awaiting_payment", "awaiting_verification"].includes(order.payment_status) &&
+      order.status === "pending";
 
     return (
       <Collapsible key={order.id} open={isExpanded} onOpenChange={() => setExpandedOrder(isExpanded ? null : order.id)}>
@@ -276,6 +346,61 @@ const Orders = () => {
               </span>
               <span className="font-bold text-primary">R{Number(order.total_amount).toFixed(2)}</span>
             </div>
+
+            {/* PoP upload for unverified Yoco orders */}
+            {needsPop && (
+              <div className="mt-3 p-3 border border-dashed rounded-lg bg-muted/30 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
+                  <FileText className="w-4 h-4" />
+                  Payment not confirmed? Upload proof of payment
+                </div>
+                {popOrderId === order.id ? (
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs">Screenshot / Receipt</Label>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => setPopFile(e.target.files?.[0] || null)}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full mt-1"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload className="w-3.5 h-3.5 mr-2" />
+                        {popFile ? popFile.name : "Choose file"}
+                      </Button>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Transaction Reference</Label>
+                      <Input
+                        placeholder="e.g. YC-ABC123"
+                        value={popRef}
+                        onChange={(e) => setPopRef(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleSubmitPop} disabled={isSubmittingPop} className="flex-1">
+                        {isSubmittingPop ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                        Submit
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setPopOrderId(null); setPopFile(null); setPopRef(""); }}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setPopOrderId(order.id)}>
+                    Upload Proof of Payment
+                  </Button>
+                )}
+              </div>
+            )}
 
             <CollapsibleContent>
               {renderTrackingTimeline(order)}
@@ -337,6 +462,22 @@ const Orders = () => {
               <CardContent className="p-6 flex items-center justify-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 <span className="text-muted-foreground">Verifying your payment…</span>
+              </CardContent>
+            </Card>
+          )}
+
+          {verifyFailed && !isVerifying && (
+            <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <FileText className="w-5 h-5 text-amber-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-amber-800 dark:text-amber-300">Payment verification pending</p>
+                    <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                      We couldn't automatically confirm your payment. Expand your order below to upload proof of payment.
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
