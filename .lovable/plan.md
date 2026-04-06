@@ -1,80 +1,120 @@
+# Bulletproof Yoco Payment System + Admin Gateway Controls
 
+## Current State
 
-# Yoco Payment Verification (No Webhooks) + Landing Marketplace Block
+The system already has:
 
-## Problem
-1. **Yoco webhooks unavailable** — sole proprietor accounts don't have access to the webhook configuration page. The current system relies on `yoco-webhook` to confirm payments, so card payments never get confirmed.
-2. **No marketplace presence on landing page** — no featured products block to drive traffic.
-3. **Payment flow incomplete** — the success redirect just shows a toast but never actually verifies or confirms the payment.
+- `yoco-checkout` edge function (creates Yoco session, saves `yoco_checkout_id`)
+- `yoco-verify-payment` edge function (polls Yoco API on redirect)
+- Orders page with payment verification on `?payment=success`
+- Checkout page with COD + Yoco card options
+- Admin shop orders management with status updates
+- Product form with payment_type + checkout_url fields
 
-## Solution
+The core architecture is **correct**. The main gaps are:
 
-### 1. New Edge Function: `yoco-verify-payment`
+1. **No fallback when Yoco verification fails** — user has no way to prove payment
+2. **Product save still failing** — the `payment_type` and `checkout_url` columns may not exist on external Supabase (PGRST204 error = column not found)
+3. **No admin payment gateway controls** — admin can't switch between gateways or manage payment settings
+4. **No proof-of-payment upload** for edge cases
 
-Replace webhook dependency with **server-side payment verification on redirect**. When the user returns to `/orders?payment=success&order_id=xxx`:
+## Plan
 
-- Frontend calls `yoco-verify-payment` with the `order_id`
-- Edge function fetches the checkout from Yoco API (`GET https://payments.yoco.com/api/checkouts/{checkoutId}`) to check status
-- If payment is complete, updates `shop_orders` status to `confirmed`, inserts payment record, and inserts status history — same logic the webhook did
-- Store the Yoco `checkoutId` on `shop_orders` during checkout creation so we can look it up later
+### 1. External SQL — `docs/PAYMENT_SYSTEM_SQL.sql`
 
-### 2. Update `yoco-checkout` Edge Function
+Single idempotent script covering everything:
 
-Save the Yoco `checkoutId` to `shop_orders` so the verify function can use it:
 ```sql
--- Need this column on external DB
+-- Ensure payment columns on products
+ALTER TABLE products ADD COLUMN IF NOT EXISTS payment_type text DEFAULT 'standard';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS checkout_url text;
+
+-- Ensure Yoco tracking on shop_orders
 ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS yoco_checkout_id text;
+
+-- Payment proofs table (fallback for failed verification)
+CREATE TABLE IF NOT EXISTS payment_proofs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  image_url text,
+  reference_number text,
+  status text DEFAULT 'pending',
+  admin_note text,
+  reviewed_by uuid,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE payment_proofs ENABLE ROW LEVEL SECURITY;
+-- RLS: users manage own, admins manage all
+
+-- Webhook events (if not exists)
+CREATE TABLE IF NOT EXISTS webhook_events (...);
+
+-- All indexes
 ```
 
-### 3. Update `Orders.tsx` — Call Verify on Return
+This fixes the product save error (PGRST204) by ensuring `payment_type` and `checkout_url` columns exist.
 
-Replace the simple toast with an actual verification call:
-- On `?payment=success&order_id=xxx`, call `yoco-verify-payment`
-- Show loading state during verification
-- Show confirmed toast on success, error toast on failure
+### 2. Proof of Payment Fallback — Orders Page
 
-### 4. Landing Page — Featured Marketplace Block
+When payment verification returns `verified: false` or errors:
 
-Add a "Student Marketplace" section between Trusted Residences and About sections:
-- Fetch up to 8 featured/latest products from `products` table
-- Display in a responsive grid with image, name, price
-- "Shop Now" CTA linking to `/marketplace`
-- "View All" link
+- Show a "Payment not confirmed?" card with:
+  - Upload proof of payment image (to `product-images` bucket)
+  - Enter transaction reference number
+  - Submit for admin review
+- Insert into `payment_proofs` table
+- Order stays `awaiting_verification` until admin approves
 
-### 5. External SQL
+### 3. Admin Payment Management
 
-```sql
--- Add checkout ID tracking
-ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS yoco_checkout_id text;
-NOTIFY pgrst, 'reload schema';
-```
+**AdminShopOrders.tsx** updates:
+
+- Add "Verify Payment" button for orders with `payment_status = 'awaiting_payment'`
+- Show proof-of-payment submissions with approve/reject
+- On approve: update order to `confirmed` + `payment_status = 'paid'`
+
+**Admin Settings** — new "Payment Gateway" section:
+
+- Toggle Yoco on/off (stored in `platform_settings`)
+- Display configured gateway status
+- Future-ready: placeholder for PayFast/Stripe when needed
+
+### 4. Product Form Fix
+
+The product save error is caused by `payment_type` and `checkout_url` columns not existing on external DB. The SQL in step 1 fixes this. No code changes needed — the form already sends these fields correctly.
 
 ## Files
 
-| File | Action |
-|------|--------|
-| `docs/YOCO_VERIFY_SQL.sql` | Create: add `yoco_checkout_id` column |
-| `supabase/functions/yoco-verify-payment/index.ts` | Create: verify payment via Yoco API |
-| `supabase/functions/yoco-checkout/index.ts` | Update: save `checkoutId` to order |
-| `src/pages/Orders.tsx` | Update: call verify on success redirect |
-| `src/pages/Landing.tsx` | Update: add featured marketplace block |
-| `supabase/config.toml` | Update: add verify function config |
 
-## Flow
+| File                                  | Action                                                |
+| ------------------------------------- | ----------------------------------------------------- |
+| `docs/PAYMENT_SYSTEM_SQL.sql`         | Create: complete idempotent SQL for external Supabase |
+| `src/pages/Orders.tsx`                | Update: add proof-of-payment upload fallback UI       |
+| `src/pages/admin/AdminShopOrders.tsx` | Update: add payment proof review + manual verify      |
+| `src/pages/admin/AdminSettings.tsx`   | Update: add payment gateway configuration section     |
+
+
+## Flow After Fix
 
 ```text
-User → Checkout (Yoco) → yoco-checkout creates session, saves checkoutId
-     → Redirect to Yoco hosted page
-     → User pays → Yoco redirects to /orders?payment=success&order_id=xxx
-     → Orders page calls yoco-verify-payment
-     → Edge function checks Yoco API for checkout status
-     → If paid → updates order to confirmed
-     → User sees confirmed order
+User pays via Yoco → redirected back → verify-payment called
+  ├─ Verified ✓ → order confirmed, toast shown
+  └─ Not verified → show "Upload Proof" card
+       → User uploads screenshot + reference
+       → Admin reviews in Shop Orders tab
+       → Admin approves → order confirmed
 ```
 
 ## Technical Notes
-- Yoco Checkout API returns `status: "completed"` when payment succeeds
-- The `yoco-webhook` function remains as a fallback if the user upgrades their Yoco account later
-- Yoco API endpoint: `GET https://payments.yoco.com/api/checkouts/{checkoutId}` with Bearer auth
-- Featured products query: `products` table, `is_active = true`, ordered by `created_at DESC`, limit 8
 
+- The `payment_type`/`checkout_url` columns ARE the root cause of the ongoing product save error (PGRST204 = unknown column)
+- Proof-of-payment images use the existing `product-images` bucket (already public)
+- Platform settings for gateway config use existing `platform_settings` table
+- No new edge functions needed — existing verify flow + admin manual update covers all cases
+
+&nbsp;
+
+&nbsp;
+
+ensure the card payment and link payment fully work after this fix if anything still missing fix,always do a ode review after fiximg to validate your hanges and fix whatever you missed or did wrong.
