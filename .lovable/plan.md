@@ -1,120 +1,181 @@
-# Bulletproof Yoco Payment System + Admin Gateway Controls
+# System Stabilization: Payments + Seller Activation + Commission Engine
 
-## Current State
+## Critical Bugs Found
 
-The system already has:
+1. **Checkout.tsx line 102** calls `supabase.functions.invoke('quick-service')` — this function does not exist. Must call `yoco-checkout` directly via fetch (edge functions on external Supabase need direct HTTP calls, not `supabase.functions.invoke`).
+2. `**shop_orders` table** is missing `yoco_checkout_id` column — the verify function cannot look up checkout status.
+3. `**products` table** is missing `payment_type` and `checkout_url` columns — this is the root cause of the persistent "Failed to save product" error (PGRST204).
+4. **No commission/earnings tables** exist yet.
 
-- `yoco-checkout` edge function (creates Yoco session, saves `yoco_checkout_id`)
-- `yoco-verify-payment` edge function (polls Yoco API on redirect)
-- Orders page with payment verification on `?payment=success`
-- Checkout page with COD + Yoco card options
-- Admin shop orders management with status updates
-- Product form with payment_type + checkout_url fields
+## Architecture Decision: No Separate `sellers` Table
 
-The core architecture is **correct**. The main gaps are:
-
-1. **No fallback when Yoco verification fails** — user has no way to prove payment
-2. **Product save still failing** — the `payment_type` and `checkout_url` columns may not exist on external Supabase (PGRST204 error = column not found)
-3. **No admin payment gateway controls** — admin can't switch between gateways or manage payment settings
-4. **No proof-of-payment upload** for edge cases
+The existing `stores` table already has `user_id`, `is_active`, `verified`, and all store metadata. Creating a separate `sellers` table would violate the "no duplication" rule. Instead, the `stores` table IS the seller entity. A user with a store IS a seller.
 
 ## Plan
 
-### 1. External SQL — `docs/PAYMENT_SYSTEM_SQL.sql`
+### 1. External SQL — `docs/SELLER_COMMISSION_SQL.sql`
 
-Single idempotent script covering everything:
+Single idempotent script:
 
 ```sql
--- Ensure payment columns on products
+-- Fix products columns (PGRST204 fix)
 ALTER TABLE products ADD COLUMN IF NOT EXISTS payment_type text DEFAULT 'standard';
 ALTER TABLE products ADD COLUMN IF NOT EXISTS checkout_url text;
 
--- Ensure Yoco tracking on shop_orders
+-- Fix shop_orders (Yoco tracking)
 ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS yoco_checkout_id text;
 
--- Payment proofs table (fallback for failed verification)
-CREATE TABLE IF NOT EXISTS payment_proofs (
+-- Seller earnings (per-order breakdown)
+CREATE TABLE IF NOT EXISTS seller_earnings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id uuid NOT NULL,
-  user_id uuid NOT NULL,
-  image_url text,
-  reference_number text,
-  status text DEFAULT 'pending',
-  admin_note text,
-  reviewed_by uuid,
+  store_id uuid NOT NULL,
+  order_id uuid NOT NULL UNIQUE,
+  gross_amount numeric(10,2) NOT NULL,
+  platform_fee numeric(10,2) DEFAULT 0,
+  fee_percentage numeric(5,2) DEFAULT 0,
+  net_amount numeric(10,2) NOT NULL,
+  status text DEFAULT 'available',
   created_at timestamptz DEFAULT now()
 );
-ALTER TABLE payment_proofs ENABLE ROW LEVEL SECURITY;
--- RLS: users manage own, admins manage all
 
--- Webhook events (if not exists)
-CREATE TABLE IF NOT EXISTS webhook_events (...);
+-- Platform revenue log
+CREATE TABLE IF NOT EXISTS platform_revenue (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id uuid NOT NULL,
+  store_id uuid NOT NULL,
+  gross_amount numeric(10,2),
+  platform_fee numeric(10,2),
+  created_at timestamptz DEFAULT now()
+);
 
--- All indexes
+-- Payment proofs (fallback for failed verification)
+CREATE TABLE IF NOT EXISTS payment_proofs (...);
+
+-- Stores: add custom fee override
+ALTER TABLE stores ADD COLUMN IF NOT EXISTS custom_fee_percentage numeric(5,2);
+
+-- RLS policies for all new tables
+-- Indexes for performance
 ```
 
-This fixes the product save error (PGRST204) by ensuring `payment_type` and `checkout_url` columns exist.
+### 2. Fix Yoco Checkout Call — `Checkout.tsx`
 
-### 2. Proof of Payment Fallback — Orders Page
+Replace `supabase.functions.invoke('quick-service', ...)` with a direct fetch to the `yoco-checkout` edge function on the **Lovable Cloud** Supabase (where edge functions are deployed):
 
-When payment verification returns `verified: false` or errors:
+```typescript
+const res = await fetch(
+  `https://${projectId}.supabase.co/functions/v1/yoco-checkout`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: JSON.stringify({
+      order_id: order.id,
+      success_url: `${window.location.origin}/orders?payment=success&order_id=${order.id}`,
+      cancel_url: `${window.location.origin}/checkout?payment=cancelled`,
+    }),
+  }
+);
+```
 
-- Show a "Payment not confirmed?" card with:
-  - Upload proof of payment image (to `product-images` bucket)
-  - Enter transaction reference number
-  - Submit for admin review
-- Insert into `payment_proofs` table
-- Order stays `awaiting_verification` until admin approves
+### 3. Fix Edge Functions — Use External Supabase
 
-### 3. Admin Payment Management
+Both `yoco-checkout` and `yoco-verify-payment` currently use `EXTERNAL_SUPABASE_URL` for DB access, which is correct. But they also need to use the external anon key for user auth verification. Review and ensure both functions:
 
-**AdminShopOrders.tsx** updates:
+- Create service-role client with external URL + service role key
+- Create user client with external URL + external anon key + auth header
+- Include payment polling with retry (max 30s, 3s intervals) in verify function
 
-- Add "Verify Payment" button for orders with `payment_status = 'awaiting_payment'`
-- Show proof-of-payment submissions with approve/reject
-- On approve: update order to `confirmed` + `payment_status = 'paid'`
+### 4. Orders.tsx — Add Payment Polling
 
-**Admin Settings** — new "Payment Gateway" section:
+When returning from Yoco with `?payment=success`, poll the verify endpoint up to 10 times (every 3 seconds) before showing the PoP fallback. Current code only calls once.
 
-- Toggle Yoco on/off (stored in `platform_settings`)
-- Display configured gateway status
-- Future-ready: placeholder for PayFast/Stripe when needed
+### 5. Seller Dashboard Upgrades — `MyStore.tsx`
 
-### 4. Product Form Fix
+Add new tabs:
 
-The product save error is caused by `payment_type` and `checkout_url` columns not existing on external DB. The SQL in step 1 fixes this. No code changes needed — the form already sends these fields correctly.
+- **Earnings** tab: Show per-order breakdown (gross, fee, net), summary cards (total earnings, fees paid, revenue)
+- **Store Settings** tab: Edit store info, see custom fee percentage
+
+### 6. Admin Commerce Hub — New Tabs
+
+**Seller Earnings tab** (in Commerce Hub):
+
+- View all seller earnings
+- Set global default fee percentage (in `platform_settings`)
+- Override per-store custom fee
+- Platform revenue summary cards
+
+**Payment Proofs tab** (in Shop Orders):
+
+- Review pending PoP submissions
+- Approve/reject with note
+
+### 7. Commission Engine — In `yoco-verify-payment`
+
+After confirming payment, calculate and insert earnings:
+
+```text
+fee% = store.custom_fee_percentage ?? platform_settings.default_fee_percentage ?? 10
+platformFee = gross * fee% / 100
+net = gross - platformFee
+→ INSERT into seller_earnings + platform_revenue
+```
+
+### 8. Store Front Fix — `Store.tsx`
+
+Currently shows `marketplace_listings` for a store. Also show `products` linked to the store for the official catalog view.
 
 ## Files
 
 
-| File                                  | Action                                                |
-| ------------------------------------- | ----------------------------------------------------- |
-| `docs/PAYMENT_SYSTEM_SQL.sql`         | Create: complete idempotent SQL for external Supabase |
-| `src/pages/Orders.tsx`                | Update: add proof-of-payment upload fallback UI       |
-| `src/pages/admin/AdminShopOrders.tsx` | Update: add payment proof review + manual verify      |
-| `src/pages/admin/AdminSettings.tsx`   | Update: add payment gateway configuration section     |
+| File                                              | Action                                                         |
+| ------------------------------------------------- | -------------------------------------------------------------- |
+| `docs/SELLER_COMMISSION_SQL.sql`                  | Create: complete SQL for all missing tables/columns            |
+| `src/pages/Checkout.tsx`                          | Fix: replace `quick-service` with direct `yoco-checkout` fetch |
+| `src/pages/Orders.tsx`                            | Update: add payment polling (retry logic)                      |
+| `supabase/functions/yoco-checkout/index.ts`       | Review/fix: ensure correct external DB usage                   |
+| `supabase/functions/yoco-verify-payment/index.ts` | Update: add commission calculation after payment confirmation  |
+| `src/pages/MyStore.tsx`                           | Update: add Earnings tab with breakdown                        |
+| `src/pages/admin/AdminShopOrders.tsx`             | Update: add Payment Proofs review tab                          |
+| `src/pages/admin/AdminCommerceHub.tsx`            | Update: add Seller Earnings tab                                |
+| `src/pages/admin/AdminSellerEarnings.tsx`         | Create: earnings management + fee controls                     |
 
 
-## Flow After Fix
+## Payment Flow After Fix
 
 ```text
-User pays via Yoco → redirected back → verify-payment called
-  ├─ Verified ✓ → order confirmed, toast shown
-  └─ Not verified → show "Upload Proof" card
-       → User uploads screenshot + reference
-       → Admin reviews in Shop Orders tab
-       → Admin approves → order confirmed
+Checkout → creates order in shop_orders
+  → COD: redirect to /orders (done)
+  → Yoco: fetch yoco-checkout → get redirectUrl → redirect to Yoco
+    → User pays → Yoco redirects to /orders?payment=success&order_id=X
+    → Orders page polls yoco-verify-payment (up to 30s)
+      → Verified: order confirmed, earnings calculated, toast
+      → Not verified after 30s: show PoP upload form
+        → User uploads proof → admin reviews → approves → order confirmed
 ```
+
+## Seller Activation Flow
+
+```text
+Student → /store-setup → creates store (is_active=true, verified=false)
+  → Admin sees in Stores tab → toggles verified=true
+  → Store appears in marketplace with verified badge
+  → Seller manages listings in /my-store
+  → Orders come in → earnings tracked with commission split
+```
+
+No separate `sellers` table needed — the `stores` table already serves this purpose.
 
 ## Technical Notes
 
-- The `payment_type`/`checkout_url` columns ARE the root cause of the ongoing product save error (PGRST204 = unknown column)
-- Proof-of-payment images use the existing `product-images` bucket (already public)
-- Platform settings for gateway config use existing `platform_settings` table
-- No new edge functions needed — existing verify flow + admin manual update covers all cases
-
-&nbsp;
-
-&nbsp;
-
-ensure the card payment and link payment fully work after this fix if anything still missing fix,always do a ode review after fiximg to validate your hanges and fix whatever you missed or did wrong.
+- The `quick-service` function does NOT exist — this is why Yoco payments have never worked
+- Edge functions are deployed on Lovable Cloud (vmqqkebojldjsyxcewdb) but query external Supabase (mefjzkhobkltlbmhusdh)
+- Commission engine runs inside `yoco-verify-payment` to avoid needing additional functions
+- Default platform fee: 10%, stored in `platform_settings` table
+- Per-store override via `stores.custom_fee_percentage`
+- All SQL is idempotent with `IF NOT EXISTS` and `DO $$ EXCEPTION` patterns
+- ensure all functions are fixed
