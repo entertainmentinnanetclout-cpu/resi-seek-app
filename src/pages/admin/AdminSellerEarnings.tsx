@@ -184,44 +184,14 @@ export const AdminSellerEarningsContent = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {stores.map((store) => {
-                  const [localFee, setLocalFee] = useState(
-                    store.custom_fee_percentage != null ? String(store.custom_fee_percentage) : ""
-                  );
-                  return (
-                    <TableRow key={store.id}>
-                      <TableCell className="font-medium">{store.store_name}</TableCell>
-                      <TableCell>
-                        {store.verified ? (
-                          <Badge variant="default">Verified</Badge>
-                        ) : (
-                          <Badge variant="secondary">Unverified</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.5"
-                          placeholder={defaultFee}
-                          value={localFee}
-                          onChange={(e) => setLocalFee(e.target.value)}
-                          className="w-24"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleUpdateStoreFee(store.id, localFee)}
-                        >
-                          Set
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {stores.map((store) => (
+                  <StoreFeeRow
+                    key={store.id}
+                    store={store}
+                    defaultFee={defaultFee}
+                    onSave={handleUpdateStoreFee}
+                  />
+                ))}
               </TableBody>
             </Table>
           )}
