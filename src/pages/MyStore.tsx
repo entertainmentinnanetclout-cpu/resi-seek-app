@@ -158,6 +158,17 @@ const MyStore = () => {
     );
 
     setOrders(ordersWithData);
+
+    // Fetch seller earnings
+    if (storeData) {
+      const { data: earningsData } = await supabase
+        .from("seller_earnings" as any)
+        .select("*")
+        .eq("store_id", storeData.id)
+        .order("created_at", { ascending: false });
+      setEarnings((earningsData as any[]) || []);
+    }
+
     setIsLoading(false);
   };
 
