@@ -2,13 +2,14 @@ import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingBag, Store, Percent, ShoppingCart, Gift, Truck } from "lucide-react";
+import { ShoppingBag, Store, Percent, ShoppingCart, Gift, Truck, DollarSign } from "lucide-react";
 import { AdminMarketplaceContent } from "./AdminMarketplace";
 import { AdminStoresContent } from "./AdminStores";
 import { AdminDiscountsContent } from "./AdminDiscounts";
 import { AdminDiscountOrdersContent } from "./AdminDiscountOrders";
 import { AdminHamperItemsContent } from "./AdminHamperItems";
 import { AdminShopOrdersContent } from "./AdminShopOrders";
+import { AdminSellerEarningsContent } from "./AdminSellerEarnings";
 
 const tabs = [
   { value: "marketplace", label: "Marketplace", icon: ShoppingBag },
@@ -17,6 +18,7 @@ const tabs = [
   { value: "discounts", label: "Discounts", icon: Percent },
   { value: "discount-orders", label: "Discount Orders", icon: ShoppingCart },
   { value: "hamper-items", label: "Hamper Items", icon: Gift },
+  { value: "earnings", label: "Earnings", icon: DollarSign },
 ];
 
 const AdminCommerceHub = () => {
@@ -48,6 +50,7 @@ const AdminCommerceHub = () => {
           <TabsContent value="discounts"><AdminDiscountsContent /></TabsContent>
           <TabsContent value="discount-orders"><AdminDiscountOrdersContent /></TabsContent>
           <TabsContent value="hamper-items"><AdminHamperItemsContent /></TabsContent>
+          <TabsContent value="earnings"><AdminSellerEarningsContent /></TabsContent>
         </Tabs>
       </div>
     </AdminLayout>

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store, Plus, Package, Trash2, ExternalLink, ShoppingBag, Clock, CheckCircle, Truck, XCircle, Star } from "lucide-react";
+import { Store, Plus, Package, Trash2, ExternalLink, ShoppingBag, Clock, CheckCircle, Truck, XCircle, Star, DollarSign, TrendingUp } from "lucide-react";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import { formatDistanceToNow } from "date-fns";
 import StoreReviews from "@/components/StoreReviews";
@@ -89,6 +89,7 @@ const MyStore = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteListingId, setDeleteListingId] = useState<string | null>(null);
+  const [earnings, setEarnings] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) fetchStoreAndListings();
@@ -157,6 +158,17 @@ const MyStore = () => {
     );
 
     setOrders(ordersWithData);
+
+    // Fetch seller earnings
+    if (storeData) {
+      const { data: earningsData } = await supabase
+        .from("seller_earnings" as any)
+        .select("*")
+        .eq("store_id", storeData.id)
+        .order("created_at", { ascending: false });
+      setEarnings((earningsData as any[]) || []);
+    }
+
     setIsLoading(false);
   };
 
@@ -300,9 +312,10 @@ const MyStore = () => {
 
           {/* Tabs */}
           <Tabs defaultValue="listings" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="listings">Listings</TabsTrigger>
               <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
+              <TabsTrigger value="earnings">Earnings</TabsTrigger>
               <TabsTrigger value="reviews">Reviews</TabsTrigger>
             </TabsList>
 
@@ -468,6 +481,73 @@ const MyStore = () => {
                           </div>
                         );
                       })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Earnings Tab */}
+            <TabsContent value="earnings">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5" />
+                    My Earnings
+                  </CardTitle>
+                  <CardDescription>Track your revenue and platform fees</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {earnings.length === 0 ? (
+                    <div className="text-center py-12">
+                      <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">No earnings yet</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Earnings will appear here when customers complete purchases.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Summary */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="p-3 bg-muted rounded-lg text-center">
+                          <p className="text-lg font-bold">
+                            R{earnings.reduce((s, e) => s + Number(e.gross_amount || 0), 0).toFixed(2)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Gross</p>
+                        </div>
+                        <div className="p-3 bg-muted rounded-lg text-center">
+                          <p className="text-lg font-bold text-destructive">
+                            -R{earnings.reduce((s, e) => s + Number(e.platform_fee || 0), 0).toFixed(2)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Fees</p>
+                        </div>
+                        <div className="p-3 bg-muted rounded-lg text-center">
+                          <p className="text-lg font-bold text-primary">
+                            R{earnings.reduce((s, e) => s + Number(e.net_amount || 0), 0).toFixed(2)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Net</p>
+                        </div>
+                      </div>
+                      {/* List */}
+                      {earnings.map((e: any) => (
+                        <div key={e.id} className="flex justify-between items-center p-3 border rounded-lg">
+                          <div>
+                            <p className="text-sm font-mono text-muted-foreground">
+                              Order {e.order_id?.substring(0, 8)}…
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(e.created_at), { addSuffix: true })}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-primary">R{Number(e.net_amount).toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {Number(e.fee_percentage).toFixed(1)}% fee
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </CardContent>
