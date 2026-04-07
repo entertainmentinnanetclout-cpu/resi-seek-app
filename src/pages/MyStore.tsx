@@ -312,9 +312,10 @@ const MyStore = () => {
 
           {/* Tabs */}
           <Tabs defaultValue="listings" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="listings">Listings</TabsTrigger>
               <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
+              <TabsTrigger value="earnings">Earnings</TabsTrigger>
               <TabsTrigger value="reviews">Reviews</TabsTrigger>
             </TabsList>
 
