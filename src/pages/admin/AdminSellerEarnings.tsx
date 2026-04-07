@@ -12,7 +12,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign, TrendingUp, Store, Percent, Save } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-export const AdminSellerEarningsContent = () => {
+const StoreFeeRow = ({ store, defaultFee, onSave }: { store: any; defaultFee: string; onSave: (id: string, fee: string) => void }) => {
+  const [localFee, setLocalFee] = useState(
+    store.custom_fee_percentage != null ? String(store.custom_fee_percentage) : ""
+  );
+  return (
+    <TableRow>
+      <TableCell className="font-medium">{store.store_name}</TableCell>
+      <TableCell>
+        {store.verified ? <Badge variant="default">Verified</Badge> : <Badge variant="secondary">Unverified</Badge>}
+      </TableCell>
+      <TableCell>
+        <Input type="number" min="0" max="100" step="0.5" placeholder={defaultFee} value={localFee} onChange={(e) => setLocalFee(e.target.value)} className="w-24" />
+      </TableCell>
+      <TableCell>
+        <Button size="sm" variant="outline" onClick={() => onSave(store.id, localFee)}>Set</Button>
+      </TableCell>
+    </TableRow>
+  );
+};
+
   const { user } = useAuth();
   const [earnings, setEarnings] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
