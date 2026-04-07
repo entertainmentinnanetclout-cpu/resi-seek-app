@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store, Plus, Package, Trash2, ExternalLink, ShoppingBag, Clock, CheckCircle, Truck, XCircle, Star } from "lucide-react";
+import { Store, Plus, Package, Trash2, ExternalLink, ShoppingBag, Clock, CheckCircle, Truck, XCircle, Star, DollarSign, TrendingUp } from "lucide-react";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import { formatDistanceToNow } from "date-fns";
 import StoreReviews from "@/components/StoreReviews";
