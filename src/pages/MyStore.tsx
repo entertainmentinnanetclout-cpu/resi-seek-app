@@ -89,6 +89,7 @@ const MyStore = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteListingId, setDeleteListingId] = useState<string | null>(null);
+  const [earnings, setEarnings] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) fetchStoreAndListings();
