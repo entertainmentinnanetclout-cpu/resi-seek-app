@@ -46,7 +46,7 @@ const Orders = () => {
   const [isSubmittingPop, setIsSubmittingPop] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Verify Yoco payment on return
+  // Verify Yoco payment on return — polls up to 10 times (30s)
   const verifyPayment = useCallback(async (orderId: string) => {
     setIsVerifying(true);
     setVerifyFailed(null);
@@ -56,25 +56,37 @@ const Orders = () => {
       if (!token) throw new Error("Not authenticated");
 
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/yoco-verify-payment`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ order_id: orderId }),
+      let verified = false;
+
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/yoco-verify-payment`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({ order_id: orderId }),
+          }
+        );
+
+        const result = await res.json();
+
+        if (result.verified) {
+          verified = true;
+          toast.success("Payment confirmed! Your order has been processed.");
+          break;
         }
-      );
 
-      const result = await res.json();
+        // Wait 3 seconds before retrying
+        if (attempt < 9) {
+          await new Promise(r => setTimeout(r, 3000));
+        }
+      }
 
-      if (result.verified) {
-        toast.success("Payment confirmed! Your order has been processed.");
-        setVerifyFailed(null);
-      } else {
+      if (!verified) {
         setVerifyFailed(orderId);
         toast.info("Payment not yet confirmed. You can upload proof of payment below.");
       }
@@ -84,6 +96,7 @@ const Orders = () => {
       toast.error("Could not verify payment automatically.");
     } finally {
       setIsVerifying(false);
+      fetchOrders();
     }
   }, []);
 

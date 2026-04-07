@@ -68,7 +68,10 @@ Deno.serve(async (req) => {
       throw new Error("Failed to verify payment with Yoco");
     }
 
-    if (yocoData.status === "completed") {
+    // Yoco returns "completed" or "successful" for paid checkouts
+    const isPaid = yocoData.status === "completed" || yocoData.status === "successful";
+
+    if (isPaid) {
       // Payment confirmed — update order
       await supabase
         .from("shop_orders")
@@ -79,15 +82,24 @@ Deno.serve(async (req) => {
         })
         .eq("id", order_id);
 
-      // Insert payment record
-      await supabase.from("payments").insert({
-        order_id: order_id,
-        amount: Number(order.total_amount),
-        payment_method: "card",
-        payment_gateway: "yoco",
-        payment_status: "completed",
-        transaction_reference: order.yoco_checkout_id,
-      });
+      // Prevent duplicate payment records
+      const { data: existingPayment } = await supabase
+        .from("payments")
+        .select("id")
+        .eq("transaction_reference", order.yoco_checkout_id)
+        .maybeSingle();
+
+      if (!existingPayment) {
+        // Insert payment record
+        await supabase.from("payments").insert({
+          order_id: order_id,
+          amount: Number(order.total_amount),
+          payment_method: "card",
+          payment_gateway: "yoco",
+          payment_status: "completed",
+          transaction_reference: order.yoco_checkout_id,
+        });
+      }
 
       // Insert status history
       await supabase.from("order_status_history").insert({
@@ -95,6 +107,62 @@ Deno.serve(async (req) => {
         status: "confirmed",
         note: "Payment confirmed via Yoco card payment",
       });
+
+      // Commission calculation
+      try {
+        // Get store from order items
+        const { data: orderItems } = await supabase
+          .from("shop_order_items")
+          .select("store_id")
+          .eq("order_id", order_id)
+          .limit(1);
+
+        const storeId = orderItems?.[0]?.store_id;
+
+        if (storeId) {
+          // Get custom fee or default
+          const { data: store } = await supabase
+            .from("stores")
+            .select("custom_fee_percentage")
+            .eq("id", storeId)
+            .single();
+
+          const { data: settings } = await supabase
+            .from("platform_settings")
+            .select("value")
+            .eq("key", "default_fee_percentage")
+            .single();
+
+          const feePercent = store?.custom_fee_percentage
+            ?? (settings?.value ? Number(settings.value) : 10);
+
+          const gross = Number(order.total_amount);
+          const platformFee = Math.round((gross * feePercent) / 100 * 100) / 100;
+          const net = Math.round((gross - platformFee) * 100) / 100;
+
+          // Insert seller earnings (unique constraint prevents duplicates)
+          await supabase.from("seller_earnings").insert({
+            store_id: storeId,
+            order_id: order_id,
+            gross_amount: gross,
+            platform_fee: platformFee,
+            fee_percentage: feePercent,
+            net_amount: net,
+            status: "available",
+          });
+
+          // Insert platform revenue
+          await supabase.from("platform_revenue").insert({
+            order_id: order_id,
+            store_id: storeId,
+            gross_amount: gross,
+            platform_fee: platformFee,
+          });
+        }
+      } catch (commissionErr) {
+        // Don't fail the payment verification if commission calc fails
+        console.error("Commission calculation error:", commissionErr);
+      }
 
       // Log webhook event for audit
       await supabase.from("webhook_events").insert({
