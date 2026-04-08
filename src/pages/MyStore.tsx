@@ -584,6 +584,13 @@ const MyStore = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ListingFormDialog
+        open={showListingForm}
+        onOpenChange={setShowListingForm}
+        storeId={store?.id || null}
+        onSuccess={fetchStoreAndListings}
+      />
     </DashboardLayout>
   );
 };
