@@ -91,6 +91,7 @@ const MyStore = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [deleteListingId, setDeleteListingId] = useState<string | null>(null);
   const [earnings, setEarnings] = useState<any[]>([]);
+  const [showListingForm, setShowListingForm] = useState(false);
 
   useEffect(() => {
     if (user) fetchStoreAndListings();
@@ -329,7 +330,7 @@ const MyStore = () => {
                       <CardTitle>My Listings</CardTitle>
                       <CardDescription>Manage your marketplace listings</CardDescription>
                     </div>
-                    <Button onClick={() => navigate("/marketplace")}>
+                    <Button onClick={() => setShowListingForm(true)}>
                       <Plus className="w-4 h-4 mr-2" />
                       New Listing
                     </Button>
@@ -343,7 +344,7 @@ const MyStore = () => {
                       <Button
                         variant="outline"
                         className="mt-4"
-                        onClick={() => navigate("/marketplace")}
+                        onClick={() => setShowListingForm(true)}
                       >
                         Create Your First Listing
                       </Button>
