@@ -10,6 +10,7 @@ import desktopLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import mobileLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import NotificationCenter from "@/components/NotificationCenter";
 import CommandPalette from "@/components/CommandPalette";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
