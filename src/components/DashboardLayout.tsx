@@ -1,6 +1,6 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Home, Bell, Search, FileText, User, Menu, LogOut, ShoppingBag, GraduationCap, Shield, RefreshCw, Briefcase, LogIn, UserPlus } from "lucide-react";
+import { Home, Bell, Search, FileText, User, Menu, LogOut, ShoppingBag, GraduationCap, Shield, RefreshCw, Briefcase, LogIn, UserPlus, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import desktopLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import mobileLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import NotificationCenter from "@/components/NotificationCenter";
 import CommandPalette from "@/components/CommandPalette";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
@@ -23,6 +24,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const { signOut, isAdmin, user } = useAuth();
   const { profile } = useRealtimeProfile(user);
+  const [hasStore, setHasStore] = useState(false);
+
+  useEffect(() => {
+    if (user && !isAdmin) {
+      supabase
+        .from("stores")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle()
+        .then(({ data }) => setHasStore(!!data));
+    }
+  }, [user, isAdmin]);
 
   // Public browse items (always visible)
   const publicNavItems = [
@@ -34,6 +47,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // Auth-required items (only for logged-in students)
   const authNavItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
+    ...(hasStore ? [{ icon: Store, label: "My Store", path: "/my-store" }] : []),
     { icon: Briefcase, label: "My WIL", path: "/wil" },
     { icon: FileText, label: "Applications", path: "/applications" },
   ];
@@ -46,7 +60,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navItems = isAdmin
     ? adminNavItems
     : user
-      ? [...authNavItems.slice(0, 1), ...publicNavItems, ...authNavItems.slice(1)]
+      ? [...authNavItems.slice(0, hasStore ? 2 : 1), ...publicNavItems, ...authNavItems.slice(hasStore ? 2 : 1)]
       : publicNavItems;
 
   const isActive = (path: string) => location.pathname === path;

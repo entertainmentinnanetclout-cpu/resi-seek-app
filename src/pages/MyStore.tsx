@@ -10,11 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store, Plus, Package, Trash2, ExternalLink, ShoppingBag, Clock, CheckCircle, Truck, XCircle, Star, DollarSign, TrendingUp } from "lucide-react";
+import { Store, Plus, Package, Trash2, ExternalLink, ShoppingBag, Clock, CheckCircle, Truck, XCircle, Star, DollarSign, TrendingUp, AlertTriangle, MessageCircle, Edit } from "lucide-react";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import { formatDistanceToNow } from "date-fns";
 import StoreReviews from "@/components/StoreReviews";
-import ListingFormDialog from "@/components/ListingFormDialog";
+import { ProductFormDialog } from "@/components/admin/ProductFormDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,14 +46,27 @@ interface StoreData {
   verified?: boolean;
 }
 
-interface Listing {
+interface Product {
   id: string;
-  item_name: string;
+  name: string;
+  description: string | null;
   price: number;
+  compare_at_price: number | null;
   images: string[];
-  status: string;
-  verified: boolean;
+  stock_quantity: number;
+  sku: string | null;
+  tags: string[];
+  brand: string | null;
+  is_active: boolean;
+  is_featured: boolean;
+  category_id: string | null;
   created_at: string;
+}
+
+interface ProductCategory {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 interface Order {
@@ -86,20 +99,21 @@ const MyStore = () => {
   const navigate = useNavigate();
 
   const [store, setStore] = useState<StoreData | null>(null);
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [deleteListingId, setDeleteListingId] = useState<string | null>(null);
+  const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
   const [earnings, setEarnings] = useState<any[]>([]);
-  const [showListingForm, setShowListingForm] = useState(false);
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
 
   useEffect(() => {
-    if (user) fetchStoreAndListings();
+    if (user) fetchStoreData();
   }, [user]);
 
-  const fetchStoreAndListings = async () => {
+  const fetchStoreData = async () => {
     if (!user) return;
-
     setIsLoading(true);
 
     // Fetch store
@@ -109,9 +123,7 @@ const MyStore = () => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (storeError) {
-      console.error("Error fetching store:", storeError);
-    }
+    if (storeError) console.error("Error fetching store:", storeError);
 
     if (!storeData) {
       navigate("/store-setup");
@@ -120,18 +132,20 @@ const MyStore = () => {
 
     setStore(storeData);
 
-    // Fetch listings
-    const { data: listingsData, error: listingsError } = await supabase
-      .from("marketplace_listings")
+    // Fetch categories
+    const { data: catData } = await supabase
+      .from("product_categories")
+      .select("id, name, slug")
+      .order("display_order");
+    setCategories(catData || []);
+
+    // Fetch products for this store
+    const { data: productsData } = await supabase
+      .from("products")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("store_id", storeData.id)
       .order("created_at", { ascending: false });
-
-    if (listingsError) {
-      console.error("Error fetching listings:", listingsError);
-    }
-
-    setListings(listingsData || []);
+    setProducts((productsData as Product[]) || []);
 
     // Fetch orders for this seller
     const { data: ordersData } = await supabase
@@ -140,7 +154,6 @@ const MyStore = () => {
       .eq("seller_id", user.id)
       .order("created_at", { ascending: false });
 
-    // Fetch related data for orders
     const ordersWithData = await Promise.all(
       (ordersData || []).map(async (order) => {
         const { data: listing } = await supabase
@@ -148,28 +161,23 @@ const MyStore = () => {
           .select("item_name, images")
           .eq("id", order.listing_id)
           .maybeSingle();
-
         const { data: buyer } = await supabase
           .from("profiles")
           .select("full_name, phone")
           .eq("id", order.buyer_id)
           .maybeSingle();
-
         return { ...order, listing, buyer };
       })
     );
-
     setOrders(ordersWithData);
 
     // Fetch seller earnings
-    if (storeData) {
-      const { data: earningsData } = await supabase
-        .from("seller_earnings" as any)
-        .select("*")
-        .eq("store_id", storeData.id)
-        .order("created_at", { ascending: false });
-      setEarnings((earningsData as any[]) || []);
-    }
+    const { data: earningsData } = await supabase
+      .from("seller_earnings" as any)
+      .select("*")
+      .eq("store_id", storeData.id)
+      .order("created_at", { ascending: false });
+    setEarnings((earningsData as any[]) || []);
 
     setIsLoading(false);
   };
@@ -180,32 +188,28 @@ const MyStore = () => {
         .from("marketplace_orders")
         .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq("id", orderId);
-
       if (error) throw error;
       toast.success(`Order status updated to ${newStatus}`);
-      fetchStoreAndListings();
+      fetchStoreData();
     } catch (error) {
       toast.error("Failed to update order status");
     }
   };
 
-  const handleDeleteListing = async () => {
-    if (!deleteListingId) return;
-
+  const handleDeleteProduct = async () => {
+    if (!deleteProductId) return;
     try {
       const { error } = await supabase
-        .from("marketplace_listings")
+        .from("products")
         .delete()
-        .eq("id", deleteListingId);
-
+        .eq("id", deleteProductId);
       if (error) throw error;
-
-      toast.success("Listing deleted");
-      setListings(listings.filter((l) => l.id !== deleteListingId));
+      toast.success("Product deleted");
+      setProducts(products.filter((p) => p.id !== deleteProductId));
     } catch (error: any) {
-      toast.error("Failed to delete listing");
+      toast.error("Failed to delete product");
     } finally {
-      setDeleteListingId(null);
+      setDeleteProductId(null);
     }
   };
 
@@ -224,16 +228,59 @@ const MyStore = () => {
     );
   }
 
+  // Store exists but not verified — show pending approval
+  if (store && !store.verified) {
+    return (
+      <DashboardLayout>
+        <SEO title="My Store — Pending Approval" description="Your store is awaiting admin approval." />
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="max-w-2xl mx-auto">
+            <Card className="border-yellow-500/50">
+              <CardContent className="p-8 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto">
+                  <AlertTriangle className="w-8 h-8 text-yellow-500" />
+                </div>
+                <h2 className="text-2xl font-bold">Store Pending Approval</h2>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Your store <span className="font-semibold text-foreground">"{store.store_name}"</span> has been submitted and is waiting for admin approval. Once approved, you'll have full access to list products, manage orders, and track earnings.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+                  <Button
+                    onClick={() => {
+                      const message = encodeURIComponent(
+                        `Hi ResKonnect! I'd like to follow up on my store approval for "${store.store_name}". My email is ${user?.email}. Please let me know the status.`
+                      );
+                      window.open(`https://wa.me/27637323192?text=${message}`, "_blank");
+                    }}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Contact Admin on WhatsApp
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/marketplace")}>
+                    Browse Marketplace
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground pt-2">
+                  Approval typically takes 24–48 hours. You'll be notified once your store is live.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   const activeOrders = orders.filter(o => !["completed", "cancelled"].includes(o.status));
 
   return (
     <DashboardLayout>
       <SEO
-        title="My Store | Manage Your Listings"
-        description="Manage your store and listings on the student marketplace."
+        title="My Store | Manage Your Products"
+        description="Manage your store, products, orders and earnings on the student marketplace."
       />
       <div className="p-4 sm:p-6 lg:p-8">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6">
           {/* Store Header */}
           <Card className="overflow-hidden">
             {store?.store_banner_url && (
@@ -271,9 +318,7 @@ const MyStore = () => {
                   {store?.store_description && (
                     <p className="text-muted-foreground mt-2">{store.store_description}</p>
                   )}
-                  {store?.verified && (
-                    <Badge className="mt-2 bg-green-600">✓ Verified Seller</Badge>
-                  )}
+                  <Badge className="mt-2 bg-green-600">✓ Verified Seller</Badge>
                 </div>
               </div>
             </CardContent>
@@ -283,8 +328,8 @@ const MyStore = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold">{listings.length}</p>
-                <p className="text-sm text-muted-foreground">Listings</p>
+                <p className="text-2xl font-bold">{products.length}</p>
+                <p className="text-sm text-muted-foreground">Products</p>
               </CardContent>
             </Card>
             <Card>
@@ -313,53 +358,53 @@ const MyStore = () => {
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="listings" className="space-y-4">
+          <Tabs defaultValue="products" className="space-y-4">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="listings">Listings</TabsTrigger>
+              <TabsTrigger value="products">Products</TabsTrigger>
               <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
               <TabsTrigger value="earnings">Earnings</TabsTrigger>
               <TabsTrigger value="reviews">Reviews</TabsTrigger>
             </TabsList>
 
-            {/* Listings Tab */}
-            <TabsContent value="listings">
+            {/* Products Tab */}
+            <TabsContent value="products">
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle>My Listings</CardTitle>
-                      <CardDescription>Manage your marketplace listings</CardDescription>
+                      <CardTitle>My Products</CardTitle>
+                      <CardDescription>Full product catalog — manage stock, pricing, images and more</CardDescription>
                     </div>
-                    <Button onClick={() => setShowListingForm(true)}>
+                    <Button onClick={() => { setEditingProduct(null); setShowProductForm(true); }}>
                       <Plus className="w-4 h-4 mr-2" />
-                      New Listing
+                      Add Product
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {listings.length === 0 ? (
+                  {products.length === 0 ? (
                     <div className="text-center py-12">
                       <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">No listings yet</p>
-                      <Button
-                        variant="outline"
-                        className="mt-4"
-                        onClick={() => setShowListingForm(true)}
-                      >
-                        Create Your First Listing
+                      <h3 className="font-semibold text-lg mb-1">No products yet</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Start building your catalog — add products with images, pricing, stock levels and more.
+                      </p>
+                      <Button onClick={() => { setEditingProduct(null); setShowProductForm(true); }}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Your First Product
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {listings.map((listing) => (
+                    <div className="space-y-3">
+                      {products.map((product) => (
                         <div
-                          key={listing.id}
-                          className="flex items-center gap-4 p-4 border rounded-lg"
+                          key={product.id}
+                          className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                         >
-                          {listing.images?.[0] ? (
+                          {product.images?.[0] ? (
                             <img
-                              src={listing.images[0]}
-                              alt={listing.item_name}
+                              src={product.images[0]}
+                              alt={product.name}
                               className="w-16 h-16 rounded-lg object-cover"
                             />
                           ) : (
@@ -368,28 +413,64 @@ const MyStore = () => {
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium truncate">{listing.item_name}</h3>
-                            <p className="text-lg font-bold text-primary">
-                              R{listing.price.toLocaleString()}
-                            </p>
+                            <h3 className="font-medium truncate">{product.name}</h3>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge variant={listing.status === "active" ? "default" : "secondary"}>
-                                {listing.status}
-                              </Badge>
-                              {listing.verified ? (
-                                <Badge variant="outline" className="text-green-600">Verified</Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-orange-600">Pending Review</Badge>
+                              <span className="text-lg font-bold text-primary">
+                                R{product.price.toLocaleString()}
+                              </span>
+                              {product.compare_at_price && (
+                                <span className="text-sm text-muted-foreground line-through">
+                                  R{product.compare_at_price.toLocaleString()}
+                                </span>
                               )}
                             </div>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <Badge variant={product.is_active ? "default" : "secondary"}>
+                                {product.is_active ? "Active" : "Inactive"}
+                              </Badge>
+                              {product.is_featured && (
+                                <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                                  <Star className="w-3 h-3 mr-1" /> Featured
+                                </Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                Stock: {product.stock_quantity}
+                              </span>
+                            </div>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setDeleteListingId(listing.id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setEditingProduct({
+                                  id: product.id,
+                                  name: product.name,
+                                  description: product.description || "",
+                                  price: product.price,
+                                  compare_at_price: product.compare_at_price,
+                                  images: product.images || [],
+                                  stock_quantity: product.stock_quantity,
+                                  sku: product.sku || "",
+                                  tags: product.tags || [],
+                                  brand: product.brand || "",
+                                  is_active: product.is_active,
+                                  is_featured: product.is_featured,
+                                  category_id: product.category_id,
+                                });
+                                setShowProductForm(true);
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setDeleteProductId(product.id)}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -416,7 +497,6 @@ const MyStore = () => {
                       {orders.map((order) => {
                         const status = statusConfig[order.status] || statusConfig.pending;
                         const StatusIcon = status.icon;
-
                         return (
                           <div key={order.id} className="p-4 border rounded-lg space-y-3">
                             <div className="flex items-start gap-4">
@@ -446,19 +526,16 @@ const MyStore = () => {
                                 {status.label}
                               </Badge>
                             </div>
-
                             {order.buyer_notes && (
                               <div className="p-3 bg-muted rounded-lg text-sm">
                                 <span className="font-medium">Note:</span> {order.buyer_notes}
                               </div>
                             )}
-
                             {order.delivery_address && (
                               <div className="text-sm text-muted-foreground">
                                 <span className="font-medium">Delivery:</span> {order.delivery_address}
                               </div>
                             )}
-
                             <div className="flex items-center justify-between pt-2 border-t">
                               <span className="text-xs text-muted-foreground">
                                 {formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}
@@ -510,7 +587,6 @@ const MyStore = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {/* Summary */}
                       <div className="grid grid-cols-3 gap-3">
                         <div className="p-3 bg-muted rounded-lg text-center">
                           <p className="text-lg font-bold">
@@ -531,7 +607,6 @@ const MyStore = () => {
                           <p className="text-xs text-muted-foreground">Net</p>
                         </div>
                       </div>
-                      {/* List */}
                       {earnings.map((e: any) => (
                         <div key={e.id} className="flex justify-between items-center p-3 border rounded-lg">
                           <div>
@@ -565,18 +640,18 @@ const MyStore = () => {
       </div>
 
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteListingId} onOpenChange={() => setDeleteListingId(null)}>
+      <AlertDialog open={!!deleteProductId} onOpenChange={() => setDeleteProductId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Listing?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Product?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this listing. This action cannot be undone.
+              This will permanently delete this product. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteListing}
+              onClick={handleDeleteProduct}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
@@ -585,12 +660,19 @@ const MyStore = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <ListingFormDialog
-        open={showListingForm}
-        onOpenChange={setShowListingForm}
-        storeId={store?.id || null}
-        onSuccess={fetchStoreAndListings}
-      />
+      {store && (
+        <ProductFormDialog
+          open={showProductForm}
+          onOpenChange={setShowProductForm}
+          product={editingProduct}
+          storeId={store.id}
+          categories={categories}
+          onSaved={() => {
+            setShowProductForm(false);
+            fetchStoreData();
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 };
