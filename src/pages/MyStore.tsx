@@ -14,6 +14,7 @@ import { Store, Plus, Package, Trash2, ExternalLink, ShoppingBag, Clock, CheckCi
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import { formatDistanceToNow } from "date-fns";
 import StoreReviews from "@/components/StoreReviews";
+import ListingFormDialog from "@/components/ListingFormDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -90,6 +91,7 @@ const MyStore = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [deleteListingId, setDeleteListingId] = useState<string | null>(null);
   const [earnings, setEarnings] = useState<any[]>([]);
+  const [showListingForm, setShowListingForm] = useState(false);
 
   useEffect(() => {
     if (user) fetchStoreAndListings();
@@ -328,7 +330,7 @@ const MyStore = () => {
                       <CardTitle>My Listings</CardTitle>
                       <CardDescription>Manage your marketplace listings</CardDescription>
                     </div>
-                    <Button onClick={() => navigate("/marketplace")}>
+                    <Button onClick={() => setShowListingForm(true)}>
                       <Plus className="w-4 h-4 mr-2" />
                       New Listing
                     </Button>
@@ -342,7 +344,7 @@ const MyStore = () => {
                       <Button
                         variant="outline"
                         className="mt-4"
-                        onClick={() => navigate("/marketplace")}
+                        onClick={() => setShowListingForm(true)}
                       >
                         Create Your First Listing
                       </Button>
@@ -582,6 +584,13 @@ const MyStore = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ListingFormDialog
+        open={showListingForm}
+        onOpenChange={setShowListingForm}
+        storeId={store?.id || null}
+        onSuccess={fetchStoreAndListings}
+      />
     </DashboardLayout>
   );
 };
