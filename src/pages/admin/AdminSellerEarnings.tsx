@@ -31,7 +31,7 @@ const StoreFeeRow = ({ store, defaultFee, onSave }: { store: any; defaultFee: st
     </TableRow>
   );
 };
-
+export const AdminSellerEarningsContent = () => {
   const { user } = useAuth();
   const [earnings, setEarnings] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
