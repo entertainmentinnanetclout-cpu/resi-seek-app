@@ -71,12 +71,24 @@ const FeaturedMarketplace = () => {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data } = await supabase
+      // First try landing-featured, fallback to newest 8
+      let { data } = await supabase
         .from("products" as any)
         .select("id, name, price, images, compare_at_price, stores(store_name)")
         .eq("is_active", true)
+        .eq("is_landing_featured", true)
         .order("created_at", { ascending: false })
         .limit(8);
+
+      if (!data || data.length === 0) {
+        const res = await supabase
+          .from("products" as any)
+          .select("id, name, price, images, compare_at_price, stores(store_name)")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(8);
+        data = res.data;
+      }
       if (data) setProducts(data as any[]);
     };
     fetchProducts();
