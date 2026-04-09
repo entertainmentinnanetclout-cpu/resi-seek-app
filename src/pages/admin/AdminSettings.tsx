@@ -55,6 +55,24 @@ export const AdminSettingsContent = () => {
         </div>
 
         <div className="grid gap-6">
+          {/* Banking Details for EFT */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Building2 className="w-5 h-5" /> EFT Banking Details</CardTitle>
+              <CardDescription>Bank details shown to students during EFT checkout</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Bank Name</Label><Input value={bankDetails.bank_name} onChange={e => setBankDetails(p => ({...p, bank_name: e.target.value}))} placeholder="e.g. FNB" /></div>
+                <div className="space-y-2"><Label>Account Holder</Label><Input value={bankDetails.account_holder} onChange={e => setBankDetails(p => ({...p, account_holder: e.target.value}))} placeholder="e.g. ResKonnect PTY LTD" /></div>
+                <div className="space-y-2"><Label>Account Number</Label><Input value={bankDetails.account_number} onChange={e => setBankDetails(p => ({...p, account_number: e.target.value}))} placeholder="e.g. 62812345678" /></div>
+                <div className="space-y-2"><Label>Branch Code</Label><Input value={bankDetails.branch_code} onChange={e => setBankDetails(p => ({...p, branch_code: e.target.value}))} placeholder="e.g. 250655" /></div>
+                <div className="space-y-2"><Label>Account Type</Label><Input value={bankDetails.account_type} onChange={e => setBankDetails(p => ({...p, account_type: e.target.value}))} placeholder="e.g. Cheque / Savings" /></div>
+              </div>
+              <Button onClick={handleSaveBankDetails} disabled={savingBank}>{savingBank && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Save Banking Details</Button>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>General Settings</CardTitle>
