@@ -99,6 +99,8 @@ const Checkout = () => {
     return () => clearInterval(interval);
   }, [eftData]);
 
+  if (shouldBlock) return null;
+
   const deliveryAddress = deliveryType === "campus"
     ? `TUT ${selectedCampus} Campus Drop-off`
     : residences.find((r) => r.id === selectedResidence)?.name || "";
