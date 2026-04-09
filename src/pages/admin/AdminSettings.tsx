@@ -8,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CreditCard, Banknote, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { CreditCard, Banknote, ExternalLink, Building2, Loader2 } from "lucide-react";
 
 export const AdminSettingsContent = () => {
   const handleSave = () => {
