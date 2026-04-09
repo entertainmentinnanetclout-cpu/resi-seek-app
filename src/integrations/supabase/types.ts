@@ -669,6 +669,72 @@ export type Database = {
           },
         ]
       }
+      eft_payments: {
+        Row: {
+          admin_note: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string | null
+          device_info: Json | null
+          expected_amount: number
+          expires_at: string
+          fingerprint: string
+          honeypot_triggered: boolean | null
+          id: string
+          order_id: string
+          payment_reference: string
+          pop_file_hash: string | null
+          pop_image_url: string | null
+          pop_uploaded_at: string | null
+          risk_score: number | null
+          status: string
+          unique_cents: number
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string | null
+          device_info?: Json | null
+          expected_amount: number
+          expires_at: string
+          fingerprint: string
+          honeypot_triggered?: boolean | null
+          id?: string
+          order_id: string
+          payment_reference: string
+          pop_file_hash?: string | null
+          pop_image_url?: string | null
+          pop_uploaded_at?: string | null
+          risk_score?: number | null
+          status?: string
+          unique_cents?: number
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string | null
+          device_info?: Json | null
+          expected_amount?: number
+          expires_at?: string
+          fingerprint?: string
+          honeypot_triggered?: boolean | null
+          id?: string
+          order_id?: string
+          payment_reference?: string
+          pop_file_hash?: string | null
+          pop_image_url?: string | null
+          pop_uploaded_at?: string | null
+          risk_score?: number | null
+          status?: string
+          unique_cents?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           campus: string | null
@@ -1299,6 +1365,66 @@ export type Database = {
           },
         ]
       }
+      payment_action_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_type: string
+          created_at: string | null
+          eft_payment_id: string | null
+          id: string
+          metadata: Json | null
+          order_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_type: string
+          created_at?: string | null
+          eft_payment_id?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_type?: string
+          created_at?: string | null
+          eft_payment_id?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+        }
+        Relationships: []
+      }
+      payment_rate_limits: {
+        Row: {
+          action_type: string
+          attempt_count: number | null
+          created_at: string | null
+          id: string
+          user_id: string
+          window_start: string | null
+        }
+        Insert: {
+          action_type: string
+          attempt_count?: number | null
+          created_at?: string | null
+          id?: string
+          user_id: string
+          window_start?: string | null
+        }
+        Update: {
+          action_type?: string
+          attempt_count?: number | null
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -1468,6 +1594,7 @@ export type Database = {
           images: string[] | null
           is_active: boolean | null
           is_featured: boolean | null
+          is_landing_featured: boolean | null
           name: string
           price: number
           sku: string | null
@@ -1486,6 +1613,7 @@ export type Database = {
           images?: string[] | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          is_landing_featured?: boolean | null
           name: string
           price: number
           sku?: string | null
@@ -1504,6 +1632,7 @@ export type Database = {
           images?: string[] | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          is_landing_featured?: boolean | null
           name?: string
           price?: number
           sku?: string | null
