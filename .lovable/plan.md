@@ -1,181 +1,194 @@
-# System Stabilization: Payments + Seller Activation + Commission Engine
+# EFT Payment System + Marketplace Upgrades
 
-## Critical Bugs Found
+## Overview
 
-1. **Checkout.tsx line 102** calls `supabase.functions.invoke('quick-service')` — this function does not exist. Must call `yoco-checkout` directly via fetch (edge functions on external Supabase need direct HTTP calls, not `supabase.functions.invoke`).
-2. `**shop_orders` table** is missing `yoco_checkout_id` column — the verify function cannot look up checkout status.
-3. `**products` table** is missing `payment_type` and `checkout_url` columns — this is the root cause of the persistent "Failed to save product" error (PGRST204).
-4. **No commission/earnings tables** exist yet.
+Replace Yoco with a secure manual EFT payment system, add admin banking setup, product category management, delivery location dropdowns (TUT campuses + residences), and admin-controlled featured products on landing page.
 
-## Architecture Decision: No Separate `sellers` Table
-
-The existing `stores` table already has `user_id`, `is_active`, `verified`, and all store metadata. Creating a separate `sellers` table would violate the "no duplication" rule. Instead, the `stores` table IS the seller entity. A user with a store IS a seller.
-
-## Plan
-
-### 1. External SQL — `docs/SELLER_COMMISSION_SQL.sql`
-
-Single idempotent script:
+## 1. External SQL — `docs/EFT_PAYMENT_SQL.sql`
 
 ```sql
--- Fix products columns (PGRST204 fix)
-ALTER TABLE products ADD COLUMN IF NOT EXISTS payment_type text DEFAULT 'standard';
-ALTER TABLE products ADD COLUMN IF NOT EXISTS checkout_url text;
+-- Admin banking details (stored in platform_settings)
+-- key: 'eft_bank_details', value: { bank_name, account_number, branch_code, account_holder, account_type }
 
--- Fix shop_orders (Yoco tracking)
-ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS yoco_checkout_id text;
-
--- Seller earnings (per-order breakdown)
-CREATE TABLE IF NOT EXISTS seller_earnings (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id uuid NOT NULL,
-  order_id uuid NOT NULL UNIQUE,
-  gross_amount numeric(10,2) NOT NULL,
-  platform_fee numeric(10,2) DEFAULT 0,
-  fee_percentage numeric(5,2) DEFAULT 0,
-  net_amount numeric(10,2) NOT NULL,
-  status text DEFAULT 'available',
-  created_at timestamptz DEFAULT now()
-);
-
--- Platform revenue log
-CREATE TABLE IF NOT EXISTS platform_revenue (
+-- EFT payments table (unique refs, expiry, fingerprints)
+CREATE TABLE IF NOT EXISTS eft_payments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id uuid NOT NULL,
-  store_id uuid NOT NULL,
-  gross_amount numeric(10,2),
-  platform_fee numeric(10,2),
+  user_id uuid NOT NULL,
+  payment_reference text UNIQUE NOT NULL,
+  expected_amount numeric(10,2) NOT NULL,
+  unique_cents integer NOT NULL DEFAULT 0,
+  fingerprint text NOT NULL,  -- SHA256(user_id + amount + ref + timestamp)
+  status text DEFAULT 'pending',  -- pending, uploaded, verified, confirmed, rejected, expired
+  expires_at timestamptz NOT NULL,
+  pop_image_url text,
+  pop_file_hash text,
+  pop_uploaded_at timestamptz,
+  risk_score integer DEFAULT 0,
+  device_info jsonb DEFAULT '{}',
+  honeypot_triggered boolean DEFAULT false,
+  admin_note text,
+  confirmed_by uuid,
+  confirmed_at timestamptz,
+  created_at timestamptz DEFAULT now()
+);
+-- RLS: users see own, admins see all
+-- Indexes on payment_reference, user_id, status, fingerprint, pop_file_hash
+
+-- Payment action logs (immutable)
+CREATE TABLE IF NOT EXISTS payment_action_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  eft_payment_id uuid,
+  order_id uuid,
+  actor_id uuid,
+  actor_type text NOT NULL, -- 'user', 'admin', 'system'
+  action text NOT NULL,
+  metadata jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now()
+);
+-- RLS: admins only SELECT, system INSERT
+
+-- Rate limits table
+CREATE TABLE IF NOT EXISTS payment_rate_limits (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  action_type text NOT NULL, -- 'create_payment', 'upload_pop'
+  attempt_count integer DEFAULT 1,
+  window_start timestamptz DEFAULT now(),
   created_at timestamptz DEFAULT now()
 );
 
--- Payment proofs (fallback for failed verification)
-CREATE TABLE IF NOT EXISTS payment_proofs (...);
-
--- Stores: add custom fee override
-ALTER TABLE stores ADD COLUMN IF NOT EXISTS custom_fee_percentage numeric(5,2);
-
--- RLS policies for all new tables
--- Indexes for performance
+-- Products: add is_landing_featured flag
+ALTER TABLE products ADD COLUMN IF NOT EXISTS is_landing_featured boolean DEFAULT false;
 ```
 
-### 2. Fix Yoco Checkout Call — `Checkout.tsx`
+## 2. Checkout.tsx — EFT Payment Flow
 
-Replace `supabase.functions.invoke('quick-service', ...)` with a direct fetch to the `yoco-checkout` edge function on the **Lovable Cloud** Supabase (where edge functions are deployed):
+- Replace Yoco option with **"EFT / Bank Transfer"** option
+- Mark Yoco as **"Coming Soon"** (disabled radio, greyed out with badge)
+- When EFT selected and order placed:
+  - Generate unique reference: `RK-EFT-{timestamp_base36}-{random4}`
+  - Calculate unique amount: `total + (user_id_hash % 99) cents` (deterministic per user)
+  - Generate SHA256 fingerprint
+  - Insert into `eft_payments` with 15min expiry
+  - Show **EFT Payment Instructions screen** with:
+    - Bank details (fetched from `platform_settings.eft_bank_details`)
+    - Payment reference (copyable)
+    - Exact amount (copyable)
+    - 15-minute countdown timer
+    - "Upload Proof of Payment" button
+    - Hidden honeypot field
 
-```typescript
-const res = await fetch(
-  `https://${projectId}.supabase.co/functions/v1/yoco-checkout`,
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-    },
-    body: JSON.stringify({
-      order_id: order.id,
-      success_url: `${window.location.origin}/orders?payment=success&order_id=${order.id}`,
-      cancel_url: `${window.location.origin}/checkout?payment=cancelled`,
-    }),
-  }
-);
-```
+## 3. EFT Payment Instructions Component
 
-### 3. Fix Edge Functions — Use External Supabase
+New component shown after order creation when EFT selected:
 
-Both `yoco-checkout` and `yoco-verify-payment` currently use `EXTERNAL_SUPABASE_URL` for DB access, which is correct. But they also need to use the external anon key for user auth verification. Review and ensure both functions:
+- Bank name, account holder, account number, branch code
+- Unique reference + unique amount prominently displayed
+- Countdown timer (expires_at - now)
+- Upload POP: image file + optional reference input
+- On upload: hash file client-side (SHA256), check for duplicate hash, submit
+- After upload: show "Payment Under Review" status
 
-- Create service-role client with external URL + service role key
-- Create user client with external URL + external anon key + auth header
-- Include payment polling with retry (max 30s, 3s intervals) in verify function
+## 4. Orders.tsx — EFT Status Integration
 
-### 4. Orders.tsx — Add Payment Polling
+- Show EFT payment status per order (pending → uploaded → confirmed)
+- If expired and no POP: show "Payment Expired" with option to contact admin
+- If POP uploaded: show "Under Review" badge
+- Remove Yoco polling logic (keep code but skip execution when payment_method !== 'yoco')
 
-When returning from Yoco with `?payment=success`, poll the verify endpoint up to 10 times (every 3 seconds) before showing the PoP fallback. Current code only calls once.
+## 5. Admin Settings — Banking Details Management
 
-### 5. Seller Dashboard Upgrades — `MyStore.tsx`
+Add "Banking Details" card to AdminSettings:
 
-Add new tabs:
+- Bank Name, Account Holder, Account Number, Branch Code, Account Type
+- Save to `platform_settings` with key `eft_bank_details`
+- Load existing on mount
 
-- **Earnings** tab: Show per-order breakdown (gross, fee, net), summary cards (total earnings, fees paid, revenue)
-- **Store Settings** tab: Edit store info, see custom fee percentage
+## 6. Admin Shop Orders — EFT Review Tab
 
-### 6. Admin Commerce Hub — New Tabs
+Add "EFT Payments" tab:
 
-**Seller Earnings tab** (in Commerce Hub):
+- List all `eft_payments` with status filter
+- Show: order number, reference, amount, status, risk score, POP image
+- Approve: updates `eft_payments.status = 'confirmed'`, `shop_orders.status = 'confirmed'`, `shop_orders.payment_status = 'paid'`
+- Reject: updates status + adds admin_note
+- View POP image in dialog
+- Flag high risk scores (>3) in red
+- All actions logged to `payment_action_logs`
 
-- View all seller earnings
-- Set global default fee percentage (in `platform_settings`)
-- Override per-store custom fee
-- Platform revenue summary cards
+## 7. Delivery Location Dropdown — Checkout.tsx
 
-**Payment Proofs tab** (in Shop Orders):
+Replace free-text delivery address with structured dropdown:
 
-- Review pending PoP submissions
-- Approve/reject with note
+- **Delivery Type**: "TUT Campus Drop-off" or "Residence Delivery"
+- If campus: dropdown of all TUT campuses (from `campuses.ts`)
+- If residence: fetch `residences` table, show as dropdown
+- Add info banner: "We deliver nationwide but only to TUT Campus Drop-offs and Listed Residences"
 
-### 7. Commission Engine — In `yoco-verify-payment`
+## 8. Product Category Management — Admin
 
-After confirming payment, calculate and insert earnings:
+Add "Categories" tab to Commerce Hub:
 
-```text
-fee% = store.custom_fee_percentage ?? platform_settings.default_fee_percentage ?? 10
-platformFee = gross * fee% / 100
-net = gross - platformFee
-→ INSERT into seller_earnings + platform_revenue
-```
+- CRUD for `product_categories` table (name, slug, image_url, display_order, parent_id)
+- Drag/reorder via display_order
+- Delete with confirmation (only if no products linked)
+- Upgrade marketplace to have Categories filters, blocks like Best deals etc 
 
-### 8. Store Front Fix — `Store.tsx`
+## 9. Landing Page Featured Products — Admin Control
 
-Currently shows `marketplace_listings` for a store. Also show `products` linked to the store for the official catalog view.
+- Add `is_landing_featured` column to products
+- Admin toggle in product form or a dedicated "Landing Featured" selector
+- Landing page `FeaturedMarketplace` component queries `products` where `is_landing_featured = true` instead of just `is_active`
+- If none featured, fall back to newest 8
+
+## 10. Marketplace — Category Filter Chips
+
+Already partially implemented. Ensure:
+
+- Categories show as horizontal scrollable chips
+- Selected category filters products
+- "All" chip resets filter
 
 ## Files
 
 
-| File                                              | Action                                                         |
-| ------------------------------------------------- | -------------------------------------------------------------- |
-| `docs/SELLER_COMMISSION_SQL.sql`                  | Create: complete SQL for all missing tables/columns            |
-| `src/pages/Checkout.tsx`                          | Fix: replace `quick-service` with direct `yoco-checkout` fetch |
-| `src/pages/Orders.tsx`                            | Update: add payment polling (retry logic)                      |
-| `supabase/functions/yoco-checkout/index.ts`       | Review/fix: ensure correct external DB usage                   |
-| `supabase/functions/yoco-verify-payment/index.ts` | Update: add commission calculation after payment confirmation  |
-| `src/pages/MyStore.tsx`                           | Update: add Earnings tab with breakdown                        |
-| `src/pages/admin/AdminShopOrders.tsx`             | Update: add Payment Proofs review tab                          |
-| `src/pages/admin/AdminCommerceHub.tsx`            | Update: add Seller Earnings tab                                |
-| `src/pages/admin/AdminSellerEarnings.tsx`         | Create: earnings management + fee controls                     |
+| File                                         | Action                                              |
+| -------------------------------------------- | --------------------------------------------------- |
+| `docs/EFT_PAYMENT_SQL.sql`                   | Create: full idempotent SQL                         |
+| `src/pages/Checkout.tsx`                     | Rewrite: EFT flow, Yoco disabled, delivery dropdown |
+| `src/pages/Orders.tsx`                       | Update: EFT status display                          |
+| `src/pages/admin/AdminSettings.tsx`          | Update: banking details card                        |
+| `src/pages/admin/AdminShopOrders.tsx`        | Update: EFT review tab                              |
+| `src/pages/admin/AdminCommerceHub.tsx`       | Update: add Categories tab                          |
+| `src/pages/Landing.tsx`                      | Update: FeaturedMarketplace query                   |
+| `src/components/admin/ProductFormDialog.tsx` | Update: add is_landing_featured toggle              |
+| `src/lib/campuses.ts`                        | Already exists, reuse for dropdowns                 |
 
 
-## Payment Flow After Fix
-
-```text
-Checkout → creates order in shop_orders
-  → COD: redirect to /orders (done)
-  → Yoco: fetch yoco-checkout → get redirectUrl → redirect to Yoco
-    → User pays → Yoco redirects to /orders?payment=success&order_id=X
-    → Orders page polls yoco-verify-payment (up to 30s)
-      → Verified: order confirmed, earnings calculated, toast
-      → Not verified after 30s: show PoP upload form
-        → User uploads proof → admin reviews → approves → order confirmed
-```
-
-## Seller Activation Flow
+## EFT Payment Flow
 
 ```text
-Student → /store-setup → creates store (is_active=true, verified=false)
-  → Admin sees in Stores tab → toggles verified=true
-  → Store appears in marketplace with verified badge
-  → Seller manages listings in /my-store
-  → Orders come in → earnings tracked with commission split
+Student checkout → selects EFT → order created
+  → unique ref + unique amount generated
+  → EFT instructions shown with countdown (15min)
+  → Student pays via banking app
+  → Uploads POP screenshot + reference
+  → System hashes file, checks duplicates, logs action
+  → Order shows "Under Review"
+  → Admin sees in EFT Payments tab
+  → Admin views POP, checks ref/amount match
+  → Approves → order confirmed, student notified
+  → Rejects → student sees rejection reason
 ```
 
-No separate `sellers` table needed — the `stores` table already serves this purpose.
+## Security Measures
 
-## Technical Notes
-
-- The `quick-service` function does NOT exist — this is why Yoco payments have never worked
-- Edge functions are deployed on Lovable Cloud (vmqqkebojldjsyxcewdb) but query external Supabase (mefjzkhobkltlbmhusdh)
-- Commission engine runs inside `yoco-verify-payment` to avoid needing additional functions
-- Default platform fee: 10%, stored in `platform_settings` table
-- Per-store override via `stores.custom_fee_percentage`
-- All SQL is idempotent with `IF NOT EXISTS` and `DO $$ EXCEPTION` patterns
-- ensure all functions are fixed
+- SHA256 fingerprint per payment (tamper detection)
+- Unique cents per user (prevents reference reuse across users)
+- POP file hashing (duplicate upload detection)
+- 15-minute expiry (prevents stale references)
+- Rate limiting (max 5 payments/hour, max 10 uploads/hour)
+- Hidden honeypot field (bot detection)
+- Immutable action logs (full audit trail)
+- RLS on all tables (users see own data only)
