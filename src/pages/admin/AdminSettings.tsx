@@ -13,6 +13,33 @@ import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, Banknote, ExternalLink, Building2, Loader2 } from "lucide-react";
 
 export const AdminSettingsContent = () => {
+  const [bankDetails, setBankDetails] = useState({
+    bank_name: "", account_holder: "", account_number: "", branch_code: "", account_type: "",
+  });
+  const [savingBank, setSavingBank] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase.from("platform_settings").select("value").eq("key", "eft_bank_details").maybeSingle();
+      if (data?.value && typeof data.value === "object") setBankDetails(prev => ({ ...prev, ...(data.value as any) }));
+    };
+    load();
+  }, []);
+
+  const handleSaveBankDetails = async () => {
+    setSavingBank(true);
+    try {
+      const { data: existing } = await supabase.from("platform_settings").select("id").eq("key", "eft_bank_details").maybeSingle();
+      if (existing) {
+        await supabase.from("platform_settings").update({ value: bankDetails as any, updated_at: new Date().toISOString() }).eq("key", "eft_bank_details");
+      } else {
+        await supabase.from("platform_settings").insert({ key: "eft_bank_details", value: bankDetails as any, description: "EFT banking details for checkout" } as any);
+      }
+      toast.success("Banking details saved");
+    } catch { toast.error("Failed to save banking details"); }
+    finally { setSavingBank(false); }
+  };
+
   const handleSave = () => {
     toast.success("Settings saved successfully");
   };
