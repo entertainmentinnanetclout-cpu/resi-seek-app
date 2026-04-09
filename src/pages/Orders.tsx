@@ -304,7 +304,7 @@ const Orders = () => {
     const status = statusConfig[order.status] || statusConfig.pending;
     const StatusIcon = status.icon;
     const isExpanded = expandedOrder === order.id;
-    const needsPop = order.payment_method === "yoco" && 
+    const needsPop = (order.payment_method === "yoco" || order.payment_method === "eft") && 
       ["awaiting_payment", "awaiting_verification"].includes(order.payment_status) &&
       order.status === "pending";
 
@@ -355,7 +355,7 @@ const Orders = () => {
 
             <div className="flex justify-between items-center mt-3 pt-3 border-t">
               <span className="text-sm text-muted-foreground">
-                {order.payment_method === "cod" ? "Cash on Delivery" : order.payment_method === "yoco" ? "Card (Yoco)" : order.payment_method}
+                {order.payment_method === "cod" ? "Cash on Delivery" : order.payment_method === "eft" ? "EFT / Bank Transfer" : order.payment_method === "yoco" ? "Card (Yoco)" : order.payment_method}
               </span>
               <span className="font-bold text-primary">R{Number(order.total_amount).toFixed(2)}</span>
             </div>

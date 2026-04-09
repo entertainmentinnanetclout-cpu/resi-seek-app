@@ -8,9 +8,38 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CreditCard, Banknote, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { CreditCard, Banknote, ExternalLink, Building2, Loader2 } from "lucide-react";
 
 export const AdminSettingsContent = () => {
+  const [bankDetails, setBankDetails] = useState({
+    bank_name: "", account_holder: "", account_number: "", branch_code: "", account_type: "",
+  });
+  const [savingBank, setSavingBank] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase.from("platform_settings").select("value").eq("key", "eft_bank_details").maybeSingle();
+      if (data?.value && typeof data.value === "object") setBankDetails(prev => ({ ...prev, ...(data.value as any) }));
+    };
+    load();
+  }, []);
+
+  const handleSaveBankDetails = async () => {
+    setSavingBank(true);
+    try {
+      const { data: existing } = await supabase.from("platform_settings").select("id").eq("key", "eft_bank_details").maybeSingle();
+      if (existing) {
+        await supabase.from("platform_settings").update({ value: bankDetails as any, updated_at: new Date().toISOString() }).eq("key", "eft_bank_details");
+      } else {
+        await supabase.from("platform_settings").insert({ key: "eft_bank_details", value: bankDetails as any, description: "EFT banking details for checkout" } as any);
+      }
+      toast.success("Banking details saved");
+    } catch { toast.error("Failed to save banking details"); }
+    finally { setSavingBank(false); }
+  };
+
   const handleSave = () => {
     toast.success("Settings saved successfully");
   };
@@ -26,6 +55,24 @@ export const AdminSettingsContent = () => {
         </div>
 
         <div className="grid gap-6">
+          {/* Banking Details for EFT */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Building2 className="w-5 h-5" /> EFT Banking Details</CardTitle>
+              <CardDescription>Bank details shown to students during EFT checkout</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Bank Name</Label><Input value={bankDetails.bank_name} onChange={e => setBankDetails(p => ({...p, bank_name: e.target.value}))} placeholder="e.g. FNB" /></div>
+                <div className="space-y-2"><Label>Account Holder</Label><Input value={bankDetails.account_holder} onChange={e => setBankDetails(p => ({...p, account_holder: e.target.value}))} placeholder="e.g. ResKonnect PTY LTD" /></div>
+                <div className="space-y-2"><Label>Account Number</Label><Input value={bankDetails.account_number} onChange={e => setBankDetails(p => ({...p, account_number: e.target.value}))} placeholder="e.g. 62812345678" /></div>
+                <div className="space-y-2"><Label>Branch Code</Label><Input value={bankDetails.branch_code} onChange={e => setBankDetails(p => ({...p, branch_code: e.target.value}))} placeholder="e.g. 250655" /></div>
+                <div className="space-y-2"><Label>Account Type</Label><Input value={bankDetails.account_type} onChange={e => setBankDetails(p => ({...p, account_type: e.target.value}))} placeholder="e.g. Cheque / Savings" /></div>
+              </div>
+              <Button onClick={handleSaveBankDetails} disabled={savingBank}>{savingBank && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Save Banking Details</Button>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>General Settings</CardTitle>

@@ -37,6 +37,7 @@ interface ProductData {
   brand: string;
   is_active: boolean;
   is_featured: boolean;
+  is_landing_featured?: boolean;
 }
 
 const emptyProduct: ProductData = {
@@ -52,6 +53,7 @@ const emptyProduct: ProductData = {
   brand: "",
   is_active: true,
   is_featured: false,
+  is_landing_featured: false,
 };
 
 interface ProductFormDialogProps {
@@ -160,6 +162,7 @@ export const ProductFormDialog = ({
         brand: form.brand.trim() || null,
         is_active: form.is_active,
         is_featured: form.is_featured,
+        is_landing_featured: form.is_landing_featured || false,
         store_id: storeId,
         payment_type: (form as any).payment_type || "standard",
         checkout_url: (form as any).payment_type === "checkout_link" ? ((form as any).checkout_url || null) : null,
@@ -182,19 +185,16 @@ export const ProductFormDialog = ({
       onOpenChange(false);
     } catch (error: unknown) {
       console.error("Save error:", error);
-
       let msg = "Unknown error";
       if (error && typeof error === "object") {
         const err = error as { message?: unknown; details?: unknown; code?: unknown };
         const message = typeof err.message === "string" ? err.message : null;
         const details = typeof err.details === "string" ? err.details : null;
         const code = typeof err.code === "string" ? err.code : null;
-
         msg = [message, details, code ? `(${code})` : null].filter(Boolean).join(" ") || JSON.stringify(error);
       } else {
         msg = String(error);
       }
-
       toast.error(`Failed to save product: ${msg}`);
     } finally {
       setSaving(false);
@@ -212,141 +212,67 @@ export const ProductFormDialog = ({
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          {/* Name */}
           <div className="grid gap-2">
             <Label htmlFor="name">Product Name *</Label>
-            <Input
-              id="name"
-              value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              placeholder="e.g. TUT Hoodie — Navy Blue"
-            />
+            <Input id="name" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. TUT Hoodie — Navy Blue" />
           </div>
 
-          {/* Description */}
           <div className="grid gap-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={form.description}
-              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-              placeholder="Product details, sizes, textures, materials..."
-              rows={4}
-            />
+            <Textarea id="description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Product details..." rows={4} />
           </div>
 
-          {/* Price row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="price">Price (R) *</Label>
-              <Input
-                id="price"
-                type="number"
-                min={0}
-                step={0.01}
-                value={form.price || ""}
-                onChange={(e) => setForm((p) => ({ ...p, price: parseFloat(e.target.value) || 0 }))}
-              />
+              <Input id="price" type="number" min={0} step={0.01} value={form.price || ""} onChange={(e) => setForm((p) => ({ ...p, price: parseFloat(e.target.value) || 0 }))} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="compare_price">Compare-at Price (R)</Label>
-              <Input
-                id="compare_price"
-                type="number"
-                min={0}
-                step={0.01}
-                value={form.compare_at_price ?? ""}
-                onChange={(e) =>
-                  setForm((p) => ({
-                    ...p,
-                    compare_at_price: e.target.value ? parseFloat(e.target.value) : null,
-                  }))
-                }
-                placeholder="Original price for sale display"
-              />
+              <Input id="compare_price" type="number" min={0} step={0.01} value={form.compare_at_price ?? ""} onChange={(e) => setForm((p) => ({ ...p, compare_at_price: e.target.value ? parseFloat(e.target.value) : null }))} placeholder="Original price" />
             </div>
           </div>
 
-          {/* Category & Brand */}
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label>Category</Label>
-              <Select
-                value={form.category_id || "none"}
-                onValueChange={(v) => setForm((p) => ({ ...p, category_id: v === "none" ? null : v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
+              <Select value={form.category_id || "none"} onValueChange={(v) => setForm((p) => ({ ...p, category_id: v === "none" ? null : v }))}>
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No category</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
+                  {categories.map((cat) => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="brand">Brand</Label>
-              <Input
-                id="brand"
-                value={form.brand}
-                onChange={(e) => setForm((p) => ({ ...p, brand: e.target.value }))}
-                placeholder="e.g. ResKonnect"
-              />
+              <Input id="brand" value={form.brand} onChange={(e) => setForm((p) => ({ ...p, brand: e.target.value }))} placeholder="e.g. ResKonnect" />
             </div>
           </div>
 
-          {/* Stock & SKU */}
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="stock">Stock Quantity</Label>
-              <Input
-                id="stock"
-                type="number"
-                min={0}
-                value={form.stock_quantity}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, stock_quantity: parseInt(e.target.value) || 0 }))
-                }
-              />
+              <Input id="stock" type="number" min={0} value={form.stock_quantity} onChange={(e) => setForm((p) => ({ ...p, stock_quantity: parseInt(e.target.value) || 0 }))} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="sku">SKU</Label>
-              <Input
-                id="sku"
-                value={form.sku}
-                onChange={(e) => setForm((p) => ({ ...p, sku: e.target.value }))}
-                placeholder="e.g. RK-HOODIE-NB-001"
-              />
+              <Input id="sku" value={form.sku} onChange={(e) => setForm((p) => ({ ...p, sku: e.target.value }))} placeholder="e.g. RK-HOODIE-NB-001" />
             </div>
           </div>
 
-          {/* Tags */}
           <div className="grid gap-2">
             <Label htmlFor="tags">Tags (comma-separated)</Label>
-            <Input
-              id="tags"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              placeholder="e.g. clothing, hoodie, winter"
-            />
+            <Input id="tags" value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="e.g. clothing, hoodie, winter" />
           </div>
 
           {/* Payment Configuration */}
           <div className="grid gap-2">
             <Label>Payment Type</Label>
-            <Select
-              value={(form as any).payment_type || "standard"}
-              onValueChange={(v) => setForm((p) => ({ ...p, payment_type: v } as any))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select payment type" />
-              </SelectTrigger>
+            <Select value={(form as any).payment_type || "standard"} onValueChange={(v) => setForm((p) => ({ ...p, payment_type: v } as any))}>
+              <SelectTrigger><SelectValue placeholder="Select payment type" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="standard">Standard (Cart + COD/Yoco)</SelectItem>
+                <SelectItem value="standard">Standard (Cart + COD/EFT)</SelectItem>
                 <SelectItem value="checkout_link">External Checkout Link</SelectItem>
               </SelectContent>
             </Select>
@@ -355,34 +281,24 @@ export const ProductFormDialog = ({
           {(form as any).payment_type === "checkout_link" && (
             <div className="grid gap-2">
               <Label htmlFor="checkout_url">Checkout URL</Label>
-              <Input
-                id="checkout_url"
-                type="url"
-                value={(form as any).checkout_url || ""}
-                onChange={(e) => setForm((p) => ({ ...p, checkout_url: e.target.value } as any))}
-                placeholder="https://pay.yoco.com/your-link or any payment URL"
-              />
-              <p className="text-xs text-muted-foreground">
-                Users will be redirected to this link when they click "Buy Now"
-              </p>
+              <Input id="checkout_url" type="url" value={(form as any).checkout_url || ""} onChange={(e) => setForm((p) => ({ ...p, checkout_url: e.target.value } as any))} placeholder="https://pay.yoco.com/your-link" />
+              <p className="text-xs text-muted-foreground">Users will be redirected to this link when they click "Buy Now"</p>
             </div>
           )}
 
           {/* Toggles */}
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-6">
             <div className="flex items-center gap-2">
-              <Switch
-                checked={form.is_active}
-                onCheckedChange={(v) => setForm((p) => ({ ...p, is_active: v }))}
-              />
+              <Switch checked={form.is_active} onCheckedChange={(v) => setForm((p) => ({ ...p, is_active: v }))} />
               <Label>Active</Label>
             </div>
             <div className="flex items-center gap-2">
-              <Switch
-                checked={form.is_featured}
-                onCheckedChange={(v) => setForm((p) => ({ ...p, is_featured: v }))}
-              />
+              <Switch checked={form.is_featured} onCheckedChange={(v) => setForm((p) => ({ ...p, is_featured: v }))} />
               <Label>Featured</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={form.is_landing_featured || false} onCheckedChange={(v) => setForm((p) => ({ ...p, is_landing_featured: v }))} />
+              <Label>Landing Page</Label>
             </div>
           </div>
 
@@ -392,16 +308,8 @@ export const ProductFormDialog = ({
             <div className="grid grid-cols-4 gap-2">
               {form.images.map((url, idx) => (
                 <div key={idx} className="relative aspect-square group">
-                  <img
-                    src={url}
-                    alt={`Product ${idx + 1}`}
-                    className="w-full h-full object-cover rounded-md border"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(idx)}
-                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
+                  <img src={url} alt={`Product ${idx + 1}`} className="w-full h-full object-cover rounded-md border" />
+                  <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <X className="w-3 h-3" />
                   </button>
                 </div>
@@ -415,23 +323,14 @@ export const ProductFormDialog = ({
                     <span className="text-xs">Upload</span>
                   </>
                 )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleImageUpload}
-                  disabled={uploading}
-                />
+                <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} disabled={uploading} />
               </label>
             </div>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancel
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {isEditing ? "Update Product" : "Add Product"}
