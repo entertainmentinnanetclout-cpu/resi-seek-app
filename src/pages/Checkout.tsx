@@ -63,8 +63,6 @@ const Checkout = () => {
   const [popFile, setPopFile] = useState<File | null>(null);
   const [isUploadingPop, setIsUploadingPop] = useState(false);
 
-  if (shouldBlock) return null;
-
   // Fetch residences for delivery dropdown
   useEffect(() => {
     const fetchResidences = async () => {
