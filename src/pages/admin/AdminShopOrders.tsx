@@ -435,6 +435,21 @@ export const AdminShopOrdersContent = () => {
                 {selectedOrder.delivery_phone && <p className="text-xs text-muted-foreground">📞 {selectedOrder.delivery_phone}</p>}
               </div>
 
+              {/* Proof of Payment Preview */}
+              {selectedOrder.pop_url && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground uppercase">Proof of Payment</Label>
+                  <a href={selectedOrder.pop_url} target="_blank" rel="noopener noreferrer">
+                    <img src={selectedOrder.pop_url} alt="Proof of Payment" className="w-full rounded-lg border max-h-48 object-contain" />
+                  </a>
+                  {selectedOrder.pop_uploaded_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Uploaded {formatDistanceToNow(new Date(selectedOrder.pop_uploaded_at), { addSuffix: true })}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase">Items</Label>
                 {selectedOrder.items?.map((item: any) => (

@@ -2,7 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, KeyRound, FileText, Users, Phone, FolderOpen, ClipboardList } from "lucide-react";
+import { Building2, KeyRound, FileText, Users, Phone, FolderOpen, ClipboardList, Layers } from "lucide-react";
 import { AdminResidencesContent } from "./AdminResidences";
 import { AdminResidencePortalsContent } from "./AdminResidencePortals";
 import { AdminApplicationsContent } from "./AdminApplications";
@@ -10,9 +10,11 @@ import { AdminFollowUpContent } from "./AdminFollowUp";
 import { AdminDocumentsContent } from "./AdminDocuments";
 import { AdminUsersContent } from "./AdminUsers";
 import { AdminLandlordApplicationsContent } from "./AdminLandlordApplications";
+import SectionsManager from "@/components/admin/SectionsManager";
 
 const tabs = [
   { value: "residences", label: "Residences", icon: Building2 },
+  { value: "sections", label: "Sections", icon: Layers },
   { value: "portals", label: "Portals", icon: KeyRound },
   { value: "applications", label: "Applications", icon: FileText },
   { value: "landlord-apps", label: "Landlord Apps", icon: ClipboardList },
@@ -27,11 +29,11 @@ const AdminOperationsHub = () => {
 
   return (
     <AdminLayout>
-      <SEO title="Operations Hub | Admin" description="Manage residences, applications, users and documents" />
+      <SEO title="Accommodation Hub | Admin" description="Manage residences, applications, users and documents" />
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Operations Hub</h1>
-          <p className="text-muted-foreground">Residences, applications, users & documents</p>
+          <h1 className="text-3xl font-bold">Accommodation Hub</h1>
+          <p className="text-muted-foreground">Residences, sections, applications, users & documents</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })}>
@@ -45,6 +47,7 @@ const AdminOperationsHub = () => {
           </TabsList>
 
           <TabsContent value="residences"><AdminResidencesContent /></TabsContent>
+          <TabsContent value="sections"><SectionsManager /></TabsContent>
           <TabsContent value="portals"><AdminResidencePortalsContent /></TabsContent>
           <TabsContent value="applications"><AdminApplicationsContent /></TabsContent>
           <TabsContent value="landlord-apps"><AdminLandlordApplicationsContent /></TabsContent>
