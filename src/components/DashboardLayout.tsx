@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Home, Bell, Search, FileText, User, Menu, LogOut, ShoppingBag, GraduationCap, Shield, RefreshCw, Briefcase, LogIn, UserPlus, Store } from "lucide-react";
+import { Home, Bell, Search, FileText, User, Menu, LogOut, ShoppingBag, GraduationCap, Shield, RefreshCw, Briefcase, LogIn, UserPlus, Store, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +48,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const authNavItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
     ...(hasStore ? [{ icon: Store, label: "My Store", path: "/my-store" }] : []),
+    { icon: Package, label: "My Orders", path: "/orders" },
     { icon: Briefcase, label: "My WIL", path: "/wil" },
     { icon: FileText, label: "Applications", path: "/applications" },
   ];

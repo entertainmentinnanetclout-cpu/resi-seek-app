@@ -29,7 +29,7 @@ interface AdminLayoutProps {
 const allNavItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/admin", roles: ["admin", "operations_lead", "commerce_lead", "growth_lead", "system_operator", "support_agent"] },
   { icon: TrendingUp, label: "Analytics", path: "/admin/analytics", roles: ["admin", "growth_lead", "system_operator"] },
-  { icon: Boxes, label: "Operations Hub", path: "/admin/operations", roles: ["admin", "operations_lead", "support_agent"] },
+  { icon: Building2, label: "Accommodation Hub", path: "/admin/operations", roles: ["admin", "operations_lead", "support_agent"] },
   { icon: ShoppingCart, label: "Commerce Hub", path: "/admin/commerce", roles: ["admin", "commerce_lead", "support_agent"] },
   { icon: Film, label: "Media Hub", path: "/admin/media", roles: ["admin", "growth_lead"] },
   { icon: Cpu, label: "System Hub", path: "/admin/system", roles: ["admin", "system_operator"] },
