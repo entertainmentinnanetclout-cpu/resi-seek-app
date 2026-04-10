@@ -1,194 +1,102 @@
-# EFT Payment System + Marketplace Upgrades
 
-## Overview
 
-Replace Yoco with a secure manual EFT payment system, add admin banking setup, product category management, delivery location dropdowns (TUT campuses + residences), and admin-controlled featured products on landing page.
+# Admin Hub Restructure + Order System Fix + POP Integration
 
-## 1. External SQL — `docs/EFT_PAYMENT_SQL.sql`
+## What's Changing
+
+1. **Rename "Operations Hub" → "Accommodation Hub"** across sidebar, route, page title, and redirect hooks
+2. **Add "Residence Sections" tab** to the Accommodation Hub (already exists inside AdminResidences — will be promoted to its own hub tab)
+3. **Add "Orders" tab to student sidebar nav** ("My Orders" button alongside My Store)
+4. **Add POP column to shop_orders** (`pop_url`, `pop_uploaded_at`) via migration — extending existing table, no new tables
+5. **Fix Orders page** to show EFT POP inline and display all order statuses (not just approved)
+6. **Add EFT Payments tab** to Commerce Hub Shop Orders (already partially there with "Payment Proofs" tab — will unify with `eft_payments` table)
+
+## What Already Exists (NO duplication)
+
+- `shop_orders` table — extend with `pop_url`/`pop_uploaded_at` columns
+- `eft_payments` table — already created in previous migration
+- `payment_proofs` queried in AdminShopOrders — keep as-is
+- `AdminResidencesContent` already has Sections tab internally — promote to hub level
+- `AdminCommerceHub` already has Shop Orders tab
+- `AdminOperationsHub` already has all accommodation tabs
+- Role system (`user_roles` + `get_user_staff_role`) — already complete, no changes needed
+
+## Detailed Changes
+
+### 1. Database Migration
 
 ```sql
--- Admin banking details (stored in platform_settings)
--- key: 'eft_bank_details', value: { bank_name, account_number, branch_code, account_holder, account_type }
+-- Extend shop_orders (no new tables)
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS pop_url text;
+ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS pop_uploaded_at timestamptz;
 
--- EFT payments table (unique refs, expiry, fingerprints)
-CREATE TABLE IF NOT EXISTS eft_payments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id uuid NOT NULL,
-  user_id uuid NOT NULL,
-  payment_reference text UNIQUE NOT NULL,
-  expected_amount numeric(10,2) NOT NULL,
-  unique_cents integer NOT NULL DEFAULT 0,
-  fingerprint text NOT NULL,  -- SHA256(user_id + amount + ref + timestamp)
-  status text DEFAULT 'pending',  -- pending, uploaded, verified, confirmed, rejected, expired
-  expires_at timestamptz NOT NULL,
-  pop_image_url text,
-  pop_file_hash text,
-  pop_uploaded_at timestamptz,
-  risk_score integer DEFAULT 0,
-  device_info jsonb DEFAULT '{}',
-  honeypot_triggered boolean DEFAULT false,
-  admin_note text,
-  confirmed_by uuid,
-  confirmed_at timestamptz,
-  created_at timestamptz DEFAULT now()
-);
--- RLS: users see own, admins see all
--- Indexes on payment_reference, user_id, status, fingerprint, pop_file_hash
-
--- Payment action logs (immutable)
-CREATE TABLE IF NOT EXISTS payment_action_logs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  eft_payment_id uuid,
-  order_id uuid,
-  actor_id uuid,
-  actor_type text NOT NULL, -- 'user', 'admin', 'system'
-  action text NOT NULL,
-  metadata jsonb DEFAULT '{}',
-  created_at timestamptz DEFAULT now()
-);
--- RLS: admins only SELECT, system INSERT
-
--- Rate limits table
-CREATE TABLE IF NOT EXISTS payment_rate_limits (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  action_type text NOT NULL, -- 'create_payment', 'upload_pop'
-  attempt_count integer DEFAULT 1,
-  window_start timestamptz DEFAULT now(),
-  created_at timestamptz DEFAULT now()
-);
-
--- Products: add is_landing_featured flag
-ALTER TABLE products ADD COLUMN IF NOT EXISTS is_landing_featured boolean DEFAULT false;
+-- Indexes for order queries
+CREATE INDEX IF NOT EXISTS idx_shop_orders_user_status ON shop_orders(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_shop_orders_status ON shop_orders(status);
 ```
 
-## 2. Checkout.tsx — EFT Payment Flow
+### 2. AdminLayout.tsx — Rename sidebar item
 
-- Replace Yoco option with **"EFT / Bank Transfer"** option
-- Mark Yoco as **"Coming Soon"** (disabled radio, greyed out with badge)
-- When EFT selected and order placed:
-  - Generate unique reference: `RK-EFT-{timestamp_base36}-{random4}`
-  - Calculate unique amount: `total + (user_id_hash % 99) cents` (deterministic per user)
-  - Generate SHA256 fingerprint
-  - Insert into `eft_payments` with 15min expiry
-  - Show **EFT Payment Instructions screen** with:
-    - Bank details (fetched from `platform_settings.eft_bank_details`)
-    - Payment reference (copyable)
-    - Exact amount (copyable)
-    - 15-minute countdown timer
-    - "Upload Proof of Payment" button
-    - Hidden honeypot field
+- Change `"Operations Hub"` → `"Accommodation Hub"` (label only)
+- Change icon from `Boxes` to `Building2`
+- Keep route `/admin/operations` (no URL break)
+- Add new roles to mapping: keep existing roles, just rename label
 
-## 3. EFT Payment Instructions Component
+### 3. AdminOperationsHub.tsx → Rename to Accommodation Hub
 
-New component shown after order creation when EFT selected:
+- Update title: "Accommodation Hub"
+- Update subtitle
+- Add "Sections" tab (embed `SectionsManager` directly)
+- Keep all existing tabs
 
-- Bank name, account holder, account number, branch code
-- Unique reference + unique amount prominently displayed
-- Countdown timer (expires_at - now)
-- Upload POP: image file + optional reference input
-- On upload: hash file client-side (SHA256), check for duplicate hash, submit
-- After upload: show "Payment Under Review" status
+### 4. AdminCommerceHub.tsx — Add EFT Payments tab
 
-## 4. Orders.tsx — EFT Status Integration
+The existing Shop Orders already has a "Payment Proofs" sub-tab. Add an "EFT Payments" sub-tab that queries the `eft_payments` table with approve/reject flow + POP image viewer.
 
-- Show EFT payment status per order (pending → uploaded → confirmed)
-- If expired and no POP: show "Payment Expired" with option to contact admin
-- If POP uploaded: show "Under Review" badge
-- Remove Yoco polling logic (keep code but skip execution when payment_method !== 'yoco')
+### 5. DashboardLayout.tsx — Add "My Orders" to sidebar
 
-## 5. Admin Settings — Banking Details Management
+Add `{ icon: Package, label: "My Orders", path: "/orders" }` to `authNavItems` for all logged-in students (not just store owners).
 
-Add "Banking Details" card to AdminSettings:
+### 6. Orders.tsx — Show all statuses
 
-- Bank Name, Account Holder, Account Number, Branch Code, Account Type
-- Save to `platform_settings` with key `eft_bank_details`
-- Load existing on mount
+Currently shows all orders. Ensure:
+- POP upload section works with `shop_orders.pop_url` column
+- Status badges show full lifecycle (pending → confirmed → processing → in_transit → delivered)
+- No filter to "approved only" — students see all their orders
 
-## 6. Admin Shop Orders — EFT Review Tab
+### 7. AdminShopOrders.tsx — Show POP in order detail
 
-Add "EFT Payments" tab:
+In the order detail dialog, if `pop_url` exists, show the POP image preview. Admin can view it alongside the existing approve/reject flow.
 
-- List all `eft_payments` with status filter
-- Show: order number, reference, amount, status, risk score, POP image
-- Approve: updates `eft_payments.status = 'confirmed'`, `shop_orders.status = 'confirmed'`, `shop_orders.payment_status = 'paid'`
-- Reject: updates status + adds admin_note
-- View POP image in dialog
-- Flag high risk scores (>3) in red
-- All actions logged to `payment_action_logs`
+### 8. Role-Based Access
 
-## 7. Delivery Location Dropdown — Checkout.tsx
+The existing role system already handles this:
+- `admin` → all hubs
+- `operations_lead` → Accommodation Hub
+- `commerce_lead` → Commerce Hub
+- `growth_lead` → Media Hub
+- `system_operator` → System Hub
+- `support_agent` → Accommodation + Commerce
 
-Replace free-text delivery address with structured dropdown:
+No new roles needed. The prompt's `super_admin`, `accommodation_manager`, etc. map to the existing roles.
 
-- **Delivery Type**: "TUT Campus Drop-off" or "Residence Delivery"
-- If campus: dropdown of all TUT campuses (from `campuses.ts`)
-- If residence: fetch `residences` table, show as dropdown
-- Add info banner: "We deliver nationwide but only to TUT Campus Drop-offs and Listed Residences"
+## Files Modified
 
-## 8. Product Category Management — Admin
+| File | Change |
+|------|--------|
+| Migration SQL | Add `pop_url`, `pop_uploaded_at` to `shop_orders` + indexes |
+| `src/components/admin/AdminLayout.tsx` | Rename "Operations Hub" → "Accommodation Hub", change icon |
+| `src/pages/admin/AdminOperationsHub.tsx` | Rename title, add Sections tab |
+| `src/components/DashboardLayout.tsx` | Add "My Orders" to student sidebar |
+| `src/pages/admin/AdminShopOrders.tsx` | Show POP image in order detail dialog |
+| `src/hooks/useAdminRedirect.ts` | Update redirect label comment (route stays same) |
 
-Add "Categories" tab to Commerce Hub:
+## NOT Changing (already works)
 
-- CRUD for `product_categories` table (name, slug, image_url, display_order, parent_id)
-- Drag/reorder via display_order
-- Delete with confirmation (only if no products linked)
-- Upgrade marketplace to have Categories filters, blocks like Best deals etc 
+- Commerce Hub structure — already has all tabs
+- Media Hub — already has Slides, News, Events, Bursaries
+- Role-based sidebar filtering — already implemented
+- EFT payment flow — already built in previous iteration
+- Order status lifecycle — already in AdminShopOrders
+- `payment_proofs` table/tab — already functional
 
-## 9. Landing Page Featured Products — Admin Control
-
-- Add `is_landing_featured` column to products
-- Admin toggle in product form or a dedicated "Landing Featured" selector
-- Landing page `FeaturedMarketplace` component queries `products` where `is_landing_featured = true` instead of just `is_active`
-- If none featured, fall back to newest 8
-
-## 10. Marketplace — Category Filter Chips
-
-Already partially implemented. Ensure:
-
-- Categories show as horizontal scrollable chips
-- Selected category filters products
-- "All" chip resets filter
-
-## Files
-
-
-| File                                         | Action                                              |
-| -------------------------------------------- | --------------------------------------------------- |
-| `docs/EFT_PAYMENT_SQL.sql`                   | Create: full idempotent SQL                         |
-| `src/pages/Checkout.tsx`                     | Rewrite: EFT flow, Yoco disabled, delivery dropdown |
-| `src/pages/Orders.tsx`                       | Update: EFT status display                          |
-| `src/pages/admin/AdminSettings.tsx`          | Update: banking details card                        |
-| `src/pages/admin/AdminShopOrders.tsx`        | Update: EFT review tab                              |
-| `src/pages/admin/AdminCommerceHub.tsx`       | Update: add Categories tab                          |
-| `src/pages/Landing.tsx`                      | Update: FeaturedMarketplace query                   |
-| `src/components/admin/ProductFormDialog.tsx` | Update: add is_landing_featured toggle              |
-| `src/lib/campuses.ts`                        | Already exists, reuse for dropdowns                 |
-
-
-## EFT Payment Flow
-
-```text
-Student checkout → selects EFT → order created
-  → unique ref + unique amount generated
-  → EFT instructions shown with countdown (15min)
-  → Student pays via banking app
-  → Uploads POP screenshot + reference
-  → System hashes file, checks duplicates, logs action
-  → Order shows "Under Review"
-  → Admin sees in EFT Payments tab
-  → Admin views POP, checks ref/amount match
-  → Approves → order confirmed, student notified
-  → Rejects → student sees rejection reason
-```
-
-## Security Measures
-
-- SHA256 fingerprint per payment (tamper detection)
-- Unique cents per user (prevents reference reuse across users)
-- POP file hashing (duplicate upload detection)
-- 15-minute expiry (prevents stale references)
-- Rate limiting (max 5 payments/hour, max 10 uploads/hour)
-- Hidden honeypot field (bot detection)
-- Immutable action logs (full audit trail)
-- RLS on all tables (users see own data only)
