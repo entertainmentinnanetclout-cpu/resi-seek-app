@@ -2214,6 +2214,8 @@ export type Database = {
           order_number: string
           payment_method: string | null
           payment_status: string | null
+          pop_uploaded_at: string | null
+          pop_url: string | null
           status: string
           total_amount: number
           updated_at: string | null
@@ -2228,6 +2230,8 @@ export type Database = {
           order_number: string
           payment_method?: string | null
           payment_status?: string | null
+          pop_uploaded_at?: string | null
+          pop_url?: string | null
           status?: string
           total_amount: number
           updated_at?: string | null
@@ -2242,6 +2246,8 @@ export type Database = {
           order_number?: string
           payment_method?: string | null
           payment_status?: string | null
+          pop_uploaded_at?: string | null
+          pop_url?: string | null
           status?: string
           total_amount?: number
           updated_at?: string | null
