@@ -58,9 +58,17 @@ export const AdminShopOrdersContent = () => {
   const [selectedProof, setSelectedProof] = useState<any>(null);
   const [proofNote, setProofNote] = useState("");
 
+  // EFT payments (new unified table)
+  const [eftPayments, setEftPayments] = useState<any[]>([]);
+  const [eftLoading, setEftLoading] = useState(true);
+  const [eftDetailOpen, setEftDetailOpen] = useState(false);
+  const [selectedEft, setSelectedEft] = useState<any>(null);
+  const [eftNote, setEftNote] = useState("");
+
   useEffect(() => {
     fetchOrders();
     fetchProofs();
+    fetchEftPayments();
   }, []);
 
   const fetchOrders = async () => {
@@ -99,6 +107,110 @@ export const AdminShopOrdersContent = () => {
     if (error) console.error("Error fetching payment proofs:", error);
     setProofs(data || []);
     setProofsLoading(false);
+  };
+
+  const fetchEftPayments = async () => {
+    setEftLoading(true);
+    const { data, error } = await supabase
+      .from("eft_payments" as any)
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) console.error("Error fetching EFT payments:", error);
+    setEftPayments(data || []);
+    setEftLoading(false);
+  };
+
+  const handleApproveEft = async (eft: any) => {
+    if (!user) return;
+    try {
+      await supabase.from("eft_payments" as any).update({
+        status: "confirmed",
+        confirmed_by: user.id,
+        confirmed_at: new Date().toISOString(),
+        admin_note: eftNote || null,
+      } as any).eq("id", eft.id);
+
+      await supabase.from("shop_orders" as any).update({
+        status: "confirmed",
+        payment_status: "paid",
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", eft.order_id);
+
+      await supabase.from("order_status_history").insert({
+        order_id: eft.order_id,
+        status: "confirmed",
+        note: `EFT payment ${eft.payment_reference} approved`,
+        updated_by: user.id,
+      });
+
+      await supabase.from("payment_action_logs" as any).insert({
+        eft_payment_id: eft.id,
+        order_id: eft.order_id,
+        actor_id: user.id,
+        actor_type: "admin",
+        action: "eft_approved",
+        metadata: { reference: eft.payment_reference, note: eftNote },
+      } as any);
+
+      await supabase.from("notifications").insert({
+        user_id: eft.user_id,
+        type: "payment_confirmed",
+        title: "Payment confirmed",
+        message: `Your EFT payment ${eft.payment_reference} has been confirmed. Your order is being processed.`,
+      });
+
+      toast.success("EFT approved & order confirmed");
+      setEftDetailOpen(false);
+      setEftNote("");
+      fetchEftPayments();
+      fetchOrders();
+    } catch (err: any) {
+      const msg = err && typeof err === "object" && "message" in err ? err.message : String(err);
+      toast.error(`Failed to approve: ${msg}`);
+    }
+  };
+
+  const handleRejectEft = async (eft: any) => {
+    if (!user) return;
+    try {
+      await supabase.from("eft_payments" as any).update({
+        status: "rejected",
+        confirmed_by: user.id,
+        confirmed_at: new Date().toISOString(),
+        admin_note: eftNote || "Rejected",
+      } as any).eq("id", eft.id);
+
+      await supabase.from("shop_orders" as any).update({
+        status: "cancelled",
+        payment_status: "rejected",
+        updated_at: new Date().toISOString(),
+      } as any).eq("id", eft.order_id);
+
+      await supabase.from("payment_action_logs" as any).insert({
+        eft_payment_id: eft.id,
+        order_id: eft.order_id,
+        actor_id: user.id,
+        actor_type: "admin",
+        action: "eft_rejected",
+        metadata: { reference: eft.payment_reference, note: eftNote },
+      } as any);
+
+      await supabase.from("notifications").insert({
+        user_id: eft.user_id,
+        type: "payment_rejected",
+        title: "Payment rejected",
+        message: `Your EFT payment ${eft.payment_reference} could not be verified. ${eftNote || ""}`,
+      });
+
+      toast.success("EFT payment rejected");
+      setEftDetailOpen(false);
+      setEftNote("");
+      fetchEftPayments();
+      fetchOrders();
+    } catch (err: any) {
+      const msg = err && typeof err === "object" && "message" in err ? err.message : String(err);
+      toast.error(`Failed to reject: ${msg}`);
+    }
   };
 
   const openDetail = (order: any) => {
@@ -231,6 +343,7 @@ export const AdminShopOrdersContent = () => {
   });
 
   const pendingProofs = proofs.filter(p => p.status === "pending");
+  const pendingEft = eftPayments.filter(e => ["uploaded", "pending"].includes(e.status));
 
   if (isLoading) {
     return (
@@ -250,6 +363,14 @@ export const AdminShopOrdersContent = () => {
             {pendingProofs.length > 0 && (
               <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
                 {pendingProofs.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="eft" className="relative">
+            EFT Payments
+            {pendingEft.length > 0 && (
+              <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                {pendingEft.length}
               </Badge>
             )}
           </TabsTrigger>
