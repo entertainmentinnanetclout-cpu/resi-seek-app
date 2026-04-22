@@ -1,102 +1,168 @@
 
 
-# Admin Hub Restructure + Order System Fix + POP Integration
+# Hampers Visibility, Image Uploads, Social Sharing & EFT Polish
 
-## What's Changing
+## Overview
 
-1. **Rename "Operations Hub" → "Accommodation Hub"** across sidebar, route, page title, and redirect hooks
-2. **Add "Residence Sections" tab** to the Accommodation Hub (already exists inside AdminResidences — will be promoted to its own hub tab)
-3. **Add "Orders" tab to student sidebar nav** ("My Orders" button alongside My Store)
-4. **Add POP column to shop_orders** (`pop_url`, `pop_uploaded_at`) via migration — extending existing table, no new tables
-5. **Fix Orders page** to show EFT POP inline and display all order statuses (not just approved)
-6. **Add EFT Payments tab** to Commerce Hub Shop Orders (already partially there with "Payment Proofs" tab — will unify with `eft_payments` table)
+Five connected fixes:
 
-## What Already Exists (NO duplication)
+1. **Hampers don't show because of two-table confusion** — `hamper_items` (admin manages) feeds the preference/swipe system, while the marketplace reads from `hampers` (buyable bundles). Items added in Admin → Hamper Items never reach the marketplace. We unify the admin flow so a hamper item can also be published as a buyable hamper.
+2. **Hamper image uploads** — replace URL-only field with native file upload to existing `hamper-images` bucket (and same upgrade for `bursaries`, `campus_news`, `events` admin forms which all suffer the same problem).
+3. **Marketplace UI redesign** — promote Hampers and Deals to equal billing with Products via a new "Discover" hero strip + tab redesign with iconography, counts, and a featured carousel per tab.
+4. **Universal Social Share Cards** — every product, hamper, deal, residence and bursary becomes shareable with a rich WhatsApp/Facebook preview using a server-rendered OG card edge function.
+5. **EFT end-to-end polish** — verify POP upload writes to both `eft_payments.pop_image_url` AND `shop_orders.pop_url`, ensure admin sees POP inline with one-click approve/reject in a dedicated "EFT Payments" sub-tab.
 
-- `shop_orders` table — extend with `pop_url`/`pop_uploaded_at` columns
-- `eft_payments` table — already created in previous migration
-- `payment_proofs` queried in AdminShopOrders — keep as-is
-- `AdminResidencesContent` already has Sections tab internally — promote to hub level
-- `AdminCommerceHub` already has Shop Orders tab
-- `AdminOperationsHub` already has all accommodation tabs
-- Role system (`user_roles` + `get_user_staff_role`) — already complete, no changes needed
+## 1. Hamper System Unification
 
-## Detailed Changes
+**Root cause**: Admin "Hamper Items" writes to `hamper_items` (used for the student preference picker). Marketplace reads `hampers` (curated bundles). Anything added in admin appears nowhere on the storefront.
 
-### 1. Database Migration
+**Fix**:
+- Rename admin tab `Hamper Items` → `Hamper Catalog`. Keep existing CRUD for preference items.
+- Add a new tab `Hamper Bundles` in the Commerce Hub that performs CRUD on the `hampers` table (name, description, price, stock, image, category, is_active).
+- Each bundle can attach `hamper_bundle_items` (existing link table) — multi-select from `hamper_items`.
+- Marketplace hampers tab gets **Add to Cart** button (creates a `hamper_orders` row directly) and **Share** button.
 
-```sql
--- Extend shop_orders (no new tables)
-ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS pop_url text;
-ALTER TABLE shop_orders ADD COLUMN IF NOT EXISTS pop_uploaded_at timestamptz;
+## 2. Image Uploads (no more URL-only)
 
--- Indexes for order queries
-CREATE INDEX IF NOT EXISTS idx_shop_orders_user_status ON shop_orders(user_id, status);
-CREATE INDEX IF NOT EXISTS idx_shop_orders_status ON shop_orders(status);
+Replace the URL `<Input>` with a dual-mode component `<ImageInput>`:
+- Drop-zone uploader → uploads to the right Supabase bucket → autofills the URL.
+- Manual URL paste still supported as fallback.
+- Shows live preview thumbnail.
+
+Apply to:
+- `AdminHamperItems` and the new `AdminHamperBundles` form → bucket `hamper-images`
+- `AdminBursaries` → bucket `admin-images`
+- `AdminNews` → bucket `admin-images`
+- `AdminEvents` → bucket `admin-images`
+- `AdminSlides` → bucket `admin-images` (already partly there, harmonise)
+
+## 3. Marketplace UI Redesign
+
+Replace the small tab bar with:
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│  MARKETPLACE  — Shop. Save. Care.                       │
+│  [Search bar] [Cart] [My Store] [My Orders]             │
+├─────────────────────────────────────────────────────────┤
+│  ┌──Products──┐ ┌──Deals──┐ ┌──Hampers──┐ ┌──New──┐    │
+│  │   3,200    │ │   42    │ │    18     │ │  120  │    │
+│  │  items     │ │  active │ │  bundles  │ │  this │    │
+│  │            │ │         │ │           │ │  week │    │
+│  └────────────┘ └─────────┘ └───────────┘ └───────┘    │
+├─────────────────────────────────────────────────────────┤
+│  Featured carousel (rotates Products/Deals/Hampers)     │
+├─────────────────────────────────────────────────────────┤
+│  Tabs: [Products] [Deals] [Hampers]  ← equal weight     │
+│  Per-tab: category chips, sort, grid, share/cart        │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### 2. AdminLayout.tsx — Rename sidebar item
+Every card (product, deal, hamper) gets a unified `MarketplaceCard` component with: image, title, price, badge, **Cart** button, **Share** button (icon variant).
 
-- Change `"Operations Hub"` → `"Accommodation Hub"` (label only)
-- Change icon from `Boxes` to `Building2`
-- Keep route `/admin/operations` (no URL break)
-- Add new roles to mapping: keep existing roles, just rename label
+## 4. Universal Social Share Cards
 
-### 3. AdminOperationsHub.tsx → Rename to Accommodation Hub
+**Goal**: When a student copies a product link to WhatsApp, the recipient sees a rich preview card with the product image, name, price and ResKonnect branding.
 
-- Update title: "Accommodation Hub"
-- Update subtitle
-- Add "Sections" tab (embed `SectionsManager` directly)
-- Keep all existing tabs
+**Implementation**:
+- New edge function `og-image` (`supabase/functions/og-image/index.ts`) that takes `?type=product&id=…` and returns a 1200×630 PNG via SVG-to-PNG (`@vercel/og`-equivalent, using `Deno` + `resvg`). Pulls live data from DB.
+- `SEO.tsx` already accepts `imageUrl` — pass `https://<project>.supabase.co/functions/v1/og-image?type=product&id=…` from each detail page.
+- New helper `getShareUrl(type, id)` returns canonical URL with UTM params.
+- `ShareButton` already supports WhatsApp/Facebook/Copy — extend with **Instagram Stories** (downloads card image) and **TikTok** (copies link + opens app).
+- Add `<ShareButton variant="icon">` to every `MarketplaceCard`, `ProductDetail`, `Hampers` card, `BursaryCard`, `ResidenceCard`.
 
-### 4. AdminCommerceHub.tsx — Add EFT Payments tab
+`og-image` edge function deploys with `verify_jwt = false` so social crawlers can fetch it.
 
-The existing Shop Orders already has a "Payment Proofs" sub-tab. Add an "EFT Payments" sub-tab that queries the `eft_payments` table with approve/reject flow + POP image viewer.
+## 5. EFT End-to-End Polish
 
-### 5. DashboardLayout.tsx — Add "My Orders" to sidebar
+Status today (verified):
+- ✅ Checkout creates `eft_payments` row with reference, amount, expiry, fingerprint
+- ✅ User uploads POP → writes `eft_payments.pop_image_url` + `pop_file_hash` + sets order to `awaiting_verification`
+- ❌ **Bug**: POP not also mirrored to `shop_orders.pop_url` (column exists from previous migration but is unused)
+- ❌ Admin "EFT Payments" tab missing in `AdminShopOrders` — only legacy "Payment Proofs" tab present
+- ❌ No way for admin to approve EFT and auto-flip order status from "awaiting_verification" → "confirmed"
 
-Add `{ icon: Package, label: "My Orders", path: "/orders" }` to `authNavItems` for all logged-in students (not just store owners).
+**Fixes**:
+- On POP upload: also `update shop_orders set pop_url = …, pop_uploaded_at = now()`
+- Add new sub-tab **"EFT Payments"** in `AdminShopOrders.tsx` listing all `eft_payments` joined with order data. Columns: reference, amount, status, risk score, POP preview, age. Actions:
+  - **Approve** → updates `eft_payments.status='confirmed'`, `shop_orders.status='confirmed'`, `shop_orders.payment_status='paid'`, inserts `payment_action_logs` + `order_status_history` + `notifications` row for student
+  - **Reject** → sets `eft_payments.status='rejected'`, `shop_orders.status='rejected'`, with admin note
+  - **View POP** → fullscreen image dialog
+- Status badge in student `Orders.tsx` shows `Awaiting Verification`, `Payment Confirmed`, `Payment Rejected` clearly with the EFT reference inline.
 
-### 6. Orders.tsx — Show all statuses
+## 6. Required External Supabase SQL
 
-Currently shows all orders. Ensure:
-- POP upload section works with `shop_orders.pop_url` column
-- Status badges show full lifecycle (pending → confirmed → processing → in_transit → delivered)
-- No filter to "approved only" — students see all their orders
+New file `docs/HAMPER_AND_EFT_SQL.sql` (idempotent, run in external Supabase SQL editor):
 
-### 7. AdminShopOrders.tsx — Show POP in order detail
+```sql
+-- 1. Hampers: ensure all needed columns exist
+ALTER TABLE public.hampers ADD COLUMN IF NOT EXISTS short_description text;
+ALTER TABLE public.hampers ADD COLUMN IF NOT EXISTS is_landing_featured boolean DEFAULT false;
 
-In the order detail dialog, if `pop_url` exists, show the POP image preview. Admin can view it alongside the existing approve/reject flow.
+-- 2. hamper_bundle_items: link to hamper_items catalog (optional FK)
+ALTER TABLE public.hamper_bundle_items
+  ADD COLUMN IF NOT EXISTS hamper_item_id uuid REFERENCES public.hamper_items(id) ON DELETE SET NULL;
 
-### 8. Role-Based Access
+-- 3. shop_orders: confirm pop columns exist (re-runnable)
+ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS pop_url text;
+ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS pop_uploaded_at timestamptz;
 
-The existing role system already handles this:
-- `admin` → all hubs
-- `operations_lead` → Accommodation Hub
-- `commerce_lead` → Commerce Hub
-- `growth_lead` → Media Hub
-- `system_operator` → System Hub
-- `support_agent` → Accommodation + Commerce
+-- 4. eft_payments: add seller-friendly indexes + FK
+ALTER TABLE public.eft_payments
+  ADD CONSTRAINT eft_payments_order_fkey
+  FOREIGN KEY (order_id) REFERENCES public.shop_orders(id) ON DELETE CASCADE
+  NOT VALID;
+-- (NOT VALID skips re-checking existing rows — safe re-run)
 
-No new roles needed. The prompt's `super_admin`, `accommodation_manager`, etc. map to the existing roles.
+CREATE INDEX IF NOT EXISTS idx_eft_payments_status_created ON public.eft_payments(status, created_at DESC);
 
-## Files Modified
+-- 5. Storage bucket policy: ensure hamper-images is fully readable
+INSERT INTO storage.buckets (id, name, public) VALUES ('hamper-images','hamper-images',true)
+  ON CONFLICT (id) DO UPDATE SET public = true;
 
-| File | Change |
-|------|--------|
-| Migration SQL | Add `pop_url`, `pop_uploaded_at` to `shop_orders` + indexes |
-| `src/components/admin/AdminLayout.tsx` | Rename "Operations Hub" → "Accommodation Hub", change icon |
-| `src/pages/admin/AdminOperationsHub.tsx` | Rename title, add Sections tab |
-| `src/components/DashboardLayout.tsx` | Add "My Orders" to student sidebar |
-| `src/pages/admin/AdminShopOrders.tsx` | Show POP image in order detail dialog |
-| `src/hooks/useAdminRedirect.ts` | Update redirect label comment (route stays same) |
+DO $$ BEGIN
+  CREATE POLICY "admin_upload_hamper_images" ON storage.objects FOR INSERT
+    WITH CHECK (bucket_id = 'hamper-images' AND has_role(auth.uid(),'admin'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-## NOT Changing (already works)
+DO $$ BEGIN
+  CREATE POLICY "anyone_view_hamper_images" ON storage.objects FOR SELECT
+    USING (bucket_id = 'hamper-images');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-- Commerce Hub structure — already has all tabs
-- Media Hub — already has Slides, News, Events, Bursaries
-- Role-based sidebar filtering — already implemented
-- EFT payment flow — already built in previous iteration
-- Order status lifecycle — already in AdminShopOrders
-- `payment_proofs` table/tab — already functional
+-- 6. hamper_orders: ensure cart-style flow works
+ALTER TABLE public.hamper_orders ADD COLUMN IF NOT EXISTS pop_url text;
+ALTER TABLE public.hamper_orders ADD COLUMN IF NOT EXISTS pop_uploaded_at timestamptz;
+
+NOTIFY pgrst, 'reload schema';
+```
+
+## 7. Files Modified / Created
+
+| File | Action |
+|---|---|
+| `docs/HAMPER_AND_EFT_SQL.sql` | **Create** — idempotent SQL above |
+| `supabase/functions/og-image/index.ts` | **Create** — dynamic OG card generator |
+| `supabase/config.toml` | Add `[functions.og-image] verify_jwt = false` |
+| `src/components/ImageInput.tsx` | **Create** — drop-zone + URL fallback |
+| `src/components/MarketplaceCard.tsx` | **Create** — unified card w/ share + cart |
+| `src/components/ShareButton.tsx` | Extend with Instagram + TikTok + dynamic OG image |
+| `src/lib/share.ts` | **Create** — `getShareUrl(type, id)` helper |
+| `src/pages/Marketplace.tsx` | Redesign hero, stat cards, unified MarketplaceCard, hamper Add-to-Cart + Share |
+| `src/pages/admin/AdminHamperItems.tsx` | Rename to "Hamper Catalog", swap URL field for `<ImageInput>` |
+| `src/pages/admin/AdminHamperBundles.tsx` | **Create** — CRUD on `hampers` + bundle items |
+| `src/pages/admin/AdminCommerceHub.tsx` | Add "Hamper Bundles" tab |
+| `src/pages/admin/AdminBursaries.tsx` | Use `<ImageInput>` |
+| `src/pages/admin/AdminNews.tsx` | Use `<ImageInput>` |
+| `src/pages/admin/AdminEvents.tsx` | Use `<ImageInput>` |
+| `src/pages/admin/AdminShopOrders.tsx` | **Add "EFT Payments" tab** with approve/reject + POP viewer |
+| `src/pages/Checkout.tsx` | Mirror POP to `shop_orders.pop_url` on upload |
+| `src/pages/Orders.tsx` | Show EFT reference + clearer status badges |
+| `src/pages/ProductDetail.tsx` | Add `<ShareButton>` + dynamic `og:image` |
+
+## 8. Action Required From You
+
+1. Run `docs/HAMPER_AND_EFT_SQL.sql` in the **external Supabase** SQL editor (mefjzkhobkltlbmhusdh).
+2. Confirm bank details are filled in **Admin → Settings → EFT Banking Details** (already built).
+3. After deploy, list one test bundle in **Admin → Commerce Hub → Hamper Bundles** to verify it now appears in the marketplace Hampers tab.
 
