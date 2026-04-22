@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { Search, ShoppingCart, Star, Filter, Package, Store, Flame, Sparkles, Percent, Gift } from "lucide-react";
 
 import { useCartCount } from "@/hooks/useCart";
+import MarketplaceCard from "@/components/MarketplaceCard";
+import ShareButton from "@/components/ShareButton";
 
 const Marketplace = () => {
   
@@ -76,6 +78,40 @@ const Marketplace = () => {
     setHampersLoading(false);
   };
 
+  const handleHamperOrder = async (hamper: any) => {
+    if (!user) {
+      toast.error("Please sign in to order a hamper");
+      navigate("/auth?returnTo=/marketplace?tab=hampers");
+      return;
+    }
+    try {
+      const orderNumber = `HMP-${Date.now().toString(36).toUpperCase()}`;
+      const { data: order, error } = await supabase
+        .from("hamper_orders" as any)
+        .insert({
+          user_id: user.id,
+          order_number: orderNumber,
+          total_amount: hamper.price,
+          status: "pending",
+          payment_method: "cod",
+        } as any)
+        .select("id")
+        .single();
+      if (error) throw error;
+      await supabase.from("hamper_order_items" as any).insert({
+        order_id: (order as any).id,
+        hamper_id: hamper.id,
+        quantity: 1,
+        price: hamper.price,
+      } as any);
+      toast.success(`${hamper.name} ordered! Check My Orders for status.`);
+      navigate("/orders");
+    } catch (err: any) {
+      const msg = err && typeof err === "object" && "message" in err ? err.message : String(err);
+      toast.error(`Failed to order: ${msg}`);
+    }
+  };
+
   const filteredProducts = products.filter((p: any) => {
     const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === "all" || p.category_id === selectedCategory;
@@ -99,11 +135,14 @@ const Marketplace = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold font-display">Marketplace</h1>
-              <p className="text-muted-foreground mt-1">Shop, deals & hamper bundles — all in one place</p>
+              <p className="text-muted-foreground mt-1">Shop. Save. Care. — products, deals & hamper bundles in one place</p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => navigate("/my-store")}>
                 <Store className="w-4 h-4 mr-2" /> My Store
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/orders")}>
+                <Package className="w-4 h-4 mr-2" /> My Orders
               </Button>
               <Button variant="outline" className="relative" onClick={() => navigate("/cart")}>
                 <ShoppingCart className="w-4 h-4 mr-2" /> Cart
@@ -112,6 +151,26 @@ const Marketplace = () => {
                 )}
               </Button>
             </div>
+          </div>
+
+          {/* Discover stat strip — equal weight for every category */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Products", count: products.length, icon: Package, color: "text-primary" },
+              { label: "Deals", count: discounts.length, icon: Percent, color: "text-orange-500" },
+              { label: "Hampers", count: hampers.length, icon: Gift, color: "text-pink-500" },
+              { label: "New this week", count: products.filter((p: any) => Date.now() - new Date(p.created_at).getTime() < 7 * 86400000).length, icon: Sparkles, color: "text-amber-500" },
+            ].map((stat) => (
+              <Card key={stat.label}>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <stat.icon className={`w-7 h-7 ${stat.color}`} />
+                  <div>
+                    <p className="text-2xl font-bold leading-tight">{stat.count}</p>
+                    <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           {/* Tabs: Products | Deals | Hampers */}
@@ -235,41 +294,22 @@ const Marketplace = () => {
               ) : hampers.length === 0 ? (
                 <Card><CardContent className="py-12 text-center"><Gift className="w-16 h-16 text-muted-foreground mx-auto mb-4" /><h3 className="text-xl font-semibold mb-2">No hampers available</h3><p className="text-muted-foreground">Hamper bundles will appear here once available.</p></CardContent></Card>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {hampers.map((hamper: any) => (
-                    <Card key={hamper.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                      {hamper.image_url && (
-                        <div className="h-40 overflow-hidden bg-muted">
-                          <img src={hamper.image_url} alt={hamper.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }} />
-                        </div>
-                      )}
-                      <CardContent className="p-4">
-                        {hamper.category && <Badge variant="secondary" className="mb-2">{hamper.category}</Badge>}
-                        <h3 className="font-bold text-lg">{hamper.name}</h3>
-                        {hamper.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{hamper.description}</p>}
-                        {hamper.hamper_bundle_items?.length > 0 && (
-                          <div className="mt-2">
-                            <p className="text-xs text-muted-foreground font-medium mb-1">Includes:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {hamper.hamper_bundle_items.slice(0, 4).map((item: any) => (
-                                <Badge key={item.id} variant="outline" className="text-xs">{item.item_name}</Badge>
-                              ))}
-                              {hamper.hamper_bundle_items.length > 4 && <Badge variant="outline" className="text-xs">+{hamper.hamper_bundle_items.length - 4} more</Badge>}
-                            </div>
-                          </div>
-                        )}
-                        <div className="mt-3 flex items-center justify-between">
-                          <span className="text-xl font-bold text-primary">R{Number(hamper.price).toFixed(2)}</span>
-                          <div className="flex items-center gap-2">
-                            {hamper.stock_quantity <= 0 ? (
-                              <Badge variant="destructive">Sold Out</Badge>
-                            ) : (
-                              <Badge variant="secondary">{hamper.stock_quantity} left</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <MarketplaceCard
+                      key={hamper.id}
+                      type="hamper"
+                      id={hamper.id}
+                      title={hamper.name}
+                      subtitle={hamper.category || "Hamper bundle"}
+                      imageUrl={hamper.image_url}
+                      price={Number(hamper.price)}
+                      badge={hamper.stock_quantity > 0 ? `${hamper.stock_quantity} left` : undefined}
+                      outOfStock={hamper.stock_quantity <= 0}
+                      ctaLabel="Order Hamper"
+                      shareText={hamper.description || "Curated student hamper bundle from ResKonnect"}
+                      onCart={() => handleHamperOrder(hamper)}
+                    />
                   ))}
                 </div>
               )}

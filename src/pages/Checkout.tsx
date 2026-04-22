@@ -280,10 +280,15 @@ const Checkout = () => {
         } as any)
         .eq("payment_reference", eftData.reference);
 
-      // Update order
+      // Update order — mirror POP onto shop_orders for admin visibility
       await supabase
         .from("shop_orders" as any)
-        .update({ payment_status: "awaiting_verification", updated_at: new Date().toISOString() } as any)
+        .update({
+          payment_status: "awaiting_verification",
+          pop_url: urlData.publicUrl,
+          pop_uploaded_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as any)
         .eq("id", eftData.orderId);
 
       // Log
