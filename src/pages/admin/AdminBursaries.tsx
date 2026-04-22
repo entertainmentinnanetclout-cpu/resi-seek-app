@@ -15,6 +15,7 @@ import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import ImageInput from "@/components/ImageInput";
 
 interface Bursary {
   id: string;
@@ -28,6 +29,7 @@ interface Bursary {
   type: string;
   description: string | null;
   is_active: boolean;
+  image_url?: string | null;
 }
 
 const emptyBursary: Partial<Bursary> = {
@@ -41,6 +43,7 @@ const emptyBursary: Partial<Bursary> = {
   type: "general",
   description: "",
   is_active: true,
+  image_url: "",
 };
 
 export const AdminBursariesContent = () => {
@@ -93,6 +96,7 @@ export const AdminBursariesContent = () => {
         type: editingBursary.type || "general",
         description: editingBursary.description || null,
         is_active: editingBursary.is_active ?? true,
+        image_url: editingBursary.image_url || null,
       };
 
       if (editingBursary.id) {
@@ -261,6 +265,14 @@ export const AdminBursariesContent = () => {
                       rows={3}
                     />
                   </div>
+
+                  <ImageInput
+                    value={editingBursary.image_url || ""}
+                    onChange={(url) => setEditingBursary({ ...editingBursary, image_url: url })}
+                    bucket="admin-images"
+                    pathPrefix="bursaries"
+                    label="Bursary image"
+                  />
 
                   <div className="flex items-center justify-between">
                     <Label>Active</Label>

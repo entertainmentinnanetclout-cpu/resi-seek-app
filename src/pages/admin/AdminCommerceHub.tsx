@@ -8,6 +8,7 @@ import { AdminStoresContent } from "./AdminStores";
 import { AdminDiscountsContent } from "./AdminDiscounts";
 import { AdminDiscountOrdersContent } from "./AdminDiscountOrders";
 import { AdminHamperItemsContent } from "./AdminHamperItems";
+import { AdminHamperBundlesContent } from "./AdminHamperBundles";
 import { AdminShopOrdersContent } from "./AdminShopOrders";
 import { AdminSellerEarningsContent } from "./AdminSellerEarnings";
 import { AdminCategoriesContent } from "./AdminCategories";
@@ -19,7 +20,8 @@ const tabs = [
   { value: "categories", label: "Categories", icon: LayoutGrid },
   { value: "discounts", label: "Discounts", icon: Percent },
   { value: "discount-orders", label: "Discount Orders", icon: ShoppingCart },
-  { value: "hamper-items", label: "Hamper Items", icon: Gift },
+  { value: "hamper-bundles", label: "Hamper Bundles", icon: Gift },
+  { value: "hamper-items", label: "Hamper Catalog", icon: Gift },
   { value: "earnings", label: "Earnings", icon: DollarSign },
 ];
 
@@ -52,6 +54,7 @@ const AdminCommerceHub = () => {
           <TabsContent value="categories"><AdminCategoriesContent /></TabsContent>
           <TabsContent value="discounts"><AdminDiscountsContent /></TabsContent>
           <TabsContent value="discount-orders"><AdminDiscountOrdersContent /></TabsContent>
+          <TabsContent value="hamper-bundles"><AdminHamperBundlesContent /></TabsContent>
           <TabsContent value="hamper-items"><AdminHamperItemsContent /></TabsContent>
           <TabsContent value="earnings"><AdminSellerEarningsContent /></TabsContent>
         </Tabs>

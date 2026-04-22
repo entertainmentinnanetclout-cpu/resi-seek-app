@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Gift, Plus, Pencil, Trash2, Loader2, Image, Apple, BookOpen, ShowerHead, Laptop, Bed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ImageInput from "@/components/ImageInput";
 
 interface HamperItem {
   id: string;
@@ -350,11 +351,12 @@ export const AdminHamperItemsContent = () => {
             </div>
 
             <div>
-              <Label>Image URL</Label>
-              <Input
+              <ImageInput
                 value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://..."
+                onChange={(url) => setFormData({ ...formData, image_url: url })}
+                bucket="hamper-images"
+                pathPrefix="catalog"
+                label="Item image"
               />
             </div>
 
