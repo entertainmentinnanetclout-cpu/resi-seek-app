@@ -16,6 +16,7 @@ import { Search, ShoppingCart, Star, Filter, Package, Store, Flame, Sparkles, Pe
 import { useCartCount } from "@/hooks/useCart";
 import MarketplaceCard from "@/components/MarketplaceCard";
 import ShareButton from "@/components/ShareButton";
+import MarketplaceBanners from "@/components/MarketplaceBanners";
 
 const Marketplace = () => {
   
@@ -152,6 +153,9 @@ const Marketplace = () => {
               </Button>
             </div>
           </div>
+
+          {/* Hero banner carousel — admin-controlled via marketplace_banners table */}
+          <MarketplaceBanners placement="hero" />
 
           {/* Discover stat strip — equal weight for every category */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
