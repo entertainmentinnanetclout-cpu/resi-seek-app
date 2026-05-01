@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Package, Gift, Percent } from "lucide-react";
+import { ShoppingCart, Package, Gift, Percent, Store, BadgeCheck } from "lucide-react";
 import ShareButton from "@/components/ShareButton";
 import type { ShareableType } from "@/lib/share";
 
@@ -19,6 +19,10 @@ interface MarketplaceCardProps {
   onClick?: () => void;
   onCart?: () => void;
   shareText?: string;
+  /** Store branding shown above the title (Amazon-style) */
+  storeName?: string;
+  storeLogoUrl?: string;
+  storeVerified?: boolean;
 }
 
 const TYPE_ICON: Record<string, any> = {
@@ -47,6 +51,9 @@ const MarketplaceCard = ({
   onClick,
   onCart,
   shareText,
+  storeName,
+  storeLogoUrl,
+  storeVerified,
 }: MarketplaceCardProps) => {
   const Icon = TYPE_ICON[type] || Package;
   const hasDiscount = compareAtPrice && price && compareAtPrice > price;
@@ -108,19 +115,37 @@ const MarketplaceCard = ({
         </div>
       </div>
 
-      <div className="p-3 flex flex-col flex-1">
-        {subtitle && (
+      <div className="p-2.5 flex flex-col flex-1">
+        {(storeName || storeLogoUrl) && (
+          <div className="flex items-center gap-1.5 mb-1 min-w-0">
+            {storeLogoUrl ? (
+              <img
+                src={storeLogoUrl}
+                alt={storeName || "Store"}
+                className="w-4 h-4 rounded-full object-cover border bg-background flex-shrink-0"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              />
+            ) : (
+              <Store className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+            )}
+            <span className="text-[11px] text-muted-foreground truncate">{storeName || "ResKonnect"}</span>
+            {storeVerified && (
+              <BadgeCheck className="w-3 h-3 text-primary flex-shrink-0" />
+            )}
+          </div>
+        )}
+        {subtitle && !storeName && (
           <p className="text-xs text-muted-foreground truncate mb-1">{subtitle}</p>
         )}
         <h3
-          className="font-medium text-sm line-clamp-2 flex-1 cursor-pointer hover:text-primary transition-colors"
+          className="font-medium text-sm line-clamp-2 flex-1 cursor-pointer hover:text-primary transition-colors leading-snug"
           onClick={onClick}
         >
           {title}
         </h3>
         {price !== undefined && (
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-lg font-bold text-primary">
+          <div className="mt-1.5 flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-base font-bold text-primary">
               R{Number(price).toFixed(2)}
             </span>
             {hasDiscount && (
@@ -134,7 +159,7 @@ const MarketplaceCard = ({
           <Button
             size="sm"
             variant="default"
-            className="mt-2 w-full gap-1.5 h-8"
+            className="mt-2 w-full gap-1.5 h-8 text-xs"
             onClick={(e) => {
               e.stopPropagation();
               onCart();
