@@ -534,6 +534,82 @@ export const AdminShopOrdersContent = () => {
             </Card>
           )}
         </TabsContent>
+
+        {/* EFT Payments Tab */}
+        <TabsContent value="eft" className="space-y-4 mt-4">
+          {eftLoading ? (
+            <div className="space-y-3">{[1, 2].map(i => <Skeleton key={i} className="h-16 w-full" />)}</div>
+          ) : eftPayments.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No EFT payments yet</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Reference</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Risk</TableHead>
+                      <TableHead>POP</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Age</TableHead>
+                      <TableHead className="w-10"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {eftPayments.map((eft: any) => {
+                      const statusLabel = eft.status === "uploaded" ? "Awaiting Verification"
+                        : eft.status === "confirmed" ? "Confirmed"
+                        : eft.status === "rejected" ? "Rejected"
+                        : "Pending";
+                      const statusVariant: "default" | "secondary" | "destructive" =
+                        eft.status === "confirmed" ? "default"
+                        : eft.status === "rejected" ? "destructive"
+                        : "secondary";
+                      const actionable = ["pending", "uploaded"].includes(eft.status);
+                      return (
+                        <TableRow key={eft.id}>
+                          <TableCell className="font-mono text-xs">{eft.payment_reference}</TableCell>
+                          <TableCell className="font-semibold">R{Number(eft.expected_amount).toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Badge variant={Number(eft.risk_score) > 50 ? "destructive" : "outline"} className="text-xs">
+                              {eft.risk_score ?? 0}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {eft.pop_image_url ? (
+                              <a href={eft.pop_image_url} target="_blank" rel="noopener noreferrer" title="View POP">
+                                <ImageIcon className="w-4 h-4 text-primary" />
+                              </a>
+                            ) : <span className="text-xs text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={statusVariant} className="capitalize">{statusLabel}</Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(eft.created_at), { addSuffix: true })}
+                          </TableCell>
+                          <TableCell>
+                            {actionable && (
+                              <Button variant="ghost" size="icon" onClick={() => { setSelectedEft(eft); setEftNote(""); setEftDetailOpen(true); }}>
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Order Detail Dialog */}
@@ -671,6 +747,81 @@ export const AdminShopOrdersContent = () => {
                   Approve
                 </Button>
                 <Button variant="destructive" className="flex-1" onClick={() => handleRejectProof(selectedProof)}>
+                  <ShieldX className="w-4 h-4 mr-2" />
+                  Reject
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* EFT Detail Dialog */}
+      <Dialog open={eftDetailOpen} onOpenChange={setEftDetailOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Review EFT Payment</DialogTitle>
+            <DialogDescription>
+              Reference: <span className="font-mono">{selectedEft?.payment_reference}</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedEft && (
+            <div className="space-y-4">
+              {selectedEft.pop_image_url ? (
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase">Proof of Payment</Label>
+                  <a href={selectedEft.pop_image_url} target="_blank" rel="noopener noreferrer">
+                    <img src={selectedEft.pop_image_url} alt="Proof of Payment" className="w-full rounded-lg border mt-1 max-h-72 object-contain bg-muted" />
+                  </a>
+                  {selectedEft.pop_uploaded_at && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Uploaded {formatDistanceToNow(new Date(selectedEft.pop_uploaded_at), { addSuffix: true })}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+                  No proof of payment uploaded yet
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Expected Amount</Label>
+                  <p className="font-semibold">R{Number(selectedEft.expected_amount).toFixed(2)}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Risk Score</Label>
+                  <p className="font-semibold">{selectedEft.risk_score ?? 0}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Expires</Label>
+                  <p className="text-xs">{selectedEft.expires_at ? format(new Date(selectedEft.expires_at), "dd MMM yyyy HH:mm") : "—"}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Fingerprint</Label>
+                  <p className="text-xs font-mono truncate" title={selectedEft.fingerprint}>{selectedEft.fingerprint?.substring(0, 16)}…</p>
+                </div>
+              </div>
+
+              <div>
+                <Label>Admin Note (optional)</Label>
+                <Textarea
+                  placeholder="Add a note for the audit log…"
+                  value={eftNote}
+                  onChange={(e) => setEftNote(e.target.value)}
+                  rows={2}
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button className="flex-1" onClick={() => handleApproveEft(selectedEft)}>
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  Approve & Confirm Order
+                </Button>
+                <Button variant="destructive" className="flex-1" onClick={() => handleRejectEft(selectedEft)}>
                   <ShieldX className="w-4 h-4 mr-2" />
                   Reject
                 </Button>
