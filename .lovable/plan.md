@@ -1,168 +1,222 @@
+# Marketplace Polish + Phase 1 Rebuild
 
+## Phase A — Finish In-Flight Work (4 items)
 
-# Hampers Visibility, Image Uploads, Social Sharing & EFT Polish
+### 1. AdminShopOrders.tsx — EFT Payments tab + dialog
 
-## Overview
+The handlers `handleApproveEft` / `handleRejectEft` and the `<TabsTrigger value="eft">` are already wired. Missing pieces:
 
-Five connected fixes:
+- Add `<TabsContent value="eft">` between the "proofs" TabsContent and the closing `</Tabs>` (around line 537), rendering:
+  - Loading skeletons when `eftLoading`
+  - Empty state card when `eftPayments.length === 0`
+  - Table: Reference · Amount · Risk · POP · Status · Age · Action (Eye icon → opens dialog when status is `pending`/`uploaded`)
+  - Status badges: `pending` (secondary) · `uploaded` (default "Awaiting Verification") · `confirmed` (default green) · `rejected` (destructive)
+- Add the EFT detail `<Dialog open={eftDetailOpen}>` after the existing Proof Detail Dialog with:
+  - POP image preview (full-size, click opens new tab)
+  - Reference, expected amount, risk_score, fingerprint, expires_at, device_info JSON snippet
+  - Admin note textarea (`eftNote`)
+  - Approve / Reject buttons calling `handleApproveEft` / `handleRejectEft`
 
-1. **Hampers don't show because of two-table confusion** — `hamper_items` (admin manages) feeds the preference/swipe system, while the marketplace reads from `hampers` (buyable bundles). Items added in Admin → Hamper Items never reach the marketplace. We unify the admin flow so a hamper item can also be published as a buyable hamper.
-2. **Hamper image uploads** — replace URL-only field with native file upload to existing `hamper-images` bucket (and same upgrade for `bursaries`, `campus_news`, `events` admin forms which all suffer the same problem).
-3. **Marketplace UI redesign** — promote Hampers and Deals to equal billing with Products via a new "Discover" hero strip + tab redesign with iconography, counts, and a featured carousel per tab.
-4. **Universal Social Share Cards** — every product, hamper, deal, residence and bursary becomes shareable with a rich WhatsApp/Facebook preview using a server-rendered OG card edge function.
-5. **EFT end-to-end polish** — verify POP upload writes to both `eft_payments.pop_image_url` AND `shop_orders.pop_url`, ensure admin sees POP inline with one-click approve/reject in a dedicated "EFT Payments" sub-tab.
+### 2. ProductDetail.tsx — Share button + dynamic OG image
 
-## 1. Hamper System Unification
+- Import `ShareButton` from `@/components/ShareButton`
+- Pass `imageUrl={getOgImageUrl("product", product.id)}` to `<SEO>` (import from `@/lib/share`)
+- Place `<ShareButton variant="icon" type="product" id={product.id} title={product.name} text={product.description || ""} />` next to the price/title section so users can share on WhatsApp/Instagram/etc
 
-**Root cause**: Admin "Hamper Items" writes to `hamper_items` (used for the student preference picker). Marketplace reads `hampers` (curated bundles). Anything added in admin appears nowhere on the storefront.
+### 3. Orders.tsx — Clearer EFT status badges + reference inline
 
-**Fix**:
-- Rename admin tab `Hamper Items` → `Hamper Catalog`. Keep existing CRUD for preference items.
-- Add a new tab `Hamper Bundles` in the Commerce Hub that performs CRUD on the `hampers` table (name, description, price, stock, image, category, is_active).
-- Each bundle can attach `hamper_bundle_items` (existing link table) — multi-select from `hamper_items`.
-- Marketplace hampers tab gets **Add to Cart** button (creates a `hamper_orders` row directly) and **Share** button.
+- Extend `statusConfig` payment-state derivation: when `order.payment_method === "eft"`, derive a sub-badge from `payment_status`:
+  - `awaiting_payment` → "Awaiting Payment" (amber)
+  - `awaiting_verification` → "Awaiting Verification" (amber, with spinner-style dot)
+  - `paid` → "Payment Confirmed" (green)
+  - `rejected` → "Payment Rejected" (destructive)
+- Display the EFT reference inline beside the order header (fetched from `eft_payments` joined by `order_id`). Add a small `fetchEftRefs()` call in `fetchOrders` to map `order_id → payment_reference`.
+- &nbsp;
+  4. Per-category banners/hero carousel admin
+    create per ategory banner and carousel on marketplace ui.
+    create admin controls.  add on external sql to ensure its connected to backend
 
-## 2. Image Uploads (no more URL-only)
+---
 
-Replace the URL `<Input>` with a dual-mode component `<ImageInput>`:
-- Drop-zone uploader → uploads to the right Supabase bucket → autofills the URL.
-- Manual URL paste still supported as fallback.
-- Shows live preview thumbnail.
+## Phase B — Marketplace + Seller + Admin Upgrade (Phase 1 of larger rebuild)
 
-Apply to:
-- `AdminHamperItems` and the new `AdminHamperBundles` form → bucket `hamper-images`
-- `AdminBursaries` → bucket `admin-images`
-- `AdminNews` → bucket `admin-images`
-- `AdminEvents` → bucket `admin-images`
-- `AdminSlides` → bucket `admin-images` (already partly there, harmonise)
+The full Parts 1–9 prompt is a multi-week rebuild. To keep each run shippable, this plan covers the **highest-leverage subset** that fixes the critical bugs and lays groundwork. Subsequent phases (campaigns, runners, AI Studio, advanced moderation) will follow in named follow-up plans.
 
-## 3. Marketplace UI Redesign
+### B1. Fix product routing & ProductCard reuse
 
-Replace the small tab bar with:
+- Marketplace.tsx still has an inline `ProductCard` component using `/product/${id}`. Route exists (`/product/:id`) so it should already work — verify by replacing inline `ProductCard` with `<MarketplaceCard type="product" .../>` for full consistency (also fixes the share button missing on landing/marketplace).
+- ProductDetail.tsx already calls `navigate("/marketplace")` on missing — keep, but make the loading→not-found flow show a "Product not found" Card with back button instead of redirecting silently.
+- Confirm Landing.tsx product cards link to `/product/:id` (read & patch if not).
+
+### B2. Compact responsive grid (5–6 cols on desktop)
+
+Update Marketplace.tsx product grid:
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│  MARKETPLACE  — Shop. Save. Care.                       │
-│  [Search bar] [Cart] [My Store] [My Orders]             │
-├─────────────────────────────────────────────────────────┤
-│  ┌──Products──┐ ┌──Deals──┐ ┌──Hampers──┐ ┌──New──┐    │
-│  │   3,200    │ │   42    │ │    18     │ │  120  │    │
-│  │  items     │ │  active │ │  bundles  │ │  this │    │
-│  │            │ │         │ │           │ │  week │    │
-│  └────────────┘ └─────────┘ └───────────┘ └───────┘    │
-├─────────────────────────────────────────────────────────┤
-│  Featured carousel (rotates Products/Deals/Hampers)     │
-├─────────────────────────────────────────────────────────┤
-│  Tabs: [Products] [Deals] [Hampers]  ← equal weight     │
-│  Per-tab: category chips, sort, grid, share/cart        │
-└─────────────────────────────────────────────────────────┘
+grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3
 ```
 
-Every card (product, deal, hamper) gets a unified `MarketplaceCard` component with: image, title, price, badge, **Cart** button, **Share** button (icon variant).
+Tighten `MarketplaceCard` padding (`p-2.5`), make image area `aspect-square`, font sizes shrink one step.
 
-## 4. Universal Social Share Cards
+### B3. Store branding on every card
 
-**Goal**: When a student copies a product link to WhatsApp, the recipient sees a rich preview card with the product image, name, price and ResKonnect branding.
+Extend `MarketplaceCard` props with `storeName?: string` and `storeLogoUrl?: string`. Render a small logo + name row above the title. Update Marketplace.tsx + Landing.tsx + Store.tsx + ProductDetail "related" section to pass them.
 
-**Implementation**:
-- New edge function `og-image` (`supabase/functions/og-image/index.ts`) that takes `?type=product&id=…` and returns a 1200×630 PNG via SVG-to-PNG (`@vercel/og`-equivalent, using `Deno` + `resvg`). Pulls live data from DB.
-- `SEO.tsx` already accepts `imageUrl` — pass `https://<project>.supabase.co/functions/v1/og-image?type=product&id=…` from each detail page.
-- New helper `getShareUrl(type, id)` returns canonical URL with UTM params.
-- `ShareButton` already supports WhatsApp/Facebook/Copy — extend with **Instagram Stories** (downloads card image) and **TikTok** (copies link + opens app).
-- Add `<ShareButton variant="icon">` to every `MarketplaceCard`, `ProductDetail`, `Hampers` card, `BursaryCard`, `ResidenceCard`.
+### B4. ProductDetail premium upgrade (light pass)
 
-`og-image` edge function deploys with `verify_jwt = false` so social crawlers can fetch it.
+- Add main image with `object-contain` + zoom-on-click (use a Dialog or simple CSS scale)
+- Trust badges row: "Verified Seller", "Student Marketplace", "Campus Delivery", "No Counterfeit"
+- Already has thumbnails, store row, variants — keep.
 
-## 5. EFT End-to-End Polish
+### B5. Vendor store re-edit (`/my-store/edit`)
 
-Status today (verified):
-- ✅ Checkout creates `eft_payments` row with reference, amount, expiry, fingerprint
-- ✅ User uploads POP → writes `eft_payments.pop_image_url` + `pop_file_hash` + sets order to `awaiting_verification`
-- ❌ **Bug**: POP not also mirrored to `shop_orders.pop_url` (column exists from previous migration but is unused)
-- ❌ Admin "EFT Payments" tab missing in `AdminShopOrders` — only legacy "Payment Proofs" tab present
-- ❌ No way for admin to approve EFT and auto-flip order status from "awaiting_verification" → "confirmed"
+New page `src/pages/StoreEdit.tsx` mirroring StoreSetup but pre-loading the existing store. Lets vendors:
 
-**Fixes**:
-- On POP upload: also `update shop_orders set pop_url = …, pop_uploaded_at = now()`
-- Add new sub-tab **"EFT Payments"** in `AdminShopOrders.tsx` listing all `eft_payments` joined with order data. Columns: reference, amount, status, risk score, POP preview, age. Actions:
-  - **Approve** → updates `eft_payments.status='confirmed'`, `shop_orders.status='confirmed'`, `shop_orders.payment_status='paid'`, inserts `payment_action_logs` + `order_status_history` + `notifications` row for student
-  - **Reject** → sets `eft_payments.status='rejected'`, `shop_orders.status='rejected'`, with admin note
-  - **View POP** → fullscreen image dialog
-- Status badge in student `Orders.tsx` shows `Awaiting Verification`, `Payment Confirmed`, `Payment Rejected` clearly with the EFT reference inline.
+- Re-upload logo & banner (existing `store-assets` bucket)
+- Update name, description, WhatsApp, email, campus
+- New optional fields once SQL runs: accent_color, return_policy, delivery_notes, social links, is_open
+Add "Edit Store" button to MyStore.tsx header.
 
-## 6. Required External Supabase SQL
+### B6. Seller dashboard (MyStore.tsx) upgrade — pass 1
 
-New file `docs/HAMPER_AND_EFT_SQL.sql` (idempotent, run in external Supabase SQL editor):
+- Add stat cards: Today's Sales, Pending Orders, Low Stock (already partly there)
+- Add Branding tab (logo/banner re-upload inline)
+- Add Promotions tab (toggle `is_featured` and `is_landing_featured` per product — already in DB)
+- Keep existing Products / Orders / Earnings / Reviews tabs
+
+### B7. Admin marketplace control upgrade — pass 1
+
+In AdminCommerceHub:
+
+- Add "Sellers" tab (uses `AdminStores` content, but adds Approve/Reject/Suspend/Verify actions and Founding Seller badge toggle)
+- Add "Product Moderation" tab listing all products with `approval_status = pending` and a "Require image reupload" action
+- Marketplace Overview stat cards on Commerce Hub landing (GMV, orders, sellers, buyers, pending approvals, flagged products)
+
+### B8. SQL migration (idempotent, additive only)
+
+New file `docs/MARKETPLACE_REBUILD_SQL.sql`:
 
 ```sql
--- 1. Hampers: ensure all needed columns exist
-ALTER TABLE public.hampers ADD COLUMN IF NOT EXISTS short_description text;
-ALTER TABLE public.hampers ADD COLUMN IF NOT EXISTS is_landing_featured boolean DEFAULT false;
+-- STORES: branding + status fields
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS accent_color text DEFAULT '#3b82f6';
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS return_policy text;
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS delivery_notes text;
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS social_links jsonb DEFAULT '{}'::jsonb;
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS is_open boolean DEFAULT true;
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS is_suspended boolean DEFAULT false;
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS founding_seller boolean DEFAULT false;
+ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS slug text;
+CREATE UNIQUE INDEX IF NOT EXISTS stores_slug_unique ON public.stores(slug) WHERE slug IS NOT NULL;
 
--- 2. hamper_bundle_items: link to hamper_items catalog (optional FK)
-ALTER TABLE public.hamper_bundle_items
-  ADD COLUMN IF NOT EXISTS hamper_item_id uuid REFERENCES public.hamper_items(id) ON DELETE SET NULL;
+-- PRODUCTS: moderation + AI fields
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS approval_status text DEFAULT 'approved';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS image_quality_status text DEFAULT 'pending';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS ai_enhanced boolean DEFAULT false;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS moderation_notes text;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS discount_percent numeric;
 
--- 3. shop_orders: confirm pop columns exist (re-runnable)
-ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS pop_url text;
-ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS pop_uploaded_at timestamptz;
+-- SHOP_ORDERS: commission + delivery
+ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS delivery_fee numeric DEFAULT 0;
+ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS commission_rate numeric DEFAULT 0.03;
+ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS commission_amount numeric DEFAULT 0;
+ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS payout_status text DEFAULT 'pending';
+ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS assigned_runner_id uuid;
 
--- 4. eft_payments: add seller-friendly indexes + FK
-ALTER TABLE public.eft_payments
-  ADD CONSTRAINT eft_payments_order_fkey
-  FOREIGN KEY (order_id) REFERENCES public.shop_orders(id) ON DELETE CASCADE
-  NOT VALID;
--- (NOT VALID skips re-checking existing rows — safe re-run)
-
-CREATE INDEX IF NOT EXISTS idx_eft_payments_status_created ON public.eft_payments(status, created_at DESC);
-
--- 5. Storage bucket policy: ensure hamper-images is fully readable
-INSERT INTO storage.buckets (id, name, public) VALUES ('hamper-images','hamper-images',true)
-  ON CONFLICT (id) DO UPDATE SET public = true;
-
-DO $$ BEGIN
-  CREATE POLICY "admin_upload_hamper_images" ON storage.objects FOR INSERT
-    WITH CHECK (bucket_id = 'hamper-images' AND has_role(auth.uid(),'admin'));
+-- CAMPAIGNS table
+CREATE TABLE IF NOT EXISTS public.campaigns (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  type text NOT NULL,
+  status text DEFAULT 'draft',
+  starts_at timestamptz,
+  ends_at timestamptz,
+  config jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.campaigns ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN CREATE POLICY admins_manage_campaigns ON public.campaigns FOR ALL USING (has_role(auth.uid(),'admin')) WITH CHECK (has_role(auth.uid(),'admin'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY anyone_view_active_campaigns ON public.campaigns FOR SELECT USING (status = 'active');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-DO $$ BEGIN
-  CREATE POLICY "anyone_view_hamper_images" ON storage.objects FOR SELECT
-    USING (bucket_id = 'hamper-images');
+-- SELLER PAYOUTS
+CREATE TABLE IF NOT EXISTS public.seller_payouts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id uuid NOT NULL,
+  seller_id uuid NOT NULL,
+  amount numeric NOT NULL,
+  status text DEFAULT 'pending',
+  notes text,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.seller_payouts ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN CREATE POLICY admins_manage_payouts ON public.seller_payouts FOR ALL USING (has_role(auth.uid(),'admin')) WITH CHECK (has_role(auth.uid(),'admin'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY sellers_view_own_payouts ON public.seller_payouts FOR SELECT USING (seller_id = auth.uid());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- 6. hamper_orders: ensure cart-style flow works
-ALTER TABLE public.hamper_orders ADD COLUMN IF NOT EXISTS pop_url text;
-ALTER TABLE public.hamper_orders ADD COLUMN IF NOT EXISTS pop_uploaded_at timestamptz;
+-- MARKETPLACE SETTINGS
+CREATE TABLE IF NOT EXISTS public.marketplace_settings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  key text UNIQUE NOT NULL,
+  value jsonb DEFAULT '{}'::jsonb,
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.marketplace_settings ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN CREATE POLICY admins_manage_marketplace_settings ON public.marketplace_settings FOR ALL USING (has_role(auth.uid(),'admin')) WITH CHECK (has_role(auth.uid(),'admin'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY anyone_view_marketplace_settings ON public.marketplace_settings FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Storage buckets (additive)
+INSERT INTO storage.buckets (id, name, public) VALUES ('store-banners','store-banners',true) ON CONFLICT (id) DO UPDATE SET public = true;
+INSERT INTO storage.buckets (id, name, public) VALUES ('campaign-assets','campaign-assets',true) ON CONFLICT (id) DO UPDATE SET public = true;
+
+DO $$ BEGIN CREATE POLICY anyone_view_store_banners ON storage.objects FOR SELECT USING (bucket_id = 'store-banners');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY users_upload_own_store_banners ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'store-banners' AND auth.uid()::text = (storage.foldername(name))[1]);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 NOTIFY pgrst, 'reload schema';
 ```
 
-## 7. Files Modified / Created
+User runs this manually in external Supabase SQL editor (mefjzkhobkltlbmhusdh) — does not break existing data, all `IF NOT EXISTS`/`ON CONFLICT`/`DO $$` blocks.
 
-| File | Action |
-|---|---|
-| `docs/HAMPER_AND_EFT_SQL.sql` | **Create** — idempotent SQL above |
-| `supabase/functions/og-image/index.ts` | **Create** — dynamic OG card generator |
-| `supabase/config.toml` | Add `[functions.og-image] verify_jwt = false` |
-| `src/components/ImageInput.tsx` | **Create** — drop-zone + URL fallback |
-| `src/components/MarketplaceCard.tsx` | **Create** — unified card w/ share + cart |
-| `src/components/ShareButton.tsx` | Extend with Instagram + TikTok + dynamic OG image |
-| `src/lib/share.ts` | **Create** — `getShareUrl(type, id)` helper |
-| `src/pages/Marketplace.tsx` | Redesign hero, stat cards, unified MarketplaceCard, hamper Add-to-Cart + Share |
-| `src/pages/admin/AdminHamperItems.tsx` | Rename to "Hamper Catalog", swap URL field for `<ImageInput>` |
-| `src/pages/admin/AdminHamperBundles.tsx` | **Create** — CRUD on `hampers` + bundle items |
-| `src/pages/admin/AdminCommerceHub.tsx` | Add "Hamper Bundles" tab |
-| `src/pages/admin/AdminBursaries.tsx` | Use `<ImageInput>` |
-| `src/pages/admin/AdminNews.tsx` | Use `<ImageInput>` |
-| `src/pages/admin/AdminEvents.tsx` | Use `<ImageInput>` |
-| `src/pages/admin/AdminShopOrders.tsx` | **Add "EFT Payments" tab** with approve/reject + POP viewer |
-| `src/pages/Checkout.tsx` | Mirror POP to `shop_orders.pop_url` on upload |
-| `src/pages/Orders.tsx` | Show EFT reference + clearer status badges |
-| `src/pages/ProductDetail.tsx` | Add `<ShareButton>` + dynamic `og:image` |
+## What's NOT in this plan (saved for future requests)
 
-## 8. Action Required From You
+These items from the Master Prompt are real but too large for one execution loop:
 
-1. Run `docs/HAMPER_AND_EFT_SQL.sql` in the **external Supabase** SQL editor (mefjzkhobkltlbmhusdh).
-2. Confirm bank details are filled in **Admin → Settings → EFT Banking Details** (already built).
-3. After deploy, list one test bundle in **Admin → Commerce Hub → Hamper Bundles** to verify it now appears in the marketplace Hampers tab.
+- Image zoom lightbox (basic zoom only this pass)
+- Buy & Win campaign UI
+- First 100 Sellers program UI
+- Runner assignment/dispatch system
+- AI Studio image enhancement pipeline
+- Counterfeit reporting flow
+  &nbsp;
+- Store theme color preview/publish flow
 
+After Phase A+B ships and you confirm it works, ask for "Phase 2" and I'll build them.
+
+## Files Modified / Created
+
+
+| File                                   | Action                                            |
+| -------------------------------------- | ------------------------------------------------- |
+| `src/pages/admin/AdminShopOrders.tsx`  | Add EFT TabsContent + dialog                      |
+| `src/pages/ProductDetail.tsx`          | ShareButton + dynamic OG image                    |
+| `src/pages/Orders.tsx`                 | EFT status badges + reference inline              |
+| `src/pages/Marketplace.tsx`            | Replace inline ProductCard, tighter grid          |
+| `src/components/MarketplaceCard.tsx`   | storeName + storeLogoUrl props, compact mode      |
+| `src/pages/StoreEdit.tsx`              | **Create** — vendor re-edit page                  |
+| `src/pages/MyStore.tsx`                | "Edit Store" button + Branding tab                |
+| `src/App.tsx`                          | Add `/my-store/edit` route                        |
+| `src/pages/admin/AdminCommerceHub.tsx` | Add "Sellers" + "Product Moderation" tabs         |
+| `src/pages/admin/AdminStores.tsx`      | Add Approve/Suspend/Verify/Founding-badge actions |
+| `docs/MARKETPLACE_REBUILD_SQL.sql`     | **Create** — idempotent SQL above                 |
+
+
+## Action Required From You
+
+1. Approve this plan to start implementation.
+2. After deploy, run `docs/MARKETPLACE_REBUILD_SQL.sql` in your external Supabase SQL editor.
+3. Test: list a hamper bundle, share a product to WhatsApp, approve an EFT payment, edit your store logo.

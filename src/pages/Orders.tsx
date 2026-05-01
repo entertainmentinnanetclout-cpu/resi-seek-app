@@ -135,6 +135,16 @@ const Orders = () => {
 
     if (shopError) console.error("Error fetching orders:", shopError);
 
+    // Fetch EFT references for inline display
+    const { data: eftRows } = await supabase
+      .from("eft_payments" as any)
+      .select("order_id, payment_reference, status")
+      .eq("user_id", user.id);
+    const eftByOrder = new Map<string, { reference: string; status: string }>();
+    (eftRows || []).forEach((e: any) => {
+      eftByOrder.set(e.order_id, { reference: e.payment_reference, status: e.status });
+    });
+
     const ordersWithItems = await Promise.all(
       (shopOrders || []).map(async (order: any) => {
         const [{ data: items }, { data: history }] = await Promise.all([
@@ -148,7 +158,7 @@ const Orders = () => {
             .eq("order_id", order.id)
             .order("created_at", { ascending: true }),
         ]);
-        return { ...order, items: items || [], statusHistory: history || [] };
+        return { ...order, items: items || [], statusHistory: history || [], eft: eftByOrder.get(order.id) || null };
       })
     );
 
@@ -308,6 +318,26 @@ const Orders = () => {
       ["awaiting_payment", "awaiting_verification"].includes(order.payment_status) &&
       order.status === "pending";
 
+    // Derive EFT/payment sub-badge
+    const isEft = order.payment_method === "eft";
+    let paymentBadge: { label: string; className: string } | null = null;
+    if (isEft) {
+      switch (order.payment_status) {
+        case "awaiting_payment":
+          paymentBadge = { label: "Awaiting Payment", className: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30" };
+          break;
+        case "awaiting_verification":
+          paymentBadge = { label: "Awaiting Verification", className: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30" };
+          break;
+        case "paid":
+          paymentBadge = { label: "Payment Confirmed", className: "bg-green-500/15 text-green-700 dark:text-green-300 border-green-500/30" };
+          break;
+        case "rejected":
+          paymentBadge = { label: "Payment Rejected", className: "bg-destructive/15 text-destructive border-destructive/30" };
+          break;
+      }
+    }
+
     return (
       <Collapsible key={order.id} open={isExpanded} onOpenChange={() => setExpandedOrder(isExpanded ? null : order.id)}>
         <Card className="hover:shadow-md transition-shadow">
@@ -319,8 +349,18 @@ const Orders = () => {
                   <p className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}
                   </p>
+                  {order.eft?.reference && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      EFT Ref: <span className="font-mono font-medium text-foreground">{order.eft.reference}</span>
+                    </p>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  {paymentBadge && (
+                    <Badge variant="outline" className={paymentBadge.className}>
+                      {paymentBadge.label}
+                    </Badge>
+                  )}
                   <Badge variant={status.variant}>
                     <StatusIcon className="w-3 h-3 mr-1" />
                     {status.label}

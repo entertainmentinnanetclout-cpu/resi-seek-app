@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 interface ImageInputProps {
   value: string;
   onChange: (url: string) => void;
-  bucket?: "hamper-images" | "admin-images" | "product-images" | "store-assets";
+  bucket?: "hamper-images" | "admin-images" | "product-images" | "store-assets" | "campaign-assets" | "store-banners";
   pathPrefix?: string;
   label?: string;
   className?: string;
