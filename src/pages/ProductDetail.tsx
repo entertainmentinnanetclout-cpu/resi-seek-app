@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShoppingCart, Store, Star, Minus, Plus, Package, ArrowLeft, Truck, Shield, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { useAddToCart } from "@/hooks/useCart";
+import ShareButton from "@/components/ShareButton";
+import { getOgImageUrl } from "@/lib/share";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -101,7 +103,12 @@ const ProductDetail = () => {
 
   return (
     <DashboardLayout>
-      <SEO title={`${product.name} | ResKonnect Marketplace`} description={product.description || ""} />
+      <SEO
+        title={`${product.name} | ResKonnect Marketplace`}
+        description={product.description || `Shop ${product.name} on ResKonnect — South Africa's student marketplace.`}
+        type="product"
+        imageUrl={product.images?.[0] || getOgImageUrl("product", product.id)}
+      />
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Back button */}
@@ -172,7 +179,17 @@ const ProductDetail = () => {
                 )}
               </button>
 
-              <h1 className="text-2xl sm:text-3xl font-bold">{product.name}</h1>
+              <div className="flex items-start gap-3">
+                <h1 className="text-2xl sm:text-3xl font-bold flex-1">{product.name}</h1>
+                <ShareButton
+                  variant="icon"
+                  type="product"
+                  id={product.id}
+                  title={product.name}
+                  text={product.description || `Check out ${product.name} on ResKonnect Marketplace`}
+                  className="border"
+                />
+              </div>
 
               {/* Price */}
               <div className="flex items-baseline gap-3">
