@@ -26,6 +26,7 @@ import { AdminSlidesContent } from "./AdminSlides";
 import { AdminNewsContent } from "./AdminNews";
 import { AdminEventsContent } from "./AdminEvents";
 import { AdminBursariesContent } from "./AdminBursaries";
+import { AdminMarketplaceBannersContent } from "./AdminMarketplaceBanners";
 import { formatDistanceToNow, format, isPast, isFuture } from "date-fns";
 
 interface MediaStats {
@@ -47,6 +48,7 @@ interface RecentItem {
 const tabs = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
   { value: "slides", label: "Hero Slides", icon: Image },
+  { value: "banners", label: "Marketplace Banners", icon: Image },
   { value: "news", label: "News", icon: Newspaper },
   { value: "events", label: "Events", icon: Calendar },
   { value: "bursaries", label: "Bursaries", icon: GraduationCap },
