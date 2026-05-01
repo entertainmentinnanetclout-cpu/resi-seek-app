@@ -231,8 +231,23 @@ const Marketplace = () => {
               {featuredProducts.length > 0 && (
                 <section>
                   <div className="flex items-center gap-2 mb-4"><Sparkles className="w-5 h-5 text-primary" /><h2 className="text-xl font-bold">Featured Products</h2></div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {featuredProducts.slice(0, 4).map((product: any) => (<ProductCard key={product.id} product={product} onClick={() => navigate(`/product/${product.id}`)} />))}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                    {featuredProducts.slice(0, 6).map((product: any) => (
+                      <MarketplaceCard
+                        key={product.id}
+                        type="product"
+                        id={product.id}
+                        title={product.name}
+                        imageUrl={product.images?.[0]}
+                        price={Number(product.price)}
+                        compareAtPrice={product.compare_at_price ? Number(product.compare_at_price) : undefined}
+                        outOfStock={product.stock_quantity <= 0}
+                        storeName={product.stores?.store_name}
+                        storeLogoUrl={product.stores?.store_logo_url}
+                        shareText={product.description || product.name}
+                        onClick={() => navigate(`/product/${product.id}`)}
+                      />
+                    ))}
                   </div>
                 </section>
               )}
@@ -244,8 +259,23 @@ const Marketplace = () => {
                 ) : filteredProducts.length === 0 ? (
                   <Card><CardContent className="py-12 text-center"><Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" /><h3 className="text-xl font-semibold mb-2">No products found</h3><p className="text-muted-foreground">{searchQuery ? "Try a different search." : "Products will appear once stores add items."}</p></CardContent></Card>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {filteredProducts.map((product: any) => (<ProductCard key={product.id} product={product} onClick={() => navigate(`/product/${product.id}`)} />))}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                    {filteredProducts.map((product: any) => (
+                      <MarketplaceCard
+                        key={product.id}
+                        type="product"
+                        id={product.id}
+                        title={product.name}
+                        imageUrl={product.images?.[0]}
+                        price={Number(product.price)}
+                        compareAtPrice={product.compare_at_price ? Number(product.compare_at_price) : undefined}
+                        outOfStock={product.stock_quantity <= 0}
+                        storeName={product.stores?.store_name}
+                        storeLogoUrl={product.stores?.store_logo_url}
+                        shareText={product.description || product.name}
+                        onClick={() => navigate(`/product/${product.id}`)}
+                      />
+                    ))}
                   </div>
                 )}
               </section>
