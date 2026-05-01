@@ -477,6 +477,7 @@ const AdminMediaHub = () => {
 
           <TabsContent value="overview">{renderOverview()}</TabsContent>
           <TabsContent value="slides"><AdminSlidesContent /></TabsContent>
+          <TabsContent value="banners"><AdminMarketplaceBannersContent /></TabsContent>
           <TabsContent value="news"><AdminNewsContent /></TabsContent>
           <TabsContent value="events"><AdminEventsContent /></TabsContent>
           <TabsContent value="bursaries"><AdminBursariesContent /></TabsContent>
