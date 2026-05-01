@@ -135,6 +135,16 @@ const Orders = () => {
 
     if (shopError) console.error("Error fetching orders:", shopError);
 
+    // Fetch EFT references for inline display
+    const { data: eftRows } = await supabase
+      .from("eft_payments" as any)
+      .select("order_id, payment_reference, status")
+      .eq("user_id", user.id);
+    const eftByOrder = new Map<string, { reference: string; status: string }>();
+    (eftRows || []).forEach((e: any) => {
+      eftByOrder.set(e.order_id, { reference: e.payment_reference, status: e.status });
+    });
+
     const ordersWithItems = await Promise.all(
       (shopOrders || []).map(async (order: any) => {
         const [{ data: items }, { data: history }] = await Promise.all([
@@ -148,7 +158,7 @@ const Orders = () => {
             .eq("order_id", order.id)
             .order("created_at", { ascending: true }),
         ]);
-        return { ...order, items: items || [], statusHistory: history || [] };
+        return { ...order, items: items || [], statusHistory: history || [], eft: eftByOrder.get(order.id) || null };
       })
     );
 
