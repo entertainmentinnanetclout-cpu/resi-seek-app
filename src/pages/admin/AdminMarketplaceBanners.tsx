@@ -172,7 +172,6 @@ export const AdminMarketplaceBannersContent = () => {
                 value={form.image_url}
                 onChange={(url) => setForm({ ...form, image_url: url })}
                 bucket="campaign-assets"
-                folder="banners"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
