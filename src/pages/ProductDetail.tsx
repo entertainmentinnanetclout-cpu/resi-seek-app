@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShoppingCart, Store, Star, Minus, Plus, Package, ArrowLeft, Truck, Shield, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { BadgeCheck, GraduationCap, ShieldCheck } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useAddToCart } from "@/hooks/useCart";
 import ShareButton from "@/components/ShareButton";
 import { getOgImageUrl } from "@/lib/share";
@@ -26,6 +28,7 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [zoomOpen, setZoomOpen] = useState(false);
 
   useEffect(() => {
     if (id) fetchProduct();
@@ -125,7 +128,8 @@ const ProductDetail = () => {
                 <img
                   src={images[selectedImage]}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain bg-background cursor-zoom-in"
+                  onClick={() => setZoomOpen(true)}
                   onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
                 />
                 {images.length > 1 && (
@@ -283,14 +287,22 @@ const ProductDetail = () => {
               )}
 
               {/* Trust badges */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Truck className="w-4 h-4" />
-                  Campus delivery available
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <div className="flex items-center gap-2 text-xs p-2 rounded-md bg-muted/50">
+                  <BadgeCheck className="w-4 h-4 text-green-600" />
+                  <span>Verified Seller</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Shield className="w-4 h-4" />
-                  Verified student store
+                <div className="flex items-center gap-2 text-xs p-2 rounded-md bg-muted/50">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  <span>Student Marketplace</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs p-2 rounded-md bg-muted/50">
+                  <Truck className="w-4 h-4 text-blue-600" />
+                  <span>Campus Delivery</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs p-2 rounded-md bg-muted/50">
+                  <ShieldCheck className="w-4 h-4 text-amber-600" />
+                  <span>No Counterfeit</span>
                 </div>
               </div>
 
@@ -343,6 +355,15 @@ const ProductDetail = () => {
           )}
         </div>
       </div>
+      <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
+        <DialogContent className="max-w-5xl p-2 bg-background">
+          <img
+            src={images[selectedImage]}
+            alt={product.name}
+            className="w-full max-h-[85vh] object-contain"
+          />
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

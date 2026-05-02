@@ -314,6 +314,10 @@ const MyStore = () => {
                       <ExternalLink className="w-4 h-4 mr-2" />
                       View Public Page
                     </Button>
+                    <Button variant="outline" onClick={() => navigate("/my-store/edit")}>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit Store
+                    </Button>
                   </div>
                   {store?.store_description && (
                     <p className="text-muted-foreground mt-2">{store.store_description}</p>
