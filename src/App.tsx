@@ -29,6 +29,7 @@ import Events from "./pages/Events";
 import Documents from "./pages/Documents";
 import StoreSetup from "./pages/StoreSetup";
 import MyStore from "./pages/MyStore";
+import StoreEdit from "./pages/StoreEdit";
 import Store from "./pages/Store";
 import Orders from "./pages/Orders";
 import ProductDetail from "./pages/ProductDetail";
@@ -133,6 +134,7 @@ const App = () => {
               <Route path="/documents" element={<StudentRoute><Documents /></StudentRoute>} />
               <Route path="/store-setup" element={<StudentRoute><StoreSetup /></StudentRoute>} />
               <Route path="/my-store" element={<StudentRoute><MyStore /></StudentRoute>} />
+              <Route path="/my-store/edit" element={<StudentRoute><StoreEdit /></StudentRoute>} />
               <Route path="/orders" element={<StudentRoute><Orders /></StudentRoute>} />
               <Route path="/cart" element={<StudentRoute><Cart /></StudentRoute>} />
               <Route path="/checkout" element={<StudentRoute><Checkout /></StudentRoute>} />

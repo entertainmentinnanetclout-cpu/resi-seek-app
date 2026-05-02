@@ -2,7 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingBag, Store, Percent, ShoppingCart, Gift, Truck, DollarSign, LayoutGrid } from "lucide-react";
+import { ShoppingBag, Store, Percent, ShoppingCart, Gift, Truck, DollarSign, LayoutGrid, Users } from "lucide-react";
 import { AdminMarketplaceContent } from "./AdminMarketplace";
 import { AdminStoresContent } from "./AdminStores";
 import { AdminDiscountsContent } from "./AdminDiscounts";
@@ -16,6 +16,7 @@ import { AdminCategoriesContent } from "./AdminCategories";
 const tabs = [
   { value: "marketplace", label: "Marketplace", icon: ShoppingBag },
   { value: "stores", label: "Stores", icon: Store },
+  { value: "sellers", label: "Sellers", icon: Users },
   { value: "shop-orders", label: "Shop Orders", icon: Truck },
   { value: "categories", label: "Categories", icon: LayoutGrid },
   { value: "discounts", label: "Discounts", icon: Percent },
@@ -50,6 +51,7 @@ const AdminCommerceHub = () => {
 
           <TabsContent value="marketplace"><AdminMarketplaceContent /></TabsContent>
           <TabsContent value="stores"><AdminStoresContent /></TabsContent>
+          <TabsContent value="sellers"><AdminStoresContent /></TabsContent>
           <TabsContent value="shop-orders"><AdminShopOrdersContent /></TabsContent>
           <TabsContent value="categories"><AdminCategoriesContent /></TabsContent>
           <TabsContent value="discounts"><AdminDiscountsContent /></TabsContent>

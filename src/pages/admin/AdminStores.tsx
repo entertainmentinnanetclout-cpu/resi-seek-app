@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Store, ShieldCheck, ShieldX, Eye, Trash2, Star } from "lucide-react";
+import { Search, Store, ShieldCheck, ShieldX, Eye, Trash2, Star, Ban, CheckCircle2, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -34,6 +34,8 @@ interface StoreData {
   rating: number;
   created_at: string;
   user_id: string;
+  is_suspended?: boolean;
+  founding_seller?: boolean;
   owner?: {
     full_name: string;
     email: string;
@@ -269,6 +271,12 @@ export const AdminStoresContent = () => {
                             <Badge variant={store.verified ? "default" : "destructive"}>
                               {store.verified ? "Verified" : "Unverified"}
                             </Badge>
+                            {store.is_suspended && (
+                              <Badge variant="destructive">Suspended</Badge>
+                            )}
+                            {store.founding_seller && (
+                              <Badge className="bg-amber-500"><Award className="w-3 h-3 mr-1" />Founding</Badge>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -289,6 +297,26 @@ export const AdminStoresContent = () => {
                               ) : (
                                 <ShieldCheck className="w-4 h-4 text-green-500" />
                               )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => updateStore(store.id, { is_suspended: !store.is_suspended } as any)}
+                              title={store.is_suspended ? "Unsuspend" : "Suspend"}
+                            >
+                              {store.is_suspended ? (
+                                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Ban className="w-4 h-4 text-destructive" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => updateStore(store.id, { founding_seller: !store.founding_seller } as any)}
+                              title={store.founding_seller ? "Remove founding badge" : "Mark as founding seller"}
+                            >
+                              <Award className={`w-4 h-4 ${store.founding_seller ? "text-amber-500" : "text-muted-foreground"}`} />
                             </Button>
                             <Button
                               variant="ghost"
