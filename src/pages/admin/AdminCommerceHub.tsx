@@ -12,6 +12,7 @@ import { AdminHamperBundlesContent } from "./AdminHamperBundles";
 import { AdminShopOrdersContent } from "./AdminShopOrders";
 import { AdminSellerEarningsContent } from "./AdminSellerEarnings";
 import { AdminCategoriesContent } from "./AdminCategories";
+import { AdminSellerApprovalsContent } from "./AdminSellerApprovals";
 
 const tabs = [
   { value: "marketplace", label: "Marketplace", icon: ShoppingBag },
@@ -51,7 +52,7 @@ const AdminCommerceHub = () => {
 
           <TabsContent value="marketplace"><AdminMarketplaceContent /></TabsContent>
           <TabsContent value="stores"><AdminStoresContent /></TabsContent>
-          <TabsContent value="sellers"><AdminStoresContent /></TabsContent>
+          <TabsContent value="sellers"><AdminSellerApprovalsContent /></TabsContent>
           <TabsContent value="shop-orders"><AdminShopOrdersContent /></TabsContent>
           <TabsContent value="categories"><AdminCategoriesContent /></TabsContent>
           <TabsContent value="discounts"><AdminDiscountsContent /></TabsContent>
