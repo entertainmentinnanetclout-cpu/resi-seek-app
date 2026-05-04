@@ -42,6 +42,7 @@ const Auth = () => {
   const [selectedCampus, setSelectedCampus] = useState("");
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo");
+  const refCode = searchParams.get("ref");
 
   const { staffRole } = useAuth();
   const [showDebug, setShowDebug] = useState(false);
@@ -118,6 +119,20 @@ const Auth = () => {
             throw error;
         }
         toast.success("Account created! Please check your email to verify your account.");
+        // Capture referral if present
+        if (refCode) {
+          try {
+            const { data: sess } = await supabase.auth.getSession();
+            const uid = sess.session?.user?.id;
+            if (uid) {
+              await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/referral-capture`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string },
+                body: JSON.stringify({ code: refCode, referred_user_id: uid }),
+              });
+            }
+          } catch (e) { console.warn("referral capture failed", e); }
+        }
         setIsLogin(true);
       }
     } catch (error: any) {
