@@ -1,222 +1,180 @@
-# Marketplace Polish + Phase 1 Rebuild
+## Goal
 
-## Phase A — Finish In-Flight Work (4 items)
+Close out the seller program + admin marketplace control gaps and fix the broken admin visibility:
 
-### 1. AdminShopOrders.tsx — EFT Payments tab + dialog
+1. Wire the new pages (`SellerOnboarding`, `Referrals`, `MyDiscountCodes`, `AdminSellerApprovals`) into routing and nav.
+2. Fix admin not seeing listings (showing 0) and not being able to remove faulty seller products.
+3. Add admin "Order on behalf of student" for any product.
+4. Make hampers easily addable to the Deals section + make hamper card open a full-detail dialog showing constituent items.
+5. Build the missing edge functions: `send-push`, `referral-capture`, `vapid-public-key`.
+6. Add the small UX glue (PushPrompt mounted globally, referral code captured from `?ref=` on signup).
+7. Idempotent SQL migration for everything new + safety policies.
 
-The handlers `handleApproveEft` / `handleRejectEft` and the `<TabsTrigger value="eft">` are already wired. Missing pieces:
+## 1. Routing & Nav (App.tsx + DashboardLayout)
 
-- Add `<TabsContent value="eft">` between the "proofs" TabsContent and the closing `</Tabs>` (around line 537), rendering:
-  - Loading skeletons when `eftLoading`
-  - Empty state card when `eftPayments.length === 0`
-  - Table: Reference · Amount · Risk · POP · Status · Age · Action (Eye icon → opens dialog when status is `pending`/`uploaded`)
-  - Status badges: `pending` (secondary) · `uploaded` (default "Awaiting Verification") · `confirmed` (default green) · `rejected` (destructive)
-- Add the EFT detail `<Dialog open={eftDetailOpen}>` after the existing Proof Detail Dialog with:
-  - POP image preview (full-size, click opens new tab)
-  - Reference, expected amount, risk_score, fingerprint, expires_at, device_info JSON snippet
-  - Admin note textarea (`eftNote`)
-  - Approve / Reject buttons calling `handleApproveEft` / `handleRejectEft`
-
-### 2. ProductDetail.tsx — Share button + dynamic OG image
-
-- Import `ShareButton` from `@/components/ShareButton`
-- Pass `imageUrl={getOgImageUrl("product", product.id)}` to `<SEO>` (import from `@/lib/share`)
-- Place `<ShareButton variant="icon" type="product" id={product.id} title={product.name} text={product.description || ""} />` next to the price/title section so users can share on WhatsApp/Instagram/etc
-
-### 3. Orders.tsx — Clearer EFT status badges + reference inline
-
-- Extend `statusConfig` payment-state derivation: when `order.payment_method === "eft"`, derive a sub-badge from `payment_status`:
-  - `awaiting_payment` → "Awaiting Payment" (amber)
-  - `awaiting_verification` → "Awaiting Verification" (amber, with spinner-style dot)
-  - `paid` → "Payment Confirmed" (green)
-  - `rejected` → "Payment Rejected" (destructive)
-- Display the EFT reference inline beside the order header (fetched from `eft_payments` joined by `order_id`). Add a small `fetchEftRefs()` call in `fetchOrders` to map `order_id → payment_reference`.
-- &nbsp;
-  4. Per-category banners/hero carousel admin
-    create per ategory banner and carousel on marketplace ui.
-    create admin controls.  add on external sql to ensure its connected to backend
-
----
-
-## Phase B — Marketplace + Seller + Admin Upgrade (Phase 1 of larger rebuild)
-
-The full Parts 1–9 prompt is a multi-week rebuild. To keep each run shippable, this plan covers the **highest-leverage subset** that fixes the critical bugs and lays groundwork. Subsequent phases (campaigns, runners, AI Studio, advanced moderation) will follow in named follow-up plans.
-
-### B1. Fix product routing & ProductCard reuse
-
-- Marketplace.tsx still has an inline `ProductCard` component using `/product/${id}`. Route exists (`/product/:id`) so it should already work — verify by replacing inline `ProductCard` with `<MarketplaceCard type="product" .../>` for full consistency (also fixes the share button missing on landing/marketplace).
-- ProductDetail.tsx already calls `navigate("/marketplace")` on missing — keep, but make the loading→not-found flow show a "Product not found" Card with back button instead of redirecting silently.
-- Confirm Landing.tsx product cards link to `/product/:id` (read & patch if not).
-
-### B2. Compact responsive grid (5–6 cols on desktop)
-
-Update Marketplace.tsx product grid:
+Add inside `<Routes>`:
 
 ```text
-grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3
+/seller-onboarding        StudentRoute -> SellerOnboarding
+/referrals                StudentRoute -> Referrals
+/my-discount-codes        StudentRoute -> MyDiscountCodes
+/admin/seller-approvals   AdminRoute   -> AdminSellerApprovals
 ```
 
-Tighten `MarketplaceCard` padding (`p-2.5`), make image area `aspect-square`, font sizes shrink one step.
+Add a "Sellers" sub-tab in `AdminCommerceHub` for `AdminSellerApprovals` (currently the "sellers" tab incorrectly mounts `AdminStoresContent`).
 
-### B3. Store branding on every card
+Add sidebar links in `DashboardLayout` (student): "Become a Seller", "Referrals", "Discount Codes" (only if user owns a store).
 
-Extend `MarketplaceCard` props with `storeName?: string` and `storeLogoUrl?: string`. Render a small logo + name row above the title. Update Marketplace.tsx + Landing.tsx + Store.tsx + ProductDetail "related" section to pass them.
+Mount `<PushPrompt />` once in `App.tsx` (next to `<ResBot />`) so every authenticated page can prompt for notifications.
 
-### B4. ProductDetail premium upgrade (light pass)
+## 2. Fix Admin Listings = 0 and Faulty Product Removal
 
-- Add main image with `object-contain` + zoom-on-click (use a Dialog or simple CSS scale)
-- Trust badges row: "Verified Seller", "Student Marketplace", "Campus Delivery", "No Counterfeit"
-- Already has thumbnails, store row, variants — keep.
+Root cause check: `AdminStores` counts `marketplace_listings` per `store_id`, but verified seller products live in `products` (per memory: verified stores → `products`, pending → `marketplace_listings`). So admin sees 0 listings even when stores have products.
 
-### B5. Vendor store re-edit (`/my-store/edit`)
+Changes in `src/pages/admin/AdminStores.tsx`:
 
-New page `src/pages/StoreEdit.tsx` mirroring StoreSetup but pre-loading the existing store. Lets vendors:
+- Count BOTH `products` and `marketplace_listings` per store; show as `Products: X · Listings: Y`.
+- Add "View Products" action that opens a dialog listing every `products` row for the store with Delete + Toggle Active buttons (admin-only, uses existing `admins_manage_all_products` policy).
 
-- Re-upload logo & banner (existing `store-assets` bucket)
-- Update name, description, WhatsApp, email, campus
-- New optional fields once SQL runs: accent_color, return_policy, delivery_notes, social links, is_open
-Add "Edit Store" button to MyStore.tsx header.
+Changes in `src/components/admin/StudentListingsModeration.tsx`:
 
-### B6. Seller dashboard (MyStore.tsx) upgrade — pass 1
+- Add a Delete button (uses existing `Admins can delete marketplace listings` policy).
+- Add a "Source" column showing whether the row came from `marketplace_listings` (legacy/unverified) or `products` (verified store).
+- Bug: the sellers list uses `.eq("id", listing.user_id)` per row but the parallel fetches don't dedupe — refactor to a single `in()` query for performance, but functionality stays the same.
 
-- Add stat cards: Today's Sales, Pending Orders, Low Stock (already partly there)
-- Add Branding tab (logo/banner re-upload inline)
-- Add Promotions tab (toggle `is_featured` and `is_landing_featured` per product — already in DB)
-- Keep existing Products / Orders / Earnings / Reviews tabs
+New `AdminProductsModeration` mini-table inside `AdminMarketplace` "Student Listings" tab so admin can delete `products` rows from any store (currently no UI for that). Reuses `products` table with `admins_manage_all_products`.
 
-### B7. Admin marketplace control upgrade — pass 1
+## 3. Admin Order-on-Behalf
 
-In AdminCommerceHub:
+New component `src/components/admin/AdminPlaceOrderDialog.tsx` opened from the products list. Form: pick student (search profiles by email/full_name), quantity, delivery_address, payment_method (cash/EFT). On submit, insert into `shop_orders` with `user_id = chosen_student_id`, `status = 'pending'`, plus a row in `shop_order_items`. Uses the existing admin RLS `admins_manage_all_*` policies.
 
-- Add "Sellers" tab (uses `AdminStores` content, but adds Approve/Reject/Suspend/Verify actions and Founding Seller badge toggle)
-- Add "Product Moderation" tab listing all products with `approval_status = pending` and a "Require image reupload" action
-- Marketplace Overview stat cards on Commerce Hub landing (GMV, orders, sellers, buyers, pending approvals, flagged products)
+Add an "Order on behalf" button next to each product in the new admin products dialog (#2) and in `ResKonnectStoreManager`.
 
-### B8. SQL migration (idempotent, additive only)
+## 4. Hampers — easier admin flow + clickable detail
 
-New file `docs/MARKETPLACE_REBUILD_SQL.sql`:
+`src/pages/admin/AdminHamperBundles.tsx`:
+
+- Already lets admin pick catalog items. Add an "Add to Deals" toggle (`is_landing_featured`) and a quick `Switch` in the table row for one-click promotion.
+- Add bulk "Add selected items" dropdown so admin can append items to an existing bundle without reopening the editor.
+
+`src/components/MarketplaceCard.tsx`:
+
+- Already pressable. For `type === 'hamper'`, instead of routing to `/product/...`, open a new shared `<HamperDetailDialog>`.
+
+New `src/components/HamperDetailDialog.tsx`:
+
+- Shows hamper image, description, price, full list of `hamper_bundle_items` (item_name × quantity), "Order Now" button (cash on delivery via `hamper_orders`), and a `<ShareButton type="hamper" />`.
+
+`src/pages/Marketplace.tsx`:
+
+- Replace inline hamper render with `MarketplaceCard` using `onClick={() => setSelectedHamper(h)}` and mount the dialog.
+
+## 5. Edge Functions
+
+```text
+supabase/functions/vapid-public-key/index.ts   — GET, returns { publicKey: VAPID_PUBLIC_KEY }
+supabase/functions/send-push/index.ts          — POST { user_id|user_ids, title, body, url? }
+                                                 service-role: looks up push_subscriptions,
+                                                 signs VAPID JWT (web-push deno port),
+                                                 fans out, prunes 410/404 rows
+supabase/functions/referral-capture/index.ts   — POST { code, referred_user_id }
+                                                 increments referral_codes.signup_count,
+                                                 inserts referral_earnings(source_type='signup', amount=settings.signup_bonus)
+```
+
+Register all three in `supabase/config.toml` with `verify_jwt = false` (referral-capture and vapid-public-key are public; send-push validates an admin/service caller in code).
+
+Secrets needed (request via `add_secret` if missing): `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (e.g. `mailto:reskonnect@gmail.com`).
+
+Frontend wiring:
+
+- `src/lib/push.ts`: if `VITE_VAPID_PUBLIC_KEY` env is missing, fall back to fetching `vapid-public-key` edge function.
+- `src/pages/Auth.tsx`: read `?ref=CODE` from URL on signup, after successful signup call `referral-capture` edge function.
+
+## 6. SQL Migration — `docs/MARKETPLACE_CONTROL_SQL.sql` (idempotent, additive)
 
 ```sql
--- STORES: branding + status fields
-ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS accent_color text DEFAULT '#3b82f6';
-ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS return_policy text;
-ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS delivery_notes text;
-ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS social_links jsonb DEFAULT '{}'::jsonb;
-ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS is_open boolean DEFAULT true;
-ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS is_suspended boolean DEFAULT false;
-ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS founding_seller boolean DEFAULT false;
-ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS slug text;
-CREATE UNIQUE INDEX IF NOT EXISTS stores_slug_unique ON public.stores(slug) WHERE slug IS NOT NULL;
+-- platform_settings: signup bonus + commission %
+INSERT INTO public.platform_settings(key, value, description)
+VALUES ('referral_signup_bonus', '{"amount": 10}'::jsonb, 'Flat ZAR per referred signup'),
+       ('referral_sale_percent', '{"percent": 5}'::jsonb, 'Percent of sale paid to referrer')
+ON CONFLICT (key) DO NOTHING;
 
--- PRODUCTS: moderation + AI fields
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS approval_status text DEFAULT 'approved';
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS image_quality_status text DEFAULT 'pending';
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS ai_enhanced boolean DEFAULT false;
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS moderation_notes text;
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS discount_percent numeric;
-
--- SHOP_ORDERS: commission + delivery
-ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS delivery_fee numeric DEFAULT 0;
-ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS commission_rate numeric DEFAULT 0.03;
-ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS commission_amount numeric DEFAULT 0;
-ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS payout_status text DEFAULT 'pending';
-ALTER TABLE public.shop_orders ADD COLUMN IF NOT EXISTS assigned_runner_id uuid;
-
--- CAMPAIGNS table
-CREATE TABLE IF NOT EXISTS public.campaigns (
+-- shop_order_items table (if missing) so admin can place orders programmatically
+CREATE TABLE IF NOT EXISTS public.shop_order_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  type text NOT NULL,
-  status text DEFAULT 'draft',
-  starts_at timestamptz,
-  ends_at timestamptz,
-  config jsonb DEFAULT '{}'::jsonb,
+  order_id uuid NOT NULL REFERENCES public.shop_orders(id) ON DELETE CASCADE,
+  product_id uuid NOT NULL,
+  store_id uuid,
+  quantity integer NOT NULL DEFAULT 1,
+  unit_price numeric NOT NULL,
   created_at timestamptz DEFAULT now()
 );
-ALTER TABLE public.campaigns ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN CREATE POLICY admins_manage_campaigns ON public.campaigns FOR ALL USING (has_role(auth.uid(),'admin')) WITH CHECK (has_role(auth.uid(),'admin'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY anyone_view_active_campaigns ON public.campaigns FOR SELECT USING (status = 'active');
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+ALTER TABLE public.shop_order_items ENABLE ROW LEVEL SECURITY;
+-- admins manage; users view their own via order
+DO $$ BEGIN CREATE POLICY admins_manage_shop_order_items ON public.shop_order_items FOR ALL USING (has_role(auth.uid(),'admin')) WITH CHECK (has_role(auth.uid(),'admin')); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY users_view_own_shop_order_items ON public.shop_order_items FOR SELECT USING (EXISTS (SELECT 1 FROM shop_orders so WHERE so.id = shop_order_items.order_id AND so.user_id = auth.uid())); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- SELLER PAYOUTS
-CREATE TABLE IF NOT EXISTS public.seller_payouts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id uuid NOT NULL,
-  seller_id uuid NOT NULL,
-  amount numeric NOT NULL,
-  status text DEFAULT 'pending',
-  notes text,
-  created_at timestamptz DEFAULT now()
-);
-ALTER TABLE public.seller_payouts ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN CREATE POLICY admins_manage_payouts ON public.seller_payouts FOR ALL USING (has_role(auth.uid(),'admin')) WITH CHECK (has_role(auth.uid(),'admin'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY sellers_view_own_payouts ON public.seller_payouts FOR SELECT USING (seller_id = auth.uid());
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+-- ensure product_categories has a 'hampers' slug used by MarketplaceCard deal grouping
+INSERT INTO public.product_categories(name, slug, display_order)
+VALUES ('Hampers','hampers',99) ON CONFLICT DO NOTHING;
 
--- MARKETPLACE SETTINGS
-CREATE TABLE IF NOT EXISTS public.marketplace_settings (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  key text UNIQUE NOT NULL,
-  value jsonb DEFAULT '{}'::jsonb,
-  updated_at timestamptz DEFAULT now()
-);
-ALTER TABLE public.marketplace_settings ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN CREATE POLICY admins_manage_marketplace_settings ON public.marketplace_settings FOR ALL USING (has_role(auth.uid(),'admin')) WITH CHECK (has_role(auth.uid(),'admin'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY anyone_view_marketplace_settings ON public.marketplace_settings FOR SELECT USING (true);
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
--- Storage buckets (additive)
-INSERT INTO storage.buckets (id, name, public) VALUES ('store-banners','store-banners',true) ON CONFLICT (id) DO UPDATE SET public = true;
-INSERT INTO storage.buckets (id, name, public) VALUES ('campaign-assets','campaign-assets',true) ON CONFLICT (id) DO UPDATE SET public = true;
-
-DO $$ BEGIN CREATE POLICY anyone_view_store_banners ON storage.objects FOR SELECT USING (bucket_id = 'store-banners');
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY users_upload_own_store_banners ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'store-banners' AND auth.uid()::text = (storage.foldername(name))[1]);
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-NOTIFY pgrst, 'reload schema';
+-- referral capture RPC: atomic signup-bonus award
+CREATE OR REPLACE FUNCTION public.capture_referral(_code text, _referred uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+DECLARE _ref uuid; _bonus numeric;
+BEGIN
+  SELECT user_id INTO _ref FROM referral_codes WHERE code = _code AND is_active = true;
+  IF _ref IS NULL OR _ref = _referred THEN RETURN; END IF;
+  SELECT (value->>'amount')::numeric INTO _bonus FROM platform_settings WHERE key='referral_signup_bonus';
+  UPDATE referral_codes SET signup_count = signup_count + 1, total_earned = total_earned + COALESCE(_bonus,0) WHERE user_id = _ref;
+  INSERT INTO referral_earnings(referrer_user_id, referred_user_id, source_type, amount)
+  VALUES (_ref, _referred, 'signup', COALESCE(_bonus,0));
+END $$;
+GRANT EXECUTE ON FUNCTION public.capture_referral(text, uuid) TO anon, authenticated;
 ```
 
-User runs this manually in external Supabase SQL editor (mefjzkhobkltlbmhusdh) — does not break existing data, all `IF NOT EXISTS`/`ON CONFLICT`/`DO $$` blocks.
+(File also defensively re-asserts `admins_manage_all_products`, `Admins delete marketplace listings`, and `admins_manage_shop_orders` with `DO $$ ... EXCEPTION WHEN duplicate_object` blocks so re-runs never break existing policies.)
 
-## What's NOT in this plan (saved for future requests)
+## 7. QA Checklist (post-deploy)
 
-These items from the Master Prompt are real but too large for one execution loop:
+1. `/admin/commerce?tab=stores` shows non-zero counts when a store has products.
+2. Admin can delete a faulty seller product; it disappears from `/marketplace`.
+3. Admin can place an order for a student; order appears in that student's `/orders` and in `/admin/commerce?tab=shop-orders`.
+4. Hamper card on `/marketplace?tab=hampers` opens dialog with item list + Order button.
+5. Admin can flip a hamper's "Featured in Deals" switch; it appears under the Deals tab.
+6. New routes `/seller-onboarding`, `/referrals`, `/my-discount-codes`, `/admin/seller-approvals` load without 404.
+7. Push prompt appears for logged-in users; enabling stores a row in `push_subscriptions`; sending a test from `send-push` triggers a browser notification.
+8. Signing up with `/auth?ref=CODE` increments `referral_codes.signup_count` for the code owner.
 
-- Image zoom lightbox (basic zoom only this pass)
-- Buy & Win campaign UI
-- First 100 Sellers program UI
-- Runner assignment/dispatch system
-- AI Studio image enhancement pipeline
-- Counterfeit reporting flow
-  &nbsp;
-- Store theme color preview/publish flow
+## 8. Files Touched
 
-After Phase A+B ships and you confirm it works, ask for "Phase 2" and I'll build them.
+**New**
 
-## Files Modified / Created
+- `src/components/HamperDetailDialog.tsx`
+- `src/components/admin/AdminPlaceOrderDialog.tsx`
+- `src/components/admin/AdminProductsModeration.tsx`
+- `supabase/functions/vapid-public-key/index.ts`
+- `supabase/functions/send-push/index.ts`
+- `supabase/functions/referral-capture/index.ts`
+- `docs/MARKETPLACE_CONTROL_SQL.sql`
 
+**Edited**
 
-| File                                   | Action                                            |
-| -------------------------------------- | ------------------------------------------------- |
-| `src/pages/admin/AdminShopOrders.tsx`  | Add EFT TabsContent + dialog                      |
-| `src/pages/ProductDetail.tsx`          | ShareButton + dynamic OG image                    |
-| `src/pages/Orders.tsx`                 | EFT status badges + reference inline              |
-| `src/pages/Marketplace.tsx`            | Replace inline ProductCard, tighter grid          |
-| `src/components/MarketplaceCard.tsx`   | storeName + storeLogoUrl props, compact mode      |
-| `src/pages/StoreEdit.tsx`              | **Create** — vendor re-edit page                  |
-| `src/pages/MyStore.tsx`                | "Edit Store" button + Branding tab                |
-| `src/App.tsx`                          | Add `/my-store/edit` route                        |
-| `src/pages/admin/AdminCommerceHub.tsx` | Add "Sellers" + "Product Moderation" tabs         |
-| `src/pages/admin/AdminStores.tsx`      | Add Approve/Suspend/Verify/Founding-badge actions |
-| `docs/MARKETPLACE_REBUILD_SQL.sql`     | **Create** — idempotent SQL above                 |
+- `src/App.tsx` (routes + PushPrompt mount)
+- `src/components/DashboardLayout.tsx` (sidebar entries)
+- `src/pages/Auth.tsx` (capture `?ref=`)
+- `src/pages/Marketplace.tsx` (hamper dialog)
+- `src/pages/admin/AdminStores.tsx` (product count, products dialog, delete)
+- `src/pages/admin/AdminCommerceHub.tsx` (proper Sellers tab → AdminSellerApprovals)
+- `src/pages/admin/AdminMarketplace.tsx` (mount AdminProductsModeration)
+- `src/components/admin/StudentListingsModeration.tsx` (delete + source column)
+- `src/pages/admin/AdminHamperBundles.tsx` (one-click "Add to Deals" switch)
+- `src/lib/push.ts` (fallback fetch for VAPID key)
+- `supabase/config.toml` (verify_jwt for new functions)
 
+## 9. Action Required From You
 
-## Action Required From You
-
-1. Approve this plan to start implementation.
-2. After deploy, run `docs/MARKETPLACE_REBUILD_SQL.sql` in your external Supabase SQL editor.
-3. Test: list a hamper bundle, share a product to WhatsApp, approve an EFT payment, edit your store logo.
+1. Run `docs/MARKETPLACE_CONTROL_SQL.sql` in the external Supabase SQL editor.
+2. Add secrets if missing: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (a one-time `npx web-push generate-vapid-keys` produces them).
+3. Optional: set `VITE_VAPID_PUBLIC_KEY` in env for fastest client startup (otherwise we fetch it from the edge function on first use). set in env

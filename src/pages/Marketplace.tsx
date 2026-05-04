@@ -17,6 +17,7 @@ import { useCartCount } from "@/hooks/useCart";
 import MarketplaceCard from "@/components/MarketplaceCard";
 import ShareButton from "@/components/ShareButton";
 import MarketplaceBanners from "@/components/MarketplaceBanners";
+import HamperDetailDialog from "@/components/HamperDetailDialog";
 
 const Marketplace = () => {
   
@@ -40,6 +41,7 @@ const Marketplace = () => {
   // Hampers state
   const [hampers, setHampers] = useState<any[]>([]);
   const [hampersLoading, setHampersLoading] = useState(true);
+  const [selectedHamper, setSelectedHamper] = useState<any | null>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -342,7 +344,8 @@ const Marketplace = () => {
                       outOfStock={hamper.stock_quantity <= 0}
                       ctaLabel="Order Hamper"
                       shareText={hamper.description || "Curated student hamper bundle from ResKonnect"}
-                      onCart={() => handleHamperOrder(hamper)}
+                      onClick={() => setSelectedHamper(hamper)}
+                      onCart={() => setSelectedHamper(hamper)}
                     />
                   ))}
                 </div>
@@ -351,6 +354,12 @@ const Marketplace = () => {
           </Tabs>
         </div>
       </div>
+      <HamperDetailDialog
+        hamper={selectedHamper}
+        open={!!selectedHamper}
+        onClose={() => setSelectedHamper(null)}
+        onOrder={(h) => { setSelectedHamper(null); handleHamperOrder(h); }}
+      />
     </DashboardLayout>
   );
 };

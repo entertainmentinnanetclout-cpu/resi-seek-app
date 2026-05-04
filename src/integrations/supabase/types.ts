@@ -2784,6 +2784,10 @@ export type Database = {
       }
     }
     Functions: {
+      capture_referral: {
+        Args: { _code: string; _referred: string }
+        Returns: undefined
+      }
       generate_ref_code: { Args: { app_id: string }; Returns: string }
       get_user_residence_id: { Args: never; Returns: string }
       get_user_staff_role: { Args: { _user_id: string }; Returns: string }

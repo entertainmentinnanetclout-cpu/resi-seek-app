@@ -41,6 +41,7 @@ interface StoreData {
     email: string;
   } | null;
   listings_count?: number;
+  products_count?: number;
 }
 
 export const AdminStoresContent = () => {
@@ -68,12 +69,11 @@ export const AdminStoresContent = () => {
             .eq("id", store.user_id)
             .maybeSingle();
 
-          const { count } = await supabase
-            .from("marketplace_listings")
-            .select("*", { count: "exact", head: true })
-            .eq("store_id", store.id);
-
-          return { ...store, owner: profile, listings_count: count || 0 };
+          const [{ count: listingsCount }, { count: productsCount }] = await Promise.all([
+            supabase.from("marketplace_listings").select("*", { count: "exact", head: true }).eq("store_id", store.id),
+            supabase.from("products" as any).select("*", { count: "exact", head: true }).eq("store_id", store.id),
+          ]);
+          return { ...store, owner: profile, listings_count: listingsCount || 0, products_count: productsCount || 0 };
         })
       );
 
@@ -142,7 +142,7 @@ export const AdminStoresContent = () => {
     total: stores.length,
     verified: stores.filter((s) => s.verified).length,
     active: stores.filter((s) => s.is_active).length,
-    totalListings: stores.reduce((sum, s) => sum + (s.listings_count || 0), 0),
+    totalListings: stores.reduce((sum, s) => sum + (s.listings_count || 0) + (s.products_count || 0), 0),
   };
 
   return (
@@ -256,7 +256,12 @@ export const AdminStoresContent = () => {
                           </div>
                         </TableCell>
                         <TableCell>{store.campus || "-"}</TableCell>
-                        <TableCell>{store.listings_count}</TableCell>
+                        <TableCell>
+                          <div className="text-xs leading-tight">
+                            <div>Products: <strong>{store.products_count ?? 0}</strong></div>
+                            <div>Listings: <strong>{store.listings_count ?? 0}</strong></div>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />

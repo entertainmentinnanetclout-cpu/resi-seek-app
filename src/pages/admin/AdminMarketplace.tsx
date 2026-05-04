@@ -2,9 +2,10 @@ import { useState } from "react";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store, Users } from "lucide-react";
+import { Store, Users, Package } from "lucide-react";
 import { ResKonnectStoreManager } from "@/components/admin/ResKonnectStoreManager";
 import { StudentListingsModeration } from "@/components/admin/StudentListingsModeration";
+import AdminProductsModeration from "@/components/admin/AdminProductsModeration";
 
 export const AdminMarketplaceContent = () => {
   const [activeTab, setActiveTab] = useState("store");
@@ -28,6 +29,10 @@ export const AdminMarketplaceContent = () => {
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Student Listings</span>
             </TabsTrigger>
+            <TabsTrigger value="products" className="gap-1.5">
+              <Package className="w-4 h-4" />
+              <span className="hidden sm:inline">All Products</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="store">
@@ -35,6 +40,9 @@ export const AdminMarketplaceContent = () => {
           </TabsContent>
           <TabsContent value="listings">
             <StudentListingsModeration />
+          </TabsContent>
+          <TabsContent value="products">
+            <AdminProductsModeration />
           </TabsContent>
         </Tabs>
       </div>

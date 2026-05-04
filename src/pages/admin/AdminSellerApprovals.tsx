@@ -17,7 +17,11 @@ export const AdminSellerApprovalsContent = () => {
   const [docUrl, setDocUrl] = useState<string | null>(null);
 
   const load = async () => {
-    const { data } = await supabase.from("stores").select("*").in("kyc_status" as any, ["pending","rejected"]).order("kyc_submitted_at" as any, { ascending: false });
+    const { data } = await (supabase as any)
+      .from("stores")
+      .select("*")
+      .in("kyc_status", ["pending", "rejected"])
+      .order("kyc_submitted_at", { ascending: false });
     const enriched = await Promise.all((data || []).map(async (s: any) => {
       const { data: p } = await supabase.from("profiles").select("full_name,email,phone").eq("id", s.user_id).maybeSingle();
       return { ...s, owner: p };
@@ -51,7 +55,7 @@ export const AdminSellerApprovalsContent = () => {
 
   return (
     <>
-      <SEO title="Seller Approvals | Admin" />
+      <SEO title="Seller Approvals | Admin" description="Review and approve student seller KYC applications" />
       <div className="space-y-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2"><ShieldCheck className="w-7 h-7 text-primary" />Seller KYC Approvals</h1>
