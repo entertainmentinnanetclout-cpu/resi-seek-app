@@ -23,3 +23,12 @@ verify_jwt = false
 
 [functions.og-image]
 verify_jwt = false
+
+[functions.vapid-public-key]
+verify_jwt = false
+
+[functions.referral-capture]
+verify_jwt = false
+
+[functions.send-push]
+verify_jwt = false
