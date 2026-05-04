@@ -1,6 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const VAPID_PUBLIC_KEY = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string) || "";
+let VAPID_PUBLIC_KEY = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string) || "";
+
+async function getVapidKey(): Promise<string> {
+  if (VAPID_PUBLIC_KEY) return VAPID_PUBLIC_KEY;
+  try {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vapid-public-key`;
+    const res = await fetch(url, { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string } });
+    const json = await res.json();
+    VAPID_PUBLIC_KEY = json.publicKey || "";
+  } catch (e) { console.warn("vapid fetch failed", e); }
+  return VAPID_PUBLIC_KEY;
+}
 
 function urlBase64ToUint8Array(base64: string) {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -25,7 +36,8 @@ export async function subscribePush(): Promise<boolean> {
   if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
     return false;
   }
-  if (!VAPID_PUBLIC_KEY) {
+  const key = await getVapidKey();
+  if (!key) {
     console.warn("VITE_VAPID_PUBLIC_KEY not set");
     return false;
   }
@@ -39,7 +51,7 @@ export async function subscribePush(): Promise<boolean> {
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      applicationServerKey: urlBase64ToUint8Array(key),
     });
   }
 
