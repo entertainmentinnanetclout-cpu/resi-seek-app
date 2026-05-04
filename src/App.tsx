@@ -147,6 +147,9 @@ const App = () => {
               <Route path="/wil" element={<StudentRoute><MyWIL /></StudentRoute>} />
               <Route path="/setup-profile" element={<StudentRoute><ProfileSetup /></StudentRoute>} />
               <Route path="/dashboard/updates" element={<StudentRoute><Updates /></StudentRoute>} />
+              <Route path="/seller-onboarding" element={<StudentRoute><SellerOnboarding /></StudentRoute>} />
+              <Route path="/referrals" element={<StudentRoute><Referrals /></StudentRoute>} />
+              <Route path="/my-discount-codes" element={<StudentRoute><MyDiscountCodes /></StudentRoute>} />
               
               {/* Admin Hub Routes */}
               <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
@@ -176,6 +179,7 @@ const App = () => {
               <Route path="/admin/settings" element={<ProtectedRoute><AdminRoute><AdminSettings /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/residence-portals" element={<ProtectedRoute><AdminRoute><AdminResidencePortals /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/wil" element={<ProtectedRoute><AdminRoute><AdminWIL /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/seller-approvals" element={<ProtectedRoute><AdminRoute><AdminSellerApprovals /></AdminRoute></ProtectedRoute>} />
 
               {/* Residence Portal Routes */}
               <Route path="/residence/login" element={<ResidenceLogin />} />
@@ -197,6 +201,7 @@ const App = () => {
               </Routes>
               {/* Global ResBot Chatbot */}
               <ResBot />
+              <PushPrompt />
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
