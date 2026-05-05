@@ -484,25 +484,43 @@ export type Database = {
         Row: {
           cart_id: string
           created_at: string | null
+          hamper_id: string | null
+          hamper_item_id: string | null
           id: string
-          product_id: string
+          image_snapshot: string | null
+          item_type: string
+          product_id: string | null
           quantity: number | null
+          title_snapshot: string | null
+          unit_price: number | null
           variant_id: string | null
         }
         Insert: {
           cart_id: string
           created_at?: string | null
+          hamper_id?: string | null
+          hamper_item_id?: string | null
           id?: string
-          product_id: string
+          image_snapshot?: string | null
+          item_type?: string
+          product_id?: string | null
           quantity?: number | null
+          title_snapshot?: string | null
+          unit_price?: number | null
           variant_id?: string | null
         }
         Update: {
           cart_id?: string
           created_at?: string | null
+          hamper_id?: string | null
+          hamper_item_id?: string | null
           id?: string
-          product_id?: string
+          image_snapshot?: string | null
+          item_type?: string
+          product_id?: string | null
           quantity?: number | null
+          title_snapshot?: string | null
+          unit_price?: number | null
           variant_id?: string | null
         }
         Relationships: [
@@ -549,6 +567,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      delivery_zones: {
+        Row: {
+          base_fee: number
+          conditions: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          free_threshold: number | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          base_fee?: number
+          conditions?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          free_threshold?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          base_fee?: number
+          conditions?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          free_threshold?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       discount_orders: {
         Row: {
@@ -888,31 +945,43 @@ export type Database = {
           category: string
           created_at: string | null
           description: string | null
+          display_order: number | null
           estimated_price: number | null
           id: string
           image_url: string | null
           is_active: boolean | null
+          is_orderable: boolean
           name: string
+          price: number | null
+          stock_quantity: number | null
         }
         Insert: {
           category: string
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           estimated_price?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_orderable?: boolean
           name: string
+          price?: number | null
+          stock_quantity?: number | null
         }
         Update: {
           category?: string
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           estimated_price?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_orderable?: boolean
           name?: string
+          price?: number | null
+          stock_quantity?: number | null
         }
         Relationships: []
       }
@@ -1034,6 +1103,7 @@ export type Database = {
           category: string | null
           created_at: string | null
           description: string | null
+          display_order: number | null
           id: string
           image_url: string | null
           is_active: boolean | null
@@ -1046,6 +1116,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -1058,6 +1129,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -1590,6 +1662,7 @@ export type Database = {
           compare_at_price: number | null
           created_at: string | null
           description: string | null
+          display_order: number | null
           id: string
           images: string[] | null
           is_active: boolean | null
@@ -1609,6 +1682,7 @@ export type Database = {
           compare_at_price?: number | null
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           id?: string
           images?: string[] | null
           is_active?: boolean | null
@@ -1628,6 +1702,7 @@ export type Database = {
           compare_at_price?: number | null
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           id?: string
           images?: string[] | null
           is_active?: boolean | null
@@ -2208,7 +2283,9 @@ export type Database = {
         Row: {
           created_at: string | null
           delivery_address: string | null
+          delivery_fee: number | null
           delivery_phone: string | null
+          delivery_zone_id: string | null
           id: string
           notes: string | null
           order_number: string
@@ -2216,6 +2293,8 @@ export type Database = {
           payment_status: string | null
           pop_uploaded_at: string | null
           pop_url: string | null
+          referral_code: string | null
+          referral_credited: boolean | null
           status: string
           total_amount: number
           updated_at: string | null
@@ -2224,7 +2303,9 @@ export type Database = {
         Insert: {
           created_at?: string | null
           delivery_address?: string | null
+          delivery_fee?: number | null
           delivery_phone?: string | null
+          delivery_zone_id?: string | null
           id?: string
           notes?: string | null
           order_number: string
@@ -2232,6 +2313,8 @@ export type Database = {
           payment_status?: string | null
           pop_uploaded_at?: string | null
           pop_url?: string | null
+          referral_code?: string | null
+          referral_credited?: boolean | null
           status?: string
           total_amount: number
           updated_at?: string | null
@@ -2240,7 +2323,9 @@ export type Database = {
         Update: {
           created_at?: string | null
           delivery_address?: string | null
+          delivery_fee?: number | null
           delivery_phone?: string | null
+          delivery_zone_id?: string | null
           id?: string
           notes?: string | null
           order_number?: string
@@ -2248,6 +2333,8 @@ export type Database = {
           payment_status?: string | null
           pop_uploaded_at?: string | null
           pop_url?: string | null
+          referral_code?: string | null
+          referral_credited?: boolean | null
           status?: string
           total_amount?: number
           updated_at?: string | null
@@ -2788,6 +2875,7 @@ export type Database = {
         Args: { _code: string; _referred: string }
         Returns: undefined
       }
+      capture_referral_sale: { Args: { _order_id: string }; Returns: undefined }
       generate_ref_code: { Args: { app_id: string }; Returns: string }
       get_user_residence_id: { Args: never; Returns: string }
       get_user_staff_role: { Args: { _user_id: string }; Returns: string }
