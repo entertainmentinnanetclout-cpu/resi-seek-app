@@ -656,12 +656,20 @@ const Checkout = () => {
                   {items.map((item: any) => (
                     <div key={item.id} className="flex justify-between text-sm">
                       <span className="truncate flex-1 text-muted-foreground">
-                        {item.products?.name} × {item.quantity}
+                        {displayOf(item).title} × {item.quantity}
                       </span>
-                      <span>R{(Number(item.products?.price || 0) * item.quantity).toFixed(2)}</span>
+                      <span>R{(unitPriceOf(item) * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                   <Separator />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>R{subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Delivery {selectedZone?.name ? `· ${selectedZone.name}` : ""}</span>
+                    <span>{deliveryFee === 0 ? "Free" : `R${deliveryFee.toFixed(2)}`}</span>
+                  </div>
                   {paymentMethod === "eft" && user && (
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <span>Unique identifier</span>
@@ -672,8 +680,8 @@ const Checkout = () => {
                     <span>Total</span>
                     <span className="text-primary">
                       R{paymentMethod === "eft" && user
-                        ? (total + getUserUniqueCents(user.id) / 100).toFixed(2)
-                        : total.toFixed(2)}
+                        ? (grandTotal + getUserUniqueCents(user.id) / 100).toFixed(2)
+                        : grandTotal.toFixed(2)}
                     </span>
                   </div>
                   <Button size="lg" className="w-full" onClick={handleCheckout} disabled={isSubmitting}>
@@ -684,8 +692,8 @@ const Checkout = () => {
                       </>
                     ) : (
                       `Place Order — R${paymentMethod === "eft" && user
-                        ? (total + getUserUniqueCents(user.id) / 100).toFixed(2)
-                        : total.toFixed(2)}`
+                        ? (grandTotal + getUserUniqueCents(user.id) / 100).toFixed(2)
+                        : grandTotal.toFixed(2)}`
                     )}
                   </Button>
                 </CardContent>
