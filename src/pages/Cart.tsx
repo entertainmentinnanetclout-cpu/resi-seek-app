@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ShoppingCart, Minus, Plus, Trash2, ArrowLeft, ShoppingBag, Package } from "lucide-react";
-import { useCart } from "@/hooks/useCart";
+import { useCart, unitPriceOf, displayOf } from "@/hooks/useCart";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 
 const Cart = () => {
@@ -56,18 +56,20 @@ const Cart = () => {
               {/* Cart Items */}
               <div className="lg:col-span-2 space-y-4">
                 {items.map((item: any) => {
-                  const product = item.products;
-                  if (!product) return null;
+                  const d = displayOf(item);
+                  const lineTotal = unitPriceOf(item) * (item.quantity || 1);
+                  const detailHref = item.item_type === "product" && item.products?.id
+                    ? `/product/${item.products.id}` : undefined;
                   return (
                     <Card key={item.id}>
                       <CardContent className="p-4">
                         <div className="flex gap-4">
                           <div
                             className="w-20 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer"
-                            onClick={() => navigate(`/product/${product.id}`)}
+                            onClick={() => detailHref && navigate(detailHref)}
                           >
-                            {product.images?.[0] ? (
-                              <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                            {d.image ? (
+                              <img src={d.image} alt={d.title} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
                                 <Package className="w-8 h-8 text-muted-foreground" />
@@ -75,15 +77,15 @@ const Cart = () => {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-muted-foreground">{product.stores?.store_name}</p>
+                            <p className="text-xs text-muted-foreground">{d.subtitle}</p>
                             <h3
                               className="font-medium truncate cursor-pointer hover:text-primary"
-                              onClick={() => navigate(`/product/${product.id}`)}
+                              onClick={() => detailHref && navigate(detailHref)}
                             >
-                              {product.name}
+                              {d.title}
                             </h3>
                             <p className="text-lg font-bold text-primary mt-1">
-                              R{(Number(product.price) * item.quantity).toFixed(2)}
+                              R{lineTotal.toFixed(2)}
                             </p>
                             <div className="flex items-center justify-between mt-2">
                               <div className="flex items-center gap-2">
