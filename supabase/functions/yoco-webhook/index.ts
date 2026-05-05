@@ -59,6 +59,9 @@ Deno.serve(async (req) => {
           note: "Payment confirmed via Yoco",
         });
 
+        // Capture referral sale
+        await supabase.rpc("capture_referral_sale", { _order_id: orderId });
+
         // Mark webhook as processed
         await supabase
           .from("webhook_events")

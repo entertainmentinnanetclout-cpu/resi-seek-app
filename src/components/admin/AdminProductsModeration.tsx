@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Trash2, Eye, Search, ShoppingCart, Power } from "lucide-react";
+import { Trash2, Eye, Search, ShoppingCart, Power, ChevronUp, ChevronDown } from "lucide-react";
 import AdminPlaceOrderDialog from "@/components/admin/AdminPlaceOrderDialog";
 
 interface ProductRow {
@@ -17,6 +17,7 @@ interface ProductRow {
   stock_quantity: number;
   store_id: string;
   images?: string[];
+  display_order: number;
   stores?: { store_name: string } | null;
 }
 
@@ -30,8 +31,8 @@ const AdminProductsModeration = () => {
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("products")
-      .select("id, name, price, is_active, stock_quantity, store_id, images, stores(store_name)")
-      .order("created_at", { ascending: false })
+      .select("id, name, price, is_active, stock_quantity, store_id, images, display_order, stores(store_name)")
+      .order("display_order", { ascending: true })
       .limit(200);
     if (error) toast.error(error.message);
     setItems((data as any) || []);
@@ -46,6 +47,37 @@ const AdminProductsModeration = () => {
     if (error) { toast.error(error.message); return; }
     toast.success("Product deleted");
     load();
+  };
+
+  const handleReorder = async (product: ProductRow, direction: "up" | "down") => {
+    const currentIndex = items.findIndex((i) => i.id === product.id);
+    if (direction === "up" && currentIndex === 0) return;
+    if (direction === "down" && currentIndex === items.length - 1) return;
+
+    const otherIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    const otherProduct = items[otherIndex];
+
+    const currentOrder = product.display_order || 0;
+    const otherOrder = otherProduct.display_order || 0;
+
+    try {
+      const { error: err1 } = await supabase
+        .from("products" as any)
+        .update({ display_order: otherOrder })
+        .eq("id", product.id);
+      if (err1) throw err1;
+
+      const { error: err2 } = await supabase
+        .from("products" as any)
+        .update({ display_order: currentOrder })
+        .eq("id", otherProduct.id);
+      if (err2) throw err2;
+
+      toast.success("Order updated");
+      load();
+    } catch (err: any) {
+      toast.error("Failed to reorder");
+    }
   };
 
   const toggle = async (p: ProductRow) => {
@@ -79,6 +111,7 @@ const AdminProductsModeration = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-20">Order</TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead>Store</TableHead>
                   <TableHead>Price</TableHead>
@@ -88,8 +121,30 @@ const AdminProductsModeration = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((p) => (
+                {filtered.map((p, idx) => (
                   <TableRow key={p.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          disabled={idx === 0}
+                          onClick={() => handleReorder(p, "up")}
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          disabled={idx === items.length - 1}
+                          onClick={() => handleReorder(p, "down")}
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                     <TableCell className="flex items-center gap-2">
                       {p.images?.[0] && <img src={p.images[0]} alt="" className="w-8 h-8 rounded object-cover" />}
                       <span className="font-medium">{p.name}</span>

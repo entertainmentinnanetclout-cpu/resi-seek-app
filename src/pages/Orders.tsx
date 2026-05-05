@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +31,7 @@ const trackingSteps = ["Pending", "Confirmed", "Processing", "In Transit", "Deli
 
 const Orders = () => {
   const shouldBlock = useAdminRedirect();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -318,6 +319,10 @@ const Orders = () => {
       ["awaiting_payment", "awaiting_verification"].includes(order.payment_status) &&
       order.status === "pending";
 
+    const canResumePayment = (order.payment_method === "eft" || order.payment_method === "yoco") &&
+      order.payment_status === "awaiting_payment" &&
+      order.status === "pending";
+
     // Derive EFT/payment sub-badge
     const isEft = order.payment_method === "eft";
     let paymentBadge: { label: string; className: string } | null = null;
@@ -383,9 +388,13 @@ const Orders = () => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.products?.name || "Product"}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium truncate">{item.products?.name || item.title_snapshot || "Item"}</p>
+                      {item.item_type === "hamper" && <Badge variant="outline" className="text-[10px] h-4 px-1">Hamper</Badge>}
+                      {item.item_type === "hamper_item" && <Badge variant="outline" className="text-[10px] h-4 px-1">Item</Badge>}
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      {item.products?.stores?.store_name} · Qty: {item.quantity}
+                      {item.products?.stores?.store_name || (item.item_type?.includes('hamper') ? "ResKonnect" : "")} · Qty: {item.quantity}
                     </p>
                   </div>
                   <p className="text-sm font-semibold">R{Number(item.price * item.quantity).toFixed(2)}</p>
@@ -399,6 +408,19 @@ const Orders = () => {
               </span>
               <span className="font-bold text-primary">R{Number(order.total_amount).toFixed(2)}</span>
             </div>
+
+            {/* Resume payment for EFT/Yoco */}
+            {canResumePayment && (
+              <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-sm">
+                  <p className="font-medium text-primary">Payment pending</p>
+                  <p className="text-xs text-muted-foreground">Resume your payment to confirm this order.</p>
+                </div>
+                <Button size="sm" onClick={() => navigate(`/orders/${order.id}/pay`)}>
+                  Resume Payment
+                </Button>
+              </div>
+            )}
 
             {/* PoP upload for unverified Yoco orders */}
             {needsPop && (

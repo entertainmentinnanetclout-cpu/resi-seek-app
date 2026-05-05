@@ -1,6 +1,6 @@
 import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import { getOgImageUrl } from "@/lib/share";
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const addToCart = useAddToCart();
   const [product, setProduct] = useState<any>(null);
@@ -33,6 +34,13 @@ const ProductDetail = () => {
   useEffect(() => {
     if (id) fetchProduct();
   }, [id]);
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      localStorage.setItem("pending_ref", ref);
+    }
+  }, [searchParams]);
 
   const fetchProduct = async () => {
     setIsLoading(true);
