@@ -1,180 +1,189 @@
-## Goal
+# Unified Commerce + Affiliate Program Plan
 
-Close out the seller program + admin marketplace control gaps and fix the broken admin visibility:
+## 1. VAPID Secrets (Web Push)
 
-1. Wire the new pages (`SellerOnboarding`, `Referrals`, `MyDiscountCodes`, `AdminSellerApprovals`) into routing and nav.
-2. Fix admin not seeing listings (showing 0) and not being able to remove faulty seller products.
-3. Add admin "Order on behalf of student" for any product.
-4. Make hampers easily addable to the Deals section + make hamper card open a full-detail dialog showing constituent items.
-5. Build the missing edge functions: `send-push`, `referral-capture`, `vapid-public-key`.
-6. Add the small UX glue (PushPrompt mounted globally, referral code captured from `?ref=` on signup).
-7. Idempotent SQL migration for everything new + safety policies.
+Add three secrets to backend so `send-push` can sign notifications:
 
-## 1. Routing & Nav (App.tsx + DashboardLayout)
+- `VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT` (e.g. `mailto:reskonnect@gmail.com`)
 
-Add inside `<Routes>`:
+Will request via `add_secret` once plan approved. Generate with `npx web-push generate-vapid-keys`. Also expose `VAPID_PUBLIC_KEY` to client via existing `vapid-public-key` edge function so no rebuild is needed when keys rotate.
 
-```text
-/seller-onboarding        StudentRoute -> SellerOnboarding
-/referrals                StudentRoute -> Referrals
-/my-discount-codes        StudentRoute -> MyDiscountCodes
-/admin/seller-approvals   AdminRoute   -> AdminSellerApprovals
-```
+## 2. Unified Purchase Flow (Products + Hampers + Hamper Items + Deals)
 
-Add a "Sellers" sub-tab in `AdminCommerceHub` for `AdminSellerApprovals` (currently the "sellers" tab incorrectly mounts `AdminStoresContent`).
+Currently products go through `Cart → Checkout → EFT/Yoco`. Hampers use a one-shot order. Deals reuse products. The 14 standalone hamper-catalog items (`hamper_items` table) have no order path at all.
 
-Add sidebar links in `DashboardLayout` (student): "Become a Seller", "Referrals", "Discount Codes" (only if user owns a store).
-
-Mount `<PushPrompt />` once in `App.tsx` (next to `<ResBot />`) so every authenticated page can prompt for notifications.
-
-## 2. Fix Admin Listings = 0 and Faulty Product Removal
-
-Root cause check: `AdminStores` counts `marketplace_listings` per `store_id`, but verified seller products live in `products` (per memory: verified stores → `products`, pending → `marketplace_listings`). So admin sees 0 listings even when stores have products.
-
-Changes in `src/pages/admin/AdminStores.tsx`:
-
-- Count BOTH `products` and `marketplace_listings` per store; show as `Products: X · Listings: Y`.
-- Add "View Products" action that opens a dialog listing every `products` row for the store with Delete + Toggle Active buttons (admin-only, uses existing `admins_manage_all_products` policy).
-
-Changes in `src/components/admin/StudentListingsModeration.tsx`:
-
-- Add a Delete button (uses existing `Admins can delete marketplace listings` policy).
-- Add a "Source" column showing whether the row came from `marketplace_listings` (legacy/unverified) or `products` (verified store).
-- Bug: the sellers list uses `.eq("id", listing.user_id)` per row but the parallel fetches don't dedupe — refactor to a single `in()` query for performance, but functionality stays the same.
-
-New `AdminProductsModeration` mini-table inside `AdminMarketplace` "Student Listings" tab so admin can delete `products` rows from any store (currently no UI for that). Reuses `products` table with `admins_manage_all_products`.
-
-## 3. Admin Order-on-Behalf
-
-New component `src/components/admin/AdminPlaceOrderDialog.tsx` opened from the products list. Form: pick student (search profiles by email/full_name), quantity, delivery_address, payment_method (cash/EFT). On submit, insert into `shop_orders` with `user_id = chosen_student_id`, `status = 'pending'`, plus a row in `shop_order_items`. Uses the existing admin RLS `admins_manage_all_*` policies.
-
-Add an "Order on behalf" button next to each product in the new admin products dialog (#2) and in `ResKonnectStoreManager`.
-
-## 4. Hampers — easier admin flow + clickable detail
-
-`src/pages/admin/AdminHamperBundles.tsx`:
-
-- Already lets admin pick catalog items. Add an "Add to Deals" toggle (`is_landing_featured`) and a quick `Switch` in the table row for one-click promotion.
-- Add bulk "Add selected items" dropdown so admin can append items to an existing bundle without reopening the editor.
-
-`src/components/MarketplaceCard.tsx`:
-
-- Already pressable. For `type === 'hamper'`, instead of routing to `/product/...`, open a new shared `<HamperDetailDialog>`.
-
-New `src/components/HamperDetailDialog.tsx`:
-
-- Shows hamper image, description, price, full list of `hamper_bundle_items` (item_name × quantity), "Order Now" button (cash on delivery via `hamper_orders`), and a `<ShareButton type="hamper" />`.
-
-`src/pages/Marketplace.tsx`:
-
-- Replace inline hamper render with `MarketplaceCard` using `onClick={() => setSelectedHamper(h)}` and mount the dialog.
-
-## 5. Edge Functions
+Make every saleable thing flow through the same pipeline:
 
 ```text
-supabase/functions/vapid-public-key/index.ts   — GET, returns { publicKey: VAPID_PUBLIC_KEY }
-supabase/functions/send-push/index.ts          — POST { user_id|user_ids, title, body, url? }
-                                                 service-role: looks up push_subscriptions,
-                                                 signs VAPID JWT (web-push deno port),
-                                                 fans out, prunes 410/404 rows
-supabase/functions/referral-capture/index.ts   — POST { code, referred_user_id }
-                                                 increments referral_codes.signup_count,
-                                                 inserts referral_earnings(source_type='signup', amount=settings.signup_bonus)
+Card click → Detail Dialog → "Add to Cart" → /cart → /checkout → Payment screen w/ countdown → /orders/:id
 ```
 
-Register all three in `supabase/config.toml` with `verify_jwt = false` (referral-capture and vapid-public-key are public; send-push validates an admin/service caller in code).
+### 2a. Cart model extension
 
-Secrets needed (request via `add_secret` if missing): `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (e.g. `mailto:reskonnect@gmail.com`).
-
-Frontend wiring:
-
-- `src/lib/push.ts`: if `VITE_VAPID_PUBLIC_KEY` env is missing, fall back to fetching `vapid-public-key` edge function.
-- `src/pages/Auth.tsx`: read `?ref=CODE` from URL on signup, after successful signup call `referral-capture` edge function.
-
-## 6. SQL Migration — `docs/MARKETPLACE_CONTROL_SQL.sql` (idempotent, additive)
+Extend `cart_items` to support multiple sources via a discriminator:
 
 ```sql
--- platform_settings: signup bonus + commission %
-INSERT INTO public.platform_settings(key, value, description)
-VALUES ('referral_signup_bonus', '{"amount": 10}'::jsonb, 'Flat ZAR per referred signup'),
-       ('referral_sale_percent', '{"percent": 5}'::jsonb, 'Percent of sale paid to referrer')
-ON CONFLICT (key) DO NOTHING;
-
--- shop_order_items table (if missing) so admin can place orders programmatically
-CREATE TABLE IF NOT EXISTS public.shop_order_items (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id uuid NOT NULL REFERENCES public.shop_orders(id) ON DELETE CASCADE,
-  product_id uuid NOT NULL,
-  store_id uuid,
-  quantity integer NOT NULL DEFAULT 1,
-  unit_price numeric NOT NULL,
-  created_at timestamptz DEFAULT now()
+ALTER TABLE cart_items
+  ADD COLUMN IF NOT EXISTS item_type text NOT NULL DEFAULT 'product',
+  ADD COLUMN IF NOT EXISTS hamper_id uuid,
+  ADD COLUMN IF NOT EXISTS hamper_item_id uuid,
+  ADD COLUMN IF NOT EXISTS unit_price numeric,
+  ADD COLUMN IF NOT EXISTS title_snapshot text,
+  ADD COLUMN IF NOT EXISTS image_snapshot text;
+ALTER TABLE cart_items ALTER COLUMN product_id DROP NOT NULL;
+ALTER TABLE cart_items ADD CONSTRAINT cart_item_source_chk CHECK (
+  (item_type='product' AND product_id IS NOT NULL) OR
+  (item_type='hamper'  AND hamper_id  IS NOT NULL) OR
+  (item_type='hamper_item' AND hamper_item_id IS NOT NULL)
 );
-ALTER TABLE public.shop_order_items ENABLE ROW LEVEL SECURITY;
--- admins manage; users view their own via order
-DO $$ BEGIN CREATE POLICY admins_manage_shop_order_items ON public.shop_order_items FOR ALL USING (has_role(auth.uid(),'admin')) WITH CHECK (has_role(auth.uid(),'admin')); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY users_view_own_shop_order_items ON public.shop_order_items FOR SELECT USING (EXISTS (SELECT 1 FROM shop_orders so WHERE so.id = shop_order_items.order_id AND so.user_id = auth.uid())); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
--- ensure product_categories has a 'hampers' slug used by MarketplaceCard deal grouping
-INSERT INTO public.product_categories(name, slug, display_order)
-VALUES ('Hampers','hampers',99) ON CONFLICT DO NOTHING;
-
--- referral capture RPC: atomic signup-bonus award
-CREATE OR REPLACE FUNCTION public.capture_referral(_code text, _referred uuid)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
-DECLARE _ref uuid; _bonus numeric;
-BEGIN
-  SELECT user_id INTO _ref FROM referral_codes WHERE code = _code AND is_active = true;
-  IF _ref IS NULL OR _ref = _referred THEN RETURN; END IF;
-  SELECT (value->>'amount')::numeric INTO _bonus FROM platform_settings WHERE key='referral_signup_bonus';
-  UPDATE referral_codes SET signup_count = signup_count + 1, total_earned = total_earned + COALESCE(_bonus,0) WHERE user_id = _ref;
-  INSERT INTO referral_earnings(referrer_user_id, referred_user_id, source_type, amount)
-  VALUES (_ref, _referred, 'signup', COALESCE(_bonus,0));
-END $$;
-GRANT EXECUTE ON FUNCTION public.capture_referral(text, uuid) TO anon, authenticated;
 ```
 
-(File also defensively re-asserts `admins_manage_all_products`, `Admins delete marketplace listings`, and `admins_manage_shop_orders` with `DO $$ ... EXCEPTION WHEN duplicate_object` blocks so re-runs never break existing policies.)
+`useCart` hook gets `addHamper(hamper)` and `addHamperItem(item)` helpers in addition to current `addProduct`.
 
-## 7. QA Checklist (post-deploy)
+### 2b. Hamper item ordering
 
-1. `/admin/commerce?tab=stores` shows non-zero counts when a store has products.
-2. Admin can delete a faulty seller product; it disappears from `/marketplace`.
-3. Admin can place an order for a student; order appears in that student's `/orders` and in `/admin/commerce?tab=shop-orders`.
-4. Hamper card on `/marketplace?tab=hampers` opens dialog with item list + Order button.
-5. Admin can flip a hamper's "Featured in Deals" switch; it appears under the Deals tab.
-6. New routes `/seller-onboarding`, `/referrals`, `/my-discount-codes`, `/admin/seller-approvals` load without 404.
-7. Push prompt appears for logged-in users; enabling stores a row in `push_subscriptions`; sending a test from `send-push` triggers a browser notification.
-8. Signing up with `/auth?ref=CODE` increments `referral_codes.signup_count` for the code owner.
+`hamper_items` (the 14 catalog items) become single-orderable. Add `is_orderable boolean DEFAULT true` and `price` is already there. Build a new `/marketplace?tab=hamper-items` grid using `MarketplaceCard` with type `hamper_item`. Each card opens a detail dialog with quantity + Add to Cart.
 
-## 8. Files Touched
+### 2c. Hamper detail dialog
+
+Replace current "Order Now" cash-only button with "Add to Cart" routing through the unified flow. Keep the items list display.
+
+### 2d. Persistent payment screen with countdown
+
+Existing EFT system already has `expires_at`. Move payment UI into a dedicated route `/orders/:id/pay` that:
+
+- Reads order + EFT row from DB on mount (so closing/reopening works).
+- Shows live countdown to `expires_at`.
+- Lets user upload PoP, switch to Yoco, or cancel.
+- If expired, shows "Generate new payment reference" action.
+
+Link from `/orders` row: any order with `payment_status in ('pending','awaiting_payment')` shows a "Resume payment" button → `/orders/:id/pay`.
+
+## 3. Delivery Configuration
+
+### 3a. Admin delivery rules
+
+New table:
+
+```sql
+CREATE TABLE delivery_zones (
+  id uuid PK,
+  name text,                -- "TUT Soshanguve", "Pretoria CBD", "National courier"
+  base_fee numeric,
+  per_km_fee numeric DEFAULT 0,
+  free_threshold numeric,   -- order total above which delivery is free
+  conditions text,          -- free-text shown to student
+  is_active boolean DEFAULT true,
+  display_order int
+);
+```
+
+Admin UI: new tab in Commerce Hub → "Delivery Zones" with CRUD. Populate with TUT campus drop-offs and listed residences seed.
+
+### 3b. Checkout delivery step
+
+Insert a "Delivery" step between Cart and Payment in `Checkout.tsx`:
+
+- Radio list of active `delivery_zones` with fee, free-threshold note, and conditions text.
+- Selected zone fee added to order total; persisted on `shop_orders` as `delivery_zone_id`, `delivery_fee`.
+
+Same step appears for hamper / hamper-item orders since they share the flow. and upgrade cart button/icon to hover on when users are adding things to cart so they can easily access art without having to close the page and go to cart.
+
+all items and products Added must have product display cards when tapping them
+
+## 4. Admin Product Ordering
+
+Add `display_order int DEFAULT 0` to `products`, `hampers`, `hamper_items`. Admin pages get drag-handle reorder (using `@dnd-kit` already in project) + numeric input fallback. Public listings sort by `display_order ASC, created_at DESC`. Affects:
+
+- `Marketplace.tsx` product grid
+- Hampers tab
+- Landing "Featured" rows
+
+## 5. Affiliate / Referral Program
+
+### 5a. Public affiliate landing page
+
+New route `/affiliates` (PUBLIC) — explains program, signup bonus, sale %, FAQ, CTA "Join & get your link". Footer of `PublicLayout` gets an "Affiliates" link.
+
+### 5b. Per-product affiliate links
+
+`Referrals.tsx` gets a "Product links" tab that lets a referrer paste/select any product, generating `https://reskonnect.lovable.app/product/<id>?ref=<CODE>`. `ProductDetail.tsx` reads `?ref=` and stores it in `localStorage('pending_ref')`. On checkout completion, server-side `capture_referral_sale` RPC awards the configured percent to the referrer.
+
+```sql
+CREATE OR REPLACE FUNCTION capture_referral_sale(_order_id uuid)
+RETURNS void ... -- looks up order.user_id's pending referral; reads referral_sale_percent from platform_settings; inserts referral_earnings(source_type='sale', amount=...)
+```
+
+Trigger: call this RPC from `Checkout` success handler / Yoco webhook / EFT confirmation.
+
+### 5c. Earnings dashboard upgrades
+
+`Referrals.tsx` already shows code + earnings. Add:
+
+- Signup bonus credits card (count × bonus).
+- Ledger table with columns: date, type (signup/sale), referred user (masked), order ref, amount, status.
+- Per-product link generator as above.
+- "Copy" + native share for each link.
+
+## 6. Student Orders Page
+
+`Orders.tsx` already exists for shop orders. Expand to a unified view:
+
+- Tabs: All / Products / Hampers / Hamper Items / Deals.
+- Each row shows: order_number, items summary, status badge, total, created_at, "Resume payment" if pending, "View details" → `/orders/:id`.
+- New `/orders/:id` detail page: items, delivery zone, status timeline (from `order_status_history`), payment info, support button.
+- Realtime subscription to `shop_orders` + `order_status_history` so status updates push live.
+
+## 7. Files Touched
 
 **New**
 
-- `src/components/HamperDetailDialog.tsx`
-- `src/components/admin/AdminPlaceOrderDialog.tsx`
-- `src/components/admin/AdminProductsModeration.tsx`
-- `supabase/functions/vapid-public-key/index.ts`
-- `supabase/functions/send-push/index.ts`
-- `supabase/functions/referral-capture/index.ts`
-- `docs/MARKETPLACE_CONTROL_SQL.sql`
+- `src/pages/Affiliates.tsx` (public marketing page)
+- `src/pages/OrderPayment.tsx` (`/orders/:id/pay`)
+- `src/pages/OrderDetail.tsx` (`/orders/:id`)
+- `src/components/CheckoutDeliveryStep.tsx`
+- `src/components/admin/AdminDeliveryZones.tsx`
+- `src/components/admin/ProductReorderTable.tsx`
+- `docs/UNIFIED_COMMERCE_SQL.sql` (idempotent migration)
 
 **Edited**
 
-- `src/App.tsx` (routes + PushPrompt mount)
-- `src/components/DashboardLayout.tsx` (sidebar entries)
-- `src/pages/Auth.tsx` (capture `?ref=`)
-- `src/pages/Marketplace.tsx` (hamper dialog)
-- `src/pages/admin/AdminStores.tsx` (product count, products dialog, delete)
-- `src/pages/admin/AdminCommerceHub.tsx` (proper Sellers tab → AdminSellerApprovals)
-- `src/pages/admin/AdminMarketplace.tsx` (mount AdminProductsModeration)
-- `src/components/admin/StudentListingsModeration.tsx` (delete + source column)
-- `src/pages/admin/AdminHamperBundles.tsx` (one-click "Add to Deals" switch)
-- `src/lib/push.ts` (fallback fetch for VAPID key)
-- `supabase/config.toml` (verify_jwt for new functions)
+- `src/App.tsx` (new routes)
+- `src/components/PublicLayout.tsx` (footer Affiliates link)
+- `src/hooks/useCart.ts` (hamper + hamper_item support)
+- `src/pages/Marketplace.tsx` (hamper-items tab, reorder-aware)
+- `src/components/HamperDetailDialog.tsx` (Add to Cart)
+- `src/components/MarketplaceCard.tsx` (display_order, hamper_item type)
+- `src/pages/Cart.tsx` + `src/pages/Checkout.tsx` (delivery step, multi-source)
+- `src/pages/Orders.tsx` (unified tabs, resume-payment)
+- `src/pages/ProductDetail.tsx` (capture `?ref=`)
+- `src/pages/Referrals.tsx` (ledger, product links, signup credits)
+- `src/pages/admin/AdminCommerceHub.tsx` (Delivery Zones tab)
+- `src/pages/admin/AdminMarketplace.tsx`, `AdminHamperBundles.tsx`, `AdminHamperItems.tsx` (drag reorder)
 
-## 9. Action Required From You
+## 8. SQL Migration (idempotent — `docs/UNIFIED_COMMERCE_SQL.sql`)
 
-1. Run `docs/MARKETPLACE_CONTROL_SQL.sql` in the external Supabase SQL editor.
-2. Add secrets if missing: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (a one-time `npx web-push generate-vapid-keys` produces them).
-3. Optional: set `VITE_VAPID_PUBLIC_KEY` in env for fastest client startup (otherwise we fetch it from the edge function on first use). set in env
+- `cart_items` source-discriminator columns + check constraint
+- `delivery_zones` table + RLS (admins manage, anyone views active) + seed rows
+- `shop_orders` add `delivery_zone_id`, `delivery_fee`
+- `products`/`hampers`/`hamper_items` add `display_order`
+- `hamper_items` add `is_orderable`, ensure `price` not null with default
+- `capture_referral_sale(order_id)` RPC
+- Indexes on `display_order`, `cart_items.item_type`
+
+## 9. Action Required
+
+1. Approve this plan.
+2. Provide three VAPID values when prompted (or let me generate).
+3. After deploy: run the SQL file, then admins set delivery zones + product order in `/admin/commerce`.
+
+## 10. QA Checklist
+
+- Add a hamper, a hamper-item, and a product to cart together → single checkout works.
+- Close the payment tab → reopen via `/orders` → "Resume payment" loads countdown intact.
+- Admin reorders products → public Marketplace reflects new order.
+- `/affiliates` loads without auth; "Join" CTA goes to `/auth?returnTo=/referrals`.
+- Visit a product with `?ref=CODE`, complete purchase → ledger row appears for referrer with `source_type=sale`.
+- Push notification fires after VAPID secrets are added.
