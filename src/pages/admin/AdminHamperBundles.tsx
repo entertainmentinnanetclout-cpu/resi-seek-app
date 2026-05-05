@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Gift, Plus, Pencil, Trash2, Loader2, Package } from "lucide-react";
+import { Gift, Plus, Pencil, Trash2, Loader2, Package, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ImageInput from "@/components/ImageInput";
@@ -27,6 +27,7 @@ interface Hamper {
   image_url: string | null;
   is_active: boolean;
   is_landing_featured?: boolean;
+  display_order: number;
   hamper_bundle_items?: { id: string; item_name: string; quantity: number }[];
 }
 
@@ -63,7 +64,7 @@ export const AdminHamperBundlesContent = () => {
       supabase
         .from("hampers" as any)
         .select("*, hamper_bundle_items(id, item_name, quantity, hamper_item_id)")
-        .order("created_at", { ascending: false }),
+        .order("display_order", { ascending: true }),
       supabase
         .from("hamper_items" as any)
         .select("id, name, category")
@@ -177,6 +178,37 @@ export const AdminHamperBundlesContent = () => {
     }
   };
 
+  const handleReorder = async (bundle: Hamper, direction: "up" | "down") => {
+    const currentIndex = bundles.findIndex((b) => b.id === bundle.id);
+    if (direction === "up" && currentIndex === 0) return;
+    if (direction === "down" && currentIndex === bundles.length - 1) return;
+
+    const otherIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    const otherBundle = bundles[otherIndex];
+
+    const currentOrder = bundle.display_order || 0;
+    const otherOrder = otherBundle.display_order || 0;
+
+    try {
+      const { error: err1 } = await supabase
+        .from("hampers" as any)
+        .update({ display_order: otherOrder })
+        .eq("id", bundle.id);
+      if (err1) throw err1;
+
+      const { error: err2 } = await supabase
+        .from("hampers" as any)
+        .update({ display_order: currentOrder })
+        .eq("id", otherBundle.id);
+      if (err2) throw err2;
+
+      toast.success("Order updated");
+      fetchAll();
+    } catch (err: any) {
+      toast.error("Failed to reorder");
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this hamper bundle?")) return;
     try {
@@ -238,6 +270,7 @@ export const AdminHamperBundlesContent = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-20">Order</TableHead>
                       <TableHead>Bundle</TableHead>
                       <TableHead>Items</TableHead>
                       <TableHead>Price</TableHead>
@@ -247,8 +280,30 @@ export const AdminHamperBundlesContent = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {bundles.map((b) => (
+                    {bundles.map((b, idx) => (
                       <TableRow key={b.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              disabled={idx === 0}
+                              onClick={() => handleReorder(b, "up")}
+                            >
+                              <ChevronUp className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              disabled={idx === bundles.length - 1}
+                              onClick={() => handleReorder(b, "down")}
+                            >
+                              <ChevronDown className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             {b.image_url ? (

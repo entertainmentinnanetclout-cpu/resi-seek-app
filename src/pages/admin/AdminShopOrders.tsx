@@ -159,6 +159,9 @@ export const AdminShopOrdersContent = () => {
         message: `Your EFT payment ${eft.payment_reference} has been confirmed. Your order is being processed.`,
       });
 
+      // Capture referral sale
+      await supabase.rpc("capture_referral_sale", { _order_id: eft.order_id });
+
       toast.success("EFT approved & order confirmed");
       setEftDetailOpen(false);
       setEftNote("");
@@ -302,6 +305,9 @@ export const AdminShopOrdersContent = () => {
           transaction_reference: proof.reference_number || "manual-approval",
         } as any);
       }
+
+      // Capture referral sale
+      await supabase.rpc("capture_referral_sale", { _order_id: proof.order_id });
 
       toast.success("Payment approved and order confirmed");
       setProofDetailOpen(false);

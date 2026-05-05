@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Search, ShoppingCart, Star, Filter, Package, Store, Flame, Sparkles, Percent, Gift } from "lucide-react";
 
-import { useCartCount } from "@/hooks/useCart";
+import { useCartCount, useAddHamperToCart, useAddHamperItemToCart } from "@/hooks/useCart";
 import MarketplaceCard from "@/components/MarketplaceCard";
 import ShareButton from "@/components/ShareButton";
 import MarketplaceBanners from "@/components/MarketplaceBanners";
@@ -24,6 +24,7 @@ const Marketplace = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const cartCount = useCartCount();
+  const addHamperToCart = useAddHamperToCart();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") || "products";
 
@@ -43,11 +44,17 @@ const Marketplace = () => {
   const [hampersLoading, setHampersLoading] = useState(true);
   const [selectedHamper, setSelectedHamper] = useState<any | null>(null);
 
+  // Hamper items state
+  const [hamperItems, setHamperItems] = useState<any[]>([]);
+  const [hamperItemsLoading, setHamperItemsLoading] = useState(true);
+  const addHamperItemToCart = useAddHamperItemToCart();
+
   useEffect(() => {
     fetchCategories();
     fetchProducts();
     fetchDiscounts();
     fetchHampers();
+    fetchHamperItems();
   }, []);
 
   
@@ -76,43 +83,38 @@ const Marketplace = () => {
   };
 
   const fetchHampers = async () => {
-    const { data } = await supabase.from("hampers" as any).select("*, hamper_bundle_items(*)").eq("is_active", true);
+    const { data } = await supabase.from("hampers" as any).select("*, hamper_bundle_items(*)").eq("is_active", true).order("display_order", { ascending: true });
     setHampers(data || []);
     setHampersLoading(false);
   };
 
-  const handleHamperOrder = async (hamper: any) => {
-    if (!user) {
-      toast.error("Please sign in to order a hamper");
-      navigate("/auth?returnTo=/marketplace?tab=hampers");
-      return;
-    }
-    try {
-      const orderNumber = `HMP-${Date.now().toString(36).toUpperCase()}`;
-      const { data: order, error } = await supabase
-        .from("hamper_orders" as any)
-        .insert({
-          user_id: user.id,
-          order_number: orderNumber,
-          total_amount: hamper.price,
-          status: "pending",
-          payment_method: "cod",
-        } as any)
-        .select("id")
-        .single();
-      if (error) throw error;
-      await supabase.from("hamper_order_items" as any).insert({
-        order_id: (order as any).id,
-        hamper_id: hamper.id,
-        quantity: 1,
-        price: hamper.price,
-      } as any);
-      toast.success(`${hamper.name} ordered! Check My Orders for status.`);
-      navigate("/orders");
-    } catch (err: any) {
-      const msg = err && typeof err === "object" && "message" in err ? err.message : String(err);
-      toast.error(`Failed to order: ${msg}`);
-    }
+  const fetchHamperItems = async () => {
+    const { data } = await supabase
+      .from("hamper_items" as any)
+      .select("*")
+      .eq("is_active", true)
+      .eq("is_orderable", true)
+      .order("display_order", { ascending: true });
+    setHamperItems(data || []);
+    setHamperItemsLoading(false);
+  };
+
+  const handleAddHamperToCart = async (hamper: any) => {
+    await addHamperToCart({
+      id: hamper.id,
+      name: hamper.name,
+      price: hamper.price,
+      image_url: hamper.image_url
+    });
+  };
+
+  const handleAddHamperItemToCart = async (item: any) => {
+    await addHamperItemToCart({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      image_url: item.image_url
+    });
   };
 
   const filteredProducts = products.filter((p: any) => {
@@ -179,17 +181,20 @@ const Marketplace = () => {
             ))}
           </div>
 
-          {/* Tabs: Products | Deals | Hampers */}
+          {/* Tabs: Products | Deals | Hampers | Hamper Items */}
           <Tabs defaultValue={defaultTab} className="space-y-6">
-            <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex">
-              <TabsTrigger value="products" className="gap-1.5">
+            <TabsList className="w-full sm:w-auto flex overflow-x-auto h-auto p-1 gap-1">
+              <TabsTrigger value="products" className="gap-1.5 flex-1 sm:flex-none">
                 <Package className="w-4 h-4" /> Products
               </TabsTrigger>
-              <TabsTrigger value="deals" className="gap-1.5">
+              <TabsTrigger value="deals" className="gap-1.5 flex-1 sm:flex-none">
                 <Percent className="w-4 h-4" /> Deals
               </TabsTrigger>
-              <TabsTrigger value="hampers" className="gap-1.5">
+              <TabsTrigger value="hampers" className="gap-1.5 flex-1 sm:flex-none">
                 <Gift className="w-4 h-4" /> Hampers
+              </TabsTrigger>
+              <TabsTrigger value="hamper-items" className="gap-1.5 flex-1 sm:flex-none">
+                <Package className="w-4 h-4" /> Hamper Items
               </TabsTrigger>
             </TabsList>
 
@@ -342,10 +347,39 @@ const Marketplace = () => {
                       price={Number(hamper.price)}
                       badge={hamper.stock_quantity > 0 ? `${hamper.stock_quantity} left` : undefined}
                       outOfStock={hamper.stock_quantity <= 0}
-                      ctaLabel="Order Hamper"
+                      ctaLabel="Add to Cart"
                       shareText={hamper.description || "Curated student hamper bundle from ResKonnect"}
                       onClick={() => setSelectedHamper(hamper)}
-                      onCart={() => setSelectedHamper(hamper)}
+                      onCart={() => handleAddHamperToCart(hamper)}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Hamper Items Tab */}
+            <TabsContent value="hamper-items" className="space-y-6">
+              <div className="flex items-center gap-2 mb-2"><Package className="w-5 h-5 text-primary" /><h2 className="text-xl font-bold">Single Hamper Items</h2></div>
+              {hamperItemsLoading ? (
+                <div className="text-center py-12"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" /></div>
+              ) : hamperItems.length === 0 ? (
+                <Card><CardContent className="py-12 text-center"><Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" /><h3 className="text-xl font-semibold mb-2">No items available</h3><p className="text-muted-foreground">Single hamper items will appear here soon.</p></CardContent></Card>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {hamperItems.map((item: any) => (
+                    <MarketplaceCard
+                      key={item.id}
+                      type="product"
+                      id={item.id}
+                      title={item.name}
+                      subtitle="Hamper catalog item"
+                      imageUrl={item.image_url}
+                      price={Number(item.price)}
+                      badge={item.stock_quantity > 0 ? `${item.stock_quantity} left` : undefined}
+                      outOfStock={item.stock_quantity <= 0}
+                      ctaLabel="Add to Cart"
+                      shareText={item.description || item.name}
+                      onCart={() => handleAddHamperItemToCart(item)}
                     />
                   ))}
                 </div>
@@ -358,7 +392,7 @@ const Marketplace = () => {
         hamper={selectedHamper}
         open={!!selectedHamper}
         onClose={() => setSelectedHamper(null)}
-        onOrder={(h) => { setSelectedHamper(null); handleHamperOrder(h); }}
+        onOrder={(h) => { setSelectedHamper(null); handleAddHamperToCart(h); }}
       />
     </DashboardLayout>
   );
