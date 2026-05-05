@@ -2192,32 +2192,47 @@ export type Database = {
       shop_order_items: {
         Row: {
           created_at: string | null
+          hamper_id: string | null
+          hamper_item_id: string | null
           id: string
+          image_snapshot: string | null
+          item_type: string
           order_id: string
           price: number
-          product_id: string
+          product_id: string | null
           quantity: number
-          store_id: string
+          store_id: string | null
+          title_snapshot: string | null
           variant_id: string | null
         }
         Insert: {
           created_at?: string | null
+          hamper_id?: string | null
+          hamper_item_id?: string | null
           id?: string
+          image_snapshot?: string | null
+          item_type?: string
           order_id: string
           price: number
-          product_id: string
+          product_id?: string | null
           quantity?: number
-          store_id: string
+          store_id?: string | null
+          title_snapshot?: string | null
           variant_id?: string | null
         }
         Update: {
           created_at?: string | null
+          hamper_id?: string | null
+          hamper_item_id?: string | null
           id?: string
+          image_snapshot?: string | null
+          item_type?: string
           order_id?: string
           price?: number
-          product_id?: string
+          product_id?: string | null
           quantity?: number
-          store_id?: string
+          store_id?: string | null
+          title_snapshot?: string | null
           variant_id?: string | null
         }
         Relationships: [
