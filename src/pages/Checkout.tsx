@@ -603,6 +603,45 @@ const Checkout = () => {
                 </CardContent>
               </Card>
 
+              {/* Delivery Zone (admin-controlled) */}
+              {zones.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Delivery Option & Fees</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <RadioGroup value={selectedZoneId} onValueChange={setSelectedZoneId}>
+                      {zones.map((z: any) => {
+                        const isFree = z.free_threshold && subtotal >= Number(z.free_threshold);
+                        const fee = isFree ? 0 : Number(z.base_fee || 0);
+                        return (
+                          <div key={z.id} className="flex items-start space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50">
+                            <RadioGroupItem value={z.id} id={`zone-${z.id}`} className="mt-1" />
+                            <Label htmlFor={`zone-${z.id}`} className="flex-1 cursor-pointer">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-medium">{z.name}</p>
+                                <span className="text-sm font-semibold text-primary">
+                                  {fee === 0 ? "Free" : `R${fee.toFixed(2)}`}
+                                </span>
+                              </div>
+                              {z.description && <p className="text-xs text-muted-foreground mt-1">{z.description}</p>}
+                              {z.free_threshold && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Free over R{Number(z.free_threshold).toFixed(2)}
+                                </p>
+                              )}
+                              {z.conditions && (
+                                <p className="text-xs text-muted-foreground mt-1 italic">{z.conditions}</p>
+                              )}
+                            </Label>
+                          </div>
+                        );
+                      })}
+                    </RadioGroup>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Payment */}
               <Card>
                 <CardHeader>
