@@ -81,7 +81,7 @@ const HamperDetailDialog = ({ hamper, open, onClose, onOrder }: Props) => {
               <X className="w-4 h-4 mr-2" /> Close
             </Button>
             <Button onClick={() => onOrder(hamper)} disabled={outOfStock} className="flex-1">
-              <ShoppingCart className="w-4 h-4 mr-2" /> {outOfStock ? "Out of Stock" : "Order Now"}
+              <ShoppingCart className="w-4 h-4 mr-2" /> {outOfStock ? "Out of Stock" : "Add to Cart"}
             </Button>
           </div>
         </div>

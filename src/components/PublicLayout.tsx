@@ -93,6 +93,8 @@ const PublicLayout = ({ children }: PublicLayoutProps) => {
                 <li><Link to="/find" className="hover:text-primary transition-colors">Find My Res</Link></li>
                 <li><Link to="/auth" className="hover:text-primary transition-colors">Sign Up</Link></li>
                 <li><Link to="/auth" className="hover:text-primary transition-colors">Login</Link></li>
+                <li><Link to="/affiliates" className="hover:text-primary transition-colors">Affiliates</Link></li>
+                <li><Link to="/marketplace" className="hover:text-primary transition-colors">Marketplace</Link></li>
               </ul>
             </div>
             <div>

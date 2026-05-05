@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, CreditCard, Banknote, Building2, Loader2, CheckCircle, Copy, Clock, Upload, AlertTriangle, Info } from "lucide-react";
-import { useCart } from "@/hooks/useCart";
+import { useCart, unitPriceOf, displayOf } from "@/hooks/useCart";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import { TUT_CAMPUSES } from "@/lib/campuses";
 
@@ -49,6 +49,8 @@ const Checkout = () => {
   const [selectedCampus, setSelectedCampus] = useState("");
   const [selectedResidence, setSelectedResidence] = useState("");
   const [residences, setResidences] = useState<any[]>([]);
+  const [zones, setZones] = useState<any[]>([]);
+  const [selectedZoneId, setSelectedZoneId] = useState<string>("");
   const [formData, setFormData] = useState({
     delivery_phone: "",
     notes: "",
@@ -73,6 +75,19 @@ const Checkout = () => {
       setResidences(data || []);
     };
     fetchResidences();
+  }, []);
+
+  // Load delivery zones (admin-controlled)
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("delivery_zones" as any)
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order");
+      setZones(data || []);
+      if (data && data.length && !selectedZoneId) setSelectedZoneId((data[0] as any).id);
+    })();
   }, []);
 
   // Fetch bank details
@@ -104,6 +119,15 @@ const Checkout = () => {
   const deliveryAddress = deliveryType === "campus"
     ? `TUT ${selectedCampus} Campus Drop-off`
     : residences.find((r) => r.id === selectedResidence)?.name || "";
+
+  const selectedZone = zones.find((z: any) => z.id === selectedZoneId);
+  const subtotal = total;
+  const deliveryFee = (() => {
+    if (!selectedZone) return 0;
+    if (selectedZone.free_threshold && subtotal >= Number(selectedZone.free_threshold)) return 0;
+    return Number(selectedZone.base_fee || 0);
+  })();
+  const grandTotal = subtotal + deliveryFee;
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -138,6 +162,7 @@ const Checkout = () => {
     setIsSubmitting(true);
     try {
       const orderNumber = `RK-${Date.now().toString(36).toUpperCase()}`;
+      const refCode = (typeof window !== "undefined" && localStorage.getItem("pending_ref")) || null;
 
       const { data: order, error: orderError } = await supabase
         .from("shop_orders" as any)
@@ -147,7 +172,10 @@ const Checkout = () => {
           status: "pending",
           payment_method: paymentMethod,
           payment_status: paymentMethod === "cod" ? "pending" : "awaiting_payment",
-          total_amount: total,
+          total_amount: grandTotal,
+          delivery_zone_id: selectedZoneId || null,
+          delivery_fee: deliveryFee,
+          referral_code: refCode,
           delivery_address: deliveryAddress,
           delivery_phone: formData.delivery_phone,
           notes: formData.notes,
@@ -157,17 +185,22 @@ const Checkout = () => {
 
       if (orderError) throw orderError;
 
-      const orderItems = items
-        .map((item: any) => ({
+      const orderItems = items.map((item: any) => {
+        const d = displayOf(item);
+        return {
           order_id: (order as any).id,
-          product_id: item.product_id,
+          item_type: item.item_type || "product",
+          product_id: item.item_type === "product" || !item.item_type ? item.product_id : null,
+          hamper_id: item.item_type === "hamper" ? item.hamper_id : null,
+          hamper_item_id: item.item_type === "hamper_item" ? item.hamper_item_id : null,
           variant_id: item.variant_id || null,
-          store_id: item.products?.stores?.id || item.products?.store_id,
+          store_id: item.products?.stores?.id || item.products?.store_id || null,
           quantity: item.quantity,
-          price: Number(item.products?.price || 0),
-        }))
-        .filter((oi: any) => oi.store_id);
-
+          price: unitPriceOf(item),
+          title_snapshot: d.title,
+          image_snapshot: d.image || null,
+        };
+      });
       if (orderItems.length > 0) {
         await supabase.from("shop_order_items" as any).insert(orderItems as any);
       }
@@ -177,7 +210,7 @@ const Checkout = () => {
         payment_method: paymentMethod,
         payment_gateway: paymentMethod === "eft" ? "eft" : null,
         payment_status: "pending",
-        amount: total,
+        amount: grandTotal,
       } as any);
 
       await supabase.from("order_status_history" as any).insert({
@@ -190,7 +223,7 @@ const Checkout = () => {
       if (paymentMethod === "eft") {
         // Generate EFT payment
         const uniqueCents = getUserUniqueCents(user.id);
-        const expectedAmount = total + uniqueCents / 100;
+        const expectedAmount = grandTotal + uniqueCents / 100;
         const reference = `RK-EFT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
         const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
         const fingerprint = await sha256(`${user.id}|${expectedAmount}|${reference}|${expiresAt}`);
@@ -220,20 +253,14 @@ const Checkout = () => {
         } as any);
 
         await clearCart();
-        setEftData({
-          orderId: (order as any).id,
-          reference,
-          expectedAmount,
-          uniqueCents,
-          expires_at: expiresAt,
-          orderNumber,
-        });
-        setEftStep("instructions");
+        // Persist payment screen as a real route so users can resume after closing the tab.
+        navigate(`/orders/${(order as any).id}/pay`);
         return;
       }
 
       // COD flow
       await clearCart();
+      try { localStorage.removeItem("pending_ref"); } catch {}
       toast.success("Order placed successfully!");
       navigate("/orders");
     } catch (error: any) {
@@ -576,6 +603,45 @@ const Checkout = () => {
                 </CardContent>
               </Card>
 
+              {/* Delivery Zone (admin-controlled) */}
+              {zones.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Delivery Option & Fees</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <RadioGroup value={selectedZoneId} onValueChange={setSelectedZoneId}>
+                      {zones.map((z: any) => {
+                        const isFree = z.free_threshold && subtotal >= Number(z.free_threshold);
+                        const fee = isFree ? 0 : Number(z.base_fee || 0);
+                        return (
+                          <div key={z.id} className="flex items-start space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50">
+                            <RadioGroupItem value={z.id} id={`zone-${z.id}`} className="mt-1" />
+                            <Label htmlFor={`zone-${z.id}`} className="flex-1 cursor-pointer">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-medium">{z.name}</p>
+                                <span className="text-sm font-semibold text-primary">
+                                  {fee === 0 ? "Free" : `R${fee.toFixed(2)}`}
+                                </span>
+                              </div>
+                              {z.description && <p className="text-xs text-muted-foreground mt-1">{z.description}</p>}
+                              {z.free_threshold && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Free over R{Number(z.free_threshold).toFixed(2)}
+                                </p>
+                              )}
+                              {z.conditions && (
+                                <p className="text-xs text-muted-foreground mt-1 italic">{z.conditions}</p>
+                              )}
+                            </Label>
+                          </div>
+                        );
+                      })}
+                    </RadioGroup>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Payment */}
               <Card>
                 <CardHeader>
@@ -629,12 +695,20 @@ const Checkout = () => {
                   {items.map((item: any) => (
                     <div key={item.id} className="flex justify-between text-sm">
                       <span className="truncate flex-1 text-muted-foreground">
-                        {item.products?.name} × {item.quantity}
+                        {displayOf(item).title} × {item.quantity}
                       </span>
-                      <span>R{(Number(item.products?.price || 0) * item.quantity).toFixed(2)}</span>
+                      <span>R{(unitPriceOf(item) * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                   <Separator />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>R{subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Delivery {selectedZone?.name ? `· ${selectedZone.name}` : ""}</span>
+                    <span>{deliveryFee === 0 ? "Free" : `R${deliveryFee.toFixed(2)}`}</span>
+                  </div>
                   {paymentMethod === "eft" && user && (
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <span>Unique identifier</span>
@@ -645,8 +719,8 @@ const Checkout = () => {
                     <span>Total</span>
                     <span className="text-primary">
                       R{paymentMethod === "eft" && user
-                        ? (total + getUserUniqueCents(user.id) / 100).toFixed(2)
-                        : total.toFixed(2)}
+                        ? (grandTotal + getUserUniqueCents(user.id) / 100).toFixed(2)
+                        : grandTotal.toFixed(2)}
                     </span>
                   </div>
                   <Button size="lg" className="w-full" onClick={handleCheckout} disabled={isSubmitting}>
@@ -657,8 +731,8 @@ const Checkout = () => {
                       </>
                     ) : (
                       `Place Order — R${paymentMethod === "eft" && user
-                        ? (total + getUserUniqueCents(user.id) / 100).toFixed(2)
-                        : total.toFixed(2)}`
+                        ? (grandTotal + getUserUniqueCents(user.id) / 100).toFixed(2)
+                        : grandTotal.toFixed(2)}`
                     )}
                   </Button>
                 </CardContent>

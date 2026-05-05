@@ -59,10 +59,15 @@ export function useCart() {
     if (!cart) { setIsLoading(false); return; }
     setCartId((cart as any).id);
 
-    // Fetch items with product details
+    // Fetch items + linked product / hamper / hamper_item details
     const { data: cartItems } = await supabase
       .from("cart_items" as any)
-      .select("*, products(id, name, price, compare_at_price, images, stock_quantity, stores(store_name))")
+      .select(
+        `*,
+        products(id, name, price, compare_at_price, images, stock_quantity, stores(store_name)),
+        hampers(id, name, price, image_url, stock_quantity),
+        hamper_items(id, name, price, image_url, stock_quantity)`
+      )
       .eq("cart_id", (cart as any).id);
 
     setItems(cartItems || []);
@@ -93,11 +98,38 @@ export function useCart() {
   };
 
   const total = items.reduce((sum: number, item: any) => {
-    const price = item.products?.price || 0;
+    const price = unitPriceOf(item);
     return sum + Number(price) * (item.quantity || 1);
   }, 0);
 
   return { items, isLoading, total, cartId, updateQuantity, removeItem, clearCart, refetch: fetchCart };
+}
+
+/** Resolve a unit price for any cart item type. */
+export function unitPriceOf(item: any): number {
+  if (item.unit_price != null) return Number(item.unit_price);
+  if (item.item_type === "hamper") return Number(item.hampers?.price || 0);
+  if (item.item_type === "hamper_item") return Number(item.hamper_items?.price || 0);
+  return Number(item.products?.price || 0);
+}
+
+/** Resolve a display title/image for any cart item. */
+export function displayOf(item: any): { title: string; image?: string; subtitle?: string } {
+  if (item.item_type === "hamper") return {
+    title: item.title_snapshot || item.hampers?.name || "Hamper",
+    image: item.image_snapshot || item.hampers?.image_url,
+    subtitle: "Hamper bundle",
+  };
+  if (item.item_type === "hamper_item") return {
+    title: item.title_snapshot || item.hamper_items?.name || "Item",
+    image: item.image_snapshot || item.hamper_items?.image_url,
+    subtitle: "Hamper item",
+  };
+  return {
+    title: item.products?.name || "Product",
+    image: item.products?.images?.[0],
+    subtitle: item.products?.stores?.store_name,
+  };
 }
 
 export function useAddToCart() {
@@ -153,5 +185,63 @@ export function useAddToCart() {
       if (variantId) item.variant_id = variantId;
       await supabase.from("cart_items" as any).insert(item);
     }
+  };
+}
+
+/** Get-or-create the cart for the current user, returns cart id. */
+async function ensureCart(userId: string): Promise<string | null> {
+  const { data: cart } = await supabase
+    .from("cart" as any).select("id").eq("user_id", userId).maybeSingle();
+  if (cart) return (cart as any).id;
+  const { data: newCart } = await supabase
+    .from("cart" as any).insert({ user_id: userId } as any).select("id").single();
+  return newCart ? (newCart as any).id : null;
+}
+
+/** Add a hamper to cart. */
+export function useAddHamperToCart() {
+  const { user } = useAuth();
+  return async (hamper: { id: string; name: string; price: number; image_url?: string | null }, quantity = 1) => {
+    if (!user) { toast.error("Please sign in"); return false; }
+    const cartId = await ensureCart(user.id);
+    if (!cartId) { toast.error("Cart unavailable"); return false; }
+    const { data: existing } = await supabase
+      .from("cart_items" as any).select("id, quantity")
+      .eq("cart_id", cartId).eq("hamper_id", hamper.id).eq("item_type", "hamper").maybeSingle();
+    if (existing) {
+      await supabase.from("cart_items" as any).update({ quantity: (existing as any).quantity + quantity } as any).eq("id", (existing as any).id);
+    } else {
+      await supabase.from("cart_items" as any).insert({
+        cart_id: cartId, item_type: "hamper", hamper_id: hamper.id,
+        quantity, unit_price: hamper.price,
+        title_snapshot: hamper.name, image_snapshot: hamper.image_url || null,
+      } as any);
+    }
+    toast.success(`${hamper.name} added to cart`);
+    return true;
+  };
+}
+
+/** Add a hamper-catalog item (single) to cart. */
+export function useAddHamperItemToCart() {
+  const { user } = useAuth();
+  return async (item: { id: string; name: string; price: number; image_url?: string | null }, quantity = 1) => {
+    if (!user) { toast.error("Please sign in"); return false; }
+    const cartId = await ensureCart(user.id);
+    if (!cartId) { toast.error("Cart unavailable"); return false; }
+    const { data: existing } = await supabase
+      .from("cart_items" as any).select("id, quantity")
+      .eq("cart_id", cartId).eq("hamper_item_id", item.id).eq("item_type", "hamper_item").maybeSingle();
+    if (existing) {
+      await supabase.from("cart_items" as any).update({ quantity: (existing as any).quantity + quantity } as any).eq("id", (existing as any).id);
+    } else {
+      await supabase.from("cart_items" as any).insert({
+        cart_id: cartId, item_type: "hamper_item", hamper_item_id: item.id,
+        quantity, unit_price: item.price,
+        title_snapshot: item.name, image_snapshot: item.image_url || null,
+      } as any);
+    }
+    toast.success(`${item.name} added to cart`);
+    return true;
   };
 }
