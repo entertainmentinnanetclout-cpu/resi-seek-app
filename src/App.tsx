@@ -85,6 +85,8 @@ import AdminOperationsHub from "./pages/admin/AdminOperationsHub";
 import AdminCommerceHub from "./pages/admin/AdminCommerceHub";
 import AdminMediaHub from "./pages/admin/AdminMediaHub";
 import AdminSystemHub from "./pages/admin/AdminSystemHub";
+import Affiliates from "./pages/Affiliates";
+import OrderPayment from "./pages/OrderPayment";
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -129,6 +131,7 @@ const App = () => {
               <Route path="/events" element={<Events />} />
               <Route path="/campus-news" element={<CampusNews />} />
               <Route path="/roommates" element={<RoommateFinder />} />
+              <Route path="/affiliates" element={<Affiliates />} />
 
               {/* Protected Student Routes (require auth) */}
               <Route path="/dashboard" element={<StudentRoute><Dashboard /></StudentRoute>} />
@@ -141,6 +144,7 @@ const App = () => {
               <Route path="/my-store" element={<StudentRoute><MyStore /></StudentRoute>} />
               <Route path="/my-store/edit" element={<StudentRoute><StoreEdit /></StudentRoute>} />
               <Route path="/orders" element={<StudentRoute><Orders /></StudentRoute>} />
+              <Route path="/orders/:id/pay" element={<StudentRoute><OrderPayment /></StudentRoute>} />
               <Route path="/cart" element={<StudentRoute><Cart /></StudentRoute>} />
               <Route path="/checkout" element={<StudentRoute><Checkout /></StudentRoute>} />
               <Route path="/my-discount-orders" element={<StudentRoute><MyDiscountOrders /></StudentRoute>} />
