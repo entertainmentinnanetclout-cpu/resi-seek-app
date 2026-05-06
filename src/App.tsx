@@ -87,6 +87,9 @@ import AdminMediaHub from "./pages/admin/AdminMediaHub";
 import AdminSystemHub from "./pages/admin/AdminSystemHub";
 import Affiliates from "./pages/Affiliates";
 import OrderPayment from "./pages/OrderPayment";
+import MediaDashboard from "./pages/MediaDashboard";
+import CommerceDashboard from "./pages/CommerceDashboard";
+import { SpecialistRoute } from "@/components/SpecialistRoute";
 const queryClient = new QueryClient();
 
 const App = () => {
