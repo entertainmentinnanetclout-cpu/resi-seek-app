@@ -14,8 +14,8 @@ export const useAdminRedirect = () => {
       const hubMap: Record<string, string> = {
         admin: "/admin",
         operations_lead: "/admin/operations",
-        commerce_lead: "/admin/commerce",
-        growth_lead: "/admin/media",
+        commerce_lead: "/commerce",
+        growth_lead: "/media",
         system_operator: "/admin/system",
         support_agent: "/admin/operations",
       };

@@ -87,6 +87,9 @@ import AdminMediaHub from "./pages/admin/AdminMediaHub";
 import AdminSystemHub from "./pages/admin/AdminSystemHub";
 import Affiliates from "./pages/Affiliates";
 import OrderPayment from "./pages/OrderPayment";
+import MediaDashboard from "./pages/MediaDashboard";
+import CommerceDashboard from "./pages/CommerceDashboard";
+import { SpecialistRoute } from "@/components/SpecialistRoute";
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -162,6 +165,10 @@ const App = () => {
               <Route path="/admin/commerce" element={<ProtectedRoute><AdminRoute><AdminCommerceHub /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/media" element={<ProtectedRoute><AdminRoute><AdminMediaHub /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/system" element={<ProtectedRoute><AdminRoute><AdminSystemHub /></AdminRoute></ProtectedRoute>} />
+
+              {/* Specialist Standalone Dashboards */}
+              <Route path="/media" element={<ProtectedRoute><SpecialistRoute allowedRoles={["admin", "growth_lead"]}><MediaDashboard /></SpecialistRoute></ProtectedRoute>} />
+              <Route path="/commerce" element={<ProtectedRoute><SpecialistRoute allowedRoles={["admin", "commerce_lead"]}><CommerceDashboard /></SpecialistRoute></ProtectedRoute>} />
 
               {/* Legacy Admin Routes (kept for backward compatibility) */}
               <Route path="/admin/residences" element={<ProtectedRoute><AdminRoute><AdminResidences /></AdminRoute></ProtectedRoute>} />
