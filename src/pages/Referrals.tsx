@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Copy, Share2, Users, DollarSign, Loader2, Gift, Link as LinkIcon, Search } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Referrals() {
   const { user } = useAuth();
@@ -28,14 +29,29 @@ export default function Referrals() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data: codeData } = await supabase.rpc("get_or_create_referral_code" as any);
+      // Get-or-create referral code inline (no RPC dependency).
+      let { data: codeData } = await supabase
+        .from("referral_codes" as any)
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!codeData) {
+        const newCode = `RK${user.id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+        const { data: created } = await supabase
+          .from("referral_codes" as any)
+          .insert({ user_id: user.id, code: newCode, is_active: true } as any)
+          .select("*")
+          .single();
+        codeData = created;
+      }
       setCode(codeData);
       const { data: e } = await supabase.from("referral_earnings" as any).select("*").eq("referrer_user_id", user.id).order("created_at", { ascending: false });
       setEarnings(e || []);
-      const { data: s } = await supabase.from("platform_settings").select("key,value").in("key", ["referral_signup_bonus","referral_sale_percentage"]);
+      const { data: s } = await supabase.from("platform_settings").select("key,value").in("key", ["referral_signup_bonus","referral_sale_percent"]);
       s?.forEach((r: any) => {
-        if (r.key === "referral_signup_bonus") setSignupBonus(Number(r.value) || 10);
-        if (r.key === "referral_sale_percentage") setSalePct(Number(r.value) || 5);
+        const v: any = r.value;
+        if (r.key === "referral_signup_bonus") setSignupBonus(Number(v?.amount ?? v) || 10);
+        if (r.key === "referral_sale_percent") setSalePct(Number(v?.percent ?? v) || 5);
       });
 
       // Fetch products for link generator
