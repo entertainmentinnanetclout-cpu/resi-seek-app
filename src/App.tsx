@@ -166,6 +166,10 @@ const App = () => {
               <Route path="/admin/media" element={<ProtectedRoute><AdminRoute><AdminMediaHub /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/system" element={<ProtectedRoute><AdminRoute><AdminSystemHub /></AdminRoute></ProtectedRoute>} />
 
+              {/* Specialist Standalone Dashboards */}
+              <Route path="/media" element={<ProtectedRoute><SpecialistRoute allowedRoles={["admin", "growth_lead"]}><MediaDashboard /></SpecialistRoute></ProtectedRoute>} />
+              <Route path="/commerce" element={<ProtectedRoute><SpecialistRoute allowedRoles={["admin", "commerce_lead"]}><CommerceDashboard /></SpecialistRoute></ProtectedRoute>} />
+
               {/* Legacy Admin Routes (kept for backward compatibility) */}
               <Route path="/admin/residences" element={<ProtectedRoute><AdminRoute><AdminResidences /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/applications" element={<ProtectedRoute><AdminRoute><AdminApplications /></AdminRoute></ProtectedRoute>} />
