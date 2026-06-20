@@ -1,189 +1,128 @@
-# Unified Commerce + Affiliate Program Plan
+## Emergency Migration Plan — Supabase → Lovable Cloud (with Sync + Abstraction)
 
-## 1. VAPID Secrets (Web Push)
+### Goal
+Restore full functionality TODAY by switching the live data plane to **Lovable Cloud** while keeping every UI, route, workflow, and permission identical. Historical data stays in External Supabase and will sync back once it's restored. Then introduce a backend abstraction layer so ResKonnect can run on any provider via a single config switch.
 
-Add three secrets to backend so `send-push` can sign notifications:
+---
 
-- `VAPID_PUBLIC_KEY`
-- `VAPID_PRIVATE_KEY`
-- `VAPID_SUBJECT` (e.g. `mailto:reskonnect@gmail.com`)
+### Phase 1 — Emergency Cutover (Today)
 
-Will request via `add_secret` once plan approved. Generate with `npx web-push generate-vapid-keys`. Also expose `VAPID_PUBLIC_KEY` to client via existing `vapid-public-key` edge function so no rebuild is needed when keys rotate.
+**1. Provision Lovable Cloud as the active backend**
+- Enable Lovable Cloud (Supabase-compatible) as the new primary.
+- Recreate the full schema on Lovable Cloud from a consolidated master migration built from:
+  - `docs/MASTER_SQL_v5.sql`, `MARKETPLACE_REBUILD_SQL.sql`, `HAMPER_AND_EFT_SQL.sql`, `EFT_PAYMENT_SQL.sql`, `LANDLORD_SQL.sql`, `ORDER_TRACKING_SQL.sql`, `SELLER_COMMISSION_SQL.sql`, `SPECIALIST_DASHBOARDS_SQL.sql`, `YOCO_VERIFY_SQL.sql`.
+- Recreate all 10 storage buckets (documents, marketplace, admin-images, store-assets, profile-pictures, application-documents, wil-documents, product-images, hamper-images, payment-proofs) with matching policies.
+- Recreate roles, RLS, SECURITY DEFINER functions (`has_role`, `get_user_staff_role`, `handle_new_user`, `capture_referral*`, `get_or_create_referral_code`, `is_authorized_residence_user`, `get_user_residence_id`).
+- Seed the two admin accounts (`43v3r2a11@gmail.com`, `reskonnect@gmail.com`) into `user_roles` as `admin`.
 
-## 2. Unified Purchase Flow (Products + Hampers + Hamper Items + Deals)
+**2. Introduce a Backend Abstraction Layer (BAL) — minimal first slice**
+- New folder `src/backend/` exposing a single typed client:
+  - `db` (from/select/insert/update/delete/rpc)
+  - `auth` (signIn, signUp, signOut, getSession, onAuthStateChange)
+  - `storage` (upload/download/getPublicUrl/remove)
+  - `functions` (invoke)
+- Driver-based: `src/backend/drivers/lovable.ts` and `src/backend/drivers/supabase.ts` (stub for now, identical surface since both are Supabase-compatible).
+- Resolver reads `VITE_BACKEND_PROVIDER` (`lovable` | `supabase`) and picks the driver. Default = `lovable`.
+- Re-export `supabase` from `@/integrations/supabase/client` as a thin shim that points at the active driver, so NO existing page needs to change today. (Achieves "no UI/route/workflow change".)
 
-Currently products go through `Cart → Checkout → EFT/Yoco`. Hampers use a one-shot order. Deals reuse products. The 14 standalone hamper-catalog items (`hamper_items` table) have no order path at all.
+**3. Point the shim at Lovable Cloud**
+- Replace the hardcoded `mefjzkhobkltlbmhusdh` URL/key fallbacks in `src/integrations/supabase/client.ts` with the Lovable Cloud URL + anon key (from auto-generated `.env`).
+- Update all edge functions that read `EXTERNAL_SUPABASE_URL` / `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` to prefer Lovable Cloud envs, with External as fallback.
 
-Make every saleable thing flow through the same pipeline:
+**4. Critical edge functions to re-deploy against Lovable Cloud**
+`yoco-checkout`, `yoco-webhook`, `yoco-verify-payment`, `update-application-status`, `create-residence-portal-user`, `download-handover-pack`, `generate-booking-slip`, `referral-capture`, `send-push`, `vapid-public-key`, `resbot-ai`, `og-image`.
 
+**5. Smoke-test the Phase 1 surfaces**
+- Applications: 2nd Sem / Trimester / 2027 form submit → row in `applications` → visible in `AdminApplications` → document upload to `application-documents` → status update via edge function.
+- Find My Res: residence list, filters, availability, detail.
+- Accreditation: landlord submission + document upload + admin review.
+- Commerce: marketplace browse, store, cart, checkout (EFT + Yoco), hampers, discount orders.
+
+---
+
+### Phase 2 — Sync Engine (when External Supabase is back)
+
+**Architecture**
 ```text
-Card click → Detail Dialog → "Add to Cart" → /cart → /checkout → Payment screen w/ countdown → /orders/:id
+   Lovable Cloud (active)
+          │  trigger → sync_queue
+          ▼
+    sync_queue table        ── processed by ──▶  sync-worker edge function
+          │                                            │
+          ▼                                            ▼
+    retry/backoff                            External Supabase (mirror)
 ```
 
-### 2a. Cart model extension
+**Components**
+- New table `sync_queue` (id, entity, entity_id, op `insert|update|delete`, payload jsonb, status `pending|sent|failed`, attempts, last_error, created_at, sent_at).
+- DB triggers on critical tables (`applications`, `application_documents`, `residences`, `shop_orders`, `shop_order_items`, `stores`, `products`, `user_roles`, `profiles`, landlord/accreditation tables) → enqueue change row.
+- Edge function `sync-worker` (cron every minute via `pg_cron` + `pg_net`) pulls `pending`, replays into External Supabase using its service role, marks `sent` or increments `attempts` with exponential backoff.
+- Idempotent upserts keyed on UUID PKs so replays are safe.
+- One-time backfill script `docs/SYNC_BACKFILL.sql` to push the period between cutover and External recovery.
 
-Extend `cart_items` to support multiple sources via a discriminator:
+---
 
-```sql
-ALTER TABLE cart_items
-  ADD COLUMN IF NOT EXISTS item_type text NOT NULL DEFAULT 'product',
-  ADD COLUMN IF NOT EXISTS hamper_id uuid,
-  ADD COLUMN IF NOT EXISTS hamper_item_id uuid,
-  ADD COLUMN IF NOT EXISTS unit_price numeric,
-  ADD COLUMN IF NOT EXISTS title_snapshot text,
-  ADD COLUMN IF NOT EXISTS image_snapshot text;
-ALTER TABLE cart_items ALTER COLUMN product_id DROP NOT NULL;
-ALTER TABLE cart_items ADD CONSTRAINT cart_item_source_chk CHECK (
-  (item_type='product' AND product_id IS NOT NULL) OR
-  (item_type='hamper'  AND hamper_id  IS NOT NULL) OR
-  (item_type='hamper_item' AND hamper_item_id IS NOT NULL)
-);
-```
+### Phase 3 — Health Monitoring (God Mode)
 
-`useCart` hook gets `addHamper(hamper)` and `addHamperItem(item)` helpers in addition to current `addProduct`.
+New page `src/pages/admin/AdminBackendHealth.tsx`, added as a tab in `AdminSystemHub` (visible only to `admin`).
 
-### 2b. Hamper item ordering
+Displays:
+- **Backend Status** cards:
+  - Lovable Cloud: 🟢 / 🔴 (ping `select 1` via RPC)
+  - External Supabase: 🟢 / 🔴 (driver ping)
+  - Active provider badge (`BACKEND_PROVIDER`)
+- **Sync metrics** from `sync_queue`:
+  - Last successful sync timestamp
+  - Pending records count
+  - Failed records (with retry button)
+- **Recent failures** table (entity, error, attempts).
+- **Manual controls**: "Pause sync", "Resume sync", "Replay failed", "Switch provider" (writes to `platform_settings.active_backend`).
 
-`hamper_items` (the 14 catalog items) become single-orderable. Add `is_orderable boolean DEFAULT true` and `price` is already there. Build a new `/marketplace?tab=hamper-items` grid using `MarketplaceCard` with type `hamper_item`. Each card opens a detail dialog with quantity + Add to Cart.
+A lightweight banner component (`BackendStatusBanner`) appears site-wide for admins when the active backend is degraded — so we never learn outages from users.
 
-### 2c. Hamper detail dialog
+---
 
-Replace current "Order Now" cash-only button with "Add to Cart" routing through the unified flow. Keep the items list display.
+### Phase 4 — Backend Portability (Future-proof)
 
-### 2d. Persistent payment screen with countdown
+- Expand `src/backend/drivers/` with adapters for:
+  - `lovable.ts` (Supabase-compatible)
+  - `supabase.ts` (External)
+  - `postgres.ts` (PostgREST / direct PG via edge)
+  - `firebase.ts` (Firestore + Firebase Auth + Storage adapter)
+  - `awsrds.ts` (RDS via a thin REST gateway edge function)
+- All app code imports from `@/backend` only. Direct `@supabase/...` imports become forbidden by ESLint rule `no-restricted-imports` (allowlist only `src/backend/drivers/*`).
+- Provider chosen at runtime by `VITE_BACKEND_PROVIDER`; auth/storage/db/functions surfaces stay identical.
+- Add capability matrix doc `docs/BACKEND_PROVIDERS.md` describing supported features per driver.
 
-Existing EFT system already has `expires_at`. Move payment UI into a dedicated route `/orders/:id/pay` that:
+---
 
-- Reads order + EFT row from DB on mount (so closing/reopening works).
-- Shows live countdown to `expires_at`.
-- Lets user upload PoP, switch to Yoco, or cancel.
-- If expired, shows "Generate new payment reference" action.
+### Permanent Knowledge-Base Rule (to add)
 
-Link from `/orders` row: any order with `payment_status in ('pending','awaiting_payment')` shows a "Resume payment" button → `/orders/:id/pay`.
+> ResKonnect must never be tightly coupled to a single backend provider. All database, auth, storage, and admin workflows go through `src/backend/`. Every new feature must support backend portability across Lovable Cloud, Supabase, PostgreSQL, Firebase, and AWS RDS without frontend changes. A sync engine mirrors writes to secondary providers, and the God Mode Backend Health dashboard surfaces provider/sync status. If a backend becomes unavailable, the platform keeps running on the active provider without interruption.
 
-## 3. Delivery Configuration
+Saved to both project memory (`mem://architecture/backend-abstraction`) and workspace knowledge.
 
-### 3a. Admin delivery rules
+---
 
-New table:
+### Technical Details
 
-```sql
-CREATE TABLE delivery_zones (
-  id uuid PK,
-  name text,                -- "TUT Soshanguve", "Pretoria CBD", "National courier"
-  base_fee numeric,
-  per_km_fee numeric DEFAULT 0,
-  free_threshold numeric,   -- order total above which delivery is free
-  conditions text,          -- free-text shown to student
-  is_active boolean DEFAULT true,
-  display_order int
-);
-```
+- **No UI/route changes in Phase 1.** All existing files keep `import { supabase } from "@/integrations/supabase/client"`; that module becomes a re-export of the active driver.
+- **Cloud secrets needed:** `EXTERNAL_SUPABASE_URL`, `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY`, `EXTERNAL_SUPABASE_ANON_KEY` (kept for sync-worker); Lovable Cloud secrets auto-injected.
+- **Edge function `verify_jwt`** preserved per current setup (`yoco-webhook` stays public; admin functions stay JWT-validated in code).
+- **RLS parity:** every policy from External re-applied verbatim on Lovable Cloud as part of the master migration. Confirmed with `supabase--linter` after migration.
+- **Data backfill on Supabase recovery:** one-shot import (CSV or `pg_dump` provided by you, since Lovable Cloud blocks outbound `pg_dump`). Existing IDs preserved → safe re-merge.
 
-Admin UI: new tab in Commerce Hub → "Delivery Zones" with CRUD. Populate with TUT campus drop-offs and listed residences seed.
+---
 
-### 3b. Checkout delivery step
+### Deliverables Checklist
+1. Master migration applied to Lovable Cloud (schema + RLS + functions + buckets).
+2. `src/backend/` abstraction with `lovable` + `supabase` drivers + shim.
+3. Edge functions re-deployed and pointed at Lovable Cloud.
+4. `sync_queue` + triggers + `sync-worker` cron edge function.
+5. `AdminBackendHealth` tab inside System Hub (God Mode).
+6. ESLint rule banning direct `@supabase/*` imports outside `src/backend/drivers/`.
+7. KB rule saved to memory; `docs/BACKEND_PROVIDERS.md` authored.
 
-Insert a "Delivery" step between Cart and Payment in `Checkout.tsx`:
-
-- Radio list of active `delivery_zones` with fee, free-threshold note, and conditions text.
-- Selected zone fee added to order total; persisted on `shop_orders` as `delivery_zone_id`, `delivery_fee`.
-
-Same step appears for hamper / hamper-item orders since they share the flow. and upgrade cart button/icon to hover on when users are adding things to cart so they can easily access art without having to close the page and go to cart.
-
-all items and products Added must have product display cards when tapping them
-
-## 4. Admin Product Ordering
-
-Add `display_order int DEFAULT 0` to `products`, `hampers`, `hamper_items`. Admin pages get drag-handle reorder (using `@dnd-kit` already in project) + numeric input fallback. Public listings sort by `display_order ASC, created_at DESC`. Affects:
-
-- `Marketplace.tsx` product grid
-- Hampers tab
-- Landing "Featured" rows
-
-## 5. Affiliate / Referral Program
-
-### 5a. Public affiliate landing page
-
-New route `/affiliates` (PUBLIC) — explains program, signup bonus, sale %, FAQ, CTA "Join & get your link". Footer of `PublicLayout` gets an "Affiliates" link.
-
-### 5b. Per-product affiliate links
-
-`Referrals.tsx` gets a "Product links" tab that lets a referrer paste/select any product, generating `https://reskonnect.lovable.app/product/<id>?ref=<CODE>`. `ProductDetail.tsx` reads `?ref=` and stores it in `localStorage('pending_ref')`. On checkout completion, server-side `capture_referral_sale` RPC awards the configured percent to the referrer.
-
-```sql
-CREATE OR REPLACE FUNCTION capture_referral_sale(_order_id uuid)
-RETURNS void ... -- looks up order.user_id's pending referral; reads referral_sale_percent from platform_settings; inserts referral_earnings(source_type='sale', amount=...)
-```
-
-Trigger: call this RPC from `Checkout` success handler / Yoco webhook / EFT confirmation.
-
-### 5c. Earnings dashboard upgrades
-
-`Referrals.tsx` already shows code + earnings. Add:
-
-- Signup bonus credits card (count × bonus).
-- Ledger table with columns: date, type (signup/sale), referred user (masked), order ref, amount, status.
-- Per-product link generator as above.
-- "Copy" + native share for each link.
-
-## 6. Student Orders Page
-
-`Orders.tsx` already exists for shop orders. Expand to a unified view:
-
-- Tabs: All / Products / Hampers / Hamper Items / Deals.
-- Each row shows: order_number, items summary, status badge, total, created_at, "Resume payment" if pending, "View details" → `/orders/:id`.
-- New `/orders/:id` detail page: items, delivery zone, status timeline (from `order_status_history`), payment info, support button.
-- Realtime subscription to `shop_orders` + `order_status_history` so status updates push live.
-
-## 7. Files Touched
-
-**New**
-
-- `src/pages/Affiliates.tsx` (public marketing page)
-- `src/pages/OrderPayment.tsx` (`/orders/:id/pay`)
-- `src/pages/OrderDetail.tsx` (`/orders/:id`)
-- `src/components/CheckoutDeliveryStep.tsx`
-- `src/components/admin/AdminDeliveryZones.tsx`
-- `src/components/admin/ProductReorderTable.tsx`
-- `docs/UNIFIED_COMMERCE_SQL.sql` (idempotent migration)
-
-**Edited**
-
-- `src/App.tsx` (new routes)
-- `src/components/PublicLayout.tsx` (footer Affiliates link)
-- `src/hooks/useCart.ts` (hamper + hamper_item support)
-- `src/pages/Marketplace.tsx` (hamper-items tab, reorder-aware)
-- `src/components/HamperDetailDialog.tsx` (Add to Cart)
-- `src/components/MarketplaceCard.tsx` (display_order, hamper_item type)
-- `src/pages/Cart.tsx` + `src/pages/Checkout.tsx` (delivery step, multi-source)
-- `src/pages/Orders.tsx` (unified tabs, resume-payment)
-- `src/pages/ProductDetail.tsx` (capture `?ref=`)
-- `src/pages/Referrals.tsx` (ledger, product links, signup credits)
-- `src/pages/admin/AdminCommerceHub.tsx` (Delivery Zones tab)
-- `src/pages/admin/AdminMarketplace.tsx`, `AdminHamperBundles.tsx`, `AdminHamperItems.tsx` (drag reorder)
-
-## 8. SQL Migration (idempotent — `docs/UNIFIED_COMMERCE_SQL.sql`)
-
-- `cart_items` source-discriminator columns + check constraint
-- `delivery_zones` table + RLS (admins manage, anyone views active) + seed rows
-- `shop_orders` add `delivery_zone_id`, `delivery_fee`
-- `products`/`hampers`/`hamper_items` add `display_order`
-- `hamper_items` add `is_orderable`, ensure `price` not null with default
-- `capture_referral_sale(order_id)` RPC
-- Indexes on `display_order`, `cart_items.item_type`
-
-## 9. Action Required
-
-1. Approve this plan.
-2. Provide three VAPID values when prompted (or let me generate).
-3. After deploy: run the SQL file, then admins set delivery zones + product order in `/admin/commerce`.
-
-## 10. QA Checklist
-
-- Add a hamper, a hamper-item, and a product to cart together → single checkout works.
-- Close the payment tab → reopen via `/orders` → "Resume payment" loads countdown intact.
-- Admin reorders products → public Marketplace reflects new order.
-- `/affiliates` loads without auth; "Join" CTA goes to `/auth?returnTo=/referrals`.
-- Visit a product with `?ref=CODE`, complete purchase → ledger row appears for referrer with `source_type=sale`.
-- Push notification fires after VAPID secrets are added.
+**Confirmations needed before I build:**
+- OK to recreate the schema on Lovable Cloud from the consolidated master SQL (no historical row migration today)?
+- OK to switch the default of `src/integrations/supabase/client.ts` away from the hardcoded External URL to Lovable Cloud?
