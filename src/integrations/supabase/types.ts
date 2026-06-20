@@ -209,6 +209,8 @@ export type Database = {
       applications: {
         Row: {
           application_date: string
+          application_term: string | null
+          application_year: number | null
           created_at: string
           desired_move_in: string | null
           funding_type: string
@@ -226,6 +228,8 @@ export type Database = {
         }
         Insert: {
           application_date?: string
+          application_term?: string | null
+          application_year?: number | null
           created_at?: string
           desired_move_in?: string | null
           funding_type?: string
@@ -243,6 +247,8 @@ export type Database = {
         }
         Update: {
           application_date?: string
+          application_term?: string | null
+          application_year?: number | null
           created_at?: string
           desired_move_in?: string | null
           funding_type?: string
@@ -1179,6 +1185,113 @@ export type Database = {
           slide_location?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      landlord_application_documents: {
+        Row: {
+          application_id: string
+          doc_type: string
+          file_path: string
+          id: string
+          original_filename: string | null
+          status: string
+          uploaded_at: string
+        }
+        Insert: {
+          application_id: string
+          doc_type: string
+          file_path: string
+          id?: string
+          original_filename?: string | null
+          status?: string
+          uploaded_at?: string
+        }
+        Update: {
+          application_id?: string
+          doc_type?: string
+          file_path?: string
+          id?: string
+          original_filename?: string | null
+          status?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landlord_application_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "landlord_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landlord_applications: {
+        Row: {
+          address: string | null
+          admin_notes: string | null
+          amenities: string[] | null
+          application_type: string
+          business_name: string | null
+          campus: string | null
+          capacity: number | null
+          city: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          monthly_rent: number | null
+          notes: string | null
+          phone: string
+          province: string | null
+          residence_name: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          admin_notes?: string | null
+          amenities?: string[] | null
+          application_type?: string
+          business_name?: string | null
+          campus?: string | null
+          capacity?: number | null
+          city?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          monthly_rent?: number | null
+          notes?: string | null
+          phone: string
+          province?: string | null
+          residence_name?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          admin_notes?: string | null
+          amenities?: string[] | null
+          application_type?: string
+          business_name?: string | null
+          campus?: string | null
+          capacity?: number | null
+          city?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          monthly_rent?: number | null
+          notes?: string | null
+          phone?: string
+          province?: string | null
+          residence_name?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -3085,7 +3198,15 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "student" | "residence_portal"
+      app_role:
+        | "admin"
+        | "student"
+        | "residence_portal"
+        | "operations_lead"
+        | "commerce_lead"
+        | "growth_lead"
+        | "system_operator"
+        | "support_agent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3213,7 +3334,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "student", "residence_portal"],
+      app_role: [
+        "admin",
+        "student",
+        "residence_portal",
+        "operations_lead",
+        "commerce_lead",
+        "growth_lead",
+        "system_operator",
+        "support_agent",
+      ],
     },
   },
 } as const
