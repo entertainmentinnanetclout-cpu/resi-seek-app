@@ -2,15 +2,17 @@ import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Briefcase, MessageSquare, Activity, Settings } from "lucide-react";
+import { Briefcase, MessageSquare, Activity, Settings, HeartPulse } from "lucide-react";
 import { AdminWILContent } from "./AdminWIL";
 import { AdminWhatsAppTemplatesContent } from "./AdminWhatsAppTemplates";
 import { AdminSystemStatusContent } from "./AdminSystemStatus";
 import { AdminSettingsContent } from "./AdminSettings";
+import { AdminBackendHealthContent } from "./AdminBackendHealth";
 
 const tabs = [
   { value: "wil", label: "WIL Management", icon: Briefcase },
   { value: "whatsapp", label: "WhatsApp Templates", icon: MessageSquare },
+  { value: "backend-health", label: "Backend Health", icon: HeartPulse },
   { value: "system-status", label: "System Status", icon: Activity },
   { value: "settings", label: "Settings", icon: Settings },
 ];
@@ -40,6 +42,7 @@ const AdminSystemHub = () => {
 
           <TabsContent value="wil"><AdminWILContent /></TabsContent>
           <TabsContent value="whatsapp"><AdminWhatsAppTemplatesContent /></TabsContent>
+          <TabsContent value="backend-health"><AdminBackendHealthContent /></TabsContent>
           <TabsContent value="system-status"><AdminSystemStatusContent /></TabsContent>
           <TabsContent value="settings"><AdminSettingsContent /></TabsContent>
         </Tabs>
