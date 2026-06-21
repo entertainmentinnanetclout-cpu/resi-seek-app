@@ -1146,6 +1146,36 @@ export type Database = {
         }
         Relationships: []
       }
+      health_status: {
+        Row: {
+          details: Json | null
+          id: string
+          last_checked_at: string
+          last_success_at: string | null
+          provider: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          details?: Json | null
+          id?: string
+          last_checked_at?: string
+          last_success_at?: string | null
+          provider: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          details?: Json | null
+          id?: string
+          last_checked_at?: string
+          last_success_at?: string | null
+          provider?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hero_slides: {
         Row: {
           created_at: string
@@ -2863,6 +2893,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sync_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          last_error: string | null
+          op: string
+          payload: Json | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          last_error?: string | null
+          op: string
+          payload?: Json | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          last_error?: string | null
+          op?: string
+          payload?: Json | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
