@@ -15,6 +15,8 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/s
 import { ThemeToggle } from "@/components/ThemeToggle";
 import FloatingShapes from "@/components/FloatingShapes";
 import TrustedResidencesGrid from "@/components/TrustedResidencesGrid";
+import { CategoryHeroSelector } from "@/components/findmyres/CategoryHeroSelector";
+import { AccreditationCTA } from "@/components/findmyres/AccreditationCTA";
 import LandlordApplicationTabs from "@/components/LandlordApplicationTabs";
 import headerLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import footerLogo from "@/assets/FOOTER.png";
@@ -292,6 +294,12 @@ const Landing = () => {
             <TrustedResidencesGrid />
           </div>
         </section>
+
+        {/* ── Find Your Next Home (category-first discovery) ── */}
+        <CategoryHeroSelector />
+
+        {/* ── Become Accredited (landlord CTA) ───────────── */}
+        <AccreditationCTA />
 
         {/* ── Featured Marketplace ───────────────────────── */}
         <FeaturedMarketplace />
