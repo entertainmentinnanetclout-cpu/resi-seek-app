@@ -2,7 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, KeyRound, FileText, Users, Phone, FolderOpen, ClipboardList, Layers } from "lucide-react";
+import { Building2, KeyRound, FileText, Users, Phone, FolderOpen, ClipboardList, Layers, Filter } from "lucide-react";
 import { AdminResidencesContent } from "./AdminResidences";
 import { AdminResidencePortalsContent } from "./AdminResidencePortals";
 import { AdminApplicationsContent } from "./AdminApplications";
@@ -11,10 +11,12 @@ import { AdminDocumentsContent } from "./AdminDocuments";
 import { AdminUsersContent } from "./AdminUsers";
 import { AdminLandlordApplicationsContent } from "./AdminLandlordApplications";
 import SectionsManager from "@/components/admin/SectionsManager";
+import { AdminFilterConfigContent } from "./AdminFilterConfig";
 
 const tabs = [
   { value: "residences", label: "Residences", icon: Building2 },
   { value: "sections", label: "Sections", icon: Layers },
+  { value: "filters", label: "Filters", icon: Filter },
   { value: "portals", label: "Portals", icon: KeyRound },
   { value: "applications", label: "Applications", icon: FileText },
   { value: "landlord-apps", label: "Landlord Apps", icon: ClipboardList },
@@ -48,6 +50,7 @@ const AdminOperationsHub = () => {
 
           <TabsContent value="residences"><AdminResidencesContent /></TabsContent>
           <TabsContent value="sections"><SectionsManager /></TabsContent>
+          <TabsContent value="filters"><AdminFilterConfigContent /></TabsContent>
           <TabsContent value="portals"><AdminResidencePortalsContent /></TabsContent>
           <TabsContent value="applications"><AdminApplicationsContent /></TabsContent>
           <TabsContent value="landlord-apps"><AdminLandlordApplicationsContent /></TabsContent>
