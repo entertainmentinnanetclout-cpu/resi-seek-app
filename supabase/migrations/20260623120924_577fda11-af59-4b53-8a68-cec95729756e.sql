@@ -1,0 +1,1 @@
+REVOKE SELECT ("contact_email") ON TABLE public.residences FROM anon;
