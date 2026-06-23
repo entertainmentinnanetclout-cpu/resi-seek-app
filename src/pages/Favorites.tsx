@@ -24,7 +24,6 @@ interface FavoriteResidence {
     image_url?: string;
     room_type?: string;
     campus?: string;
-    contact_phone?: string;
     verification_level?: string;
     available_spots?: number;
   };
@@ -59,7 +58,6 @@ const Favorites = () => {
             image_url,
             room_type,
             campus,
-            contact_phone,
             verification_level,
             available_spots
           )
