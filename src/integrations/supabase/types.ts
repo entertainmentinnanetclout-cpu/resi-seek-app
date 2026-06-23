@@ -907,6 +907,51 @@ export type Database = {
           },
         ]
       }
+      filter_config: {
+        Row: {
+          control_type: string
+          created_at: string
+          display_order: number
+          filter_group: string
+          id: string
+          is_featured: boolean
+          is_multiselect: boolean
+          is_visible: boolean
+          key: string
+          label: string
+          options: Json | null
+          updated_at: string
+        }
+        Insert: {
+          control_type?: string
+          created_at?: string
+          display_order?: number
+          filter_group?: string
+          id?: string
+          is_featured?: boolean
+          is_multiselect?: boolean
+          is_visible?: boolean
+          key: string
+          label: string
+          options?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          control_type?: string
+          created_at?: string
+          display_order?: number
+          filter_group?: string
+          id?: string
+          is_featured?: boolean
+          is_multiselect?: boolean
+          is_visible?: boolean
+          key?: string
+          label?: string
+          options?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hamper_bundle_items: {
         Row: {
           created_at: string | null
@@ -2316,20 +2361,31 @@ export type Database = {
         Row: {
           address: string
           amenities: string[] | null
+          application_count: number | null
           available_spots: number
           campus: string | null
           capacity: number
+          category: string | null
           contact_email: string | null
           contact_phone: string | null
           created_at: string
+          deposit_amount: number | null
           description: string | null
           display_order: number | null
           distance_from_campus: number | null
           featured: boolean | null
+          featured_rank: number | null
+          gender: string | null
+          has_parking: boolean | null
+          has_wifi: boolean | null
           id: string
           image_url: string | null
           images: string[] | null
+          is_featured: boolean | null
+          is_furnished: boolean | null
           is_trusted: boolean | null
+          is_tut_accredited: boolean | null
+          lease_period: string | null
           name: string
           price: number
           province: string | null
@@ -2337,28 +2393,43 @@ export type Database = {
           room_type: string | null
           room_types: string[] | null
           section_category: string | null
+          singles_available: number | null
+          slug: string | null
           updated_at: string
+          utilities_included: boolean | null
           verification_level: string | null
+          view_count: number | null
           virtual_tour_provider: string | null
           virtual_tour_url: string | null
         }
         Insert: {
           address: string
           amenities?: string[] | null
+          application_count?: number | null
           available_spots?: number
           campus?: string | null
           capacity?: number
+          category?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          deposit_amount?: number | null
           description?: string | null
           display_order?: number | null
           distance_from_campus?: number | null
           featured?: boolean | null
+          featured_rank?: number | null
+          gender?: string | null
+          has_parking?: boolean | null
+          has_wifi?: boolean | null
           id?: string
           image_url?: string | null
           images?: string[] | null
+          is_featured?: boolean | null
+          is_furnished?: boolean | null
           is_trusted?: boolean | null
+          is_tut_accredited?: boolean | null
+          lease_period?: string | null
           name: string
           price: number
           province?: string | null
@@ -2366,28 +2437,43 @@ export type Database = {
           room_type?: string | null
           room_types?: string[] | null
           section_category?: string | null
+          singles_available?: number | null
+          slug?: string | null
           updated_at?: string
+          utilities_included?: boolean | null
           verification_level?: string | null
+          view_count?: number | null
           virtual_tour_provider?: string | null
           virtual_tour_url?: string | null
         }
         Update: {
           address?: string
           amenities?: string[] | null
+          application_count?: number | null
           available_spots?: number
           campus?: string | null
           capacity?: number
+          category?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          deposit_amount?: number | null
           description?: string | null
           display_order?: number | null
           distance_from_campus?: number | null
           featured?: boolean | null
+          featured_rank?: number | null
+          gender?: string | null
+          has_parking?: boolean | null
+          has_wifi?: boolean | null
           id?: string
           image_url?: string | null
           images?: string[] | null
+          is_featured?: boolean | null
+          is_furnished?: boolean | null
           is_trusted?: boolean | null
+          is_tut_accredited?: boolean | null
+          lease_period?: string | null
           name?: string
           price?: number
           province?: string | null
@@ -2395,8 +2481,12 @@ export type Database = {
           room_type?: string | null
           room_types?: string[] | null
           section_category?: string | null
+          singles_available?: number | null
+          slug?: string | null
           updated_at?: string
+          utilities_included?: boolean | null
           verification_level?: string | null
+          view_count?: number | null
           virtual_tour_provider?: string | null
           virtual_tour_url?: string | null
         }
