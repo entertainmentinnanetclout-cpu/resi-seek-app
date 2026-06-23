@@ -100,7 +100,7 @@ export const AdminBackendHealthContent = () => {
               </CardTitle>
               {statusBadge(pings.lovable?.ok)}
             </div>
-            <CardDescription>Primary backend (vmqqkebojldjsyxcewdb)</CardDescription>
+            <CardDescription>Standby provider (warm)</CardDescription>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-1">
             <div>Latency: <span className="font-mono">{pings.lovable?.ms ?? "—"} ms</span></div>
@@ -118,7 +118,7 @@ export const AdminBackendHealthContent = () => {
               </CardTitle>
               {statusBadge(pings.external?.ok)}
             </div>
-            <CardDescription>Mirror / historical data source</CardDescription>
+            <CardDescription>Primary source of truth</CardDescription>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-1">
             <div>Latency: <span className="font-mono">{pings.external?.ms ?? "—"} ms</span></div>
