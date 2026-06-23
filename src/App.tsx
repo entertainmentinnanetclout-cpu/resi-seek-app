@@ -124,6 +124,7 @@ const App = () => {
               <Route path="/find" element={<FindMyRes />} />
               <Route path="/findmyres" element={<FindMyRes />} />
               <Route path="/res/:id" element={<ResidenceDetail />} />
+              <Route path="/find-my-res/:slug" element={<ResidenceDetail />} />
               <Route path="/bursaries" element={<BursaryFinder />} />
               <Route path="/bursary/:id" element={<BursaryDetail />} />
               <Route path="/marketplace" element={<Marketplace />} />

@@ -3,12 +3,19 @@ import { useState, useMemo, useCallback } from "react";
 export interface ResidenceFilters {
   searchQuery: string;
   campus: string;
+  category: string;
+  gender: string;
   priceMin: number;
   priceMax: number;
   distanceMax: number;
   roomTypes: string[];
   sectionCategory: string;
   nsfasOnly: boolean;
+  tutOnly: boolean;
+  singlesOnly: boolean;
+  furnishedOnly: boolean;
+  wifiOnly: boolean;
+  parkingOnly: boolean;
   availability: "all" | "available" | "few_spots";
   amenities: string[];
   sortBy: string;
@@ -17,12 +24,19 @@ export interface ResidenceFilters {
 const DEFAULT_FILTERS: ResidenceFilters = {
   searchQuery: "",
   campus: "all",
+  category: "all",
+  gender: "all",
   priceMin: 0,
   priceMax: 10000,
   distanceMax: 20,
   roomTypes: [],
   sectionCategory: "all",
   nsfasOnly: false,
+  tutOnly: false,
+  singlesOnly: false,
+  furnishedOnly: false,
+  wifiOnly: false,
+  parkingOnly: false,
   availability: "all",
   amenities: [],
   sortBy: "match",
@@ -108,11 +122,18 @@ export function useResidenceFilters(residences: any[]) {
     let count = 0;
     if (filters.searchQuery) count++;
     if (filters.campus !== "all") count++;
+    if (filters.category !== "all") count++;
+    if (filters.gender !== "all") count++;
     if (filters.priceMin > 0 || filters.priceMax < 10000) count++;
     if (filters.distanceMax < 20) count++;
     if (filters.roomTypes.length > 0) count++;
     if (filters.sectionCategory !== "all") count++;
     if (filters.nsfasOnly) count++;
+    if (filters.tutOnly) count++;
+    if (filters.singlesOnly) count++;
+    if (filters.furnishedOnly) count++;
+    if (filters.wifiOnly) count++;
+    if (filters.parkingOnly) count++;
     if (filters.availability !== "all") count++;
     if (filters.amenities.length > 0) count++;
     return count;
@@ -137,6 +158,16 @@ export function useResidenceFilters(residences: any[]) {
     // Campus
     if (filters.campus !== "all") {
       filtered = filtered.filter((r) => r.campus === filters.campus);
+    }
+
+    // Category
+    if (filters.category !== "all") {
+      filtered = filtered.filter((r) => r.category === filters.category);
+    }
+
+    // Gender
+    if (filters.gender !== "all") {
+      filtered = filtered.filter((r) => r.gender === filters.gender || r.gender === "mixed");
     }
 
     // Price
@@ -178,6 +209,11 @@ export function useResidenceFilters(residences: any[]) {
     if (filters.nsfasOnly) {
       filtered = filtered.filter((r) => r.is_trusted === true);
     }
+    if (filters.tutOnly)       filtered = filtered.filter((r) => r.is_tut_accredited === true);
+    if (filters.singlesOnly)   filtered = filtered.filter((r) => (Number(r.singles_available) || 0) > 0 || r.room_types?.some((t: string) => t.toLowerCase().includes("single")));
+    if (filters.furnishedOnly) filtered = filtered.filter((r) => r.is_furnished === true);
+    if (filters.wifiOnly)      filtered = filtered.filter((r) => r.has_wifi === true);
+    if (filters.parkingOnly)   filtered = filtered.filter((r) => r.has_parking === true);
 
     // Availability
     if (filters.availability === "available") {

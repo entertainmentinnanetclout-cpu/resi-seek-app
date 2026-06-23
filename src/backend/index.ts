@@ -16,7 +16,10 @@ import { lovableDriver } from "./drivers/lovable";
 import { supabaseDriver } from "./drivers/supabase";
 import type { BackendDriver } from "./types";
 
-const provider = (import.meta.env.VITE_BACKEND_PROVIDER as string | undefined) ?? "lovable";
+// External Supabase is the primary backend. Lovable Cloud is kept warm as
+// a standby provider via the BAL. Override with VITE_BACKEND_PROVIDER=lovable
+// when running purely on Lovable Cloud.
+const provider = (import.meta.env.VITE_BACKEND_PROVIDER as string | undefined) ?? "supabase";
 
 const driver: BackendDriver = provider === "supabase" ? supabaseDriver : lovableDriver;
 
