@@ -1,6 +1,6 @@
 import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Building2, ArrowUpDown } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,14 +24,24 @@ import { FilterSidebar } from "@/components/findmyres/FilterSidebar";
 import { FilterBottomSheet } from "@/components/findmyres/FilterBottomSheet";
 import { ActiveFilterChips } from "@/components/findmyres/ActiveFilterChips";
 import { ResidencePropertyCard } from "@/components/findmyres/ResidencePropertyCard";
+import { CategoryRail } from "@/components/findmyres/CategoryRail";
+import { AccreditationCTA } from "@/components/findmyres/AccreditationCTA";
 import CompareDrawer from "@/components/CompareDrawer";
 
 const MAX_COMPARE = 3;
 const PAGE_SIZE = 20;
 
+const CATEGORY_SECTIONS = [
+  { key: "flats", title: "Flats", subtitle: "Bachelor, studio, 1 & 2 bedroom apartments" },
+  { key: "communes", title: "Communes", subtitle: "Male, female and mixed shared houses" },
+  { key: "student_residences", title: "Student Residences", subtitle: "NSFAS & TUT accredited buildings" },
+  { key: "private_rentals", title: "Private Rentals", subtitle: "Family rentals and professional homes" },
+] as const;
+
 const FindMyRes = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { residences, loading } = useRealtimeResidences();
   const { sections } = useResidenceSections("findmyres");
   const {
@@ -50,6 +60,13 @@ const FindMyRes = () => {
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [applicationNotes, setApplicationNotes] = useState("");
+
+  // Deep-link category support: /find?category=flats
+  useEffect(() => {
+    const cat = searchParams.get("category");
+    if (cat && cat !== filters.category) updateFilter("category", cat);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // First-visit CTA modal
   useEffect(() => {
@@ -109,6 +126,23 @@ const FindMyRes = () => {
   const visibleResidences = filteredResidences.slice(0, visibleCount);
   const hasMore = visibleCount < filteredResidences.length;
 
+  // Group residences by category for rails (only when no filters active)
+  const byCategory = CATEGORY_SECTIONS.map((s) => ({
+    ...s,
+    items: residences.filter((r: any) => r.category === s.key).slice(0, 10),
+    total: residences.filter((r: any) => r.category === s.key).length,
+  }));
+  const featured = [...residences]
+    .filter((r: any) => (r.available_spots ?? 0) > 0)
+    .sort((a: any, b: any) => {
+      const aScore = (a.is_featured ? 1000 : 0) + (a.featured_rank || 0) + (a.application_count || 0) + (a.view_count || 0) / 10;
+      const bScore = (b.is_featured ? 1000 : 0) + (b.featured_rank || 0) + (b.application_count || 0) + (b.view_count || 0) / 10;
+      return bScore - aScore;
+    })
+    .slice(0, 10);
+
+  const showRails = !hasActiveFilters && !loading && residences.length > 0;
+
   return (
     <DashboardLayout>
       <SEO
@@ -142,8 +176,40 @@ const FindMyRes = () => {
           totalCount={residences.length}
         />
 
+        {/* Category Rails (Property24-style discovery) */}
+        {showRails && (
+          <div className="max-w-7xl mx-auto py-8 space-y-10">
+            {byCategory.filter((s) => s.items.length > 0).map((s) => (
+              <CategoryRail
+                key={s.key}
+                title={s.title}
+                subtitle={s.subtitle}
+                viewAllHref={`/find?category=${s.key}`}
+                viewAllLabel={`View All ${s.title}`}
+                count={s.total}
+              >
+                {s.items.map((r: any) => (
+                  <div key={r.id} className="min-w-[280px] sm:min-w-[320px] snap-start">
+                    <ResidencePropertyCard residence={r} onApply={handleApply} />
+                  </div>
+                ))}
+              </CategoryRail>
+            ))}
+            {featured.length > 0 && (
+              <CategoryRail title="Featured Accommodation" subtitle="Smart-ranked by demand, reviews and availability" count={featured.length}>
+                {featured.map((r: any) => (
+                  <div key={r.id} className="min-w-[280px] sm:min-w-[320px] snap-start">
+                    <ResidencePropertyCard residence={r} onApply={handleApply} />
+                  </div>
+                ))}
+              </CategoryRail>
+            )}
+            <AccreditationCTA />
+          </div>
+        )}
+
         {/* Main Content: Sidebar + Grid */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" id="results">
           <div className="flex gap-6">
             {/* Desktop Sidebar */}
             <div className="hidden lg:block">
