@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { safeFormatDate } from "@/lib/utils";
 import { downloadEnhancedCSV } from "@/lib/exportHelpers";
+import HandoverExportPanel from "@/components/admin/HandoverExportPanel";
 
 interface UserDocument {
   id: string;
