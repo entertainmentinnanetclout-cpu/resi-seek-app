@@ -1,117 +1,114 @@
-## Part A — Revert to External Supabase (keep safety net)
+## Root cause (Part 1) — Preview vs Production drift
 
-**Repoint, don't rebuild.** External Supabase becomes the active provider again; Lovable Cloud stays wired as a hot standby.
+Preview and Production are the SAME Vercel/Lovable build and BOTH point at External Supabase `mefjzkhobkltlbmhusdh`. They are not diverging on the frontend.
 
-1. **Switch active driver** in `src/backend/index.ts` default to `"supabase"`; set `VITE_BACKEND_PROVIDER=supabase` in `.env`. `src/integrations/supabase/client.ts` already points at External (`mefjzkhobkltlbmhusdh`) — leave untouched.
-2. **Edge functions** — keep the dual-env fallback logic added during cutover, but document External as primary. No redeploy needed (auto).
-3. **Keep**: `src/backend/` BAL, `src/pages/admin/AdminBackendHealth.tsx`, `sync_queue` + `health_status` tables, `docs/PHASE_1A_SQL_PACK.sql` as DR pack.
-4. **Health dashboard** — flip labels: External 🟢 primary, Lovable Cloud 🟢 standby. Surface "active provider" pill.
-5. **No data migration needed** — historical data already lives on External; Lovable Cloud writes from the outage window stay in `sync_queue` for later one-way replay (Phase 1D, not in this plan).
-
-## Part B — Find My Res V3.0 (Property24-tier upgrade)
-
-### Audit & reuse (no duplicates)
-Existing assets to extend, not replace:
-- `src/pages/FindMyRes.tsx` — main page
-- `src/hooks/useResidenceFilters.ts` — filter state + match scoring (extend, don't fork)
-- `src/hooks/useResidenceSections.ts` + `residence_sections` table — already drives category sections
-- `src/components/findmyres/{SmartSearchBar,FilterSidebar,FilterBottomSheet,ActiveFilterChips,ResidencePropertyCard}.tsx`
-- `src/components/admin/SectionsManager.tsx` — already manages sections (extend for categories + filter config)
-- `residences` table (27 cols) — add only missing fields
-- `filter_config` table (per memory) — reuse for filter management
-
-### UI architecture (FindMyRes page)
+The real drift is in the **database**:
 
 ```text
-┌─────────────────────────────────────────────────┐
-│ Sticky Top Filter Bar (Property24-style)        │
-│ Location · Campus · Category · Price · Gender · │
-│ NSFAS · TUT · Singles · Available · Furnished · │
-│ WiFi · Parking · Distance   [More ▾]            │
-├─────────────────────────────────────────────────┤
-│ § 1  FLATS                 → View All Flats     │
-│ ◀ [card] [card] [card] [card] [card] ▶          │
-├─────────────────────────────────────────────────┤
-│ § 2  COMMUNES              → View All           │
-│ ◀ [card] [card] [card] ▶                        │
-├─────────────────────────────────────────────────┤
-│ § 3  STUDENT RESIDENCES    → View All           │
-├─────────────────────────────────────────────────┤
-│ § 4  PRIVATE RENTALS       → View All           │
-├─────────────────────────────────────────────────┤
-│ § 5  FEATURED (AI-ranked)                       │
-├─────────────────────────────────────────────────┤
-│ LANDLORD CTA — "List Your Property" →           │
-│   /landlord-accreditation                       │
-└─────────────────────────────────────────────────┘
+Frontend (preview + prod)   ──►  External Supabase  mefjzkhobkltlbmhusdh   (live data)
+Edge functions (runtime)    ──►  External Supabase  mefjzkhobkltlbmhusdh   (via EXTERNAL_SUPABASE_* secrets)
+supabase--migration tool    ──►  Lovable Cloud      vmqqkebojldjsyxcewdb   (config.toml project_id)  ◄── MISMATCH
 ```
 
-Deep-link support: `/find-my-res?category=flats|communes|residences|rentals` pre-applies category filter and scrolls to that section.
+Every migration we have run this week (Find My Res V3 columns, `filter_config`, `sync_queue`, `health_status`, RLS hardening, marketplace trigger, residences column REVOKE, slug trigger…) landed in the **Lovable Cloud mirror only**. External production is missing all of it. That is why:
 
-### New components (additive)
-- `CategoryRail.tsx` — horizontal scroll wrapper with snap + arrows, used by all 5 sections
-- `CategoryHeroSelector.tsx` — landing-page visual category picker (4 cards → deep links)
-- `AccreditationCTA.tsx` — "Become Accredited 2026–2031" landlord block
-- `StatusBadge.tsx` — FULL (pulsing red) / LIMITED (orange) / AVAILABLE (green) / NEW (blue) / FEATURED (gold)
+- New code that reads `slug`, `category`, `is_tut_accredited`, `filter_config`, etc. works in our dev/preview reads when types match but returns null/empty on production data because columns/rows aren't there.
+- Security hardening (column revokes, order seller trigger) is NOT live in production.
+- `src/integrations/supabase/types.ts` was hand-edited to reflect Lovable Cloud schema, so TS compiles green even though External doesn't have those columns.
 
-### Card upgrade (`ResidencePropertyCard.tsx` — extend in place)
-Add: status badges, "Singles Available" pill (already partially present — make prominent), gender pill, accreditation badges (NSFAS/TUT), distance, beds available number. No new card file.
+There is no Vercel/Lovable build mismatch to "redeploy" — there's a **schema delivery gap**. The fix is to ship one consolidated, idempotent SQL pack that the operator runs in External Supabase SQL Editor, then verify parity.
 
-### Landing page additions (`src/pages/Landing.tsx`)
-- "Find Your Next Home" section using `CategoryHeroSelector`
-- "Become Accredited" section using `AccreditationCTA`
+## Part 2 — Handover Pack data integrity
 
-### Admin upgrades (extend `AdminOperationsHub` / accommodation tabs)
-- **Residence Categories** tab — reuse `SectionsManager` pattern, add `category` field
-- **Filter Management** tab — new `FilterConfigManager.tsx` over `filter_config` table (ordering, visibility, labels, featured, groups)
-- **Availability Control** dashboard widget — total beds, full, singles
-- **Accreditation Pipeline** — already exists as `AdminLandlordApplications`; add status counters widget
-- **Hub Analytics** — extend `AdminAnalytics` cards (Total Properties, Available Beds, Full, Singles, Apps Today/Month, Accreditation Apps, Conversion)
+Current `download-handover-pack` edge function fetches `applications` then joins `profiles` by `user_id`. Risks:
 
-### SEO
-- Slug column on residences → routes `/find-my-res/:slug` (keep `/res/:id` working via redirect)
-- `SEOJsonLd.tsx` extended with `Residence` / `Apartment` / `RentalProperty` schema types
-- Sitemap regen includes slug routes
+- `profiles.full_name` is free-text — students with mismatched/empty names produce wrong rows.
+- `applications` has its own `student_number` (sometimes), and `profiles.student_number` may differ.
+- No funding source surfaced.
+- No de-dup; multiple applications per student per residence appear as separate rows with no warning.
+- Orphan applications (deleted profile) render as "N/A" instead of blocking export.
 
-### Performance
-- React Query for residence fetch (already used); add `staleTime: 60s`
-- `loading="lazy"` on all card images (already present)
-- Virtualized horizontal rails via CSS scroll-snap (no lib)
-- Indexed columns: `category`, `gender`, `is_nsfas_accredited`, `is_tut_accredited`, `available_spots`, `singles_available`, `slug`
+Fix: a single validated view + a validator function, both consumed by the existing edge function and a new Export Center tab. No new tables.
 
-### Database changes (External Supabase, re-runnable)
-Audit first via `supabase--read_query`. Likely missing on `residences`:
-- `category` text (`flats|communes|student_residence|private_rental`) — default inferred from existing data
-- `gender` text (`male|female|mixed`)
-- `singles_available` int
-- `is_tut_accredited` bool
-- `is_furnished`, `has_wifi`, `has_parking` bool (may exist in `amenities[]` — keep as-is and derive)
-- `lease_period`, `deposit_amount`, `utilities_included` (for rentals)
-- `slug` text unique
-- `is_featured` bool, `featured_rank` int
-- `view_count`, `application_count` int (for AI ranking)
+## Part 3 — Export Center (reuse existing AdminApplications hub)
 
-New table:
-- `filter_config(id, key, label, group, display_order, is_visible, is_featured, is_multiselect, options jsonb)` — admin-managed
-- GRANT SELECT to anon+authenticated; ALL to service_role; admin-only write policy via `has_role(auth.uid(),'admin')`
+Extend the **existing** Operations Hub → Applications tab with a "Handover Export" panel (no new route, no parallel module). Panel:
 
-Indexes on every filterable column. Triggers: `update_updated_at`, slug auto-gen from name+id.
+1. Calls `validate_handover_pack(residence_id)` RPC → shows counts (Total Students, Total Applications, Duplicates, Missing Names, Missing Student #, Missing Funding, Orphans, Invalid Residence).
+2. If any error count > 0 → red "DATA INTEGRITY ERROR" card listing offending `application_id`s with deep links to AdminApplications. Export buttons disabled.
+3. If clean → enables "Download CSV" and "Download PDF" (existing handover edge function, now reading from the validated view).
 
-### Deliverables bundle
-- `docs/FIND_MY_RES_V3_SQL.sql` — rerunnable master pack (additive ALTERs guarded with `IF NOT EXISTS`, new tables, RLS, GRANTs, indexes, triggers, seed for `filter_config`, rollback section)
-- Migration file via `supabase--migration` tool (External Supabase target)
-- Updated `KNOWLEDGE_BASE.md` + memory entries (FindMyRes V3 architecture, filter_config system, category model)
-- `docs/FIND_MY_RES_V3_REPORT.md` — reuse report, new assets, DB diff, routes, QA + mobile + perf checklists
+## Part 4 — Deliverables
 
-### Out of scope (confirm before adding)
-- Map view / clustering
-- Saved searches + alerts
-- Compare drawer extension (already exists; not touching)
-- Phase 1D External↔Lovable sync replay
+### A. `docs/MASTER_EXPORT_INTEGRITY_SQL.sql` (rerunnable, idempotent)
 
----
+Run in External Supabase SQL Editor. Contains:
 
-**Confirm to proceed.** Two flags before I build:
+- `ALTER TABLE public.applications ADD COLUMN IF NOT EXISTS funding_source text;` (and any other missing handover columns)
+- `CREATE OR REPLACE VIEW public.residence_handover_export_v` — security_invoker, joins `applications → profiles → residences`, exposes only: `application_id`, `ref_code`, `residence_id`, `residence_name`, `student_name`, `student_surname`, `student_number`, `funding_source`, `email`, `phone`, `status`, `applied_at`. Surname is split from `full_name` deterministically.
+- `CREATE OR REPLACE FUNCTION public.validate_handover_pack(_residence_id uuid)` — returns jsonb `{ ok, totals: {...}, errors: [{code, application_id, reason}] }`. Checks: dup student_number per residence, dup applications (same user+residence), missing/blank name, missing surname, missing funding_source, missing student_number, application.residence_id not in residences, orphan profile.
+- GRANTs: `SELECT` on view to `authenticated`, `EXECUTE` on function to `authenticated` (admin-gated inside function via `has_role`).
+- No DROP, no destructive ops. Wrapped in `DO $$ ... $$` guards where needed.
 
-1. **Category source** — derive `category` from existing `room_type`/`section_category` heuristically on migration, or leave NULL and let admin tag manually? (Recommend: heuristic + admin override.)
-2. **Slug routing** — add `/find-my-res/:slug` as primary and 301 `/res/:id` → slug, or keep both equal? (Recommend: slug primary, id redirects.)
+### B. Catch-up migration pack `docs/EXTERNAL_PARITY_CATCHUP.sql`
+
+Concatenation (re-export) of every Lovable-mirror-only change so the operator can bring External back to parity in one paste: Find My Res V3 columns + slug trigger + `filter_config` + RLS tightening + marketplace order trigger + residences contact column revoke. All `IF NOT EXISTS` / `CREATE OR REPLACE` / `DROP POLICY IF EXISTS ... CREATE POLICY ...`.
+
+### C. Edge function update
+
+`supabase/functions/download-handover-pack/index.ts`:
+
+- Call `validate_handover_pack` first; if `ok=false` return 422 with the error list (no PDF/CSV).
+- Read rows from `residence_handover_export_v` instead of ad-hoc joins.
+- Keep `EXTERNAL_SUPABASE_*` env var pattern (unchanged).
+
+### D. Frontend
+
+- `src/pages/admin/AdminApplications.tsx` — add "Handover Export" section using the validator RPC (uses existing `supabase` client → External).
+- No new route, no new admin page, no duplicate "Export" module.
+
+### E. Reports
+
+- `docs/DEPLOYMENT_AUDIT_REPORT.md` — documents the schema-delivery gap, lists the mismatched mirror migrations, gives the exact paste-order for External.
+- `docs/HANDOVER_INTEGRITY_REPORT.md` — view/function spec, validation rules, integration checklist, QA checklist.
+
+## What I will NOT do
+
+- Will not create new tables, new admin routes, parallel export pages, or duplicate handover functions.
+- Will not run destructive SQL.
+- Will not touch `src/integrations/supabase/client.ts`, `types.ts`, or `supabase/config.toml`.
+- Will not "redeploy production frontend" — there is nothing wrong with the frontend deploy; the gap is in the External DB.
+
+## Open questions before I build
+
+1. **Funding source field** — `applications` has no `funding_source` column on External today. Add it as nullable `text` (NSFAS / Self-Funded / Bursary / Other) and surface a small picker in the existing application form, or pull from a new `profiles.funding_source` instead? My recommendation: add to `applications` (per-application, students can change funder year to year).
+2. **Surname split** — `profiles` only has `full_name`. Accept the simple rule "first token = name, rest = surname" for the view, or add explicit `first_name` / `last_name` columns to `profiles` and backfill? Recommendation: ship the split now (unblocks exports today), add explicit columns in a follow-up.
+3. **Who runs the catch-up SQL?** I can produce `EXTERNAL_PARITY_CATCHUP.sql` ready to paste, but only the project owner can execute it in the External SQL Editor. Confirm you'll run it — otherwise nothing actually lands in production.
+
+Produce a complete EXTERNAL_PARITY_CATCHUP.sql file that is fully rerunnable and idempotent using IF NOT EXISTS, DO $$ blocks, CREATE OR REPLACE FUNCTION, DROP POLICY IF EXISTS, and CREATE POLICY patterns. The SQL must bring External Supabase to the exact same schema state as the currently running backend. Include:
+
+- Tables
+- Views
+- Functions
+- Triggers
+- RLS Policies
+- Storage Buckets
+- Role Grants
+- Foreign Keys
+- Indexes
+- Constraints
+- Enums
+- Health Dashboard tables
+- Accreditation tables
+- Commerce Hub tables
+- Operations Hub tables
+- Media Hub tables
+- Application/Handover Pack fixes
+- Funding Source additions
+- First Name / Last Name additions
+
+Output as one master SQL pack with section headers and verification queries at the end.
+
+&nbsp;
+
+Do not assume the filter_config schema. Inspect the existing table structure before generating migration SQL. If filter_config already exists, use the existing required columns and perform UPSERTs rather than INSERTs. All migration SQL must be schema-aware and rerunnable.
