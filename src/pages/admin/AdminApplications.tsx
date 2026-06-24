@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { safeFormatDate } from "@/lib/utils";
 import { downloadEnhancedCSV } from "@/lib/exportHelpers";
+import HandoverExportPanel from "@/components/admin/HandoverExportPanel";
 
 interface UserDocument {
   id: string;
@@ -277,6 +278,7 @@ export const AdminApplicationsContent = () => {
       <SEO title="Manage Applications | Admin" description="Review and manage student applications" />
 
       <div className="space-y-6">
+        <HandoverExportPanel />
         <div>
           <h1 className="text-3xl font-bold">Applications</h1>
           <p className="text-muted-foreground">Review and manage student applications</p>

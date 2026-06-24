@@ -54,6 +54,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "application_activity_log_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "residence_handover_export_v"
+            referencedColumns: ["application_id"]
+          },
+          {
             foreignKeyName: "application_activity_log_residence_id_fkey"
             columns: ["residence_id"]
             isOneToOne: false
@@ -66,6 +73,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "applications"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_activity_log_application"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "residence_handover_export_v"
+            referencedColumns: ["application_id"]
           },
           {
             foreignKeyName: "fk_activity_log_residence"
@@ -125,6 +139,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "application_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "residence_handover_export_v"
+            referencedColumns: ["application_id"]
+          },
+          {
             foreignKeyName: "application_documents_residence_id_fkey"
             columns: ["residence_id"]
             isOneToOne: false
@@ -137,6 +158,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "applications"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_app_docs_application"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "residence_handover_export_v"
+            referencedColumns: ["application_id"]
           },
           {
             foreignKeyName: "fk_app_docs_residence"
@@ -184,6 +212,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "application_messages_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "residence_handover_export_v"
+            referencedColumns: ["application_id"]
+          },
+          {
             foreignKeyName: "application_messages_residence_id_fkey"
             columns: ["residence_id"]
             isOneToOne: false
@@ -196,6 +231,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "applications"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_app_messages_application"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "residence_handover_export_v"
+            referencedColumns: ["application_id"]
           },
           {
             foreignKeyName: "fk_app_messages_residence"
@@ -2074,6 +2116,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_referral_claims_application"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "residence_handover_export_v"
+            referencedColumns: ["application_id"]
+          },
+          {
             foreignKeyName: "fk_referral_claims_residence"
             columns: ["residence_id"]
             isOneToOne: false
@@ -2086,6 +2135,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "applications"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_claims_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "residence_handover_export_v"
+            referencedColumns: ["application_id"]
           },
           {
             foreignKeyName: "referral_claims_residence_id_fkey"
@@ -3314,6 +3370,57 @@ export type Database = {
         }
         Relationships: []
       }
+      residence_handover_export_v: {
+        Row: {
+          application_date: string | null
+          application_id: string | null
+          campus: string | null
+          created_at: string | null
+          email: string | null
+          funding_source: string | null
+          move_in_date: string | null
+          moved_in: boolean | null
+          phone: string | null
+          ref_code: string | null
+          residence_id: string | null
+          residence_name: string | null
+          status: string | null
+          student_name: string | null
+          student_number: string | null
+          student_surname: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_applications_residence"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_applications_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_seller_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_applications_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       capture_referral: {
@@ -3354,6 +3461,10 @@ export type Database = {
       is_authorized_residence_user: {
         Args: { target_residence_id: string }
         Returns: boolean
+      }
+      validate_handover_pack: {
+        Args: { _residence_id?: string }
+        Returns: Json
       }
     }
     Enums: {
