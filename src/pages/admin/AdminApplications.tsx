@@ -278,6 +278,7 @@ export const AdminApplicationsContent = () => {
       <SEO title="Manage Applications | Admin" description="Review and manage student applications" />
 
       <div className="space-y-6">
+        <HandoverExportPanel />
         <div>
           <h1 className="text-3xl font-bold">Applications</h1>
           <p className="text-muted-foreground">Review and manage student applications</p>
