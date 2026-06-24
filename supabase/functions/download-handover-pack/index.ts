@@ -84,7 +84,7 @@ serve(async (req) => {
       );
     }
 
-    const { residence_id, application_ids } = await req.json();
+    const { residence_id, application_ids, skip_validation } = await req.json();
 
     if (!residence_id && !application_ids) {
       return new Response(
@@ -93,34 +93,62 @@ serve(async (req) => {
       );
     }
 
-    // Fetch applications
-    let query = supabaseAdmin
-      .from('applications')
-      .select('*, residence:residences(name, address, campus, price, room_type)');
-
-    if (residence_id) {
-      query = query.eq('residence_id', residence_id);
-    } else if (application_ids) {
-      query = query.in('id', application_ids);
+    // ----- Pre-export integrity validation (blocks export on failure) -----
+    if (!skip_validation) {
+      const { data: validation, error: vErr } = await supabaseAdmin
+        .rpc('validate_handover_pack', { _residence_id: residence_id ?? null });
+      if (vErr) {
+        console.error(`[${VERSION}] Validator RPC failed`, vErr);
+        return new Response(
+          JSON.stringify({ error: 'Validation failed to run', detail: vErr.message, _version: VERSION }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (validation && validation.ok === false) {
+        return new Response(
+          JSON.stringify({
+            error: 'DATA INTEGRITY ERROR — export blocked',
+            validation,
+            _version: VERSION,
+          }),
+          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
-    const { data: applications, error: appError } = await query.order('application_date', { ascending: false });
-
-    if (appError || !applications?.length) {
+    // ----- Pull rows from the single validated view -----
+    let vQuery = supabaseAdmin.from('residence_handover_export_v').select('*');
+    if (residence_id) {
+      vQuery = vQuery.eq('residence_id', residence_id);
+    } else if (application_ids) {
+      vQuery = vQuery.in('application_id', application_ids);
+    }
+    const { data: rows, error: vErr2 } = await vQuery.order('application_date', { ascending: false });
+    if (vErr2 || !rows?.length) {
       return new Response(
         JSON.stringify({ error: 'No applications found', _version: VERSION }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Fetch profiles for all applicants
-    const userIds = [...new Set(applications.map(a => a.user_id))];
-    const { data: profiles } = await supabaseAdmin
-      .from('profiles')
-      .select('*')
-      .in('id', userIds);
-
-    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    // Adapter so downstream HTML code keeps its existing shape
+    const applications = rows.map((r: any) => ({
+      id: r.application_id,
+      user_id: r.user_id,
+      residence_id: r.residence_id,
+      status: r.status,
+      application_date: r.application_date,
+      residence: { name: r.residence_name },
+      funding_source: r.funding_source,
+    }));
+    const profileMap = new Map(rows.map((r: any) => [r.user_id, {
+      id: r.user_id,
+      full_name: [r.student_name, r.student_surname].filter(Boolean).join(' '),
+      student_number: r.student_number,
+      email: r.email,
+      phone: r.phone,
+    }]));
+    const userIds = [...new Set(rows.map((r: any) => r.user_id).filter(Boolean))];
 
     // Fetch documents for all applicants
     const { data: allDocuments } = await supabaseAdmin
