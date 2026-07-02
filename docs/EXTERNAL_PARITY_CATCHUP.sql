@@ -109,6 +109,14 @@ CREATE POLICY "filter_config admin manage" ON public.filter_config FOR ALL
   WITH CHECK (public.has_role(auth.uid(), 'admin'::app_role));
 
 -- Seed defaults (UPSERT, never destructive)
+-- Older external schema may include a NOT NULL `name` column; relax it so seeds work everywhere.
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_schema='public' AND table_name='filter_config' AND column_name='name') THEN
+    EXECUTE 'ALTER TABLE public.filter_config ALTER COLUMN name DROP NOT NULL';
+  END IF;
+END $$;
+
 INSERT INTO public.filter_config (key, label, filter_group, display_order, control_type, is_featured)
 VALUES
   ('nsfas',     'NSFAS Accredited',  'accreditation', 10, 'toggle', true),
