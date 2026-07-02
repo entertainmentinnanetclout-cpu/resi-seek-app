@@ -160,7 +160,6 @@ serve(async (req) => {
 
     // 1. Create Auth User
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
       email: cleanEmail,
       password,
       email_confirm: true,
@@ -170,7 +169,43 @@ serve(async (req) => {
       return jsonResponse({ error: authError.message }, 400);
     }
 
+    if (!authData.user?.id) {
+      return jsonResponse({ error: 'Auth user was not created' }, 500);
+    }
+
     const newUserId = authData.user.id;
+
+    const assignPortalRole = async () => {
+      const { error: firstRoleError } = await supabaseAdmin
+        .from('user_roles')
+        .upsert(
+          { user_id: newUserId, role: 'residence_portal' },
+          { onConflict: 'user_id,role', ignoreDuplicates: true }
+        );
+
+      if (!firstRoleError) return;
+      if (!isLegacyUserRoleUniqueError(firstRoleError)) {
+        throw new Error(`Role assignment failed: ${errorMessage(firstRoleError)}`);
+      }
+
+      // A legacy UNIQUE(user_id) index means the new auth user's automatic
+      // student role blocks the residence_portal role. For brand-new portal
+      // users only, remove that auto student role before assigning portal.
+      const { error: cleanupError } = await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', newUserId)
+        .neq('role', 'admin');
+      if (cleanupError) throw new Error(`Legacy role cleanup failed: ${errorMessage(cleanupError)}`);
+
+      const { error: retryRoleError } = await supabaseAdmin
+        .from('user_roles')
+        .upsert(
+          { user_id: newUserId, role: 'residence_portal' },
+          { onConflict: 'user_id,role', ignoreDuplicates: true }
+        );
+      if (retryRoleError) throw new Error(`Role assignment failed after cleanup: ${errorMessage(retryRoleError)}`);
+    };
 
     try {
       console.log(`[${VERSION}] Created user ${newUserId}, assigning role...`);
@@ -192,26 +227,7 @@ serve(async (req) => {
 
         console.warn(`[${VERSION}] using service-role fallback for portal database writes`);
 
-        if (isLegacyUserRoleUniqueError(rpcError)) {
-          // A legacy UNIQUE(user_id) index means the new auth user's automatic
-          // student role blocks the residence_portal role. For brand-new portal
-          // users only, remove that auto student role before assigning portal.
-          const { error: cleanupError } = await supabaseAdmin
-            .from('user_roles')
-            .delete()
-            .eq('user_id', newUserId)
-            .neq('role', 'admin');
-          if (cleanupError) throw new Error(`Legacy role cleanup failed: ${errorMessage(cleanupError)}`);
-        }
-
-        const { error: roleInsertError } = await supabaseAdmin
-          .from('user_roles')
-          .upsert(
-            { user_id: newUserId, role: 'residence_portal' },
-            { onConflict: 'user_id,role', ignoreDuplicates: true }
-          );
-
-        if (roleInsertError) throw new Error(`Role assignment failed: ${errorMessage(roleInsertError)}`);
+        await assignPortalRole();
 
         const { error: portalInsertError } = await supabaseAdmin
           .from('residence_portal_accounts')
