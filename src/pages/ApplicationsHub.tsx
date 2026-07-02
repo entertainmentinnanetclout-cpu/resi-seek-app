@@ -226,7 +226,6 @@ const ApplicationsHub = () => {
     if (error) toast.error("Could not save progress");
   };
 
-  const currentItems = CHECKLISTS[tab];
   const currentPathway = pathways[tab];
   const currentItems = currentPathway.checklist;
   const currentChecked = checklists[tab] ?? {};
