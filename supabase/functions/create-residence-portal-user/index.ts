@@ -177,11 +177,11 @@ serve(async (req) => {
       return jsonResponse({ error: 'Portal email is already in use' }, 409);
     }
 
-    const { data: existingProfile, error: existingProfileError } = await supabaseAdmin
+    const { data: existingProfiles, error: existingProfileError } = await supabaseAdmin
       .from('profiles')
       .select('id, email')
       .ilike('email', cleanEmail)
-      .maybeSingle();
+      .limit(1);
 
     if (existingProfileError) {
       return jsonResponse({ error: `Profile email check failed: ${errorMessage(existingProfileError)}` }, 500);
@@ -202,6 +202,7 @@ serve(async (req) => {
         }, 409);
       }
 
+      const existingProfile = existingProfiles?.[0];
       if (isProfileEmailDuplicateError(authError) && existingProfile) {
         return jsonResponse({
           error: 'This email already exists in profiles and is blocking portal login creation. Run the updated Residence Portal Master SQL, then retry, or use a different portal email.',
