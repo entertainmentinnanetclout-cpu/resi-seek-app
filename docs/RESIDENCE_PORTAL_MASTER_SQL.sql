@@ -19,8 +19,11 @@ BEGIN
   END IF;
 END$$;
 
--- Legacy single-column unique breaks multi-role users
+-- Legacy single-column unique breaks multi-role users. External has appeared
+-- with BOTH a constraint (`user_roles_user_id_key`) and a standalone unique
+-- index (`user_roles_user_id_unique`) in different runs, so remove both.
 DO $$
+DECLARE _idx record;
 BEGIN
   IF EXISTS (
     SELECT 1 FROM pg_constraint
@@ -29,6 +32,30 @@ BEGIN
   ) THEN
     ALTER TABLE public.user_roles DROP CONSTRAINT user_roles_user_id_key;
   END IF;
+
+  DROP INDEX IF EXISTS public.user_roles_user_id_unique;
+
+  FOR _idx IN
+    SELECT i.indexrelid::regclass AS index_name
+      FROM pg_index i
+      JOIN pg_class tbl ON tbl.oid = i.indrelid
+      JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+      LEFT JOIN pg_constraint con ON con.conindid = i.indexrelid
+     WHERE ns.nspname = 'public'
+       AND tbl.relname = 'user_roles'
+       AND i.indisunique = true
+       AND con.oid IS NULL
+       AND array_length(i.indkey, 1) = 1
+       AND EXISTS (
+         SELECT 1
+           FROM pg_attribute a
+          WHERE a.attrelid = i.indrelid
+            AND a.attnum = i.indkey[0]
+            AND a.attname = 'user_id'
+       )
+  LOOP
+    EXECUTE format('DROP INDEX IF EXISTS %s', _idx.index_name);
+  END LOOP;
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint
@@ -232,6 +259,9 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.admin_delete_residence_portal(uuid) TO authenticated, service_role;
 
+-- Force PostgREST to see new/changed RPC signatures immediately.
+NOTIFY pgrst, 'reload schema';
+
 -- ---------------------------------------------------------------------
 -- PHASE 4 · Verification
 -- ---------------------------------------------------------------------
@@ -250,6 +280,30 @@ SELECT 'user_roles_legacy_unique_gone' AS check, NOT EXISTS (
   WHERE conname='user_roles_user_id_key' AND conrelid='public.user_roles'::regclass
 ) AS ok;
 
+SELECT 'user_roles_legacy_unique_index_gone' AS check, NOT EXISTS (
+  SELECT 1 FROM pg_indexes
+  WHERE schemaname='public'
+    AND tablename='user_roles'
+    AND indexname='user_roles_user_id_unique'
+) AS ok;
+
+SELECT 'user_roles_no_single_user_unique_indexes' AS check, NOT EXISTS (
+  SELECT 1
+    FROM pg_index i
+    JOIN pg_class tbl ON tbl.oid = i.indrelid
+    JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+    LEFT JOIN pg_constraint con ON con.conindid = i.indexrelid
+   WHERE ns.nspname = 'public'
+     AND tbl.relname = 'user_roles'
+     AND i.indisunique = true
+     AND con.oid IS NULL
+     AND array_length(i.indkey, 1) = 1
+     AND EXISTS (
+       SELECT 1 FROM pg_attribute a
+       WHERE a.attrelid = i.indrelid AND a.attnum = i.indkey[0] AND a.attname = 'user_id'
+     )
+) AS ok;
+
 SELECT 'rpa_single_residence_fk' AS check, COUNT(*) = 1 AS ok
 FROM pg_constraint
 WHERE conrelid='public.residence_portal_accounts'::regclass AND contype='f';
@@ -257,6 +311,30 @@ WHERE conrelid='public.residence_portal_accounts'::regclass AND contype='f';
 SELECT 'rpc_admin_create_residence_portal' AS check, EXISTS (
   SELECT 1 FROM pg_proc WHERE proname='admin_create_residence_portal'
 ) AS ok;
+
+SELECT 'rpc_admin_create_residence_portal_signature' AS check, EXISTS (
+  SELECT 1
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname='public'
+     AND p.proname='admin_create_residence_portal'
+     AND pg_get_function_arguments(p.oid) = '_residence_id uuid, _user_id uuid, _email text'
+) AS ok;
+
+SELECT 'rpc_admin_create_residence_portal_grant' AS check, has_function_privilege(
+  'authenticated',
+  'public.admin_create_residence_portal(uuid,uuid,text)',
+  'EXECUTE'
+) AS ok;
+
+SELECT 'rpa_table_grants_authenticated' AS check, bool_and(has_table_privilege('authenticated', 'public.residence_portal_accounts', privilege)) AS ok
+FROM (VALUES ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) AS p(privilege);
+
+SELECT 'rpa_unique_indexes' AS check, COUNT(*) >= 2 AS ok
+FROM pg_indexes
+WHERE schemaname='public'
+  AND tablename='residence_portal_accounts'
+  AND indexname IN ('rpa_user_id_unique','rpa_email_lower_unique');
 
 SELECT 'portal_accounts_count' AS metric, COUNT(*) AS value FROM public.residence_portal_accounts;
 SELECT 'residence_portal_role_count' AS metric, COUNT(*) AS value
