@@ -13,9 +13,8 @@ interface AppMessage {
   id: string;
   application_id: string;
   sender_type: string | null;
-  body: string;
+  message: string;
   created_at: string;
-  read_at: string | null;
 }
 
 const Messages = () => {
@@ -35,11 +34,11 @@ const Messages = () => {
       if (!ids.length) { if (!cancelled) { setMessages([]); setLoading(false); } return; }
       const { data } = await supabase
         .from('application_messages')
-        .select('id, application_id, sender_type, body, created_at, read_at')
+        .select('id, application_id, sender_type, message, created_at')
         .in('application_id', ids)
         .order('created_at', { ascending: false })
         .limit(50);
-      if (!cancelled) { setMessages((data || []) as AppMessage[]); setLoading(false); }
+      if (!cancelled) { setMessages((data || []) as unknown as AppMessage[]); setLoading(false); }
     })();
 
     const channel = supabase
@@ -95,7 +94,7 @@ const Messages = () => {
                         {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
                       </span>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{m.body}</p>
+                    <p className="text-sm whitespace-pre-wrap">{m.message}</p>
                     <Link
                       to={`/applications`}
                       className="text-xs text-primary hover:underline mt-2 inline-block"
