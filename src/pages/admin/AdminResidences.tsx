@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star, LayoutList } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star, LayoutList, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import TrustedResidencesEditor from "@/components/admin/TrustedResidencesEditor";
@@ -47,6 +47,8 @@ interface Residence {
   accepts_private?: boolean | null;
   accepts_nsfas?: boolean | null;
   institution_tags?: string[] | null;
+  is_spotlight?: boolean | null;
+  spotlight_rank?: number | null;
 }
 
 const ROOM_TYPE_OPTIONS = ["Single", "Sharing", "Bachelor", "Commune"];
@@ -82,12 +84,14 @@ const emptyResidence: Partial<Residence> = {
   accepts_private: false,
   accepts_nsfas: false,
   institution_tags: [],
+  is_spotlight: false,
 };
 
 export const AdminResidencesContent = () => {
   const [residences, setResidences] = useState<Residence[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [audienceFilter, setAudienceFilter] = useState<"all" | "university" | "tvet" | "private" | "spotlight">("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<Partial<Residence> | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -192,6 +196,7 @@ export const AdminResidencesContent = () => {
         accepts_private: editingResidence.accepts_private ?? false,
         accepts_nsfas: editingResidence.accepts_nsfas ?? false,
         institution_tags: editingResidence.institution_tags ?? [],
+        is_spotlight: editingResidence.is_spotlight ?? false,
       };
 
       if (editingResidence.id) {
@@ -244,10 +249,40 @@ export const AdminResidencesContent = () => {
     }
   };
 
-  const filteredResidences = residences.filter(r =>
-    (r.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (r.address ?? '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredResidences = residences.filter(r => {
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      (r.name ?? '').toLowerCase().includes(q) ||
+      (r.address ?? '').toLowerCase().includes(q);
+    if (!matchesSearch) return false;
+    if (audienceFilter === "university") return r.accepts_university !== false;
+    if (audienceFilter === "tvet") return r.accepts_tvet === true;
+    if (audienceFilter === "private") return r.accepts_private === true;
+    if (audienceFilter === "spotlight") return r.is_spotlight === true;
+    return true;
+  });
+
+  const toggleSpotlight = async (r: Residence) => {
+    const next = !r.is_spotlight;
+    setResidences((prev) => prev.map((x) => (x.id === r.id ? { ...x, is_spotlight: next } : x)));
+    const { error } = await supabase.from("residences").update({ is_spotlight: next }).eq("id", r.id);
+    if (error) {
+      toast.error(error.message || "Failed to update spotlight");
+      fetchResidences();
+    } else {
+      toast.success(next ? "Added to spotlight" : "Removed from spotlight");
+    }
+  };
+
+  const toggleAudience = async (r: Residence, field: "accepts_tvet" | "accepts_private" | "accepts_university") => {
+    const next = !r[field];
+    setResidences((prev) => prev.map((x) => (x.id === r.id ? { ...x, [field]: next } : x)));
+    const { error } = await supabase.from("residences").update({ [field]: next }).eq("id", r.id);
+    if (error) {
+      toast.error(error.message || "Failed to update audience");
+      fetchResidences();
+    }
+  };
 
   return (
     <>
