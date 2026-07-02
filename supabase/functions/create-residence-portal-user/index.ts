@@ -101,8 +101,10 @@ serve(async (req) => {
     try {
       console.log(`[${VERSION}] Created user ${newUserId}, assigning role...`);
 
-      // 2 + 3 · Atomic role + portal write via RPC (returns readable errors)
-      const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc(
+      // 2 + 3 · Atomic role + portal write via RPC (returns readable errors).
+      // Use the caller-scoped client so auth.uid() resolves inside the SECURITY
+      // DEFINER function's admin check.
+      const { data: rpcData, error: rpcError } = await supabaseUser.rpc(
         'admin_create_residence_portal',
         { _residence_id: residence_id, _user_id: newUserId, _email: email }
       );
