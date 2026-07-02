@@ -101,6 +101,9 @@ ON CONFLICT (key) DO UPDATE
 -- ============================================================================
 -- 04. Hero slide seeds — deadline announcements
 -- ============================================================================
+-- Ensure subtitle column exists on External (older schemas may lack it)
+ALTER TABLE public.hero_slides ADD COLUMN IF NOT EXISTS subtitle TEXT;
+
 INSERT INTO public.hero_slides (title, subtitle, cta_label, cta_url, is_active, sort_order, slide_location)
 SELECT * FROM (VALUES
   ('TUT 2026 Applications', 'Closing 30 September 2025 — get your documents ready', 'Prepare Now', '/apply?target=tut',    true, 10, 'landing'),
