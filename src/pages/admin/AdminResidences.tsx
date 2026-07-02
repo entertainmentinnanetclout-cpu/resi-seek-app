@@ -755,15 +755,40 @@ export const AdminResidencesContent = () => {
 
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search residences..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search residences..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: "all", label: "All", color: "bg-primary text-white" },
+                  { key: "university", label: "TUT / University", color: "bg-sky text-white" },
+                  { key: "tvet", label: "TVET / College", color: "bg-amber text-white" },
+                  { key: "private", label: "Private", color: "bg-violet text-white" },
+                  { key: "spotlight", label: "Spotlight", color: "bg-gradient-spotlight text-white" },
+                ].map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setAudienceFilter(t.key as any)}
+                    className={
+                      "px-3 py-1.5 rounded-full text-xs font-medium border transition-all " +
+                      (audienceFilter === t.key
+                        ? t.color + " border-transparent shadow-md"
+                        : "bg-background text-muted-foreground border-border hover:bg-muted")
+                    }
+                  >
+                    {t.label}
+                  </button>
+                ))}
               </div>
             </div>
           </CardHeader>
@@ -781,6 +806,8 @@ export const AdminResidencesContent = () => {
                       <TableHead>Campus</TableHead>
                       <TableHead>Price</TableHead>
                       <TableHead>Available</TableHead>
+                      <TableHead>Audience</TableHead>
+                      <TableHead>Spotlight</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -792,6 +819,56 @@ export const AdminResidencesContent = () => {
                         <TableCell>{residence.campus || "-"}</TableCell>
                         <TableCell>R{residence.price.toLocaleString()}</TableCell>
                         <TableCell>{residence.available_spots}/{residence.capacity}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            <button
+                              type="button"
+                              onClick={() => toggleAudience(residence, "accepts_university")}
+                              className={
+                                "text-[10px] px-1.5 py-0.5 rounded border transition-colors " +
+                                (residence.accepts_university !== false
+                                  ? "bg-sky/15 text-sky border-sky/40"
+                                  : "bg-muted text-muted-foreground border-border opacity-50")
+                              }
+                            >TUT</button>
+                            <button
+                              type="button"
+                              onClick={() => toggleAudience(residence, "accepts_tvet")}
+                              className={
+                                "text-[10px] px-1.5 py-0.5 rounded border transition-colors " +
+                                (residence.accepts_tvet
+                                  ? "bg-amber/15 text-amber border-amber/40"
+                                  : "bg-muted text-muted-foreground border-border opacity-50")
+                              }
+                            >TVET</button>
+                            <button
+                              type="button"
+                              onClick={() => toggleAudience(residence, "accepts_private")}
+                              className={
+                                "text-[10px] px-1.5 py-0.5 rounded border transition-colors " +
+                                (residence.accepts_private
+                                  ? "bg-violet/15 text-violet border-violet/40"
+                                  : "bg-muted text-muted-foreground border-border opacity-50")
+                              }
+                            >Private</button>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <button
+                            type="button"
+                            onClick={() => toggleSpotlight(residence)}
+                            title="Toggle spotlight"
+                            className={
+                              "inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-all " +
+                              (residence.is_spotlight
+                                ? "bg-gradient-spotlight text-white shadow-md"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80")
+                            }
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            {residence.is_spotlight ? "On" : "Off"}
+                          </button>
+                        </TableCell>
                         <TableCell>
                           <Badge variant={residence.verification_level === "verified" || residence.verification_level === "premium" ? "default" : "secondary"}>
                             {residence.verification_level || "basic"}
