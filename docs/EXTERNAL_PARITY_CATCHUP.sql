@@ -216,6 +216,27 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- Ensure application_date / move_in_date / moved_in columns exist (older schemas may lack them).
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                  WHERE table_schema='public' AND table_name='applications' AND column_name='application_date') THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+                WHERE table_schema='public' AND table_name='applications' AND column_name='submitted_at') THEN
+      EXECUTE 'ALTER TABLE public.applications ADD COLUMN application_date TIMESTAMPTZ GENERATED ALWAYS AS (submitted_at) STORED';
+    ELSE
+      EXECUTE 'ALTER TABLE public.applications ADD COLUMN application_date TIMESTAMPTZ DEFAULT now()';
+    END IF;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                  WHERE table_schema='public' AND table_name='applications' AND column_name='move_in_date') THEN
+    EXECUTE 'ALTER TABLE public.applications ADD COLUMN move_in_date DATE';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                  WHERE table_schema='public' AND table_name='applications' AND column_name='moved_in') THEN
+    EXECUTE 'ALTER TABLE public.applications ADD COLUMN moved_in BOOLEAN DEFAULT false';
+  END IF;
+END $$;
+
 CREATE VIEW public.residence_handover_export_v
 WITH (security_invoker = on) AS
 SELECT
