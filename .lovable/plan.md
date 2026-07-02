@@ -1,45 +1,47 @@
-## Diagnosis
+## What the logs show
 
-The portal SQL pack was run on the external production database, but the deployed function is currently calling a backend where `admin_create_residence_portal` is missing. That explains why the UI still shows `{}`: the request reaches `create-residence-portal-user`, but the function fails before the portal record/role are created. The verification screenshot also shows `residence_portal_role_count = 0`, confirming no portal role assignment succeeded.
+The active failure is no longer the old `user_roles_user_id_unique` issue. The uploaded logs show repeated portal creation attempts failing at auth-user creation:
 
-## Plan
+- `POST /auth/v1/admin/users` returns `500`
+- Database error: `duplicate key value violates unique constraint "profiles_email_key"`
+- Follow-up transaction errors: `25P02 current transaction is aborted`
 
-1. **Lock the exact failing layer**
-   - Add safer response parsing in `invokeEdgeFunction()` so the toast shows the real backend error instead of `{}`.
-   - Add structured debug fields for status, function version, and error message without exposing secrets.
+That means the `handle_new_user()` trigger is trying to insert a new profile with an email that already exists in `profiles`, so the auth user creation rolls back before the portal account or `residence_portal` role can be created.
 
-2. **Make Create Portal independent of missing RPC cache/state**
-   - Update `create-residence-portal-user` to try the atomic RPC first.
-   - If the RPC is missing or not visible in the schema cache, fall back to a service-role transactional sequence:
-     - create auth user
-     - upsert `user_roles` with `residence_portal`
-     - insert `residence_portal_accounts`
-     - rollback auth user if database writes fail
-   - Return clear JSON errors for duplicate email, duplicate residence, missing admin role, missing residence, and database constraint failures.
+## Fix plan
 
-3. **Strengthen the dedicated Residence Portal SQL pack**
-   - Ensure `admin_create_residence_portal()` is definitely created and visible.
-   - Add `NOTIFY pgrst, 'reload schema'` after function creation.
-   - Add verification checks for:
-     - enum role exists
-     - composite user role unique exists
-     - legacy single-user unique is gone
-     - portal RPC exists with exact argument names
-     - function execute grants exist
-     - portal table grants/RLS are correct
-     - duplicate residence/email/user constraints are correct
+1. **Patch the Residence Portal SQL pack**
+   - Update `docs/RESIDENCE_PORTAL_MASTER_SQL.sql` with a new Phase 0/1 fix for profile-email duplicates.
+   - Make `public.handle_new_user()` idempotent for both `id` and `email` conflicts.
+   - If an email already exists in `profiles` for another user, preserve the existing profile and allow auth creation to continue by avoiding the duplicate email insert.
+   - Keep `user_roles` multi-role safe and keep the legacy unique-index cleanup already added.
 
-4. **Wire admin toggle/delete to RPC helpers**
-   - Replace direct table update/delete in `AdminResidencePortals` with `admin_set_residence_portal_active` and `admin_delete_residence_portal` through the backend.
-   - This keeps admin actions consistent with the hardened SQL pack and prevents RLS/table-policy surprises.
+2. **Patch the portal edge function**
+   - Before calling admin auth create-user, check whether a portal account already exists for the email.
+   - If auth create-user fails with the known profile-email duplicate/database-new-user error, return a readable message explaining that the email already exists in profiles and another email should be used or the duplicate profile should be cleaned.
+   - Include a stable debug code such as `PROFILE_EMAIL_DUPLICATE` so the admin toast is not `{}`.
 
-5. **Validate after implementation**
-   - Deploy the updated function.
-   - Test the function endpoint directly with a controlled invalid payload to confirm readable error output.
-   - Re-check function logs and database verification queries to confirm the real issue is exposed/resolved.
+3. **Strengthen the admin UI error display**
+   - Update `AdminResidencePortals.tsx` error parsing to show nested `debug_code`, `details`, and function version fields when the edge function returns structured failures.
+   - Keep current UI/routes/workflow unchanged.
 
-## Deliverable
+4. **Add a verification block to the SQL pack**
+   - Add checks for duplicate profile emails.
+   - Add checks that `handle_new_user()` is the safe version.
+   - Add checks that no single-column unique index remains on `user_roles(user_id)`.
+   - Add checks for portal accounts, portal roles, and duplicate portal emails.
 
-- Updated edge function with robust fallback and real error messages.
-- Updated admin UI error handling for portal creation/toggle/delete.
-- Updated `docs/RESIDENCE_PORTAL_MASTER_SQL.sql` as the specialised external database master pack for Residence Portal.
+5. **Validate**
+   - Use the uploaded logs as the baseline failure.
+   - Run a type-safe code check for touched frontend/function files.
+   - Provide the exact SQL file to run and the expected verification output after approval.
+
+## Files to change
+
+- `docs/RESIDENCE_PORTAL_MASTER_SQL.sql`
+- `supabase/functions/create-residence-portal-user/index.ts`
+- `src/pages/admin/AdminResidencePortals.tsx`
+
+## Expected result
+
+Create Residence Portal will stop failing with `{}`. If the email is reusable, portal creation completes. If the email is already tied to a conflicting profile/account, admin sees a clear message instead of a blank error.
