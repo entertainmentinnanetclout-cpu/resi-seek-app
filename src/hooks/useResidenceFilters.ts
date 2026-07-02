@@ -128,6 +128,16 @@ const hasTagLike = (residence: any, needles: string[]) => {
   return needles.some((needle) => haystack.includes(normalize(needle)));
 };
 
+const isLegacyInclusiveResidence = (residence: any) => {
+  const tags = getInstitutionTags(residence);
+  return (
+    residence.accepts_university !== false &&
+    residence.accepts_tvet !== true &&
+    residence.accepts_private !== true &&
+    tags.length === 0
+  );
+};
+
 export function useResidenceFilters(residences: any[]) {
   const [filters, setFilters] = useState<ResidenceFilters>(DEFAULT_FILTERS);
 
@@ -203,11 +213,11 @@ export function useResidenceFilters(residences: any[]) {
       );
     } else if (filters.audience === "tvet") {
       filtered = filtered.filter(
-        (r) => r.accepts_tvet === true || hasTagLike(r, ["tvet", "college", "tshwane north", "tshwane south", "ekurhuleni"]),
+        (r) => r.accepts_tvet === true || isLegacyInclusiveResidence(r) || hasTagLike(r, ["tvet", "college", "tshwane north", "tshwane south", "ekurhuleni"]),
       );
     } else if (filters.audience === "private") {
       filtered = filtered.filter(
-        (r) => r.accepts_private === true || hasTagLike(r, ["private", "rentals", "private-accommodations"]),
+        (r) => r.accepts_private === true || isLegacyInclusiveResidence(r) || hasTagLike(r, ["private", "rentals", "private-accommodations"]),
       );
     }
 
