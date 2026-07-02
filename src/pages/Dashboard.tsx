@@ -14,8 +14,8 @@ import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import heroAccommodation from "@/assets/hero-accommodation.jpg";
-import studentStudying from "@/assets/student-studying.jpg";
+import inclusivePathwaysHero from "@/assets/hero-inclusive-pathways.jpg";
+import applicationsFundingHero from "@/assets/hero-applications-funding.jpg";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -67,13 +67,13 @@ const Dashboard = () => {
 
   const carouselSlides = [
     {
-      image: heroAccommodation,
+      image: inclusivePathwaysHero,
       title: "Find Your Perfect Res",
-      description: "Discover comfortable, affordable student accommodation near your campus",
+      description: "Discover verified accommodation for university, TVET college and private pathways.",
       cta: { text: "Browse Residences", action: () => navigate("/findmyres") },
     },
     {
-      image: studentStudying,
+      image: applicationsFundingHero,
       title: "Applications & Funding Ready",
       description: "Prepare your TUT, university, TVET and NSFAS documents in one place",
       cta: { text: "Open Applications Hub", action: () => navigate("/apply") },
