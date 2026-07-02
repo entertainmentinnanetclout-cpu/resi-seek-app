@@ -38,6 +38,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/lovableFunctions";
 import { toast } from "sonner";
 
+const getReadableError = (err: unknown, fallback: string) => {
+  if (err instanceof Error && err.message && err.message !== "{}") return err.message;
+  if (typeof err === "string" && err.trim() && err.trim() !== "{}") return err.trim();
+  if (err && typeof err === "object") {
+    const record = err as Record<string, unknown>;
+    for (const key of ["message", "details", "hint", "code"]) {
+      const value = record[key];
+      if (typeof value === "string" && value.trim()) return value.trim();
+    }
+  }
+  return fallback;
+};
+
 interface PortalAccount {
   residence_id: string;
   user_id: string | null;
@@ -162,7 +175,7 @@ export const AdminResidencePortalsContent = () => {
           password: newPassword,
         }
       );
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(getReadableError(error, 'Failed to create account'));
       if (data?.error) throw new Error(data.error);
 
       toast.success('Portal account created successfully');
@@ -172,9 +185,9 @@ export const AdminResidencePortalsContent = () => {
       setNewPassword("");
       setConfirmPassword("");
       fetchData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating account:', err);
-      toast.error(err.message || 'Failed to create account');
+      toast.error(getReadableError(err, 'Failed to create account'));
     } finally {
       setIsCreating(false);
     }
@@ -182,18 +195,18 @@ export const AdminResidencePortalsContent = () => {
 
   const toggleAccountStatus = async (account: PortalAccount) => {
     try {
-      const { error } = await supabase
-        .from('residence_portal_accounts')
-        .update({ is_active: !account.is_active })
-        .eq('residence_id', account.residence_id);
+      const { error } = await (supabase as any).rpc('admin_set_residence_portal_active', {
+        _residence_id: account.residence_id,
+        _active: !account.is_active,
+      });
 
       if (error) throw error;
 
       toast.success(`Account ${account.is_active ? 'deactivated' : 'activated'}`);
       fetchData();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error toggling status:', err);
-      toast.error('Failed to update account status');
+      toast.error(getReadableError(err, 'Failed to update account status'));
     }
   };
 
@@ -203,18 +216,17 @@ export const AdminResidencePortalsContent = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('residence_portal_accounts')
-        .delete()
-        .eq('residence_id', account.residence_id);
+      const { error } = await (supabase as any).rpc('admin_delete_residence_portal', {
+        _residence_id: account.residence_id,
+      });
 
       if (error) throw error;
 
       toast.success('Portal account deleted');
       fetchData();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error deleting account:', err);
-      toast.error('Failed to delete account');
+      toast.error(getReadableError(err, 'Failed to delete account'));
     }
   };
 
