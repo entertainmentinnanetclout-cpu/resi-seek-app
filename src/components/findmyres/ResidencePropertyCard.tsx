@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, Bed, Users, Wifi, Car, Sofa } from "lucide-react";
+import { MapPin, Bed, Users, Wifi, Car, Sofa, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,14 @@ import FavoriteButton from "@/components/FavoriteButton";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { RESKONNECT_WHATSAPP } from "@/lib/constants";
 import { StatusBadge, residenceStatus } from "./StatusBadge";
+import { cn } from "@/lib/utils";
+
+const CATEGORY_ACCENT: Record<string, string> = {
+  flats: "from-violet to-pink",
+  communes: "from-coral to-amber",
+  student_residences: "from-sky to-primary",
+  private_rentals: "from-mint to-sky",
+};
 
 interface ResidencePropertyCardProps {
   residence: any;
@@ -23,10 +31,17 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
   const distance = Number(residence.distance_from_campus) || 0;
   const status = residenceStatus(residence);
   const slug = residence.slug || residence.id;
+  const accent = CATEGORY_ACCENT[residence.category as string] || "from-primary to-violet";
+  const isSpotlight = residence.is_spotlight === true;
 
   return (
     <Link to={`/find-my-res/${slug}`} className="block group">
-      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30">
+      <Card className={cn(
+        "overflow-hidden rounded-2xl border-border/50 hover:border-transparent transition-all duration-300",
+        "hover:shadow-premium hover:-translate-y-1",
+      )}>
+        {/* Category accent strip */}
+        <div className={cn("h-1.5 w-full bg-gradient-to-r", accent)} />
         {/* Image */}
         <div className="relative aspect-[16/10] overflow-hidden">
           <img
@@ -42,12 +57,17 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
           {/* Status badges (top right) */}
           <div className="absolute top-3 right-3 flex flex-col gap-1.5 items-end">
             <StatusBadge variant={status} label={status === "limited" ? `${spots} LEFT` : undefined} />
-            {residence.is_featured && status !== "featured" && <StatusBadge variant="featured" />}
+            {isSpotlight && (
+              <Badge className="bg-gradient-spotlight border-0 text-white shadow-md">
+                <Sparkles className="w-3 h-3 mr-1" /> Spotlight
+              </Badge>
+            )}
+            {residence.is_featured && status !== "featured" && !isSpotlight && <StatusBadge variant="featured" />}
           </div>
 
           {/* Match score */}
           {matchScore !== undefined && matchScore > 0 && (
-            <div className="absolute top-3 left-3 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-md">
+            <div className="absolute top-3 left-3 w-10 h-10 rounded-full bg-gradient-vibrant text-white flex items-center justify-center text-xs font-bold shadow-lg">
               {matchScore}%
             </div>
           )}
@@ -62,15 +82,22 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
         <CardContent className="p-4 space-y-3">
           {/* Price */}
           <div className="flex items-start justify-between">
-            <p className="text-xl font-bold text-primary">
-              R{price.toLocaleString()}<span className="text-sm font-normal text-muted-foreground">/mo</span>
-            </p>
+            <span className="inline-flex items-baseline gap-0.5 rounded-full bg-gradient-price px-3 py-1 text-white shadow-sm">
+              <span className="text-lg font-bold">R{price.toLocaleString()}</span>
+              <span className="text-xs opacity-90">/mo</span>
+            </span>
             <div className="flex gap-1 shrink-0">
               {residence.is_trusted && (
-                <Badge variant="outline" className="text-[10px] border-green-500 text-green-600">NSFAS ✓</Badge>
+                <Badge className="text-[10px] bg-mint/15 text-mint border border-mint/40 hover:bg-mint/20">NSFAS ✓</Badge>
               )}
               {residence.is_tut_accredited && (
-                <Badge variant="outline" className="text-[10px] border-blue-500 text-blue-600">TUT ✓</Badge>
+                <Badge className="text-[10px] bg-sky/15 text-sky border border-sky/40 hover:bg-sky/20">TUT ✓</Badge>
+              )}
+              {residence.accepts_tvet && (
+                <Badge className="text-[10px] bg-amber/15 text-amber border border-amber/40 hover:bg-amber/20">TVET</Badge>
+              )}
+              {residence.accepts_private && (
+                <Badge className="text-[10px] bg-violet/15 text-violet border border-violet/40 hover:bg-violet/20">Private</Badge>
               )}
             </div>
           </div>
@@ -83,34 +110,34 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
             <MapPin className="w-3.5 h-3.5 shrink-0" />
             <span className="line-clamp-1">{residence.address}</span>
             {distance > 0 && (
-              <span className="shrink-0 ml-auto text-xs font-medium">{distance}km</span>
+              <span className="shrink-0 ml-auto text-xs font-medium text-coral">{distance}km</span>
             )}
           </div>
 
           {/* Room types + Singles + Gender */}
           <div className="flex flex-wrap gap-1.5">
             {(residence.room_types || [residence.room_type]).filter(Boolean).slice(0, 3).map((type: string) => (
-              <Badge key={type} variant="secondary" className="text-xs capitalize">
+              <Badge key={type} className="text-xs capitalize bg-violet/10 text-violet border border-violet/30 hover:bg-violet/20">
                 <Bed className="w-3 h-3 mr-1" />
                 {type}
               </Badge>
             ))}
             {(singlesAvailable > 0 || hasSingles) && (
-              <Badge variant="outline" className="text-xs border-green-500/50 text-green-600">
+              <Badge className="text-xs bg-mint/15 text-mint border border-mint/40 hover:bg-mint/20">
                 {singlesAvailable > 0 ? `${singlesAvailable} Singles` : "Singles Available"}
               </Badge>
             )}
             {residence.gender && (
-              <Badge variant="outline" className="text-xs capitalize">{residence.gender}</Badge>
+              <Badge className="text-xs capitalize bg-pink/10 text-pink border border-pink/30 hover:bg-pink/20">{residence.gender}</Badge>
             )}
           </div>
 
           {/* Amenities icons */}
           {(residence.is_furnished || residence.has_wifi || residence.has_parking) && (
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              {residence.is_furnished && <span className="flex items-center gap-1"><Sofa className="w-3.5 h-3.5" />Furnished</span>}
-              {residence.has_wifi && <span className="flex items-center gap-1"><Wifi className="w-3.5 h-3.5" />WiFi</span>}
-              {residence.has_parking && <span className="flex items-center gap-1"><Car className="w-3.5 h-3.5" />Parking</span>}
+              {residence.is_furnished && <span className="flex items-center gap-1 text-amber"><Sofa className="w-3.5 h-3.5" />Furnished</span>}
+              {residence.has_wifi && <span className="flex items-center gap-1 text-sky"><Wifi className="w-3.5 h-3.5" />WiFi</span>}
+              {residence.has_parking && <span className="flex items-center gap-1 text-mint"><Car className="w-3.5 h-3.5" />Parking</span>}
             </div>
           )}
 
@@ -122,7 +149,10 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
 
           {/* CTA */}
           <Button
-            className="w-full mt-1"
+            className={cn(
+              "w-full mt-1",
+              !isFull && "bg-gradient-vibrant hover:opacity-90 border-0 text-white shadow-md",
+            )}
             variant={isFull ? "outline" : "default"}
             disabled={isFull}
             onClick={(e) => {
