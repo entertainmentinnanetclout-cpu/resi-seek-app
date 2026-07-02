@@ -203,6 +203,19 @@ END $$;
 --    (Mirrors docs/MASTER_EXPORT_INTEGRITY_SQL.sql verbatim)
 -- ============================================================================
 DROP VIEW IF EXISTS public.residence_handover_export_v CASCADE;
+-- Ensure a funding_type column exists on applications so the view compiles on older schemas.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                  WHERE table_schema='public' AND table_name='applications' AND column_name='funding_type') THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+                WHERE table_schema='public' AND table_name='applications' AND column_name='funding_source') THEN
+      EXECUTE 'ALTER TABLE public.applications ADD COLUMN funding_type TEXT GENERATED ALWAYS AS (funding_source) STORED';
+    ELSE
+      EXECUTE 'ALTER TABLE public.applications ADD COLUMN funding_type TEXT';
+    END IF;
+  END IF;
+END $$;
+
 CREATE VIEW public.residence_handover_export_v
 WITH (security_invoker = on) AS
 SELECT
