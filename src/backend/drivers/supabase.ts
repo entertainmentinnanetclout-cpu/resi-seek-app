@@ -8,16 +8,13 @@
  * and switch the provider env. If the vars are missing we fall back to the Lovable
  * client so the app still boots.
  */
-import { createClient } from "@supabase/supabase-js";
-import { supabase as lovableClient } from "@/integrations/supabase/client";
+// External Supabase driver — uses the hard-pinned External client from
+// `src/integrations/supabase/client.ts`. Both drivers now resolve to the
+// same External project so provider swaps are a no-op at runtime.
+import { supabase as externalClient } from "@/integrations/supabase/client";
 import type { BackendDriver } from "../types";
 
-const url = (import.meta.env.VITE_EXTERNAL_SUPABASE_URL as string | undefined) ?? "";
-const key = (import.meta.env.VITE_EXTERNAL_SUPABASE_ANON_KEY as string | undefined) ?? "";
-
-const client = url && key
-  ? createClient(url, key, { auth: { storage: localStorage, persistSession: true, autoRefreshToken: true } })
-  : lovableClient;
+const client = externalClient;
 
 export const supabaseDriver: BackendDriver = {
   name: "supabase",

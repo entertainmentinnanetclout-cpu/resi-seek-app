@@ -6,8 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "https://mefjzkhobkltlbmhusdh.supabase.co";
-const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const SUPABASE_URL = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL") ?? "https://mefjzkhobkltlbmhusdh.supabase.co";
+const SUPABASE_ANON = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
 function escapeXml(s: string): string {
   return String(s)

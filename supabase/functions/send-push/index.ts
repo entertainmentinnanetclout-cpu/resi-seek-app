@@ -33,8 +33,8 @@ Deno.serve(async (req) => {
       });
     }
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? Deno.env.get("EXTERNAL_SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      Deno.env.get("EXTERNAL_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
     let q = supabase.from("push_subscriptions").select("endpoint, p256dh, auth, user_id");
     const ids: string[] = user_ids || (user_id ? [user_id] : []);

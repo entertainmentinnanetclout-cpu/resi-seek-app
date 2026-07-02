@@ -1,5 +1,16 @@
 # Welcome to your Lovable project
 
+## ⚠️ Backend hard-pin
+
+This project's frontend is **hard-pinned to External Supabase** (`mefjzkhobkltlbmhusdh`).
+`src/integrations/supabase/client.ts` ignores `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY`
+because Lovable Cloud injects those to point at its mirror, which would silently
+cause preview ≠ production data drift.
+
+All schema changes must ship as SQL packs under `docs/EXTERNAL_PARITY_*.sql` and be
+run manually in the External Supabase SQL editor. Do **not** use the
+`supabase--migration` tool as the source of truth — it writes to the Lovable mirror.
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/dedebc2a-aca6-4fe3-8e88-445bf6af16bd
