@@ -17,6 +17,7 @@ import FloatingShapes from "@/components/FloatingShapes";
 import TrustedResidencesGrid from "@/components/TrustedResidencesGrid";
 import { CategoryHeroSelector } from "@/components/findmyres/CategoryHeroSelector";
 import { AccreditationCTA } from "@/components/findmyres/AccreditationCTA";
+import { AudienceSelector } from "@/components/findmyres/AudienceSelector";
 import LandlordApplicationTabs from "@/components/LandlordApplicationTabs";
 import headerLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import footerLogo from "@/assets/FOOTER.png";
@@ -274,6 +275,27 @@ const Landing = () => {
           <HeroCarousel slides={fallbackSlides} autoPlay interval={6000} useDatabase={true} location="landing" />
         </section>
 
+        {/* ── Audience Selector — University / TVET / Private ── */}
+        <section className="py-8 md:py-10 bg-gradient-to-b from-primary/5 to-background">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-5">
+              <h2 className="text-2xl md:text-3xl font-bold">Who are you looking for?</h2>
+              <p className="text-muted-foreground text-sm md:text-base mt-1">
+                University, TVET college, or private — we've got accommodation for every student.
+              </p>
+            </div>
+            <div className="max-w-4xl mx-auto">
+              <AudienceSelector
+                audience="all"
+                onChange={(v) => navigate(v === "all" ? "/find" : `/find?audience=${v}`)}
+                onInstitutionChange={(t) =>
+                  t ? navigate(`/find?institution=${encodeURIComponent(t)}`) : undefined
+                }
+              />
+            </div>
+          </div>
+        </section>
+
         {/* ── Stats Counter ─────────────────────────────── */}
         <section className="py-10 md:py-14 bg-primary/5">
           <div className="container mx-auto px-4">
@@ -301,8 +323,7 @@ const Landing = () => {
         {/* ── Become Accredited (landlord CTA) ───────────── */}
         <AccreditationCTA />
 
-        {/* ── Featured Marketplace ───────────────────────── */}
-        <FeaturedMarketplace />
+        {/* Marketplace paused — hidden from public landing */}
 
         {/* ── About + Dual CTA ──────────────────────────── */}
         <section className="py-12 md:py-20 bg-card/50 relative overflow-hidden">
