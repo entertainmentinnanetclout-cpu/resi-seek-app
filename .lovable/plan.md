@@ -1,71 +1,34 @@
-# Admin Deep Scan & Master Fix
+## Admin Master SQL — dedicated pack
 
-Goal: every admin page loads, every action works, every edge function returns 200 on the External Supabase project. No stub pages, no silent RPC failures, no missing tables.
+Create `docs/ADMIN_MASTER_SQL.sql` — a single, rerunnable pack scoped only to what the Admin console needs on External Supabase. Independent from `MASTER_GOD_SQL.sql` so it can be re-run any time an admin page throws.
 
-## Phase 0 — Full Deep Scan (no code left unturned)
+### Scope (only admin surface)
 
-Produce `docs/ADMIN_DEEP_SCAN_REPORT.md` covering:
+1. **FK / embed cleanup** — drop duplicate FK on `residence_portal_accounts` (`residence_portal_accounts_residence_id_fkey`), keep `fk_portal_accounts_residence`. `NOTIFY pgrst, 'reload schema'` at the end.
+2. **Missing columns the admin UI reads** — add-if-missing:
+   - `application_messages.body TEXT` (deployed code reads `body`, current schema has `message`) + backfill `body := message`.
+   - `applications.funding_type` shim mirroring `funding_source`.
+   - `hero_slides.subtitle`, `cta_label`, `cta_url` defaults.
+   - `stores.status`, `is_verified` defaults for moderation list.
+   - `marketplace_listings.status`, `admin_notes`.
+3. **Admin-only tables** (create-if-missing, with GRANTs + RLS + admin-only policies via `has_role(auth.uid(),'admin')`):
+   `admin_alerts`, `system_events`, `webhook_events`, `payment_action_logs`, `platform_revenue`, `seller_earnings`, `seller_kyc_log`, `call_logs` (if absent), `whatsapp_templates` (if absent), `filter_config` (if absent).
+4. **RPCs the admin UI calls** — create-or-replace:
+   - `admin_dashboard_counts()` → single JSON blob (users, applications by status, residences, orders, listings pending, revenue MTD).
+   - `admin_recent_activity(_limit int)` → union of latest applications / orders / listings.
+   - `admin_delete_listing(_id uuid)`, `admin_toggle_store_verified(_id uuid, _v bool)`, `admin_set_application_status(_id uuid, _status text, _note text)` — all `SECURITY DEFINER`, gated by `has_role('admin')`.
+5. **RLS audit for admin visibility** — add `USING (public.has_role(auth.uid(),'admin'))` admin-override policies on every table the admin lists but currently returns 0 rows on: `stores`, `products`, `marketplace_listings`, `shop_orders`, `payment_proofs`, `discount_orders`, `hamper_orders`, `landlord_applications`, `wil_applications`.
+6. **Storage policies** — admin read/write override on `payment-proofs`, `seller-kyc`, `landlord-documents`, `wil-documents`, `application-documents`.
+7. **Verification block at the bottom** — SELECTs that must all return sensible counts:
+   - duplicate FKs on `residence_portal_accounts` (must be 0)
+   - missing columns list (must be empty)
+   - admin tables present (9 rows)
+   - policies with `has_role('admin')` count per table
+   - `admin_dashboard_counts()` sample invocation
 
-1. Every file under `src/pages/admin/**` and `src/components/admin/**` — for each: tables/RPCs/functions/buckets it touches, plus PASS/FAIL against External DB.
-2. Every edge function in `supabase/functions/**` — env vars required, deployment status, invocation path from UI, PASS/FAIL smoke test.
-3. Every `.from(...)`, `.rpc(...)`, `.storage.from(...)`, `functions.invoke(...)` call across `src/**` cross-referenced with the live External schema (`supabase--read_query` on `information_schema`).
-4. Every route in `src/App.tsx` — guard, layout, existence of target component.
-5. `docs/UI_DB_TOUCHPOINT_MATRIX.md` refreshed with a Missing / Broken / OK column.
+### Deliverables
 
-Deliverable: a single markdown table of every failure with root cause + fix owner (SQL vs code vs edge fn).
+- `docs/ADMIN_MASTER_SQL.sql` — the pack (rerunnable, wrapped in `DO $$ … $$` where needed).
+- Append a short "Admin SQL" section to `docs/ADMIN_DEEP_SCAN_REPORT.md` pointing at the new file and listing the verification queries.
 
-## Phase 1 — Admin UI Fixes
-
-Focus areas the user called out plus everything the scan flags. Expected concrete fixes based on quick sweep:
-
-- **AdminResidences**: image-upload bucket path bug (uses `admin-images` for both upload + public URL — verify storage policy, empty-state when `residences` returns 0, add error surface).
-- **AdminResidencePortals**: replace silent `supabase.functions.invoke` failures with typed error toast + retry; ensure it reads the External URL via `externalFunctionUrl('create-residence-portal-user')` with explicit anon key + Authorization headers (same pattern already used elsewhere).
-- **Messages page** (student + admin variant): currently a stub — wire to `application_messages` with realtime, PII-safe.
-- **AdminApplications / AdminFollowUp / AdminDocuments / AdminUsers / AdminLandlordApplications**: add loading + error + empty states; verify FK joins use explicit constraint names.
-- **AdminMediaHub / AdminCommerceHub / AdminSystemHub** tab modules: audit each embedded `*Content` export.
-- **AdminBackendHealth**: ping every edge function + every critical table, show red/green.
-
-All fixes stay inside existing hubs — no new admin pages, no duplicate routes.
-
-## Phase 2 — Edge Function Hardening
-
-For each of the 12 functions:
-- Confirm `EXTERNAL_SUPABASE_URL`, `EXTERNAL_SUPABASE_ANON_KEY`, `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` are read (not the Lovable defaults).
-- Uniform CORS headers, uniform error envelope `{ error, _version }`.
-- Auth: `getUser()` via user client, `has_role` via admin client (fix any that skip this).
-- Add `_health` GET branch so AdminBackendHealth can probe without side-effects.
-
-## Phase 3 — MASTER_GOD_SQL v5 (single rerunnable pack)
-
-Replaces `docs/MASTER_GOD_SQL.sql`. Idempotent (`IF NOT EXISTS`, `CREATE OR REPLACE`, safe `ALTER`s). Sections:
-
-1. Missing tables / columns discovered in scan (extends current pack).
-2. Every `public` table: verify + reapply `GRANT`s for `authenticated` and `service_role`; `anon SELECT` only where policy allows.
-3. RLS policy audit: reapply admin-full-access via `has_role(auth.uid(),'admin')` on every admin-managed table.
-4. Storage policies for `admin-images`, `payment-proofs`, `application-documents`, `wil-documents`, `landlord-documents` (admin RW, owner RW where relevant).
-5. `residence_portal_accounts` unique index on `(residence_id)` + `(email)` so create-portal fails cleanly.
-6. Missing RPCs referenced by UI: `has_role`, `get_user_staff_role`, `is_authorized_residence_user`, `capture_referral`, `capture_referral_sale`, `validate_handover_pack`, `get_or_create_referral_code` — recreate if drift.
-7. Realtime `ALTER PUBLICATION` for `application_messages`, `notifications`, `shop_orders`, `marketplace_orders` (wrapped in `DO $$ ... EXCEPTION`).
-8. Verification block: 8 `SELECT` statements at the bottom that print row counts + missing-object list — user runs and pastes back if anything is red.
-
-## Phase 4 — Verification
-
-- Run `supabase--read_query` against External to confirm every table+RPC exists after user runs the pack.
-- Playwright pass through all 6 admin hub tabs, screenshot each, attach to report.
-- AdminBackendHealth must be all-green.
-
-## Files touched (planned)
-
-Code:
-- `src/pages/Messages.tsx` (wire to real data)
-- `src/pages/admin/AdminResidences.tsx`, `AdminResidencePortals.tsx`, `AdminApplications.tsx`, `AdminFollowUp.tsx`, `AdminDocuments.tsx`, `AdminUsers.tsx`, `AdminLandlordApplications.tsx`, `AdminBackendHealth.tsx` (error/empty states, health probes)
-- Any hub `*Content` module the scan flags
-- All 12 files under `supabase/functions/*/index.ts` (uniform env + health branch)
-
-Docs / SQL:
-- `docs/ADMIN_DEEP_SCAN_REPORT.md` (new)
-- `docs/UI_DB_TOUCHPOINT_MATRIX.md` (updated)
-- `docs/MASTER_GOD_SQL.sql` (v5, rerunnable — the single SQL to run on External)
-
-## Out of scope
-No changes to public/student pages beyond `Messages.tsx`. No new admin routes. No provider swap.
+No frontend code changes in this pack — the report already tracked those. If verification reveals a still-broken admin page after you run this, paste the exact failing statement and I'll patch the next mismatch in the same pack.
