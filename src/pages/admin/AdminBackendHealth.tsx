@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, RefreshCw, Database, Activity, AlertTriangle, Loader2 } from "lucide-react";
 import { supabase, activeBackendProvider } from "@/backend";
+import { EXTERNAL_SUPABASE_URL } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 
 type ProviderRow = {
@@ -16,14 +17,14 @@ type ProviderRow = {
 
 type SyncStats = { pending: number; failed: number; sent: number; lastSent: string | null };
 
-const pingLovable = async () => {
+const pingPrimary = async () => {
   const start = performance.now();
   const { error } = await supabase.from("health_status").select("provider").limit(1);
   return { ok: !error, ms: Math.round(performance.now() - start), error: error?.message };
 };
 
 const pingExternal = async () => {
-  const url = (import.meta.env.VITE_EXTERNAL_SUPABASE_URL as string | undefined) || "https://mefjzkhobkltlbmhusdh.supabase.co";
+  const url = EXTERNAL_SUPABASE_URL;
   try {
     const start = performance.now();
     const res = await fetch(`${url}/auth/v1/health`, { method: "GET" });
@@ -36,7 +37,7 @@ const pingExternal = async () => {
 export const AdminBackendHealthContent = () => {
   const [rows, setRows] = useState<ProviderRow[]>([]);
   const [sync, setSync] = useState<SyncStats>({ pending: 0, failed: 0, sent: 0, lastSent: null });
-  const [pings, setPings] = useState<{ lovable?: any; external?: any }>({});
+  const [pings, setPings] = useState<{ primary?: any; external?: any }>({});
   const [loading, setLoading] = useState(false);
 
   const refresh = async () => {
@@ -54,8 +55,8 @@ export const AdminBackendHealthContent = () => {
       sent: 0,
       lastSent: (lastSent as any)?.[0]?.sent_at ?? null,
     });
-    const [lp, ep] = await Promise.all([pingLovable(), pingExternal()]);
-    setPings({ lovable: lp, external: ep });
+    const [primary, external] = await Promise.all([pingPrimary(), pingExternal()]);
+    setPings({ primary, external });
     setLoading(false);
   };
 
@@ -96,16 +97,16 @@ export const AdminBackendHealthContent = () => {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
-                <Database className="w-5 h-5" /> Lovable Cloud
+                <Database className="w-5 h-5" /> Active App Client
               </CardTitle>
-              {statusBadge(pings.lovable?.ok)}
+              {statusBadge(pings.primary?.ok)}
             </div>
-            <CardDescription>Standby provider (warm)</CardDescription>
+            <CardDescription>UI data path — pinned to External Supabase</CardDescription>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-1">
-            <div>Latency: <span className="font-mono">{pings.lovable?.ms ?? "—"} ms</span></div>
-            {pings.lovable?.error && (
-              <div className="text-destructive flex items-start gap-1"><AlertTriangle className="w-3 h-3 mt-0.5" />{pings.lovable.error}</div>
+            <div>Latency: <span className="font-mono">{pings.primary?.ms ?? "—"} ms</span></div>
+            {pings.primary?.error && (
+              <div className="text-destructive flex items-start gap-1"><AlertTriangle className="w-3 h-3 mt-0.5" />{pings.primary.error}</div>
             )}
           </CardContent>
         </Card>
@@ -132,7 +133,7 @@ export const AdminBackendHealthContent = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Sync Queue</CardTitle>
-          <CardDescription>Outbound mirror queue to External Supabase</CardDescription>
+          <CardDescription>Legacy queue kept for audit only; External Supabase is the source of truth.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-3 gap-4 text-sm">
           <div>
