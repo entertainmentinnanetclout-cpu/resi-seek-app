@@ -45,7 +45,7 @@ BEGIN
        AND tbl.relname = 'user_roles'
        AND i.indisunique = true
        AND con.oid IS NULL
-       AND array_length(i.indkey, 1) = 1
+       AND i.indnatts = 1
        AND EXISTS (
          SELECT 1
            FROM pg_attribute a
@@ -297,7 +297,7 @@ SELECT 'user_roles_no_single_user_unique_indexes' AS check, NOT EXISTS (
      AND tbl.relname = 'user_roles'
      AND i.indisunique = true
      AND con.oid IS NULL
-     AND array_length(i.indkey, 1) = 1
+     AND i.indnatts = 1
      AND EXISTS (
        SELECT 1 FROM pg_attribute a
        WHERE a.attrelid = i.indrelid AND a.attnum = i.indkey[0] AND a.attname = 'user_id'
