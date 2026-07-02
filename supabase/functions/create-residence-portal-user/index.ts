@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const VERSION = "v2.0.0-external";
+const VERSION = "v3.0.0-atomic-rpc";
 const DEPLOYED_AT = new Date().toISOString();
 
 const corsHeaders = {
@@ -101,36 +101,20 @@ serve(async (req) => {
     try {
       console.log(`[${VERSION}] Created user ${newUserId}, assigning role...`);
 
-      // 2. Assign Role
-      const { error: roleInsertError } = await supabaseAdmin
-        .from('user_roles')
-        .upsert(
-          { user_id: newUserId, role: 'residence_portal' },
-          { onConflict: 'user_id,role', ignoreDuplicates: true }
-        );
+      // 2 + 3 · Atomic role + portal write via RPC (returns readable errors).
+      // Use the caller-scoped client so auth.uid() resolves inside the SECURITY
+      // DEFINER function's admin check.
+      const { data: rpcData, error: rpcError } = await supabaseUser.rpc(
+        'admin_create_residence_portal',
+        { _residence_id: residence_id, _user_id: newUserId, _email: email }
+      );
 
-      if (roleInsertError) {
-        console.error(`[${VERSION}] role insert failed`, roleInsertError);
-        throw new Error(`Role assignment failed: ${roleInsertError.message || roleInsertError.code || JSON.stringify(roleInsertError)}`);
+      if (rpcError) {
+        const msg = rpcError.message || rpcError.details || rpcError.hint || rpcError.code || 'Unknown Postgres error';
+        console.error(`[${VERSION}] rpc failed`, rpcError);
+        throw new Error(msg);
       }
-
-      // 3. Create Portal Account Record
-      const { error: portalInsertError } = await supabaseAdmin
-        .from('residence_portal_accounts')
-        .insert({
-          residence_id,
-          user_id: newUserId,
-          email,
-          is_active: true
-        });
-
-      if (portalInsertError) {
-        console.error(`[${VERSION}] portal insert failed`, portalInsertError);
-        if (portalInsertError.code === '23505') { // Unique constraint violation
-          throw new Error('This residence already has a portal account or email is already in use.');
-        }
-        throw new Error(`Portal account insert failed: ${portalInsertError.message || portalInsertError.code || JSON.stringify(portalInsertError)}`);
-      }
+      console.log(`[${VERSION}] rpc ok`, rpcData);
 
       console.log(`[${VERSION}] Portal account created successfully`);
 
