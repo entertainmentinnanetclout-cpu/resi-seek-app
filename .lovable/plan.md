@@ -1,75 +1,45 @@
+## Diagnosis
 
-# Residence Portal Master God Mode SQL
+The portal SQL pack was run on the external production database, but the deployed function is currently calling a backend where `admin_create_residence_portal` is missing. That explains why the UI still shows `{}`: the request reaches `create-residence-portal-user`, but the function fails before the portal record/role are created. The verification screenshot also shows `residence_portal_role_count = 0`, confirming no portal role assignment succeeded.
 
-The `{}` you're still seeing means the edge function is throwing an error whose JSON serialization is empty — almost always because the External DB is rejecting one of the two writes (`user_roles` upsert or `residence_portal_accounts` insert) with a Postgres object the JS side can't stringify (constraint name only, no `message`). We're going to stop fighting that from JS and move the whole write into ONE atomic Postgres RPC on External, so the edge function makes a single call and returns Postgres' real error text every time.
+## Plan
+
+1. **Lock the exact failing layer**
+   - Add safer response parsing in `invokeEdgeFunction()` so the toast shows the real backend error instead of `{}`.
+   - Add structured debug fields for status, function version, and error message without exposing secrets.
+
+2. **Make Create Portal independent of missing RPC cache/state**
+   - Update `create-residence-portal-user` to try the atomic RPC first.
+   - If the RPC is missing or not visible in the schema cache, fall back to a service-role transactional sequence:
+     - create auth user
+     - upsert `user_roles` with `residence_portal`
+     - insert `residence_portal_accounts`
+     - rollback auth user if database writes fail
+   - Return clear JSON errors for duplicate email, duplicate residence, missing admin role, missing residence, and database constraint failures.
+
+3. **Strengthen the dedicated Residence Portal SQL pack**
+   - Ensure `admin_create_residence_portal()` is definitely created and visible.
+   - Add `NOTIFY pgrst, 'reload schema'` after function creation.
+   - Add verification checks for:
+     - enum role exists
+     - composite user role unique exists
+     - legacy single-user unique is gone
+     - portal RPC exists with exact argument names
+     - function execute grants exist
+     - portal table grants/RLS are correct
+     - duplicate residence/email/user constraints are correct
+
+4. **Wire admin toggle/delete to RPC helpers**
+   - Replace direct table update/delete in `AdminResidencePortals` with `admin_set_residence_portal_active` and `admin_delete_residence_portal` through the backend.
+   - This keeps admin actions consistent with the hardened SQL pack and prevents RLS/table-policy surprises.
+
+5. **Validate after implementation**
+   - Deploy the updated function.
+   - Test the function endpoint directly with a controlled invalid payload to confirm readable error output.
+   - Re-check function logs and database verification queries to confirm the real issue is exposed/resolved.
 
 ## Deliverable
 
-New file: `docs/RESIDENCE_PORTAL_MASTER_SQL.sql` — rerunnable, External-only, self-verifying.
-
-### Phase 1 — Enum + role safety
-- Ensure `app_role` enum contains `residence_portal` (add via `ALTER TYPE ... ADD VALUE IF NOT EXISTS`).
-- Drop legacy `user_roles_user_id_key` (unique on user_id alone) if present.
-- Ensure composite `UNIQUE(user_id, role)` on `user_roles`.
-- Ensure `has_role(uuid, app_role)` SECURITY DEFINER exists.
-
-### Phase 2 — `residence_portal_accounts` hardening
-- Drop duplicate FK `residence_portal_accounts_residence_id_fkey` (keeps the named one, kills PostgREST embed ambiguity).
-- Ensure `PRIMARY KEY (residence_id)` OR unique on `residence_id` so one portal per residence.
-- Ensure unique on `user_id` (one portal per auth user).
-- Ensure unique on `email` (case-insensitive via functional index).
-- Columns: `residence_id`, `user_id`, `email`, `is_active`, `created_at`, `updated_at` (add missing).
-- Grants: `SELECT/INSERT/UPDATE/DELETE` to `authenticated`, `ALL` to `service_role`.
-- RLS: enable + admin-full, portal-owner self-read.
-
-### Phase 3 — Atomic creator RPC (this is the fix for `{}`)
-```sql
-CREATE OR REPLACE FUNCTION public.admin_create_residence_portal(
-  _residence_id uuid,
-  _user_id uuid,
-  _email text
-) RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
-```
-Behavior:
-- Verify caller is admin via `has_role(auth.uid(),'admin')`, else raise.
-- Verify residence exists, else raise `residence_not_found`.
-- Verify no existing portal on this residence, else raise `portal_exists`.
-- Upsert `user_roles(user_id,'residence_portal')` with `ON CONFLICT DO NOTHING`.
-- Insert `residence_portal_accounts` row.
-- Return `jsonb_build_object('success',true,'residence_id',_residence_id,'user_id',_user_id)`.
-- Every failure path uses `RAISE EXCEPTION USING MESSAGE = ...` so PostgREST returns a readable `message` string (no more `{}`).
-
-Companion RPCs:
-- `admin_deactivate_residence_portal(_residence_id uuid)`
-- `admin_delete_residence_portal(_residence_id uuid)` — also removes `user_roles` row.
-
-Grants: `EXECUTE ... TO authenticated` (guarded by admin check inside).
-
-### Phase 4 — Verification block
-Idempotent `SELECT` checks at end:
-- Enum contains `residence_portal`.
-- `user_roles` composite unique present, legacy unique gone.
-- Only one FK on `residence_portal_accounts.residence_id`.
-- RPCs exist.
-- Row counts.
-
-## Edge function rewire (tiny)
-`supabase/functions/create-residence-portal-user/index.ts`:
-- After `auth.admin.createUser`, replace the two `.from(...)` writes with a single:
-  ```ts
-  const { data, error } = await supabaseAdmin.rpc('admin_create_residence_portal', {
-    _residence_id: residence_id, _user_id: newUserId, _email: email
-  });
-  ```
-- On error, rollback auth user and return `error.message ?? error.details ?? error.hint ?? 'Unknown Postgres error'` so the UI never sees `{}` again.
-
-## UI (no change needed)
-`AdminResidencePortals.tsx` already surfaces `data.error` / thrown message — it will start showing the real Postgres reason once the function returns it.
-
-## Run order
-1. Run `docs/RESIDENCE_PORTAL_MASTER_SQL.sql` on External.
-2. Edge function auto-redeploys.
-3. Retry Create Portal — you'll either succeed, or see the exact failing constraint / condition instead of `{}`.
-
-Approve and I'll ship the SQL pack and the 10-line edge-function swap.
+- Updated edge function with robust fallback and real error messages.
+- Updated admin UI error handling for portal creation/toggle/delete.
+- Updated `docs/RESIDENCE_PORTAL_MASTER_SQL.sql` as the specialised external database master pack for Residence Portal.

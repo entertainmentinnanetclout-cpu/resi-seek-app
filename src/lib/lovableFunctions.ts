@@ -17,9 +17,46 @@ export const LOVABLE_FUNCTIONS_ANON_KEY =
 
 export interface InvokeResult<T = unknown> {
   data: T | null;
-  error: { message: string; status?: number } | null;
+  error: { message: string; status?: number; version?: string; details?: unknown } | null;
   raw?: Response;
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const asNonEmptyString = (value: unknown): string | null =>
+  typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+
+const stringifySafe = (value: unknown): string | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") return asNonEmptyString(value);
+  try {
+    const text = JSON.stringify(value);
+    return text && text !== "{}" ? text : null;
+  } catch {
+    return null;
+  }
+};
+
+const extractErrorMessage = (payload: unknown, fallback: string): string => {
+  if (!isRecord(payload)) return stringifySafe(payload) || fallback;
+
+  const direct = asNonEmptyString(payload.error) || asNonEmptyString(payload.message);
+  if (direct && direct !== "{}") return direct;
+
+  const nestedError = payload.error;
+  if (isRecord(nestedError)) {
+    const nested =
+      asNonEmptyString(nestedError.message) ||
+      asNonEmptyString(nestedError.details) ||
+      asNonEmptyString(nestedError.hint) ||
+      asNonEmptyString(nestedError.code);
+    if (nested) return nested;
+  }
+
+  const details = asNonEmptyString(payload.details) || asNonEmptyString(payload.hint) || asNonEmptyString(payload.code);
+  return details || stringifySafe(payload) || fallback;
+};
 
 export async function invokeEdgeFunction<T = unknown>(
   name: string,
@@ -48,13 +85,21 @@ export async function invokeEdgeFunction<T = unknown>(
       return { data: text as unknown as T, error: null, raw: res };
     }
 
-    let json: any = null;
-    try { json = await res.json(); } catch { /* body may be empty */ }
+    const text = await res.text();
+    let json: unknown = null;
+    try { json = text ? JSON.parse(text) : null; } catch { json = text; }
 
-    if (!res.ok || json?.error) {
+    const hasErrorPayload = isRecord(json) && json.error !== undefined;
+    if (!res.ok || hasErrorPayload) {
+      const fallback = `HTTP ${res.status}${res.statusText ? `: ${res.statusText}` : ""}`;
       return {
         data: null,
-        error: { message: json?.error || `HTTP ${res.status}`, status: res.status },
+        error: {
+          message: extractErrorMessage(json, fallback),
+          status: res.status,
+          version: isRecord(json) ? asNonEmptyString(json._version) || undefined : undefined,
+          details: isRecord(json) ? json : text,
+        },
         raw: res,
       };
     }

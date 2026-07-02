@@ -21,7 +21,10 @@ END $$;
 -- 01a · user_roles unique constraint fix
 -- External DB has legacy UNIQUE(user_id) which blocks multi-role users
 -- (e.g. student + residence_portal). Replace with UNIQUE(user_id, role).
+-- Some External runs also created a standalone unique index named
+-- user_roles_user_id_unique, so remove that too.
 DO $$
+DECLARE _idx record;
 BEGIN
   IF EXISTS (
     SELECT 1 FROM pg_constraint
@@ -30,6 +33,27 @@ BEGIN
   ) THEN
     ALTER TABLE public.user_roles DROP CONSTRAINT user_roles_user_id_key;
   END IF;
+  DROP INDEX IF EXISTS public.user_roles_user_id_unique;
+  FOR _idx IN
+    SELECT i.indexrelid::regclass AS index_name
+      FROM pg_index i
+      JOIN pg_class tbl ON tbl.oid = i.indrelid
+      JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+      LEFT JOIN pg_constraint con ON con.conindid = i.indexrelid
+     WHERE ns.nspname = 'public'
+       AND tbl.relname = 'user_roles'
+       AND i.indisunique = true
+       AND con.oid IS NULL
+       AND i.indnatts = 1
+       AND EXISTS (
+         SELECT 1 FROM pg_attribute a
+          WHERE a.attrelid = i.indrelid
+            AND a.attnum = i.indkey[0]
+            AND a.attname = 'user_id'
+       )
+  LOOP
+    EXECUTE format('DROP INDEX IF EXISTS %s', _idx.index_name);
+  END LOOP;
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint
     WHERE conname = 'user_roles_user_id_role_key'
