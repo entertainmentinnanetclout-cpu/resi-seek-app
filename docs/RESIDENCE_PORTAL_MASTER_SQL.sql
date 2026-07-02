@@ -6,6 +6,54 @@
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
+-- PHASE 0 · Auth trigger safety: profile email collisions
+-- ---------------------------------------------------------------------
+-- Uploaded production logs showed portal creation failing before roles/RPCs
+-- run, at /auth/v1/admin/users, with:
+--   duplicate key value violates unique constraint "profiles_email_key"
+-- That means the auth.users AFTER INSERT trigger hit a pre-existing profile
+-- email and rolled back user creation. This safe trigger function never lets
+-- a duplicate profile email block auth user creation.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  _email text := lower(coalesce(NEW.email, ''));
+BEGIN
+  BEGIN
+    INSERT INTO public.profiles (id, full_name, email)
+    VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name',''), NEW.email)
+    ON CONFLICT (id) DO UPDATE
+      SET email = EXCLUDED.email,
+          full_name = COALESCE(NULLIF(public.profiles.full_name, ''), EXCLUDED.full_name),
+          updated_at = now();
+  EXCEPTION WHEN unique_violation THEN
+    -- Most commonly profiles_email_key. Keep the existing profile and allow
+    -- the auth user + role creation to complete. Portal users do not require
+    -- a profile row to be created in this trigger.
+    NULL;
+  END;
+
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (NEW.id, 'student'::public.app_role)
+  ON CONFLICT (user_id, role) DO NOTHING;
+
+  IF _email IN ('43v3r2a11@gmail.com','reskonnect@gmail.com') THEN
+    INSERT INTO public.user_roles (user_id, role)
+    VALUES (NEW.id, 'admin'::public.app_role)
+    ON CONFLICT (user_id, role) DO NOTHING;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role;
+
+-- ---------------------------------------------------------------------
 -- PHASE 1 · Enum + user_roles safety
 -- ---------------------------------------------------------------------
 DO $$
@@ -265,6 +313,18 @@ NOTIFY pgrst, 'reload schema';
 -- ---------------------------------------------------------------------
 -- PHASE 4 · Verification
 -- ---------------------------------------------------------------------
+SELECT 'handle_new_user_safe_profile_duplicates' AS check, pg_get_functiondef('public.handle_new_user()'::regprocedure) ILIKE '%profiles_email_key%'
+  OR pg_get_functiondef('public.handle_new_user()'::regprocedure) ILIKE '%unique_violation%' AS ok;
+
+SELECT 'duplicate_profile_emails' AS metric, COUNT(*) AS value
+FROM (
+  SELECT lower(email) AS email
+  FROM public.profiles
+  WHERE email IS NOT NULL AND email <> ''
+  GROUP BY lower(email)
+  HAVING COUNT(*) > 1
+) d;
+
 SELECT 'enum_has_residence_portal' AS check, EXISTS (
   SELECT 1 FROM pg_type t JOIN pg_enum e ON e.enumtypid=t.oid
   WHERE t.typname='app_role' AND e.enumlabel='residence_portal'
@@ -339,3 +399,10 @@ WHERE schemaname='public'
 SELECT 'portal_accounts_count' AS metric, COUNT(*) AS value FROM public.residence_portal_accounts;
 SELECT 'residence_portal_role_count' AS metric, COUNT(*) AS value
   FROM public.user_roles WHERE role='residence_portal'::app_role;
+SELECT 'duplicate_portal_emails' AS metric, COUNT(*) AS value
+FROM (
+  SELECT lower(email) AS email
+  FROM public.residence_portal_accounts
+  GROUP BY lower(email)
+  HAVING COUNT(*) > 1
+) d;
