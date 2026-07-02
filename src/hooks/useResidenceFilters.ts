@@ -108,6 +108,26 @@ export function calculateMatchScore(
   return Math.round((score / maxScore) * 100);
 }
 
+const normalize = (value: unknown) => String(value ?? "").toLowerCase();
+
+const getInstitutionTags = (residence: any): string[] =>
+  Array.isArray(residence.institution_tags) ? residence.institution_tags : [];
+
+const hasTagLike = (residence: any, needles: string[]) => {
+  const haystack = [
+    residence.name,
+    residence.campus,
+    residence.address,
+    residence.description,
+    residence.section_category,
+    ...getInstitutionTags(residence),
+  ]
+    .map(normalize)
+    .join(" ");
+
+  return needles.some((needle) => haystack.includes(normalize(needle)));
+};
+
 export function useResidenceFilters(residences: any[]) {
   const [filters, setFilters] = useState<ResidenceFilters>(DEFAULT_FILTERS);
 
@@ -178,18 +198,24 @@ export function useResidenceFilters(residences: any[]) {
 
     // Audience (institution type)
     if (filters.audience === "university") {
-      filtered = filtered.filter((r) => r.accepts_university !== false);
+      filtered = filtered.filter(
+        (r) => r.accepts_university !== false || hasTagLike(r, ["tut", "university", "up", "unisa", "wits", "uj"]),
+      );
     } else if (filters.audience === "tvet") {
-      filtered = filtered.filter((r) => r.accepts_tvet === true);
+      filtered = filtered.filter(
+        (r) => r.accepts_tvet === true || hasTagLike(r, ["tvet", "college", "tshwane north", "tshwane south", "ekurhuleni"]),
+      );
     } else if (filters.audience === "private") {
-      filtered = filtered.filter((r) => r.accepts_private === true);
+      filtered = filtered.filter(
+        (r) => r.accepts_private === true || hasTagLike(r, ["private", "rentals", "private-accommodations"]),
+      );
     }
 
     if (filters.institutionTag) {
       const tag = filters.institutionTag;
       filtered = filtered.filter((r) => {
         const tags: string[] = r.institution_tags || [];
-        return tags.includes(tag);
+        return tags.includes(tag) || hasTagLike(r, [tag]);
       });
     }
 
@@ -230,7 +256,7 @@ export function useResidenceFilters(residences: any[]) {
 
     // NSFAS
     if (filters.nsfasOnly) {
-      filtered = filtered.filter((r) => r.is_trusted === true);
+      filtered = filtered.filter((r) => r.accepts_nsfas === true || r.nsfas_accredited === true || r.is_tut_accredited === true);
     }
     if (filters.tutOnly)       filtered = filtered.filter((r) => r.is_tut_accredited === true);
     if (filters.singlesOnly)   filtered = filtered.filter((r) => (Number(r.singles_available) || 0) > 0 || r.room_types?.some((t: string) => t.toLowerCase().includes("single")));

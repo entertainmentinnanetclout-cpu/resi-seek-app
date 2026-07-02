@@ -26,6 +26,13 @@ export function ActiveFilterChips({ filters, updateFilter, resetFilters, hasActi
   if (filters.sectionCategory !== "all") {
     chips.push({ label: `${filters.sectionCategory}`, onRemove: () => updateFilter("sectionCategory", "all") });
   }
+  if (filters.audience !== "all") {
+    const label = filters.audience === "tvet" ? "TVET / College" : filters.audience === "private" ? "Private" : "University";
+    chips.push({ label, onRemove: () => updateFilter("audience", "all") });
+  }
+  if (filters.institutionTag) {
+    chips.push({ label: filters.institutionTag, onRemove: () => updateFilter("institutionTag", undefined) });
+  }
   filters.roomTypes.forEach((rt) => {
     chips.push({
       label: `${rt}`,

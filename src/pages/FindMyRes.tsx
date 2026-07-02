@@ -151,9 +151,9 @@ const FindMyRes = () => {
   return (
     <DashboardLayout>
       <SEO
-        title="Find Student Accommodation Near TUT | 360+ Verified Residences | ResKonnect"
-        description="Browse and apply to 360+ verified student residences near TUT campuses. NSFAS approved options available. Smart-match to your perfect student home."
-        keywords="TUT accommodation, Pretoria West student res, verified student housing, NSFAS residence"
+        title="Find Student Accommodation | University, TVET & Private | ResKonnect"
+        description="Browse and apply to verified accommodation for university students, TVET college students and private applicants. NSFAS options available."
+        keywords="TVET accommodation, university student accommodation, private student rentals, NSFAS residence, Pretoria accommodation"
       />
       <div className="min-h-screen bg-background">
         {/* Breadcrumb */}
@@ -398,7 +398,7 @@ const FindMyRes = () => {
           <DialogHeader>
             <DialogTitle className="text-2xl">Start Your Journey 🎓</DialogTitle>
             <DialogDescription className="text-base pt-2">
-              Find verified student accommodation near TUT campuses. Create a free account to apply, save favourites, and get notified about new listings.
+              Find verified accommodation for university, TVET college and private applicants. Create a free account to apply, save favourites, and get notified about new listings.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col gap-2 sm:flex-col">
