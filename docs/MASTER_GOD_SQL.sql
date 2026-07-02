@@ -256,6 +256,15 @@ CREATE TABLE IF NOT EXISTS public.seller_earnings (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+-- Backfill columns if an older seller_earnings table already existed.
+ALTER TABLE public.seller_earnings ADD COLUMN IF NOT EXISTS store_id          uuid;
+ALTER TABLE public.seller_earnings ADD COLUMN IF NOT EXISTS seller_user_id    uuid;
+ALTER TABLE public.seller_earnings ADD COLUMN IF NOT EXISTS order_id          uuid;
+ALTER TABLE public.seller_earnings ADD COLUMN IF NOT EXISTS order_type        text;
+ALTER TABLE public.seller_earnings ADD COLUMN IF NOT EXISTS gross_amount      numeric(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE public.seller_earnings ADD COLUMN IF NOT EXISTS commission_amount numeric(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE public.seller_earnings ADD COLUMN IF NOT EXISTS net_amount        numeric(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE public.seller_earnings ADD COLUMN IF NOT EXISTS status            text NOT NULL DEFAULT 'pending';
 GRANT SELECT ON public.seller_earnings TO authenticated;
 GRANT ALL ON public.seller_earnings TO service_role;
 ALTER TABLE public.seller_earnings ENABLE ROW LEVEL SECURITY;
