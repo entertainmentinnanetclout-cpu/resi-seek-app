@@ -531,6 +531,17 @@ export const AdminResidencesContent = () => {
                         }
                       />
                     </div>
+                    <label className="flex items-center justify-between gap-2 rounded-lg border-2 border-transparent bg-gradient-spotlight/5 p-3 cursor-pointer bg-[length:200%_100%]"
+                      style={{ background: "linear-gradient(90deg, hsl(var(--accent-violet)/0.08), hsl(var(--accent-coral)/0.08))" }}>
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        <Sparkles className="w-4 h-4 text-violet" />
+                        Spotlight on Find My Res
+                      </span>
+                      <Switch
+                        checked={!!editingResidence.is_spotlight}
+                        onCheckedChange={(v) => setEditingResidence({ ...editingResidence, is_spotlight: v })}
+                      />
+                    </label>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
