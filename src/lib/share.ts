@@ -1,7 +1,9 @@
 // Universal share helpers — canonical URLs + dynamic OG images
 
 const SITE_URL = "https://reskonnect.co.za";
-const PROJECT_ID = (import.meta as any).env?.VITE_SUPABASE_PROJECT_ID || "mefjzkhobkltlbmhusdh";
+import { EXTERNAL_SUPABASE_PROJECT_ID } from "@/integrations/supabase/client";
+
+const PROJECT_ID = EXTERNAL_SUPABASE_PROJECT_ID;
 
 export type ShareableType = "product" | "hamper" | "deal" | "residence" | "bursary";
 

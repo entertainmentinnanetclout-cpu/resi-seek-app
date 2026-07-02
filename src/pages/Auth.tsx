@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { EXTERNAL_SUPABASE_ANON_KEY, EXTERNAL_SUPABASE_URL, externalFunctionUrl } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 import logo from "@/assets/LIGHT THEME Login Page Icon.png";
@@ -125,9 +126,9 @@ const Auth = () => {
             const { data: sess } = await supabase.auth.getSession();
             const uid = sess.session?.user?.id;
             if (uid) {
-              await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/referral-capture`, {
+              await fetch(externalFunctionUrl("referral-capture"), {
                 method: "POST",
-                headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string },
+                headers: { "Content-Type": "application/json", apikey: EXTERNAL_SUPABASE_ANON_KEY },
                 body: JSON.stringify({ code: refCode, referred_user_id: uid }),
               });
             }
@@ -294,7 +295,7 @@ const Auth = () => {
                   <p><span className="text-muted-foreground">User ID:</span> {user.id}</p>
                   <p><span className="text-muted-foreground">Staff Role:</span> <span className={staffRole ? 'text-green-600 font-bold' : 'text-destructive font-bold'}>{staffRole || 'null (student)'}</span></p>
                   <p><span className="text-muted-foreground">Loading:</span> {authLoading ? 'true' : 'false'}</p>
-                  <p><span className="text-muted-foreground">Backend:</span> {import.meta.env.VITE_SUPABASE_URL || 'hardcoded'}</p>
+                  <p><span className="text-muted-foreground">Backend:</span> {EXTERNAL_SUPABASE_URL}</p>
                 </div>
               )}
             </div>
