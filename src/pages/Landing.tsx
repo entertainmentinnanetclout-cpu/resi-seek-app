@@ -191,8 +191,8 @@ const Landing = () => {
 
   const navLinks = [
     { label: "Find Accommodation", to: "/find" },
+    { label: "Apply (TUT / NSFAS)", to: "/apply" },
     { label: "Bursaries", to: "/bursaries" },
-    { label: "Marketplace", to: "/marketplace" },
     { label: "Campus News", to: "/campus-news" },
   ];
 

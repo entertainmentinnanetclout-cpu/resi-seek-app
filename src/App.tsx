@@ -21,6 +21,8 @@ import Favorites from "./pages/Favorites";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Marketplace from "./pages/Marketplace";
+import MarketplaceComingSoon from "./pages/MarketplaceComingSoon";
+import ApplicationsHub from "./pages/ApplicationsHub";
 import ResidenceDetail from "./pages/ResidenceDetail";
 import BursaryFinder from "./pages/BursaryFinder";
 import StudentDeals from "./pages/StudentDeals";
@@ -127,9 +129,12 @@ const App = () => {
               <Route path="/find-my-res/:slug" element={<ResidenceDetail />} />
               <Route path="/bursaries" element={<BursaryFinder />} />
               <Route path="/bursary/:id" element={<BursaryDetail />} />
-              <Route path="/marketplace" element={<Marketplace />} />
-              <Route path="/product/:id" element={<ProductDetail />} />
-              <Route path="/store/:storeId" element={<Store />} />
+              {/* Marketplace paused publicly — all shop routes render Coming Soon */}
+              <Route path="/marketplace" element={<MarketplaceComingSoon />} />
+              <Route path="/marketplace/*" element={<MarketplaceComingSoon />} />
+              <Route path="/product/:id" element={<MarketplaceComingSoon />} />
+              <Route path="/store/:storeId" element={<MarketplaceComingSoon />} />
+              <Route path="/apply" element={<ApplicationsHub />} />
               <Route path="/discounts" element={<StudentDeals />} />
               <Route path="/hamper" element={<StudentDeals />} />
               <Route path="/events" element={<Events />} />
