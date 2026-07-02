@@ -48,3 +48,21 @@ while the client is pinned to External.
 - Every new edge function call must go through `invokeEdgeFunction`.
 - Every new `public` table requires GRANTs and RLS in the same migration.
 - Never re-introduce a stub page — wire it or delete it.
+
+## Admin SQL pack
+
+A dedicated, rerunnable pack lives at `docs/ADMIN_MASTER_SQL.sql`. Run it on
+External Supabase any time an admin page throws. It is independent from
+`MASTER_GOD_SQL.sql` and covers:
+
+1. Duplicate FK cleanup on `residence_portal_accounts`
+2. Column shims (`application_messages.body`, `applications.funding_type`,
+   `hero_slides.subtitle/cta_label/cta_url`, `stores.status/is_verified`,
+   `marketplace_listings.status/admin_notes`)
+3. Admin-only tables (10) with GRANT + RLS + admin-only policies
+4. Admin RPCs: `admin_dashboard_counts`, `admin_recent_activity`,
+   `admin_delete_listing`, `admin_toggle_store_verified`,
+   `admin_set_application_status`
+5. Admin RLS override policies on 15 tables so admin lists never return 0
+6. Storage admin override on all sensitive buckets
+7. Verification block at the bottom (5 SELECTs)
