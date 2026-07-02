@@ -21,10 +21,10 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="text-center mb-6">
           <h1 className="text-3xl sm:text-4xl font-bold mb-2">
-            Find Your Perfect Residence
+            Find Your Perfect Accommodation
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Smart-match across 360+ verified student accommodations near TUT campuses
+            Smart-match verified accommodation for university, TVET college and private applicants
           </p>
         </div>
 
@@ -42,10 +42,10 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
             </div>
             <Select value={filters.campus} onValueChange={(v) => updateFilter("campus", v)}>
               <SelectTrigger className="h-12 sm:w-56">
-                <SelectValue placeholder="Select campus" />
+                <SelectValue placeholder="Area / campus" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Campuses</SelectItem>
+                <SelectItem value="all">All Areas</SelectItem>
                 {TUT_CAMPUSES.map((c) => (
                   <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                 ))}

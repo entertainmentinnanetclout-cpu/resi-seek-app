@@ -18,8 +18,9 @@ Allow: /bursaries
 Allow: /discounts
 Allow: /events
 Allow: /roommates
-Allow: /marketplace
+Disallow: /marketplace
 Allow: /news
+Allow: /apply
 
 # SEO landing pages
 Allow: /gauteng-student-accommodation

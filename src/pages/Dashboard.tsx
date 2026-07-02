@@ -1,6 +1,6 @@
 import SEO from "@/components/SEO";
 import { useNavigate, Link } from "react-router-dom";
-import { Search, User, X, Plus, FileText, Heart, ShoppingBag, GraduationCap, Newspaper, ArrowRight } from "lucide-react";
+import { Search, User, X, Plus, FileText, Heart, GraduationCap, Newspaper, ArrowRight } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import HeroCarousel from "@/components/HeroCarousel";
 import SmartDashboard from "@/components/SmartDashboard";
@@ -14,7 +14,8 @@ import { useRealtimeApplications } from "@/hooks/useRealtimeApplications";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import heroAccommodation from "@/assets/hero-accommodation.jpg";
+import inclusivePathwaysHero from "@/assets/hero-inclusive-pathways.jpg";
+import applicationsFundingHero from "@/assets/hero-applications-funding.jpg";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -66,16 +67,16 @@ const Dashboard = () => {
 
   const carouselSlides = [
     {
-      image: heroAccommodation,
+      image: inclusivePathwaysHero,
       title: "Find Your Perfect Res",
-      description: "Discover comfortable, affordable student accommodation near your campus",
+      description: "Discover verified accommodation for university, TVET college and private pathways.",
       cta: { text: "Browse Residences", action: () => navigate("/findmyres") },
     },
     {
-      image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=600&fit=crop",
-      title: "Student Grocery Discounts",
-      description: "Save up to 30% on grocery hampers specially curated for students",
-      cta: { text: "Get Discounts", action: () => navigate("/marketplace?tab=deals") },
+      image: applicationsFundingHero,
+      title: "Applications & Funding Ready",
+      description: "Prepare your TUT, university, TVET and NSFAS documents in one place",
+      cta: { text: "Open Applications Hub", action: () => navigate("/apply") },
     },
   ];
 
@@ -84,7 +85,7 @@ const Dashboard = () => {
     { icon: FileText, title: "My Applications", description: "Track your status", gradient: "bg-gradient-to-br from-purple-500 to-pink-600", path: "/applications" },
     { icon: User, title: "My Profile", description: "Update your details", gradient: "bg-gradient-to-br from-blue-500 to-indigo-600", path: "/profile" },
     { icon: Heart, title: "Favorites", description: "Saved residences", gradient: "bg-gradient-to-br from-rose-500 to-red-600", path: "/favorites" },
-    { icon: ShoppingBag, title: "Marketplace", description: "Buy & sell essentials", gradient: "bg-gradient-to-br from-orange-500 to-amber-600", path: "/marketplace" },
+    { icon: FileText, title: "Applications Hub", description: "TUT, TVET & NSFAS guide", gradient: "bg-gradient-to-br from-orange-500 to-amber-600", path: "/apply" },
     { icon: GraduationCap, title: "Bursaries", description: "Funding opportunities", gradient: "bg-gradient-to-br from-cyan-500 to-blue-600", path: "/bursaries" },
   ];
 

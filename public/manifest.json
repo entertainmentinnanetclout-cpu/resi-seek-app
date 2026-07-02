@@ -1,7 +1,7 @@
 {
   "name": "ResKonnect Simplified Portal",
   "short_name": "ResKonnect",
-  "description": "Student Hub and Marketplace – campus life, accommodation, and career connection made easy.",
+  "description": "Student accommodation, applications, NSFAS, TVET, university and private pathway support.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

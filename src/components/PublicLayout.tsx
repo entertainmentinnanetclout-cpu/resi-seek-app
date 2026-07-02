@@ -25,6 +25,9 @@ const PublicLayout = ({ children }: PublicLayoutProps) => {
             <Link to="/find" className="text-sm font-medium hover:text-primary transition-colors">
               Find My Res
             </Link>
+            <Link to="/apply" className="text-sm font-medium hover:text-primary transition-colors">
+              Applications
+            </Link>
             <Link to="/nsfas-accredited-accommodation" className="text-sm font-medium hover:text-primary transition-colors">
               NSFAS Accommodation
             </Link>
@@ -48,6 +51,11 @@ const PublicLayout = ({ children }: PublicLayoutProps) => {
                   <SheetClose asChild>
                     <Link to="/find" className="text-lg font-medium hover:text-primary transition-colors">
                       Find My Res
+                    </Link>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Link to="/apply" className="text-lg font-medium hover:text-primary transition-colors">
+                      Applications
                     </Link>
                   </SheetClose>
                   <SheetClose asChild>
@@ -93,8 +101,8 @@ const PublicLayout = ({ children }: PublicLayoutProps) => {
                 <li><Link to="/find" className="hover:text-primary transition-colors">Find My Res</Link></li>
                 <li><Link to="/auth" className="hover:text-primary transition-colors">Sign Up</Link></li>
                 <li><Link to="/auth" className="hover:text-primary transition-colors">Login</Link></li>
+                <li><Link to="/apply" className="hover:text-primary transition-colors">Applications</Link></li>
                 <li><Link to="/affiliates" className="hover:text-primary transition-colors">Affiliates</Link></li>
-                <li><Link to="/marketplace" className="hover:text-primary transition-colors">Marketplace</Link></li>
               </ul>
             </div>
             <div>

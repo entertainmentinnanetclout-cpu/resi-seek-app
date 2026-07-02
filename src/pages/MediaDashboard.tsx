@@ -11,7 +11,7 @@ import { AdminMarketplaceBannersContent } from "./admin/AdminMarketplaceBanners"
 const navItems = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
   { value: "slides", label: "Hero Slides", icon: Image },
-  { value: "banners", label: "Marketplace Banners", icon: Image },
+  { value: "banners", label: "Promotional Banners", icon: Image },
   { value: "news", label: "News", icon: Newspaper },
   { value: "events", label: "Events", icon: Calendar },
   { value: "bursaries", label: "Bursaries", icon: GraduationCap },
@@ -33,7 +33,7 @@ const MediaDashboard = () => {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold capitalize">{tab === "overview" ? "Media Overview" : tab.replace("-", " ")}</h1>
-          <p className="text-muted-foreground">Slides, news, events, banners & bursaries</p>
+          <p className="text-muted-foreground">Slides, news, events, promotional banners & bursaries</p>
         </div>
 
         {tab === "overview" && <MediaOverview />}

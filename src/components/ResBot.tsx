@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { EXTERNAL_SUPABASE_ANON_KEY, externalFunctionUrl } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -90,12 +91,12 @@ const ResBot = () => {
     try {
       // Call the AI edge function
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/resbot-ai`,
+        externalFunctionUrl("resbot-ai"),
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${EXTERNAL_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
             message: messageText,

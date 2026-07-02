@@ -1,12 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
+import { EXTERNAL_SUPABASE_ANON_KEY, externalFunctionUrl } from "@/integrations/supabase/client";
 
 let VAPID_PUBLIC_KEY = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string) || "";
 
 async function getVapidKey(): Promise<string> {
   if (VAPID_PUBLIC_KEY) return VAPID_PUBLIC_KEY;
   try {
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vapid-public-key`;
-    const res = await fetch(url, { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string } });
+    const res = await fetch(externalFunctionUrl("vapid-public-key"), { headers: { apikey: EXTERNAL_SUPABASE_ANON_KEY } });
     const json = await res.json();
     VAPID_PUBLIC_KEY = json.publicKey || "";
   } catch (e) { console.warn("vapid fetch failed", e); }

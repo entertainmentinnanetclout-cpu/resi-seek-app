@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { EXTERNAL_SUPABASE_ANON_KEY, EXTERNAL_SUPABASE_PROJECT_ID } from "@/integrations/supabase/client";
 import SEO from "@/components/SEO";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,7 +57,7 @@ const Orders = () => {
       const token = sessionData?.session?.access_token;
       if (!token) throw new Error("Not authenticated");
 
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const projectId = EXTERNAL_SUPABASE_PROJECT_ID;
       let verified = false;
 
       for (let attempt = 0; attempt < 10; attempt++) {
@@ -67,7 +68,7 @@ const Orders = () => {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
-              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              apikey: EXTERNAL_SUPABASE_ANON_KEY,
             },
             body: JSON.stringify({ order_id: orderId }),
           }

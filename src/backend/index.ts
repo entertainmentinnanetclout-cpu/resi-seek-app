@@ -5,23 +5,18 @@
  * Existing code that imports the supabase client directly is still supported during the
  * transition; it continues to work because both paths resolve to the active driver below.
  *
- * The active driver is chosen at module load by `VITE_BACKEND_PROVIDER`:
- *   - "lovable"  (default) -> Lovable Cloud
- *   - "supabase"           -> External Supabase
+ * External Supabase is the production source of truth. Provider switching is
+ * kept as a safety abstraction only; the UI must not drift back to Lovable data.
  *
  * Each driver exposes the same surface (db / auth / storage / functions) so swapping
  * providers does not require any change to UI, routes, hooks, or workflows.
  */
-import { lovableDriver } from "./drivers/lovable";
 import { supabaseDriver } from "./drivers/supabase";
 import type { BackendDriver } from "./types";
 
-// External Supabase is the primary backend. Lovable Cloud is kept warm as
-// a standby provider via the BAL. Override with VITE_BACKEND_PROVIDER=lovable
-// when running purely on Lovable Cloud.
-const provider = (import.meta.env.VITE_BACKEND_PROVIDER as string | undefined) ?? "supabase";
-
-const driver: BackendDriver = provider === "supabase" ? supabaseDriver : lovableDriver;
+// Hard-lock External Supabase for preview, production and specialist dashboards.
+const provider = "supabase";
+const driver: BackendDriver = supabaseDriver;
 
 export const backend = driver;
 export const db = driver.db;

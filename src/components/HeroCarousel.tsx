@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import inclusivePathwaysHero from "@/assets/hero-inclusive-pathways.jpg";
+import applicationsFundingHero from "@/assets/hero-applications-funding.jpg";
 
 interface Slide {
   image: string;
@@ -62,8 +64,17 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
     const { data, error } = await query.order("display_order", { ascending: true });
 
     if (!error && data && data.length > 0) {
-      const formattedSlides: Slide[] = data.map(slide => ({
-        image: slide.image_url,
+      const filteredData = data.filter((slide) => {
+        if (!location || !["landing", "dashboard", "all"].includes(location)) return true;
+        const title = String(slide.title || "").toLowerCase();
+        const link = String(slide.cta_link || "").toLowerCase();
+        const description = String(slide.description || "").toLowerCase();
+        const marketplaceSignals = ["marketplace", "my store", "shop now", "student shop", "products"];
+        return !marketplaceSignals.some((signal) => title.includes(signal) || description.includes(signal) || link.includes(signal));
+      });
+
+      const formattedSlides: Slide[] = filteredData.map(slide => ({
+        image: resolveSlideImage(slide.title, slide.description, slide.image_url),
         title: slide.title,
         description: slide.description || "",
         cta: slide.cta_text && slide.cta_link ? {
@@ -77,9 +88,28 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
           }
         } : undefined
       }));
-      setSlides(formattedSlides);
+      if (formattedSlides.length > 0) {
+        setSlides(formattedSlides);
+      } else if (propSlides) {
+        setSlides(propSlides);
+      }
     }
     setIsLoading(false);
+  };
+
+  const resolveSlideImage = (title?: string | null, description?: string | null, imageUrl?: string | null) => {
+    const copy = `${title ?? ""} ${description ?? ""}`.toLowerCase();
+    const isPlaceholder = !imageUrl || imageUrl.includes("placehold.co") || imageUrl.includes("placeholder");
+
+    if (copy.includes("nsfas") || copy.includes("application") || copy.includes("funding") || copy.includes("document")) {
+      return isPlaceholder ? applicationsFundingHero : imageUrl;
+    }
+
+    if (copy.includes("tvet") || copy.includes("college") || copy.includes("private") || copy.includes("university") || copy.includes("accommodation")) {
+      return isPlaceholder ? inclusivePathwaysHero : imageUrl;
+    }
+
+    return imageUrl || inclusivePathwaysHero;
   };
 
   useEffect(() => {
@@ -117,7 +147,7 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
   }
 
   return (
-    <div className={cn("relative w-full h-[500px] md:h-[600px] lg:h-[700px] overflow-hidden rounded-2xl group", className)}>
+    <div className={cn("relative w-full h-[520px] md:h-[640px] lg:h-[720px] overflow-hidden rounded-2xl group bg-muted", className)}>
       {/* Slides */}
       {slides.map((slide, index) => (
         <div
@@ -137,16 +167,19 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
               transform: index === currentSlide ? 'scale(1.05)' : 'scale(1)'
             }}
           >
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/25" />
           </div>
 
           {/* Content */}
-          <div className="relative h-full flex items-end pb-16 px-6 md:px-12 lg:px-20">
-            <div className="max-w-4xl">
+          <div className="relative h-full flex items-end pb-20 px-6 md:px-12 lg:px-20">
+            <div className="max-w-4xl border-l-4 border-primary pl-5 md:pl-7">
+              <div className="mb-3 inline-flex rounded-full border border-white/25 bg-black/25 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/90 backdrop-blur-sm">
+                ResKonnect
+              </div>
               <h2 
                 className={cn(
-                  "text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-4 transform transition-all duration-700 delay-100",
+                  "text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-4 leading-[0.95] transform transition-all duration-700 delay-100 drop-shadow-2xl",
                   index === currentSlide
                     ? "translate-y-0 opacity-100"
                     : "translate-y-8 opacity-0"
@@ -156,7 +189,7 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
               </h2>
               <p 
                 className={cn(
-                  "text-lg md:text-xl lg:text-2xl text-white/90 mb-6 transform transition-all duration-700 delay-200",
+                  "text-base md:text-xl lg:text-2xl text-white/90 mb-6 max-w-3xl leading-relaxed transform transition-all duration-700 delay-200 drop-shadow",
                   index === currentSlide
                     ? "translate-y-0 opacity-100"
                     : "translate-y-8 opacity-0"

@@ -1,6 +1,6 @@
 import SEO from "@/components/SEO";
 import SEOJsonLd from "@/components/SEOJsonLd";
-import { Shield, MapPin, DollarSign, FileCheck, Menu, Users, Building2, Award, ShoppingBag, ArrowRight } from "lucide-react";
+import { Shield, MapPin, DollarSign, FileCheck, Menu, Users, Building2, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import HeroCarousel from "@/components/HeroCarousel";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -22,10 +21,10 @@ import LandlordApplicationTabs from "@/components/LandlordApplicationTabs";
 import headerLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import footerLogo from "@/assets/FOOTER.png";
 import iconLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
-import artsFestival from "@/assets/arts-festival.jpg";
-import campusDinokeng from "@/assets/campus-dinokeng.jpg";
 import studentStudying from "@/assets/student-studying.jpg";
 import studentsCelebration from "@/assets/students-celebration.jpg";
+import inclusivePathwaysHero from "@/assets/hero-inclusive-pathways.jpg";
+import applicationsFundingHero from "@/assets/hero-applications-funding.jpg";
 
 /* ── Animated Counter ─────────────────────────────────── */
 const AnimatedCounter = ({ target, suffix = "" }: { target: number; suffix?: string }) => {
@@ -67,92 +66,6 @@ const AnimatedCounter = ({ target, suffix = "" }: { target: number; suffix?: str
   );
 };
 
-/* ── Featured Marketplace Block ───────────────────────── */
-const FeaturedMarketplace = () => {
-  const navigate = useNavigate();
-  const [products, setProducts] = useState<any[]>([]);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      // First try landing-featured, fallback to newest 8
-      let { data } = await supabase
-        .from("products" as any)
-        .select("id, name, price, images, compare_at_price, stores(store_name)")
-        .eq("is_active", true)
-        .eq("is_landing_featured", true)
-        .order("created_at", { ascending: false })
-        .limit(8);
-
-      if (!data || data.length === 0) {
-        const res = await supabase
-          .from("products" as any)
-          .select("id, name, price, images, compare_at_price, stores(store_name)")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-          .limit(8);
-        data = res.data;
-      }
-      if (data) setProducts(data as any[]);
-    };
-    fetchProducts();
-  }, []);
-
-  if (products.length === 0) return null;
-
-  return (
-    <section className="py-12 md:py-20">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-3">
-              <ShoppingBag className="w-4 h-4" /> Student Marketplace
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold">Shop Student Essentials</h2>
-            <p className="text-muted-foreground mt-1">Everything you need for campus life, from fellow students and trusted sellers.</p>
-          </div>
-          <Button variant="outline" className="hidden sm:flex gap-2" onClick={() => navigate("/marketplace")}>
-            View All <ArrowRight className="w-4 h-4" />
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.map((p: any) => (
-            <Card
-              key={p.id}
-              className="group cursor-pointer hover:shadow-lg transition-all overflow-hidden"
-              onClick={() => navigate(`/marketplace/${p.id}`)}
-            >
-              <div className="aspect-square bg-muted overflow-hidden">
-                {p.images?.[0] ? (
-                  <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <ShoppingBag className="w-10 h-10 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-              <CardContent className="p-3">
-                <p className="text-sm font-medium truncate">{p.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{(p as any).stores?.store_name}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="font-bold text-primary">R{Number(p.price).toFixed(2)}</span>
-                  {p.compare_at_price && (
-                    <span className="text-xs text-muted-foreground line-through">R{Number(p.compare_at_price).toFixed(2)}</span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="mt-6 text-center sm:hidden">
-          <Button onClick={() => navigate("/marketplace")} className="gap-2">
-            Browse Marketplace <ArrowRight className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-    </section>
-  );
-};
-
 /* ── Landing Page ──────────────────────────────────────── */
 const Landing = () => {
   const navigate = useNavigate();
@@ -170,10 +83,10 @@ const Landing = () => {
   };
 
   const fallbackSlides = [
-    { image: campusDinokeng, title: "Welcome to TUT Dinokeng Campus", description: "Find your perfect student accommodation near campus - 400+ verified options available", cta: { text: "Explore Residences", action: () => navigate("/find") } },
-    { image: artsFestival, title: "Experience Campus Life", description: "Join vibrant campus activities and cultural celebrations throughout the year", cta: { text: "Get Started", action: () => navigate("/auth") } },
-    { image: studentStudying, title: "Study in Comfort", description: "Access quality accommodation that supports your academic success", cta: { text: "Find Your Res", action: () => navigate("/find") } },
-    { image: studentsCelebration, title: "Build Lifelong Connections", description: "Be part of a thriving student community in Pretoria & Tshwane", cta: { text: "Join Now", action: () => navigate("/auth") } },
+    { image: inclusivePathwaysHero, title: "Accommodation for University, TVET & Private", description: "Find verified residences that welcome TUT, other universities, TVET college students and private applicants.", cta: { text: "Find Accommodation", action: () => navigate("/find") } },
+    { image: applicationsFundingHero, title: "Applications & NSFAS Ready", description: "Prepare one document pack for TUT, universities, TVET colleges and NSFAS funding applications.", cta: { text: "Open Applications Hub", action: () => navigate("/apply") } },
+    { image: studentStudying, title: "Study in Comfort", description: "Access quality accommodation that supports your academic success no matter where you study.", cta: { text: "Find Your Res", action: () => navigate("/find") } },
+    { image: studentsCelebration, title: "Build Lifelong Connections", description: "Be part of a thriving student community across Pretoria, Tshwane and beyond.", cta: { text: "Join Now", action: () => navigate("/auth") } },
   ];
 
   const features = [
@@ -323,8 +236,6 @@ const Landing = () => {
         {/* ── Become Accredited (landlord CTA) ───────────── */}
         <AccreditationCTA />
 
-        {/* Marketplace paused — hidden from public landing */}
-
         {/* ── About + Dual CTA ──────────────────────────── */}
         <section className="py-12 md:py-20 bg-card/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
@@ -425,8 +336,8 @@ const Landing = () => {
               <h4 className="font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link to="/find" className="hover:text-primary transition-colors">Find My Res</Link></li>
+                <li><Link to="/apply" className="hover:text-primary transition-colors">Applications</Link></li>
                 <li><Link to="/bursaries" className="hover:text-primary transition-colors">Bursaries</Link></li>
-                <li><Link to="/marketplace" className="hover:text-primary transition-colors">Marketplace</Link></li>
                 <li><Link to="/auth" className="hover:text-primary transition-colors">Sign Up / Login</Link></li>
               </ul>
             </div>

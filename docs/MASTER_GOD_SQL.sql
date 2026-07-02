@@ -343,16 +343,51 @@ END $$;
 -- 04  Seeds — safe UPSERTs
 -- ============================================================================
 
+-- 04.0 application_prep — Applications Hub checklist state
+CREATE TABLE IF NOT EXISTS public.application_prep (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  institution text NOT NULL,
+  checklist jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, institution)
+);
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.application_prep TO authenticated;
+GRANT ALL ON public.application_prep TO service_role;
+ALTER TABLE public.application_prep ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "application_prep owner rw" ON public.application_prep;
+CREATE POLICY "application_prep owner rw" ON public.application_prep FOR ALL
+  USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "application_prep admin read" ON public.application_prep;
+CREATE POLICY "application_prep admin read" ON public.application_prep FOR SELECT
+  USING (public.has_role(auth.uid(), 'admin'::app_role));
+DROP TRIGGER IF EXISTS trg_application_prep_updated ON public.application_prep;
+CREATE TRIGGER trg_application_prep_updated BEFORE UPDATE ON public.application_prep
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
 -- 04.1 platform_settings (only insert missing keys)
 INSERT INTO public.platform_settings (key, value, description) VALUES
   ('marketplace_paused',   jsonb_build_object('paused', true, 'label','Marketplace paused'), 'Toggle to hide marketplace publicly'),
+  ('marketplace_public_enabled', jsonb_build_object('enabled', false, 'reason', 'Accommodation-first growth focus'), 'Public marketplace launch toggle'),
   ('referral_signup_bonus',jsonb_build_object('amount', 15),   'ZAR bonus paid on new sign-up referral'),
   ('referral_sale_percent',jsonb_build_object('percent', 5),   'Percent commission paid on referred sale'),
-  ('tut_2026_deadline',    jsonb_build_object('date','2025-09-30','label','TUT 2026 Applications close 30 September 2025'),
-                           'TUT undergraduate application closing date'),
-  ('nsfas_tvet_open',      jsonb_build_object('open', true, 'label','NSFAS TVET Trimester 3 applications open'),
-                           'NSFAS TVET application window flag')
-ON CONFLICT (key) DO NOTHING;
+  ('application_deadlines', '{
+    "tut_2026": {"date":"2025-09-30", "label":"TUT applications close 30 September", "status":"closing"},
+    "universities_2026": {"label":"University windows vary by institution", "status":"check"},
+    "tvet_2026": {"label":"TVET college intakes open by campus and programme", "status":"open"},
+    "nsfas_uni_2026": {"label":"NSFAS university funding window — prepare documents", "status":"prepare"},
+    "nsfas_tvet_2026": {"label":"NSFAS TVET applications open by trimester/semester", "status":"open"}
+  }'::jsonb, 'Application deadline copy used by Applications Hub'),
+  ('application_pathways', '{
+    "TUT": {"label":"TUT", "title":"TUT applications", "applyUrl":"https://www.tut.ac.za/", "cta":"Open TUT"},
+    "UNIVERSITY": {"label":"All Universities", "title":"University applications", "applyUrl":"https://www.cao.ac.za/", "cta":"View Options"},
+    "TVET": {"label":"TVET / Colleges", "title":"TVET and college applications", "applyUrl":"https://www.tnc.edu.za/", "cta":"Explore TVET"},
+    "NSFAS_UNI": {"label":"NSFAS University", "title":"NSFAS university funding", "applyUrl":"https://www.nsfas.org.za/content/how-to-apply.html", "cta":"Open NSFAS"},
+    "NSFAS_TVET": {"label":"NSFAS TVET", "title":"NSFAS TVET funding", "applyUrl":"https://www.nsfas.org.za/content/how-to-apply.html", "cta":"Open NSFAS"},
+    "PRIVATE": {"label":"Private / General", "title":"Private study and accommodation readiness", "applyUrl":"https://www.google.com/search?q=private+college+south+africa+application", "cta":"Search Colleges"}
+  }'::jsonb, 'Applications Hub pathways')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, description = EXCLUDED.description;
 
 -- 04.2 filter_config defaults
 INSERT INTO public.filter_config (key, label, filter_group, display_order, control_type, is_featured)
@@ -364,17 +399,40 @@ VALUES
   ('singles',   'Singles Available', 'rooms',         50, 'toggle', false)
 ON CONFLICT (key) DO NOTHING;
 
--- 04.3 hero_slides deadline slides (schema-matched)
+-- 04.3 deactivate legacy marketplace slides and seed inclusive premium slides
+UPDATE public.hero_slides
+SET is_active = false
+WHERE lower(coalesce(title,'') || ' ' || coalesce(description,'') || ' ' || coalesce(cta_link,''))
+      ~ '(marketplace|shop now|my store|student shop|products)';
+
 INSERT INTO public.hero_slides (title, description, image_url, cta_text, cta_link, is_active, display_order, slide_location)
 SELECT * FROM (VALUES
-  ('TUT 2026 Applications','Closing 30 September 2025 — get your documents ready',
-   'https://placehold.co/1920x1080/0a2540/ffffff?text=TUT+2026+Applications',
-   'Prepare Now','/apply?target=tut', true, 10, 'landing'),
-  ('NSFAS TVET Now Open','Trimester 3 applications are open for TVET students',
-   'https://placehold.co/1920x1080/0a7d3b/ffffff?text=NSFAS+TVET+Open',
-   'Apply Guide','/apply?target=nsfas_tvet', true, 11, 'landing')
+  ('Accommodation for University, TVET & Private','Verified residences for TUT, all universities, TVET college students and private applicants.',
+   'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1920&q=85',
+   'Find Accommodation','/find', true, 1, 'landing'),
+  ('Applications & NSFAS Ready','Prepare one document pack for TUT, universities, TVET colleges and NSFAS funding applications.',
+   'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1920&q=85',
+   'Open Applications Hub','/apply', true, 2, 'landing'),
+  ('TVET & College Accommodation','Find places that welcome Tshwane North, Tshwane South, Ekurhuleni and private college students.',
+   'https://images.unsplash.com/photo-1571260899304-425eee4c7efc?auto=format&fit=crop&w=1920&q=85',
+   'Browse TVET Options','/find?audience=tvet', true, 3, 'landing'),
+  ('Private Pathway Accommodation','Not only TUT. Private renters and self-funded students can find verified homes too.',
+   'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1920&q=85',
+   'Browse Private Options','/find?audience=private', true, 4, 'landing'),
+  ('Applications & Funding Ready','Prepare your TUT, university, TVET and NSFAS documents in one place.',
+   'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1920&q=85',
+   'Open Applications Hub','/apply', true, 1, 'dashboard')
 ) AS v(title, description, image_url, cta_text, cta_link, is_active, display_order, slide_location)
-WHERE NOT EXISTS (SELECT 1 FROM public.hero_slides WHERE title = v.title);
+ON CONFLICT DO NOTHING;
+
+-- Make old database rows inclusive until admin fine-tunes each property.
+UPDATE public.residences
+SET accepts_university = true,
+    accepts_tvet = true,
+    accepts_private = true
+WHERE coalesce(array_length(institution_tags, 1), 0) = 0
+  AND accepts_tvet = false
+  AND accepts_private = false;
 
 COMMIT;
 

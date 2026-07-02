@@ -20,7 +20,7 @@ export default function Affiliates() {
           </p>
           <div className="flex justify-center gap-3 pt-4">
             <Button size="lg" asChild><Link to="/auth?returnTo=/referrals">Join & Get Your Link</Link></Button>
-            <Button size="lg" variant="outline" asChild><Link to="/marketplace">Browse Marketplace</Link></Button>
+            <Button size="lg" variant="outline" asChild><Link to="/find">Find Accommodation</Link></Button>
           </div>
         </section>
 
@@ -28,7 +28,7 @@ export default function Affiliates() {
           {[
             { icon: Users, title: "R10 per signup", desc: "Earn a flat bonus every time someone joins ResKonnect with your code." },
             { icon: DollarSign, title: "5% per sale", desc: "Earn 5% of every product, hamper or item your referrals buy." },
-            { icon: Share2, title: "Per-product links", desc: "Generate unique affiliate links for any product on the marketplace." },
+            { icon: Share2, title: "Accommodation-ready links", desc: "Generate unique affiliate links while commerce is paused and accommodation growth is prioritised." },
           ].map((b) => (
             <Card key={b.title}>
               <CardContent className="p-6">

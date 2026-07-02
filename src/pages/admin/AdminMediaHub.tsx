@@ -48,7 +48,7 @@ interface RecentItem {
 const tabs = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
   { value: "slides", label: "Hero Slides", icon: Image },
-  { value: "banners", label: "Marketplace Banners", icon: Image },
+  { value: "banners", label: "Promotional Banners", icon: Image },
   { value: "news", label: "News", icon: Newspaper },
   { value: "events", label: "Events", icon: Calendar },
   { value: "bursaries", label: "Bursaries", icon: GraduationCap },
