@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import inclusivePathwaysHero from "@/assets/hero-inclusive-pathways.jpg";
+import applicationsFundingHero from "@/assets/hero-applications-funding.jpg";
 
 interface Slide {
   image: string;
@@ -63,14 +65,16 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
 
     if (!error && data && data.length > 0) {
       const filteredData = data.filter((slide) => {
-        if (location !== "landing") return true;
+        if (!location || !["landing", "dashboard", "all"].includes(location)) return true;
         const title = String(slide.title || "").toLowerCase();
         const link = String(slide.cta_link || "").toLowerCase();
-        return !title.startsWith("shop") && !link.includes("marketplace");
+        const description = String(slide.description || "").toLowerCase();
+        const marketplaceSignals = ["marketplace", "my store", "shop now", "student shop", "products"];
+        return !marketplaceSignals.some((signal) => title.includes(signal) || description.includes(signal) || link.includes(signal));
       });
 
       const formattedSlides: Slide[] = filteredData.map(slide => ({
-        image: slide.image_url,
+        image: resolveSlideImage(slide.title, slide.description, slide.image_url),
         title: slide.title,
         description: slide.description || "",
         cta: slide.cta_text && slide.cta_link ? {
@@ -91,6 +95,21 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
       }
     }
     setIsLoading(false);
+  };
+
+  const resolveSlideImage = (title?: string | null, description?: string | null, imageUrl?: string | null) => {
+    const copy = `${title ?? ""} ${description ?? ""}`.toLowerCase();
+    const isPlaceholder = !imageUrl || imageUrl.includes("placehold.co") || imageUrl.includes("placeholder");
+
+    if (copy.includes("nsfas") || copy.includes("application") || copy.includes("funding") || copy.includes("document")) {
+      return isPlaceholder ? applicationsFundingHero : imageUrl;
+    }
+
+    if (copy.includes("tvet") || copy.includes("college") || copy.includes("private") || copy.includes("university") || copy.includes("accommodation")) {
+      return isPlaceholder ? inclusivePathwaysHero : imageUrl;
+    }
+
+    return imageUrl || inclusivePathwaysHero;
   };
 
   useEffect(() => {
