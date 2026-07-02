@@ -149,18 +149,18 @@ const App = () => {
               <Route path="/messages" element={<StudentRoute><Messages /></StudentRoute>} />
               <Route path="/favorites" element={<StudentRoute><Favorites /></StudentRoute>} />
               <Route path="/documents" element={<StudentRoute><Documents /></StudentRoute>} />
-              <Route path="/store-setup" element={<StudentRoute><StoreSetup /></StudentRoute>} />
-              <Route path="/my-store" element={<StudentRoute><MyStore /></StudentRoute>} />
-              <Route path="/my-store/edit" element={<StudentRoute><StoreEdit /></StudentRoute>} />
-              <Route path="/orders" element={<StudentRoute><Orders /></StudentRoute>} />
-              <Route path="/orders/:id/pay" element={<StudentRoute><OrderPayment /></StudentRoute>} />
-              <Route path="/cart" element={<StudentRoute><Cart /></StudentRoute>} />
-              <Route path="/checkout" element={<StudentRoute><Checkout /></StudentRoute>} />
+              <Route path="/store-setup" element={<MarketplaceComingSoon />} />
+              <Route path="/my-store" element={<MarketplaceComingSoon />} />
+              <Route path="/my-store/edit" element={<MarketplaceComingSoon />} />
+              <Route path="/orders" element={<MarketplaceComingSoon />} />
+              <Route path="/orders/:id/pay" element={<MarketplaceComingSoon />} />
+              <Route path="/cart" element={<MarketplaceComingSoon />} />
+              <Route path="/checkout" element={<MarketplaceComingSoon />} />
               <Route path="/my-discount-orders" element={<StudentRoute><MyDiscountOrders /></StudentRoute>} />
               <Route path="/wil" element={<StudentRoute><MyWIL /></StudentRoute>} />
               <Route path="/setup-profile" element={<StudentRoute><ProfileSetup /></StudentRoute>} />
               <Route path="/dashboard/updates" element={<StudentRoute><Updates /></StudentRoute>} />
-              <Route path="/seller-onboarding" element={<StudentRoute><SellerOnboarding /></StudentRoute>} />
+              <Route path="/seller-onboarding" element={<MarketplaceComingSoon />} />
               <Route path="/referrals" element={<StudentRoute><Referrals /></StudentRoute>} />
               <Route path="/my-discount-codes" element={<StudentRoute><MyDiscountCodes /></StudentRoute>} />
               
