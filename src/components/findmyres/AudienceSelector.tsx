@@ -13,13 +13,15 @@ interface AudienceSelectorProps {
   compact?: boolean;
 }
 
-const OPTIONS: { key: AudienceKey; label: string; sub: string; icon: any; institutions: string[] }[] = [
+const OPTIONS: { key: AudienceKey; label: string; sub: string; icon: any; institutions: string[]; accent: string; iconBg: string }[] = [
   {
     key: "university",
     label: "University",
     sub: "TUT, UP, UNISA & more",
     icon: GraduationCap,
     institutions: ["TUT", "UP", "UNISA", "Wits", "UJ"],
+    accent: "border-sky bg-sky/10 ring-sky/30",
+    iconBg: "bg-sky text-white",
   },
   {
     key: "tvet",
@@ -34,6 +36,8 @@ const OPTIONS: { key: AudienceKey; label: string; sub: string; icon: any; instit
       "Damelin",
       "Rosebank College",
     ],
+    accent: "border-amber bg-amber/10 ring-amber/30",
+    iconBg: "bg-amber text-white",
   },
   {
     key: "private",
@@ -41,6 +45,8 @@ const OPTIONS: { key: AudienceKey; label: string; sub: string; icon: any; instit
     sub: "Working professionals & general renters",
     icon: Home,
     institutions: [],
+    accent: "border-violet bg-violet/10 ring-violet/30",
+    iconBg: "bg-violet text-white",
   },
 ];
 
@@ -87,9 +93,9 @@ export function AudienceSelector({
               onClick={() => toggle(opt.key)}
               className={cn(
                 "group relative overflow-hidden rounded-xl border-2 p-4 text-left transition-all",
-                "hover:border-primary/60 hover:shadow-lg",
+                "hover:shadow-lg",
                 isActive
-                  ? "border-primary bg-primary/10 shadow-md ring-2 ring-primary/30"
+                  ? cn("shadow-md ring-2", opt.accent)
                   : "border-border bg-card",
               )}
             >
@@ -97,7 +103,7 @@ export function AudienceSelector({
                 <div
                   className={cn(
                     "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors",
-                    isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                    isActive ? opt.iconBg : "bg-muted text-muted-foreground",
                   )}
                 >
                   <Icon className="h-5 w-5" />
