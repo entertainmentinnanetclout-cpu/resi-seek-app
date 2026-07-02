@@ -47,6 +47,12 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        coral: "hsl(var(--accent-coral))",
+        amber: "hsl(var(--accent-amber))",
+        mint: "hsl(var(--accent-mint))",
+        violet: "hsl(var(--accent-violet))",
+        pink: "hsl(var(--accent-pink))",
+        sky: "hsl(var(--accent-sky))",
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -82,6 +88,9 @@ export default {
         'gradient-secondary': 'var(--gradient-secondary)',
         'gradient-dark': 'var(--gradient-dark)',
         'gradient-card': 'var(--gradient-card)',
+        'gradient-spotlight': 'var(--gradient-spotlight)',
+        'gradient-price': 'var(--gradient-price)',
+        'gradient-vibrant': 'var(--gradient-vibrant)',
       },
       boxShadow: {
         'card': 'var(--shadow-card)',

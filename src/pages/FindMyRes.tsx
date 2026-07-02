@@ -27,6 +27,7 @@ import { ResidencePropertyCard } from "@/components/findmyres/ResidencePropertyC
 import { CategoryRail } from "@/components/findmyres/CategoryRail";
 import { AccreditationCTA } from "@/components/findmyres/AccreditationCTA";
 import { AudienceSelector, type AudienceKey } from "@/components/findmyres/AudienceSelector";
+import { ResidenceSpotlightSlider } from "@/components/findmyres/ResidenceSpotlightSlider";
 import CompareDrawer from "@/components/CompareDrawer";
 
 const MAX_COMPARE = 3;
@@ -180,6 +181,9 @@ const FindMyRes = () => {
           resultCount={filteredResidences.length}
           totalCount={residences.length}
         />
+
+        {/* Marketing Spotlight Slider */}
+        <ResidenceSpotlightSlider residences={residences} loading={loading} />
 
         {/* Audience Selector — University / TVET / Private */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
