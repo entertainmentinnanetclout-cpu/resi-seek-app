@@ -45,9 +45,17 @@ UPDATE public.application_messages
 
 ALTER TABLE public.applications
   ADD COLUMN IF NOT EXISTS funding_type TEXT;
-UPDATE public.applications
-   SET funding_type = funding_source
- WHERE funding_type IS NULL AND funding_source IS NOT NULL;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='applications' AND column_name='funding_source'
+  ) THEN
+    EXECUTE 'UPDATE public.applications
+               SET funding_type = funding_source
+             WHERE funding_type IS NULL AND funding_source IS NOT NULL';
+  END IF;
+END $$;
 
 ALTER TABLE public.hero_slides
   ADD COLUMN IF NOT EXISTS subtitle TEXT,
