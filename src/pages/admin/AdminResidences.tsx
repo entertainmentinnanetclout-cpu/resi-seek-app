@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star, LayoutList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -41,6 +42,11 @@ interface Residence {
   amenities: string[] | null;
   virtual_tour_url: string | null;
   virtual_tour_provider: string | null;
+  accepts_university?: boolean | null;
+  accepts_tvet?: boolean | null;
+  accepts_private?: boolean | null;
+  accepts_nsfas?: boolean | null;
+  institution_tags?: string[] | null;
 }
 
 const ROOM_TYPE_OPTIONS = ["Single", "Sharing", "Bachelor", "Commune"];
@@ -71,6 +77,11 @@ const emptyResidence: Partial<Residence> = {
   images: [],
   virtual_tour_url: "",
   virtual_tour_provider: "",
+  accepts_university: true,
+  accepts_tvet: false,
+  accepts_private: false,
+  accepts_nsfas: false,
+  institution_tags: [],
 };
 
 export const AdminResidencesContent = () => {
@@ -176,6 +187,11 @@ export const AdminResidencesContent = () => {
         virtual_tour_url: editingResidence.virtual_tour_url || null,
         virtual_tour_provider: editingResidence.virtual_tour_provider || null,
         section_category: (editingResidence as any).section_category || null,
+        accepts_university: editingResidence.accepts_university ?? true,
+        accepts_tvet: editingResidence.accepts_tvet ?? false,
+        accepts_private: editingResidence.accepts_private ?? false,
+        accepts_nsfas: editingResidence.accepts_nsfas ?? false,
+        institution_tags: editingResidence.institution_tags ?? [],
       };
 
       if (editingResidence.id) {
@@ -435,6 +451,51 @@ export const AdminResidencesContent = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Audience & Accreditation */}
+                  <div className="space-y-3 border-t pt-4">
+                    <Label className="text-sm font-semibold">Audience & Accreditation</Label>
+                    <p className="text-xs text-muted-foreground -mt-1">
+                      Which students can this residence accept?
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { key: "accepts_university", label: "University students" },
+                        { key: "accepts_tvet", label: "TVET / College students" },
+                        { key: "accepts_private", label: "Private renters" },
+                        { key: "accepts_nsfas", label: "NSFAS approved" },
+                      ].map((f) => (
+                        <label
+                          key={f.key}
+                          className="flex items-center justify-between gap-2 rounded-lg border p-3 cursor-pointer"
+                        >
+                          <span className="text-sm">{f.label}</span>
+                          <Switch
+                            checked={!!(editingResidence as any)[f.key]}
+                            onCheckedChange={(v) =>
+                              setEditingResidence({ ...editingResidence, [f.key]: v } as any)
+                            }
+                          />
+                        </label>
+                      ))}
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Institution tags (comma-separated)</Label>
+                      <Input
+                        placeholder="e.g. TUT, UNISA, Tshwane North College"
+                        value={(editingResidence.institution_tags || []).join(", ")}
+                        onChange={(e) =>
+                          setEditingResidence({
+                            ...editingResidence,
+                            institution_tags: e.target.value
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean),
+                          })
+                        }
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

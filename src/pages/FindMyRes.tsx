@@ -26,6 +26,7 @@ import { ActiveFilterChips } from "@/components/findmyres/ActiveFilterChips";
 import { ResidencePropertyCard } from "@/components/findmyres/ResidencePropertyCard";
 import { CategoryRail } from "@/components/findmyres/CategoryRail";
 import { AccreditationCTA } from "@/components/findmyres/AccreditationCTA";
+import { AudienceSelector, type AudienceKey } from "@/components/findmyres/AudienceSelector";
 import CompareDrawer from "@/components/CompareDrawer";
 
 const MAX_COMPARE = 3;
@@ -65,6 +66,10 @@ const FindMyRes = () => {
   useEffect(() => {
     const cat = searchParams.get("category");
     if (cat && cat !== filters.category) updateFilter("category", cat);
+    const aud = searchParams.get("audience") as AudienceKey | null;
+    if (aud && aud !== filters.audience) updateFilter("audience", aud);
+    const inst = searchParams.get("institution");
+    if (inst && inst !== filters.institutionTag) updateFilter("institutionTag", inst);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -175,6 +180,16 @@ const FindMyRes = () => {
           resultCount={filteredResidences.length}
           totalCount={residences.length}
         />
+
+        {/* Audience Selector — University / TVET / Private */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <AudienceSelector
+            audience={filters.audience}
+            onChange={(v) => updateFilter("audience", v)}
+            institutionTag={filters.institutionTag}
+            onInstitutionChange={(v) => updateFilter("institutionTag", v)}
+          />
+        </div>
 
         {/* Category Rails (Property24-style discovery) */}
         {showRails && (

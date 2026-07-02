@@ -248,6 +248,33 @@ export type Database = {
           },
         ]
       }
+      application_prep: {
+        Row: {
+          checklist: Json
+          created_at: string
+          id: string
+          institution: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checklist?: Json
+          created_at?: string
+          id?: string
+          institution: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checklist?: Json
+          created_at?: string
+          id?: string
+          institution?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       applications: {
         Row: {
           application_date: string
@@ -2415,6 +2442,10 @@ export type Database = {
       }
       residences: {
         Row: {
+          accepts_nsfas: boolean
+          accepts_private: boolean
+          accepts_tvet: boolean
+          accepts_university: boolean
           address: string
           amenities: string[] | null
           application_count: number | null
@@ -2437,6 +2468,7 @@ export type Database = {
           id: string
           image_url: string | null
           images: string[] | null
+          institution_tags: string[]
           is_featured: boolean | null
           is_furnished: boolean | null
           is_trusted: boolean | null
@@ -2459,6 +2491,10 @@ export type Database = {
           virtual_tour_url: string | null
         }
         Insert: {
+          accepts_nsfas?: boolean
+          accepts_private?: boolean
+          accepts_tvet?: boolean
+          accepts_university?: boolean
           address: string
           amenities?: string[] | null
           application_count?: number | null
@@ -2481,6 +2517,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           images?: string[] | null
+          institution_tags?: string[]
           is_featured?: boolean | null
           is_furnished?: boolean | null
           is_trusted?: boolean | null
@@ -2503,6 +2540,10 @@ export type Database = {
           virtual_tour_url?: string | null
         }
         Update: {
+          accepts_nsfas?: boolean
+          accepts_private?: boolean
+          accepts_tvet?: boolean
+          accepts_university?: boolean
           address?: string
           amenities?: string[] | null
           application_count?: number | null
@@ -2525,6 +2566,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           images?: string[] | null
+          institution_tags?: string[]
           is_featured?: boolean | null
           is_furnished?: boolean | null
           is_trusted?: boolean | null

@@ -40,7 +40,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // Public browse items (always visible)
   const publicNavItems = [
     { icon: Search, label: "Find My Res", path: "/findmyres" },
-    { icon: ShoppingBag, label: "Marketplace", path: "/marketplace" },
+    { icon: FileText, label: "Apply", path: "/apply" },
     { icon: GraduationCap, label: "Bursaries", path: "/bursaries" },
   ];
 

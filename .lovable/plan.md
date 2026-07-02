@@ -1,114 +1,196 @@
-## Root cause (Part 1) — Preview vs Production drift
+# ResKonnect — Audience Diversification, Applications Hub & Marketplace Pause
 
-Preview and Production are the SAME Vercel/Lovable build and BOTH point at External Supabase `mefjzkhobkltlbmhusdh`. They are not diverging on the frontend.
+Master plan. Structured so any agent (or you) can execute phase-by-phase without drift. Every phase ends with a checkpoint you can verify in the UI + a matching SQL block in one master file: `docs/AUDIENCE_V1_MASTER_SQL.sql` (External Supabase).
 
-The real drift is in the **database**:
+---
 
-```text
-Frontend (preview + prod)   ──►  External Supabase  mefjzkhobkltlbmhusdh   (live data)
-Edge functions (runtime)    ──►  External Supabase  mefjzkhobkltlbmhusdh   (via EXTERNAL_SUPABASE_* secrets)
-supabase--migration tool    ──►  Lovable Cloud      vmqqkebojldjsyxcewdb   (config.toml project_id)  ◄── MISMATCH
+## Phase 0 — Ground Rules (read once, keep applying)
+
+- **Backend of truth:** External Supabase (via BAL `provider=supabase`). Every schema change ships in `docs/AUDIENCE_V1_MASTER_SQL.sql` — one rerunnable file, idempotent (`IF NOT EXISTS`, `DROP POLICY IF EXISTS`, etc.).
+- **UI ↔ DB parity check:** at the end of each phase, run `supabase--read_query` counts to confirm the frontend numbers match DB reality. Log results in `docs/AUDIENCE_V1_PARITY_REPORT.md`.
+- **No new duplicate pages.** Extend existing ones (`FindMyRes`, `Landing`, `AdminResidences`, `hero_slides`).
+- **South African English + ZAR** everywhere.
+
+---
+
+## Phase 1 — Audience Model (DB + Admin)
+
+### Goal
+
+Every residence can be tagged with any combination of audiences it accepts. Admin controls it from one place.
+
+### DB changes (in master SQL)
+
+```sql
+-- 1. audience columns on residences
+ALTER TABLE public.residences
+  ADD COLUMN IF NOT EXISTS accepts_university boolean NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS accepts_tvet       boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS accepts_private    boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS accepts_nsfas      boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS institution_tags   text[] NOT NULL DEFAULT '{}'; -- e.g. {TUT, Tshwane North College, UNISA}
+
+CREATE INDEX IF NOT EXISTS idx_residences_audience
+  ON public.residences (accepts_university, accepts_tvet, accepts_private, accepts_nsfas);
 ```
 
-Every migration we have run this week (Find My Res V3 columns, `filter_config`, `sync_queue`, `health_status`, RLS hardening, marketplace trigger, residences column REVOKE, slug trigger…) landed in the **Lovable Cloud mirror only**. External production is missing all of it. That is why:
+### Admin UI
 
-- New code that reads `slug`, `category`, `is_tut_accredited`, `filter_config`, etc. works in our dev/preview reads when types match but returns null/empty on production data because columns/rows aren't there.
-- Security hardening (column revokes, order seller trigger) is NOT live in production.
-- `src/integrations/supabase/types.ts` was hand-edited to reflect Lovable Cloud schema, so TS compiles green even though External doesn't have those columns.
+- `AdminResidences` edit dialog: new "Audience & Accreditation" section with 4 switches + a chip-input for `institution_tags`.
+- Backfill helper button: "Mark all as University + NSFAS" (safe default for existing rows).
 
-There is no Vercel/Lovable build mismatch to "redeploy" — there's a **schema delivery gap**. The fix is to ship one consolidated, idempotent SQL pack that the operator runs in External Supabase SQL Editor, then verify parity.
+### Checkpoint
 
-## Part 2 — Handover Pack data integrity
+Row count in DB with `accepts_tvet=true` = count shown in admin filter chip.
 
-Current `download-handover-pack` edge function fetches `applications` then joins `profiles` by `user_id`. Risks:
+---
 
-- `profiles.full_name` is free-text — students with mismatched/empty names produce wrong rows.
-- `applications` has its own `student_number` (sometimes), and `profiles.student_number` may differ.
-- No funding source surfaced.
-- No de-dup; multiple applications per student per residence appear as separate rows with no warning.
-- Orphan applications (deleted profile) render as "N/A" instead of blocking export.
+## Phase 2 — Audience Selector (Public UX)
 
-Fix: a single validated view + a validator function, both consumed by the existing edge function and a new Export Center tab. No new tables.
+### Goal
 
-## Part 3 — Export Center (reuse existing AdminApplications hub)
+Single, prominent segmented control at the top of `Landing` and `FindMyRes`. Big buttons, accessible, animated, **click-to-open / click-again-to-close** dropdown of institution sub-filters.
 
-Extend the **existing** Operations Hub → Applications tab with a "Handover Export" panel (no new route, no parallel module). Panel:
+### Component
 
-1. Calls `validate_handover_pack(residence_id)` RPC → shows counts (Total Students, Total Applications, Duplicates, Missing Names, Missing Student #, Missing Funding, Orphans, Invalid Residence).
-2. If any error count > 0 → red "DATA INTEGRITY ERROR" card listing offending `application_id`s with deep links to AdminApplications. Export buttons disabled.
-3. If clean → enables "Download CSV" and "Download PDF" (existing handover edge function, now reading from the validated view).
+`src/components/findmyres/AudienceSelector.tsx`
 
-## Part 4 — Deliverables
+- 3 primary pills: **University**, **TVET / College**, **Private**.
+- Each pill = toggle (press again = deselect → shows all).
+- Below each active pill, a collapsible chip row of `institution_tags` (TUT, UNISA, Tshwane North College, Tshwane South College, etc.) driven by `filter_config` table.
+- State stored in URL (`?audience=tvet&institution=Tshwane+North+College`) so links are shareable.
+- Feeds `useResidenceFilters` via three new filter keys: `audience`, `institutionTag`.
 
-### A. `docs/MASTER_EXPORT_INTEGRITY_SQL.sql` (rerunnable, idempotent)
+### Filter logic
 
-Run in External Supabase SQL Editor. Contains:
+```ts
+// useResidenceFilters
+if (filters.audience === 'university') filtered = filtered.filter(r => r.accepts_university);
+if (filters.audience === 'tvet')       filtered = filtered.filter(r => r.accepts_tvet);
+if (filters.audience === 'private')    filtered = filtered.filter(r => r.accepts_private);
+if (filters.institutionTag)            filtered = filtered.filter(r => r.institution_tags?.includes(filters.institutionTag));
+```
 
-- `ALTER TABLE public.applications ADD COLUMN IF NOT EXISTS funding_source text;` (and any other missing handover columns)
-- `CREATE OR REPLACE VIEW public.residence_handover_export_v` — security_invoker, joins `applications → profiles → residences`, exposes only: `application_id`, `ref_code`, `residence_id`, `residence_name`, `student_name`, `student_surname`, `student_number`, `funding_source`, `email`, `phone`, `status`, `applied_at`. Surname is split from `full_name` deterministically.
-- `CREATE OR REPLACE FUNCTION public.validate_handover_pack(_residence_id uuid)` — returns jsonb `{ ok, totals: {...}, errors: [{code, application_id, reason}] }`. Checks: dup student_number per residence, dup applications (same user+residence), missing/blank name, missing surname, missing funding_source, missing student_number, application.residence_id not in residences, orphan profile.
-- GRANTs: `SELECT` on view to `authenticated`, `EXECUTE` on function to `authenticated` (admin-gated inside function via `has_role`).
-- No DROP, no destructive ops. Wrapped in `DO $$ ... $$` guards where needed.
+### Landing page
 
-### B. Catch-up migration pack `docs/EXTERNAL_PARITY_CATCHUP.sql`
+Replace the current TUT-only hero copy with a 3-card "Who are you?" block above the fold; each card deep-links into `/find?audience=…`. Keeps existing hero slider below.
 
-Concatenation (re-export) of every Lovable-mirror-only change so the operator can bring External back to parity in one paste: Find My Res V3 columns + slug trigger + `filter_config` + RLS tightening + marketplace order trigger + residences contact column revoke. All `IF NOT EXISTS` / `CREATE OR REPLACE` / `DROP POLICY IF EXISTS ... CREATE POLICY ...`.
+### Checkpoint
 
-### C. Edge function update
+- Toggle behavior: press once = open+filter, press again = close+clear.
+- Only one audience active at a time (radio-like), but institution chips are multi-select.
 
-`supabase/functions/download-handover-pack/index.ts`:
+---
 
-- Call `validate_handover_pack` first; if `ok=false` return 422 with the error list (no PDF/CSV).
-- Read rows from `residence_handover_export_v` instead of ad-hoc joins.
-- Keep `EXTERNAL_SUPABASE_*` env var pattern (unchanged).
+## Phase 3 — Marketplace on Hold
 
-### D. Frontend
+### Goal
 
-- `src/pages/admin/AdminApplications.tsx` — add "Handover Export" section using the validator RPC (uses existing `supabase` client → External).
-- No new route, no new admin page, no duplicate "Export" module.
+Hide marketplace from public nav; keep data + admin management intact.
 
-### E. Reports
+### Changes
 
-- `docs/DEPLOYMENT_AUDIT_REPORT.md` — documents the schema-delivery gap, lists the mismatched mirror migrations, gives the exact paste-order for External.
-- `docs/HANDOVER_INTEGRITY_REPORT.md` — view/function spec, validation rules, integration checklist, QA checklist.
+- Remove marketplace links from: `PublicLayout` header, `Landing` sections, mobile bottom nav, `CommandPalette`.
+- New page `src/pages/MarketplaceComingSoon.tsx` (branded, "Back in early 2026, focus on accommodation first" + waitlist email capture → `platform_settings.waitlist_marketplace`).
+- Route `/marketplace` + `/marketplace/*` (product/store/cart/checkout) → render ComingSoon (keep old routes intact so old links don't 404).
+- Admin routes and `CommerceDashboard` remain fully functional (behind auth).
+- Add feature flag row in `platform_settings`: `{ key: 'marketplace_public_enabled', value: {enabled:false} }` so we can re-enable with one toggle.
 
-## What I will NOT do
+### Checkpoint
 
-- Will not create new tables, new admin routes, parallel export pages, or duplicate handover functions.
-- Will not run destructive SQL.
-- Will not touch `src/integrations/supabase/client.ts`, `types.ts`, or `supabase/config.toml`.
-- Will not "redeploy production frontend" — there is nothing wrong with the frontend deploy; the gap is in the External DB.
+Anonymous visit to `/marketplace` shows Coming Soon; admin at `/admin/commerce` still works.
 
-## Open questions before I build
+---
 
-1. **Funding source field** — `applications` has no `funding_source` column on External today. Add it as nullable `text` (NSFAS / Self-Funded / Bursary / Other) and surface a small picker in the existing application form, or pull from a new `profiles.funding_source` instead? My recommendation: add to `applications` (per-application, students can change funder year to year).
-2. **Surname split** — `profiles` only has `full_name`. Accept the simple rule "first token = name, rest = surname" for the view, or add explicit `first_name` / `last_name` columns to `profiles` and backfill? Recommendation: ship the split now (unblocks exports today), add explicit columns in a follow-up.
-3. **Who runs the catch-up SQL?** I can produce `EXTERNAL_PARITY_CATCHUP.sql` ready to paste, but only the project owner can execute it in the External SQL Editor. Confirm you'll run it — otherwise nothing actually lands in production.
+## Phase 4 — Applications Helper Hub (Phase-1 scope: info + checklist)
 
-Produce a complete EXTERNAL_PARITY_CATCHUP.sql file that is fully rerunnable and idempotent using IF NOT EXISTS, DO $$ blocks, CREATE OR REPLACE FUNCTION, DROP POLICY IF EXISTS, and CREATE POLICY patterns. The SQL must bring External Supabase to the exact same schema state as the currently running backend. Include:
+### Goal
 
-- Tables
-- Views
-- Functions
-- Triggers
-- RLS Policies
-- Storage Buckets
-- Role Grants
-- Foreign Keys
-- Indexes
-- Constraints
-- Enums
-- Health Dashboard tables
-- Accreditation tables
-- Commerce Hub tables
-- Operations Hub tables
-- Media Hub tables
-- Application/Handover Pack fixes
-- Funding Source additions
-- First Name / Last Name additions
+One page that tells students exactly which docs to prepare for TUT, NSFAS (TVET + University), and lets them upload to us so we hold the pack.
 
-Output as one master SQL pack with section headers and verification queries at the end.
+### Route & files
 
-&nbsp;
+- `/apply` → `src/pages/ApplicationsHub.tsx`
+- Sub-tabs: **TUT**, **NSFAS (University)**, **NSFAS (TVET)**, **Private College** (add UNISA later).
+- Each tab shows:
+  - Deadline banner (pulled from `platform_settings.application_deadlines`).
+  - Required-docs checklist with checkbox state stored in `application_prep` table.
+  - External "Apply on official site" button.
+  - "Upload to ResKonnect" panel reusing `DocumentUploader` → saves to existing `documents` bucket, tagged `purpose='application_pack'`.
 
-Do not assume the filter_config schema. Inspect the existing table structure before generating migration SQL. If filter_config already exists, use the existing required columns and perform UPSERTs rather than INSERTs. All migration SQL must be schema-aware and rerunnable.
+### DB
+
+```sql
+CREATE TABLE IF NOT EXISTS public.application_prep (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  institution text NOT NULL,          -- 'TUT' | 'NSFAS_UNI' | 'NSFAS_TVET' | 'PRIVATE'
+  checklist jsonb NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, institution)
+);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.application_prep TO authenticated;
+GRANT ALL ON public.application_prep TO service_role;
+ALTER TABLE public.application_prep ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "own prep" ON public.application_prep FOR ALL
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+```
+
+### Checkpoint
+
+Student can check off items, refresh page, state persists. Admin can view aggregated readiness in a small `AdminApplicationsPrep` widget added to Operations Hub.
+
+---
+
+## Phase 5 — Deadline Slides (seeded from research)
+
+Insert into `hero_slides` (`slide_location='main'`, active) via `supabase--insert`:
+
+
+| Title                              | Copy                                            | CTA                      | Deadline                                   |
+| ---------------------------------- | ----------------------------------------------- | ------------------------ | ------------------------------------------ |
+| NSFAS TVET 2026 — Trimester 3 open | Apply now for TVET funding                      | `/apply?tab=nsfas-tvet`  | rolling                                    |
+| TUT 2026 late applications         | Selected programmes still open — apply today    | `/apply?tab=tut`         | 30 Sep 2025 (verified from TUT prospectus) |
+| NSFAS University 2026              | Applications for 2026 university funding        | `/apply?tab=nsfas-uni`   | check NSFAS site                           |
+| Private colleges                   | Boston, Damelin, Rosebank — accommodation ready | `/find?audience=private` | rolling                                    |
+
+
+Store the copy dates in `platform_settings.application_deadlines` so admin edits update slides + `ApplicationsHub` in one place.
+
+---
+
+## Phase 6 — DB ↔ UI Verification & Cleanup
+
+- Run `supabase--linter` after applying master SQL; fix any advisories.
+- Add `docs/AUDIENCE_V1_PARITY_REPORT.md` with:
+  - residences count per audience
+  - marketplace listings hidden vs visible
+  - application_prep row count
+- Confirm BAL still points to External Supabase.
+- Remove any code paths that still reference the marketplace from public discovery.
+
+---
+
+## Deliverables
+
+
+| File                                                                                                                                                                                                                                | Purpose                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `docs/AUDIENCE_V1_MASTER_SQL.sql`                                                                                                                                                                                                   | Single idempotent SQL pack (Phases 1, 3 flag, 4, 5 seed) |
+| `docs/AUDIENCE_V1_PARITY_REPORT.md`                                                                                                                                                                                                 | Post-run DB/UI parity numbers                            |
+| `src/components/findmyres/AudienceSelector.tsx`                                                                                                                                                                                     | New segmented control                                    |
+| `src/pages/ApplicationsHub.tsx`                                                                                                                                                                                                     | New apply page                                           |
+| `src/pages/MarketplaceComingSoon.tsx`                                                                                                                                                                                               | Coming-soon replacement                                  |
+| Updated: `Landing.tsx`, `FindMyRes.tsx`, `useResidenceFilters.ts`, `PublicLayout.tsx`, `AdminResidences.tsx`, `App.tsx` routes**THE LOVABLE PREVIEW MUST FULLY MATCH THE EXTERNAL DEPLOYED SITE ON VERCEL UNDER ResKonnect.co.za** | &nbsp;                                                   |
+
+
+## Out of scope (park for later phases)
+
+- Direct TUT/NSFAS API submission
+- UNISA / private college onboarding wizard
+- Marketplace re-launch
+- Roommate matching against new audience tags (Phase 2 later)
+
+Once you approve, I'll implement Phase 1 → 6 in that order in build mode and stop after Phase 6 for your verification.
