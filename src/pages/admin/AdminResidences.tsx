@@ -265,7 +265,7 @@ export const AdminResidencesContent = () => {
   const toggleSpotlight = async (r: Residence) => {
     const next = !r.is_spotlight;
     setResidences((prev) => prev.map((x) => (x.id === r.id ? { ...x, is_spotlight: next } : x)));
-    const { error } = await supabase.from("residences").update({ is_spotlight: next }).eq("id", r.id);
+    const { error } = await supabase.from("residences").update({ is_spotlight: next } as any).eq("id", r.id);
     if (error) {
       toast.error(error.message || "Failed to update spotlight");
       fetchResidences();
