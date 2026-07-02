@@ -100,6 +100,11 @@ CREATE TABLE IF NOT EXISTS public.system_events (
   payload jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+-- Backfill missing columns if an older system_events table already existed.
+ALTER TABLE public.system_events ADD COLUMN IF NOT EXISTS actor_user_id uuid;
+ALTER TABLE public.system_events ADD COLUMN IF NOT EXISTS target_table  text;
+ALTER TABLE public.system_events ADD COLUMN IF NOT EXISTS target_id     text;
+ALTER TABLE public.system_events ADD COLUMN IF NOT EXISTS payload       jsonb NOT NULL DEFAULT '{}'::jsonb;
 GRANT SELECT, INSERT ON public.system_events TO authenticated;
 GRANT ALL ON public.system_events TO service_role;
 ALTER TABLE public.system_events ENABLE ROW LEVEL SECURITY;
