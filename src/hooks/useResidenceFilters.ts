@@ -5,6 +5,8 @@ export interface ResidenceFilters {
   campus: string;
   category: string;
   gender: string;
+  audience: "all" | "university" | "tvet" | "private";
+  institutionTag?: string;
   priceMin: number;
   priceMax: number;
   distanceMax: number;
@@ -26,6 +28,8 @@ const DEFAULT_FILTERS: ResidenceFilters = {
   campus: "all",
   category: "all",
   gender: "all",
+  audience: "all",
+  institutionTag: undefined,
   priceMin: 0,
   priceMax: 10000,
   distanceMax: 20,
@@ -124,6 +128,8 @@ export function useResidenceFilters(residences: any[]) {
     if (filters.campus !== "all") count++;
     if (filters.category !== "all") count++;
     if (filters.gender !== "all") count++;
+    if (filters.audience !== "all") count++;
+    if (filters.institutionTag) count++;
     if (filters.priceMin > 0 || filters.priceMax < 10000) count++;
     if (filters.distanceMax < 20) count++;
     if (filters.roomTypes.length > 0) count++;
@@ -168,6 +174,23 @@ export function useResidenceFilters(residences: any[]) {
     // Gender
     if (filters.gender !== "all") {
       filtered = filtered.filter((r) => r.gender === filters.gender || r.gender === "mixed");
+    }
+
+    // Audience (institution type)
+    if (filters.audience === "university") {
+      filtered = filtered.filter((r) => r.accepts_university !== false);
+    } else if (filters.audience === "tvet") {
+      filtered = filtered.filter((r) => r.accepts_tvet === true);
+    } else if (filters.audience === "private") {
+      filtered = filtered.filter((r) => r.accepts_private === true);
+    }
+
+    if (filters.institutionTag) {
+      const tag = filters.institutionTag;
+      filtered = filtered.filter((r) => {
+        const tags: string[] = r.institution_tags || [];
+        return tags.includes(tag);
+      });
     }
 
     // Price
