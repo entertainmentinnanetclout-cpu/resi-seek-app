@@ -203,7 +203,7 @@ export const AdminResidencesContent = () => {
         // Update existing
         const { error } = await supabase
           .from("residences")
-          .update(residenceData)
+          .update(residenceData as any)
           .eq("id", editingResidence.id);
 
         if (error) throw error;
@@ -212,7 +212,7 @@ export const AdminResidencesContent = () => {
         // Create new
         const { error } = await supabase
           .from("residences")
-          .insert([residenceData]);
+          .insert([residenceData as any]);
 
         if (error) throw error;
         toast.success("Residence created successfully");
