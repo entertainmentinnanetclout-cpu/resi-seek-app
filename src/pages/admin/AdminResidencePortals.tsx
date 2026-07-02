@@ -38,6 +38,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/lovableFunctions";
 import { toast } from "sonner";
 
+const stringifyErrorPart = (value: unknown): string | null => {
+  if (typeof value === "string" && value.trim() && value.trim() !== "{}") return value.trim();
+  if (value && typeof value === "object") {
+    try {
+      const text = JSON.stringify(value);
+      return text && text !== "{}" ? text : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
 const getReadableError = (err: unknown, fallback: string) => {
   if (err instanceof Error && err.message && err.message !== "{}") return err.message;
   if (typeof err === "string" && err.trim() && err.trim() !== "{}") return err.trim();
@@ -47,6 +60,21 @@ const getReadableError = (err: unknown, fallback: string) => {
       const value = record[key];
       if (typeof value === "string" && value.trim()) return value.trim();
     }
+    if (record.details && typeof record.details === "object") {
+      const details = record.details as Record<string, unknown>;
+      const nestedMessage = stringifyErrorPart(details.error) || stringifyErrorPart(details.message);
+      const debugCode = stringifyErrorPart(details.debug_code);
+      const version = stringifyErrorPart(details._version);
+      if (nestedMessage) {
+        return [nestedMessage, debugCode ? `Code: ${debugCode}` : null, version ? `Function: ${version}` : null]
+          .filter(Boolean)
+          .join(" · ");
+      }
+    }
+    const debugCode = stringifyErrorPart(record.debug_code);
+    if (debugCode) return `${fallback} · Code: ${debugCode}`;
+    const asText = stringifyErrorPart(record);
+    if (asText) return asText;
   }
   return fallback;
 };
