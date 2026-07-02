@@ -43,6 +43,20 @@ All colors MUST be HSL.
     --warning-foreground: 0 0% 0%;
 
     --radius: 0.75rem;
+
+    /* Vibrant accent palette — used by cards, badges, spotlight */
+    --accent-coral: 12 92% 62%;
+    --accent-amber: 38 96% 55%;
+    --accent-mint: 158 72% 45%;
+    --accent-violet: 265 84% 62%;
+    --accent-pink: 330 82% 62%;
+    --accent-sky: 199 92% 55%;
+
+    /* Category tokens */
+    --cat-flats: var(--accent-violet);
+    --cat-communes: var(--accent-coral);
+    --cat-residences: var(--primary);
+    --cat-rentals: var(--accent-mint);
     
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
     --gradient-secondary: linear-gradient(135deg, hsl(220 13% 95%), hsl(220 9% 96%));
@@ -50,6 +64,9 @@ All colors MUST be HSL.
     --gradient-dark: linear-gradient(135deg, hsl(215 39% 17%), hsl(222 69% 40%));
     --gradient-card: linear-gradient(135deg, hsl(220 13% 95%), hsl(220 13% 97%));
     --gradient-accent: linear-gradient(135deg, hsl(var(--primary)), hsl(221 83% 63%));
+    --gradient-spotlight: linear-gradient(135deg, hsl(var(--accent-violet)) 0%, hsl(var(--accent-pink)) 50%, hsl(var(--accent-coral)) 100%);
+    --gradient-price: linear-gradient(135deg, hsl(var(--accent-coral)), hsl(var(--accent-amber)));
+    --gradient-vibrant: linear-gradient(135deg, hsl(var(--accent-sky)) 0%, hsl(var(--accent-violet)) 100%);
 
     --shadow-card: 0 2px 10px -2px hsl(220 13% 50% / 0.1);
     --shadow-hover: 0 8px 20px -4px hsl(220 13% 50% / 0.2);
@@ -102,6 +119,17 @@ All colors MUST be HSL.
 
     --warning: 38 92% 50%;
     --warning-foreground: 222 47% 11%;
+
+    --accent-coral: 12 88% 60%;
+    --accent-amber: 38 92% 55%;
+    --accent-mint: 158 68% 48%;
+    --accent-violet: 265 80% 68%;
+    --accent-pink: 330 78% 66%;
+    --accent-sky: 199 88% 60%;
+    --cat-flats: var(--accent-violet);
+    --cat-communes: var(--accent-coral);
+    --cat-residences: var(--primary);
+    --cat-rentals: var(--accent-mint);
     
     --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 45%));
     --gradient-secondary: linear-gradient(135deg, hsl(222 47% 14%), hsl(222 47% 18%));
@@ -109,6 +137,9 @@ All colors MUST be HSL.
     --gradient-dark: linear-gradient(135deg, hsl(222 47% 8%), hsl(217 91% 30%));
     --gradient-card: linear-gradient(135deg, hsl(222 47% 14%), hsl(222 47% 16%));
     --gradient-accent: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 70%));
+    --gradient-spotlight: linear-gradient(135deg, hsl(var(--accent-violet)) 0%, hsl(var(--accent-pink)) 50%, hsl(var(--accent-coral)) 100%);
+    --gradient-price: linear-gradient(135deg, hsl(var(--accent-coral)), hsl(var(--accent-amber)));
+    --gradient-vibrant: linear-gradient(135deg, hsl(var(--accent-sky)) 0%, hsl(var(--accent-violet)) 100%);
 
     --shadow-card: 0 2px 10px -2px hsl(217 91% 60% / 0.1);
     --shadow-hover: 0 8px 20px -4px hsl(217 91% 60% / 0.2);

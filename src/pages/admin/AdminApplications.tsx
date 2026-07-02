@@ -44,6 +44,7 @@ export const AdminApplicationsContent = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [institutionFilter, setInstitutionFilter] = useState<"all" | "university" | "tvet" | "private" | "other">("all");
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
@@ -266,7 +267,11 @@ export const AdminApplicationsContent = () => {
       app.residence?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.profile?.email?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || app.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const inst = (app as any).institution_type as string | null | undefined;
+    const matchesInstitution =
+      institutionFilter === "all" ||
+      (institutionFilter === "other" ? !inst : inst === institutionFilter);
+    return matchesSearch && matchesStatus && matchesInstitution;
   });
 
   const pendingCount = filteredApplications.filter(
@@ -339,6 +344,18 @@ export const AdminApplicationsContent = () => {
                   {applicationStatuses.map(s => (
                     <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+              <Select value={institutionFilter} onValueChange={(v) => setInstitutionFilter(v as any)}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Institution type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Institutions</SelectItem>
+                  <SelectItem value="university">University / TUT</SelectItem>
+                  <SelectItem value="tvet">TVET / College</SelectItem>
+                  <SelectItem value="private">Private</SelectItem>
+                  <SelectItem value="other">Other / Unspecified</SelectItem>
                 </SelectContent>
               </Select>
               {pendingCount > 0 && (

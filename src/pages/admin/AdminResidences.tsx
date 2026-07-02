@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star, LayoutList } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star, LayoutList, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import TrustedResidencesEditor from "@/components/admin/TrustedResidencesEditor";
@@ -47,6 +47,8 @@ interface Residence {
   accepts_private?: boolean | null;
   accepts_nsfas?: boolean | null;
   institution_tags?: string[] | null;
+  is_spotlight?: boolean | null;
+  spotlight_rank?: number | null;
 }
 
 const ROOM_TYPE_OPTIONS = ["Single", "Sharing", "Bachelor", "Commune"];
@@ -82,12 +84,14 @@ const emptyResidence: Partial<Residence> = {
   accepts_private: false,
   accepts_nsfas: false,
   institution_tags: [],
+  is_spotlight: false,
 };
 
 export const AdminResidencesContent = () => {
   const [residences, setResidences] = useState<Residence[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [audienceFilter, setAudienceFilter] = useState<"all" | "university" | "tvet" | "private" | "spotlight">("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<Partial<Residence> | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -192,13 +196,14 @@ export const AdminResidencesContent = () => {
         accepts_private: editingResidence.accepts_private ?? false,
         accepts_nsfas: editingResidence.accepts_nsfas ?? false,
         institution_tags: editingResidence.institution_tags ?? [],
+        is_spotlight: editingResidence.is_spotlight ?? false,
       };
 
       if (editingResidence.id) {
         // Update existing
         const { error } = await supabase
           .from("residences")
-          .update(residenceData)
+          .update(residenceData as any)
           .eq("id", editingResidence.id);
 
         if (error) throw error;
@@ -207,7 +212,7 @@ export const AdminResidencesContent = () => {
         // Create new
         const { error } = await supabase
           .from("residences")
-          .insert([residenceData]);
+          .insert([residenceData as any]);
 
         if (error) throw error;
         toast.success("Residence created successfully");
@@ -244,10 +249,40 @@ export const AdminResidencesContent = () => {
     }
   };
 
-  const filteredResidences = residences.filter(r =>
-    (r.name ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (r.address ?? '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredResidences = residences.filter(r => {
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      (r.name ?? '').toLowerCase().includes(q) ||
+      (r.address ?? '').toLowerCase().includes(q);
+    if (!matchesSearch) return false;
+    if (audienceFilter === "university") return r.accepts_university !== false;
+    if (audienceFilter === "tvet") return r.accepts_tvet === true;
+    if (audienceFilter === "private") return r.accepts_private === true;
+    if (audienceFilter === "spotlight") return r.is_spotlight === true;
+    return true;
+  });
+
+  const toggleSpotlight = async (r: Residence) => {
+    const next = !r.is_spotlight;
+    setResidences((prev) => prev.map((x) => (x.id === r.id ? { ...x, is_spotlight: next } : x)));
+    const { error } = await supabase.from("residences").update({ is_spotlight: next } as any).eq("id", r.id);
+    if (error) {
+      toast.error(error.message || "Failed to update spotlight");
+      fetchResidences();
+    } else {
+      toast.success(next ? "Added to spotlight" : "Removed from spotlight");
+    }
+  };
+
+  const toggleAudience = async (r: Residence, field: "accepts_tvet" | "accepts_private" | "accepts_university") => {
+    const next = !r[field];
+    setResidences((prev) => prev.map((x) => (x.id === r.id ? { ...x, [field]: next } : x)));
+    const { error } = await supabase.from("residences").update({ [field]: next }).eq("id", r.id);
+    if (error) {
+      toast.error(error.message || "Failed to update audience");
+      fetchResidences();
+    }
+  };
 
   return (
     <>
@@ -496,6 +531,17 @@ export const AdminResidencesContent = () => {
                         }
                       />
                     </div>
+                    <label className="flex items-center justify-between gap-2 rounded-lg border-2 border-transparent bg-gradient-spotlight/5 p-3 cursor-pointer bg-[length:200%_100%]"
+                      style={{ background: "linear-gradient(90deg, hsl(var(--accent-violet)/0.08), hsl(var(--accent-coral)/0.08))" }}>
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        <Sparkles className="w-4 h-4 text-violet" />
+                        Spotlight on Find My Res
+                      </span>
+                      <Switch
+                        checked={!!editingResidence.is_spotlight}
+                        onCheckedChange={(v) => setEditingResidence({ ...editingResidence, is_spotlight: v })}
+                      />
+                    </label>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -709,15 +755,40 @@ export const AdminResidencesContent = () => {
 
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search residences..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search residences..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: "all", label: "All", color: "bg-primary text-white" },
+                  { key: "university", label: "TUT / University", color: "bg-sky text-white" },
+                  { key: "tvet", label: "TVET / College", color: "bg-amber text-white" },
+                  { key: "private", label: "Private", color: "bg-violet text-white" },
+                  { key: "spotlight", label: "Spotlight", color: "bg-gradient-spotlight text-white" },
+                ].map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setAudienceFilter(t.key as any)}
+                    className={
+                      "px-3 py-1.5 rounded-full text-xs font-medium border transition-all " +
+                      (audienceFilter === t.key
+                        ? t.color + " border-transparent shadow-md"
+                        : "bg-background text-muted-foreground border-border hover:bg-muted")
+                    }
+                  >
+                    {t.label}
+                  </button>
+                ))}
               </div>
             </div>
           </CardHeader>
@@ -735,6 +806,8 @@ export const AdminResidencesContent = () => {
                       <TableHead>Campus</TableHead>
                       <TableHead>Price</TableHead>
                       <TableHead>Available</TableHead>
+                      <TableHead>Audience</TableHead>
+                      <TableHead>Spotlight</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -746,6 +819,56 @@ export const AdminResidencesContent = () => {
                         <TableCell>{residence.campus || "-"}</TableCell>
                         <TableCell>R{residence.price.toLocaleString()}</TableCell>
                         <TableCell>{residence.available_spots}/{residence.capacity}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            <button
+                              type="button"
+                              onClick={() => toggleAudience(residence, "accepts_university")}
+                              className={
+                                "text-[10px] px-1.5 py-0.5 rounded border transition-colors " +
+                                (residence.accepts_university !== false
+                                  ? "bg-sky/15 text-sky border-sky/40"
+                                  : "bg-muted text-muted-foreground border-border opacity-50")
+                              }
+                            >TUT</button>
+                            <button
+                              type="button"
+                              onClick={() => toggleAudience(residence, "accepts_tvet")}
+                              className={
+                                "text-[10px] px-1.5 py-0.5 rounded border transition-colors " +
+                                (residence.accepts_tvet
+                                  ? "bg-amber/15 text-amber border-amber/40"
+                                  : "bg-muted text-muted-foreground border-border opacity-50")
+                              }
+                            >TVET</button>
+                            <button
+                              type="button"
+                              onClick={() => toggleAudience(residence, "accepts_private")}
+                              className={
+                                "text-[10px] px-1.5 py-0.5 rounded border transition-colors " +
+                                (residence.accepts_private
+                                  ? "bg-violet/15 text-violet border-violet/40"
+                                  : "bg-muted text-muted-foreground border-border opacity-50")
+                              }
+                            >Private</button>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <button
+                            type="button"
+                            onClick={() => toggleSpotlight(residence)}
+                            title="Toggle spotlight"
+                            className={
+                              "inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium transition-all " +
+                              (residence.is_spotlight
+                                ? "bg-gradient-spotlight text-white shadow-md"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80")
+                            }
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            {residence.is_spotlight ? "On" : "Off"}
+                          </button>
+                        </TableCell>
                         <TableCell>
                           <Badge variant={residence.verification_level === "verified" || residence.verification_level === "premium" ? "default" : "secondary"}>
                             {residence.verification_level || "basic"}
