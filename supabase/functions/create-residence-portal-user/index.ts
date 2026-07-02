@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const VERSION = "v3.1.0-rpc-plus-fallback";
+const VERSION = "v3.2.0-profile-email-safe";
 const DEPLOYED_AT = new Date().toISOString();
 
 const corsHeaders = {
@@ -51,6 +51,25 @@ const isRpcVisibilityError = (error: unknown) => {
 const isLegacyUserRoleUniqueError = (error: unknown) => {
   const message = errorMessage(error, '').toLowerCase();
   return message.includes('user_roles_user_id_unique') || message.includes('user_roles_user_id_key');
+};
+
+const isProfileEmailDuplicateError = (error: unknown) => {
+  const message = errorMessage(error, '').toLowerCase();
+  return (
+    message.includes('profiles_email_key') ||
+    message.includes('database error creating new user') ||
+    message.includes('database error saving new user')
+  );
+};
+
+const isAuthEmailAlreadyExistsError = (error: unknown) => {
+  const message = errorMessage(error, '').toLowerCase();
+  return (
+    message.includes('already been registered') ||
+    message.includes('already registered') ||
+    message.includes('user already exists') ||
+    message.includes('email address already')
+  );
 };
 
 const isConflictMessage = (message: string) =>
@@ -158,6 +177,16 @@ serve(async (req) => {
       return jsonResponse({ error: 'Portal email is already in use' }, 409);
     }
 
+    const { data: existingProfiles, error: existingProfileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, email')
+      .ilike('email', cleanEmail)
+      .limit(1);
+
+    if (existingProfileError) {
+      return jsonResponse({ error: `Profile email check failed: ${errorMessage(existingProfileError)}` }, 500);
+    }
+
     // 1. Create Auth User
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: cleanEmail,
@@ -166,7 +195,30 @@ serve(async (req) => {
     });
 
     if (authError) {
-      return jsonResponse({ error: authError.message }, 400);
+      if (isAuthEmailAlreadyExistsError(authError)) {
+        return jsonResponse({
+          error: 'This email already belongs to an existing login account. Use a different portal email or delete the old portal login first.',
+          debug_code: 'AUTH_EMAIL_ALREADY_EXISTS',
+        }, 409);
+      }
+
+      const existingProfile = existingProfiles?.[0];
+      if (isProfileEmailDuplicateError(authError) && existingProfile) {
+        return jsonResponse({
+          error: 'This email already exists in profiles and is blocking portal login creation. Run the updated Residence Portal Master SQL, then retry, or use a different portal email.',
+          debug_code: 'PROFILE_EMAIL_DUPLICATE',
+          profile_id: existingProfile.id,
+        }, 409);
+      }
+
+      if (isProfileEmailDuplicateError(authError)) {
+        return jsonResponse({
+          error: 'Portal login creation was blocked by the profile creation trigger. Run the updated Residence Portal Master SQL, then retry.',
+          debug_code: 'PROFILE_EMAIL_DUPLICATE',
+        }, 409);
+      }
+
+      return jsonResponse({ error: authError.message, debug_code: 'AUTH_CREATE_FAILED' }, 400);
     }
 
     if (!authData.user?.id) {
@@ -262,7 +314,10 @@ serve(async (req) => {
       const isConflict = isConflictMessage(msg);
       console.error(`[${VERSION}] dbError caught:`, msg, dbError);
 
-      return jsonResponse({ error: msg, debug_code: isLegacyUserRoleUniqueError(dbError) ? 'LEGACY_USER_ROLE_UNIQUE' : undefined }, isConflict ? 409 : 500);
+      return jsonResponse({
+        error: msg,
+        debug_code: isLegacyUserRoleUniqueError(dbError) ? 'LEGACY_USER_ROLE_UNIQUE' : undefined,
+      }, isConflict ? 409 : 500);
     }
 
   } catch (error: unknown) {

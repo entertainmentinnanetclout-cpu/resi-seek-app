@@ -38,15 +38,50 @@ import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/lovableFunctions";
 import { toast } from "sonner";
 
+const stringifyErrorPart = (value: unknown): string | null => {
+  if (typeof value === "string" && value.trim() && value.trim() !== "{}") return value.trim();
+  if (value && typeof value === "object") {
+    try {
+      const text = JSON.stringify(value);
+      return text && text !== "{}" ? text : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
 const getReadableError = (err: unknown, fallback: string) => {
   if (err instanceof Error && err.message && err.message !== "{}") return err.message;
   if (typeof err === "string" && err.trim() && err.trim() !== "{}") return err.trim();
   if (err && typeof err === "object") {
     const record = err as Record<string, unknown>;
+    const nestedDetails = record.details && typeof record.details === "object"
+      ? (record.details as Record<string, unknown>)
+      : null;
+    const debugCode = stringifyErrorPart(record.debug_code) || stringifyErrorPart(nestedDetails?.debug_code);
+    const version = stringifyErrorPart(record.version) || stringifyErrorPart(nestedDetails?._version);
+    const directMessage = stringifyErrorPart(record.message) || stringifyErrorPart(record.error);
+    if (directMessage) {
+      return [directMessage, debugCode ? `Code: ${debugCode}` : null, version ? `Function: ${version}` : null]
+        .filter(Boolean)
+        .join(" · ");
+    }
     for (const key of ["message", "details", "hint", "code"]) {
       const value = record[key];
       if (typeof value === "string" && value.trim()) return value.trim();
     }
+    if (nestedDetails) {
+      const nestedMessage = stringifyErrorPart(nestedDetails.error) || stringifyErrorPart(nestedDetails.message);
+      if (nestedMessage) {
+        return [nestedMessage, debugCode ? `Code: ${debugCode}` : null, version ? `Function: ${version}` : null]
+          .filter(Boolean)
+          .join(" · ");
+      }
+    }
+    if (debugCode) return `${fallback} · Code: ${debugCode}`;
+    const asText = stringifyErrorPart(record);
+    if (asText) return asText;
   }
   return fallback;
 };
