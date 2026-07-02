@@ -190,6 +190,8 @@ BEGIN
 END $$;
 
 -- Public read for whatsapp_templates + filter_config (admin UI reads them widely)
+ALTER TABLE public.whatsapp_templates ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE public.filter_config      ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 DROP POLICY IF EXISTS "public_read_whatsapp_templates" ON public.whatsapp_templates;
 CREATE POLICY "public_read_whatsapp_templates" ON public.whatsapp_templates
   FOR SELECT TO authenticated USING (is_active = true);
