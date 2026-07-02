@@ -18,6 +18,28 @@ END $$;
 -- =====================================================================
 -- 01 · FK / embed cleanup
 -- =====================================================================
+-- 01a · user_roles unique constraint fix
+-- External DB has legacy UNIQUE(user_id) which blocks multi-role users
+-- (e.g. student + residence_portal). Replace with UNIQUE(user_id, role).
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'user_roles_user_id_key'
+      AND conrelid = 'public.user_roles'::regclass
+  ) THEN
+    ALTER TABLE public.user_roles DROP CONSTRAINT user_roles_user_id_key;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'user_roles_user_id_role_key'
+      AND conrelid = 'public.user_roles'::regclass
+  ) THEN
+    ALTER TABLE public.user_roles
+      ADD CONSTRAINT user_roles_user_id_role_key UNIQUE (user_id, role);
+  END IF;
+END $$;
+
 DO $$
 BEGIN
   IF EXISTS (
