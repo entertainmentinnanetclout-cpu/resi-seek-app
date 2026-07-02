@@ -56,22 +56,29 @@ const getReadableError = (err: unknown, fallback: string) => {
   if (typeof err === "string" && err.trim() && err.trim() !== "{}") return err.trim();
   if (err && typeof err === "object") {
     const record = err as Record<string, unknown>;
+    const nestedDetails = record.details && typeof record.details === "object"
+      ? (record.details as Record<string, unknown>)
+      : null;
+    const debugCode = stringifyErrorPart(record.debug_code) || stringifyErrorPart(nestedDetails?.debug_code);
+    const version = stringifyErrorPart(record.version) || stringifyErrorPart(nestedDetails?._version);
+    const directMessage = stringifyErrorPart(record.message) || stringifyErrorPart(record.error);
+    if (directMessage) {
+      return [directMessage, debugCode ? `Code: ${debugCode}` : null, version ? `Function: ${version}` : null]
+        .filter(Boolean)
+        .join(" · ");
+    }
     for (const key of ["message", "details", "hint", "code"]) {
       const value = record[key];
       if (typeof value === "string" && value.trim()) return value.trim();
     }
-    if (record.details && typeof record.details === "object") {
-      const details = record.details as Record<string, unknown>;
-      const nestedMessage = stringifyErrorPart(details.error) || stringifyErrorPart(details.message);
-      const debugCode = stringifyErrorPart(details.debug_code);
-      const version = stringifyErrorPart(details._version);
+    if (nestedDetails) {
+      const nestedMessage = stringifyErrorPart(nestedDetails.error) || stringifyErrorPart(nestedDetails.message);
       if (nestedMessage) {
         return [nestedMessage, debugCode ? `Code: ${debugCode}` : null, version ? `Function: ${version}` : null]
           .filter(Boolean)
           .join(" · ");
       }
     }
-    const debugCode = stringifyErrorPart(record.debug_code);
     if (debugCode) return `${fallback} · Code: ${debugCode}`;
     const asText = stringifyErrorPart(record);
     if (asText) return asText;
