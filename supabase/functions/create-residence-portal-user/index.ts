@@ -104,12 +104,15 @@ serve(async (req) => {
       // 2. Assign Role
       const { error: roleInsertError } = await supabaseAdmin
         .from('user_roles')
-        .insert({
-          user_id: newUserId,
-          role: 'residence_portal'
-        });
+        .upsert(
+          { user_id: newUserId, role: 'residence_portal' },
+          { onConflict: 'user_id,role', ignoreDuplicates: true }
+        );
 
-      if (roleInsertError) throw roleInsertError;
+      if (roleInsertError) {
+        console.error(`[${VERSION}] role insert failed`, roleInsertError);
+        throw new Error(`Role assignment failed: ${roleInsertError.message || roleInsertError.code || JSON.stringify(roleInsertError)}`);
+      }
 
       // 3. Create Portal Account Record
       const { error: portalInsertError } = await supabaseAdmin
@@ -122,10 +125,11 @@ serve(async (req) => {
         });
 
       if (portalInsertError) {
+        console.error(`[${VERSION}] portal insert failed`, portalInsertError);
         if (portalInsertError.code === '23505') { // Unique constraint violation
           throw new Error('This residence already has a portal account or email is already in use.');
         }
-        throw portalInsertError;
+        throw new Error(`Portal account insert failed: ${portalInsertError.message || portalInsertError.code || JSON.stringify(portalInsertError)}`);
       }
 
       console.log(`[${VERSION}] Portal account created successfully`);
@@ -145,10 +149,12 @@ serve(async (req) => {
       // Rollback: Delete the auth user if DB insert failed
       await supabaseAdmin.auth.admin.deleteUser(newUserId);
 
-      const isConflict = dbError.message?.includes('already has') || dbError.message?.includes('already in use');
+      const msg = dbError?.message || dbError?.details || dbError?.hint || (typeof dbError === 'string' ? dbError : JSON.stringify(dbError));
+      const isConflict = msg?.includes('already has') || msg?.includes('already in use');
+      console.error(`[${VERSION}] dbError caught:`, msg, dbError);
 
       return new Response(
-        JSON.stringify({ error: dbError.message || 'Failed to create database records', _version: VERSION }),
+        JSON.stringify({ error: msg || 'Failed to create database records', _version: VERSION }),
         {
           status: isConflict ? 409 : 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
