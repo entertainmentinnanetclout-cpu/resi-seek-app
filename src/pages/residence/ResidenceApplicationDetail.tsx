@@ -220,15 +220,13 @@ const ResidenceApplicationDetail = () => {
     
     setIsUpdatingStatus(true);
     try {
-      const response = await supabase.functions.invoke('update-application-status', {
-        body: {
-          application_id: application.id,
-          new_status: selectedStatus,
-          notes: statusNotes || undefined
-        }
+      const { invokeEdgeFunction } = await import('@/lib/lovableFunctions');
+      const response = await invokeEdgeFunction<{ referral_claim_created?: boolean }>('update-application-status', {
+        application_id: application.id,
+        new_status: selectedStatus,
+        notes: statusNotes || undefined,
       });
-
-      if (response.error) throw response.error;
+      if (response.error) throw new Error(response.error.message);
 
       toast.success(`Application ${selectedStatus.replace('_', ' ')}`);
       

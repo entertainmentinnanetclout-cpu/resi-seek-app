@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/lovableFunctions";
 import { toast } from "sonner";
 
 interface PortalAccount {
@@ -98,22 +99,12 @@ export const AdminResidencePortalsContent = () => {
       
       setResidences(allResidences || []);
 
-      // Fetch portal accounts with joined residence data
+      // Fetch portal accounts + residence rows separately to avoid the
+      // "more than one relationship" PostgREST error caused by duplicate
+      // FKs on residence_portal_accounts.residence_id on External.
       const { data: accountsData, error: accountsError } = await supabase
         .from('residence_portal_accounts')
-        .select(`
-          residence_id,
-          user_id,
-          email,
-          is_active,
-          created_at,
-          residences (
-            id,
-            name,
-            campus,
-            province
-          )
-        `)
+        .select('residence_id, user_id, email, is_active, created_at')
         .order('created_at', { ascending: false });
 
       if (accountsError) {
@@ -121,7 +112,15 @@ export const AdminResidencePortalsContent = () => {
         throw accountsError;
       }
 
-      const transformedAccounts = (accountsData || []) as unknown as PortalAccount[];
+      const resIds = (accountsData || []).map(a => a.residence_id);
+      const { data: joinedRes } = resIds.length
+        ? await supabase.from('residences').select('id, name, campus, province').in('id', resIds)
+        : { data: [] as any[] };
+      const resMap = new Map((joinedRes || []).map(r => [r.id, r]));
+      const transformedAccounts = (accountsData || []).map(a => ({
+        ...a,
+        residences: resMap.get(a.residence_id) || null,
+      })) as unknown as PortalAccount[];
       setAccounts(transformedAccounts);
 
       // Filter out residences that already have accounts
@@ -155,15 +154,15 @@ export const AdminResidencePortalsContent = () => {
 
     setIsCreating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-residence-portal-user', {
-        body: {
+      const { data, error } = await invokeEdgeFunction<{ success?: boolean; error?: string }>(
+        'create-residence-portal-user',
+        {
           residence_id: selectedResidence,
           email: newEmail,
-          password: newPassword
+          password: newPassword,
         }
-      });
-
-      if (error) throw error;
+      );
+      if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
 
       toast.success('Portal account created successfully');

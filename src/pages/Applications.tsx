@@ -122,18 +122,15 @@ const Applications = () => {
       const handleDownloadSlip = useCallback(async () => {
         setDownloadingSlip(true);
         try {
-          const { data, error } = await supabase.functions.invoke('generate-booking-slip', {
-            body: { application_id: application.id }
-          });
-          
+          const { invokeEdgeFunction } = await import('@/lib/lovableFunctions');
+          const { data, error } = await invokeEdgeFunction<string>(
+            'generate-booking-slip',
+            { application_id: application.id },
+            { rawText: true },
+          );
           if (error) {
             console.error('Booking slip error:', error);
             throw new Error(error.message || 'Failed to generate booking slip');
-          }
-          
-          // Check if response is an error JSON
-          if (typeof data === 'object' && data?.error) {
-            throw new Error(data.error);
           }
           
           // Open HTML in new tab

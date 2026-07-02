@@ -434,6 +434,28 @@ WHERE coalesce(array_length(institution_tags, 1), 0) = 0
   AND accepts_tvet = false
   AND accepts_private = false;
 
+-- ============================================================================
+-- 05  Constraint & FK cleanup — resolves PostgREST embed ambiguity
+-- ============================================================================
+
+-- residence_portal_accounts had TWO FKs on residence_id, which makes
+-- PostgREST reject any `residences(...)` embed with "more than one relationship".
+-- Drop the auto-named legacy FK and keep the branded one.
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint
+              WHERE conname = 'residence_portal_accounts_residence_id_fkey'
+                AND conrelid = 'public.residence_portal_accounts'::regclass)
+     AND EXISTS (SELECT 1 FROM pg_constraint
+                  WHERE conname = 'fk_portal_accounts_residence'
+                    AND conrelid = 'public.residence_portal_accounts'::regclass)
+  THEN
+    EXECUTE 'ALTER TABLE public.residence_portal_accounts DROP CONSTRAINT residence_portal_accounts_residence_id_fkey';
+  END IF;
+END $$;
+
+-- Refresh PostgREST schema cache
+NOTIFY pgrst, 'reload schema';
+
 COMMIT;
 
 -- ============================================================================
