@@ -21,10 +21,10 @@ import LandlordApplicationTabs from "@/components/LandlordApplicationTabs";
 import headerLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import footerLogo from "@/assets/FOOTER.png";
 import iconLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
-import artsFestival from "@/assets/arts-festival.jpg";
-import campusDinokeng from "@/assets/campus-dinokeng.jpg";
 import studentStudying from "@/assets/student-studying.jpg";
 import studentsCelebration from "@/assets/students-celebration.jpg";
+import inclusivePathwaysHero from "@/assets/hero-inclusive-pathways.jpg";
+import applicationsFundingHero from "@/assets/hero-applications-funding.jpg";
 
 /* ── Animated Counter ─────────────────────────────────── */
 const AnimatedCounter = ({ target, suffix = "" }: { target: number; suffix?: string }) => {
@@ -83,10 +83,10 @@ const Landing = () => {
   };
 
   const fallbackSlides = [
-    { image: campusDinokeng, title: "Welcome to TUT Dinokeng Campus", description: "Find your perfect student accommodation near campus - 400+ verified options available", cta: { text: "Explore Residences", action: () => navigate("/find") } },
-    { image: artsFestival, title: "Experience Campus Life", description: "Join vibrant campus activities and cultural celebrations throughout the year", cta: { text: "Get Started", action: () => navigate("/auth") } },
-    { image: studentStudying, title: "Study in Comfort", description: "Access quality accommodation that supports your academic success", cta: { text: "Find Your Res", action: () => navigate("/find") } },
-    { image: studentsCelebration, title: "Build Lifelong Connections", description: "Be part of a thriving student community in Pretoria & Tshwane", cta: { text: "Join Now", action: () => navigate("/auth") } },
+    { image: inclusivePathwaysHero, title: "Accommodation for University, TVET & Private", description: "Find verified residences that welcome TUT, other universities, TVET college students and private applicants.", cta: { text: "Find Accommodation", action: () => navigate("/find") } },
+    { image: applicationsFundingHero, title: "Applications & NSFAS Ready", description: "Prepare one document pack for TUT, universities, TVET colleges and NSFAS funding applications.", cta: { text: "Open Applications Hub", action: () => navigate("/apply") } },
+    { image: studentStudying, title: "Study in Comfort", description: "Access quality accommodation that supports your academic success no matter where you study.", cta: { text: "Find Your Res", action: () => navigate("/find") } },
+    { image: studentsCelebration, title: "Build Lifelong Connections", description: "Be part of a thriving student community across Pretoria, Tshwane and beyond.", cta: { text: "Join Now", action: () => navigate("/auth") } },
   ];
 
   const features = [
