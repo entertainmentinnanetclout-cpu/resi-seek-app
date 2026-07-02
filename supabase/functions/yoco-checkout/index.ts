@@ -17,15 +17,15 @@ Deno.serve(async (req) => {
       throw new Error("YOCO_SECRET_KEY not configured");
     }
 
-    const EXTERNAL_URL = Deno.env.get("SUPABASE_URL") ?? Deno.env.get("EXTERNAL_SUPABASE_URL")!;
-    const EXTERNAL_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY")!;
+    const EXTERNAL_URL = Deno.env.get("EXTERNAL_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL")!;
+    const EXTERNAL_KEY = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(EXTERNAL_URL, EXTERNAL_KEY);
 
     // Verify JWT from Authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Not authenticated");
 
-    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY")!;
+    const ANON_KEY = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!;
     const userClient = createClient(EXTERNAL_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
