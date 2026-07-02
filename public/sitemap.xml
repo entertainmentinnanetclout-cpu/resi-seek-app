@@ -49,14 +49,6 @@
     <lastmod>2025-12-01</lastmod>
   </url>
   
-  <!-- Marketplace -->
-  <url>
-    <loc>https://reskonnect.co.za/marketplace</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.75</priority>
-    <lastmod>2025-12-01</lastmod>
-  </url>
-  
   <!-- Bursary Finder -->
   <url>
     <loc>https://reskonnect.co.za/bursaries</loc>
