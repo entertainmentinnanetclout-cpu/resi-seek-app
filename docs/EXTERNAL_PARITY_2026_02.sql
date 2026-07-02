@@ -101,11 +101,11 @@ ON CONFLICT (key) DO UPDATE
 -- ============================================================================
 -- 04. Hero slide seeds — deadline announcements
 -- ============================================================================
-INSERT INTO public.hero_slides (title, description, cta_text, cta_link, is_active, display_order, slide_location)
+INSERT INTO public.hero_slides (title, description, image_url, cta_text, cta_link, is_active, display_order, slide_location)
 SELECT * FROM (VALUES
-  ('TUT 2026 Applications', 'Closing 30 September 2025 — get your documents ready', 'Prepare Now', '/apply?target=tut',    true, 10, 'landing'),
-  ('NSFAS TVET Now Open',    'Trimester 3 applications are open for TVET students',   'Apply Guide', '/apply?target=nsfas_tvet', true, 11, 'landing')
-) AS v(title, description, cta_text, cta_link, is_active, display_order, slide_location)
+  ('TUT 2026 Applications', 'Closing 30 September 2025 — get your documents ready', 'https://placehold.co/1920x1080/0a2540/ffffff?text=TUT+2026+Applications',  'Prepare Now', '/apply?target=tut',    true, 10, 'landing'),
+  ('NSFAS TVET Now Open',    'Trimester 3 applications are open for TVET students',   'https://placehold.co/1920x1080/0a7d3b/ffffff?text=NSFAS+TVET+Open',      'Apply Guide', '/apply?target=nsfas_tvet', true, 11, 'landing')
+) AS v(title, description, image_url, cta_text, cta_link, is_active, display_order, slide_location)
 WHERE NOT EXISTS (
   SELECT 1 FROM public.hero_slides WHERE title = v.title
 );
