@@ -195,12 +195,21 @@ export const AdminResidencePortalsContent = () => {
 
   const toggleAccountStatus = async (account: PortalAccount) => {
     try {
-      const { error } = await (supabase as any).rpc('admin_set_residence_portal_active', {
+      const { error: rpcError } = await (supabase as any).rpc('admin_set_residence_portal_active', {
         _residence_id: account.residence_id,
         _active: !account.is_active,
       });
 
-      if (error) throw error;
+      if (rpcError) {
+        const message = getReadableError(rpcError, 'Failed to update account status');
+        if (!message.includes('schema cache') && !message.includes('Could not find the function')) throw rpcError;
+
+        const { error: fallbackError } = await supabase
+          .from('residence_portal_accounts')
+          .update({ is_active: !account.is_active })
+          .eq('residence_id', account.residence_id);
+        if (fallbackError) throw fallbackError;
+      }
 
       toast.success(`Account ${account.is_active ? 'deactivated' : 'activated'}`);
       fetchData();
@@ -216,11 +225,20 @@ export const AdminResidencePortalsContent = () => {
     }
 
     try {
-      const { error } = await (supabase as any).rpc('admin_delete_residence_portal', {
+      const { error: rpcError } = await (supabase as any).rpc('admin_delete_residence_portal', {
         _residence_id: account.residence_id,
       });
 
-      if (error) throw error;
+      if (rpcError) {
+        const message = getReadableError(rpcError, 'Failed to delete account');
+        if (!message.includes('schema cache') && !message.includes('Could not find the function')) throw rpcError;
+
+        const { error: fallbackError } = await supabase
+          .from('residence_portal_accounts')
+          .delete()
+          .eq('residence_id', account.residence_id);
+        if (fallbackError) throw fallbackError;
+      }
 
       toast.success('Portal account deleted');
       fetchData();
