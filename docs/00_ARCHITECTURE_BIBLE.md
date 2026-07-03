@@ -1,4 +1,39 @@
-# 00. Architecture Bible
+# 00. Architecture Bible (Version 2.0)
+
+**Released**: 23 March 2026
+**Status**: Authoritative Reference
+
+---
+
+## Master Index
+1. [Architecture Bible (00)](./00_ARCHITECTURE_BIBLE.md)
+2. [Business Architecture (01)](./01_BUSINESS_ARCHITECTURE.md)
+3. [Database Standards (02)](./02_DATABASE_STANDARDS.md)
+4. [SQL Migration Standard (03)](./03_SQL_MIGRATION_STANDARD.md)
+5. [UI Design System (04)](./04_UI_DESIGN_SYSTEM.md)
+6. [Security & RLS (05)](./05_SECURITY_AND_RLS.md)
+7. [Role & Permission Model (06)](./06_ROLE_PERMISSION_MODEL.md)
+8. [Deployment & Disaster Recovery (07)](./07_DEPLOYMENT_PLAYBOOK.md)
+9. [Testing Standard (08)](./08_TESTING_STANDARD.md)
+10. [Backend Provider Strategy (09)](./09_BACKEND_PROVIDER_STRATEGY.md)
+11. [Product Roadmap (10)](./10_PRODUCT_ROADMAP.md)
+12. [System Manual (11)](./11_SYSTEM_MANUAL.md)
+13. [Component Registry (12)](./12_COMPONENT_REGISTRY.md)
+14. [Database Relationships (13)](./13_DATABASE_RELATIONSHIPS.md)
+15. [Test Scenarios (14)](./14_TEST_SCENARIOS.md)
+16. [System Map (15)](./15_SYSTEM_MAP.md)
+17. [API Reference (16)](./16_API_REFERENCE.md)
+18. [Edge Function Reference (17)](./17_EDGE_FUNCTION_REFERENCE.md)
+19. [RLS Reference (18)](./18_RLS_REFERENCE.md)
+20. [Storage Reference (19)](./19_STORAGE_REFERENCE.md)
+21. [Admin Manual (20)](./20_ADMIN_MANUAL.md)
+22. [Residence Admin Manual (21)](./21_RESIDENCE_ADMIN_MANUAL.md)
+23. [Student User Manual (22)](./22_STUDENT_USER_MANUAL.md)
+24. [Changelog (23)](./23_CHANGELOG.md)
+25. [Known Issues (24)](./24_KNOWN_ISSUES.md)
+26. [Release Checklist (25)](./25_RELEASE_CHECKLIST.md)
+
+---
 
 ## 1. Enterprise Domain Model
 ResKonnect is organized into core business domains. Every new feature or entity must belong to exactly one domain.
