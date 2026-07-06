@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import TrustedResidencesEditor from "@/components/admin/TrustedResidencesEditor";
 import SectionsManager from "@/components/admin/SectionsManager";
 import { useResidenceSections } from "@/hooks/useResidenceSections";
+import { BulkAudienceActions } from "@/components/admin/residences/BulkAudienceActions";
 
 interface Residence {
   id: string;
@@ -97,6 +98,7 @@ export const AdminResidencesContent = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [additionalImages, setAdditionalImages] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const { sections: dbSections } = useResidenceSections();
 
   const fetchResidences = async () => {
@@ -261,6 +263,13 @@ export const AdminResidencesContent = () => {
     if (audienceFilter === "spotlight") return r.is_spotlight === true;
     return true;
   });
+
+  const toggleSelect = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => checked ? Array.from(new Set([...prev, id])) : prev.filter((x) => x !== id));
+  };
+  const toggleSelectAll = (checked: boolean) => {
+    setSelectedIds(checked ? filteredResidences.map((r) => r.id) : []);
+  };
 
   const toggleSpotlight = async (r: Residence) => {
     const next = !r.is_spotlight;
@@ -793,6 +802,11 @@ export const AdminResidencesContent = () => {
             </div>
           </CardHeader>
           <CardContent>
+            <BulkAudienceActions
+              selectedIds={selectedIds}
+              onDone={() => { setSelectedIds([]); fetchResidences(); }}
+              onClear={() => setSelectedIds([])}
+            />
             {loading ? (
               <p className="text-center py-8 text-muted-foreground">Loading...</p>
             ) : filteredResidences.length === 0 ? (
@@ -802,6 +816,13 @@ export const AdminResidencesContent = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-8">
+                        <Checkbox
+                          checked={selectedIds.length > 0 && selectedIds.length === filteredResidences.length}
+                          onCheckedChange={(v) => toggleSelectAll(!!v)}
+                          aria-label="Select all"
+                        />
+                      </TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Campus</TableHead>
                       <TableHead>Price</TableHead>
@@ -815,6 +836,13 @@ export const AdminResidencesContent = () => {
                   <TableBody>
                     {filteredResidences.map((residence) => (
                       <TableRow key={residence.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.includes(residence.id)}
+                            onCheckedChange={(v) => toggleSelect(residence.id, !!v)}
+                            aria-label={`Select ${residence.name}`}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">{residence.name}</TableCell>
                         <TableCell>{residence.campus || "-"}</TableCell>
                         <TableCell>R{residence.price.toLocaleString()}</TableCell>

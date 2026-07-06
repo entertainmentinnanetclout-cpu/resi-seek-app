@@ -2,7 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, KeyRound, FileText, Users, Phone, FolderOpen, ClipboardList, Layers, Filter } from "lucide-react";
+import { Building2, KeyRound, FileText, Users, Phone, FolderOpen, ClipboardList, Layers, Filter, Sparkles } from "lucide-react";
 import { AdminResidencesContent } from "./AdminResidences";
 import { AdminResidencePortalsContent } from "./AdminResidencePortals";
 import { AdminApplicationsContent } from "./AdminApplications";
@@ -12,6 +12,7 @@ import { AdminUsersContent } from "./AdminUsers";
 import { AdminLandlordApplicationsContent } from "./AdminLandlordApplications";
 import SectionsManager from "@/components/admin/SectionsManager";
 import { AdminFilterConfigContent } from "./AdminFilterConfig";
+import { AdminRecruitmentProgrammeContent } from "./AdminRecruitmentProgramme";
 
 const tabs = [
   { value: "residences", label: "Residences", icon: Building2 },
@@ -23,6 +24,7 @@ const tabs = [
   { value: "follow-up", label: "Follow-Up", icon: Phone },
   { value: "documents", label: "Documents", icon: FolderOpen },
   { value: "users", label: "Users", icon: Users },
+  { value: "recruitment", label: "Recruitment", icon: Sparkles },
 ];
 
 const AdminOperationsHub = () => {
@@ -57,6 +59,7 @@ const AdminOperationsHub = () => {
           <TabsContent value="follow-up"><AdminFollowUpContent /></TabsContent>
           <TabsContent value="documents"><AdminDocumentsContent /></TabsContent>
           <TabsContent value="users"><AdminUsersContent /></TabsContent>
+          <TabsContent value="recruitment"><AdminRecruitmentProgrammeContent /></TabsContent>
         </Tabs>
       </div>
     </AdminLayout>
