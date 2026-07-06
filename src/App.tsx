@@ -92,6 +92,9 @@ import OrderPayment from "./pages/OrderPayment";
 import MediaDashboard from "./pages/MediaDashboard";
 import CommerceDashboard from "./pages/CommerceDashboard";
 import { SpecialistRoute } from "@/components/SpecialistRoute";
+import ReferralRedirect from "./pages/ReferralRedirect";
+import RecruiterDashboard from "./pages/RecruiterDashboard";
+import AdminRecruitmentProgramme from "./pages/admin/AdminRecruitmentProgramme";
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -141,6 +144,11 @@ const App = () => {
               <Route path="/campus-news" element={<CampusNews />} />
               <Route path="/roommates" element={<RoommateFinder />} />
               <Route path="/affiliates" element={<Affiliates />} />
+              {/* Referral link entrypoint (public) */}
+              <Route path="/r/:code" element={<ReferralRedirect />} />
+              {/* Public Recruitment Programme page */}
+              <Route path="/referrals" element={<Referrals />} />
+              <Route path="/recruiter-dashboard" element={<ProtectedRoute><RecruiterDashboard /></ProtectedRoute>} />
 
               {/* Protected Student Routes (require auth) */}
               <Route path="/dashboard" element={<StudentRoute><Dashboard /></StudentRoute>} />
@@ -161,7 +169,6 @@ const App = () => {
               <Route path="/setup-profile" element={<StudentRoute><ProfileSetup /></StudentRoute>} />
               <Route path="/dashboard/updates" element={<StudentRoute><Updates /></StudentRoute>} />
               <Route path="/seller-onboarding" element={<MarketplaceComingSoon />} />
-              <Route path="/referrals" element={<StudentRoute><Referrals /></StudentRoute>} />
               <Route path="/my-discount-codes" element={<StudentRoute><MyDiscountCodes /></StudentRoute>} />
               
               {/* Admin Hub Routes */}
@@ -197,6 +204,7 @@ const App = () => {
               <Route path="/admin/residence-portals" element={<ProtectedRoute><AdminRoute><AdminResidencePortals /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/wil" element={<ProtectedRoute><AdminRoute><AdminWIL /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/seller-approvals" element={<ProtectedRoute><AdminRoute><AdminSellerApprovals /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/recruitment" element={<ProtectedRoute><AdminRoute><AdminRecruitmentProgramme /></AdminRoute></ProtectedRoute>} />
 
               {/* Residence Portal Routes */}
               <Route path="/residence/login" element={<ResidenceLogin />} />

@@ -29,6 +29,10 @@ import { AccreditationCTA } from "@/components/findmyres/AccreditationCTA";
 import { AudienceSelector, type AudienceKey } from "@/components/findmyres/AudienceSelector";
 import { ResidenceSpotlightSlider } from "@/components/findmyres/ResidenceSpotlightSlider";
 import CompareDrawer from "@/components/CompareDrawer";
+import { ReferralBanner } from "@/components/referrals/ReferralBanner";
+import { useEffect as useEffectRef } from "react";
+import { getReferralPublic, captureReferralClick } from "@/lib/referrals/referralApi";
+import { saveReferral, getVisitorId, readReferral } from "@/lib/referrals/referralStorage";
 
 const MAX_COMPARE = 3;
 const PAGE_SIZE = 20;
@@ -184,6 +188,7 @@ const FindMyRes = () => {
 
         {/* Marketing Spotlight Slider */}
         <ResidenceSpotlightSlider residences={residences} loading={loading} />
+        <ReferralBanner />
 
         {/* Audience Selector — University / TVET / Private */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
