@@ -30,9 +30,8 @@ import { AudienceSelector, type AudienceKey } from "@/components/findmyres/Audie
 import { ResidenceSpotlightSlider } from "@/components/findmyres/ResidenceSpotlightSlider";
 import CompareDrawer from "@/components/CompareDrawer";
 import { ReferralBanner } from "@/components/referrals/ReferralBanner";
-import { useEffect as useEffectRef } from "react";
 import { getReferralPublic, captureReferralClick } from "@/lib/referrals/referralApi";
-import { saveReferral, getVisitorId, readReferral } from "@/lib/referrals/referralStorage";
+import { saveReferral, getVisitorId } from "@/lib/referrals/referralStorage";
 
 const MAX_COMPARE = 3;
 const PAGE_SIZE = 20;
@@ -76,6 +75,18 @@ const FindMyRes = () => {
     const inst = searchParams.get("institution");
     if (inst && inst !== filters.institutionTag) updateFilter("institutionTag", inst);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Capture ?ref=CODE if present (safe if user landed via /r/:code already)
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (!ref) return;
+    (async () => {
+      const info = await getReferralPublic(ref);
+      if (!info) return;
+      const sid = await captureReferralClick(info.code, getVisitorId(), window.location.pathname + window.location.search);
+      saveReferral(info.code, sid, info.agent_name, window.location.pathname);
+    })();
   }, [searchParams]);
 
   // First-visit CTA modal

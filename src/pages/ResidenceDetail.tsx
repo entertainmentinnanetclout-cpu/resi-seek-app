@@ -23,6 +23,8 @@ import { RESKONNECT_WHATSAPP } from "@/lib/constants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { readReferral, savePendingApplication } from "@/lib/referrals/referralStorage";
+import { captureApplicationReferral } from "@/lib/referrals/referralApi";
 
 const ResidenceDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -99,7 +101,17 @@ const ResidenceDetail = () => {
 
   const handleApply = () => {
     if (!user) {
-      toast.error("Please sign in to apply");
+      // Save intent so referral + residence survives login
+      const ref = readReferral();
+      savePendingApplication({
+        residence_id: id!,
+        residence_name: residence?.name,
+        current_route: window.location.pathname,
+        referral_code: ref?.code || null,
+        referral_session_id: ref?.sessionId || null,
+        timestamp: new Date().toISOString(),
+      });
+      toast.info("Sign in to complete your application — we saved your progress");
       navigate("/auth?returnTo=/res/" + id);
       return;
     }
@@ -129,6 +141,15 @@ const ResidenceDetail = () => {
         });
 
       if (error) throw error;
+
+      // Attach referral (safe no-op if none)
+      try {
+        const inserted = await supabase.from("applications").select("id").eq("user_id", user.id).eq("residence_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+        const ref = readReferral();
+        if (inserted.data?.id && (ref?.code || ref?.sessionId)) {
+          await captureApplicationReferral(inserted.data.id, ref?.code || null, ref?.sessionId || null);
+        }
+      } catch (e) { console.warn("referral attach skipped", e); }
 
       toast.success("Application submitted successfully!");
       setShowApplyModal(false);
