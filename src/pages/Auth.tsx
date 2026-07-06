@@ -13,6 +13,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
 import logo from "@/assets/LIGHT THEME Login Page Icon.png";
 import { Loader2, Chrome } from "lucide-react";
+import { readPendingApplication, clearPendingApplication, readPendingRecruiter, clearPendingRecruiter, readReferral } from "@/lib/referrals/referralStorage";
+import { attachReferralToUser } from "@/lib/referrals/referralApi";
 
 import { TUT_CAMPUSES } from "@/lib/campuses";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -51,7 +53,11 @@ const Auth = () => {
   useEffect(() => {
     if (!authLoading && user) {
       console.log("[Auth] Routing decision:", { email: user.email, staffRole, userId: user.id });
-      const timer = setTimeout(() => {
+      const timer = setTimeout(async () => {
+        // Attach any anonymous referral session to this user
+        const ref = readReferral();
+        if (ref?.sessionId) { try { await attachReferralToUser(ref.sessionId); } catch {} }
+
         if (staffRole) {
           // Staff roles get routed to their default hub
           const hubMap: Record<string, string> = {
@@ -64,6 +70,18 @@ const Auth = () => {
           };
           navigate(hubMap[staffRole] || "/admin", { replace: true });
         } else {
+          // Honor pending intents first
+          const pendingApp = readPendingApplication();
+          if (pendingApp?.residence_id) {
+            clearPendingApplication();
+            navigate(pendingApp.current_route || `/res/${pendingApp.residence_id}`, { replace: true });
+            return;
+          }
+          if (readPendingRecruiter()) {
+            clearPendingRecruiter();
+            navigate("/referrals#apply", { replace: true });
+            return;
+          }
           navigate(returnTo || "/dashboard", { replace: true });
         }
       }, 150);
