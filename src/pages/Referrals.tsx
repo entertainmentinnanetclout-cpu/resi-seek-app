@@ -12,14 +12,25 @@ import { Copy, Share2, Users, DollarSign, Loader2, Gift, Link as LinkIcon, Searc
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PublicLayout from "@/components/PublicLayout";
+import { useNavigate } from "react-router-dom";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { submitRecruiterApplication } from "@/lib/referrals/referralApi";
+import { savePendingRecruiter } from "@/lib/referrals/referralStorage";
+import { Sparkles, Trophy, CheckCircle2 } from "lucide-react";
 
 export default function Referrals() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [code, setCode] = useState<any>(null);
   const [earnings, setEarnings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(!!user);
   const [signupBonus, setSignupBonus] = useState(10);
   const [salePct, setSalePct] = useState(5);
+  const [myApp, setMyApp] = useState<any>(null);
+  const [applying, setApplying] = useState(false);
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", whatsapp_number: "", institution: "", campus: "", city: "", province: "", recruitment_area: "", experience: "", motivation: "", social_media_link: "" });
 
   // Affiliate link generator state
   const [products, setProducts] = useState<any[]>([]);
@@ -27,7 +38,7 @@ export default function Referrals() {
   const [productSearchOpen, setProductSearchOpen] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     (async () => {
       // Get-or-create referral code inline (no RPC dependency).
       let { data: codeData } = await supabase
@@ -61,6 +72,86 @@ export default function Referrals() {
       setLoading(false);
     })();
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase.from("recruiter_applications" as any).select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      setMyApp(data);
+      setForm((f) => ({ ...f, full_name: (user.user_metadata as any)?.full_name || f.full_name, email: user.email || f.email }));
+    })();
+  }, [user]);
+
+  const submitApp = async () => {
+    if (!user) { savePendingRecruiter(); navigate("/auth?returnTo=/referrals"); return; }
+    if (!form.full_name.trim() || !form.recruitment_area.trim() || !form.motivation.trim() || !(form.phone || form.whatsapp_number)) {
+      toast.error("Fill full name, area, phone or WhatsApp, and motivation");
+      return;
+    }
+    setApplying(true);
+    const { data, error } = await submitRecruiterApplication(form);
+    setApplying(false);
+    if (error) return toast.error(error.message);
+    toast.success("Recruiter application submitted");
+    const { data: refreshed } = await supabase.from("recruiter_applications" as any).select("*").eq("id", data as any).maybeSingle();
+    setMyApp(refreshed);
+  };
+
+  const programme = (
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-sm"><Sparkles className="w-4 h-4" /> ResKonnect Recruitment Programme</div>
+        <h1 className="text-4xl sm:text-5xl font-bold">Refer students. Earn cash.</h1>
+        <p className="text-lg text-muted-foreground">Earn <strong>R200</strong> per successful student and <strong>R3,000</strong> bonus for 10 successful referrals.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[
+          { icon: <Users className="w-5 h-5" />, title: "Share your link", body: "Every recruiter gets a unique referral link." },
+          { icon: <CheckCircle2 className="w-5 h-5" />, title: "Students apply", body: "Anyone who signs up and applies is tracked to you." },
+          { icon: <Trophy className="w-5 h-5" />, title: "Get paid", body: "Verified & approved placements earn R200 each." },
+        ].map((s, i) => (
+          <Card key={i}><CardContent className="p-5"><div className="rounded-full bg-primary/10 text-primary w-10 h-10 flex items-center justify-center mb-3">{s.icon}</div><h3 className="font-semibold mb-1">{s.title}</h3><p className="text-sm text-muted-foreground">{s.body}</p></CardContent></Card>
+        ))}
+      </div>
+
+      <Card id="apply">
+        <CardHeader><CardTitle>Apply to become a recruiter</CardTitle><CardDescription>Approved recruiters get a badge, dashboard, and referral link.</CardDescription></CardHeader>
+        <CardContent className="space-y-4">
+          {myApp && myApp.status === "pending" && <div className="rounded-md border p-3 text-sm">Your application is <Badge>pending</Badge> — we'll email you when it is reviewed.</div>}
+          {myApp && myApp.status === "approved" && <div className="rounded-md border p-3 text-sm">You are an approved recruiter! <Button variant="link" onClick={() => navigate("/recruiter-dashboard")}>Open dashboard →</Button></div>}
+          {myApp && myApp.status === "rejected" && <div className="rounded-md border p-3 text-sm">Your last application was rejected. You may re-apply.</div>}
+          {(!myApp || myApp.status === "rejected") && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1"><Label>Full name *</Label><Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
+              <div className="space-y-1"><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+              <div className="space-y-1"><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+              <div className="space-y-1"><Label>WhatsApp</Label><Input value={form.whatsapp_number} onChange={(e) => setForm({ ...form, whatsapp_number: e.target.value })} /></div>
+              <div className="space-y-1"><Label>Institution</Label><Input value={form.institution} onChange={(e) => setForm({ ...form, institution: e.target.value })} /></div>
+              <div className="space-y-1"><Label>Campus</Label><Input value={form.campus} onChange={(e) => setForm({ ...form, campus: e.target.value })} /></div>
+              <div className="space-y-1"><Label>City</Label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
+              <div className="space-y-1"><Label>Province</Label><Input value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} /></div>
+              <div className="space-y-1 md:col-span-2"><Label>Recruitment area *</Label><Input placeholder="e.g. TUT Soshanguve South" value={form.recruitment_area} onChange={(e) => setForm({ ...form, recruitment_area: e.target.value })} /></div>
+              <div className="space-y-1 md:col-span-2"><Label>Experience</Label><Textarea rows={2} value={form.experience} onChange={(e) => setForm({ ...form, experience: e.target.value })} /></div>
+              <div className="space-y-1 md:col-span-2"><Label>Motivation *</Label><Textarea rows={3} value={form.motivation} onChange={(e) => setForm({ ...form, motivation: e.target.value })} /></div>
+              <div className="space-y-1 md:col-span-2"><Label>Social media link</Label><Input value={form.social_media_link} onChange={(e) => setForm({ ...form, social_media_link: e.target.value })} /></div>
+              <div className="md:col-span-2 flex justify-end"><Button onClick={submitApp} disabled={applying}>{applying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}{user ? "Submit application" : "Sign in to apply"}</Button></div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  // Public visitors + not-yet-recruiters see the programme page.
+  if (!user || !code) {
+    return (
+      <PublicLayout>
+        <SEO title="Recruitment Programme | ResKonnect" description="Refer students and earn cash." />
+        {programme}
+      </PublicLayout>
+    );
+  }
 
   const link = code ? `${window.location.origin}/auth?ref=${code.code}` : "";
   const totalAvailable = earnings.filter((e) => e.status === "available" || e.status === "confirmed").reduce((s, e) => s + Number(e.amount), 0);
