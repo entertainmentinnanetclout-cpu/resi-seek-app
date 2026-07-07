@@ -44,14 +44,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: Shield, label: "Admin Portal", path: "/admin" },
   ];
 
-  const [isRecruiter, setIsRecruiter] = useState(false);
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const { data } = await supabase.from("referral_agents" as any).select("status").eq("user_id", user.id).eq("program_key", "student_recruitment").maybeSingle();
-      if (data?.status === 'approved') setIsRecruiter(true);
-    })();
-  }, [user]);
+  const { isRecruiter } = useAuth();
 
   const recruiterNavItems = isRecruiter ? [{ icon: Sparkles, label: "Recruitments", path: "/recruit/dashboard" }] : [];
 

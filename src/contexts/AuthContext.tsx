@@ -10,8 +10,12 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isRecruiter: boolean;
+  isPendingRecruiter: boolean;
+  isStudent: boolean;
   staffRole: StaffRole;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +25,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isRecruiter, setIsRecruiter] = useState(false);
+  const [isPendingRecruiter, setIsPendingRecruiter] = useState(false);
+  const [isStudent, setIsStudent] = useState(false);
   const [staffRole, setStaffRole] = useState<StaffRole>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
   const navigate = useNavigate();
@@ -62,47 +69,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Check staff role OUTSIDE auth callbacks
+  const checkStatus = async () => {
+    if (!sessionChecked) return;
+    if (!user) {
+      setIsAdmin(false);
+      setStaffRole(null);
+      setIsRecruiter(false);
+      setIsPendingRecruiter(false);
+      setIsStudent(false);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // 1. Check Staff Role
+      const { data: roleData, error: roleError } = await supabase.rpc("get_user_staff_role", {
+        _user_id: user.id,
+      });
+      if (roleError) throw roleError;
+      const role = (roleData as string | null) as StaffRole;
+      setStaffRole(role);
+      setIsAdmin(role === 'admin');
+
+      // 2. Check Recruiter Status & Student Profile in parallel
+      const [recruiterRes, pendingRes, profileRes] = await Promise.all([
+        supabase.from("referral_agents" as any).select("status").eq("user_id", user.id).eq("program_key", "student_recruitment").maybeSingle(),
+        supabase.from("recruiter_applications" as any).select("status").eq("user_id", user.id).eq("program_key", "student_recruitment").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("profiles").select("student_number").eq("id", user.id).maybeSingle()
+      ]);
+
+      setIsRecruiter(recruiterRes.data?.status === 'approved');
+      setIsPendingRecruiter(pendingRes.data?.status === 'pending');
+      setIsStudent(!!profileRes.data?.student_number);
+
+      console.log("[AuthContext] Status check:", {
+        email: user.email,
+        resolvedRole: role,
+        isRecruiter: recruiterRes.data?.status === 'approved',
+        isPendingRecruiter: pendingRes.data?.status === 'pending',
+        isStudent: !!profileRes.data?.student_number
+      });
+    } catch (e) {
+      console.error("[AuthContext] Status check failed:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let cancelled = false;
-
-    const checkRole = async () => {
-      if (!sessionChecked) return;
-      if (!user) {
-        setIsAdmin(false);
-        setStaffRole(null);
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-
-      try {
-        const { data, error } = await supabase.rpc("get_user_staff_role", {
-          _user_id: user.id,
-        });
-
-        if (cancelled) return;
-        if (error) throw error;
-
-        const role = (data as string | null) as StaffRole;
-        console.log("[AuthContext] Role check:", { email: user.email, userId: user.id, resolvedRole: role });
-        setStaffRole(role);
-        setIsAdmin(role === 'admin');
-      } catch (e) {
-        console.error("[AuthContext] Role check failed:", e, { email: user.email, userId: user.id });
-        if (!cancelled) {
-          setIsAdmin(false);
-          setStaffRole(null);
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    };
-
-    checkRole();
-
-    return () => { cancelled = true; };
+    checkStatus();
   }, [user?.id, sessionChecked]);
 
   const signOut = async () => {
@@ -111,11 +128,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setSession(null);
     setIsAdmin(false);
     setStaffRole(null);
+    setIsRecruiter(false);
+    setIsPendingRecruiter(false);
+    setIsStudent(false);
     navigate("/auth");
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, isAdmin, staffRole, signOut }}>
+    <AuthContext.Provider value={{
+      user, session, isLoading, isAdmin, isRecruiter, isPendingRecruiter, isStudent, staffRole, signOut, refreshProfile: checkStatus
+    }}>
       {children}
     </AuthContext.Provider>
   );
