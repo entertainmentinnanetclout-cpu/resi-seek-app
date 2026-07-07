@@ -35,8 +35,9 @@ export default function RecruiterAuth() {
   useEffect(() => {
     if (!authLoading && user) {
       const timer = setTimeout(() => {
+        // Redirection logic is handled by Auth.tsx and the global flow,
+        // but we can provide an extra guard here if needed.
         if (readPendingRecruiter() || returnTo === "/recruit/apply") {
-          clearPendingRecruiter();
           navigate("/recruit/apply", { replace: true });
         } else {
           navigate("/recruit/dashboard", { replace: true });

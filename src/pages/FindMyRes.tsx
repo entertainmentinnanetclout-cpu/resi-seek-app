@@ -112,10 +112,17 @@ const FindMyRes = () => {
     setVisibleCount(PAGE_SIZE);
   }, [filters]);
 
+  const { isStudent } = useAuth();
+
   const handleApply = (residence: any) => {
     if (!user) {
       toast.error("Please sign in to apply");
       navigate("/auth?returnTo=/find");
+      return;
+    }
+    if (!isStudent) {
+      toast.info("Please complete your student profile to apply for accommodation.");
+      navigate("/setup-profile");
       return;
     }
     if ((residence.available_spots || 0) === 0) {

@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { submitRecruiterApplication } from "@/lib/referrals/referralApi";
 
 export default function RecruiterApply() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
@@ -38,12 +38,14 @@ export default function RecruiterApply() {
         .from("recruiter_applications" as any)
         .select("*")
         .eq("user_id", user.id)
+        .eq("program_key", "student_recruitment")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       setMyApp(data);
       if (data?.status === "approved") {
+        await refreshProfile();
         navigate("/recruit/dashboard");
       }
 
@@ -55,7 +57,7 @@ export default function RecruiterApply() {
       }));
       setLoading(false);
     })();
-  }, [user, navigate]);
+  }, [user, navigate, refreshProfile]);
 
   const handleSubmit = async () => {
     if (!form.full_name.trim() || !form.recruitment_area.trim() || !form.motivation.trim() || !(form.phone || form.whatsapp_number)) {
@@ -63,7 +65,7 @@ export default function RecruiterApply() {
       return;
     }
     setApplying(true);
-    const { data, error } = await submitRecruiterApplication(form);
+    const { data, error } = await submitRecruiterApplication({ ...form, program_key: 'student_recruitment' });
     setApplying(false);
     if (error) return toast.error(error.message);
     toast.success("Application submitted successfully!");

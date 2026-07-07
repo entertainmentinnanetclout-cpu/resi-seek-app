@@ -38,7 +38,7 @@ const signupSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, isLoading: authLoading, isAdmin } = useAuth();
+  const { user, isLoading: authLoading, isAdmin, staffRole, isRecruiter, isPendingRecruiter, isStudent } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,12 +47,13 @@ const Auth = () => {
   const returnTo = searchParams.get("returnTo");
   const refCode = searchParams.get("ref");
 
-  const { staffRole } = useAuth();
   const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
-      console.log("[Auth] Routing decision:", { email: user.email, staffRole, userId: user.id });
+      console.log("[Auth] Routing decision:", {
+        email: user.email, staffRole, userId: user.id, isRecruiter, isPendingRecruiter, isStudent
+      });
       const timer = setTimeout(async () => {
         // Attach any anonymous referral session to this user
         const ref = readReferral();
@@ -69,25 +70,37 @@ const Auth = () => {
             support_agent: "/admin/operations",
           };
           navigate(hubMap[staffRole] || "/admin", { replace: true });
-        } else {
-          // Honor pending intents first
-          const pendingApp = readPendingApplication();
-          if (pendingApp?.residence_id) {
-            clearPendingApplication();
-            navigate(pendingApp.current_route || `/res/${pendingApp.residence_id}`, { replace: true });
-            return;
-          }
-          if (readPendingRecruiter()) {
-            clearPendingRecruiter();
-            navigate("/referrals#apply", { replace: true });
-            return;
-          }
-          navigate(returnTo || "/dashboard", { replace: true });
+          return;
         }
+
+        // Honor pending recruiter intent
+        const hasRecruiterIntent = readPendingRecruiter();
+
+        // Recruiter-only path
+        if (hasRecruiterIntent || isRecruiter || isPendingRecruiter) {
+          clearPendingRecruiter();
+          if (isRecruiter) {
+            navigate("/recruit/dashboard", { replace: true });
+          } else {
+            navigate("/recruit/apply", { replace: true });
+          }
+          return;
+        }
+
+        // Honor pending student intents first
+        const pendingApp = readPendingApplication();
+        if (pendingApp?.residence_id) {
+          clearPendingApplication();
+          navigate(pendingApp.current_route || `/res/${pendingApp.residence_id}`, { replace: true });
+          return;
+        }
+
+        // Standard student path
+        navigate(returnTo || "/dashboard", { replace: true });
       }, 150);
       return () => clearTimeout(timer);
     }
-  }, [user, authLoading, staffRole, navigate, returnTo]);
+  }, [user, authLoading, staffRole, navigate, returnTo, isRecruiter, isPendingRecruiter, isStudent]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
