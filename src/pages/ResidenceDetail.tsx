@@ -147,7 +147,7 @@ const ResidenceDetail = () => {
         const inserted = await supabase.from("applications").select("id").eq("user_id", user.id).eq("residence_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
         const ref = readReferral();
         if (inserted.data?.id && (ref?.code || ref?.sessionId)) {
-          await captureApplicationReferral(inserted.data.id, ref?.code || null, ref?.sessionId || null);
+          await captureApplicationReferral(inserted.data.id, ref?.code || null, ref?.sessionId || null, ref?.programKey || null);
         }
       } catch (e) { console.warn("referral attach skipped", e); }
 

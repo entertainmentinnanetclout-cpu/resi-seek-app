@@ -18,7 +18,8 @@ export const AdminRecruitmentProgrammeContent = () => {
   const load = async () => {
     setLoading(true);
     const [{ data: a }, { data: r }] = await Promise.all([
-      supabase.from("recruiter_applications" as any).select("*").order("created_at", { ascending: false }),
+      supabase.from("recruiter_applications" as any).select("*").eq("program_key", "student_recruitment").order("created_at", { ascending: false }),
+      // admin_referral_applications_v is already filtered by student_recruitment
       supabase.from("admin_referral_applications_v" as any).select("*").order("referred_at", { ascending: false }).limit(200),
     ]);
     setApps(a || []);

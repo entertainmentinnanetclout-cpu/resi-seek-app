@@ -11,12 +11,19 @@ export default function ReferralRedirect() {
     (async () => {
       const upper = code.toUpperCase();
       const info = await getReferralPublic(upper);
-      if (info) {
+      // Only process if it's a student_recruitment code
+      if (info && (info as any).program_key === 'student_recruitment') {
         const landing = `/find?ref=${upper}`;
         const sessionId = await captureReferralClick(upper, getVisitorId(), landing);
-        saveReferral(info.code, sessionId, info.agent_name, landing);
+        saveReferral(info.code, sessionId, info.agent_name, landing, 'student_recruitment');
+        navigate(`/find?ref=${upper}`, { replace: true });
+      } else {
+        // If it's a different program or invalid, just go to find without applying recruitment logic
+        navigate("/find", { replace: true });
+        if (info) {
+          toast.error("Invalid recruitment code.");
+        }
       }
-      navigate(info ? `/find?ref=${upper}` : "/find", { replace: true });
     })();
   }, [code, navigate]);
 

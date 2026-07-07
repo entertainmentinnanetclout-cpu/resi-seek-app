@@ -1,6 +1,7 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Home, Bell, Search, FileText, User, Menu, LogOut, GraduationCap, Shield, RefreshCw, Briefcase, LogIn, UserPlus } from "lucide-react";
+import { Home, Bell, Search, FileText, User, Menu, LogOut, GraduationCap, Shield, RefreshCw, Briefcase, LogIn, UserPlus, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -43,10 +44,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: Shield, label: "Admin Portal", path: "/admin" },
   ];
 
+  const [isRecruiter, setIsRecruiter] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase.from("referral_agents" as any).select("status").eq("user_id", user.id).eq("program_key", "student_recruitment").maybeSingle();
+      if (data?.status === 'approved') setIsRecruiter(true);
+    })();
+  }, [user]);
+
+  const recruiterNavItems = isRecruiter ? [{ icon: Sparkles, label: "Recruitments", path: "/recruit/dashboard" }] : [];
+
   const navItems = isAdmin
     ? adminNavItems
     : user
-      ? [authNavItems[0], ...publicNavItems, ...authNavItems.slice(1)]
+      ? [authNavItems[0], ...publicNavItems, ...authNavItems.slice(1), ...recruiterNavItems]
       : publicNavItems;
 
   const isActive = (path: string) => location.pathname === path;

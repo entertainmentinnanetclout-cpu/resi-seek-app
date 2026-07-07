@@ -13,7 +13,8 @@ export function ReferralBanner() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  if (!ref?.code || dismissed) return null;
+  // Only show for student_recruitment
+  if (!ref?.code || dismissed || ref.programKey !== 'student_recruitment') return null;
 
   return (
     <div className="relative rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 px-4 py-3 sm:px-6 sm:py-4 shadow-sm">

@@ -5,6 +5,7 @@ export const REF_KEYS = {
   agentName: "rk_ref_agent",
   landing: "rk_ref_landing_url",
   createdAt: "rk_ref_created_at",
+  programKey: "rk_ref_program_key",
   bannerHidden: "rk_ref_banner_hidden",
   pendingApplication: "rk_pending_application_intent",
   pendingRecruiter: "rk_pending_recruiter_application",
@@ -26,13 +27,14 @@ function getCookie(name: string): string | null {
   } catch { return null; }
 }
 
-export function saveReferral(code: string, sessionId?: string | null, agentName?: string | null, landing?: string) {
+export function saveReferral(code: string, sessionId?: string | null, agentName?: string | null, landing?: string, programKey: string = 'student_recruitment') {
   const upper = code.trim().toUpperCase();
   try {
     localStorage.setItem(REF_KEYS.code, upper);
     if (sessionId) localStorage.setItem(REF_KEYS.sessionId, sessionId);
     if (agentName) localStorage.setItem(REF_KEYS.agentName, agentName);
     if (landing) localStorage.setItem(REF_KEYS.landing, landing);
+    localStorage.setItem(REF_KEYS.programKey, programKey);
     localStorage.setItem(REF_KEYS.createdAt, new Date().toISOString());
     localStorage.removeItem(REF_KEYS.bannerHidden);
   } catch {}
@@ -48,6 +50,7 @@ export function readReferral() {
       sessionId: localStorage.getItem(REF_KEYS.sessionId),
       agentName: localStorage.getItem(REF_KEYS.agentName),
       landing: localStorage.getItem(REF_KEYS.landing),
+      programKey: localStorage.getItem(REF_KEYS.programKey),
       createdAt: localStorage.getItem(REF_KEYS.createdAt),
       bannerHidden: localStorage.getItem(REF_KEYS.bannerHidden) === "1",
     };

@@ -97,66 +97,27 @@ export default function Referrals() {
     setMyApp(refreshed);
   };
 
-  const programme = (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-sm"><Sparkles className="w-4 h-4" /> ResKonnect Recruitment Programme</div>
-        <h1 className="text-4xl sm:text-5xl font-bold">Refer students. Earn cash.</h1>
-        <p className="text-lg text-muted-foreground">Earn <strong>R200</strong> per successful student and <strong>R3,000</strong> bonus for 10 successful referrals.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[
-          { icon: <Users className="w-5 h-5" />, title: "Share your link", body: "Every recruiter gets a unique referral link." },
-          { icon: <CheckCircle2 className="w-5 h-5" />, title: "Students apply", body: "Anyone who signs up and applies is tracked to you." },
-          { icon: <Trophy className="w-5 h-5" />, title: "Get paid", body: "Verified & approved placements earn R200 each." },
-        ].map((s, i) => (
-          <Card key={i}><CardContent className="p-5"><div className="rounded-full bg-primary/10 text-primary w-10 h-10 flex items-center justify-center mb-3">{s.icon}</div><h3 className="font-semibold mb-1">{s.title}</h3><p className="text-sm text-muted-foreground">{s.body}</p></CardContent></Card>
-        ))}
-      </div>
-
-      <Card id="apply">
-        <CardHeader><CardTitle>Apply to become a recruiter</CardTitle><CardDescription>Approved recruiters get a badge, dashboard, and referral link.</CardDescription></CardHeader>
-        <CardContent className="space-y-4">
-          {myApp && myApp.status === "pending" && <div className="rounded-md border p-3 text-sm">Your application is <Badge>pending</Badge> — we'll email you when it is reviewed.</div>}
-          {myApp && myApp.status === "approved" && <div className="rounded-md border p-3 text-sm">You are an approved recruiter! <Button variant="link" onClick={() => navigate("/recruiter-dashboard")}>Open dashboard →</Button></div>}
-          {myApp && myApp.status === "rejected" && <div className="rounded-md border p-3 text-sm">Your last application was rejected. You may re-apply.</div>}
-          {(!myApp || myApp.status === "rejected") && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1"><Label>Full name *</Label><Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
-              <div className="space-y-1"><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-              <div className="space-y-1"><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-              <div className="space-y-1"><Label>WhatsApp</Label><Input value={form.whatsapp_number} onChange={(e) => setForm({ ...form, whatsapp_number: e.target.value })} /></div>
-              <div className="space-y-1"><Label>Institution</Label><Input value={form.institution} onChange={(e) => setForm({ ...form, institution: e.target.value })} /></div>
-              <div className="space-y-1"><Label>Campus</Label><Input value={form.campus} onChange={(e) => setForm({ ...form, campus: e.target.value })} /></div>
-              <div className="space-y-1"><Label>City</Label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
-              <div className="space-y-1"><Label>Province</Label><Input value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value })} /></div>
-              <div className="space-y-1 md:col-span-2"><Label>Recruitment area *</Label><Input placeholder="e.g. TUT Soshanguve South" value={form.recruitment_area} onChange={(e) => setForm({ ...form, recruitment_area: e.target.value })} /></div>
-              <div className="space-y-1 md:col-span-2"><Label>Experience</Label><Textarea rows={2} value={form.experience} onChange={(e) => setForm({ ...form, experience: e.target.value })} /></div>
-              <div className="space-y-1 md:col-span-2"><Label>Motivation *</Label><Textarea rows={3} value={form.motivation} onChange={(e) => setForm({ ...form, motivation: e.target.value })} /></div>
-              <div className="space-y-1 md:col-span-2"><Label>Social media link</Label><Input value={form.social_media_link} onChange={(e) => setForm({ ...form, social_media_link: e.target.value })} /></div>
-              <div className="md:col-span-2 flex justify-end"><Button onClick={submitApp} disabled={applying}>{applying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}{user ? "Submit application" : "Sign in to apply"}</Button></div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  // Public visitors + not-yet-recruiters see the programme page.
-  if (!user || !code) {
+  // Public visitors + not-yet-recruiters are now handled by /recruit
+  if (!user) {
     return (
       <PublicLayout>
-        <SEO title="Recruitment Programme | ResKonnect" description="Refer students and earn cash." />
-        {programme}
+        <SEO title="Referrals | ResKonnect" description="Refer friends and earn cash." />
+        <div className="max-w-4xl mx-auto p-12 text-center space-y-6">
+           <h1 className="text-4xl font-bold">Refer & Earn</h1>
+           <p className="text-lg text-muted-foreground">Sign in to get your referral link and start earning rewards.</p>
+           <Button size="lg" onClick={() => navigate("/auth?returnTo=/referrals")}>Sign In</Button>
+        </div>
       </PublicLayout>
     );
   }
 
   const link = code ? `${window.location.origin}/auth?ref=${code.code}` : "";
-  const totalAvailable = earnings.filter((e) => e.status === "available" || e.status === "confirmed").reduce((s, e) => s + Number(e.amount), 0);
-  const totalPaid = earnings.filter((e) => e.status === "paid").reduce((s, e) => s + Number(e.amount), 0);
-  const signupEarnings = earnings.filter((e) => e.source_type === 'signup' && (e.status === 'available' || e.status === 'confirmed')).reduce((s, e) => s + Number(e.amount), 0);
+  // Only show signup_referral and marketplace_referral here
+  const filteredEarnings = earnings.filter(e => e.program_key !== 'student_recruitment');
+
+  const totalAvailable = filteredEarnings.filter((e) => e.status === "available" || e.status === "confirmed").reduce((s, e) => s + Number(e.amount), 0);
+  const totalPaid = filteredEarnings.filter((e) => e.status === "paid").reduce((s, e) => s + Number(e.amount), 0);
+  const signupEarnings = filteredEarnings.filter((e) => e.source_type === 'signup' && (e.status === 'available' || e.status === 'confirmed')).reduce((s, e) => s + Number(e.amount), 0);
 
   const productAffiliateLink = selectedProduct && code
     ? `${window.location.origin}/product/${selectedProduct.id}?ref=${code.code}`
@@ -284,11 +245,11 @@ export default function Referrals() {
                 <CardDescription>Direct earnings from referred sales.</CardDescription>
               </CardHeader>
               <CardContent>
-                {earnings.filter(e => e.source_type === 'sale').length === 0 ? (
+                {filteredEarnings.filter(e => e.source_type === 'sale').length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">No sale commissions yet.</p>
                 ) : (
                   <div className="space-y-2">
-                    {earnings.filter(e => e.source_type === 'sale').map((e) => (
+                    {filteredEarnings.filter(e => e.source_type === 'sale').map((e) => (
                       <div key={e.id} className="flex justify-between items-center p-3 border rounded">
                         <div>
                           <p className="font-medium">Sale Commission</p>
@@ -315,11 +276,11 @@ export default function Referrals() {
                 <CardDescription>History of student signups using your link.</CardDescription>
               </CardHeader>
               <CardContent>
-                {earnings.filter(e => e.source_type === 'signup').length === 0 ? (
+                {filteredEarnings.filter(e => e.source_type === 'signup').length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">No signups yet.</p>
                 ) : (
                   <div className="space-y-2">
-                    {earnings.filter(e => e.source_type === 'signup').map((e) => (
+                    {filteredEarnings.filter(e => e.source_type === 'signup').map((e) => (
                       <div key={e.id} className="flex justify-between items-center p-3 border rounded">
                         <div>
                           <p className="font-medium text-sm">New Student Referral</p>

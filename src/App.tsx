@@ -95,6 +95,9 @@ import { SpecialistRoute } from "@/components/SpecialistRoute";
 import ReferralRedirect from "./pages/ReferralRedirect";
 import RecruiterDashboard from "./pages/RecruiterDashboard";
 import AdminRecruitmentProgramme from "./pages/admin/AdminRecruitmentProgramme";
+import RecruitLanding from "./pages/recruit/RecruitLanding";
+import RecruiterAuth from "./pages/recruit/RecruiterAuth";
+import RecruiterApply from "./pages/recruit/RecruiterApply";
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -146,7 +149,13 @@ const App = () => {
               <Route path="/affiliates" element={<Affiliates />} />
               {/* Referral link entrypoint (public) */}
               <Route path="/r/:code" element={<ReferralRedirect />} />
-              {/* Public Recruitment Programme page */}
+              {/* Student Recruitment Programme */}
+              <Route path="/recruit" element={<RecruitLanding />} />
+              <Route path="/recruit/auth" element={<RecruiterAuth />} />
+              <Route path="/recruit/apply" element={<ProtectedRoute><RecruiterApply /></ProtectedRoute>} />
+              <Route path="/recruit/dashboard" element={<ProtectedRoute><RecruiterDashboard /></ProtectedRoute>} />
+
+              {/* Legacy/Other Referrals */}
               <Route path="/referrals" element={<Referrals />} />
               <Route path="/recruiter-dashboard" element={<ProtectedRoute><RecruiterDashboard /></ProtectedRoute>} />
 
