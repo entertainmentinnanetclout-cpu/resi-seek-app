@@ -38,9 +38,9 @@ SET search_path = public
 AS $$
 DECLARE _tags text[] := '{}';
 BEGIN
-  IF NEW.accepts_university THEN _tags := _tags || 'university'; END IF;
-  IF NEW.accepts_tvet       THEN _tags := _tags || 'tvet_college'; END IF;
-  IF NEW.accepts_private    THEN _tags := _tags || 'private'; END IF;
+  IF NEW.accepts_university THEN _tags := array_append(_tags, 'university'); END IF;
+  IF NEW.accepts_tvet       THEN _tags := array_append(_tags, 'tvet_college'); END IF;
+  IF NEW.accepts_private    THEN _tags := array_append(_tags, 'private'); END IF;
   NEW.audience_tags := _tags;
   RETURN NEW;
 END $$;
