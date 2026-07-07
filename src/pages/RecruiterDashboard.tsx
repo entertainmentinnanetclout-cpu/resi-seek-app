@@ -20,6 +20,7 @@ export default function RecruiterDashboard() {
   useEffect(() => {
     if (!user) return;
     (async () => {
+      // recruiter_dashboard_v and recruiter_applicants_v are already filtered by program_key = 'student_recruitment'
       const [{ data: s }, { data: a }] = await Promise.all([
         supabase.from("recruiter_dashboard_v" as any).select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("recruiter_applicants_v" as any).select("*").eq("referral_agent_user_id", user.id).order("referred_at", { ascending: false }),

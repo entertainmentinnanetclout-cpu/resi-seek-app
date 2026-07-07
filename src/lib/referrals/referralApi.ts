@@ -23,7 +23,11 @@ export async function attachReferralToUser(sessionId: string) {
   await supabase.rpc("attach_referral_to_user" as any, { _session_id: sessionId });
 }
 
-export async function captureApplicationReferral(applicationId: string, code?: string | null, sessionId?: string | null) {
+export async function captureApplicationReferral(applicationId: string, code?: string | null, sessionId?: string | null, programKey?: string | null) {
+  // Enforce program_key check client-side too (though server also enforces it)
+  if (programKey && programKey !== 'student_recruitment') {
+    return false;
+  }
   const { data, error } = await supabase.rpc("capture_application_referral" as any, {
     _application_id: applicationId,
     _code: code ?? null,

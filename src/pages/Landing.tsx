@@ -338,6 +338,7 @@ const Landing = () => {
                 <li><Link to="/find" className="hover:text-primary transition-colors">Find My Res</Link></li>
                 <li><Link to="/apply" className="hover:text-primary transition-colors">Applications</Link></li>
                 <li><Link to="/bursaries" className="hover:text-primary transition-colors">Bursaries</Link></li>
+                <li><Link to="/recruit" className="hover:text-primary transition-colors">Become a Recruiter</Link></li>
                 <li><Link to="/auth" className="hover:text-primary transition-colors">Sign Up / Login</Link></li>
               </ul>
             </div>
