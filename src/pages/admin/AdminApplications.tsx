@@ -66,36 +66,68 @@ export const AdminApplicationsContent = () => {
 
   const fetchApplications = async () => {
     try {
-      console.log('[AdminApplications] Fetching applications...');
+      setLoading(true);
+      console.log('[AdminApplications] Fetching applications (safe mode)...');
       
-      const { data, error } = await supabase
+      // 1. Fetch raw applications
+      const { data: apps, error: appsError } = await supabase
         .from("applications")
-        .select(`*, residence:residences!fk_applications_residence(name)`)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error('[AdminApplications] Fetch error:', error);
-        throw error;
+      if (appsError) {
+        console.error('[AdminApplications] Fetch applications error:', {
+          message: appsError.message,
+          details: appsError.details,
+          hint: appsError.hint,
+          code: appsError.code,
+        });
+        throw appsError;
       }
       
-      console.log(`[AdminApplications] Fetched ${data?.length || 0} applications`);
+      console.log(`[AdminApplications] Fetched ${apps?.length || 0} applications`);
 
-      // Fetch profiles separately
-      const appsWithProfiles = await Promise.all(
-        (data || []).map(async (app) => {
-          const { data: profile } = await supabase
+      const userIds = [...new Set((apps || []).map(a => a.user_id).filter(Boolean))];
+      const residenceIds = [...new Set((apps || []).map(a => a.residence_id).filter(Boolean))];
+
+      // 2. Fetch profiles
+      const { data: profiles, error: profilesError } = userIds.length
+        ? await supabase
             .from("profiles")
-            .select("full_name, email, phone, student_number")
-            .eq("id", app.user_id)
-            .maybeSingle();
-          return { ...app, profile } as Application;
-        })
-      );
+            .select("id, full_name, email, phone, student_number")
+            .in("id", userIds)
+        : { data: [], error: null };
 
-      setApplications(appsWithProfiles);
+      if (profilesError) {
+        console.error('[AdminApplications] Fetch profiles error:', profilesError);
+      }
+
+      // 3. Fetch residences
+      const { data: residences, error: residencesError } = residenceIds.length
+        ? await supabase
+            .from("residences")
+            .select("id, name")
+            .in("id", residenceIds)
+        : { data: [], error: null };
+
+      if (residencesError) {
+        console.error('[AdminApplications] Fetch residences error:', residencesError);
+      }
+
+      // 4. Merge data
+      const profileById = new Map((profiles || []).map(p => [p.id, p]));
+      const residenceById = new Map((residences || []).map(r => [r.id, r]));
+
+      const enrichedApplications = (apps || []).map(app => ({
+        ...app,
+        profile: profileById.get(app.user_id) || null,
+        residence: residenceById.get(app.residence_id) || null,
+      })) as Application[];
+
+      setApplications(enrichedApplications);
     } catch (error) {
-      console.error("[AdminApplications] Error:", error);
-      toast.error("Failed to load applications");
+      console.error("[AdminApplications] Fatal error:", error);
+      toast.error("Failed to load applications. Check console for details.");
     } finally {
       setLoading(false);
     }
