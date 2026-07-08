@@ -25,6 +25,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { readReferral, savePendingApplication } from "@/lib/referrals/referralStorage";
 import { captureApplicationReferral } from "@/lib/referrals/referralApi";
+import { ReferralBanner } from "@/components/referrals/ReferralBanner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ResidenceDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +42,7 @@ const ResidenceDetail = () => {
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [applicationNotes, setApplicationNotes] = useState("");
+  const [institutionType, setInstitutionType] = useState<string>("university");
   const [submitting, setSubmitting] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
 
@@ -138,7 +141,8 @@ const ResidenceDetail = () => {
           residence_id: id,
           status: 'submitted',
           notes: applicationNotes || null,
-        });
+          institution_type: institutionType,
+        } as any);
 
       if (error) throw error;
 
