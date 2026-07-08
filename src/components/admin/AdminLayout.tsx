@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Building2, Home, LogOut, Menu, LayoutDashboard, RefreshCw, TrendingUp, ShoppingCart, Film, Cpu } from "lucide-react";
+import { Building2, Home, LogOut, Menu, LayoutDashboard, RefreshCw, TrendingUp, ShoppingCart, Film, Cpu, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +33,7 @@ const allNavItems = [
   { icon: ShoppingCart, label: "Commerce Hub", path: "/admin/commerce", roles: ["admin", "commerce_lead", "support_agent"] },
   { icon: Film, label: "Media Hub", path: "/admin/media", roles: ["admin", "growth_lead"] },
   { icon: Cpu, label: "System Hub", path: "/admin/system", roles: ["admin", "system_operator"] },
+  { icon: GraduationCap, label: "TVET Hub", path: "/admin/tvet", roles: ["admin", "tvet_lead"] },
 ];
 
 const roleLabels: Record<string, string> = {
@@ -41,6 +42,7 @@ const roleLabels: Record<string, string> = {
   commerce_lead: "Commerce Lead",
   growth_lead: "Growth Lead",
   system_operator: "System Operator",
+  tvet_lead: "TVET Lead",
   support_agent: "Support Agent",
 };
 
