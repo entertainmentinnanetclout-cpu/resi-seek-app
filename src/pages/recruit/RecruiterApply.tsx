@@ -44,7 +44,7 @@ export default function RecruiterApply() {
         .maybeSingle();
 
       setMyApp(data);
-      if (data?.status === "approved") {
+      if ((data as any)?.status === "approved") {
         await refreshProfile();
         navigate("/recruit/dashboard");
       }
