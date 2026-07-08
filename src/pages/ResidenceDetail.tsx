@@ -232,8 +232,8 @@ const ResidenceDetail = () => {
         imageUrl={residence.image_url}
       />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-4"><ReferralBanner /></div>
         <Breadcrumb className="mb-4">
-            <div className="mb-4"><ReferralBanner /></div>
             <BreadcrumbList>
                 <BreadcrumbItem>
                     <BreadcrumbLink asChild>
