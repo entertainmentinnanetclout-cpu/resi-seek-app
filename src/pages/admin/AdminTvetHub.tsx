@@ -32,13 +32,77 @@ export default function AdminTvetHub() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.from("tvet_applications_v" as any).select("*").order("created_at", { ascending: false });
-      if (error) {
-        console.warn("[AdminTvetHub] view read failed, falling back to applications filter:", error.message);
-        const { data: fallback } = await supabase.from("applications").select("id, user_id, residence_id, status, application_date, created_at, institution_type, residence:residences!fk_applications_residence(name)").eq("institution_type", "tvet").order("created_at", { ascending: false });
-        // Enrich with profile
-        const enriched = await Promise.all((fallback || []).map(async (a: any) => {
-          const { data: p } = await supabase.from("profiles").select("full_name, email, phone, student_number, campus").eq("id", a.user_id).maybeSingle();
+      try {
+        setLoading(true);
+        console.log("[AdminTvetHub] Fetching TVET data...");
+
+        // 1. Get TVET residences
+        const { data: tvetResidences, error: resError } = await supabase
+          .from("residences")
+          .select("id, name, accepts_tvet")
+          .eq("accepts_tvet", true);
+
+        if (resError) {
+          console.error("[AdminTvetHub] Failed to load TVET residences:", {
+            message: resError.message,
+            details: resError.details,
+            hint: resError.hint,
+            code: resError.code,
+          });
+          throw resError;
+        }
+
+        const tvetResidenceIds = (tvetResidences || []).map(r => r.id);
+        const residenceMap = new Map((tvetResidences || []).map(r => [r.id, r.name]));
+
+        if (tvetResidenceIds.length === 0) {
+          console.log("[AdminTvetHub] No TVET residences found.");
+          setRows([]);
+          return;
+        }
+
+        // 2. Get applications for these residences
+        const { data: apps, error: appsError } = await supabase
+          .from("applications")
+          .select("*")
+          .in("residence_id", tvetResidenceIds)
+          .order("created_at", { ascending: false });
+
+        if (appsError) {
+          console.error("[AdminTvetHub] Failed to load applications:", {
+            message: appsError.message,
+            details: appsError.details,
+            hint: appsError.hint,
+            code: appsError.code,
+          });
+          throw appsError;
+        }
+
+        const userIds = [...new Set((apps || []).map(a => a.user_id).filter(Boolean))];
+
+        // 3. Get profiles for these users
+        const { data: profiles, error: profilesError } = userIds.length
+          ? await supabase
+              .from("profiles")
+              .select("id, full_name, email, phone, student_number, campus")
+              .in("id", userIds)
+          : { data: [], error: null };
+
+        if (profilesError) {
+          console.error("[AdminTvetHub] Failed to load profiles:", {
+            message: profilesError.message,
+            details: profilesError.details,
+            hint: profilesError.hint,
+            code: profilesError.code,
+          });
+          throw profilesError;
+        }
+
+        const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+        // 4. Enrich and merge
+        const enriched = (apps || []).map(a => {
+          const p = profileMap.get(a.user_id);
           return {
             application_id: a.id,
             user_id: a.user_id,
@@ -46,19 +110,21 @@ export default function AdminTvetHub() {
             application_status: a.status,
             application_date: a.application_date,
             created_at: a.created_at,
-            residence_name: a.residence?.name,
+            residence_name: residenceMap.get(a.residence_id),
             student_name: p?.full_name,
             student_email: p?.email,
             student_phone: p?.phone,
             student_number: p?.student_number,
             student_campus: p?.campus,
           };
-        }));
+        });
+
         setRows(enriched);
-      } else {
-        setRows(data || []);
+      } catch (error: any) {
+        console.error("[AdminTvetHub] Fatal error in data loading:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     })();
   }, []);
 

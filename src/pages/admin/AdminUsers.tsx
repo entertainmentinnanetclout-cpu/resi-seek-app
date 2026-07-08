@@ -38,55 +38,100 @@ export const AdminUsersContent = () => {
 
   const fetchUsers = async () => {
     try {
-      // Fetch profiles
+      setLoading(true);
+      console.log('[AdminUsers] Fetching users data...');
+
+      // 1. Fetch profiles
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (profilesError) throw profilesError;
-
-      // Fetch roles
-      let roles: Array<{ user_id: string; role: string }> = [];
-      const { data: rolesData, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
-
-      if (!rolesError) {
-        roles = rolesData || [];
+      if (profilesError) {
+        console.error('[AdminUsers] Profiles fetch error:', {
+          message: profilesError.message,
+          details: profilesError.details,
+          hint: profilesError.hint,
+          code: profilesError.code,
+        });
+        throw profilesError;
       }
 
-      // Fetch applications for each user
-      const { data: applications } = await supabase
-        .from("applications")
-        .select("user_id, status, residence:residences!fk_applications_residence(name)")
-        .order("created_at", { ascending: false });
+      const userIds = (profiles || []).map(p => p.id);
 
-      // Fetch document counts
-      const { data: documents } = await supabase
-        .from("documents")
-        .select("user_id");
+      // 2. Fetch roles
+      const { data: rolesData, error: rolesError } = userIds.length
+        ? await supabase
+            .from("user_roles")
+            .select("user_id, role")
+            .in("user_id", userIds)
+        : { data: [], error: null };
 
-      // Create lookup maps
+      if (rolesError) {
+        console.error('[AdminUsers] Roles fetch error:', rolesError);
+      }
+
+      const rolesByUserId = new Map<string, string>();
+      (rolesData || []).forEach(r => rolesByUserId.set(r.user_id, r.role));
+
+      // 3. Fetch applications (Safe multi-step approach)
+      const { data: apps, error: appsError } = userIds.length
+        ? await supabase
+            .from("applications")
+            .select("user_id, status, residence_id")
+            .in("user_id", userIds)
+        : { data: [], error: null };
+
+      if (appsError) {
+        console.error('[AdminUsers] Applications fetch error:', appsError);
+      }
+
+      const residenceIds = [...new Set((apps || []).map(a => a.residence_id).filter(Boolean))];
+
+      const { data: residences, error: residencesError } = residenceIds.length
+        ? await supabase
+            .from("residences")
+            .select("id, name")
+            .in("id", residenceIds)
+        : { data: [], error: null };
+
+      if (residencesError) {
+        console.error('[AdminUsers] Residences fetch error:', residencesError);
+      }
+
+      const residenceMap = new Map((residences || []).map(r => [r.id, r.name]));
       const applicationMap = new Map<string, { status: string; residenceName: string | null }>();
-      applications?.forEach(app => {
+
+      (apps || []).forEach(app => {
         if (!applicationMap.has(app.user_id)) {
           applicationMap.set(app.user_id, {
             status: app.status,
-            residenceName: app.residence?.name || null
+            residenceName: residenceMap.get(app.residence_id) || null
           });
         }
       });
 
+      // 4. Fetch document counts
+      const { data: documents, error: docsError } = userIds.length
+        ? await supabase
+            .from("documents")
+            .select("user_id")
+            .in("user_id", userIds)
+        : { data: [], error: null };
+
+      if (docsError) {
+        console.error('[AdminUsers] Documents count error:', docsError);
+      }
+
       const docCounts = new Map<string, number>();
-      documents?.forEach(doc => {
+      (documents || []).forEach(doc => {
         docCounts.set(doc.user_id, (docCounts.get(doc.user_id) || 0) + 1);
       });
 
-      // Merge all data
+      // 5. Merge all data
       const usersWithData = (profiles || []).map((profile) => ({
         ...profile,
-        role: roles.find((r) => r.user_id === profile.id)?.role || "student",
+        role: rolesByUserId.get(profile.id) || "student",
         applicationStatus: applicationMap.get(profile.id)?.status || null,
         residenceApplied: applicationMap.get(profile.id)?.residenceName || null,
         documentsCount: docCounts.get(profile.id) || 0,
@@ -94,8 +139,8 @@ export const AdminUsersContent = () => {
 
       setUsers(usersWithData);
     } catch (error) {
-      console.error("Error fetching users:", error);
-      toast.error("Failed to load users");
+      console.error("[AdminUsers] Fatal error fetching users:", error);
+      toast.error("Failed to load users. Check console for details.");
     } finally {
       setLoading(false);
     }
