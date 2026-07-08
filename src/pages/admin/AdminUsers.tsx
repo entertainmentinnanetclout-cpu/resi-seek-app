@@ -16,22 +16,21 @@ import { downloadVCard, downloadEnhancedCSV, formatPhoneNumber } from "@/lib/exp
 
 interface UserProfile {
   id: string;
-  full_name: string;
   email: string;
+  full_name: string;
   phone: string | null;
-  campus: string | null;
   student_number: string | null;
+  campus: string | null;
+  roles: string[];
+  primary_role: string;
   created_at: string;
-  year_of_study?: string | null;
-  role?: string;
-  applicationStatus?: string | null;
-  residenceApplied?: string | null;
-  documentsCount?: number;
+  last_sign_in_at: string | null;
 }
 
 export const AdminUsersContent = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [phoneFilter, setPhoneFilter] = useState("all");
@@ -39,108 +38,28 @@ export const AdminUsersContent = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log('[AdminUsers] Fetching users data...');
+      setError(null);
+      console.log('[AdminUsers] Fetching users from safe view...');
 
-      // 1. Fetch profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
+      const { data, error: usersError } = await supabase
+        .from("admin_users_safe")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (profilesError) {
-        console.error('[AdminUsers] Profiles fetch error:', {
-          message: profilesError.message,
-          details: profilesError.details,
-          hint: profilesError.hint,
-          code: profilesError.code,
+      if (usersError) {
+        console.error('Failed to load admin users:', {
+          message: usersError.message,
+          details: usersError.details,
+          hint: usersError.hint,
+          code: usersError.code,
         });
-        throw profilesError;
+        throw usersError;
       }
 
-      const userIds = (profiles || []).map(p => p.id);
-
-      // 2. Fetch roles
-      const { data: rolesData, error: rolesError } = userIds.length
-        ? await supabase
-            .from("user_roles")
-            .select("user_id, role")
-            .in("user_id", userIds)
-        : { data: [], error: null };
-
-      if (rolesError) {
-        console.error('[AdminUsers] Roles fetch error:', rolesError);
-      }
-
-      const rolesByUserId = new Map<string, string>();
-      (rolesData || []).forEach(r => rolesByUserId.set(r.user_id, r.role));
-
-      // 3. Fetch applications (Safe multi-step approach)
-      const { data: apps, error: appsError } = userIds.length
-        ? await supabase
-            .from("applications")
-            .select("user_id, status, residence_id")
-            .in("user_id", userIds)
-        : { data: [], error: null };
-
-      if (appsError) {
-        console.error('[AdminUsers] Applications fetch error:', appsError);
-      }
-
-      const residenceIds = [...new Set((apps || []).map(a => a.residence_id).filter(Boolean))];
-
-      const { data: residences, error: residencesError } = residenceIds.length
-        ? await supabase
-            .from("residences")
-            .select("id, name")
-            .in("id", residenceIds)
-        : { data: [], error: null };
-
-      if (residencesError) {
-        console.error('[AdminUsers] Residences fetch error:', residencesError);
-      }
-
-      const residenceMap = new Map((residences || []).map(r => [r.id, r.name]));
-      const applicationMap = new Map<string, { status: string; residenceName: string | null }>();
-
-      (apps || []).forEach(app => {
-        if (!applicationMap.has(app.user_id)) {
-          applicationMap.set(app.user_id, {
-            status: app.status,
-            residenceName: residenceMap.get(app.residence_id) || null
-          });
-        }
-      });
-
-      // 4. Fetch document counts
-      const { data: documents, error: docsError } = userIds.length
-        ? await supabase
-            .from("documents")
-            .select("user_id")
-            .in("user_id", userIds)
-        : { data: [], error: null };
-
-      if (docsError) {
-        console.error('[AdminUsers] Documents count error:', docsError);
-      }
-
-      const docCounts = new Map<string, number>();
-      (documents || []).forEach(doc => {
-        docCounts.set(doc.user_id, (docCounts.get(doc.user_id) || 0) + 1);
-      });
-
-      // 5. Merge all data
-      const usersWithData = (profiles || []).map((profile) => ({
-        ...profile,
-        role: rolesByUserId.get(profile.id) || "student",
-        applicationStatus: applicationMap.get(profile.id)?.status || null,
-        residenceApplied: applicationMap.get(profile.id)?.residenceName || null,
-        documentsCount: docCounts.get(profile.id) || 0,
-      }));
-
-      setUsers(usersWithData);
-    } catch (error) {
-      console.error("[AdminUsers] Fatal error fetching users:", error);
-      toast.error("Failed to load users. Check console for details.");
+      setUsers(data || []);
+    } catch (err: any) {
+      console.error("[AdminUsers] Fatal error fetching users:", err);
+      setError("Failed to load users. Please refresh the page.");
     } finally {
       setLoading(false);
     }
@@ -186,10 +105,10 @@ export const AdminUsersContent = () => {
       email: user.email,
       campus: user.campus,
       studentNumber: user.student_number,
-      residenceApplied: user.residenceApplied,
-      status: user.applicationStatus,
-      documentsCount: user.documentsCount,
-      yearOfStudy: user.year_of_study,
+      primaryRole: user.primary_role,
+      roles: user.roles?.join(', '),
+      createdAt: user.created_at,
+      lastSignIn: user.last_sign_in_at,
     })));
     toast.success(`Exported ${filteredUsers.length} users to CSV`);
   };
@@ -201,8 +120,6 @@ export const AdminUsersContent = () => {
       email: user.email,
       campus: user.campus,
       studentNumber: user.student_number,
-      residenceApplied: user.residenceApplied,
-      status: user.applicationStatus,
     })));
     toast.success(`Exported ${filteredUsers.filter(u => u.phone).length} contacts to vCard`);
   };
@@ -225,7 +142,7 @@ export const AdminUsersContent = () => {
       user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.student_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.phone?.includes(searchQuery);
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+    const matchesRole = roleFilter === "all" || user.primary_role === roleFilter;
     const matchesPhone = phoneFilter === "all" || 
       (phoneFilter === "with" && user.phone) ||
       (phoneFilter === "without" && !user.phone);
@@ -293,6 +210,11 @@ export const AdminUsersContent = () => {
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
+            ) : error ? (
+              <div className="py-8 text-center text-destructive">
+                <p className="font-semibold">{error}</p>
+                <Button variant="outline" className="mt-4" onClick={() => fetchUsers()}>Retry</Button>
+              </div>
             ) : filteredUsers.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">No users found</p>
             ) : (
@@ -303,8 +225,8 @@ export const AdminUsersContent = () => {
                       <TableHead>User</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Campus</TableHead>
-                      <TableHead>Application</TableHead>
                       <TableHead>Role</TableHead>
+                      <TableHead>Joined</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -314,7 +236,7 @@ export const AdminUsersContent = () => {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                              {user.role === "admin" ? (
+                              {user.primary_role === "admin" ? (
                                 <Shield className="w-5 h-5 text-primary" />
                               ) : (
                                 <User className="w-5 h-5 text-muted-foreground" />
@@ -362,29 +284,20 @@ export const AdminUsersContent = () => {
                           <span className="text-sm">{user.campus || "-"}</span>
                         </TableCell>
                         <TableCell>
-                          {user.applicationStatus ? (
-                            <div>
-                              <Badge variant={user.applicationStatus === 'approved' ? 'default' : 'secondary'} className="text-xs">
-                                {user.applicationStatus}
+                          <div className="flex flex-wrap gap-1">
+                            {user.roles?.map(role => (
+                              <Badge key={role} variant={role === "admin" ? "default" : "secondary"} className="text-[10px] px-1 py-0">
+                                {role}
                               </Badge>
-                              {user.residenceApplied && (
-                                <p className="text-xs text-muted-foreground mt-1 truncate max-w-[120px]">
-                                  {user.residenceApplied}
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          )}
+                            ))}
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                            {user.role}
-                          </Badge>
+                          <span className="text-xs text-muted-foreground">{safeFormatDate(user.created_at)}</span>
                         </TableCell>
                         <TableCell className="text-right">
                           <Select
-                            value={user.role}
+                            value={user.primary_role}
                             onValueChange={(value) => updateRole(user.id, value as "admin" | "student")}
                           >
                             <SelectTrigger className="w-24">

@@ -4,6 +4,7 @@ import SEO from "@/components/SEO";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { GraduationCap, Users, FileText, CheckCircle2, Search, Loader2 } from "lucide-react";
@@ -13,6 +14,7 @@ import { safeFormatDate } from "@/lib/utils";
 export default function TvetDashboard() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [recruiterFilter, setRecruiterFilter] = useState<string>("all");
@@ -21,42 +23,16 @@ export default function TvetDashboard() {
     (async () => {
       try {
         setLoading(true);
-        console.log("[TvetDashboard] Fetching TVET data...");
+        setError(null);
+        console.log("[TvetDashboard] Fetching TVET applications from view...");
 
-        // 1. Get TVET residences
-        const { data: tvetResidences, error: resError } = await supabase
-          .from("residences")
-          .select("id, name, accepts_tvet")
-          .eq("accepts_tvet", true);
-
-        if (resError) {
-          console.error("[TvetDashboard] Failed to load TVET residences:", {
-            message: resError.message,
-            details: resError.details,
-            hint: resError.hint,
-            code: resError.code,
-          });
-          throw resError;
-        }
-
-        const tvetResidenceIds = (tvetResidences || []).map(r => r.id);
-        const residenceMap = new Map((tvetResidences || []).map(r => [r.id, r.name]));
-
-        if (tvetResidenceIds.length === 0) {
-          console.log("[TvetDashboard] No TVET residences found.");
-          setRows([]);
-          return;
-        }
-
-        // 2. Get applications for these residences
-        const { data: apps, error: appsError } = await supabase
-          .from("applications")
+        const { data, error: appsError } = await supabase
+          .from("tvet_applications_v")
           .select("*")
-          .in("residence_id", tvetResidenceIds)
           .order("created_at", { ascending: false });
 
         if (appsError) {
-          console.error("[TvetDashboard] Failed to load applications:", {
+          console.error("Failed to load TVET applications:", {
             message: appsError.message,
             details: appsError.details,
             hint: appsError.hint,
@@ -65,50 +41,10 @@ export default function TvetDashboard() {
           throw appsError;
         }
 
-        const userIds = [...new Set((apps || []).map(a => a.user_id).filter(Boolean))];
-
-        // 3. Get profiles for these users
-        const { data: profiles, error: profilesError } = userIds.length
-          ? await supabase
-              .from("profiles")
-              .select("id, full_name, email, phone, student_number, campus")
-              .in("id", userIds)
-          : { data: [], error: null };
-
-        if (profilesError) {
-          console.error("[TvetDashboard] Failed to load profiles:", {
-            message: profilesError.message,
-            details: profilesError.details,
-            hint: profilesError.hint,
-            code: profilesError.code,
-          });
-          throw profilesError;
-        }
-
-        const profileMap = new Map((profiles || []).map(p => [p.id, p]));
-
-        // 4. Enrich and merge
-        const enriched = (apps || []).map(a => {
-          const p = profileMap.get(a.user_id);
-          return {
-            application_id: a.id,
-            user_id: a.user_id,
-            residence_id: a.residence_id,
-            application_status: a.status,
-            application_date: a.application_date,
-            created_at: a.created_at,
-            residence_name: residenceMap.get(a.residence_id),
-            student_name: p?.full_name,
-            student_email: p?.email,
-            student_phone: p?.phone,
-            student_number: p?.student_number,
-            student_campus: p?.campus,
-          };
-        });
-
-        setRows(enriched);
-      } catch (error: any) {
-        console.error("[TvetDashboard] Fatal error in data loading:", error);
+        setRows(data || []);
+      } catch (err: any) {
+        console.error("[TvetDashboard] Fatal error in data loading:", err);
+        setError("Failed to load TVET applications. Please refresh the page.");
       } finally {
         setLoading(false);
       }
@@ -119,13 +55,17 @@ export default function TvetDashboard() {
     const q = search.toLowerCase();
     const matchesQ = !q || [r.student_name, r.student_email, r.student_number, r.residence_name, r.recruiter_name].some((v) => String(v || "").toLowerCase().includes(q));
     const matchesStatus = statusFilter === "all" || r.application_status === statusFilter;
-    const matchesRecruiter = recruiterFilter === "all" || (recruiterFilter === "none" ? !r.referral_agent_user_id : r.referral_agent_user_id === recruiterFilter);
+    const matchesRecruiter = recruiterFilter === "all" || (recruiterFilter === "none" ? !r.recruiter_name : r.recruiter_name === recruiterFilter);
     return matchesQ && matchesStatus && matchesRecruiter;
   }), [rows, search, statusFilter, recruiterFilter]);
 
   const recruiters = useMemo(() => {
     const map = new Map<string, string>();
-    rows.forEach((r) => { if (r.referral_agent_user_id) map.set(r.referral_agent_user_id, r.recruiter_name || r.referral_code || "Recruiter"); });
+    rows.forEach((r) => {
+      if (r.recruiter_name) {
+        map.set(r.recruiter_name, r.recruiter_name);
+      }
+    });
     return Array.from(map.entries());
   }, [rows]);
 
@@ -133,7 +73,7 @@ export default function TvetDashboard() {
     total: rows.length,
     students: new Set(rows.map((r) => r.user_id)).size,
     approved: rows.filter((r) => r.application_status === "approved").length,
-    referred: rows.filter((r) => r.referral_agent_user_id).length,
+    referred: rows.filter((r) => r.recruiter_name || r.referral_code).length,
   }), [rows]);
 
   return (
@@ -188,6 +128,11 @@ export default function TvetDashboard() {
 
             {loading ? (
               <div className="py-12 text-center text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />Loading TVET applications…</div>
+            ) : error ? (
+              <div className="py-12 text-center text-destructive">
+                <p className="font-semibold">{error}</p>
+                <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>Retry</Button>
+              </div>
             ) : filtered.length === 0 ? (
               <div className="py-12 text-center text-muted-foreground">No TVET applications match your filters.</div>
             ) : (

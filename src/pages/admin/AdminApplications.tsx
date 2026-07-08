@@ -28,20 +28,25 @@ interface UserDocument {
 }
 
 interface Application {
-  id: string;
+  application_id: string;
   user_id: string;
   residence_id: string;
-  status: string;
-  notes: string | null;
+  application_status: string;
   application_date: string;
   created_at: string;
-  residence?: { name: string };
-  profile?: { full_name: string; email: string; phone: string | null; student_number: string | null };
+  residence_name: string;
+  student_name: string;
+  student_email: string;
+  student_phone: string | null;
+  student_number: string | null;
+  institution_type: string | null;
+  notes: string | null;
 }
 
 export const AdminApplicationsContent = () => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [institutionFilter, setInstitutionFilter] = useState<"all" | "university" | "tvet" | "private" | "other">("all");
@@ -67,16 +72,16 @@ export const AdminApplicationsContent = () => {
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      console.log('[AdminApplications] Fetching applications (safe mode)...');
+      setError(null);
+      console.log('[AdminApplications] Fetching applications from safe view...');
       
-      // 1. Fetch raw applications
-      const { data: apps, error: appsError } = await supabase
-        .from("applications")
+      const { data, error: appsError } = await supabase
+        .from("admin_applications_safe")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (appsError) {
-        console.error('[AdminApplications] Fetch applications error:', {
+        console.error('Failed to load admin applications:', {
           message: appsError.message,
           details: appsError.details,
           hint: appsError.hint,
@@ -85,49 +90,11 @@ export const AdminApplicationsContent = () => {
         throw appsError;
       }
       
-      console.log(`[AdminApplications] Fetched ${apps?.length || 0} applications`);
-
-      const userIds = [...new Set((apps || []).map(a => a.user_id).filter(Boolean))];
-      const residenceIds = [...new Set((apps || []).map(a => a.residence_id).filter(Boolean))];
-
-      // 2. Fetch profiles
-      const { data: profiles, error: profilesError } = userIds.length
-        ? await supabase
-            .from("profiles")
-            .select("id, full_name, email, phone, student_number")
-            .in("id", userIds)
-        : { data: [], error: null };
-
-      if (profilesError) {
-        console.error('[AdminApplications] Fetch profiles error:', profilesError);
-      }
-
-      // 3. Fetch residences
-      const { data: residences, error: residencesError } = residenceIds.length
-        ? await supabase
-            .from("residences")
-            .select("id, name")
-            .in("id", residenceIds)
-        : { data: [], error: null };
-
-      if (residencesError) {
-        console.error('[AdminApplications] Fetch residences error:', residencesError);
-      }
-
-      // 4. Merge data
-      const profileById = new Map((profiles || []).map(p => [p.id, p]));
-      const residenceById = new Map((residences || []).map(r => [r.id, r]));
-
-      const enrichedApplications = (apps || []).map(app => ({
-        ...app,
-        profile: profileById.get(app.user_id) || null,
-        residence: residenceById.get(app.residence_id) || null,
-      })) as Application[];
-
-      setApplications(enrichedApplications);
-    } catch (error) {
-      console.error("[AdminApplications] Fatal error:", error);
-      toast.error("Failed to load applications. Check console for details.");
+      console.log(`[AdminApplications] Fetched ${data?.length || 0} applications`);
+      setApplications(data || []);
+    } catch (err: any) {
+      console.error("[AdminApplications] Fatal error:", err);
+      setError("Failed to load applications. Please refresh the page.");
     } finally {
       setLoading(false);
     }
@@ -192,7 +159,7 @@ export const AdminApplicationsContent = () => {
 
   const updateStatus = async (id: string, newStatus: string, note?: string) => {
     try {
-      const app = applications.find(a => a.id === id);
+      const app = applications.find(a => a.application_id === id);
       const updateData: { status: string; notes?: string } = { status: newStatus };
       if (note) {
         const existingNotes = app?.notes || "";
@@ -214,8 +181,8 @@ export const AdminApplicationsContent = () => {
           user_id: app.user_id,
           type: "application_status",
           title: `Application ${statusLabel}`,
-          message: `Your application for ${app.residence?.name || 'accommodation'} has been updated to: ${statusLabel}${note ? `. Note: ${note}` : ''}`,
-          metadata: { application_id: id, status: newStatus, residence_name: app.residence?.name }
+          message: `Your application for ${app.residence_name || 'accommodation'} has been updated to: ${statusLabel}${note ? `. Note: ${note}` : ''}`,
+          metadata: { application_id: id, status: newStatus, residence_name: app.residence_name }
         });
       }
 
@@ -266,8 +233,8 @@ export const AdminApplicationsContent = () => {
 
   const selectAllPending = () => {
     const pendingIds = filteredApplications
-      .filter(app => app.status === "submitted" || app.status === "pending")
-      .map(app => app.id);
+      .filter(app => app.application_status === "submitted" || app.application_status === "pending")
+      .map(app => app.application_id);
     setSelectedIds(new Set(pendingIds));
   };
 
@@ -295,11 +262,11 @@ export const AdminApplicationsContent = () => {
 
   const filteredApplications = applications.filter((app) => {
     const matchesSearch =
-      app.profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.residence?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.profile?.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || app.status === statusFilter;
-    const inst = (app as any).institution_type as string | null | undefined;
+      app.student_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.residence_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.student_email?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || app.application_status === statusFilter;
+    const inst = app.institution_type;
     const matchesInstitution =
       institutionFilter === "all" ||
       (institutionFilter === "other" ? !inst : inst === institutionFilter);
@@ -307,7 +274,7 @@ export const AdminApplicationsContent = () => {
   });
 
   const pendingCount = filteredApplications.filter(
-    app => app.status === "submitted" || app.status === "pending"
+    app => app.application_status === "submitted" || app.application_status === "pending"
   ).length;
 
   return (
@@ -400,12 +367,12 @@ export const AdminApplicationsContent = () => {
                 className="gap-2"
                 onClick={() => {
                   const exportData = filteredApplications.map(app => ({
-                    name: app.profile?.full_name || 'Unknown',
-                    phone: app.profile?.phone || null,
-                    email: app.profile?.email || null,
-                    studentNumber: app.profile?.student_number || null,
-                    residenceApplied: app.residence?.name || 'Unknown',
-                    status: app.status,
+                    name: app.student_name || 'Unknown',
+                    phone: app.student_phone || null,
+                    email: app.student_email || null,
+                    studentNumber: app.student_number || null,
+                    residenceApplied: app.residence_name || 'Unknown',
+                    status: app.application_status,
                     applicationDate: app.application_date,
                   }));
                   downloadEnhancedCSV(exportData, `handover-pack-${new Date().toISOString().split('T')[0]}.csv`);
@@ -419,7 +386,14 @@ export const AdminApplicationsContent = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-center py-8 text-muted-foreground">Loading...</p>
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : error ? (
+              <div className="py-8 text-center text-destructive">
+                <p className="font-semibold">{error}</p>
+                <Button variant="outline" className="mt-4" onClick={() => fetchApplications()}>Retry</Button>
+              </div>
             ) : filteredApplications.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">No applications found</p>
             ) : (
@@ -429,7 +403,7 @@ export const AdminApplicationsContent = () => {
                     <TableRow>
                       <TableHead className="w-12">
                         <Checkbox
-                          checked={selectedIds.size === filteredApplications.filter(a => a.status === "submitted" || a.status === "pending").length && selectedIds.size > 0}
+                          checked={selectedIds.size === filteredApplications.filter(a => a.application_status === "submitted" || a.application_status === "pending").length && selectedIds.size > 0}
                           onCheckedChange={(checked) => {
                             if (checked) {
                               selectAllPending();
@@ -448,35 +422,35 @@ export const AdminApplicationsContent = () => {
                   </TableHeader>
                   <TableBody>
                     {filteredApplications.map((app) => (
-                      <TableRow key={app.id} className={selectedIds.has(app.id) ? "bg-primary/5" : ""}>
+                      <TableRow key={app.application_id} className={selectedIds.has(app.application_id) ? "bg-primary/5" : ""}>
                         <TableCell>
-                          {(app.status === "submitted" || app.status === "pending") && (
+                          {(app.application_status === "submitted" || app.application_status === "pending") && (
                             <Checkbox
-                              checked={selectedIds.has(app.id)}
-                              onCheckedChange={() => toggleSelection(app.id)}
+                              checked={selectedIds.has(app.application_id)}
+                              onCheckedChange={() => toggleSelection(app.application_id)}
                             />
                           )}
                         </TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium">{app.profile?.full_name || "Unknown"}</p>
-                            <p className="text-sm text-muted-foreground">{app.profile?.email}</p>
+                            <p className="font-medium">{app.student_name || "Unknown"}</p>
+                            <p className="text-sm text-muted-foreground">{app.student_email}</p>
                           </div>
                         </TableCell>
-                        <TableCell>{app.residence?.name || "Unknown"}</TableCell>
+                        <TableCell>{app.residence_name || "Unknown"}</TableCell>
                         <TableCell>{safeFormatDate(app.application_date)}</TableCell>
-                        <TableCell>{getStatusBadge(app.status)}</TableCell>
+                        <TableCell>{getStatusBadge(app.application_status)}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="icon" onClick={() => setSelectedApplication(app)}>
                             <Eye className="w-4 h-4" />
                           </Button>
-                          {(app.status === "submitted" || app.status === "pending") && (
+                          {(app.application_status === "submitted" || app.application_status === "pending") && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="text-green-600"
-                                onClick={() => updateStatus(app.id, "approved")}
+                                onClick={() => updateStatus(app.application_id, "approved")}
                               >
                                 <Check className="w-4 h-4" />
                               </Button>
@@ -484,7 +458,7 @@ export const AdminApplicationsContent = () => {
                                 variant="ghost"
                                 size="icon"
                                 className="text-destructive"
-                                onClick={() => updateStatus(app.id, "rejected")}
+                                onClick={() => updateStatus(app.application_id, "rejected")}
                               >
                                 <X className="w-4 h-4" />
                               </Button>
@@ -514,23 +488,23 @@ export const AdminApplicationsContent = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Student Name</p>
-                  <p className="font-medium">{selectedApplication.profile?.full_name}</p>
+                  <p className="font-medium">{selectedApplication.student_name}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Student Number</p>
-                  <p className="font-medium">{selectedApplication.profile?.student_number || "N/A"}</p>
+                  <p className="font-medium">{selectedApplication.student_number || "N/A"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{selectedApplication.profile?.email}</p>
+                  <p className="font-medium">{selectedApplication.student_email}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{selectedApplication.profile?.phone || "N/A"}</p>
+                  <p className="font-medium">{selectedApplication.student_phone || "N/A"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Residence</p>
-                  <p className="font-medium">{selectedApplication.residence?.name}</p>
+                  <p className="font-medium">{selectedApplication.residence_name}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Applied On</p>
@@ -540,7 +514,7 @@ export const AdminApplicationsContent = () => {
 
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Status</p>
-                {getStatusBadge(selectedApplication.status)}
+                {getStatusBadge(selectedApplication.application_status)}
               </div>
 
               {selectedApplication.notes && (
@@ -607,7 +581,7 @@ export const AdminApplicationsContent = () => {
               {/* Status Update Section */}
               <div className="space-y-3 pt-4 border-t">
                 <Label>Update Status</Label>
-                <Select onValueChange={(value) => updateStatus(selectedApplication.id, value, statusNote)}>
+                <Select onValueChange={(value) => updateStatus(selectedApplication.application_id, value, statusNote)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Change status..." />
                   </SelectTrigger>
