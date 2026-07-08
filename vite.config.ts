@@ -52,6 +52,7 @@ export default defineConfig(({ mode }) => {
             ],
           },
           workbox: {
+            maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
             runtimeCaching: [
               {
                 urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,

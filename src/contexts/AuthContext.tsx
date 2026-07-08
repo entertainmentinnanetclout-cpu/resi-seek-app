@@ -2,14 +2,16 @@ import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { AppStaffRole, GOD_MODE_ROLES } from "@/lib/constants/roles";
 
-export type StaffRole = 'admin' | 'operations_lead' | 'commerce_lead' | 'growth_lead' | 'system_operator' | 'tvet_lead' | 'support_agent' | null;
+export type StaffRole = AppStaffRole | null;
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isGodMode: boolean;
   isRecruiter: boolean;
   isPendingRecruiter: boolean;
   isStudent: boolean;
@@ -25,6 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isGodMode, setIsGodMode] = useState(false);
   const [isRecruiter, setIsRecruiter] = useState(false);
   const [isPendingRecruiter, setIsPendingRecruiter] = useState(false);
   const [isStudent, setIsStudent] = useState(false);
@@ -73,6 +76,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!sessionChecked) return;
     if (!user) {
       setIsAdmin(false);
+      setIsGodMode(false);
       setStaffRole(null);
       setIsRecruiter(false);
       setIsPendingRecruiter(false);
@@ -91,7 +95,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (roleError) throw roleError;
       const role = (roleData as string | null) as StaffRole;
       setStaffRole(role);
-      setIsAdmin(role === 'admin');
+
+      const isGod = !!role && (GOD_MODE_ROLES as readonly string[]).includes(role);
+
+      setIsGodMode(isGod);
+      setIsAdmin(isGod); // Historically isAdmin often meant God Mode in this codebase
 
       // 2. Check Recruiter Status & Student Profile in parallel
       const [recruiterRes, pendingRes, profileRes] = await Promise.all([
@@ -127,6 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setSession(null);
     setIsAdmin(false);
+    setIsGodMode(false);
     setStaffRole(null);
     setIsRecruiter(false);
     setIsPendingRecruiter(false);
@@ -136,7 +145,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{
-      user, session, isLoading, isAdmin, isRecruiter, isPendingRecruiter, isStudent, staffRole, signOut, refreshProfile: checkStatus
+      user, session, isLoading, isAdmin, isGodMode, isRecruiter, isPendingRecruiter, isStudent, staffRole, signOut, refreshProfile: checkStatus
     }}>
       {children}
     </AuthContext.Provider>
