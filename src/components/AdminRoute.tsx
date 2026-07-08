@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading: authLoading, staffRole } = useAuth();
+  const { user, isLoading: authLoading, staffRole, isGodMode } = useAuth();
   const [ready, setReady] = useState(false);
   const navigate = useNavigate();
 
@@ -16,15 +16,29 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    // Any staff role grants access to admin panel
-    if (!staffRole) {
-      toast.error('Access denied: Staff privileges required');
-      navigate('/dashboard');
+    // God Mode check for /admin routes
+    if (!isGodMode) {
+      console.warn(`[AdminRoute] Access denied for role: ${staffRole}. Redirecting to specific dashboard.`);
+
+      // Role-specific safe redirects
+      if (staffRole === 'tvet_lead') {
+        navigate('/tvet-dashboard');
+      } else if (staffRole === 'operations_lead' || staffRole === 'system_operator') {
+        // Fallback for other leads until they have dedicated dashboards
+        navigate('/dashboard');
+      } else if (staffRole === 'commerce_lead') {
+        navigate('/commerce');
+      } else if (staffRole === 'growth_lead') {
+        navigate('/media');
+      } else {
+        toast.error('Access denied: God Mode privileges required');
+        navigate('/dashboard');
+      }
       return;
     }
 
     setReady(true);
-  }, [user, authLoading, staffRole, navigate]);
+  }, [user, authLoading, staffRole, isGodMode, navigate]);
 
   if (authLoading || !ready) {
     return (

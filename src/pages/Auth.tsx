@@ -38,7 +38,7 @@ const signupSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, isLoading: authLoading, isAdmin, staffRole, isRecruiter, isPendingRecruiter, isStudent } = useAuth();
+  const { user, isLoading: authLoading, isGodMode, staffRole, isRecruiter, isPendingRecruiter, isStudent } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,18 +59,19 @@ const Auth = () => {
         const ref = readReferral();
         if (ref?.sessionId) { try { await attachReferralToUser(ref.sessionId); } catch {} }
 
-        if (staffRole) {
-          // Staff roles get routed to their default hub
-          const hubMap: Record<string, string> = {
-            admin: "/admin",
-            operations_lead: "/admin/operations",
-            commerce_lead: "/commerce",
-            growth_lead: "/media",
-            system_operator: "/admin/system",
-            tvet_lead: "/admin/tvet",
-            support_agent: "/admin/operations",
-          };
-          navigate(hubMap[staffRole] || "/admin", { replace: true });
+        if (isGodMode) {
+          navigate("/admin", { replace: true });
+          return;
+        }
+
+        if (staffRole === 'tvet_lead') {
+          navigate("/tvet-dashboard", { replace: true });
+          return;
+        }
+
+        const residenceAdminRoles = ["residence_admin", "building_admin", "office_admin"];
+        if (staffRole && residenceAdminRoles.includes(staffRole)) {
+          navigate("/residence-dashboard", { replace: true });
           return;
         }
 

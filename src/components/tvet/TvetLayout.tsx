@@ -1,13 +1,11 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Building2, Home, LogOut, Menu, LayoutDashboard, RefreshCw, TrendingUp, ShoppingCart, Film, Cpu, GraduationCap } from "lucide-react";
+import { Building2, Home, LogOut, Menu, LayoutDashboard, RefreshCw, GraduationCap, Users, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useAuth, StaffRole } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { GOD_MODE_ROLES } from "@/lib/constants/roles";
 import {
   Sidebar,
   SidebarContent,
@@ -23,45 +21,24 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-interface AdminLayoutProps {
+interface TvetLayoutProps {
   children: React.ReactNode;
 }
 
-const allNavItems = [
-  { icon: LayoutDashboard, label: "Overview", path: "/admin", roles: GOD_MODE_ROLES },
-  { icon: TrendingUp, label: "Analytics", path: "/admin/analytics", roles: GOD_MODE_ROLES },
-  { icon: Building2, label: "Accommodation Hub", path: "/admin/operations", roles: GOD_MODE_ROLES },
-  { icon: ShoppingCart, label: "Commerce Hub", path: "/admin/commerce", roles: GOD_MODE_ROLES },
-  { icon: Film, label: "Media Hub", path: "/admin/media", roles: GOD_MODE_ROLES },
-  { icon: Cpu, label: "System Hub", path: "/admin/system", roles: GOD_MODE_ROLES },
-  { icon: GraduationCap, label: "TVET Hub", path: "/admin/tvet", roles: GOD_MODE_ROLES },
+const navItems = [
+  { icon: LayoutDashboard, label: "Overview", path: "/tvet-dashboard" },
+  { icon: GraduationCap, label: "TVET Hub", path: "/tvet-dashboard" }, // Can add more specific routes later
 ];
 
-const roleLabels: Record<string, string> = {
-  admin: "God Mode",
-  super_admin: "Super Admin",
-  developer: "Developer",
-  owner: "Owner",
-  operations_lead: "Operations Lead",
-  commerce_lead: "Commerce Lead",
-  growth_lead: "Growth Lead",
-  system_operator: "System Operator",
-  tvet_lead: "TVET Lead",
-  support_agent: "Support Agent",
-};
-
-const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
+const TvetSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-
-  const navItems = allNavItems.filter(
-    (item) => staffRole && (item.roles as readonly string[]).includes(staffRole)
-  );
+  const { signOut } = useAuth();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate("/");
   };
 
@@ -79,7 +56,7 @@ const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
             <div className="min-w-0">
               <span className="text-lg font-bold block leading-tight">ResKonnect</span>
               <Badge variant="outline" className="text-[10px] mt-0.5">
-                {roleLabels[staffRole || "admin"]}
+                TVET Lead
               </Badge>
             </div>
           )}
@@ -142,27 +119,11 @@ const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
   );
 };
 
-const AdminLayout = ({ children }: AdminLayoutProps) => {
-  const { staffRole, isGodMode } = useAuth();
-  const navigate = useNavigate();
-
-  if (!isGodMode && staffRole) {
-    // Safety check: if somehow a scoped staff role gets into AdminLayout,
-    // we should not render it and redirect them immediately.
-    // They should have been caught by AdminRoute, but this is a second layer of protection.
-    console.warn(`[AdminLayout] Scoped staff role ${staffRole} detected in AdminLayout. Redirecting...`);
-    if (staffRole === 'tvet_lead') {
-      navigate('/tvet-dashboard');
-    } else {
-      navigate('/dashboard');
-    }
-    return null;
-  }
-
+const TvetLayout = ({ children }: TvetLayoutProps) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <AdminSidebar staffRole={staffRole} />
+        <TvetSidebar />
 
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-12 flex items-center justify-between border-b bg-card px-4 shrink-0 sticky top-0 z-40">
@@ -179,4 +140,4 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   );
 };
 
-export default AdminLayout;
+export default TvetLayout;

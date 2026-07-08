@@ -12,8 +12,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {
+  const { isGodMode, staffRole, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && !isGodMode) {
+      if (staffRole === 'tvet_lead') {
+        navigate('/tvet-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [isGodMode, authLoading, staffRole, navigate]);
   const [stats, setStats] = useState({
     totalResidences: 0,
     totalApplications: 0,
@@ -162,6 +176,14 @@ const AdminDashboard = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  if (loading || authLoading || !isGodMode) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-pulse text-muted-foreground">Verifying God Mode access...</div>
+      </div>
+    );
+  }
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
