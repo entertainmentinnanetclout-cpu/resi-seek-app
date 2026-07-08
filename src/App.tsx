@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,97 +9,99 @@ import Preloader from "@/components/Preloader";
 import ResBot from "@/components/ResBot";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
-import ProfileSetup from "./pages/ProfileSetup";
-import Dashboard from "./pages/Dashboard";
-import Updates from "./pages/Updates";
-import CampusNews from "./pages/CampusNews";
-import FindMyRes from "./pages/FindMyRes";
-import Applications from "./pages/Applications";
-import Profile from "./pages/Profile";
-import Messages from "./pages/Messages";
-import Favorites from "./pages/Favorites";
-import Admin from "./pages/Admin";
-import NotFound from "./pages/NotFound";
-import Marketplace from "./pages/Marketplace";
 import MarketplaceComingSoon from "./pages/MarketplaceComingSoon";
-import ApplicationsHub from "./pages/ApplicationsHub";
-import ResidenceDetail from "./pages/ResidenceDetail";
-import BursaryFinder from "./pages/BursaryFinder";
-import StudentDeals from "./pages/StudentDeals";
-import RoommateFinder from "./pages/RoommateFinder";
-import Events from "./pages/Events";
-import Documents from "./pages/Documents";
-import StoreSetup from "./pages/StoreSetup";
-import MyStore from "./pages/MyStore";
-import StoreEdit from "./pages/StoreEdit";
-import Store from "./pages/Store";
-import Orders from "./pages/Orders";
-import ProductDetail from "./pages/ProductDetail";
-import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
+import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { StudentRoute } from "@/components/StudentRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
-import ProvinceLanding from "./pages/seo/ProvinceLanding";
-import CampusLanding from "./pages/seo/CampusLanding";
-import NationalLanding from "./pages/seo/NationalLanding";
-import NsfAsLanding from "./pages/seo/NsfAsLanding";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminResidences from "./pages/admin/AdminResidences";
-import AdminApplications from "./pages/admin/AdminApplications";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminSlides from "./pages/admin/AdminSlides";
-import AdminBursaries from "./pages/admin/AdminBursaries";
-import AdminDiscounts from "./pages/admin/AdminDiscounts";
-import AdminEvents from "./pages/admin/AdminEvents";
-import AdminMarketplace from "./pages/admin/AdminMarketplace";
-import AdminNews from "./pages/admin/AdminNews";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminSystemStatus from "./pages/admin/AdminSystemStatus";
-import AdminAnalytics from "./pages/admin/AdminAnalytics";
-import AdminDocuments from "./pages/admin/AdminDocuments";
-import AdminStores from "./pages/admin/AdminStores";
-import AdminFollowUp from "./pages/admin/AdminFollowUp";
-import AdminWhatsAppTemplates from "./pages/admin/AdminWhatsAppTemplates";
-import AdminDiscountOrders from "./pages/admin/AdminDiscountOrders";
-import AdminHamperItems from "./pages/admin/AdminHamperItems";
-import AdminResidencePortals from "./pages/admin/AdminResidencePortals";
-import BursaryDetail from "./pages/BursaryDetail";
-import MyDiscountOrders from "./pages/MyDiscountOrders";
-import Terms from "./pages/Terms";
-import Privacy from "./pages/Privacy";
-import ResidenceLogin from "./pages/residence/ResidenceLogin";
-import ResidenceLayout from "./pages/residence/ResidenceLayout";
-import ResidenceDashboard from "./pages/residence/ResidenceDashboard";
-import ResidenceInbox from "./pages/residence/ResidenceInbox";
-import ResidenceApplicationDetail from "./pages/residence/ResidenceApplicationDetail";
-import ResidenceAnalytics from "./pages/residence/ResidenceAnalytics";
 import { ResidenceRoute } from "./components/ResidenceRoute";
-import SellerOnboarding from "./pages/SellerOnboarding";
-import Referrals from "./pages/Referrals";
-import MyDiscountCodes from "./pages/MyDiscountCodes";
-import AdminSellerApprovals from "./pages/admin/AdminSellerApprovals";
-import PushPrompt from "@/components/PushPrompt";
-import MyWIL from "./pages/MyWIL";
-import AdminWIL from "./pages/admin/AdminWIL";
-import AdminOperationsHub from "./pages/admin/AdminOperationsHub";
-import AdminCommerceHub from "./pages/admin/AdminCommerceHub";
-import AdminMediaHub from "./pages/admin/AdminMediaHub";
-import AdminSystemHub from "./pages/admin/AdminSystemHub";
-import Affiliates from "./pages/Affiliates";
-import OrderPayment from "./pages/OrderPayment";
-import MediaDashboard from "./pages/MediaDashboard";
-import CommerceDashboard from "./pages/CommerceDashboard";
 import { SpecialistRoute } from "@/components/SpecialistRoute";
-import ReferralRedirect from "./pages/ReferralRedirect";
-import RecruiterDashboard from "./pages/RecruiterDashboard";
-import AdminRecruitmentProgramme from "./pages/admin/AdminRecruitmentProgramme";
-import AdminTvetHub from "./pages/admin/AdminTvetHub";
-import TvetDashboard from "./pages/tvet/TvetDashboard";
-import RecruitLanding from "./pages/recruit/RecruitLanding";
-import RecruiterAuth from "./pages/recruit/RecruiterAuth";
-import RecruiterApply from "./pages/recruit/RecruiterApply";
+import PushPrompt from "@/components/PushPrompt";
+
+// Lazy load heavy components
+const ProfileSetup = lazy(() => import("./pages/ProfileSetup"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Updates = lazy(() => import("./pages/Updates"));
+const CampusNews = lazy(() => import("./pages/CampusNews"));
+const FindMyRes = lazy(() => import("./pages/FindMyRes"));
+const Applications = lazy(() => import("./pages/Applications"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Messages = lazy(() => import("./pages/Messages"));
+const Favorites = lazy(() => import("./pages/Favorites"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Marketplace = lazy(() => import("./pages/Marketplace"));
+const ApplicationsHub = lazy(() => import("./pages/ApplicationsHub"));
+const ResidenceDetail = lazy(() => import("./pages/ResidenceDetail"));
+const BursaryFinder = lazy(() => import("./pages/BursaryFinder"));
+const StudentDeals = lazy(() => import("./pages/StudentDeals"));
+const RoommateFinder = lazy(() => import("./pages/RoommateFinder"));
+const Events = lazy(() => import("./pages/Events"));
+const Documents = lazy(() => import("./pages/Documents"));
+const StoreSetup = lazy(() => import("./pages/StoreSetup"));
+const MyStore = lazy(() => import("./pages/MyStore"));
+const StoreEdit = lazy(() => import("./pages/StoreEdit"));
+const Store = lazy(() => import("./pages/Store"));
+const Orders = lazy(() => import("./pages/Orders"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const ProvinceLanding = lazy(() => import("./pages/seo/ProvinceLanding"));
+const CampusLanding = lazy(() => import("./pages/seo/CampusLanding"));
+const NationalLanding = lazy(() => import("./pages/seo/NationalLanding"));
+const NsfAsLanding = lazy(() => import("./pages/seo/NsfAsLanding"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminResidences = lazy(() => import("./pages/admin/AdminResidences"));
+const AdminApplications = lazy(() => import("./pages/admin/AdminApplications"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminSlides = lazy(() => import("./pages/admin/AdminSlides"));
+const AdminBursaries = lazy(() => import("./pages/admin/AdminBursaries"));
+const AdminDiscounts = lazy(() => import("./pages/admin/AdminDiscounts"));
+const AdminEvents = lazy(() => import("./pages/admin/AdminEvents"));
+const AdminMarketplace = lazy(() => import("./pages/admin/AdminMarketplace"));
+const AdminNews = lazy(() => import("./pages/admin/AdminNews"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminSystemStatus = lazy(() => import("./pages/admin/AdminSystemStatus"));
+const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const AdminDocuments = lazy(() => import("./pages/admin/AdminDocuments"));
+const AdminStores = lazy(() => import("./pages/admin/AdminStores"));
+const AdminFollowUp = lazy(() => import("./pages/admin/AdminFollowUp"));
+const AdminWhatsAppTemplates = lazy(() => import("./pages/admin/AdminWhatsAppTemplates"));
+const AdminDiscountOrders = lazy(() => import("./pages/admin/AdminDiscountOrders"));
+const AdminHamperItems = lazy(() => import("./pages/admin/AdminHamperItems"));
+const AdminResidencePortals = lazy(() => import("./pages/admin/AdminResidencePortals"));
+const BursaryDetail = lazy(() => import("./pages/BursaryDetail"));
+const MyDiscountOrders = lazy(() => import("./pages/MyDiscountOrders"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const ResidenceLogin = lazy(() => import("./pages/residence/ResidenceLogin"));
+const ResidenceLayout = lazy(() => import("./pages/residence/ResidenceLayout"));
+const ResidenceDashboard = lazy(() => import("./pages/residence/ResidenceDashboard"));
+const ResidenceInbox = lazy(() => import("./pages/residence/ResidenceInbox"));
+const ResidenceApplicationDetail = lazy(() => import("./pages/residence/ResidenceApplicationDetail"));
+const ResidenceAnalytics = lazy(() => import("./pages/residence/ResidenceAnalytics"));
+const SellerOnboarding = lazy(() => import("./pages/SellerOnboarding"));
+const Referrals = lazy(() => import("./pages/Referrals"));
+const MyDiscountCodes = lazy(() => import("./pages/MyDiscountCodes"));
+const AdminSellerApprovals = lazy(() => import("./pages/admin/AdminSellerApprovals"));
+const MyWIL = lazy(() => import("./pages/MyWIL"));
+const AdminWIL = lazy(() => import("./pages/admin/AdminWIL"));
+const AdminOperationsHub = lazy(() => import("./pages/admin/AdminOperationsHub"));
+const AdminCommerceHub = lazy(() => import("./pages/admin/AdminCommerceHub"));
+const AdminMediaHub = lazy(() => import("./pages/admin/AdminMediaHub"));
+const AdminSystemHub = lazy(() => import("./pages/admin/AdminSystemHub"));
+const Affiliates = lazy(() => import("./pages/Affiliates"));
+const OrderPayment = lazy(() => import("./pages/OrderPayment"));
+const MediaDashboard = lazy(() => import("./pages/MediaDashboard"));
+const CommerceDashboard = lazy(() => import("./pages/CommerceDashboard"));
+const ReferralRedirect = lazy(() => import("./pages/ReferralRedirect"));
+const RecruiterDashboard = lazy(() => import("./pages/RecruiterDashboard"));
+const AdminRecruitmentProgramme = lazy(() => import("./pages/admin/AdminRecruitmentProgramme"));
+const AdminTvetHub = lazy(() => import("./pages/admin/AdminTvetHub"));
+const TvetDashboard = lazy(() => import("./pages/tvet/TvetDashboard"));
+const RecruitLanding = lazy(() => import("./pages/recruit/RecruitLanding"));
+const RecruiterAuth = lazy(() => import("./pages/recruit/RecruiterAuth"));
+const RecruiterApply = lazy(() => import("./pages/recruit/RecruiterApply"));
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -125,6 +127,7 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
+              <Suspense fallback={<Preloader />}>
               <Routes>
               {/* Public Browse Routes (shareable, no auth required) */}
               <Route path="/" element={<Landing />} />
@@ -239,6 +242,7 @@ const App = () => {
               {/* Catch-all Not Found Route */}
               <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
               {/* Global ResBot Chatbot */}
               <ResBot />
               <PushPrompt />
