@@ -17,6 +17,7 @@ export const useAdminRedirect = () => {
         commerce_lead: "/commerce",
         growth_lead: "/media",
         system_operator: "/admin/system",
+        tvet_lead: "/admin/tvet",
         support_agent: "/admin/operations",
       };
       navigate(hubMap[staffRole] || "/admin", { replace: true });

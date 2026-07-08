@@ -95,6 +95,7 @@ import { SpecialistRoute } from "@/components/SpecialistRoute";
 import ReferralRedirect from "./pages/ReferralRedirect";
 import RecruiterDashboard from "./pages/RecruiterDashboard";
 import AdminRecruitmentProgramme from "./pages/admin/AdminRecruitmentProgramme";
+import AdminTvetHub from "./pages/admin/AdminTvetHub";
 import RecruitLanding from "./pages/recruit/RecruitLanding";
 import RecruiterAuth from "./pages/recruit/RecruiterAuth";
 import RecruiterApply from "./pages/recruit/RecruiterApply";
@@ -214,6 +215,7 @@ const App = () => {
               <Route path="/admin/wil" element={<ProtectedRoute><AdminRoute><AdminWIL /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/seller-approvals" element={<ProtectedRoute><AdminRoute><AdminSellerApprovals /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/recruitment" element={<ProtectedRoute><AdminRoute><AdminRecruitmentProgramme /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/tvet" element={<ProtectedRoute><AdminRoute><AdminTvetHub /></AdminRoute></ProtectedRoute>} />
 
               {/* Residence Portal Routes */}
               <Route path="/residence/login" element={<ResidenceLogin />} />

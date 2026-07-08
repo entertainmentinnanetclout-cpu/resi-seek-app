@@ -25,6 +25,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { readReferral, savePendingApplication } from "@/lib/referrals/referralStorage";
 import { captureApplicationReferral } from "@/lib/referrals/referralApi";
+import { ReferralBanner } from "@/components/referrals/ReferralBanner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ResidenceDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +42,7 @@ const ResidenceDetail = () => {
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [applicationNotes, setApplicationNotes] = useState("");
+  const [institutionType, setInstitutionType] = useState<string>("university");
   const [submitting, setSubmitting] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
 
@@ -138,7 +141,8 @@ const ResidenceDetail = () => {
           residence_id: id,
           status: 'submitted',
           notes: applicationNotes || null,
-        });
+          institution_type: institutionType,
+        } as any);
 
       if (error) throw error;
 
@@ -228,6 +232,7 @@ const ResidenceDetail = () => {
         imageUrl={residence.image_url}
       />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-4"><ReferralBanner /></div>
         <Breadcrumb className="mb-4">
             <BreadcrumbList>
                 <BreadcrumbItem>
@@ -592,6 +597,19 @@ const ResidenceDetail = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="rounded-md border p-3 bg-muted/30"><ReferralBanner /></div>
+            <div className="space-y-2">
+              <Label htmlFor="institution_type">I am a student at <span className="text-destructive">*</span></Label>
+              <Select value={institutionType} onValueChange={setInstitutionType}>
+                <SelectTrigger id="institution_type"><SelectValue placeholder="Select institution type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="university">University (TUT / UP / UNISA)</SelectItem>
+                  <SelectItem value="tvet">TVET College</SelectItem>
+                  <SelectItem value="private">Private College</SelectItem>
+                  <SelectItem value="other">Other / Working Professional</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="notes">Additional Notes (Optional)</Label>
               <Textarea

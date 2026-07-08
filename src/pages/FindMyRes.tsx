@@ -65,6 +65,7 @@ const FindMyRes = () => {
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [applicationNotes, setApplicationNotes] = useState("");
+  const [institutionType, setInstitutionType] = useState<string>("university");
 
   // Deep-link category support: /find?category=flats
   useEffect(() => {
@@ -141,7 +142,8 @@ const FindMyRes = () => {
         residence_id: selectedResidence.id,
         status: "submitted",
         notes: applicationNotes,
-      });
+        institution_type: institutionType,
+      } as any);
       if (error) throw error;
       toast.success(`Application submitted for ${selectedResidence.name}!`);
       setApplicationNotes("");
@@ -381,6 +383,18 @@ const FindMyRes = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="fmr-institution">I am a student at <span className="text-destructive">*</span></Label>
+              <Select value={institutionType} onValueChange={setInstitutionType}>
+                <SelectTrigger id="fmr-institution"><SelectValue placeholder="Select institution type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="university">University (TUT / UP / UNISA)</SelectItem>
+                  <SelectItem value="tvet">TVET College</SelectItem>
+                  <SelectItem value="private">Private College</SelectItem>
+                  <SelectItem value="other">Other / Working Professional</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="notes">Notes (Optional)</Label>
               <Textarea

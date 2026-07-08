@@ -3,7 +3,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
-export type StaffRole = 'admin' | 'operations_lead' | 'commerce_lead' | 'growth_lead' | 'system_operator' | 'support_agent' | null;
+export type StaffRole = 'admin' | 'operations_lead' | 'commerce_lead' | 'growth_lead' | 'system_operator' | 'tvet_lead' | 'support_agent' | null;
 
 interface AuthContextType {
   user: User | null;
@@ -100,15 +100,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         supabase.from("profiles").select("student_number").eq("id", user.id).maybeSingle()
       ]);
 
-      setIsRecruiter(recruiterRes.data?.status === 'approved');
-      setIsPendingRecruiter(pendingRes.data?.status === 'pending');
+      setIsRecruiter((recruiterRes.data as any)?.status === 'approved');
+      setIsPendingRecruiter((pendingRes.data as any)?.status === 'pending');
       setIsStudent(!!profileRes.data?.student_number);
 
       console.log("[AuthContext] Status check:", {
         email: user.email,
         resolvedRole: role,
-        isRecruiter: recruiterRes.data?.status === 'approved',
-        isPendingRecruiter: pendingRes.data?.status === 'pending',
+        isRecruiter: (recruiterRes.data as any)?.status === 'approved',
+        isPendingRecruiter: (pendingRes.data as any)?.status === 'pending',
         isStudent: !!profileRes.data?.student_number
       });
     } catch (e) {

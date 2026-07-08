@@ -284,6 +284,7 @@ export type Database = {
           desired_move_in: string | null
           funding_type: string
           id: string
+          institution_type: string | null
           last_contacted_at: string | null
           move_in_confirmed: boolean | null
           move_in_date: string | null
@@ -303,6 +304,7 @@ export type Database = {
           desired_move_in?: string | null
           funding_type?: string
           id?: string
+          institution_type?: string | null
           last_contacted_at?: string | null
           move_in_confirmed?: boolean | null
           move_in_date?: string | null
@@ -322,6 +324,7 @@ export type Database = {
           desired_move_in?: string | null
           funding_type?: string
           id?: string
+          institution_type?: string | null
           last_contacted_at?: string | null
           move_in_confirmed?: boolean | null
           move_in_date?: string | null
@@ -3520,6 +3523,7 @@ export type Database = {
         | "growth_lead"
         | "system_operator"
         | "support_agent"
+        | "tvet_lead"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3656,6 +3660,7 @@ export const Constants = {
         "growth_lead",
         "system_operator",
         "support_agent",
+        "tvet_lead",
       ],
     },
   },
