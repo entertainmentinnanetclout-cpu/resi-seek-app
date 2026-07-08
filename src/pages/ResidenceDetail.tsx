@@ -597,6 +597,19 @@ const ResidenceDetail = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="rounded-md border p-3 bg-muted/30"><ReferralBanner /></div>
+            <div className="space-y-2">
+              <Label htmlFor="institution_type">I am a student at <span className="text-destructive">*</span></Label>
+              <Select value={institutionType} onValueChange={setInstitutionType}>
+                <SelectTrigger id="institution_type"><SelectValue placeholder="Select institution type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="university">University (TUT / UP / UNISA)</SelectItem>
+                  <SelectItem value="tvet">TVET College</SelectItem>
+                  <SelectItem value="private">Private College</SelectItem>
+                  <SelectItem value="other">Other / Working Professional</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="notes">Additional Notes (Optional)</Label>
               <Textarea
