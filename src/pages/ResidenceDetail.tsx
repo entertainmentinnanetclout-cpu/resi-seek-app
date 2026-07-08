@@ -29,7 +29,7 @@ import { ReferralBanner } from "@/components/referrals/ReferralBanner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ResidenceDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [residence, setResidence] = useState<any>(null);
@@ -37,6 +37,7 @@ const ResidenceDetail = () => {
   const [reviews, setReviews] = useState<any[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showVirtualTour, setShowVirtualTour] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
@@ -46,39 +47,56 @@ const ResidenceDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
 
-  const fetchReviews = async () => {
-    if (!id) return;
+  const fetchReviews = async (residenceId: string) => {
+    if (!residenceId) return;
     const { data, error } = await supabase
       .from('reviews')
       .select('*, user:profiles(full_name)')
-      .eq('residence_id', id)
+      .eq('residence_id', residenceId)
       .order('created_at', { ascending: false });
     if (!error && data) {
       setReviews(data);
     }
   };
 
-  const checkExistingApplication = async () => {
-    if (!user || !id) return;
+  const checkExistingApplication = async (residenceId: string) => {
+    if (!user || !residenceId) return;
     const { data } = await supabase
       .from('applications')
       .select('id')
       .eq('user_id', user.id)
-      .eq('residence_id', id)
+      .eq('residence_id', residenceId)
       .maybeSingle();
     setHasApplied(!!data);
   };
 
   useEffect(() => {
+    let mounted = true;
     const fetchResidence = async () => {
-      if (!id) return;
+      if (!id && !slug) {
+        setLoading(false);
+        setError("Accommodation not found.");
+        return;
+      }
+
       setLoading(true);
+      setError(null);
       try {
-        const { data, error } = await supabase.from('residences').select('*').eq('id', id).single();
-        if (error) throw error;
-        setResidence(data);
+        let query = supabase.from('residences').select('*');
+        if (id) {
+          query = query.eq('id', id);
+        } else if (slug) {
+          query = query.eq('slug', slug);
+        }
+
+        const { data, error: fetchError } = await query.maybeSingle();
+        if (fetchError) throw fetchError;
+
+        if (!mounted) return;
 
         if (data) {
+          setResidence(data);
+
           const { data: related, error: relatedError } = await supabase
             .from('residences')
             .select('*')
@@ -87,27 +105,33 @@ const ResidenceDetail = () => {
             .limit(5);
           if (relatedError) throw relatedError;
           setRelatedResidences(related || []);
-        }
 
-        await fetchReviews();
-        await checkExistingApplication();
+          await fetchReviews(data.id);
+          await checkExistingApplication(data.id);
+        } else {
+          setError("Accommodation not found.");
+        }
       } catch (error) {
         console.error('Error fetching residence:', error);
+        setError("Failed to load residence details.");
         toast.error('Failed to load residence details.');
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
     fetchResidence();
-  }, [id, user]);
+    return () => { mounted = false; };
+  }, [id, slug, user]);
+
+  const { isStudent } = useAuth();
 
   const handleApply = () => {
     if (!user) {
       // Save intent so referral + residence survives login
       const ref = readReferral();
       savePendingApplication({
-        residence_id: id!,
+        residence_id: residence?.id || id!,
         residence_name: residence?.name,
         current_route: window.location.pathname,
         referral_code: ref?.code || null,
@@ -115,9 +139,16 @@ const ResidenceDetail = () => {
         timestamp: new Date().toISOString(),
       });
       toast.info("Sign in to complete your application — we saved your progress");
-      navigate("/auth?returnTo=/res/" + id);
+      navigate(`/auth?returnTo=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
+
+    if (!isStudent) {
+      toast.info("Please complete your student profile to apply for accommodation.");
+      navigate("/setup-profile");
+      return;
+    }
+
     if (hasApplied) {
       toast.info("You have already applied to this residence");
       return;
@@ -171,8 +202,8 @@ const ResidenceDetail = () => {
     return <DashboardLayout><div className="p-8">Loading...</div></DashboardLayout>;
   }
 
-  if (!residence) {
-    return <DashboardLayout><div className="p-8">Residence not found.</div></DashboardLayout>;
+  if (error || !residence) {
+    return <DashboardLayout><div className="p-8">{error || "Residence not found."}</div></DashboardLayout>;
   }
 
   const accommodationSchema = {
