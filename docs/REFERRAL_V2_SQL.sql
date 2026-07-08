@@ -5,6 +5,108 @@
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
+-- IMPORTANT: enum ADD VALUE must be committed before it is referenced.
+-- If a subsequent statement fails with "unsafe use of new value" on 'tvet_lead',
+-- run this file in two passes: first the enum block (0.a), then the rest.
+-- ----------------------------------------------------------------------------
+
+-- ----------------------------------------------------------------------------
+-- 0.a Add tvet_lead staff role (commit BEFORE the rest of this file if fresh)
+-- ----------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid
+    WHERE t.typname = 'app_role' AND e.enumlabel = 'tvet_lead'
+  ) THEN
+    ALTER TYPE public.app_role ADD VALUE 'tvet_lead';
+  END IF;
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- 0.b institution_type on applications (university|tvet|private|other)
+-- ----------------------------------------------------------------------------
+ALTER TABLE public.applications ADD COLUMN IF NOT EXISTS institution_type text;
+CREATE OR REPLACE FUNCTION public.validate_application_institution_type()
+RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$
+BEGIN
+  IF NEW.institution_type IS NOT NULL
+     AND NEW.institution_type NOT IN ('university','tvet','private','other') THEN
+    RAISE EXCEPTION 'invalid institution_type: %', NEW.institution_type;
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS validate_application_institution_type_trg ON public.applications;
+CREATE TRIGGER validate_application_institution_type_trg
+BEFORE INSERT OR UPDATE OF institution_type ON public.applications
+FOR EACH ROW EXECUTE FUNCTION public.validate_application_institution_type();
+UPDATE public.applications SET institution_type = 'university' WHERE institution_type IS NULL;
+CREATE INDEX IF NOT EXISTS idx_applications_institution_type ON public.applications(institution_type);
+
+-- ----------------------------------------------------------------------------
+-- 0.c Staff role priority includes tvet_lead
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_user_staff_role(_user_id uuid)
+ RETURNS text LANGUAGE sql STABLE SECURITY DEFINER
+ SET search_path TO 'public' SET row_security TO 'off'
+AS $$
+  SELECT role::text FROM public.user_roles
+  WHERE user_id = _user_id
+    AND role::text IN ('admin','operations_lead','commerce_lead','growth_lead','system_operator','tvet_lead','support_agent')
+  ORDER BY CASE role::text
+    WHEN 'admin' THEN 1
+    WHEN 'system_operator' THEN 2
+    WHEN 'operations_lead' THEN 3
+    WHEN 'commerce_lead' THEN 4
+    WHEN 'growth_lead' THEN 5
+    WHEN 'tvet_lead' THEN 6
+    WHEN 'support_agent' THEN 7
+  END LIMIT 1
+$$;
+
+-- ----------------------------------------------------------------------------
+-- 0.d RLS: tvet_lead reads all TVET apps; recruiters read their referred apps
+-- ----------------------------------------------------------------------------
+DROP POLICY IF EXISTS "tvet_lead can read tvet applications" ON public.applications;
+CREATE POLICY "tvet_lead can read tvet applications" ON public.applications
+  FOR SELECT USING (
+    institution_type = 'tvet' AND public.has_role(auth.uid(), 'tvet_lead'::app_role)
+  );
+
+DROP POLICY IF EXISTS "recruiter can read their referred applications" ON public.applications;
+CREATE POLICY "recruiter can read their referred applications" ON public.applications
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.application_referrals ar
+      WHERE ar.application_id = applications.id
+        AND ar.referral_agent_user_id = auth.uid()
+    )
+  );
+
+-- ----------------------------------------------------------------------------
+-- 0.e TVET applications view (admin + tvet_lead + referring recruiter surface)
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public.tvet_applications_v
+WITH (security_invoker = on) AS
+SELECT
+  a.id AS application_id, a.user_id, a.residence_id,
+  a.status AS application_status, a.institution_type,
+  a.application_date, a.created_at,
+  r.name AS residence_name,
+  p.full_name AS student_name, p.email AS student_email,
+  p.phone AS student_phone, p.student_number AS student_number, p.campus AS student_campus,
+  ar.referral_code, ar.referral_agent_user_id,
+  ar.status AS referral_status, ar.commission_amount,
+  ap.full_name AS recruiter_name, ap.email AS recruiter_email
+FROM public.applications a
+LEFT JOIN public.residences r  ON r.id = a.residence_id
+LEFT JOIN public.profiles   p  ON p.id = a.user_id
+LEFT JOIN public.application_referrals ar ON ar.application_id = a.id
+LEFT JOIN public.profiles   ap ON ap.id = ar.referral_agent_user_id
+WHERE a.institution_type = 'tvet';
+GRANT SELECT ON public.tvet_applications_v TO authenticated;
+
+-- ----------------------------------------------------------------------------
 -- 0. Enum extension: referral_agent role
 -- ----------------------------------------------------------------------------
 DO $$
