@@ -136,6 +136,7 @@ const App = () => {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/find" element={<FindMyRes />} />
               <Route path="/findmyres" element={<FindMyRes />} />
+              <Route path="/find-my-res" element={<FindMyRes />} />
               <Route path="/res/:id" element={<ResidenceDetail />} />
               <Route path="/find-my-res/:slug" element={<ResidenceDetail />} />
               <Route path="/bursaries" element={<BursaryFinder />} />

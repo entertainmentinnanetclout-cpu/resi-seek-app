@@ -71,6 +71,17 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        rk: {
+          navy: "#061A33",
+          "deep-navy": "#020B16",
+          blue: "#0B63CE",
+          green: "#00A86B",
+          gold: "#F6B51E",
+          orange: "#F15A24",
+          red: "#E33131",
+          white: "#FFFFFF",
+          light: "#F6F8FB",
+        },
       },
       fontFamily: {
         sans: ['Inter', 'Poppins', 'system-ui', 'sans-serif'],
