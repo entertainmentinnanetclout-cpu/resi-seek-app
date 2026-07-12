@@ -76,7 +76,7 @@ export const AdminApplicationsContent = () => {
       console.log('[AdminApplications] Fetching applications from safe view...');
       
       const { data, error: appsError } = await supabase
-        .from("admin_applications_safe")
+        .from("admin_applications_safe" as any)
         .select("*")
         .order("created_at", { ascending: false });
 
