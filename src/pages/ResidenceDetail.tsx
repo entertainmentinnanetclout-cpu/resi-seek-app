@@ -29,10 +29,12 @@ import { ReferralBanner } from "@/components/referrals/ReferralBanner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ResidenceDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams<{ id?: string; slug?: string }>();
+  const routeKey = params.id || params.slug;
   const { user } = useAuth();
   const navigate = useNavigate();
   const [residence, setResidence] = useState<any>(null);
+  const residenceId = residence?.id as string | undefined;
   const [relatedResidences, setRelatedResidences] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -47,11 +49,11 @@ const ResidenceDetail = () => {
   const [hasApplied, setHasApplied] = useState(false);
 
   const fetchReviews = async () => {
-    if (!id) return;
+    if (!residenceId) return;
     const { data, error } = await supabase
       .from('reviews')
       .select('*, user:profiles(full_name)')
-      .eq('residence_id', id)
+      .eq('residence_id', residenceId)
       .order('created_at', { ascending: false });
     if (!error && data) {
       setReviews(data);
@@ -59,23 +61,38 @@ const ResidenceDetail = () => {
   };
 
   const checkExistingApplication = async () => {
-    if (!user || !id) return;
+    if (!user || !residenceId) return;
     const { data } = await supabase
       .from('applications')
       .select('id')
       .eq('user_id', user.id)
-      .eq('residence_id', id)
+      .eq('residence_id', residenceId)
       .maybeSingle();
     setHasApplied(!!data);
   };
 
   useEffect(() => {
     const fetchResidence = async () => {
-      if (!id) return;
+      if (!routeKey) { setLoading(false); return; }
       setLoading(true);
       try {
-        const { data, error } = await supabase.from('residences').select('*').eq('id', id).single();
-        if (error) throw error;
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(routeKey);
+        let data: any = null;
+        if (isUuid) {
+          const byId = await supabase.from('residences').select('*').eq('id', routeKey).maybeSingle();
+          data = byId.data;
+          if (!data) {
+            const bySlug = await supabase.from('residences').select('*').eq('slug', routeKey).maybeSingle();
+            data = bySlug.data;
+          }
+        } else {
+          const bySlug = await supabase.from('residences').select('*').eq('slug', routeKey).maybeSingle();
+          data = bySlug.data;
+          if (!data) {
+            const byId = await supabase.from('residences').select('*').eq('id', routeKey).maybeSingle();
+            data = byId.data;
+          }
+        }
         setResidence(data);
 
         if (data) {
@@ -88,9 +105,6 @@ const ResidenceDetail = () => {
           if (relatedError) throw relatedError;
           setRelatedResidences(related || []);
         }
-
-        await fetchReviews();
-        await checkExistingApplication();
       } catch (error) {
         console.error('Error fetching residence:', error);
         toast.error('Failed to load residence details.');
@@ -100,14 +114,22 @@ const ResidenceDetail = () => {
     };
 
     fetchResidence();
-  }, [id, user]);
+  }, [routeKey]);
+
+  // Load reviews + existing application state once we know the residence id
+  useEffect(() => {
+    if (!residenceId) return;
+    fetchReviews();
+    checkExistingApplication();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [residenceId, user]);
 
   const handleApply = () => {
     if (!user) {
       // Save intent so referral + residence survives login
       const ref = readReferral();
       savePendingApplication({
-        residence_id: id!,
+        residence_id: residenceId!,
         residence_name: residence?.name,
         current_route: window.location.pathname,
         referral_code: ref?.code || null,
@@ -115,7 +137,7 @@ const ResidenceDetail = () => {
         timestamp: new Date().toISOString(),
       });
       toast.info("Sign in to complete your application — we saved your progress");
-      navigate("/auth?returnTo=/res/" + id);
+      navigate("/auth?returnTo=" + encodeURIComponent(window.location.pathname));
       return;
     }
     if (hasApplied) {
@@ -130,7 +152,7 @@ const ResidenceDetail = () => {
   };
 
   const handleSubmitApplication = async () => {
-    if (!user || !id) return;
+    if (!user || !residenceId) return;
     
     setSubmitting(true);
     try {
@@ -138,7 +160,7 @@ const ResidenceDetail = () => {
         .from('applications')
         .insert({
           user_id: user.id,
-          residence_id: id,
+          residence_id: residenceId,
           status: 'submitted',
           notes: applicationNotes || null,
           institution_type: institutionType,
@@ -148,7 +170,7 @@ const ResidenceDetail = () => {
 
       // Attach referral (safe no-op if none)
       try {
-        const inserted = await supabase.from("applications").select("id").eq("user_id", user.id).eq("residence_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+        const inserted = await supabase.from("applications").select("id").eq("user_id", user.id).eq("residence_id", residenceId).order("created_at", { ascending: false }).limit(1).maybeSingle();
         const ref = readReferral();
         if (inserted.data?.id && (ref?.code || ref?.sessionId)) {
           await captureApplicationReferral(inserted.data.id, ref?.code || null, ref?.sessionId || null, ref?.programKey || null);

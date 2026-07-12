@@ -42,7 +42,7 @@ export const AdminUsersContent = () => {
       console.log('[AdminUsers] Fetching users from safe view...');
 
       const { data, error: usersError } = await supabase
-        .from("admin_users_safe")
+        .from("admin_users_safe" as any)
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -56,7 +56,7 @@ export const AdminUsersContent = () => {
         throw usersError;
       }
 
-      setUsers(data || []);
+      setUsers((data as any) || []);
     } catch (err: any) {
       console.error("[AdminUsers] Fatal error fetching users:", err);
       setError("Failed to load users. Please refresh the page.");

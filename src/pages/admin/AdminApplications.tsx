@@ -91,7 +91,7 @@ export const AdminApplicationsContent = () => {
       }
       
       console.log(`[AdminApplications] Fetched ${data?.length || 0} applications`);
-      setApplications(data || []);
+      setApplications((data as any) || []);
     } catch (err: any) {
       console.error("[AdminApplications] Fatal error:", err);
       setError("Failed to load applications. Please refresh the page.");

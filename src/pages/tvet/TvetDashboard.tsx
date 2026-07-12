@@ -27,7 +27,7 @@ export default function TvetDashboard() {
         console.log("[TvetDashboard] Fetching TVET applications from view...");
 
         const { data, error: appsError } = await supabase
-          .from("tvet_applications_v")
+          .from("tvet_applications_v" as any)
           .select("*")
           .order("created_at", { ascending: false });
 
