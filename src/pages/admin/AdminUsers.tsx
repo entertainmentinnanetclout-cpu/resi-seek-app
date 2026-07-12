@@ -56,7 +56,7 @@ export const AdminUsersContent = () => {
         throw usersError;
       }
 
-      setUsers(data || []);
+      setUsers((data as any) || []);
     } catch (err: any) {
       console.error("[AdminUsers] Fatal error fetching users:", err);
       setError("Failed to load users. Please refresh the page.");
