@@ -42,7 +42,7 @@ export const AdminUsersContent = () => {
       console.log('[AdminUsers] Fetching users from safe view...');
 
       const { data, error: usersError } = await supabase
-        .from("admin_users_safe")
+        .from("admin_users_safe" as any)
         .select("*")
         .order("created_at", { ascending: false });
 
