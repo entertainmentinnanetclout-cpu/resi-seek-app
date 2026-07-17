@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getSignedUrl } from "@/lib/storage/signedUrl";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -194,13 +195,8 @@ export const DocumentUploader = () => {
 
   const handleViewDocument = async (doc: UploadedDocument) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("documents")
-        .createSignedUrl(doc.file_path, 3600);
-
-      if (error) throw error;
-
-      window.open(data.signedUrl, "_blank");
+      const url = await getSignedUrl("documents", doc.file_path, 3600);
+      window.open(url, "_blank");
     } catch (error) {
       console.error("Error viewing document:", error);
       toast.error("Failed to open document");

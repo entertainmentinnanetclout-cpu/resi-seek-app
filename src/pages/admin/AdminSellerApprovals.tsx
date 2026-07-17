@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Check, X, FileText, ShieldCheck } from "lucide-react";
+import { getSignedUrl } from "@/lib/storage/signedUrl";
 
 export const AdminSellerApprovalsContent = () => {
   const [stores, setStores] = useState<any[]>([]);
@@ -33,8 +34,12 @@ export const AdminSellerApprovalsContent = () => {
   const openDetail = async (s: any) => {
     setSelected(s); setReason("");
     if (s.verification_doc_url) {
-      const { data } = await supabase.storage.from("seller-kyc").createSignedUrl(s.verification_doc_url, 600);
-      setDocUrl(data?.signedUrl || null);
+      try {
+        const url = await getSignedUrl("seller-kyc", s.verification_doc_url, 900);
+        setDocUrl(url);
+      } catch {
+        setDocUrl(null);
+      }
     } else setDocUrl(null);
   };
 

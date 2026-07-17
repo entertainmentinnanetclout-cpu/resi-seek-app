@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { getSignedUrl } from "@/lib/storage/signedUrl";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -251,11 +252,12 @@ const MyWIL = () => {
   };
 
   const handleViewDoc = async (doc: WilDocument) => {
-    const { data, error } = await supabase.storage
-      .from("wil-documents")
-      .createSignedUrl(doc.file_path, 3600);
-    if (error) { toast.error("Failed to open document"); return; }
-    window.open(data.signedUrl, "_blank");
+    try {
+      const url = await getSignedUrl("wil-documents", doc.file_path, 3600);
+      window.open(url, "_blank");
+    } catch {
+      toast.error("Failed to open document");
+    }
   };
 
   const formatFileSize = (bytes: number) => {

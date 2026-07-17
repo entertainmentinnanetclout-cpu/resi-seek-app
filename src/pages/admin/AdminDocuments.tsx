@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Eye, CheckCircle2, XCircle, Clock, FileText, Download, Loader2, User, Users, Phone, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getSignedUrl } from "@/lib/storage/signedUrl";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatPhoneNumber } from "@/lib/exportHelpers";
@@ -158,13 +159,8 @@ export const AdminDocumentsContent = () => {
 
   const handlePreview = async (doc: Document) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("documents")
-        .createSignedUrl(doc.file_path, 300);
-
-      if (error) throw error;
-
-      setPreviewUrl(data.signedUrl);
+      const url = await getSignedUrl("documents", doc.file_path, 900);
+      setPreviewUrl(url);
       setSelectedDoc(doc);
       setPreviewOpen(true);
     } catch (error) {

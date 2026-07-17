@@ -13,6 +13,7 @@ import { Search, Eye, Check, X, CheckCheck, XCircle, Clock, FileQuestion, Calend
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { getSignedUrl } from "@/lib/storage/signedUrl";
 import { toast } from "sonner";
 import { safeFormatDate } from "@/lib/utils";
 import { downloadEnhancedCSV } from "@/lib/exportHelpers";
@@ -560,11 +561,8 @@ export const AdminApplicationsContent = () => {
                           variant="ghost"
                           onClick={async () => {
                             try {
-                              const { data, error } = await supabase.storage
-                                .from("documents")
-                                .createSignedUrl(doc.file_path, 3600);
-                              if (error) throw error;
-                              window.open(data.signedUrl, "_blank");
+                              const url = await getSignedUrl("documents", doc.file_path, 3600);
+                              window.open(url, "_blank");
                             } catch (error) {
                               toast.error("Failed to open document");
                             }

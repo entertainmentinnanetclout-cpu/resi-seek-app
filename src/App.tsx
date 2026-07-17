@@ -102,7 +102,16 @@ const TvetDashboard = lazy(() => import("./pages/tvet/TvetDashboard"));
 const RecruitLanding = lazy(() => import("./pages/recruit/RecruitLanding"));
 const RecruiterAuth = lazy(() => import("./pages/recruit/RecruiterAuth"));
 const RecruiterApply = lazy(() => import("./pages/recruit/RecruiterApply"));
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      staleTime: 60_000,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => {
   const [loading, setLoading] = useState(true);
