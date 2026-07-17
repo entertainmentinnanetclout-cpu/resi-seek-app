@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Download, Trash2, Eye, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { getSignedUrl } from "@/lib/storage/signedUrl";
 import {
   Dialog,
   DialogContent,
@@ -83,13 +84,8 @@ const DocumentsList = ({ onRefresh }: DocumentsListProps) => {
 
   const handlePreview = async (doc: Document) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("documents")
-        .createSignedUrl(doc.file_path, 300);
-
-      if (error) throw error;
-
-      setPreviewUrl(data.signedUrl);
+      const url = await getSignedUrl("documents", doc.file_path, 900);
+      setPreviewUrl(url);
       setPreviewOpen(true);
     } catch (error) {
       console.error("Preview error:", error);
