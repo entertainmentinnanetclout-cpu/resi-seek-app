@@ -158,13 +158,8 @@ export const AdminDocumentsContent = () => {
 
   const handlePreview = async (doc: Document) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("documents")
-        .createSignedUrl(doc.file_path, 300);
-
-      if (error) throw error;
-
-      setPreviewUrl(data.signedUrl);
+      const url = await getSignedUrl("documents", doc.file_path, 900);
+      setPreviewUrl(url);
       setSelectedDoc(doc);
       setPreviewOpen(true);
     } catch (error) {

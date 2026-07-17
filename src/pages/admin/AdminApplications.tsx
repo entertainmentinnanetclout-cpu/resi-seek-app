@@ -560,11 +560,8 @@ export const AdminApplicationsContent = () => {
                           variant="ghost"
                           onClick={async () => {
                             try {
-                              const { data, error } = await supabase.storage
-                                .from("documents")
-                                .createSignedUrl(doc.file_path, 3600);
-                              if (error) throw error;
-                              window.open(data.signedUrl, "_blank");
+                              const url = await getSignedUrl("documents", doc.file_path, 3600);
+                              window.open(url, "_blank");
                             } catch (error) {
                               toast.error("Failed to open document");
                             }
