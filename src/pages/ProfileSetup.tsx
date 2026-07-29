@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
-import logo from "@/assets/Main header Desktop.png";
+import { RESKONNECT_BRAND } from "@/constants/brand";
 
 const ProfileSetup = () => {
   const navigate = useNavigate();
@@ -205,7 +205,7 @@ const ProfileSetup = () => {
         <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <img src={logo} alt="ResKonnect" className="h-8 w-auto" />
+              <img src={RESKONNECT_BRAND.headerLogo} alt={RESKONNECT_BRAND.name} className="h-8 w-auto object-contain" />
             </div>
           </div>
         </nav>

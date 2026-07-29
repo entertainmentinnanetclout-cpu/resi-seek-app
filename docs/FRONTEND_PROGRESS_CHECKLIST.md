@@ -1,11 +1,12 @@
 # ResKonnect Frontend Upgrade — Progress Checklist
 
 ## Homepage
-- [x] Hero upgraded
+- [x] Hero upgraded to premium dark layout with custom lighting effects
 - [x] Get Started CTA added
 - [x] Persona cards added
 - [x] Need cards added
 - [x] Confirmation state added
+- [x] Integrated parent-safety FAQ section
 
 ## Onboarding
 - [x] Types created
@@ -53,7 +54,17 @@
 - [x] Admissions disclaimer added (component ready)
 - [x] Official portal disclaimer added (component ready)
 
+## Canonical Branding (NEW V2 Upgrade)
+- [x] Central Brand Constants File (`src/constants/brand.ts`) created
+- [x] Replaced header, footer, auth, preloader, and admin layouts with canonical logo references
+- [x] Replaced favicons, apple touch icons, and PWA icons with official logo derivatives
+- [x] Implemented premium preloader loading screen with centered CSS pulse scale and gold/orange glow
+- [x] Refactored ResidenceCard to include verification badges, distances, available slots, and premium action grids
+- [x] Polished ResidenceDetail page with Parent-Safe Comfort Checklists, Deposit safety disclaimers, Last verified audit dates, and Report Detail prompts
+- [x] Polished ApplicationsChecker.tsx UI with Achievement Scales reference grid
+
 ## Build
 - [x] TypeScript passes
 - [x] Build passes
 - [x] Existing pages still load
+- [x] Visual frontend verification complete with zero errors
