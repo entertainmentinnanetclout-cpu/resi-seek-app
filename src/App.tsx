@@ -20,6 +20,21 @@ import { SpecialistRoute } from "@/components/SpecialistRoute";
 import PushPrompt from "@/components/PushPrompt";
 
 // Lazy load heavy components
+const GetStarted = lazy(() => import("./pages/GetStarted"));
+const Living = lazy(() => import("./pages/public/Living"));
+const StudentAccommodation = lazy(() => import("./pages/public/StudentAccommodation"));
+const PrivateRentals = lazy(() => import("./pages/public/PrivateRentals"));
+const Parents = lazy(() => import("./pages/public/Parents"));
+const ApplicationsPillar = lazy(() => import("./pages/public/Applications"));
+const TvetApplication = lazy(() => import("./pages/public/TvetApplication"));
+const UniversityApplication = lazy(() => import("./pages/public/UniversityApplication"));
+const PrivateCollegeApplication = lazy(() => import("./pages/public/PrivateCollegeApplication"));
+const ApplicationsChecker = lazy(() => import("./pages/public/ApplicationsChecker"));
+const OpportunitiesPillar = lazy(() => import("./pages/public/Opportunities"));
+const OpportunitiesWil = lazy(() => import("./pages/public/OpportunitiesWil"));
+const PartnersPillar = lazy(() => import("./pages/public/Partners"));
+const PartnersLandlords = lazy(() => import("./pages/public/PartnersLandlords"));
+const PartnersInstitutions = lazy(() => import("./pages/public/PartnersInstitutions"));
 const ProfileSetup = lazy(() => import("./pages/ProfileSetup"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Updates = lazy(() => import("./pages/Updates"));
@@ -86,6 +101,7 @@ const MyDiscountCodes = lazy(() => import("./pages/MyDiscountCodes"));
 const AdminSellerApprovals = lazy(() => import("./pages/admin/AdminSellerApprovals"));
 const MyWIL = lazy(() => import("./pages/MyWIL"));
 const AdminWIL = lazy(() => import("./pages/admin/AdminWIL"));
+const AdminOnboardingHub = lazy(() => import("./pages/admin/AdminOnboardingHub"));
 const AdminOperationsHub = lazy(() => import("./pages/admin/AdminOperationsHub"));
 const AdminCommerceHub = lazy(() => import("./pages/admin/AdminCommerceHub"));
 const AdminMediaHub = lazy(() => import("./pages/admin/AdminMediaHub"));
@@ -140,6 +156,26 @@ const App = () => {
               <Routes>
               {/* Public Browse Routes (shareable, no auth required) */}
               <Route path="/" element={<Landing />} />
+              <Route path="/get-started" element={<GetStarted />} />
+
+              {/* Public Pillar Routes */}
+              <Route path="/living" element={<Living />} />
+              <Route path="/living/student-accommodation" element={<StudentAccommodation />} />
+              <Route path="/living/private-rentals" element={<PrivateRentals />} />
+              <Route path="/living/parents" element={<Parents />} />
+
+              <Route path="/applications" element={<ApplicationsPillar />} />
+              <Route path="/applications/tvet" element={<TvetApplication />} />
+              <Route path="/applications/university" element={<UniversityApplication />} />
+              <Route path="/applications/private-college" element={<PrivateCollegeApplication />} />
+              <Route path="/applications/checker" element={<ApplicationsChecker />} />
+
+              <Route path="/opportunities" element={<OpportunitiesPillar />} />
+              <Route path="/opportunities/wil" element={<OpportunitiesWil />} />
+
+              <Route path="/partners" element={<PartnersPillar />} />
+              <Route path="/partners/landlords" element={<PartnersLandlords />} />
+              <Route path="/partners/institutions" element={<PartnersInstitutions />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
@@ -198,6 +234,7 @@ const App = () => {
               <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/analytics" element={<ProtectedRoute><AdminRoute><AdminAnalytics /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/operations" element={<ProtectedRoute><AdminRoute><AdminOperationsHub /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/onboarding" element={<ProtectedRoute><AdminRoute><AdminOnboardingHub /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/commerce" element={<ProtectedRoute><AdminRoute><AdminCommerceHub /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/media" element={<ProtectedRoute><AdminRoute><AdminMediaHub /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/system" element={<ProtectedRoute><AdminRoute><AdminSystemHub /></AdminRoute></ProtectedRoute>} />
