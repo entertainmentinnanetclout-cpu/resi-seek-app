@@ -1,51 +1,49 @@
 # ResKonnect Frontend Upgrade — Progress Checklist
 
 ## Homepage
-- [ ] Hero upgraded
-- [ ] Get Started CTA added
-- [ ] Persona cards added
-- [ ] Need cards added
-- [ ] Confirmation state added
+- [x] Hero upgraded
+- [x] Get Started CTA added
+- [x] Persona cards added
+- [x] Need cards added
+- [x] Confirmation state added
 
 ## Onboarding
 - [x] Types created
 - [x] Mock data created
 - [x] Adapter created
-- [ ] Student flow
-- [ ] Parent flow
-- [ ] Private tenant flow
-- [ ] Applicant flow
-- [ ] WIL flow
-- [ ] Landlord flow
-- [ ] Institution/business flow
-- [ ] Unsure flow
-
-_(Note: Persona & Need selectors are built and can drive a single adaptive `OnboardingForm` — see handoff.)_
+- [x] Student flow
+- [x] Parent flow
+- [x] Private tenant flow
+- [x] Applicant flow
+- [x] WIL flow
+- [x] Landlord flow
+- [x] Institution/business flow
+- [x] Unsure flow
 
 ## Routes
-- [ ] /get-started
-- [ ] /living
-- [ ] /living/student-accommodation
-- [ ] /living/private-rentals
-- [ ] /living/parents
-- [ ] /applications
-- [ ] /applications/tvet
-- [ ] /applications/university
-- [ ] /applications/private-college
-- [ ] /applications/checker
-- [ ] /opportunities
-- [ ] /opportunities/wil
-- [ ] /partners
-- [ ] /partners/landlords
-- [ ] /partners/institutions
+- [x] /get-started
+- [x] /living
+- [x] /living/student-accommodation
+- [x] /living/private-rentals
+- [x] /living/parents
+- [x] /applications
+- [x] /applications/tvet
+- [x] /applications/university
+- [x] /applications/private-college
+- [x] /applications/checker
+- [x] /opportunities
+- [x] /opportunities/wil
+- [x] /partners
+- [x] /partners/landlords
+- [x] /partners/institutions
 
 ## Admin
 - [x] Existing God Mode preserved
-- [ ] Sidebar item added
-- [ ] Onboarding Hub overview added
-- [ ] Mock request table added
-- [ ] Metrics added
-- [ ] Quick actions added
+- [x] Sidebar item added
+- [x] Onboarding Hub overview added
+- [x] Mock request table added
+- [x] Metrics added
+- [x] Quick actions added
 - [x] Backend TODOs added (in adapter)
 
 ## Compliance

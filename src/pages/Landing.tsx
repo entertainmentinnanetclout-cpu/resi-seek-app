@@ -18,6 +18,7 @@ import { CategoryHeroSelector } from "@/components/findmyres/CategoryHeroSelecto
 import { AccreditationCTA } from "@/components/findmyres/AccreditationCTA";
 import { AudienceSelector } from "@/components/findmyres/AudienceSelector";
 import LandlordApplicationTabs from "@/components/LandlordApplicationTabs";
+import InteractiveNeedSection from "@/components/onboarding/InteractiveNeedSection";
 import headerLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
 import footerLogo from "@/assets/FOOTER.png";
 import iconLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
@@ -83,10 +84,18 @@ const Landing = () => {
   };
 
   const fallbackSlides = [
-    { image: inclusivePathwaysHero, title: "Accommodation for University, TVET & Private", description: "Find verified residences that welcome TUT, other universities, TVET college students and private applicants.", cta: { text: "Find Accommodation", action: () => navigate("/find") } },
-    { image: applicationsFundingHero, title: "Applications & NSFAS Ready", description: "Prepare one document pack for TUT, universities, TVET colleges and NSFAS funding applications.", cta: { text: "Open Applications Hub", action: () => navigate("/apply") } },
-    { image: studentStudying, title: "Study in Comfort", description: "Access quality accommodation that supports your academic success no matter where you study.", cta: { text: "Find Your Res", action: () => navigate("/find") } },
-    { image: studentsCelebration, title: "Build Lifelong Connections", description: "Be part of a thriving student community across Pretoria, Tshwane and beyond.", cta: { text: "Join Now", action: () => navigate("/auth") } },
+    {
+      image: inclusivePathwaysHero,
+      title: "One connected platform for Living, Applications, Opportunities, and Partner Solutions.",
+      description: "Find verified student accommodations, college & university application checkers, WIL/internship support, and enterprise property portals all in one place.",
+      cta: { text: "Get Started", action: () => navigate("/get-started") }
+    },
+    {
+      image: applicationsFundingHero,
+      title: "Guidance, Readiness Checks & Placement Assistance",
+      description: "Prepare your tertiary documents, match room types near your campus, and prepare for career opportunities seamlessly.",
+      cta: { text: "Get Started Now", action: () => navigate("/get-started") }
+    }
   ];
 
   const features = [
@@ -148,7 +157,7 @@ const Landing = () => {
           <div className="hidden md:flex items-center gap-2">
             <ThemeToggle />
             <Button variant="ghost" onClick={() => navigate("/auth")}>Sign In</Button>
-            <Button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground hover:bg-primary/90">Get Started</Button>
+            <Button onClick={() => navigate("/get-started")} className="bg-primary text-primary-foreground hover:bg-primary/90">Get Started</Button>
           </div>
           {/* Mobile */}
           <div className="flex items-center gap-2 md:hidden">
@@ -187,6 +196,9 @@ const Landing = () => {
         <section>
           <HeroCarousel slides={fallbackSlides} autoPlay interval={6000} useDatabase={true} location="landing" />
         </section>
+
+        {/* ── Interactive Need Cards section ── */}
+        <InteractiveNeedSection />
 
         {/* ── Audience Selector — University / TVET / Private ── */}
         <section className="py-8 md:py-10 bg-gradient-to-b from-primary/5 to-background">

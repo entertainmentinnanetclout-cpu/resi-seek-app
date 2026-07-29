@@ -22,22 +22,22 @@ const PublicLayout = ({ children }: PublicLayoutProps) => {
             <img src={headerLogo} alt="ResKonnect" className="h-8 sm:h-10 w-auto" />
           </Link>
           <nav className="hidden md:flex items-center gap-6">
-            <Link to="/find" className="text-sm font-medium hover:text-primary transition-colors">
-              Find My Res
+            <Link to="/living" className="text-sm font-medium hover:text-primary transition-colors">
+              Living
             </Link>
-            <Link to="/apply" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link to="/applications" className="text-sm font-medium hover:text-primary transition-colors">
               Applications
             </Link>
-            <Link to="/nsfas-accredited-accommodation" className="text-sm font-medium hover:text-primary transition-colors">
-              NSFAS Accommodation
+            <Link to="/opportunities" className="text-sm font-medium hover:text-primary transition-colors">
+              Opportunities
             </Link>
-            <Link to="/south-africa-student-accommodation" className="text-sm font-medium hover:text-primary transition-colors">
-              All Residences
+            <Link to="/partners" className="text-sm font-medium hover:text-primary transition-colors">
+              Partners
             </Link>
           </nav>
           <div className="hidden md:flex gap-2">
             <Button variant="ghost" onClick={() => navigate("/auth")}>Sign In</Button>
-            <Button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={() => navigate("/get-started")} className="bg-primary text-primary-foreground hover:bg-primary/90">
               Get Started
             </Button>
           </div>
@@ -49,18 +49,23 @@ const PublicLayout = ({ children }: PublicLayoutProps) => {
               <div className="p-6">
                 <div className="flex flex-col gap-4 mt-8">
                   <SheetClose asChild>
-                    <Link to="/find" className="text-lg font-medium hover:text-primary transition-colors">
-                      Find My Res
+                    <Link to="/living" className="text-lg font-medium hover:text-primary transition-colors">
+                      Living
                     </Link>
                   </SheetClose>
                   <SheetClose asChild>
-                    <Link to="/apply" className="text-lg font-medium hover:text-primary transition-colors">
+                    <Link to="/applications" className="text-lg font-medium hover:text-primary transition-colors">
                       Applications
                     </Link>
                   </SheetClose>
                   <SheetClose asChild>
-                    <Link to="/nsfas-accredited-accommodation" className="text-lg font-medium hover:text-primary transition-colors">
-                      NSFAS Accommodation
+                    <Link to="/opportunities" className="text-lg font-medium hover:text-primary transition-colors">
+                      Opportunities
+                    </Link>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Link to="/partners" className="text-lg font-medium hover:text-primary transition-colors">
+                      Partners
                     </Link>
                   </SheetClose>
                   <SheetClose asChild>
@@ -69,7 +74,7 @@ const PublicLayout = ({ children }: PublicLayoutProps) => {
                     </Button>
                   </SheetClose>
                   <SheetClose asChild>
-                    <Button className="w-full" onClick={() => navigate("/auth")}>Get Started</Button>
+                    <Button className="w-full" onClick={() => navigate("/get-started")}>Get Started</Button>
                   </SheetClose>
                 </div>
               </div>
