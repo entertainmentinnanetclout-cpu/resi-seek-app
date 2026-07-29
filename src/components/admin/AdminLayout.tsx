@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useAuth, StaffRole } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { GOD_MODE_ROLES } from "@/lib/constants/roles";
+import { RESKONNECT_BRAND } from "@/constants/brand";
 import {
   Sidebar,
   SidebarContent,
@@ -72,14 +73,19 @@ const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
   };
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <Building2 className="w-7 h-7 text-primary shrink-0" />
+    <Sidebar collapsible="icon" className="border-r border-slate-200">
+      <SidebarHeader className="border-b p-4 bg-[#071326] text-white">
+        <div className="flex items-center gap-3">
+          <img
+            src={RESKONNECT_BRAND.iconOnly}
+            alt="ResKonnect Symbol"
+            className="w-8 h-8 object-contain shrink-0 rounded-md bg-white/10 p-1"
+          />
           {!collapsed && (
-            <div className="min-w-0">
-              <span className="text-lg font-bold block leading-tight">ResKonnect</span>
-              <Badge variant="outline" className="text-[10px] mt-0.5">
+            <div className="min-w-0 flex-1">
+              <span className="text-sm font-bold block leading-tight tracking-wider text-white">RESKONNECT</span>
+              <span className="text-[10px] text-slate-300 font-semibold tracking-wider block uppercase">COMMAND CENTRE</span>
+              <Badge variant="outline" className="text-[9px] mt-1 text-[#F5B32F] border-[#F5B32F]/30 bg-[#F5B32F]/5 py-0 px-1.5 h-4 font-semibold">
                 {roleLabels[staffRole || "admin"]}
               </Badge>
             </div>
@@ -87,7 +93,7 @@ const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="bg-[#0B1220]">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -99,9 +105,13 @@ const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
                       asChild
                       isActive={isActive}
                       tooltip={item.label}
+                      className={cn(
+                        "text-slate-300 transition-all text-sm h-10 px-4 py-2.5 rounded-md hover:bg-white/5 hover:text-white",
+                        isActive && "bg-[#2563EB] text-white font-semibold hover:bg-[#2563EB]"
+                      )}
                     >
-                      <Link to={item.path}>
-                        <item.icon className="w-4 h-4" />
+                      <Link to={item.path} className="flex items-center gap-3">
+                        <item.icon className="w-4 h-4 shrink-0" />
                         <span>{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -113,16 +123,16 @@ const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-2 space-y-1">
+      <SidebarFooter className="border-t border-white/5 p-2 space-y-1 bg-[#071326]">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleRefresh} tooltip="Refresh Data">
+            <SidebarMenuButton onClick={handleRefresh} tooltip="Refresh Data" className="text-slate-300 hover:text-white hover:bg-white/5">
               <RefreshCw className="w-4 h-4" />
               <span>Refresh Data</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => navigate("/")} tooltip="Public Site">
+            <SidebarMenuButton onClick={() => navigate("/")} tooltip="Public Site" className="text-slate-300 hover:text-white hover:bg-white/5">
               <Home className="w-4 h-4" />
               <span>View Public Site</span>
             </SidebarMenuButton>
@@ -131,7 +141,7 @@ const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
             <SidebarMenuButton
               onClick={handleLogout}
               tooltip="Logout"
-              className="text-destructive hover:text-destructive"
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
             >
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
@@ -162,16 +172,22 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full bg-[#F8FAFC]">
         <AdminSidebar staffRole={staffRole} />
 
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-12 flex items-center justify-between border-b bg-card px-4 shrink-0 sticky top-0 z-40">
-            <SidebarTrigger />
-            <ThemeToggle />
+          <header className="h-14 flex items-center justify-between border-b bg-white px-4 shrink-0 sticky top-0 z-40 shadow-sm">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger />
+              <div className="h-4 w-[1px] bg-slate-200 mx-2 hidden sm:block" />
+              <span className="text-xs font-semibold text-slate-500 tracking-wider uppercase hidden sm:block">SYSTEM PORTAL</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+            </div>
           </header>
 
-          <main className="flex-1 p-4 md:p-6 lg:p-8">
+          <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
             {children}
           </main>
         </div>

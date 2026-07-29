@@ -7,8 +7,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import desktopLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
-import mobileLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
+import { RESKONNECT_BRAND } from "@/constants/brand";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import NotificationCenter from "@/components/NotificationCenter";
@@ -70,25 +69,25 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     : "U";
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-card text-foreground">
-      <div className="p-6 border-b border-border">
-        <div className="flex flex-col items-center mb-1">
-          <img src={desktopLogo} alt="ResKonnect" className="h-16 w-auto mb-2" />
-        </div>
+    <div className="flex flex-col h-full bg-[#071326] text-white">
+      <div className="p-6 border-b border-white/5 flex flex-col items-center">
+        <Link to="/" className="mb-2 transition-transform hover:scale-[1.02]">
+          <img src={RESKONNECT_BRAND.headerLogo} alt={RESKONNECT_BRAND.name} className="h-12 w-auto object-contain brightness-110" />
+        </Link>
         {isAdmin ? (
           <Badge variant="destructive" className="w-full justify-center gap-1.5 py-1">
             <Shield className="w-3.5 h-3.5" />
             Admin Mode
           </Badge>
         ) : user ? (
-          <p className="text-sm text-muted-foreground text-center">Student Portal</p>
+          <p className="text-xs text-slate-300 tracking-wider uppercase font-semibold">Student Portal</p>
         ) : (
-          <p className="text-sm text-muted-foreground text-center">Browse Residences</p>
+          <p className="text-xs text-slate-300 tracking-wider uppercase font-semibold">Browse Residences</p>
         )}
       </div>
 
       <nav className="flex-1 p-4 overflow-y-auto">
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -96,38 +95,38 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-smooth ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   active 
-                    ? "bg-primary text-primary-foreground shadow-md" 
-                    : "hover:bg-primary/10"
+                    ? "bg-[#2563EB] text-white shadow-md font-semibold"
+                    : "text-slate-300 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="font-medium text-sm">{item.label}</span>
               </button>
             );
           })}
         </div>
       </nav>
 
-      <div className="p-4 border-t border-border space-y-2">
+      <div className="p-4 border-t border-white/5 space-y-2.5">
         {user ? (
           <>
             <Button 
               variant="outline" 
-              className="w-full justify-start" 
+              className="w-full justify-start text-slate-300 hover:text-white border-white/10 hover:bg-white/5"
               onClick={handleRefresh}
             >
-              <RefreshCw className="w-5 h-5 mr-3" />
+              <RefreshCw className="w-4 h-4 mr-3" />
               Refresh
             </Button>
             <div className="flex items-center justify-between">
               <Button 
                 variant="ghost" 
-                className="flex-1 justify-start" 
+                className="flex-1 justify-start text-slate-300 hover:text-white hover:bg-white/5"
                 onClick={handleLogout}
               >
-                <LogOut className="w-5 h-5 mr-3" />
+                <LogOut className="w-4 h-4 mr-3" />
                 Logout
               </Button>
               <ThemeToggle />
@@ -136,18 +135,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         ) : (
           <>
             <Button 
-              className="w-full justify-start" 
+              className="w-full justify-start bg-[#2563EB] text-white hover:bg-[#2F6EDB]"
               onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`)}
             >
-              <LogIn className="w-5 h-5 mr-3" />
+              <LogIn className="w-4 h-4 mr-3" />
               Sign In
             </Button>
             <Button 
               variant="outline" 
-              className="w-full justify-start" 
+              className="w-full justify-start text-slate-300 hover:text-white border-white/10 hover:bg-white/5"
               onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`)}
             >
-              <UserPlus className="w-5 h-5 mr-3" />
+              <UserPlus className="w-4 h-4 mr-3" />
               Get Started
             </Button>
             <div className="flex justify-end">
@@ -160,29 +159,29 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-[#F8FAFC] flex">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:block w-64 border-r border-border">
+      <aside className="hidden md:block w-64 border-r border-slate-200 shrink-0">
         <SidebarContent />
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Desktop Top Bar */}
-        <header className="hidden md:flex border-b border-border bg-card p-4 items-center justify-between">
+        <header className="hidden md:flex border-b border-slate-200 bg-white p-4 items-center justify-between shadow-sm sticky top-0 z-40">
           <CommandPalette />
           <div className="flex items-center gap-2">
             {user && <NotificationCenter />}
             <ThemeToggle />
             {user ? (
               <button onClick={() => navigate("/profile")} className="ml-1">
-                <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-[#2563EB] transition-all">
                   <AvatarImage src={profile?.profile_picture_url || undefined} />
-                  <AvatarFallback className="text-xs bg-primary text-primary-foreground">{profileInitials}</AvatarFallback>
+                  <AvatarFallback className="text-xs bg-[#2563EB] text-white">{profileInitials}</AvatarFallback>
                 </Avatar>
               </button>
             ) : (
-              <Button size="sm" onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`)}>
+              <Button size="sm" onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`)} className="bg-[#2563EB] text-white hover:bg-[#2F6EDB]">
                 Sign In
               </Button>
             )}
@@ -190,9 +189,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </header>
 
         {/* Mobile Header */}
-        <header className="md:hidden border-b border-border bg-card p-4 flex items-center justify-between">
+        <header className="md:hidden border-b border-slate-200 bg-[#071326] p-4 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-2">
-            <img src={mobileLogo} alt="ResKonnect" className="h-8 w-auto" />
+            <Link to="/">
+              <img src={RESKONNECT_BRAND.headerLogo} alt={RESKONNECT_BRAND.name} className="h-8 w-auto object-contain brightness-110" />
+            </Link>
             {isAdmin && (
               <Badge variant="destructive" className="gap-1">
                 <Shield className="w-3 h-3" />
@@ -206,21 +207,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <button onClick={() => navigate("/profile")}>
                 <Avatar className="h-7 w-7">
                   <AvatarImage src={profile?.profile_picture_url || undefined} />
-                  <AvatarFallback className="text-xs bg-primary text-primary-foreground">{profileInitials}</AvatarFallback>
+                  <AvatarFallback className="text-xs bg-[#2563EB] text-white">{profileInitials}</AvatarFallback>
                 </Avatar>
               </button>
             ) : (
-              <Button size="sm" variant="default" onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`)}>
+              <Button size="sm" variant="default" onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`)} className="bg-[#2563EB] text-white hover:bg-[#2F6EDB]">
                 Sign In
               </Button>
             )}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="text-white hover:bg-white/5">
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-64 bg-card shadow-lg">
+              <SheetContent side="left" className="p-0 w-64 bg-[#071326] shadow-lg border-r border-white/5">
                 <SidebarContent />
               </SheetContent>
             </Sheet>
