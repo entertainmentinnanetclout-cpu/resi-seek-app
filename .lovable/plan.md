@@ -1,57 +1,85 @@
-## Why
+# ResKonnect Premium Onboarding Upgrade — Frontend Only
 
-External Supabase is returning `402 exceed_cached_egress_quota` on `/rest` and (per your report) Storage. The `documents` bucket is private, but the app calls `createSignedUrl` on every render / preview click. Signed URLs are unique strings, so each call is a fresh cache miss and burns egress. Fix = generate once per `(bucket, path)` and reuse until near-expiry.
+Credit-aware, build-safe, backend-untouched. Structured for handoff to Jules AI if credits run out mid-execution.
 
-Scope: **frontend only**, in-memory React Query cache. No SQL, no bucket flips (must stay private for PII).
+## Guardrails (non-negotiable)
 
-## Changes
+- No Supabase tables, migrations, RLS, edge functions, secrets, or env changes.
+- Do not touch `src/integrations/supabase/client.ts`, `types.ts`, or edge functions.
+- Do not remove/replace existing God Mode admin, sidebar items, or hubs — extend only.
+- Do not break existing routes (`/find`, `/apply`, `/dashboard`, `/admin/*`, `/residence/*`, etc.).
+- Exclude NSFAS *application* support entirely (funding-context references may remain where already present).
+- Include required disclaimers on all application-facing pages.
 
-### 1. New shared hook + helper — `src/lib/storage/signedUrl.ts`
-- `getSignedUrl(bucket, path, ttl=900)` — module-level `Map<string, {url, expiresAt, promise}>` cache keyed by `${bucket}::${path}`.
-  - Returns cached URL if `expiresAt - now > 60s`.
-  - Coalesces in-flight requests (returns the same `promise` for concurrent callers) so a mounting list of 20 docs = 20 requests, not 400.
-  - Logs `[signed-url] mint <path>` once per mint in dev only.
-- `useSignedUrl(bucket, path, ttl?)` — thin React Query wrapper: `queryKey: ['signed-url', bucket, path]`, `staleTime: (ttl-60)*1000`, `gcTime: ttl*1000`, `enabled: !!path`. Calls `getSignedUrl` under the hood so both hook + imperative callers share the same cache.
+## Priority-ordered execution (stop-safe at any priority boundary)
 
-### 2. `src/components/DocumentsList.tsx`
-- Replace ad-hoc `createSignedUrl` in `handlePreview` with `getSignedUrl('documents', doc.file_path)`.
-- Debounce preview/download button handlers (guard with a `busyId` ref) so double-clicks can't fire two mints.
-- Keep `handleDownload` using `.download()` (that returns a Blob, not a URL — no egress cache benefit from signing, but add the same double-click guard).
+### Priority 1 — Onboarding foundation + homepage entry
 
-### 3. Sweep other private-bucket signed-URL call sites
-Search + migrate to `getSignedUrl`:
-- `src/components/admin/HandoverExportPanel.tsx`
-- `src/pages/admin/AdminDocuments.tsx`
-- `src/pages/admin/AdminLandlordApplications.tsx`
-- `src/pages/admin/AdminSellerApprovals.tsx` (seller-kyc)
-- `src/pages/admin/AdminApplications.tsx` / application-documents viewers
-- `src/pages/MyWIL.tsx` / `AdminWIL.tsx` (wil-documents)
-- Any `payment-proofs` / `landlord-documents` previewers
+Shared data layer:
+- `src/lib/onboarding/onboardingTypes.ts` — Persona, Need, OnboardingRequest, Status enums/types.
+- `src/lib/onboarding/onboardingMockData.ts` — seed rows for admin hub demo.
+- `src/lib/onboarding/onboardingAdapter.ts` — `submitOnboardingRequest`, `getOnboardingRequests`, `updateOnboardingRequestStatus`. Backed by `localStorage` + in-memory merge with mock data. Every function carries `// TODO: connect to Supabase onboarding_requests after backend migration is deployed.`
 
-Rule: **any `createSignedUrl` call that runs inside render, an effect without a stable dep, or a click handler that can repeat → route through `getSignedUrl`.**
+Core components under `src/components/onboarding/`:
+- `PersonaSelector.tsx`, `NeedSelector.tsx`, `OnboardingForm.tsx` (conditional fields per persona+need), `OnboardingResultRouter.tsx`, `OnboardingSummaryCard.tsx`, `GuidedOnboardingModal.tsx`.
+- Persona-specific flow wrappers (thin composition around the above): Student, ParentGuardian, PrivateTenant, Applicant, WilApplicant, Landlord, InstitutionBusiness, Unsure.
 
-### 4. Iframe/img re-mount guard
-In every preview `<Dialog>` that renders `<iframe src={previewUrl}>`:
-- Only render the iframe when `previewUrl` is truthy AND the dialog is open (already true in `DocumentsList`, verify elsewhere).
-- Add `key={previewUrl}` so React reuses the node instead of re-mounting on unrelated state changes.
+Pages/routes:
+- `src/pages/GetStarted.tsx` → `/get-started` (full-page guided flow).
+- Homepage (`src/pages/Landing.tsx`): add `ServicePillarCards` + "Start with one question" section with the 8 need cards launching the modal or routing to `/get-started`.
 
-### 5. Stop background REST refetching (the 402s in your logs are REST, not just Storage)
-- Add sane defaults in `src/main.tsx` QueryClient: `refetchOnWindowFocus: false`, `refetchOnReconnect: false`, `staleTime: 60_000`. This is the single biggest cached-egress win because trusted-residences and hero-slides currently refetch on every tab focus.
+Build gate: run typecheck, verify Landing renders.
 
-## What I will NOT do
+### Priority 2 — Public premium pages
 
-- Won't make `documents` public (PII).
-- Won't add the `storage_signed_url_cache` SQL table — the user picked in-memory only, and a DB cache doesn't help browser egress anyway.
-- Won't touch `src/integrations/supabase/client.ts` or edge functions (mixed origin is fine; each side caches its own).
-- Won't change bucket URLs to `<ref>.storage.supabase.co` — same egress meter, no benefit, and it would break the existing auth header flow.
+Create under `src/pages/public/`:
+- `Living.tsx` → `/living` + subroutes `/living/student-accommodation`, `/living/private-rentals`, `/living/parents`.
+- `Applications.tsx` → `/applications` + `/applications/tvet`, `/applications/university`, `/applications/private-college`, `/applications/checker` (marks/APS readiness — client-side calculator, no backend).
+- `Opportunities.tsx` → `/opportunities`, `/opportunities/wil`.
+- `Partners.tsx` → `/partners`, `/partners/landlords`, `/partners/institutions`.
 
-## Acceptance
+Every applications-family page renders a `ComplianceDisclaimer` component with the three mandated statements. No NSFAS application CTA anywhere.
 
-- Opening the Documents page and previewing the same doc 5× results in **1** `POST …/object/sign/documents/*` call (verified via Network tab).
-- Switching browser tabs and coming back does **not** refire residence/slide REST queries.
-- Preview + download still work end-to-end.
+Reuse existing PublicLayout, SEO, Button, Card primitives. Register routes in `src/App.tsx` (lazy-loaded) beside existing public routes — do not disturb existing entries.
 
-## Out of scope
+Build gate: typecheck + smoke each new route.
 
-- Quota top-up on External Supabase (that's a billing action only you can take; the code fix reduces future burn but won't lift today's 402 until the cache resets or the plan is upgraded).
-- Any admin/TVET/referral feature work.
+### Priority 3 — Admin Onboarding Hub (extend, don't replace)
+
+- Add `AdminOnboardingHub.tsx` under `src/pages/admin/` following existing hub pattern (mirrors `AdminOperationsHub` tab structure).
+- Sub-components under `src/components/admin/onboarding/`: Overview, RequestsTable, RequestCard, QuickActions, Metrics.
+- Register route `/admin/onboarding` in `App.tsx` behind `AdminRoute`.
+- Add sidebar entry in the existing admin sidebar (locate current sidebar file, insert Onboarding Hub between Analytics and TVET Hub) — additive only.
+- All data flows through `onboardingAdapter` — currently returns mock rows. Actions (Assign, Update Status, Add Note) mutate via adapter; TODO comments mark Supabase wiring.
+- CSV export = client-side blob download from current adapter list.
+
+Build gate: typecheck + load `/admin/onboarding`.
+
+### Priority 4 — Polish + handoff
+
+- Responsive review at 375px.
+- Empty-state illustrations/copy.
+- Final typecheck.
+
+Handoff docs (created early and updated after each priority):
+- `docs/JULES_FRONTEND_HANDOFF.md` — completed vs partial, file list, routes, components, known issues, backend hooks awaiting Supabase, exact next steps.
+- `docs/FRONTEND_PROGRESS_CHECKLIST.md` — the full checklist from the spec with live tick state.
+
+## Technical notes
+
+- Reuse: `PublicLayout`, `DashboardLayout`, `AdminLayout`, shadcn `Card/Button/Tabs/Dialog`, Sonner toasts, Lucide icons, existing design tokens (vibrant palette already in `index.css`).
+- Router: keep `BrowserRouter`; new routes added as `lazy(() => import(...))` in existing `<Suspense>`.
+- No new dependencies. Forms use plain React state (persona/need are small enums; skip RHF+Zod overhead).
+- Contact CTA reuses existing WhatsApp number `063 732 3192` from project constants.
+- Compliance strings centralised in `src/lib/onboarding/complianceCopy.ts` so Jules can adjust in one place.
+
+## Explicit non-goals this turn
+
+- No admin sidebar redesign, no removal of any existing tab.
+- No changes to Marketplace paused routes.
+- No auth flow changes.
+- No edge function or SQL work — Jules will wire `onboardingAdapter` to a future `onboarding_requests` table.
+
+## Stop-safe contract
+
+If credits run out mid-priority: current priority's partial files stay behind feature flags or unlinked routes only if fully compilable; otherwise revert the incomplete component to a stub that renders "Coming soon" so build stays green. `JULES_FRONTEND_HANDOFF.md` will name the exact next file and function to resume.
