@@ -147,7 +147,7 @@ export const Living: React.FC = () => {
                 key={opt.title}
                 className="group overflow-hidden border-border/80 transition-all hover:-translate-y-1 hover:shadow-xl"
               >
-                <Link to={opt.to} className="block">
+                <button type="button" onClick={() => choose(opt)} className="block w-full text-left">
                   <div className="relative aspect-[16/10] overflow-hidden bg-muted">
                     <img
                       src={opt.image}
@@ -163,13 +163,11 @@ export const Living: React.FC = () => {
                       <h2 className="text-lg font-bold text-white">{opt.title}</h2>
                     </div>
                   </div>
-                </Link>
+                </button>
                 <CardContent className="p-6 space-y-4">
                   <p className="text-sm text-muted-foreground leading-relaxed">{opt.description}</p>
-                  <Button asChild variant="outline" className="w-full">
-                    <Link to={opt.to}>
-                      {opt.cta} <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
+                  <Button variant="outline" className="w-full" onClick={() => choose(opt)}>
+                    {opt.cta} <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </CardContent>
               </Card>
