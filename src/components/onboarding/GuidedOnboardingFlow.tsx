@@ -5,6 +5,7 @@ import NeedSelector, { getNeedOptions } from "./NeedSelector";
 import OnboardingForm from "./OnboardingForm";
 import OnboardingSummaryCard from "./OnboardingSummaryCard";
 import IntentQuickStep from "./IntentQuickStep";
+import MatchingResidencesPreview from "./MatchingResidencesPreview";
 import { useUserIntent } from "@/contexts/UserIntentContext";
 import type { Persona, Need, OnboardingRequest } from "@/lib/onboarding/onboardingTypes";
 import { submitOnboardingRequest } from "@/lib/onboarding/onboardingAdapter";
@@ -16,8 +17,8 @@ export const GuidedOnboardingFlow: React.FC = () => {
 
   const { setIntent, completeGuide, skipGuide } = useUserIntent();
 
-  // Step state machine: 1 = Persona, 2 = Need, 3 = Intent details, 4 = Form, 5 = Summary
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  // Step machine: 1 Persona, 2 Need, 3 Intent details, 6 Matching results, 4 Form, 5 Summary
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   const [selectedNeedOption, setSelectedNeedOption] = useState<string | null>(null);
   const [resolvedNeed, setResolvedNeed] = useState<Need | null>(null);
@@ -99,10 +100,15 @@ export const GuidedOnboardingFlow: React.FC = () => {
   };
 
   const handleBack = () => {
-    if (step === 4) setStep(3);
+    if (step === 4) setStep(showResultsFirst ? 6 : 3);
+    else if (step === 6) setStep(3);
     else if (step === 3) setStep(2);
     else if (step === 2) setStep(1);
   };
+
+  // Accommodation-style journeys browse real places before any form.
+  const showResultsFirst =
+    resolvedNeed === "accommodation" || resolvedNeed === "private_rental";
 
   const renderStepTitleAndSubtitle = () => {
     switch (step) {
@@ -120,6 +126,11 @@ export const GuidedOnboardingFlow: React.FC = () => {
         return {
           title: "A few quick details",
           subtitle: "This personalises your listings, filters and dashboard. You can skip it.",
+        };
+      case 6:
+        return {
+          title: "Here are places that match you",
+          subtitle: "Browse first. Forms only come after you choose — or ask us for help directly.",
         };
       case 4:
         return {
@@ -183,13 +194,17 @@ export const GuidedOnboardingFlow: React.FC = () => {
           onBack={handleBack}
           onSkip={() => {
             skipGuide();
-            setStep(4);
+            setStep(showResultsFirst ? 6 : 4);
           }}
           onContinue={(partial) => {
             setIntent(partial);
-            setStep(4);
+            setStep(showResultsFirst ? 6 : 4);
           }}
         />
+      )}
+
+      {step === 6 && (
+        <MatchingResidencesPreview onRequestHelp={() => setStep(4)} onBack={handleBack} />
       )}
 
       {step === 4 && selectedPersona && resolvedNeed && (
