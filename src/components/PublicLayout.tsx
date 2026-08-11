@@ -1,17 +1,33 @@
 import { ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
-import { BRAND } from "@/constants/brand";
+import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 
 interface PublicLayoutProps {
   children: ReactNode;
+  /** Optional contextual search rendered inside the shared header */
+  headerSearch?: ReactNode;
 }
 
-const PublicLayout = ({ children }: PublicLayoutProps) => {
-  const navigate = useNavigate();
+const PublicLayout = ({ children, headerSearch }: PublicLayoutProps) => {
+  return (
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <SiteHeader search={headerSearch} />
+      <main className="flex-1">{children}</main>
+      <SiteFooter />
+    </div>
+  );
+};
 
+export default PublicLayout;
+
+/* eslint-disable */
+const _LegacyPublicLayout = ({ children }: PublicLayoutProps) => {
+  const navigate = (_: string) => {};
+  const Link = "a" as any;
+  const Button = "button" as any;
+  const BRAND: any = {};
+  const Sheet: any = "div", SheetContent: any = "div", SheetTrigger: any = "div", SheetClose: any = "div";
+  const Menu: any = "svg";
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Header */}
