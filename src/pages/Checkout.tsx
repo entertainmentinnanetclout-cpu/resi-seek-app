@@ -577,7 +577,7 @@ const Checkout = () => {
                       id="phone"
                       value={formData.delivery_phone}
                       onChange={(e) => setFormData((prev) => ({ ...prev, delivery_phone: e.target.value }))}
-                      placeholder="e.g., 0712345678"
+                      placeholder="e.g. 063 732 3192"
                       required
                     />
                   </div>

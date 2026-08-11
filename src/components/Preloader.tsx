@@ -14,15 +14,16 @@ const Preloader = () => {
     >
       {/* ambient glow */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="rk-loader-glow absolute left-1/2 top-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-blue/25 blur-[90px]" />
-        <div className="rk-loader-glow absolute left-1/2 top-1/2 h-[240px] w-[240px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-gold/20 blur-[70px]" />
+        <div className="rk-loader-glow absolute left-1/2 top-1/2 h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-blue/20 blur-[100px]" />
+        <div className="rk-loader-glow absolute left-1/2 top-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-gold/15 blur-[80px]" />
       </div>
 
-      <div className="rk-loader-mark relative">
+      {/* icon-only transparent mark on a soft navy plate — no drop-shadow halo */}
+      <div className="rk-loader-mark relative grid h-24 w-24 place-items-center rounded-3xl bg-white/[0.04] ring-1 ring-white/10 sm:h-28 sm:w-28">
         <img
           src={BRAND.logos.icon}
           alt={BRAND.name}
-          className="h-24 w-24 object-contain drop-shadow-[0_0_28px_rgba(37,99,235,0.45)] sm:h-28 sm:w-28"
+          className="h-14 w-14 object-contain sm:h-16 sm:w-16"
         />
       </div>
 
@@ -31,7 +32,7 @@ const Preloader = () => {
         <div className="h-[2px] w-40 overflow-hidden rounded-full bg-white/10">
           <div className="rk-loader-line h-full w-1/3 rounded-full bg-gradient-to-r from-brand-blue via-brand-gold to-brand-blue" />
         </div>
-        <p className="text-xs text-white/60">Connecting your journey...</p>
+        <p className="text-xs text-white/60">Preparing your ResKonnect path...</p>
       </div>
     </div>
   );

@@ -4,7 +4,40 @@ import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Building2, Home, HeartHandshake, ShieldCheck, HelpCircle } from "lucide-react";
+import { Building2, Home, HeartHandshake, ArrowRight } from "lucide-react";
+import heroAccommodation from "@/assets/hero-accommodation.jpg";
+import inclusivePathways from "@/assets/hero-inclusive-pathways.jpg";
+import studentsCelebration from "@/assets/students-celebration.jpg";
+
+const livingOptions = [
+  {
+    title: "Student Accommodation",
+    description:
+      "Verified university and TVET college residences close to campus. Browse real rooms, prices and availability before you commit.",
+    to: "/living/student-accommodation",
+    cta: "Explore Residences",
+    image: heroAccommodation,
+    icon: Building2,
+  },
+  {
+    title: "Private Rentals",
+    description:
+      "Single rooms, bachelor units and shared apartments for students, young professionals and private tenants.",
+    to: "/living/private-rentals",
+    cta: "Browse Rentals",
+    image: inclusivePathways,
+    icon: Home,
+  },
+  {
+    title: "Parent & Guardian Support",
+    description:
+      "Guidance, off-campus lodging tips and support services for safety, security and peace of mind.",
+    to: "/living/parents",
+    cta: "Parent Portal",
+    image: studentsCelebration,
+    icon: HeartHandshake,
+  },
+];
 
 export const Living: React.FC = () => {
   return (
@@ -27,50 +60,38 @@ export const Living: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="hover:shadow-lg transition-all border-border/80">
-              <CardContent className="p-8 space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-blue-500 grid place-items-center">
-                  <Building2 className="h-6 w-6" />
-                </div>
-                <h2 className="text-xl font-bold">Student Accommodation</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Verified university and TVET college residences close to campus. Secure your perfect space today.
-                </p>
-                <Button asChild variant="outline" className="w-full">
-                  <Link to="/living/student-accommodation">Explore Residences</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all border-border/80">
-              <CardContent className="p-8 space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-500 grid place-items-center">
-                  <Home className="h-6 w-6" />
-                </div>
-                <h2 className="text-xl font-bold">Private Rentals</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Single rooms, bachelor units, or shared apartments designed for students, young professionals, and private tenants.
-                </p>
-                <Button asChild variant="outline" className="w-full">
-                  <Link to="/living/private-rentals">Browse Rentals</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all border-border/80">
-              <CardContent className="p-8 space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 grid place-items-center">
-                  <HeartHandshake className="h-6 w-6" />
-                </div>
-                <h2 className="text-xl font-bold">Parent & Guardian Support</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Guidance, off-campus lodging tips, and support services to ensure safety, security, and peace of mind.
-                </p>
-                <Button asChild variant="outline" className="w-full">
-                  <Link to="/living/parents">Parent Portal</Link>
-                </Button>
-              </CardContent>
-            </Card>
+            {livingOptions.map((opt) => (
+              <Card
+                key={opt.title}
+                className="group overflow-hidden border-border/80 transition-all hover:-translate-y-1 hover:shadow-xl"
+              >
+                <Link to={opt.to} className="block">
+                  <div className="relative aspect-[16/10] overflow-hidden bg-muted">
+                    <img
+                      src={opt.image}
+                      alt={opt.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/85 via-brand-navy/25 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 p-4">
+                      <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/15 text-white backdrop-blur-sm">
+                        <opt.icon className="h-5 w-5" />
+                      </span>
+                      <h2 className="text-lg font-bold text-white">{opt.title}</h2>
+                    </div>
+                  </div>
+                </Link>
+                <CardContent className="p-6 space-y-4">
+                  <p className="text-sm text-muted-foreground leading-relaxed">{opt.description}</p>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link to={opt.to}>
+                      {opt.cta} <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-8 max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">

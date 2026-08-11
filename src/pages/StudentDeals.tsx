@@ -440,7 +440,7 @@ const StudentDeals = () => {
                 <div className="border-t pt-2 flex justify-between font-semibold"><span>Total:</span><span className="text-primary">R{((selectedDiscount.price || 0) * orderQuantity).toFixed(2)}</span></div>
               </div>
               <div className="space-y-3">
-                <div><Label htmlFor="phone">Phone Number *</Label><Input id="phone" placeholder="e.g., 0712345678" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+                <div><Label htmlFor="phone">Phone Number *</Label><Input id="phone" placeholder="e.g. 063 732 3192" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
                 <div><Label htmlFor="address">Delivery Address *</Label><Textarea id="address" placeholder="Enter your delivery address" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} rows={2} /></div>
                 <div><Label htmlFor="notes">Order Notes (Optional)</Label><Textarea id="notes" placeholder="Any special instructions..." value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} rows={2} /></div>
               </div>

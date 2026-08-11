@@ -72,8 +72,8 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
             </div>
           )}
 
-          {/* Action overlay */}
-          <div className="absolute bottom-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Action overlay — always visible on touch, revealed on hover for pointer devices */}
+          <div className="absolute bottom-3 right-3 flex gap-1.5 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
             <FavoriteButton residenceId={residence.id} variant="icon" className="bg-background/80 backdrop-blur-sm h-8 w-8" />
             <WhatsAppButton phone={RESKONNECT_WHATSAPP} residenceName={residence.name} variant="icon" className="bg-background/80 backdrop-blur-sm h-8 w-8" />
           </div>
@@ -148,21 +148,40 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
           </div>
 
           {/* CTA */}
-          <Button
-            className={cn(
-              "w-full mt-1",
-              !isFull && "bg-gradient-vibrant hover:opacity-90 border-0 text-white shadow-md",
-            )}
-            variant={isFull ? "outline" : "default"}
-            disabled={isFull}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (!isFull) onApply(residence);
-            }}
-          >
-            {isFull ? "Fully Booked" : "Apply Now"}
-          </Button>
+          <div className="mt-1 space-y-2">
+            <Button
+              className={cn(
+                "w-full",
+                !isFull && "bg-gradient-vibrant hover:opacity-90 border-0 text-white shadow-md",
+              )}
+              variant={isFull ? "outline" : "default"}
+              disabled={isFull}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isFull) onApply(residence);
+              }}
+            >
+              {isFull ? "Fully Booked" : "Apply Now"}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.open(
+                  `https://wa.me/${RESKONNECT_WHATSAPP.replace(/\s/g, "").replace(/^0/, "27")}?text=${encodeURIComponent(
+                    `Hi ResKonnect, I would like to request a viewing for ${residence.name}.`
+                  )}`,
+                  "_blank",
+                  "noopener"
+                );
+              }}
+            >
+              Request Viewing
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </Link>

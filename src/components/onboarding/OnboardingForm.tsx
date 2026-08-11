@@ -328,7 +328,7 @@ export const OnboardingForm: React.FC<OnboardingFormProps> = ({
             <Input
               id="fullName"
               required
-              placeholder="e.g. John Doe"
+              placeholder="e.g. Lawrence Dube"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
             />
@@ -340,7 +340,7 @@ export const OnboardingForm: React.FC<OnboardingFormProps> = ({
               id="email"
               type="email"
               required
-              placeholder="e.g. john@example.com"
+              placeholder="e.g. reskonnect@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -353,7 +353,7 @@ export const OnboardingForm: React.FC<OnboardingFormProps> = ({
             <Input
               id="phone"
               required
-              placeholder="e.g. 0712345678"
+              placeholder="e.g. 063 732 3192"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
@@ -363,7 +363,7 @@ export const OnboardingForm: React.FC<OnboardingFormProps> = ({
             <Label htmlFor="whatsapp">WhatsApp Number (Optional)</Label>
             <Input
               id="whatsapp"
-              placeholder="e.g. 0712345678"
+              placeholder="e.g. 063 732 3192"
               value={whatsapp}
               onChange={(e) => setWhatsapp(e.target.value)}
             />

@@ -244,12 +244,12 @@ const Auth = () => {
               {!isLogin && (
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name <span className="text-destructive">*</span></Label>
-                  <Input id="fullName" name="fullName" required placeholder="John Doe" />
+                  <Input id="fullName" name="fullName" required placeholder="Lawrence Dube" />
                 </div>
               )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address <span className="text-destructive">*</span></Label>
-                <Input id="email" name="email" type="email" autoComplete="email" required placeholder="john@student.ac.za" />
+                <Input id="email" name="email" type="email" autoComplete="email" required placeholder="reskonnect@gmail.com" />
               </div>
               
               {!isLogin && (
