@@ -58,6 +58,8 @@ const FindMyRes = () => {
     updateFilter,
     resetFilters,
     filteredResidences,
+    closestResidences,
+    relaxBudget,
     activeFilterCount,
     hasActiveFilters,
   } = useResidenceFilters(residences);
@@ -70,22 +72,21 @@ const FindMyRes = () => {
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [applicationNotes, setApplicationNotes] = useState("");
   const [institutionType, setInstitutionType] = useState<string>("university");
-  const [intentApplied, setIntentApplied] = useState(false);
+  const [appliedIntentStamp, setAppliedIntentStamp] = useState<string | null>(null);
 
   const intentResult = deriveFiltersFromIntent(intent);
+  const intentApplied = appliedIntentStamp !== null;
 
-  // Pre-apply intent-derived filters once. Every filter stays user-removable.
+  // Re-apply intent-derived filters whenever the guide answers change.
+  // Every filter stays user-removable.
   useEffect(() => {
-    if (intentApplied) return;
+    const stamp = intent.updated_at ?? JSON.stringify(intentResult.patch);
+    if (appliedIntentStamp === stamp) return;
     const entries = Object.entries(intentResult.patch);
-    if (entries.length === 0) {
-      setIntentApplied(true);
-      return;
-    }
     entries.forEach(([key, value]) => updateFilter(key as any, value as any));
-    setIntentApplied(true);
+    setAppliedIntentStamp(stamp);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [intentApplied, intent]);
+  }, [appliedIntentStamp, intent]);
 
   // Deep-link category support: /find?category=flats
   useEffect(() => {
