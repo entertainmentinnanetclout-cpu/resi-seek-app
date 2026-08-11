@@ -255,7 +255,7 @@ serve(async (req) => {
 
     <div class="footer">
       <p>ResKonnect • South Africa's Premier Student Accommodation Platform</p>
-      <p style="margin-top: 4px;">Generated on ${new Date().toLocaleDateString('en-ZA')} • support@reskonnect.co.za</p>
+      <p style="margin-top: 4px;">Generated on ${new Date().toLocaleDateString('en-ZA')} • reskonnect@gmail.com</p>
     </div>
   </div>
 </body>

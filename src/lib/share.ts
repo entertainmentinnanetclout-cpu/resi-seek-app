@@ -1,6 +1,6 @@
 // Universal share helpers — canonical URLs + dynamic OG images
 
-const SITE_URL = "https://reskonnect.co.za";
+const SITE_URL = "https://www.reskonnect.org";
 import { EXTERNAL_SUPABASE_PROJECT_ID } from "@/integrations/supabase/client";
 
 const PROJECT_ID = EXTERNAL_SUPABASE_PROJECT_ID;

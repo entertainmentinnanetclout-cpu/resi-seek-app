@@ -33,8 +33,8 @@ export const BRAND = {
     phoneRaw: "0637323192",
     whatsapp: "27637323192",
     email: "reskonnect@gmail.com",
-    website: "www.reskonnect.co.za",
-    websiteUrl: "https://reskonnect.co.za",
+    website: "www.reskonnect.org",
+    websiteUrl: "https://www.reskonnect.org",
   },
   compliance: {
     admissions:

@@ -119,7 +119,7 @@ const Privacy = () => {
                 For privacy-related inquiries or to exercise your rights, please contact our Information Officer at:
               </p>
               <ul className="list-none pl-0 text-muted-foreground space-y-1 mt-2">
-                <li>Email: privacy@reskonnect.co.za</li>
+                <li>Email: reskonnect@gmail.com</li>
                 <li>Address: ResKonnect, Pretoria, South Africa</li>
               </ul>
             </section>

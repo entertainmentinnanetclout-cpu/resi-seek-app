@@ -29,7 +29,7 @@ const NsfAsLanding: React.FC = () => {
         "@type": "Accommodation",
         "name": residence.name,
         "address": residence.address,
-        "url": `https://reskonnect.co.za/res/${residence.id}`
+        "url": `https://www.reskonnect.org/res/${residence.id}`
       }
     }))
   };

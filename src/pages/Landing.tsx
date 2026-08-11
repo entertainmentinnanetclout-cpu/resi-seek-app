@@ -119,14 +119,14 @@ const Landing = () => {
   // Schema data
   const organizationSchema = {
     "@context": "https://schema.org", "@type": "Organization", "name": "ResKonnect",
-    "url": "https://reskonnect.co.za", "logo": "https://reskonnect.co.za/logo.png",
+    "url": "https://www.reskonnect.org", "logo": "https://www.reskonnect.org/logo.png",
     "description": "South Africa's leading student accommodation platform.",
     "contactPoint": { "@type": "ContactPoint", "telephone": "+27-63-732-3192", "contactType": "customer service", "email": "Reskonnect@gmail.com" },
   };
   const websiteSchema = {
     "@context": "https://schema.org", "@type": "WebSite", "name": "ResKonnect Student Accommodation",
-    "url": "https://reskonnect.co.za",
-    "potentialAction": { "@type": "SearchAction", "target": "https://reskonnect.co.za/find?query={search_term_string}", "query-input": "required name=search_term_string" },
+    "url": "https://www.reskonnect.org",
+    "potentialAction": { "@type": "SearchAction", "target": "https://www.reskonnect.org/find?query={search_term_string}", "query-input": "required name=search_term_string" },
   };
 
   return (

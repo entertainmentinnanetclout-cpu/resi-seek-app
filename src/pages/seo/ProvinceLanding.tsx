@@ -37,7 +37,7 @@ const ProvinceLanding: React.FC = () => {
           "addressRegion": provinceName,
           "addressCountry": "ZA"
         },
-        "url": `https://reskonnect.co.za/res/${residence.id}`
+        "url": `https://www.reskonnect.org/res/${residence.id}`
       }
     }))
   };
@@ -46,8 +46,8 @@ const ProvinceLanding: React.FC = () => {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://reskonnect.co.za" },
-      { "@type": "ListItem", "position": 2, "name": `${provinceName} Accommodation`, "item": `https://reskonnect.co.za/student-accommodation-${province}` }
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.reskonnect.org" },
+      { "@type": "ListItem", "position": 2, "name": `${provinceName} Accommodation`, "item": `https://www.reskonnect.org/student-accommodation-${province}` }
     ]
   };
 
