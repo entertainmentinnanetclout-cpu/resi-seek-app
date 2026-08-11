@@ -343,11 +343,39 @@ export function useResidenceFilters(residences: any[]) {
     return withScores;
   }, [residences, filters]);
 
+  /**
+   * Closest matches when the budget filter empties the list: same criteria,
+   * budget ignored, cheapest first. Always labelled clearly in the UI.
+   */
+  const closestResidences = useMemo(() => {
+    if (filteredResidences.length > 0) return [];
+    if (filters.priceMax >= 10000 && filters.priceMin <= 0) return [];
+    const relaxed = { ...filters, priceMin: 0, priceMax: 10000 };
+    return residences
+      .filter((r) => !isMockResidence(r))
+      .filter((r) => (filters.campus === "all" ? true : residenceMatchesCampus(r, filters.campus, filters.institutionType)))
+      .filter((r) => {
+        if (relaxed.audience === "university") return acceptsUniversity(r);
+        if (relaxed.audience === "tvet") return r.accepts_tvet === true || hasTagLike(r, ["tvet"]);
+        if (relaxed.audience === "private") return r.accepts_private === true;
+        return true;
+      })
+      .filter((r) => (filters.nsfasOnly ? r.accepts_nsfas === true || r.nsfas_accredited === true || r.is_tut_accredited === true : true))
+      .sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0))
+      .slice(0, 6);
+  }, [residences, filters, filteredResidences]);
+
+  const relaxBudget = useCallback(() => {
+    setFilters((prev) => ({ ...prev, priceMin: 0, priceMax: 10000 }));
+  }, []);
+
   return {
     filters,
     updateFilter,
     resetFilters,
     filteredResidences,
+    closestResidences,
+    relaxBudget,
     activeFilterCount,
     hasActiveFilters,
   };
