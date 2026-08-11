@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { getAuthErrorMessage } from "@/lib/authErrors";
 import SEO from "@/components/SEO";
 
 const ResidenceLogin = () => {
@@ -78,7 +79,7 @@ const ResidenceLogin = () => {
 
     } catch (error: any) {
       console.error('Login error:', error);
-      toast.error(error.message || 'Failed to login');
+      toast.error(getAuthErrorMessage(error, 'Failed to login'));
     } finally {
       setIsLoading(false);
     }
