@@ -126,9 +126,18 @@ const MatchingResidencesPreview = ({ onRequestHelp, onBack }: MatchingResidences
             <Skeleton key={i} className="h-64 rounded-2xl" />
           ))}
         </div>
-      ) : residences && residences.length > 0 ? (
+      ) : cards.length > 0 ? (
+        <>
+        {showingClosest && (
+          <div className="rounded-xl border border-amber/30 bg-amber/10 p-4 text-sm">
+            <p className="font-semibold">No exact matches found</p>
+            <p className="text-muted-foreground">
+              These are the closest matches above your selected budget.
+            </p>
+          </div>
+        )}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {residences.map((r: any) => (
+          {cards.map((r: any) => (
             <Link
               key={r.id}
               to={`/find-my-res/${r.slug || r.id}`}
@@ -182,9 +191,11 @@ const MatchingResidencesPreview = ({ onRequestHelp, onBack }: MatchingResidences
             </Link>
           ))}
         </div>
+        </>
       ) : (
         <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          No exact matches yet. Browse all verified places or let us assist you directly.
+          No exact matches found for these answers. Browse all verified places or let us
+          source options for you directly.
         </div>
       )}
 
