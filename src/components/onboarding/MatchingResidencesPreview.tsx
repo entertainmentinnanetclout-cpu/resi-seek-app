@@ -145,7 +145,7 @@ const MatchingResidencesPreview = ({ onRequestHelp, onBack }: MatchingResidences
             >
               <div className="relative aspect-[16/10] overflow-hidden bg-muted">
                 <img
-                  src={r.image_url || r.images?.[0] || "/placeholder.svg"}
+                  src={r.images?.[0] || r.image_url || "/placeholder.svg"}
                   alt={r.name}
                   loading="lazy"
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
