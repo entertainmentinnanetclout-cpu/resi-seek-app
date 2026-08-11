@@ -37,7 +37,6 @@ const columns = [
   {
     title: "Partners",
     links: [
-      { label: "ResKonnect Partners", to: "/partners" },
       { label: "Partner With ResKonnect", to: "/partners" },
       { label: "List Your Property", to: "/partners/landlords" },
       { label: "Institutions & Business", to: "/partners/institutions" },
