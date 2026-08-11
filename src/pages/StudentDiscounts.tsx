@@ -498,7 +498,7 @@ const StudentDiscounts = () => {
                   <Label htmlFor="phone">Phone Number *</Label>
                   <Input
                     id="phone"
-                    placeholder="e.g., 0712345678"
+                    placeholder="e.g. 063 732 3192"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                   />

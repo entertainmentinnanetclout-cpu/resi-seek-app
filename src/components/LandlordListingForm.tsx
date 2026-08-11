@@ -285,7 +285,7 @@ _Landlord contact details submitted securely. ResKonnect team will reach out to 
                   id="contactPhone"
                   type="tel"
                   required
-                  placeholder="e.g., 0712345678"
+                  placeholder="e.g. 063 732 3192"
                   value={formData.contactPhone}
                   onChange={e => setFormData(prev => ({ ...prev, contactPhone: e.target.value }))}
                 />
