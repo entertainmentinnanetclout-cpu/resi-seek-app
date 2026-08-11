@@ -3,123 +3,30 @@ import PublicLayout from "@/components/PublicLayout";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useNavigate } from "react-router-dom";
-import { Building2, Home, HeartHandshake, ArrowRight, GraduationCap, School, Wallet, ShieldCheck } from "lucide-react";
+import { Building2, Home, HeartHandshake, ArrowRight, GraduationCap, School, Wallet, ShieldCheck, ImageOff } from "lucide-react";
 import { useUserIntent } from "@/contexts/UserIntentContext";
-import type { UserIntent } from "@/lib/intent/userIntentTypes";
-import heroAccommodation from "@/assets/hero-accommodation.jpg";
-import inclusivePathways from "@/assets/hero-inclusive-pathways.jpg";
-import studentsCelebration from "@/assets/students-celebration.jpg";
+import { useCategoryCardConfigs, type ResolvedCategoryCard } from "@/hooks/useCategoryCardConfigs";
 
-/**
- * Category cards are functional: each one writes real intent and routes to the
- * page that can actually serve it. None of them are decorative.
- */
-interface LivingOption {
-  title: string;
-  description: string;
-  to: string;
-  cta: string;
-  image: string;
-  icon: typeof Building2;
-  intent: Partial<UserIntent>;
-}
-
-const livingOptions: LivingOption[] = [
-  {
-    title: "Student Accommodation",
-    description:
-      "Verified university and TVET college residences close to campus. Browse real rooms, prices and availability before you commit.",
-    to: "/find",
-    cta: "Explore Residences",
-    image: heroAccommodation,
-    icon: Building2,
-    intent: { persona: "student", primary_need: "accommodation", looking_for_student_accommodation: true },
-  },
-  {
-    title: "University Accommodation",
-    description:
-      "Residences flagged by our team as accepting university students, matched to your campus.",
-    to: "/find?audience=university",
-    cta: "View University Options",
-    image: heroAccommodation,
-    icon: GraduationCap,
-    intent: { persona: "student", primary_need: "accommodation", institution_type: "university" },
-  },
-  {
-    title: "TVET Accommodation",
-    description:
-      "Only residences an admin has confirmed accept TVET college students. No guesswork, no mislabelling.",
-    to: "/find?audience=tvet",
-    cta: "View TVET Options",
-    image: inclusivePathways,
-    icon: School,
-    intent: { persona: "student", primary_need: "accommodation", institution_type: "tvet" },
-  },
-  {
-    title: "NSFAS Residences",
-    description:
-      "Accommodation carrying NSFAS accreditation context. ResKonnect does not process NSFAS applications.",
-    to: "/find",
-    cta: "View NSFAS Accommodation",
-    image: heroAccommodation,
-    icon: ShieldCheck,
-    intent: {
-      persona: "student",
-      primary_need: "accommodation",
-      funding_type: "nsfas",
-      nsfas_funded: true,
-    },
-  },
-  {
-    title: "Private-Paying Student",
-    description:
-      "Student accommodation that accepts private-paying students. Still student housing — not a private rental.",
-    to: "/find",
-    cta: "View Private-Paying Options",
-    image: inclusivePathways,
-    icon: Wallet,
-    intent: {
-      persona: "student",
-      primary_need: "accommodation",
-      funding_type: "private",
-      student_status: "current_student",
-    },
-  },
-  {
-    title: "Private Rentals",
-    description:
-      "Non-student rentals for working professionals and private tenants. Handled separately from student residences.",
-    to: "/living/private-rentals",
-    cta: "Browse Rentals",
-    image: inclusivePathways,
-    icon: Home,
-    intent: {
-      persona: "private_tenant",
-      primary_need: "private_rental",
-      looking_for_private_rental: true,
-      looking_for_student_accommodation: false,
-    },
-  },
-  {
-    title: "Parent & Guardian Support",
-    description:
-      "Guidance, off-campus lodging tips and support services for safety, security and peace of mind.",
-    to: "/get-started?persona=parent_guardian",
-    cta: "Parent Portal",
-    image: studentsCelebration,
-    icon: HeartHandshake,
-    intent: { persona: "parent_guardian", parent_mode: true },
-  },
-];
+const CARD_ICONS: Record<string, typeof Building2> = {
+  student_accommodation: Building2,
+  university_accommodation: GraduationCap,
+  tvet_accommodation: School,
+  nsfas_residences: ShieldCheck,
+  private_paying_student: Wallet,
+  private_rentals: Home,
+  parent_guidance: HeartHandshake,
+};
 
 export const Living: React.FC = () => {
   const navigate = useNavigate();
   const { setIntent } = useUserIntent();
+  const { cards, isLoading } = useCategoryCardConfigs();
 
-  const choose = (opt: LivingOption) => {
-    setIntent({ ...opt.intent, completed_guide: true, skipped_guide: false });
-    navigate(opt.to);
+  const choose = (card: ResolvedCategoryCard) => {
+    setIntent(card.intent);
+    navigate(card.route_path);
   };
 
   return (
@@ -142,36 +49,48 @@ export const Living: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {livingOptions.map((opt) => (
-              <Card
-                key={opt.title}
-                className="group overflow-hidden border-border/80 transition-all hover:-translate-y-1 hover:shadow-xl"
-              >
-                <button type="button" onClick={() => choose(opt)} className="block w-full text-left">
-                  <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-                    <img
-                      src={opt.image}
-                      alt={opt.title}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/85 via-brand-navy/25 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 p-4">
-                      <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/15 text-white backdrop-blur-sm">
-                        <opt.icon className="h-5 w-5" />
-                      </span>
-                      <h2 className="text-lg font-bold text-white">{opt.title}</h2>
+            {isLoading &&
+              [0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-80 rounded-xl" />)}
+
+            {!isLoading && cards.map((card) => {
+              const Icon = CARD_ICONS[card.card_key] ?? Building2;
+              return (
+                <Card
+                  key={card.id}
+                  className="group overflow-hidden border-border/80 transition-all hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <button type="button" onClick={() => choose(card)} className="block w-full text-left">
+                    <div className="relative aspect-[16/10] overflow-hidden bg-muted">
+                      {card.imageUrl ? (
+                        <img
+                          src={card.imageUrl}
+                          alt={card.imageAlt}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+                          <ImageOff className="h-8 w-8" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/85 via-brand-navy/25 to-transparent" />
+                      <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 p-4">
+                        <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/15 text-white backdrop-blur-sm">
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <h2 className="text-lg font-bold text-white">{card.title}</h2>
+                      </div>
                     </div>
-                  </div>
-                </button>
-                <CardContent className="p-6 space-y-4">
-                  <p className="text-sm text-muted-foreground leading-relaxed">{opt.description}</p>
-                  <Button variant="outline" className="w-full" onClick={() => choose(opt)}>
-                    {opt.cta} <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                  </button>
+                  <CardContent className="p-6 space-y-4">
+                    <p className="text-sm text-muted-foreground leading-relaxed">{card.description}</p>
+                    <Button variant="outline" className="w-full" onClick={() => choose(card)}>
+                      {card.cta_label || "Explore"} <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-8 max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
