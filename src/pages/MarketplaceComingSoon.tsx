@@ -80,7 +80,7 @@ const MarketplaceComingSoon = () => {
                   <Link to="/find">Find accommodation <ArrowRight className="h-4 w-4" /></Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to="/apply">Apply to TUT / NSFAS</Link>
+                  <Link to="/apply">Application Support</Link>
                 </Button>
                 <Button asChild variant="ghost">
                   <Link to="/bursaries">Browse bursaries</Link>
