@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { TUT_CAMPUSES } from "@/lib/campuses";
+import { getCampusOptions } from "@/constants/institutionOptions";
 import type { ResidenceFilters } from "@/hooks/useResidenceFilters";
 
 interface SmartSearchBarProps {
@@ -46,7 +46,7 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Areas</SelectItem>
-                {TUT_CAMPUSES.map((c) => (
+                {getCampusOptions(filters.institutionType ?? (filters.audience === "tvet" ? "tvet" : filters.audience === "university" ? "university" : undefined)).map((c) => (
                   <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                 ))}
               </SelectContent>
