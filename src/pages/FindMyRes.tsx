@@ -343,16 +343,53 @@ const FindMyRes = () => {
                   ))}
                 </div>
               ) : filteredResidences.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-16">
-                    <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">No residences found</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Try adjusting your filters or search query.
-                    </p>
-                    <Button onClick={resetFilters}>Clear All Filters</Button>
-                  </CardContent>
-                </Card>
+                <div className="space-y-6">
+                  <Card>
+                    <CardContent className="text-center py-12">
+                      <Building2 className="w-14 h-14 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold mb-2">No exact matches found</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Nothing matches every filter you selected. Relax your budget or let
+                        ResKonnect help you source a place.
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {filters.priceMax < 10000 && (
+                          <Button variant="outline" onClick={relaxBudget}>
+                            Relax budget filter
+                          </Button>
+                        )}
+                        <Button variant="outline" onClick={resetFilters}>
+                          Clear all filters
+                        </Button>
+                        <Button asChild>
+                          <a
+                            href="https://wa.me/27637323192"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Request help finding a match
+                          </a>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {closestResidences.length > 0 && (
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="text-lg font-semibold">Closest matches</h4>
+                        <p className="text-sm text-muted-foreground">
+                          These are outside your selected budget but match your other criteria.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {closestResidences.map((r: any) => (
+                          <ResidencePropertyCard key={r.id} residence={r} onApply={handleApply} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
