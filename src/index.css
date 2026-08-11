@@ -17,10 +17,10 @@ All colors MUST be HSL.
     --popover: 220 13% 95%;
     --popover-foreground: 215 39% 17%;
 
-    --primary: 221 83% 53%;
+    --primary: 221 83% 53%; /* Rich Blue #2563EB */
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 222 69% 40%;
+    --secondary: 219 69% 52%; /* Accent Blue #2F6EDB */
     --secondary-foreground: 0 0% 100%;
 
     --muted: 220 9% 96%;
@@ -36,13 +36,33 @@ All colors MUST be HSL.
     --input: 214 20% 90%;
     --ring: 221 83% 53%;
 
-    --success: 145 65% 45%;
+    --success: 160 82% 36%; /* Green #12A870 */
     --success-foreground: 0 0% 100%;
 
-    --warning: 45 93% 47%;
+    --warning: 40 91% 57%; /* Gold #F5B32F */
     --warning-foreground: 0 0% 0%;
 
     --radius: 0.75rem;
+
+    /* ── Canonical ResKonnect brand tokens ───────────────── */
+    --brand-navy: 213 70% 9%;        /* Deep Navy   #071326 */
+    --brand-navy-command: 219 47% 8%;/* Command Navy #0B1220 */
+    --brand-blue: 221 83% 53%;       /* Rich Blue   #2563EB */
+    --brand-blue-accent: 219 69% 52%;/* Accent Blue #2F6EDB */
+    --brand-gold: 40 91% 57%;        /* Gold        #F5B32F */
+    --brand-green: 160 82% 36%;      /* Green       #12A870 */
+    --brand-red: 0 84% 60%;          /* Red         #EF4444 */
+    --brand-surface: 210 40% 98%;    /* Soft Surface #F8FAFC */
+    --brand-border: 220 13% 91%;     /* Card Border #E5E7EB */
+
+    /* Primary CTA = gold, secondary CTA = blue */
+    --cta: var(--brand-gold);
+    --cta-foreground: 213 70% 9%;
+    --cta-secondary: var(--brand-blue);
+    --cta-secondary-foreground: 0 0% 100%;
+
+    --gradient-command: linear-gradient(135deg, hsl(var(--brand-navy)) 0%, hsl(var(--brand-navy-command)) 55%, hsl(var(--brand-blue) / 0.85) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(var(--brand-gold)) 0%, hsl(36 92% 50%) 100%);
 
     /* Vibrant accent palette — used by cards, badges, spotlight */
     --accent-coral: 12 92% 62%;

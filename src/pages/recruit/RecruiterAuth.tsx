@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
-import logo from "@/assets/LIGHT THEME Login Page Icon.png";
+import { BRAND } from "@/constants/brand";
 import { Loader2, Chrome, ArrowLeft } from "lucide-react";
 import { savePendingRecruiter, readPendingRecruiter, clearPendingRecruiter } from "@/lib/referrals/referralStorage";
 
@@ -102,7 +102,7 @@ export default function RecruiterAuth() {
     <div className="min-h-screen bg-background flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <SEO title="Recruiter Auth | ResKonnect" description="Sign in or join as a student recruiter." />
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <img src={logo} alt="ResKonnect" className="mx-auto h-16 w-auto mb-6" />
+        <img src={BRAND.logos.full} alt={BRAND.name} className="mx-auto h-16 w-auto object-contain mb-6" />
         <h2 className="text-3xl font-extrabold">Recruit Students. Earn with ResKonnect.</h2>
         <p className="mt-2 text-muted-foreground">Create a recruiter account to refer students and track your placements.</p>
       </div>

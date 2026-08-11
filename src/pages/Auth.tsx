@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EXTERNAL_SUPABASE_ANON_KEY, EXTERNAL_SUPABASE_URL, externalFunctionUrl } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
-import logo from "@/assets/LIGHT THEME Login Page Icon.png";
+import { BRAND } from "@/constants/brand";
 import { Loader2, Chrome } from "lucide-react";
 import { readPendingApplication, clearPendingApplication, readPendingRecruiter, clearPendingRecruiter, readReferral } from "@/lib/referrals/referralStorage";
 import { attachReferralToUser } from "@/lib/referrals/referralApi";
@@ -227,7 +227,7 @@ const Auth = () => {
       />
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <img src={logo} alt="ResKonnect" className="mx-auto h-16 w-auto" />
+          <img src={BRAND.logos.full} alt={BRAND.name} className="mx-auto h-16 w-auto object-contain" />
           <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">{isLogin ? "Sign in to your account" : "Create a new account"}</h2>
           <p className="mt-2 text-center text-sm text-muted-foreground">
             Or{" "}

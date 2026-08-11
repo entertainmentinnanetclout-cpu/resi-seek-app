@@ -14,8 +14,8 @@ export const OnboardingSummaryCard: React.FC<OnboardingSummaryCardProps> = ({ re
   const target = routeForRequest(record);
 
   // Format ResKonnect official WhatsApp/Phone values
-  const RESKONNECT_PHONE = "011 987 6543"; // Sample fallback, or imported if needed
-  const RESKONNECT_WHATSAPP_LINK = "https://wa.me/27119876543";
+  const RESKONNECT_PHONE = "063 732 3192";
+  const RESKONNECT_WHATSAPP_LINK = "https://wa.me/27637323192";
 
   return (
     <Card className="max-w-xl mx-auto border-2 border-primary/20 bg-card/60 backdrop-blur-md">

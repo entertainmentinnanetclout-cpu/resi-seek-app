@@ -30,6 +30,9 @@ import { AudienceSelector, type AudienceKey } from "@/components/findmyres/Audie
 import { ResidenceSpotlightSlider } from "@/components/findmyres/ResidenceSpotlightSlider";
 import CompareDrawer from "@/components/CompareDrawer";
 import { ReferralBanner } from "@/components/referrals/ReferralBanner";
+import { IntentNotice } from "@/components/findmyres/IntentNotice";
+import { useUserIntent } from "@/contexts/UserIntentContext";
+import { deriveFiltersFromIntent } from "@/lib/intent/intentFilters";
 import { getReferralPublic, captureReferralClick } from "@/lib/referrals/referralApi";
 import { saveReferral, getVisitorId } from "@/lib/referrals/referralStorage";
 
@@ -49,6 +52,7 @@ const FindMyRes = () => {
   const [searchParams] = useSearchParams();
   const { residences, loading } = useRealtimeResidences();
   const { sections } = useResidenceSections("findmyres");
+  const { intent } = useUserIntent();
   const {
     filters,
     updateFilter,
@@ -66,6 +70,22 @@ const FindMyRes = () => {
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [applicationNotes, setApplicationNotes] = useState("");
   const [institutionType, setInstitutionType] = useState<string>("university");
+  const [intentApplied, setIntentApplied] = useState(false);
+
+  const intentResult = deriveFiltersFromIntent(intent);
+
+  // Pre-apply intent-derived filters once. Every filter stays user-removable.
+  useEffect(() => {
+    if (intentApplied) return;
+    const entries = Object.entries(intentResult.patch);
+    if (entries.length === 0) {
+      setIntentApplied(true);
+      return;
+    }
+    entries.forEach(([key, value]) => updateFilter(key as any, value as any));
+    setIntentApplied(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intentApplied, intent]);
 
   // Deep-link category support: /find?category=flats
   useEffect(() => {
@@ -209,6 +229,18 @@ const FindMyRes = () => {
         {/* Marketing Spotlight Slider */}
         <ResidenceSpotlightSlider residences={residences} loading={loading} />
         <ReferralBanner />
+
+        {/* Intent-aware explanation */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <IntentNotice
+            note={intentApplied ? intentResult.note : null}
+            privateRentalUnavailable={intentResult.privateRentalUnavailable}
+            guideSkipped={Boolean(intent.skipped_guide) || !intent.persona}
+            onClearIntentFilters={resetFilters}
+            area={intent.area}
+            budget={intent.budget_max}
+          />
+        </div>
 
         {/* Audience Selector — University / TVET / Private */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">

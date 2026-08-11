@@ -1,5 +1,5 @@
 import React from "react";
-import { GraduationCap, HeartHandshake, Home, FileText, Briefcase, Building2, Landmark, HelpCircle, ArrowRight } from "lucide-react";
+import { GraduationCap, HeartHandshake, Home, FileCheck, FileText, Briefcase, Building2, Landmark, HelpCircle, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -42,7 +42,7 @@ const NEED_CARDS: NeedCard[] = [
   {
     title: "Apply for study support",
     desc: "Prepare documents and apply to tertiary institutions.",
-    icon: FileCheckIcon,
+    icon: FileCheck,
     persona: "applicant",
     need: "application_support",
     colorClass: "text-green-500 bg-green-50 dark:bg-green-950/20",
@@ -80,10 +80,6 @@ const NEED_CARDS: NeedCard[] = [
     colorClass: "text-slate-500 bg-slate-50 dark:bg-slate-950/20",
   },
 ];
-
-function FileCheckIcon(props: React.SVGProps<SVGSVGElement>) {
-  return <FileText {...props} />;
-}
 
 export const InteractiveNeedSection: React.FC = () => {
   return (

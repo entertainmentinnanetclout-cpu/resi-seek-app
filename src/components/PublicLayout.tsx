@@ -3,8 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
-import headerLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
-import footerLogo from "@/assets/FOOTER.png";
+import { BRAND } from "@/constants/brand";
 
 interface PublicLayoutProps {
   children: ReactNode;
@@ -19,7 +18,7 @@ const PublicLayout = ({ children }: PublicLayoutProps) => {
       <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2">
-            <img src={headerLogo} alt="ResKonnect" className="h-8 sm:h-10 w-auto" />
+            <img src={BRAND.logos.full} alt={BRAND.name} className="h-8 sm:h-10 w-auto object-contain" />
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/living" className="text-sm font-medium hover:text-primary transition-colors">
@@ -37,7 +36,7 @@ const PublicLayout = ({ children }: PublicLayoutProps) => {
           </nav>
           <div className="hidden md:flex gap-2">
             <Button variant="ghost" onClick={() => navigate("/auth")}>Sign In</Button>
-            <Button onClick={() => navigate("/get-started")} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button onClick={() => navigate("/get-started")} className="bg-cta text-cta-foreground hover:bg-cta/90 font-semibold">
               Get Started
             </Button>
           </div>
@@ -93,11 +92,12 @@ const PublicLayout = ({ children }: PublicLayoutProps) => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
             <div className="sm:col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <img src={footerLogo} alt="ResKonnect" className="h-7 w-auto" />
+              <div className="flex items-center gap-2 mb-3">
+                <img src={BRAND.logos.full} alt={BRAND.name} className="h-9 w-auto object-contain" />
               </div>
+              <p className="text-[10px] tracking-[0.3em] text-muted-foreground mb-2">{BRAND.descriptor}</p>
               <p className="text-sm text-muted-foreground">
-                Your trusted student accommodation finder in Pretoria & Tshwane.
+                {BRAND.tagline} {BRAND.journeyLine}
               </p>
             </div>
             <div>
@@ -122,8 +122,9 @@ const PublicLayout = ({ children }: PublicLayoutProps) => {
             <div>
               <h4 className="font-semibold mb-4">Contact</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Email: Reskonnect@gmail.com</li>
-                <li>Phone: 063 732 3192</li>
+                <li>Email: {BRAND.contact.email}</li>
+                <li>Phone / WhatsApp: {BRAND.contact.phone}</li>
+                <li>{BRAND.contact.website}</li>
               </ul>
             </div>
           </div>
