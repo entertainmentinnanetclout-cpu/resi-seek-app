@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EXTERNAL_SUPABASE_ANON_KEY, EXTERNAL_SUPABASE_URL, externalFunctionUrl } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { getAuthErrorMessage } from "@/lib/authErrors";
 import { z } from "zod";
 import { BRAND } from "@/constants/brand";
 import { Loader2, Chrome } from "lucide-react";
@@ -195,7 +196,9 @@ const Auth = () => {
         setIsLogin(true);
       }
     } catch (error: any) {
-      const message = error instanceof z.ZodError ? error.issues[0].message : error.message || "An unexpected error occurred.";
+      const message = error instanceof z.ZodError
+        ? error.issues[0].message
+        : getAuthErrorMessage(error);
       setError(message);
       toast.error(message);
     } finally {
@@ -214,7 +217,7 @@ const Auth = () => {
       });
       if (error) throw error;
     } catch (err: any) {
-      toast.error(err.message || "Failed to sign in with Google.");
+      toast.error(getAuthErrorMessage(err, "Failed to sign in with Google."));
       setIsLoading(false);
     }
   };
