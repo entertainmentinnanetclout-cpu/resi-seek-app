@@ -37,12 +37,12 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
           <img
             src={BRAND.logos.full}
             alt={BRAND.name}
-            className="hidden h-11 w-auto object-contain sm:block lg:h-12"
+            className="hidden h-14 w-auto object-contain sm:block lg:h-16"
           />
           <img
             src={BRAND.logos.icon}
             alt={BRAND.name}
-            className="h-9 w-9 object-contain sm:hidden"
+            className="h-11 w-11 object-contain sm:hidden"
           />
         </Link>
 
