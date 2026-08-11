@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserIntent } from "@/contexts/UserIntentContext";
+import { isMockResidence } from "@/hooks/useResidenceFilters";
+import { residenceMatchesCampus } from "@/constants/institutionOptions";
 import { deriveFiltersFromIntent } from "@/lib/intent/intentFilters";
 import { BRAND } from "@/constants/brand";
 
@@ -38,28 +40,47 @@ const MatchingResidencesPreview = ({ onRequestHelp, onBack }: MatchingResidences
     return list;
   }, [patch]);
 
-  const { data: residences, isLoading } = useQuery({
+  const { data: result, isLoading } = useQuery({
     queryKey: ["guide-matches", patch, privateRentalUnavailable],
     enabled: !privateRentalUnavailable,
     queryFn: async () => {
-      let query = supabase
-        .from("residences")
-        .select(
-          "id, slug, name, address, campus, image_url, images, price, available_spots, room_types, is_trusted, is_tut_accredited, accepts_private, verification_level"
-        )
-        .limit(6);
+      const columns =
+        "id, slug, name, address, campus, image_url, images, price, available_spots, room_types, is_trusted, is_tut_accredited, accepts_university, accepts_tvet, accepts_private, accepts_nsfas, institution_tags, verification_level";
 
-      if (patch.campus) query = query.eq("campus", patch.campus);
-      if (patch.nsfasOnly) query = query.eq("is_trusted", true);
-      if (patch.priceMax) query = query.lte("price", patch.priceMax);
-      if (patch.audience === "tvet") query = query.eq("accepts_tvet", true);
-      if (patch.audience === "private") query = query.eq("accepts_private", true);
+      // Audience/NSFAS constraints are hard. Budget is soft so we can offer
+      // clearly-labelled closest matches instead of an empty screen.
+      const base = () => {
+        let q = supabase.from("residences").select(columns);
+        if (patch.audience === "tvet") q = q.eq("accepts_tvet", true);
+        if (patch.audience === "university") q = q.eq("accepts_university", true);
+        if (patch.privatePayingOnly || patch.audience === "private") q = q.eq("accepts_private", true);
+        if (patch.nsfasOnly) q = q.or("accepts_nsfas.eq.true,is_tut_accredited.eq.true");
+        return q;
+      };
 
-      const { data, error } = await query;
+      const applyCampus = (rows: any[]) =>
+        patch.campus
+          ? rows.filter((r) => residenceMatchesCampus(r, patch.campus, patch.institutionType))
+          : rows;
+
+      const { data, error } = await base().order("price", { ascending: true }).limit(60);
       if (error) throw error;
-      return data ?? [];
+
+      const scoped = applyCampus((data ?? []).filter((r: any) => !isMockResidence(r)));
+      const budget = Number(patch.priceMax) || 0;
+      const exact = budget ? scoped.filter((r: any) => Number(r.price || 0) <= budget) : scoped;
+
+      return {
+        exact: exact.slice(0, 6),
+        closest: exact.length === 0 ? scoped.slice(0, 6) : [],
+      };
     },
   });
+
+  const residences = result?.exact ?? [];
+  const closest = result?.closest ?? [];
+  const showingClosest = residences.length === 0 && closest.length > 0;
+  const cards = showingClosest ? closest : residences;
 
   if (privateRentalUnavailable) {
     return (
