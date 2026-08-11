@@ -1,8 +1,11 @@
 import { useState, useMemo, useCallback } from "react";
+import { residenceMatchesCampus, type InstitutionTypeKey } from "@/constants/institutionOptions";
 
 export interface ResidenceFilters {
   searchQuery: string;
   campus: string;
+  /** Scopes campus matching + audience. Set by the guide, never guessed. */
+  institutionType?: InstitutionTypeKey;
   category: string;
   gender: string;
   audience: "all" | "university" | "tvet" | "private";
@@ -13,6 +16,8 @@ export interface ResidenceFilters {
   roomTypes: string[];
   sectionCategory: string;
   nsfasOnly: boolean;
+  /** Residence accepts private-paying students (NOT a private rental). */
+  privatePayingOnly: boolean;
   tutOnly: boolean;
   singlesOnly: boolean;
   furnishedOnly: boolean;
@@ -26,6 +31,7 @@ export interface ResidenceFilters {
 const DEFAULT_FILTERS: ResidenceFilters = {
   searchQuery: "",
   campus: "all",
+  institutionType: undefined,
   category: "all",
   gender: "all",
   audience: "all",
@@ -36,6 +42,7 @@ const DEFAULT_FILTERS: ResidenceFilters = {
   roomTypes: [],
   sectionCategory: "all",
   nsfasOnly: false,
+  privatePayingOnly: false,
   tutOnly: false,
   singlesOnly: false,
   furnishedOnly: false,
