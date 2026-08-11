@@ -59,73 +59,73 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   "/": {
     title: "ResKonnect | Student Accommodation, Application Readiness & WIL Support",
     description:
-      "Find verified student accommodation, prepare your application documents, check your APS, request private rental support, and access WIL opportunities with ResKonnect.",
+      "ResKonnect helps students, parents, private tenants, landlords, and partners find verified accommodation, prepare application documents, check APS readiness, and access WIL support.",
     keywords:
       "student accommodation South Africa, Pretoria West accommodation, TUT residence, application readiness, APS checker, WIL placement support",
   },
   "/living": {
-    title: "Student Accommodation & Private Rental Support | ResKonnect",
+    title: "ResKonnect Living | Student Accommodation & Private Rental Support",
     description:
       "Browse verified student accommodation, NSFAS accommodation context, private-paying student residences, and private rental support through ResKonnect.",
     keywords:
       "student accommodation, private rentals Pretoria, NSFAS accredited accommodation, private paying student residence",
   },
   "/applications": {
-    title: "Application Readiness, APS Checker & Document Guidance | ResKonnect",
+    title: "ResKonnect Applications | APS Checker & Application Readiness",
     description:
       "Prepare for TVET, university, or private college applications with APS guidance, document checklists, and official portal direction.",
     keywords:
       "application readiness, APS checker, TVET application, university application, matric documents",
   },
   "/opportunities": {
-    title: "WIL Placement Support & Student Opportunities | ResKonnect",
+    title: "ResKonnect Opportunities | WIL Placement & Student Support",
     description:
       "Access WIL readiness support, internship guidance, student referral opportunities, and career pathway support through ResKonnect.",
     keywords: "WIL placement, work integrated learning, internship support, student opportunities",
   },
   "/partners": {
-    title: "Partner With ResKonnect | Landlords, Institutions & Businesses",
+    title: "ResKonnect Partners | Landlords, Institutions & Businesses",
     description:
       "List student accommodation, receive property leads, support student intake, and partner with ResKonnect for digital student journey solutions.",
     keywords: "list student accommodation, landlord leads, institution partnerships, student marketing",
   },
   "/find": {
-    title: "Find My Res | Search Verified Student Accommodation | ResKonnect",
+    title: "ResKonnect Find My Res | Search Verified Student Accommodation",
     description:
       "Search verified student residences, flats, communes and private rentals by campus, budget, room type and availability across South Africa.",
   },
   "/bursaries": {
-    title: "Student Bursaries & Funding Opportunities | ResKonnect",
+    title: "ResKonnect Bursaries | Student Funding Opportunities",
     description:
       "Browse open bursaries and funding opportunities for South African students, with closing dates, requirements and official application links.",
   },
   "/events": {
-    title: "Campus Events for South African Students | ResKonnect",
+    title: "ResKonnect Events | Campus Events for South African Students",
     description: "See what is happening on and around campus — student events, expos, orientation and community activities.",
   },
   "/campus-news": {
-    title: "Campus News & Student Updates | ResKonnect",
+    title: "ResKonnect Campus News | Student Updates & Notices",
     description: "Student-focused campus news, registration updates, accommodation notices and institution announcements.",
   },
   "/roommates": {
-    title: "Roommate Finder for Students | ResKonnect",
+    title: "ResKonnect Roommate Finder | Share Student Accommodation",
     description: "Find a compatible roommate to share verified student accommodation and split costs near your campus.",
   },
   "/discounts": {
-    title: "Student Deals & Discounts | ResKonnect",
+    title: "ResKonnect Student Deals & Discounts",
     description: "Student-only deals on essentials, move-in items and services from partner businesses.",
   },
   "/get-started": {
-    title: "Get Started | Guided Student Onboarding | ResKonnect",
+    title: "Get Started With ResKonnect | Guided Student Onboarding",
     description:
       "Tell us your institution, funding and area, and we will point you to matching accommodation, application readiness support or WIL guidance.",
   },
   "/terms": {
-    title: "Terms of Use | ResKonnect",
+    title: "ResKonnect Terms of Use",
     description: "The terms that apply when using the ResKonnect platform and its services.",
   },
   "/privacy": {
-    title: "Privacy Policy | ResKonnect",
+    title: "ResKonnect Privacy Policy",
     description: "How ResKonnect collects, uses and protects your personal information.",
   },
 };
