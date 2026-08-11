@@ -175,6 +175,7 @@ export function useResidenceFilters(residences: any[]) {
     if (filters.roomTypes.length > 0) count++;
     if (filters.sectionCategory !== "all") count++;
     if (filters.nsfasOnly) count++;
+    if (filters.privatePayingOnly) count++;
     if (filters.tutOnly) count++;
     if (filters.singlesOnly) count++;
     if (filters.furnishedOnly) count++;
