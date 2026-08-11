@@ -33,7 +33,7 @@ export const Living: React.FC = () => {
   return (
     <PublicLayout>
       <SEO
-        title="Student Accommodation & Private Rental Support | ResKonnect"
+        title="ResKonnect Living | Student Accommodation & Private Rental Support"
         description="Browse verified student accommodation, NSFAS accommodation context, private-paying student residences, and private rental support through ResKonnect."
         keywords="student accommodation, private rentals Pretoria, NSFAS accredited accommodation, private paying student residence"
         canonicalPath="/living"

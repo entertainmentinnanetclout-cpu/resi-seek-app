@@ -56,7 +56,7 @@ export const Applications: React.FC = () => {
   return (
     <PublicLayout>
       <SEO
-        title="Application Readiness, APS Checker & Document Guidance | ResKonnect"
+        title="ResKonnect Applications | APS Checker & Application Readiness"
         description="Prepare for TVET, university, or private college applications with APS guidance, document checklists, and official portal direction."
         keywords="application readiness, APS checker, TVET application, university application, matric documents"
         canonicalPath="/applications"
