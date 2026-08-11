@@ -135,15 +135,18 @@ const hasTagLike = (residence: any, needles: string[]) => {
   return needles.some((needle) => haystack.includes(normalize(needle)));
 };
 
-const isLegacyInclusiveResidence = (residence: any) => {
-  const tags = getInstitutionTags(residence);
-  return (
-    residence.accepts_university !== false &&
-    residence.accepts_tvet !== true &&
-    residence.accepts_private !== true &&
-    tags.length === 0
-  );
-};
+/**
+ * Placeholder/demo rows must never sit beside real listings. Real listings are
+ * whatever the backend returns minus obvious seed rows.
+ */
+const MOCK_NAME_RE = /^(example|demo|test|sample|placeholder)\b/i;
+export const isMockResidence = (residence: any) =>
+  MOCK_NAME_RE.test(String(residence?.name ?? "").trim());
+
+/** Legacy rows created before audience flags existed default to university. */
+const acceptsUniversity = (r: any) =>
+  r.accepts_university === true ||
+  (r.accepts_university == null && r.accepts_tvet !== true && r.accepts_private !== true);
 
 export function useResidenceFilters(residences: any[]) {
   const [filters, setFilters] = useState<ResidenceFilters>(DEFAULT_FILTERS);
