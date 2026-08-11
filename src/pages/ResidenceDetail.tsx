@@ -216,7 +216,7 @@ const ResidenceDetail = () => {
       "name": amenity,
       "value": true
     })),
-    "url": `https://reskonnect.co.za/res/${residence.id}`
+    "url": `https://www.reskonnect.org/res/${residence.id}`
   };
 
   const amenityIcons: { [key: string]: React.ReactNode } = {

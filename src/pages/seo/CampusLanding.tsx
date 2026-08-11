@@ -44,7 +44,7 @@ const CampusLanding: React.FC = () => {
           "addressRegion": "Gauteng",
           "addressCountry": "ZA"
         },
-        "url": `https://reskonnect.co.za/res/${residence.id}`
+        "url": `https://www.reskonnect.org/res/${residence.id}`
       }
     }))
   };
@@ -61,7 +61,7 @@ const CampusLanding: React.FC = () => {
       "addressCountry": "ZA"
     },
     "areaServed": campusName,
-    "url": `https://reskonnect.co.za/tut-${campus}-accommodation`
+    "url": `https://www.reskonnect.org/tut-${campus}-accommodation`
   };
 
   return (

@@ -21,8 +21,8 @@ const NationalLanding: React.FC = () => {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "ResKonnect",
-    "url": "https://reskonnect.co.za",
-    "logo": "https://reskonnect.co.za/logo.png",
+    "url": "https://www.reskonnect.org",
+    "logo": "https://www.reskonnect.org/logo.png",
     "description": "South Africa's leading student accommodation platform",
     "address": {
       "@type": "PostalAddress",
@@ -50,7 +50,7 @@ const NationalLanding: React.FC = () => {
         "@type": "Accommodation",
         "name": residence.name,
         "address": residence.address,
-        "url": `https://reskonnect.co.za/res/${residence.id}`
+        "url": `https://www.reskonnect.org/res/${residence.id}`
       }
     }))
   };

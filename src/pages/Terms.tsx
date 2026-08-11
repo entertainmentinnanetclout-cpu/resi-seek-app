@@ -95,7 +95,7 @@ const Terms = () => {
             <section>
               <h2 className="text-xl font-semibold mb-3">10. Contact Information</h2>
               <p className="text-muted-foreground">
-                For questions about these Terms and Conditions, please contact us at support@reskonnect.co.za
+                For questions about these Terms and Conditions, please contact us at reskonnect@gmail.com
               </p>
             </section>
           </CardContent>

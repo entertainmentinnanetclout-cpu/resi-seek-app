@@ -285,7 +285,7 @@ serve(async (req) => {
 
   <div class="footer">
     <p>ResKonnect • South Africa's Premier Student Accommodation Platform</p>
-    <p>This document was generated automatically. For support: support@reskonnect.co.za</p>
+    <p>This document was generated automatically. For support: reskonnect@gmail.com</p>
   </div>
 </body>
 </html>

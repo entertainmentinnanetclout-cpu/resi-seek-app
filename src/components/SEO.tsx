@@ -22,7 +22,7 @@ const SEO: React.FC<SEOProps> = ({
 }) => {
   const location = useLocation();
   const defaultKeywords = "ResKonnect, student accommodation, TUT, residence application, student housing, find a res, Pretoria student residence, NSFAS accommodation, Tshwane accommodation, university housing South Africa";
-  const siteUrl = "https://reskonnect.co.za";
+  const siteUrl = "https://www.reskonnect.org";
   const currentPath = canonicalPath || location.pathname;
   const canonicalUrl = `${siteUrl}${currentPath === "/" ? "" : currentPath}`;
   const defaultImage = `${siteUrl}/og-image.png`;

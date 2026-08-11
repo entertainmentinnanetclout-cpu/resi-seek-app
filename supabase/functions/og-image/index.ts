@@ -102,7 +102,7 @@ function buildSvg({
   ${safePrice ? `<rect x="60" y="530" rx="14" ry="14" width="240" height="60" fill="#fff"/>
   <text x="180" y="572" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="32" font-weight="800" fill="#1e1b4b">${safePrice}</text>` : ""}
 
-  <text x="1140" y="600" text-anchor="end" font-family="Inter, system-ui, sans-serif" font-size="18" fill="#c7d2fe">reskonnect.co.za</text>
+  <text x="1140" y="600" text-anchor="end" font-family="Inter, system-ui, sans-serif" font-size="18" fill="#c7d2fe">www.reskonnect.org</text>
 </svg>`;
 }
 
