@@ -1,5 +1,6 @@
 import type { ResidenceFilters } from "@/hooks/useResidenceFilters";
 import type { UserIntent } from "./userIntentTypes";
+import { getInstitutionTag, type InstitutionTypeKey } from "@/constants/institutionOptions";
 
 export interface IntentFilterResult {
   /** Partial filter patch to pre-apply on Find My Res. Always user-removable. */
@@ -53,6 +54,10 @@ export function deriveFiltersFromIntent(intent: UserIntent): IntentFilterResult 
 
   const audience = audienceFromInstitution(institution);
   if (audience !== "all") patch.audience = audience;
+  if (institution) patch.institutionType = institution as InstitutionTypeKey;
+
+  const institutionTag = getInstitutionTag(institution as InstitutionTypeKey, intent.institution_name);
+  if (institutionTag) patch.institutionTag = institutionTag;
 
   const campus = intent.parent_mode ? intent.child_profile?.campus ?? intent.campus : intent.campus;
   if (campus) patch.campus = campus;
@@ -63,6 +68,7 @@ export function deriveFiltersFromIntent(intent: UserIntent): IntentFilterResult 
       "Showing NSFAS-accredited or NSFAS-relevant student accommodation based on your selection."
     );
   } else if (intent.funding_type === "private") {
+    patch.privatePayingOnly = true;
     notes.push("Showing student accommodation that accepts private-paying students.");
   } else {
     notes.push("Showing student accommodation based on your profile.");
