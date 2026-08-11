@@ -6,25 +6,29 @@ const columns = [
     title: "Living",
     links: [
       { label: "Find My Res", to: "/find" },
-      { label: "Student Accommodation", to: "/living/student-accommodation" },
-      { label: "Private Rentals", to: "/living/private-rentals" },
+      { label: "Student Accommodation", to: "/student-accommodation" },
+      { label: "Pretoria West Accommodation", to: "/student-accommodation/pretoria-west" },
+      { label: "Accommodation Near TUT", to: "/student-accommodation/near-tut" },
+      { label: "NSFAS Accredited Accommodation", to: "/student-accommodation/nsfas-accredited" },
+      { label: "Private Rentals", to: "/private-rentals" },
       { label: "For Parents", to: "/living/parents" },
     ],
   },
   {
     title: "Applications",
     links: [
-      { label: "Application Readiness", to: "/applications" },
-      { label: "APS & Documents", to: "/applications/checker" },
-      { label: "TVET Readiness", to: "/applications/tvet" },
-      { label: "University Readiness", to: "/applications/university" },
+      { label: "Application Readiness", to: "/applications/application-readiness" },
+      { label: "APS Checker", to: "/applications/aps-checker" },
+      { label: "TVET Readiness", to: "/applications/tvet-application-readiness" },
+      { label: "University Readiness", to: "/applications/university-application-readiness" },
+      { label: "Applications Hub", to: "/applications" },
     ],
   },
   {
     title: "Opportunities",
     links: [
       { label: "Opportunities Hub", to: "/opportunities" },
-      { label: "WIL Support", to: "/opportunities/wil" },
+      { label: "WIL Placement Support", to: "/opportunities/wil-placement-support" },
       { label: "Bursaries", to: "/bursaries" },
       { label: "Campus News", to: "/campus-news" },
     ],
@@ -38,12 +42,22 @@ const columns = [
       { label: "Become a Recruiter", to: "/recruit" },
     ],
   },
+  {
+    title: "Guides",
+    links: [
+      { label: "Find Safe Student Accommodation", to: "/guides/how-to-find-safe-student-accommodation" },
+      { label: "Pretoria West Accommodation Guide", to: "/guides/student-accommodation-pretoria-west" },
+      { label: "TVET Application Checklist", to: "/guides/tvet-application-checklist" },
+      { label: "University Application Checklist", to: "/guides/university-application-checklist" },
+      { label: "Accommodation Documents", to: "/guides/what-documents-do-you-need-for-student-accommodation" },
+    ],
+  },
 ];
 
 const SiteFooter = () => (
   <footer className="mt-auto border-t border-border bg-muted/40 text-muted-foreground">
     <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="grid grid-cols-2 gap-8 md:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-8 md:grid-cols-3 lg:grid-cols-6">
         <div className="col-span-2 md:col-span-3 lg:col-span-1">
           <img src={BRAND.logos.full} alt={BRAND.name} className="h-12 w-auto object-contain" />
           <p className="mt-3 text-[10px] tracking-[0.3em] text-muted-foreground">{BRAND.descriptor}</p>

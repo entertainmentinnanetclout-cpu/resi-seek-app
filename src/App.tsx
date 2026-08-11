@@ -66,6 +66,7 @@ const ProvinceLanding = lazy(() => import("./pages/seo/ProvinceLanding"));
 const CampusLanding = lazy(() => import("./pages/seo/CampusLanding"));
 const NationalLanding = lazy(() => import("./pages/seo/NationalLanding"));
 const NsfAsLanding = lazy(() => import("./pages/seo/NsfAsLanding"));
+const SeoLandingPage = lazy(() => import("./pages/seo/SeoLandingPage"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminResidences = lazy(() => import("./pages/admin/AdminResidences"));
 const AdminApplications = lazy(() => import("./pages/admin/AdminApplications"));
@@ -282,6 +283,27 @@ const App = () => {
               </Route>
 
               {/* SEO Routes */}
+              <Route path="/student-accommodation" element={<SeoLandingPage pageKey="/student-accommodation" />} />
+              <Route path="/student-accommodation/pretoria-west" element={<SeoLandingPage pageKey="/student-accommodation/pretoria-west" />} />
+              <Route path="/student-accommodation/near-tut" element={<SeoLandingPage pageKey="/student-accommodation/near-tut" />} />
+              <Route path="/student-accommodation/near-tut-pretoria-west" element={<SeoLandingPage pageKey="/student-accommodation/near-tut-pretoria-west" />} />
+              <Route path="/student-accommodation/near-tshwane-south-tvet" element={<SeoLandingPage pageKey="/student-accommodation/near-tshwane-south-tvet" />} />
+              <Route path="/student-accommodation/tvet" element={<SeoLandingPage pageKey="/student-accommodation/tvet" />} />
+              <Route path="/student-accommodation/university" element={<SeoLandingPage pageKey="/student-accommodation/university" />} />
+              <Route path="/student-accommodation/nsfas-accredited" element={<SeoLandingPage pageKey="/student-accommodation/nsfas-accredited" />} />
+              <Route path="/private-rentals" element={<SeoLandingPage pageKey="/private-rentals" />} />
+              <Route path="/private-rentals/pretoria-west" element={<SeoLandingPage pageKey="/private-rentals/pretoria-west" />} />
+              <Route path="/private-rentals/bachelor-rooms-pretoria" element={<SeoLandingPage pageKey="/private-rentals/bachelor-rooms-pretoria" />} />
+              <Route path="/applications/application-readiness" element={<SeoLandingPage pageKey="/applications/application-readiness" />} />
+              <Route path="/applications/tvet-application-readiness" element={<SeoLandingPage pageKey="/applications/tvet-application-readiness" />} />
+              <Route path="/applications/university-application-readiness" element={<SeoLandingPage pageKey="/applications/university-application-readiness" />} />
+              <Route path="/applications/aps-checker" element={<SeoLandingPage pageKey="/applications/aps-checker" />} />
+              <Route path="/opportunities/wil-placement-support" element={<SeoLandingPage pageKey="/opportunities/wil-placement-support" />} />
+              <Route path="/guides/how-to-find-safe-student-accommodation" element={<SeoLandingPage pageKey="/guides/how-to-find-safe-student-accommodation" />} />
+              <Route path="/guides/student-accommodation-pretoria-west" element={<SeoLandingPage pageKey="/guides/student-accommodation-pretoria-west" />} />
+              <Route path="/guides/tvet-application-checklist" element={<SeoLandingPage pageKey="/guides/tvet-application-checklist" />} />
+              <Route path="/guides/university-application-checklist" element={<SeoLandingPage pageKey="/guides/university-application-checklist" />} />
+              <Route path="/guides/what-documents-do-you-need-for-student-accommodation" element={<SeoLandingPage pageKey="/guides/what-documents-do-you-need-for-student-accommodation" />} />
               <Route path="/student-accommodation-:province" element={<ProvinceLanding />} />
               <Route path="/tut-:campus-accommodation" element={<CampusLanding />} />
               <Route path="/nsfas-accredited-accommodation" element={<NsfAsLanding />} />

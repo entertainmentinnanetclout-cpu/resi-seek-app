@@ -1,155 +1,233 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" 
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-  <!-- Homepage -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.reskonnect.org/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
-    <lastmod>2025-12-01</lastmod>
   </url>
-  
-  <!-- Find Residences -->
   <url>
     <loc>https://www.reskonnect.org/find</loc>
     <changefreq>daily</changefreq>
     <priority>0.95</priority>
-    <lastmod>2025-12-01</lastmod>
   </url>
-  
-  <!-- Authentication -->
   <url>
-    <loc>https://www.reskonnect.org/auth</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <lastmod>2025-12-01</lastmod>
-  </url>
-  
-  <!-- Student Dashboard -->
-  <url>
-    <loc>https://www.reskonnect.org/dashboard</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2025-12-01</lastmod>
-  </url>
-  
-  <!-- Profile -->
-  <url>
-    <loc>https://www.reskonnect.org/profile</loc>
+    <loc>https://www.reskonnect.org/living</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-    <lastmod>2025-12-01</lastmod>
+    <priority>0.9</priority>
   </url>
-  
-  <!-- Applications -->
   <url>
     <loc>https://www.reskonnect.org/applications</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.75</priority>
-    <lastmod>2025-12-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
-  
-  <!-- Bursary Finder -->
+  <url>
+    <loc>https://www.reskonnect.org/opportunities</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/partners</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/get-started</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/student-accommodation</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/student-accommodation/pretoria-west</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/student-accommodation/near-tut</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/student-accommodation/near-tut-pretoria-west</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/student-accommodation/near-tshwane-south-tvet</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/student-accommodation/tvet</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/student-accommodation/university</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/student-accommodation/nsfas-accredited</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/private-rentals</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/private-rentals/pretoria-west</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/private-rentals/bachelor-rooms-pretoria</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/applications/application-readiness</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/applications/tvet-application-readiness</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/applications/university-application-readiness</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/applications/aps-checker</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/opportunities/wil-placement-support</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/partners/landlords</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/partners/institutions</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/guides/how-to-find-safe-student-accommodation</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/guides/student-accommodation-pretoria-west</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/guides/tvet-application-checklist</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/guides/university-application-checklist</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/guides/what-documents-do-you-need-for-student-accommodation</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/living/student-accommodation</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/living/private-rentals</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/living/parents</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
   <url>
     <loc>https://www.reskonnect.org/bursaries</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <lastmod>2025-12-17</lastmod>
   </url>
-  
-  <!-- Student Discounts -->
   <url>
     <loc>https://www.reskonnect.org/discounts</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.75</priority>
-    <lastmod>2025-12-17</lastmod>
+    <priority>0.7</priority>
   </url>
-  
-  <!-- Roommate Finder -->
-  <url>
-    <loc>https://www.reskonnect.org/roommates</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.75</priority>
-    <lastmod>2025-12-17</lastmod>
-  </url>
-  
-  <!-- Campus Events -->
   <url>
     <loc>https://www.reskonnect.org/events</loc>
     <changefreq>daily</changefreq>
-    <priority>0.75</priority>
-    <lastmod>2025-12-17</lastmod>
+    <priority>0.7</priority>
   </url>
-  
-  <!-- Campus News -->
+  <url>
+    <loc>https://www.reskonnect.org/roommates</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
   <url>
     <loc>https://www.reskonnect.org/campus-news</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
-    <lastmod>2025-12-01</lastmod>
   </url>
-  
-  <!-- SEO Landing Pages -->
   <url>
     <loc>https://www.reskonnect.org/student-accommodation-gauteng</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <lastmod>2025-12-01</lastmod>
+    <priority>0.8</priority>
   </url>
-  
-  <url>
-    <loc>https://www.reskonnect.org/tut-pretoria-west-accommodation</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
-    <lastmod>2025-12-01</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.reskonnect.org/tut-arcadia-accommodation</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
-    <lastmod>2025-12-01</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.reskonnect.org/tut-soshanguve-accommodation</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
-    <lastmod>2025-12-01</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.reskonnect.org/nsfas-accredited-accommodation</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <lastmod>2025-12-01</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.reskonnect.org/south-africa-student-accommodation</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <lastmod>2025-12-01</lastmod>
-  </url>
-  
   <url>
     <loc>https://www.reskonnect.org/student-accommodation-limpopo</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2025-12-01</lastmod>
+    <priority>0.75</priority>
   </url>
-  
   <url>
     <loc>https://www.reskonnect.org/student-accommodation-western-cape</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2025-12-01</lastmod>
+    <priority>0.75</priority>
   </url>
-  
   <url>
     <loc>https://www.reskonnect.org/student-accommodation-kwazulu-natal</loc>
     <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/nsfas-accredited-accommodation</loc>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <lastmod>2025-12-01</lastmod>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/south-africa-student-accommodation</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/terms</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://www.reskonnect.org/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>

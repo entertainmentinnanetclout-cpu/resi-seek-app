@@ -1,4 +1,5 @@
 import SEO from "@/components/SEO";
+import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
 import SEOJsonLd from "@/components/SEOJsonLd";
 import { Shield, MapPin, DollarSign, FileCheck, Menu, Users, Building2, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -132,9 +133,10 @@ const Landing = () => {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <SEO
-        title="Find Student Accommodation in Pretoria & Tshwane | ResKonnect South Africa"
-        description="ResKonnect helps South African students find verified, affordable student accommodation near TUT, UP, and other universities in Pretoria, Tshwane & Gauteng. Apply online today!"
-        keywords="Pretoria student accommodation, TUT residence, NSFAS approved accommodation, Tshwane student housing, affordable student res, university accommodation South Africa"
+        title="ResKonnect | Student Accommodation, Application Readiness & WIL Support"
+        description="Find verified student accommodation, prepare your application documents, check your APS, request private rental support, and access WIL opportunities with ResKonnect."
+        keywords="Pretoria student accommodation, TUT residence, NSFAS accredited accommodation, application readiness, APS checker, WIL placement support"
+        canonicalPath="/"
       />
       <SEOJsonLd schema={[organizationSchema, websiteSchema]} />
 
@@ -282,6 +284,21 @@ const Landing = () => {
               </Card>
             </div>
           </div>
+        </section>
+
+        <section className="container mx-auto max-w-5xl px-4 pb-16 sm:px-6 lg:px-8">
+          <SeoInternalLinks
+            heading="Popular on ResKonnect"
+            links={[
+              { label: "Student accommodation", to: "/student-accommodation", description: "Verified residences for university and TVET students." },
+              { label: "Pretoria West accommodation", to: "/student-accommodation/pretoria-west", description: "Rooms in one of the busiest student areas." },
+              { label: "Accommodation near TUT", to: "/student-accommodation/near-tut", description: "Walking-distance options around TUT campuses." },
+              { label: "Application readiness", to: "/applications/application-readiness", description: "Get your documents and choices in order." },
+              { label: "APS checker", to: "/applications/aps-checker", description: "Understand your admission point score." },
+              { label: "WIL placement support", to: "/opportunities/wil-placement-support", description: "Prepare for workplace integrated learning." },
+              { label: "Landlord partners", to: "/partners/landlords", description: "List your property and reach students." },
+            ]}
+          />
         </section>
       </main>
 

@@ -1,6 +1,7 @@
 import React from "react";
 import PublicLayout from "@/components/PublicLayout";
 import SEO from "@/components/SEO";
+import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -55,8 +56,10 @@ export const Applications: React.FC = () => {
   return (
     <PublicLayout>
       <SEO
-        title="Application Support & Readiness Portal"
-        description="Comprehensive guidance, readiness calculators, documents prep, and institution guidance support portal."
+        title="Application Readiness, APS Checker & Document Guidance | ResKonnect"
+        description="Prepare for TVET, university, or private college applications with APS guidance, document checklists, and official portal direction."
+        keywords="application readiness, APS checker, TVET application, university application, matric documents"
+        canonicalPath="/applications"
       />
 
       <div className="py-16 md:py-24 bg-gradient-to-b from-primary/5 via-background to-background">
@@ -150,6 +153,20 @@ export const Applications: React.FC = () => {
             <Button asChild size="lg">
               <Link to="/get-started?persona=student&need=accommodation">Match Off-Campus Lodging</Link>
             </Button>
+          </div>
+
+          <div className="mx-auto max-w-5xl">
+            <SeoInternalLinks
+              heading="Application readiness resources"
+              links={[
+                { label: "APS checker", to: "/applications/aps-checker", description: "Work out your admission point score first." },
+                { label: "TVET application readiness", to: "/applications/tvet-application-readiness", description: "Documents, intakes and programme choice." },
+                { label: "University application readiness", to: "/applications/university-application-readiness", description: "APS, subject requirements and deadlines." },
+                { label: "Official portal guidance", to: "/applications/application-readiness", description: "Where and how to submit your application." },
+                { label: "Accommodation near campus", to: "/student-accommodation", description: "Line up a room while you apply." },
+                { label: "University application checklist", to: "/guides/university-application-checklist", description: "Step-by-step preparation guide." },
+              ]}
+            />
           </div>
 
         </div>
