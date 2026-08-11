@@ -4,44 +4,25 @@
 User-agent: *
 Allow: /
 
-# Allow all crawlers
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-# Explicitly allow public pages
-Allow: /find
-Allow: /res/
-Allow: /bursaries
-Allow: /discounts
-Allow: /events
-Allow: /roommates
-Disallow: /marketplace
-Allow: /news
-Allow: /apply
-
-# SEO landing pages
-Allow: /gauteng-student-accommodation
-Allow: /western-cape-student-accommodation
-Allow: /kwazulu-natal-student-accommodation
-Allow: /eastern-cape-student-accommodation
-Allow: /campus/
-Allow: /nsfas-student-accommodation
-
-# Disallow admin and private pages
+# Private / internal areas
 Disallow: /admin
 Disallow: /dashboard
+Disallow: /god-mode
+Disallow: /auth
 Disallow: /profile
-Disallow: /applications
+Disallow: /setup-profile
 Disallow: /messages
 Disallow: /favorites
-Disallow: /setup-profile
+Disallow: /documents
+Disallow: /orders
+Disallow: /cart
+Disallow: /checkout
+Disallow: /media
+Disallow: /commerce
+Disallow: /residence/
 Disallow: /api/
 
-# Sitemap location
-Sitemap: https://www.reskonnect.org/sitemap.xml
+# Marketplace is on hold
+Disallow: /marketplace
 
-# Crawl-delay (optional, for politeness)
-Crawl-delay: 1
+Sitemap: https://www.reskonnect.org/sitemap.xml
