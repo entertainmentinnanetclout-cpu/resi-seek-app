@@ -10,8 +10,11 @@ export function organizationSchema() {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: SITE_NAME,
+    alternateName: "RESKONNECT",
     url: SITE_URL,
     logo: `${SITE_URL}/icon-512.png`,
+    description:
+      "ResKonnect is a student journey platform for accommodation, application readiness, WIL support, and partner solutions.",
     email: CONTACT_EMAIL,
     telephone: CONTACT_PHONE,
     areaServed: "ZA",
