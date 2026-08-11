@@ -146,7 +146,7 @@ export const GuidedOnboardingFlow: React.FC = () => {
   const headerInfo = renderStepTitleAndSubtitle();
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
+    <div className={`${step === 6 ? "max-w-6xl" : "max-w-3xl"} mx-auto py-8 px-4 sm:px-6`}>
       {headerInfo && (
         <div className="text-center mb-8 space-y-2">
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
