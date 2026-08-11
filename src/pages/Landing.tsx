@@ -20,6 +20,8 @@ import { AudienceSelector } from "@/components/findmyres/AudienceSelector";
 import LandlordApplicationTabs from "@/components/LandlordApplicationTabs";
 import InteractiveNeedSection from "@/components/onboarding/InteractiveNeedSection";
 import { BRAND } from "@/constants/brand";
+import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 const headerLogo = BRAND.logos.full;
 const footerLogo = BRAND.logos.full;
 const iconLogo = BRAND.logos.icon;
@@ -113,12 +115,6 @@ const Landing = () => {
     { value: 9, suffix: "", label: "Provinces Reached" },
   ];
 
-  const navLinks = [
-    { label: "Find Accommodation", to: "/find" },
-    { label: "Apply (TUT / NSFAS)", to: "/apply" },
-    { label: "Bursaries", to: "/bursaries" },
-    { label: "Campus News", to: "/campus-news" },
-  ];
 
   // Schema data
   const organizationSchema = {
@@ -134,7 +130,7 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <SEO
         title="Find Student Accommodation in Pretoria & Tshwane | ResKonnect South Africa"
         description="ResKonnect helps South African students find verified, affordable student accommodation near TUT, UP, and other universities in Pretoria, Tshwane & Gauteng. Apply online today!"
@@ -142,55 +138,7 @@ const Landing = () => {
       />
       <SEOJsonLd schema={[organizationSchema, websiteSchema]} />
 
-      {/* ── Header ──────────────────────────────────────── */}
-      <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-            <img src={headerLogo} alt="ResKonnect" className="h-8 sm:h-10 w-auto" />
-          </div>
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((l) => (
-              <Button key={l.to} variant="ghost" size="sm" onClick={() => navigate(l.to)}>{l.label}</Button>
-            ))}
-            <Button variant="ghost" size="sm" onClick={scrollToLandlord}>List Property</Button>
-          </nav>
-          <div className="hidden md:flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="ghost" onClick={() => navigate("/auth")}>Sign In</Button>
-            <Button onClick={() => navigate("/get-started")} className="bg-primary text-primary-foreground hover:bg-primary/90">Get Started</Button>
-          </div>
-          {/* Mobile */}
-          <div className="flex items-center gap-2 md:hidden">
-            <ThemeToggle />
-            <Sheet open={isMenuOpen} onOpenChange={setMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon"><Menu className="h-6 w-6" /></Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-full max-w-xs">
-                <div className="p-6 flex flex-col gap-3 mt-8">
-                  {navLinks.map((l) => (
-                    <SheetClose key={l.to} asChild>
-                      <Button variant="ghost" className="w-full justify-start" onClick={() => navigate(l.to)}>{l.label}</Button>
-                    </SheetClose>
-                  ))}
-                  <SheetClose asChild>
-                    <Button variant="ghost" className="w-full justify-start" onClick={scrollToLandlord}>List Property</Button>
-                  </SheetClose>
-                  <div className="border-t pt-3 mt-2 space-y-2">
-                    <SheetClose asChild>
-                      <Button variant="ghost" className="w-full justify-start" onClick={() => navigate("/auth")}>Sign In</Button>
-                    </SheetClose>
-                    <SheetClose asChild>
-                      <Button className="w-full" onClick={() => navigate("/auth")}>Get Started</Button>
-                    </SheetClose>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main>
         {/* ── Hero ──────────────────────────────────────── */}
@@ -337,44 +285,7 @@ const Landing = () => {
         </section>
       </main>
 
-      {/* ── Footer ──────────────────────────────────────── */}
-      <footer className="bg-card/50 border-t">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-            <div className="sm:col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2 mb-4"><img src={footerLogo} alt="ResKonnect" className="h-7 w-auto" /></div>
-              <p className="text-sm text-muted-foreground">Your trusted student accommodation finder in Pretoria & Tshwane.</p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/find" className="hover:text-primary transition-colors">Find My Res</Link></li>
-                <li><Link to="/apply" className="hover:text-primary transition-colors">Applications</Link></li>
-                <li><Link to="/bursaries" className="hover:text-primary transition-colors">Bursaries</Link></li>
-                <li><Link to="/recruit" className="hover:text-primary transition-colors">Become a Recruiter</Link></li>
-                <li><Link to="/auth" className="hover:text-primary transition-colors">Sign Up / Login</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
-                <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Contact</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Email: Reskonnect@gmail.com</li>
-                <li>Phone: 063 732 3192</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t pt-6 text-center text-sm text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} ResKonnect. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 };

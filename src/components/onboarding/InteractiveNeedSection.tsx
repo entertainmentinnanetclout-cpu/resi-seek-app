@@ -21,7 +21,7 @@ const NEED_CARDS: NeedCard[] = [
     icon: GraduationCap,
     persona: "student",
     need: "accommodation",
-    colorClass: "text-blue-500 bg-blue-50 dark:bg-blue-950/20",
+    colorClass: "text-brand-blue bg-brand-blue/10",
   },
   {
     title: "Help my child",
@@ -29,7 +29,7 @@ const NEED_CARDS: NeedCard[] = [
     icon: HeartHandshake,
     persona: "parent_guardian",
     need: "accommodation",
-    colorClass: "text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20",
+    colorClass: "text-brand-navy dark:text-brand-blue-accent bg-brand-navy/10 dark:bg-brand-blue/10",
   },
   {
     title: "Find a private rental",
@@ -37,7 +37,7 @@ const NEED_CARDS: NeedCard[] = [
     icon: Home,
     persona: "private_tenant",
     need: "private_rental",
-    colorClass: "text-sky-500 bg-sky-50 dark:bg-sky-950/20",
+    colorClass: "text-brand-blue-accent bg-brand-blue-accent/10",
   },
   {
     title: "Apply for study support",
@@ -45,7 +45,7 @@ const NEED_CARDS: NeedCard[] = [
     icon: FileCheck,
     persona: "applicant",
     need: "application_support",
-    colorClass: "text-green-500 bg-green-50 dark:bg-green-950/20",
+    colorClass: "text-brand-green bg-brand-green/10",
   },
   {
     title: "Get WIL support",
@@ -53,7 +53,7 @@ const NEED_CARDS: NeedCard[] = [
     icon: Briefcase,
     persona: "wil_applicant",
     need: "wil_support",
-    colorClass: "text-amber-500 bg-amber-50 dark:bg-amber-950/20",
+    colorClass: "text-brand-gold bg-brand-gold/15",
   },
   {
     title: "List my property",
@@ -61,7 +61,7 @@ const NEED_CARDS: NeedCard[] = [
     icon: Building2,
     persona: "landlord",
     need: "property_listing",
-    colorClass: "text-teal-500 bg-teal-50 dark:bg-teal-950/20",
+    colorClass: "text-brand-green bg-brand-green/10",
   },
   {
     title: "Partner with ResKonnect",
@@ -69,7 +69,7 @@ const NEED_CARDS: NeedCard[] = [
     icon: Landmark,
     persona: "institution_business",
     need: "partner_solution",
-    colorClass: "text-purple-500 bg-purple-50 dark:bg-purple-950/20",
+    colorClass: "text-brand-navy dark:text-brand-gold bg-brand-gold/15",
   },
   {
     title: "I am not sure",
@@ -77,7 +77,7 @@ const NEED_CARDS: NeedCard[] = [
     icon: HelpCircle,
     persona: "unsure",
     need: "general_guidance",
-    colorClass: "text-slate-500 bg-slate-50 dark:bg-slate-950/20",
+    colorClass: "text-muted-foreground bg-muted",
   },
 ];
 
@@ -100,7 +100,7 @@ export const InteractiveNeedSection: React.FC = () => {
             return (
               <Card
                 key={idx}
-                className="group relative overflow-hidden bg-card hover:bg-card/80 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-border/80"
+                className="rk-card-interactive group relative overflow-hidden p-0"
               >
                 <CardContent className="p-6 flex flex-col justify-between h-full space-y-4">
                   <div className="space-y-3">
