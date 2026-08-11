@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeResidences } from "@/hooks/useRealtimeResidences";
-import { useResidenceFilters } from "@/hooks/useResidenceFilters";
+import { useResidenceFilters, isMockResidence } from "@/hooks/useResidenceFilters";
 import { useResidenceSections } from "@/hooks/useResidenceSections";
 import { supabase } from "@/integrations/supabase/client";
 import { SmartSearchBar } from "@/components/findmyres/SmartSearchBar";
