@@ -52,7 +52,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/student-accommodation",
     kind: "landing",
-    title: "ResKonnect Student Accommodation in South Africa | Verified Listings",
+    title: "ResKonnect Student Accommodation | Verified Residences Near Campus",
     description:
       "Browse verified student accommodation for university, TVET and private-paying students. Compare rooms, prices, campus distance and availability on ResKonnect.",
     keywords: "student accommodation, student housing South Africa, verified residences, campus accommodation",
@@ -435,7 +435,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/private-rentals",
     kind: "landing",
-    title: "ResKonnect Private Rentals for Students & Young Professionals",
+    title: "ResKonnect Private Rentals | Bachelor Rooms & Private Rental Support",
     description:
       "Private rental rooms, bachelor flats and units for private-paying tenants. Compare monthly rent, area and availability through ResKonnect.",
     keywords: "private rentals, rooms to rent, bachelor flat, private tenant accommodation",
@@ -734,7 +734,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/applications/aps-checker",
     kind: "landing",
-    title: "ResKonnect APS Checker & Admission Points Guidance",
+    title: "ResKonnect APS Checker | Application Readiness Guidance",
     description:
       "Understand how your APS is calculated, what it means for your programme choices, and which documents you need before you apply.",
     keywords: "APS checker, admission point score, calculate APS, APS requirements",
@@ -848,7 +848,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/guides/how-to-find-safe-student-accommodation",
     kind: "guide",
-    title: "ResKonnect How to Find Safe Student Accommodation in South Africa",
+    title: "How to Find Safe Student Accommodation in South Africa | ResKonnect",
     description:
       "A practical guide to finding safe student accommodation: what to check on a viewing, warning signs, deposit safety and questions to ask the landlord.",
     keywords: "safe student accommodation, accommodation scams, what to check when viewing a room",
@@ -920,7 +920,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/guides/student-accommodation-pretoria-west",
     kind: "guide",
-    title: "ResKonnect Student Accommodation in Pretoria West: A Practical Guide",
+    title: "Student Accommodation in Pretoria West: A Practical Guide | ResKonnect",
     description:
       "What it is really like to live in Pretoria West as a student: areas, costs, transport, safety and how to secure a room before registration.",
     keywords: "Pretoria West student living, Pretoria West accommodation guide, TUT Pretoria West area",
@@ -989,7 +989,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/guides/tvet-application-checklist",
     kind: "guide",
-    title: "ResKonnect TVET College Application Checklist",
+    title: "TVET College Application Checklist | ResKonnect",
     description:
       "A step-by-step TVET college application checklist: documents, programme choice, intake timing and official portal steps.",
     keywords: "TVET application checklist, TVET college requirements, NCV documents",
@@ -1061,7 +1061,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/guides/university-application-checklist",
     kind: "guide",
-    title: "ResKonnect University Application Checklist",
+    title: "University Application Checklist | ResKonnect",
     description:
       "A step-by-step university application checklist: APS, subject requirements, certified documents, deadlines and official portal steps.",
     keywords: "university application checklist, university documents, APS requirements South Africa",
@@ -1134,7 +1134,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/guides/what-documents-do-you-need-for-student-accommodation",
     kind: "guide",
-    title: "ResKonnect What Documents Do You Need for Student Accommodation?",
+    title: "What Documents Do You Need for Student Accommodation? | ResKonnect",
     description:
       "The documents residences and landlords normally ask for: ID, proof of registration, proof of funding, guarantor details and lease paperwork.",
     keywords: "student accommodation documents, residence application documents, proof of registration",
