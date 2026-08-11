@@ -57,3 +57,14 @@
 - [x] TypeScript passes
 - [x] Build passes
 - [x] Existing pages still load
+## Intent engine (this turn)
+- [x] `UserIntentProvider` mounted in `App.tsx` (inside `AuthProvider`), persists to localStorage.
+- [x] `IntentQuickStep` added as step 3 of the guided flow (institution, campus/area, funding, budget). Skippable.
+- [x] `deriveFiltersFromIntent` maps intent -> Find My Res filters (audience, campus, nsfasOnly, price, room type).
+- [x] `IntentNotice` explains applied filters, offers "Show everything", and shows a private-rental request panel (no student residences mislabelled as rentals).
+- [x] WhatsApp-ready link helpers in `src/lib/whatsappLinks.ts` (click-to-chat only, no API/secrets).
+- [x] Corrected placeholder WhatsApp number in `OnboardingSummaryCard` to 063 732 3192.
+
+### Backend TODOs
+- Private rental listings table does not exist — private tenants get a request/WhatsApp panel instead of listings.
+- Intent profile sync to `onboarding_requests.metadata` still pending (adapter stubs in `src/lib/intent/userIntentAdapter.ts`).

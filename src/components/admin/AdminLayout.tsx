@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useAuth, StaffRole } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { GOD_MODE_ROLES } from "@/lib/constants/roles";
+import { BRAND } from "@/constants/brand";
 import {
   Sidebar,
   SidebarContent,
@@ -75,11 +76,11 @@ const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center gap-2">
-          <Building2 className="w-7 h-7 text-primary shrink-0" />
+          <img src={BRAND.logos.icon} alt={BRAND.name} className="w-8 h-8 object-contain shrink-0" />
           {!collapsed && (
             <div className="min-w-0">
-              <span className="text-lg font-bold block leading-tight">ResKonnect</span>
-              <Badge variant="outline" className="text-[10px] mt-0.5">
+              <img src={BRAND.logos.full} alt={BRAND.name} className="h-6 w-auto object-contain" />
+              <Badge variant="outline" className="text-[10px] mt-1">
                 {roleLabels[staffRole || "admin"]}
               </Badge>
             </div>

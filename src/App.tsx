@@ -15,6 +15,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { StudentRoute } from "@/components/StudentRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { UserIntentProvider } from "@/contexts/UserIntentContext";
 import { ResidenceRoute } from "./components/ResidenceRoute";
 import { SpecialistRoute } from "@/components/SpecialistRoute";
 import PushPrompt from "@/components/PushPrompt";
@@ -152,6 +153,7 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
+              <UserIntentProvider>
               <Suspense fallback={<Preloader />}>
               <Routes>
               {/* Public Browse Routes (shareable, no auth required) */}
@@ -292,6 +294,7 @@ const App = () => {
               {/* Global ResBot Chatbot */}
               <ResBot />
               <PushPrompt />
+              </UserIntentProvider>
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>

@@ -4,6 +4,8 @@ import PersonaSelector from "./PersonaSelector";
 import NeedSelector, { getNeedOptions } from "./NeedSelector";
 import OnboardingForm from "./OnboardingForm";
 import OnboardingSummaryCard from "./OnboardingSummaryCard";
+import IntentQuickStep from "./IntentQuickStep";
+import { useUserIntent } from "@/contexts/UserIntentContext";
 import type { Persona, Need, OnboardingRequest } from "@/lib/onboarding/onboardingTypes";
 import { submitOnboardingRequest } from "@/lib/onboarding/onboardingAdapter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,8 +14,10 @@ import { toast } from "sonner";
 export const GuidedOnboardingFlow: React.FC = () => {
   const [searchParams] = useSearchParams();
 
-  // Step state machine: 1 = Persona, 2 = Need, 3 = Form, 4 = Summary/Confirmation
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const { setIntent, completeGuide, skipGuide } = useUserIntent();
+
+  // Step state machine: 1 = Persona, 2 = Need, 3 = Intent details, 4 = Form, 5 = Summary
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   const [selectedNeedOption, setSelectedNeedOption] = useState<string | null>(null);
   const [resolvedNeed, setResolvedNeed] = useState<Need | null>(null);
@@ -34,7 +38,7 @@ export const GuidedOnboardingFlow: React.FC = () => {
         if (matched) {
           setSelectedNeedOption(matched.value);
           setResolvedNeed(matched.need);
-          setStep(3); // skip right to form
+          setStep(3); // skip right to intent details
           return;
         }
       }
@@ -52,6 +56,7 @@ export const GuidedOnboardingFlow: React.FC = () => {
   const handleNeedChange = (opt: { value: string; need: Need }) => {
     setSelectedNeedOption(opt.value);
     setResolvedNeed(opt.need);
+    setIntent({ persona: selectedPersona ?? undefined, primary_need: opt.need });
     setStep(3);
   };
 
@@ -84,7 +89,8 @@ export const GuidedOnboardingFlow: React.FC = () => {
       });
 
       setCompletedRecord(record);
-      setStep(4);
+      completeGuide();
+      setStep(5);
       toast.success("Onboarding checklist submitted successfully!");
     } catch (e) {
       console.error(e);
@@ -93,11 +99,9 @@ export const GuidedOnboardingFlow: React.FC = () => {
   };
 
   const handleBack = () => {
-    if (step === 3) {
-      setStep(2);
-    } else if (step === 2) {
-      setStep(1);
-    }
+    if (step === 4) setStep(3);
+    else if (step === 3) setStep(2);
+    else if (step === 2) setStep(1);
   };
 
   const renderStepTitleAndSubtitle = () => {
@@ -114,10 +118,15 @@ export const GuidedOnboardingFlow: React.FC = () => {
         };
       case 3:
         return {
+          title: "A few quick details",
+          subtitle: "This personalises your listings, filters and dashboard. You can skip it.",
+        };
+      case 4:
+        return {
           title: "Complete Your Support Request",
           subtitle: "Provide your details. Our platform will guide you and prepare options.",
         };
-      case 4:
+      case 5:
       default:
         return null;
     }
@@ -168,6 +177,22 @@ export const GuidedOnboardingFlow: React.FC = () => {
       )}
 
       {step === 3 && selectedPersona && resolvedNeed && (
+        <IntentQuickStep
+          persona={selectedPersona}
+          need={resolvedNeed}
+          onBack={handleBack}
+          onSkip={() => {
+            skipGuide();
+            setStep(4);
+          }}
+          onContinue={(partial) => {
+            setIntent(partial);
+            setStep(4);
+          }}
+        />
+      )}
+
+      {step === 4 && selectedPersona && resolvedNeed && (
         <Card className="shadow-lg border-muted">
           <CardContent className="p-6">
             <OnboardingForm
@@ -180,7 +205,7 @@ export const GuidedOnboardingFlow: React.FC = () => {
         </Card>
       )}
 
-      {step === 4 && completedRecord && (
+      {step === 5 && completedRecord && (
         <OnboardingSummaryCard record={completedRecord} />
       )}
     </div>

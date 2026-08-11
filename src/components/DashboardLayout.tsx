@@ -7,8 +7,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import desktopLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
-import mobileLogo from "@/assets/LIGHT THEME HOMESCREEN_APP ICON.png";
+import { BRAND } from "@/constants/brand";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import NotificationCenter from "@/components/NotificationCenter";
@@ -73,7 +72,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     <div className="flex flex-col h-full bg-card text-foreground">
       <div className="p-6 border-b border-border">
         <div className="flex flex-col items-center mb-1">
-          <img src={desktopLogo} alt="ResKonnect" className="h-16 w-auto mb-2" />
+          <img src={BRAND.logos.full} alt={BRAND.name} className="h-16 w-auto object-contain mb-2" />
         </div>
         {isAdmin ? (
           <Badge variant="destructive" className="w-full justify-center gap-1.5 py-1">
@@ -192,7 +191,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         {/* Mobile Header */}
         <header className="md:hidden border-b border-border bg-card p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={mobileLogo} alt="ResKonnect" className="h-8 w-auto" />
+            <img src={BRAND.logos.full} alt={BRAND.name} className="h-8 w-auto object-contain" />
             {isAdmin && (
               <Badge variant="destructive" className="gap-1">
                 <Shield className="w-3 h-3" />
