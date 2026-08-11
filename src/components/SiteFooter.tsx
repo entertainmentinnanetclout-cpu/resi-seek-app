@@ -92,7 +92,7 @@ const SiteFooter = () => (
       </div>
     </div>
 
-    <div className="bg-brand-navy-command">
+    <div className="bg-brand-command">
       <div className="container mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <p>&copy; {new Date().getFullYear()} {BRAND.name}. All rights reserved.</p>
         <div className="flex gap-4">
