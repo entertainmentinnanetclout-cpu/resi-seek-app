@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EXTERNAL_SUPABASE_ANON_KEY, EXTERNAL_SUPABASE_URL, externalFunctionUrl } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { getAuthErrorMessage } from "@/lib/authErrors";
 import { z } from "zod";
 import { BRAND } from "@/constants/brand";
 import { Loader2, Chrome } from "lucide-react";
