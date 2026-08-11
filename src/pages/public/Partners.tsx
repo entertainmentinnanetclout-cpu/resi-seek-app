@@ -11,7 +11,7 @@ export const Partners: React.FC = () => {
   return (
     <PublicLayout>
       <SEO
-        title="Partner With ResKonnect | Landlords, Institutions & Businesses"
+        title="ResKonnect Partners | Landlords, Institutions & Businesses"
         description="List student accommodation, receive property leads, support student intake, and partner with ResKonnect for digital student journey solutions."
         keywords="list student accommodation, landlord leads, institution partnerships, student marketing"
         canonicalPath="/partners"

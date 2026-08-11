@@ -120,12 +120,15 @@ const Landing = () => {
   // Schema data
   const organizationSchema = {
     "@context": "https://schema.org", "@type": "Organization", "name": "ResKonnect",
-    "url": "https://www.reskonnect.org", "logo": "https://www.reskonnect.org/logo.png",
-    "description": "South Africa's leading student accommodation platform.",
+    "alternateName": "RESKONNECT",
+    "url": "https://www.reskonnect.org", "logo": "https://www.reskonnect.org/icon-512.png",
+    "description": "ResKonnect is a student journey platform for accommodation, application readiness, WIL support, and partner solutions.",
+    "email": "reskonnect@gmail.com",
+    "telephone": "+27637323192",
     "contactPoint": { "@type": "ContactPoint", "telephone": "+27-63-732-3192", "contactType": "customer service", "email": "Reskonnect@gmail.com" },
   };
   const websiteSchema = {
-    "@context": "https://schema.org", "@type": "WebSite", "name": "ResKonnect Student Accommodation",
+    "@context": "https://schema.org", "@type": "WebSite", "name": "ResKonnect",
     "url": "https://www.reskonnect.org",
     "potentialAction": { "@type": "SearchAction", "target": "https://www.reskonnect.org/find?query={search_term_string}", "query-input": "required name=search_term_string" },
   };
@@ -146,6 +149,18 @@ const Landing = () => {
         {/* ── Hero ──────────────────────────────────────── */}
         <section>
           <HeroCarousel slides={fallbackSlides} autoPlay interval={6000} useDatabase={true} location="landing" />
+        </section>
+
+        {/* ── Brand H1 (single H1 for the page) ────────── */}
+        <section className="border-b bg-background py-6 md:py-8">
+          <div className="container mx-auto px-4 text-center">
+            <h1 className="text-xl font-bold leading-snug md:text-3xl">
+              <span className="text-primary">ResKonnect:</span> Your stay. Your studies. Your future. Connected.
+            </h1>
+            <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground md:text-base">
+              {BRAND.hero.subcopy}
+            </p>
+          </div>
         </section>
 
         {/* ── Interactive Need Cards section ── */}

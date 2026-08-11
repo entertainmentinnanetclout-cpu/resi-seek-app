@@ -11,7 +11,7 @@ export const Opportunities: React.FC = () => {
   return (
     <PublicLayout>
       <SEO
-        title="WIL Placement Support & Student Opportunities | ResKonnect"
+        title="ResKonnect Opportunities | WIL Placement & Student Support"
         description="Access WIL readiness support, internship guidance, student referral opportunities, and career pathway support through ResKonnect."
         keywords="WIL placement, work integrated learning, internship support, student opportunities"
         canonicalPath="/opportunities"

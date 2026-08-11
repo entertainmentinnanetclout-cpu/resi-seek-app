@@ -52,7 +52,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/student-accommodation",
     kind: "landing",
-    title: "Student Accommodation in South Africa | Verified Listings | ResKonnect",
+    title: "ResKonnect Student Accommodation | Verified Residences Near Campus",
     description:
       "Browse verified student accommodation for university, TVET and private-paying students. Compare rooms, prices, campus distance and availability on ResKonnect.",
     keywords: "student accommodation, student housing South Africa, verified residences, campus accommodation",
@@ -93,7 +93,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/student-accommodation/pretoria-west",
     kind: "landing",
-    title: "Student Accommodation in Pretoria West | Rooms Near Campus | ResKonnect",
+    title: "ResKonnect Student Accommodation in Pretoria West | Rooms Near Campus",
     description:
       "Find verified student accommodation in Pretoria West. Compare rooms, prices and availability close to TUT Pretoria West and surrounding campuses.",
     keywords: "Pretoria West student accommodation, res in Pretoria West, student rooms Pretoria West",
@@ -141,7 +141,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/student-accommodation/near-tut",
     kind: "landing",
-    title: "Student Accommodation Near TUT | Verified Residences | ResKonnect",
+    title: "ResKonnect Student Accommodation Near TUT | Verified Residences",
     description:
       "Find verified student accommodation near TUT campuses. Compare residences by campus, price, room type and availability on ResKonnect.",
     keywords: "accommodation near TUT, TUT residence, TUT student housing",
@@ -189,7 +189,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/student-accommodation/near-tut-pretoria-west",
     kind: "landing",
-    title: "Accommodation Near TUT Pretoria West Campus | ResKonnect",
+    title: "ResKonnect Accommodation Near TUT Pretoria West Campus",
     description:
       "Verified student accommodation near TUT Pretoria West campus. Compare walking-distance rooms, prices and availability on ResKonnect.",
     keywords: "TUT Pretoria West accommodation, res near TUT Pretoria West, student room Pretoria West campus",
@@ -237,7 +237,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/student-accommodation/near-tshwane-south-tvet",
     kind: "landing",
-    title: "Accommodation Near Tshwane South TVET College | ResKonnect",
+    title: "ResKonnect Accommodation Near Tshwane South TVET College",
     description:
       "Find verified student accommodation near Tshwane South TVET College. Compare affordable rooms, prices and availability for TVET students.",
     keywords: "Tshwane South TVET accommodation, TVET student accommodation Pretoria, TVET res",
@@ -285,7 +285,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/student-accommodation/tvet",
     kind: "landing",
-    title: "TVET College Student Accommodation | ResKonnect",
+    title: "ResKonnect TVET College Student Accommodation",
     description:
       "Verified accommodation for TVET college students across South Africa. Compare affordable rooms, availability and campus distance on ResKonnect.",
     keywords: "TVET accommodation, TVET college residence, TVET student housing South Africa",
@@ -333,7 +333,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/student-accommodation/university",
     kind: "landing",
-    title: "University Student Accommodation | Verified Residences | ResKonnect",
+    title: "ResKonnect University Student Accommodation | Verified Residences",
     description:
       "Compare verified university student accommodation by campus, price, room type and availability. Off-campus residences listed on ResKonnect.",
     keywords: "university accommodation, off campus residence, university student housing South Africa",
@@ -381,7 +381,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/student-accommodation/nsfas-accredited",
     kind: "landing",
-    title: "NSFAS Accredited Student Accommodation | ResKonnect",
+    title: "ResKonnect NSFAS Accredited Student Accommodation",
     description:
       "Browse student accommodation listed with NSFAS accreditation context. Compare accredited residences by campus, room type and availability.",
     keywords: "NSFAS accredited accommodation, NSFAS residence, NSFAS approved student housing",
@@ -435,7 +435,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/private-rentals",
     kind: "landing",
-    title: "Private Rentals for Students & Young Professionals | ResKonnect",
+    title: "ResKonnect Private Rentals | Bachelor Rooms & Private Rental Support",
     description:
       "Private rental rooms, bachelor flats and units for private-paying tenants. Compare monthly rent, area and availability through ResKonnect.",
     keywords: "private rentals, rooms to rent, bachelor flat, private tenant accommodation",
@@ -487,7 +487,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/private-rentals/pretoria-west",
     kind: "landing",
-    title: "Private Rentals in Pretoria West | Rooms & Flats | ResKonnect",
+    title: "ResKonnect Private Rentals in Pretoria West | Rooms & Flats",
     description:
       "Private rental rooms and flats in Pretoria West for private-paying tenants. Compare rent, inclusions and availability on ResKonnect.",
     keywords: "private rental Pretoria West, rooms to rent Pretoria West, flat to rent Pretoria West",
@@ -539,7 +539,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/private-rentals/bachelor-rooms-pretoria",
     kind: "landing",
-    title: "Bachelor Rooms & Flats to Rent in Pretoria | ResKonnect",
+    title: "ResKonnect Bachelor Rooms & Flats to Rent in Pretoria",
     description:
       "Bachelor rooms and self-contained units to rent in Pretoria for private-paying tenants. Compare rent, inclusions and availability on ResKonnect.",
     keywords: "bachelor room Pretoria, bachelor flat to rent Pretoria, self contained room Pretoria",
@@ -593,7 +593,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/applications/application-readiness",
     kind: "landing",
-    title: "Application Readiness for South African Students | ResKonnect",
+    title: "ResKonnect Application Readiness for South African Students",
     description:
       "Get application-ready: certify your documents, check your APS, understand entry requirements and follow official portal steps for TVET, university and private colleges.",
     keywords: "application readiness, student application help, matric documents, APS",
@@ -640,7 +640,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/applications/tvet-application-readiness",
     kind: "landing",
-    title: "TVET Application Readiness & Document Guidance | ResKonnect",
+    title: "ResKonnect TVET Application Readiness & Document Guidance",
     description:
       "Prepare your TVET college application: required documents, NC(V) and Report 191 basics, closing-date planning and official portal direction.",
     keywords: "TVET application, TVET college application requirements, NCV application, Report 191",
@@ -687,7 +687,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/applications/university-application-readiness",
     kind: "landing",
-    title: "University Application Readiness & APS Guidance | ResKonnect",
+    title: "ResKonnect University Application Readiness & APS Guidance",
     description:
       "Prepare your university application: APS calculation, subject requirements, certified documents, closing dates and official portal direction.",
     keywords: "university application, APS requirements, university entry requirements South Africa",
@@ -734,7 +734,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/applications/aps-checker",
     kind: "landing",
-    title: "APS Checker & Admission Points Guidance | ResKonnect",
+    title: "ResKonnect APS Checker | Application Readiness Guidance",
     description:
       "Understand how your APS is calculated, what it means for your programme choices, and which documents you need before you apply.",
     keywords: "APS checker, admission point score, calculate APS, APS requirements",
@@ -799,7 +799,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
   {
     path: "/opportunities/wil-placement-support",
     kind: "landing",
-    title: "WIL Placement Support for South African Students | ResKonnect",
+    title: "ResKonnect WIL Placement Support for South African Students",
     description:
       "Work Integrated Learning support: understand WIL requirements, prepare your CV and documents, and get help finding placement opportunities.",
     keywords: "WIL placement, work integrated learning, P1 P2 placement, internship support South Africa",
