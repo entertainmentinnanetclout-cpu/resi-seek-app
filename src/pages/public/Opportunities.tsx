@@ -1,6 +1,7 @@
 import React from "react";
 import PublicLayout from "@/components/PublicLayout";
 import SEO from "@/components/SEO";
+import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -10,8 +11,10 @@ export const Opportunities: React.FC = () => {
   return (
     <PublicLayout>
       <SEO
-        title="Opportunities Hub | WIL Placements & Careers"
-        description="Connect with workplace integrated learning programs, technical internships, career workshops, and premium recruiter opportunities."
+        title="WIL Placement Support & Student Opportunities | ResKonnect"
+        description="Access WIL readiness support, internship guidance, student referral opportunities, and career pathway support through ResKonnect."
+        keywords="WIL placement, work integrated learning, internship support, student opportunities"
+        canonicalPath="/opportunities"
       />
 
       <div className="py-16 md:py-24 bg-gradient-to-b from-primary/5 via-background to-background">
@@ -93,6 +96,18 @@ export const Opportunities: React.FC = () => {
             <Button asChild size="lg">
               <Link to="/get-started?persona=institution_business&need=partner_solution">Partner With Us</Link>
             </Button>
+          </div>
+
+          <div className="mx-auto max-w-5xl">
+            <SeoInternalLinks
+              heading="Opportunity pathways"
+              links={[
+                { label: "WIL placement support", to: "/opportunities/wil-placement-support", description: "Get placement-ready for your WIL component." },
+                { label: "Career readiness", to: "/opportunities", description: "CV, interview and workplace preparation." },
+                { label: "Student referrals", to: "/referrals", description: "Refer other students and earn rewards." },
+                { label: "Application readiness", to: "/applications/application-readiness", description: "Prepare your next study application." },
+              ]}
+            />
           </div>
 
         </div>

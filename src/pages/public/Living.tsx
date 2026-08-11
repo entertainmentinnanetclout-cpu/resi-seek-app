@@ -1,6 +1,7 @@
 import React from "react";
 import PublicLayout from "@/components/PublicLayout";
 import SEO from "@/components/SEO";
+import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,8 +33,10 @@ export const Living: React.FC = () => {
   return (
     <PublicLayout>
       <SEO
-        title="Living Solutions | Student Accommodation & Private Rentals"
-        description="Premium connected living with ResKonnect. Explore university residences, TVET-friendly housing, single bachelor apartments, parent support resources, and property listings."
+        title="Student Accommodation & Private Rental Support | ResKonnect"
+        description="Browse verified student accommodation, NSFAS accommodation context, private-paying student residences, and private rental support through ResKonnect."
+        keywords="student accommodation, private rentals Pretoria, NSFAS accredited accommodation, private paying student residence"
+        canonicalPath="/living"
       />
 
       <div className="bg-gradient-to-b from-primary/5 via-background to-background py-16 md:py-24">
@@ -103,6 +106,20 @@ export const Living: React.FC = () => {
             <Button asChild size="lg" className="shrink-0">
               <Link to="/get-started?persona=landlord&need=property_listing">List Your Property</Link>
             </Button>
+          </div>
+
+          <div className="mx-auto max-w-5xl">
+            <SeoInternalLinks
+              heading="Explore living options"
+              links={[
+                { label: "Student accommodation", to: "/student-accommodation", description: "Verified residences across our coverage areas." },
+                { label: "NSFAS accredited accommodation", to: "/student-accommodation/nsfas-accredited", description: "Listings with NSFAS accreditation context." },
+                { label: "Private-paying student accommodation", to: "/student-accommodation/university", description: "Off-campus residences for self-funded students." },
+                { label: "Private rentals", to: "/private-rentals", description: "Rooms and flats for private-paying tenants." },
+                { label: "Pretoria West accommodation", to: "/student-accommodation/pretoria-west", description: "Rooms close to Pretoria West campuses." },
+                { label: "TVET accommodation", to: "/student-accommodation/tvet", description: "Residences that accept TVET college students." },
+              ]}
+            />
           </div>
 
         </div>

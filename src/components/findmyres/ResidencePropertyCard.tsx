@@ -46,9 +46,10 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
         <div className="relative aspect-[16/10] overflow-hidden">
           <img
             src={residence.image_url || "/placeholder.svg"}
-            alt={residence.name}
+            alt={`${residence.name} student accommodation${residence.address ? ` in ${residence.address}` : ""} listed on ResKonnect`}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
+            decoding="async"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).src = "/placeholder.svg";
             }}

@@ -1,6 +1,7 @@
 import React from "react";
 import PublicLayout from "@/components/PublicLayout";
 import SEO from "@/components/SEO";
+import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -10,8 +11,10 @@ export const Partners: React.FC = () => {
   return (
     <PublicLayout>
       <SEO
-        title="Partners Portal | Landlords & Institutions"
-        description="Collaborate with ResKonnect. Build property portals, host student accommodation, manage TVET campaigns, and coordinate WIL placements."
+        title="Partner With ResKonnect | Landlords, Institutions & Businesses"
+        description="List student accommodation, receive property leads, support student intake, and partner with ResKonnect for digital student journey solutions."
+        keywords="list student accommodation, landlord leads, institution partnerships, student marketing"
+        canonicalPath="/partners"
       />
 
       <div className="py-16 md:py-24 bg-gradient-to-b from-primary/5 via-background to-background">
@@ -90,6 +93,18 @@ export const Partners: React.FC = () => {
             <Button asChild size="lg">
               <Link to="/get-started?persona=institution_business&need=partner_solution">Get Started</Link>
             </Button>
+          </div>
+
+          <div className="mx-auto max-w-5xl">
+            <SeoInternalLinks
+              heading="Partner with ResKonnect"
+              links={[
+                { label: "Landlord partners", to: "/partners/landlords", description: "List rooms and receive verified student leads." },
+                { label: "Institution partners", to: "/partners/institutions", description: "Support student intake and accommodation." },
+                { label: "List a property", to: "/get-started?persona=landlord&need=property_listing", description: "Start a listing in a few minutes." },
+                { label: "Partner solutions", to: "/partners", description: "Digital student journey solutions for business." },
+              ]}
+            />
           </div>
 
         </div>
