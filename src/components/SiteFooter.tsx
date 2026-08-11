@@ -5,29 +5,30 @@ const columns = [
   {
     title: "Living",
     links: [
+      { label: "ResKonnect Living", to: "/living" },
       { label: "Find My Res", to: "/find" },
-      { label: "Student Accommodation", to: "/student-accommodation" },
+      { label: "ResKonnect Student Accommodation", to: "/student-accommodation" },
       { label: "Pretoria West Accommodation", to: "/student-accommodation/pretoria-west" },
       { label: "Accommodation Near TUT", to: "/student-accommodation/near-tut" },
       { label: "NSFAS Accredited Accommodation", to: "/student-accommodation/nsfas-accredited" },
-      { label: "Private Rentals", to: "/private-rentals" },
+      { label: "ResKonnect Private Rentals", to: "/private-rentals" },
       { label: "For Parents", to: "/living/parents" },
     ],
   },
   {
     title: "Applications",
     links: [
+      { label: "ResKonnect Applications", to: "/applications" },
       { label: "Application Readiness", to: "/applications/application-readiness" },
-      { label: "APS Checker", to: "/applications/aps-checker" },
+      { label: "ResKonnect APS Checker", to: "/applications/aps-checker" },
       { label: "TVET Readiness", to: "/applications/tvet-application-readiness" },
       { label: "University Readiness", to: "/applications/university-application-readiness" },
-      { label: "Applications Hub", to: "/applications" },
     ],
   },
   {
     title: "Opportunities",
     links: [
-      { label: "Opportunities Hub", to: "/opportunities" },
+      { label: "ResKonnect Opportunities", to: "/opportunities" },
       { label: "WIL Placement Support", to: "/opportunities/wil-placement-support" },
       { label: "Bursaries", to: "/bursaries" },
       { label: "Campus News", to: "/campus-news" },
@@ -36,6 +37,7 @@ const columns = [
   {
     title: "Partners",
     links: [
+      { label: "ResKonnect Partners", to: "/partners" },
       { label: "Partner With ResKonnect", to: "/partners" },
       { label: "List Your Property", to: "/partners/landlords" },
       { label: "Institutions & Business", to: "/partners/institutions" },
