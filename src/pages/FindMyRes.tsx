@@ -177,13 +177,16 @@ const FindMyRes = () => {
   const visibleResidences = filteredResidences.slice(0, visibleCount);
   const hasMore = visibleCount < filteredResidences.length;
 
+  // Real listings only — seed/demo rows never appear beside real ones.
+  const realResidences = residences.filter((r: any) => !isMockResidence(r));
+
   // Group residences by category for rails (only when no filters active)
   const byCategory = CATEGORY_SECTIONS.map((s) => ({
     ...s,
-    items: residences.filter((r: any) => r.category === s.key).slice(0, 10),
-    total: residences.filter((r: any) => r.category === s.key).length,
+    items: realResidences.filter((r: any) => r.category === s.key).slice(0, 10),
+    total: realResidences.filter((r: any) => r.category === s.key).length,
   }));
-  const featured = [...residences]
+  const featured = [...realResidences]
     .filter((r: any) => (r.available_spots ?? 0) > 0)
     .sort((a: any, b: any) => {
       const aScore = (a.is_featured ? 1000 : 0) + (a.featured_rank || 0) + (a.application_count || 0) + (a.view_count || 0) / 10;
@@ -192,7 +195,7 @@ const FindMyRes = () => {
     })
     .slice(0, 10);
 
-  const showRails = !hasActiveFilters && !loading && residences.length > 0;
+  const showRails = !hasActiveFilters && !loading && realResidences.length > 0;
 
   return (
     <DashboardLayout>
