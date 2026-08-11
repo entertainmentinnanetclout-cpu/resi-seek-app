@@ -272,8 +272,8 @@ const Landing = () => {
                 <CardContent className="p-6">
                   <form onSubmit={handleContactSubmit} className="space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1"><Label htmlFor="name">Full Name</Label><Input id="name" name="name" required placeholder="John Doe" /></div>
-                      <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" required placeholder="john@student.ac.za" /></div>
+                      <div className="space-y-1"><Label htmlFor="name">Full Name</Label><Input id="name" name="name" required placeholder="Lawrence Dube" /></div>
+                      <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" required placeholder="reskonnect@gmail.com" /></div>
                     </div>
                     <div className="space-y-1"><Label htmlFor="message">Message</Label><Textarea id="message" name="message" required placeholder="How can we help you?" rows={3} /></div>
                     <Button type="submit" className="w-full">Send Message</Button>

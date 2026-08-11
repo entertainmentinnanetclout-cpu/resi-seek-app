@@ -296,11 +296,11 @@ const CampusNews = () => {
                     <form onSubmit={handleJournalistSubmit} className="space-y-4 mt-4">
                       <div>
                         <label className="text-sm font-medium mb-2 block">Full Name</label>
-                        <Input required placeholder="John Doe" />
+                        <Input required placeholder="Lawrence Dube" />
                       </div>
                       <div>
                         <label className="text-sm font-medium mb-2 block">Email</label>
-                        <Input type="email" required placeholder="john@student.ac.za" />
+                        <Input type="email" required placeholder="reskonnect@gmail.com" />
                       </div>
                       <div>
                         <label className="text-sm font-medium mb-2 block">Campus</label>

@@ -25,12 +25,12 @@ const Admin = () => {
   const applications = [
     {
       id: 1,
-      studentName: "John Doe",
+      studentName: "Lawrence Dube",
       studentNumber: "u12345678",
       residence: "Campus Heights",
       status: "pending",
       date: "2025-10-08",
-      email: "john@student.ac.za",
+      email: "reskonnect@gmail.com",
       phone: "+27 12 345 6789"
     },
     {

@@ -328,7 +328,7 @@ export const OnboardingForm: React.FC<OnboardingFormProps> = ({
             <Input
               id="fullName"
               required
-              placeholder="e.g. John Doe"
+              placeholder="e.g. Lawrence Dube"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
             />
@@ -340,7 +340,7 @@ export const OnboardingForm: React.FC<OnboardingFormProps> = ({
               id="email"
               type="email"
               required
-              placeholder="e.g. john@example.com"
+              placeholder="e.g. reskonnect@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />

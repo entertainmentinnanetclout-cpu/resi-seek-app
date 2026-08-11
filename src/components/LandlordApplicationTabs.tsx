@@ -137,7 +137,7 @@ const LandlordApplicationTabs = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label htmlFor="contact_name">Full Name *</Label>
-          <Input id="contact_name" required value={form.contact_name} onChange={(e) => update("contact_name", e.target.value)} placeholder="John Doe" />
+          <Input id="contact_name" required value={form.contact_name} onChange={(e) => update("contact_name", e.target.value)} placeholder="Lawrence Dube" />
         </div>
         <div className="space-y-1">
           <Label htmlFor="company_name">Company Name</Label>
