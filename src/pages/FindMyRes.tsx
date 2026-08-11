@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeResidences } from "@/hooks/useRealtimeResidences";
-import { useResidenceFilters } from "@/hooks/useResidenceFilters";
+import { useResidenceFilters, isMockResidence } from "@/hooks/useResidenceFilters";
 import { useResidenceSections } from "@/hooks/useResidenceSections";
 import { supabase } from "@/integrations/supabase/client";
 import { SmartSearchBar } from "@/components/findmyres/SmartSearchBar";
@@ -58,6 +58,8 @@ const FindMyRes = () => {
     updateFilter,
     resetFilters,
     filteredResidences,
+    closestResidences,
+    relaxBudget,
     activeFilterCount,
     hasActiveFilters,
   } = useResidenceFilters(residences);
@@ -70,22 +72,21 @@ const FindMyRes = () => {
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [applicationNotes, setApplicationNotes] = useState("");
   const [institutionType, setInstitutionType] = useState<string>("university");
-  const [intentApplied, setIntentApplied] = useState(false);
+  const [appliedIntentStamp, setAppliedIntentStamp] = useState<string | null>(null);
 
   const intentResult = deriveFiltersFromIntent(intent);
+  const intentApplied = appliedIntentStamp !== null;
 
-  // Pre-apply intent-derived filters once. Every filter stays user-removable.
+  // Re-apply intent-derived filters whenever the guide answers change.
+  // Every filter stays user-removable.
   useEffect(() => {
-    if (intentApplied) return;
+    const stamp = intent.updated_at ?? JSON.stringify(intentResult.patch);
+    if (appliedIntentStamp === stamp) return;
     const entries = Object.entries(intentResult.patch);
-    if (entries.length === 0) {
-      setIntentApplied(true);
-      return;
-    }
     entries.forEach(([key, value]) => updateFilter(key as any, value as any));
-    setIntentApplied(true);
+    setAppliedIntentStamp(stamp);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [intentApplied, intent]);
+  }, [appliedIntentStamp, intent]);
 
   // Deep-link category support: /find?category=flats
   useEffect(() => {
@@ -176,13 +177,16 @@ const FindMyRes = () => {
   const visibleResidences = filteredResidences.slice(0, visibleCount);
   const hasMore = visibleCount < filteredResidences.length;
 
+  // Real listings only — seed/demo rows never appear beside real ones.
+  const realResidences = residences.filter((r: any) => !isMockResidence(r));
+
   // Group residences by category for rails (only when no filters active)
   const byCategory = CATEGORY_SECTIONS.map((s) => ({
     ...s,
-    items: residences.filter((r: any) => r.category === s.key).slice(0, 10),
-    total: residences.filter((r: any) => r.category === s.key).length,
+    items: realResidences.filter((r: any) => r.category === s.key).slice(0, 10),
+    total: realResidences.filter((r: any) => r.category === s.key).length,
   }));
-  const featured = [...residences]
+  const featured = [...realResidences]
     .filter((r: any) => (r.available_spots ?? 0) > 0)
     .sort((a: any, b: any) => {
       const aScore = (a.is_featured ? 1000 : 0) + (a.featured_rank || 0) + (a.application_count || 0) + (a.view_count || 0) / 10;
@@ -191,7 +195,7 @@ const FindMyRes = () => {
     })
     .slice(0, 10);
 
-  const showRails = !hasActiveFilters && !loading && residences.length > 0;
+  const showRails = !hasActiveFilters && !loading && realResidences.length > 0;
 
   return (
     <DashboardLayout>
@@ -342,16 +346,53 @@ const FindMyRes = () => {
                   ))}
                 </div>
               ) : filteredResidences.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-16">
-                    <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">No residences found</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Try adjusting your filters or search query.
-                    </p>
-                    <Button onClick={resetFilters}>Clear All Filters</Button>
-                  </CardContent>
-                </Card>
+                <div className="space-y-6">
+                  <Card>
+                    <CardContent className="text-center py-12">
+                      <Building2 className="w-14 h-14 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold mb-2">No exact matches found</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Nothing matches every filter you selected. Relax your budget or let
+                        ResKonnect help you source a place.
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {filters.priceMax < 10000 && (
+                          <Button variant="outline" onClick={relaxBudget}>
+                            Relax budget filter
+                          </Button>
+                        )}
+                        <Button variant="outline" onClick={resetFilters}>
+                          Clear all filters
+                        </Button>
+                        <Button asChild>
+                          <a
+                            href="https://wa.me/27637323192"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Request help finding a match
+                          </a>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {closestResidences.length > 0 && (
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="text-lg font-semibold">Closest matches</h4>
+                        <p className="text-sm text-muted-foreground">
+                          These are outside your selected budget but match your other criteria.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {closestResidences.map((r: any) => (
+                          <ResidencePropertyCard key={r.id} residence={r} onApply={handleApply} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">

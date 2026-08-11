@@ -6,7 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { TUT_CAMPUSES } from "@/lib/campuses";
+import { getCampusOptions } from "@/constants/institutionOptions";
 import type { ResidenceFilters } from "@/hooks/useResidenceFilters";
 import type { ResidenceSection } from "@/hooks/useResidenceSections";
 
@@ -22,6 +22,18 @@ interface FilterSidebarProps {
 }
 
 export function FilterSidebar({ filters, updateFilter, resetFilters, activeFilterCount, sections }: FilterSidebarProps) {
+  // Campus options always follow the selected audience/institution type.
+  const campusOptions = getCampusOptions(
+    filters.institutionType ??
+      (filters.audience === "tvet"
+        ? "tvet"
+        : filters.audience === "university"
+          ? "university"
+          : filters.audience === "private"
+            ? "other"
+            : undefined),
+  );
+
   const toggleArrayItem = (key: "roomTypes" | "amenities", item: string) => {
     const current = filters[key];
     const updated = current.includes(item)
@@ -46,9 +58,11 @@ export function FilterSidebar({ filters, updateFilter, resetFilters, activeFilte
           <div className="space-y-5 pr-2">
             {/* Campus */}
             <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase text-muted-foreground">Campus</Label>
+              <Label className="text-xs font-semibold uppercase text-muted-foreground">
+                {filters.audience === "private" ? "Area" : "Campus"}
+              </Label>
               <div className="space-y-1.5">
-                {TUT_CAMPUSES.map((c) => (
+                {campusOptions.map((c) => (
                   <label key={c.value} className="flex items-center gap-2 cursor-pointer text-sm">
                     <Checkbox
                       checked={filters.campus === c.value}
@@ -56,7 +70,7 @@ export function FilterSidebar({ filters, updateFilter, resetFilters, activeFilte
                         updateFilter("campus", checked ? c.value : "all")
                       }
                     />
-                    {c.label.replace(" Campus", "")}
+                    {c.label}
                   </label>
                 ))}
               </div>

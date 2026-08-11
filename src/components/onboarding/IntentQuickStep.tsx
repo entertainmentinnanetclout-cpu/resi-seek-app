@@ -3,7 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { ALL_CAMPUSES } from "@/lib/campuses";
+import {
+  BUDGET_OPTIONS,
+  GENERIC_AREAS,
+  getCampusOptions,
+  getInstitutions,
+  INSTITUTION_TYPE_LABELS,
+} from "@/constants/institutionOptions";
 import type { Persona, Need } from "@/lib/onboarding/onboardingTypes";
 import type { FundingType, InstitutionType, UserIntent } from "@/lib/intent/userIntentTypes";
 import { cn } from "@/lib/utils";
@@ -30,7 +36,7 @@ const FUNDING: { value: FundingType; label: string; hint: string }[] = [
   { value: "unsure", label: "Not sure yet", hint: "We'll show all relevant options" },
 ];
 
-const BUDGETS = [1500, 2500, 3500, 5000, 8000];
+const BUDGETS = [...BUDGET_OPTIONS];
 
 const OptionButton = ({
   active,
@@ -64,6 +70,7 @@ export const IntentQuickStep: React.FC<IntentQuickStepProps> = ({
   onSkip,
 }) => {
   const [institutionType, setInstitutionType] = useState<InstitutionType | undefined>();
+  const [institutionName, setInstitutionName] = useState<string>("");
   const [campus, setCampus] = useState<string>("");
   const [area, setArea] = useState<string>("");
   const [funding, setFunding] = useState<FundingType | undefined>();
@@ -73,11 +80,24 @@ export const IntentQuickStep: React.FC<IntentQuickStepProps> = ({
   const isStudentSide = persona === "student" || persona === "parent_guardian" || persona === "applicant" || persona === "wil_applicant";
   const isPrivateTenant = persona === "private_tenant" || need === "private_rental";
 
+  // Campus options are always scoped to the selected institution type.
+  const institutions = getInstitutions(institutionType as any);
+  const campusOptions = institutionType
+    ? getCampusOptions(institutionType as any, institutionName || undefined)
+    : GENERIC_AREAS;
+
+  const selectInstitutionType = (value: InstitutionType) => {
+    setInstitutionType(value);
+    setInstitutionName("");
+    setCampus("");
+  };
+
   const submit = () => {
     onContinue({
       persona,
       primary_need: need,
       institution_type: institutionType,
+      institution_name: institutionName || undefined,
       campus: campus || undefined,
       area: area || undefined,
       funding_type: funding,
@@ -101,30 +121,63 @@ export const IntentQuickStep: React.FC<IntentQuickStepProps> = ({
                 <OptionButton
                   key={i.value}
                   active={institutionType === i.value}
-                  onClick={() => setInstitutionType(i.value)}
-                  title={i.label}
+                  onClick={() => selectInstitutionType(i.value)}
+                  title={INSTITUTION_TYPE_LABELS[i.value] ?? i.label}
                 />
               ))}
             </div>
           </div>
         )}
 
+        {isStudentSide && institutions.length > 0 && (
+          <div className="space-y-2">
+            <Label htmlFor="intent-institution">
+              Which {INSTITUTION_TYPE_LABELS[institutionType as InstitutionType]?.toLowerCase()}?
+            </Label>
+            <select
+              id="intent-institution"
+              value={institutionName}
+              onChange={(e) => {
+                setInstitutionName(e.target.value);
+                setCampus("");
+              }}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">Any {INSTITUTION_TYPE_LABELS[institutionType as InstitutionType]?.toLowerCase()}</option>
+              {institutions.map((i) => (
+                <option key={i.value} value={i.value}>
+                  {i.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {isAccommodation && !isPrivateTenant && (
           <div className="space-y-2">
-            <Label htmlFor="intent-campus">Nearest campus (optional)</Label>
+            <Label htmlFor="intent-campus">
+              {institutionType && institutionType !== "other" ? "Nearest campus" : "Preferred area"} (optional)
+            </Label>
             <select
               id="intent-campus"
               value={campus}
               onChange={(e) => setCampus(e.target.value)}
               className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
             >
-              <option value="">Any campus</option>
-              {ALL_CAMPUSES.map((c) => (
+              <option value="">
+                {institutionType && institutionType !== "other" ? "Any campus" : "Any area"}
+              </option>
+              {campusOptions.map((c) => (
                 <option key={c.value} value={c.value}>
                   {c.label}
                 </option>
               ))}
             </select>
+            {isStudentSide && !institutionType && (
+              <p className="text-xs text-muted-foreground">
+                Pick your institution type above to see only its campuses.
+              </p>
+            )}
           </div>
         )}
 

@@ -501,20 +501,23 @@ export const AdminResidencesContent = () => {
                   <div className="space-y-3 border-t pt-4">
                     <Label className="text-sm font-semibold">Audience & Accreditation</Label>
                     <p className="text-xs text-muted-foreground -mt-1">
-                      Which students can this residence accept?
+                      These switches control exactly what students see on the public platform.
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { key: "accepts_university", label: "University students" },
-                        { key: "accepts_tvet", label: "TVET / College students" },
-                        { key: "accepts_private", label: "Private renters" },
-                        { key: "accepts_nsfas", label: "NSFAS approved" },
+                        { key: "accepts_university", label: "University student accommodation", hint: "Shows under the University audience" },
+                        { key: "accepts_tvet", label: "TVET student accommodation", hint: "Shows under the TVET audience" },
+                        { key: "accepts_private", label: "Accepts private-paying students", hint: "Self-funded students — NOT a private rental" },
+                        { key: "accepts_nsfas", label: "NSFAS accommodation context", hint: "Shows for NSFAS-funded students" },
                       ].map((f) => (
                         <label
                           key={f.key}
                           className="flex items-center justify-between gap-2 rounded-lg border p-3 cursor-pointer"
                         >
-                          <span className="text-sm">{f.label}</span>
+                          <span className="flex flex-col">
+                            <span className="text-sm">{f.label}</span>
+                            <span className="text-[11px] text-muted-foreground">{f.hint}</span>
+                          </span>
                           <Switch
                             checked={!!(editingResidence as any)[f.key]}
                             onCheckedChange={(v) =>

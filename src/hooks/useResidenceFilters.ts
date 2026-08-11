@@ -1,8 +1,11 @@
 import { useState, useMemo, useCallback } from "react";
+import { residenceMatchesCampus, type InstitutionTypeKey } from "@/constants/institutionOptions";
 
 export interface ResidenceFilters {
   searchQuery: string;
   campus: string;
+  /** Scopes campus matching + audience. Set by the guide, never guessed. */
+  institutionType?: InstitutionTypeKey;
   category: string;
   gender: string;
   audience: "all" | "university" | "tvet" | "private";
@@ -13,6 +16,8 @@ export interface ResidenceFilters {
   roomTypes: string[];
   sectionCategory: string;
   nsfasOnly: boolean;
+  /** Residence accepts private-paying students (NOT a private rental). */
+  privatePayingOnly: boolean;
   tutOnly: boolean;
   singlesOnly: boolean;
   furnishedOnly: boolean;
@@ -26,6 +31,7 @@ export interface ResidenceFilters {
 const DEFAULT_FILTERS: ResidenceFilters = {
   searchQuery: "",
   campus: "all",
+  institutionType: undefined,
   category: "all",
   gender: "all",
   audience: "all",
@@ -36,6 +42,7 @@ const DEFAULT_FILTERS: ResidenceFilters = {
   roomTypes: [],
   sectionCategory: "all",
   nsfasOnly: false,
+  privatePayingOnly: false,
   tutOnly: false,
   singlesOnly: false,
   furnishedOnly: false,
@@ -128,15 +135,18 @@ const hasTagLike = (residence: any, needles: string[]) => {
   return needles.some((needle) => haystack.includes(normalize(needle)));
 };
 
-const isLegacyInclusiveResidence = (residence: any) => {
-  const tags = getInstitutionTags(residence);
-  return (
-    residence.accepts_university !== false &&
-    residence.accepts_tvet !== true &&
-    residence.accepts_private !== true &&
-    tags.length === 0
-  );
-};
+/**
+ * Placeholder/demo rows must never sit beside real listings. Real listings are
+ * whatever the backend returns minus obvious seed rows.
+ */
+const MOCK_NAME_RE = /^(example|demo|test|sample|placeholder)\b/i;
+export const isMockResidence = (residence: any) =>
+  MOCK_NAME_RE.test(String(residence?.name ?? "").trim());
+
+/** Legacy rows created before audience flags existed default to university. */
+const acceptsUniversity = (r: any) =>
+  r.accepts_university === true ||
+  (r.accepts_university == null && r.accepts_tvet !== true && r.accepts_private !== true);
 
 export function useResidenceFilters(residences: any[]) {
   const [filters, setFilters] = useState<ResidenceFilters>(DEFAULT_FILTERS);
@@ -165,6 +175,7 @@ export function useResidenceFilters(residences: any[]) {
     if (filters.roomTypes.length > 0) count++;
     if (filters.sectionCategory !== "all") count++;
     if (filters.nsfasOnly) count++;
+    if (filters.privatePayingOnly) count++;
     if (filters.tutOnly) count++;
     if (filters.singlesOnly) count++;
     if (filters.furnishedOnly) count++;
@@ -178,7 +189,8 @@ export function useResidenceFilters(residences: any[]) {
   const hasActiveFilters = activeFilterCount > 0;
 
   const filteredResidences = useMemo(() => {
-    let filtered = [...residences];
+    // Never mix seed/demo rows into real results.
+    let filtered = residences.filter((r) => !isMockResidence(r));
 
     // Search
     if (filters.searchQuery) {
@@ -191,9 +203,11 @@ export function useResidenceFilters(residences: any[]) {
       );
     }
 
-    // Campus
-    if (filters.campus !== "all") {
-      filtered = filtered.filter((r) => r.campus === filters.campus);
+    // Campus (fuzzy: backend labels drift, e.g. "Pretoria West (Main Campus)")
+    if (filters.campus && filters.campus !== "all") {
+      filtered = filtered.filter((r) =>
+        residenceMatchesCampus(r, filters.campus, filters.institutionType),
+      );
     }
 
     // Category
@@ -206,19 +220,20 @@ export function useResidenceFilters(residences: any[]) {
       filtered = filtered.filter((r) => r.gender === filters.gender || r.gender === "mixed");
     }
 
-    // Audience (institution type)
+    // Audience (institution type) — admin flags are the source of truth.
     if (filters.audience === "university") {
-      filtered = filtered.filter(
-        (r) => r.accepts_university !== false || hasTagLike(r, ["tut", "university", "up", "unisa", "wits", "uj"]),
-      );
+      filtered = filtered.filter((r) => acceptsUniversity(r));
     } else if (filters.audience === "tvet") {
       filtered = filtered.filter(
-        (r) => r.accepts_tvet === true || isLegacyInclusiveResidence(r) || hasTagLike(r, ["tvet", "college", "tshwane north", "tshwane south", "ekurhuleni"]),
+        (r) => r.accepts_tvet === true || hasTagLike(r, ["tvet"]),
       );
     } else if (filters.audience === "private") {
-      filtered = filtered.filter(
-        (r) => r.accepts_private === true || isLegacyInclusiveResidence(r) || hasTagLike(r, ["private", "rentals", "private-accommodations"]),
-      );
+      // "private" here = accepts private-paying students, not private rentals.
+      filtered = filtered.filter((r) => r.accepts_private === true);
+    }
+
+    if (filters.privatePayingOnly) {
+      filtered = filtered.filter((r) => r.accepts_private === true);
     }
 
     if (filters.institutionTag) {
@@ -328,11 +343,39 @@ export function useResidenceFilters(residences: any[]) {
     return withScores;
   }, [residences, filters]);
 
+  /**
+   * Closest matches when the budget filter empties the list: same criteria,
+   * budget ignored, cheapest first. Always labelled clearly in the UI.
+   */
+  const closestResidences = useMemo(() => {
+    if (filteredResidences.length > 0) return [];
+    if (filters.priceMax >= 10000 && filters.priceMin <= 0) return [];
+    const relaxed = { ...filters, priceMin: 0, priceMax: 10000 };
+    return residences
+      .filter((r) => !isMockResidence(r))
+      .filter((r) => (filters.campus === "all" ? true : residenceMatchesCampus(r, filters.campus, filters.institutionType)))
+      .filter((r) => {
+        if (relaxed.audience === "university") return acceptsUniversity(r);
+        if (relaxed.audience === "tvet") return r.accepts_tvet === true || hasTagLike(r, ["tvet"]);
+        if (relaxed.audience === "private") return r.accepts_private === true;
+        return true;
+      })
+      .filter((r) => (filters.nsfasOnly ? r.accepts_nsfas === true || r.nsfas_accredited === true || r.is_tut_accredited === true : true))
+      .sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0))
+      .slice(0, 6);
+  }, [residences, filters, filteredResidences]);
+
+  const relaxBudget = useCallback(() => {
+    setFilters((prev) => ({ ...prev, priceMin: 0, priceMax: 10000 }));
+  }, []);
+
   return {
     filters,
     updateFilter,
     resetFilters,
     filteredResidences,
+    closestResidences,
+    relaxBudget,
     activeFilterCount,
     hasActiveFilters,
   };

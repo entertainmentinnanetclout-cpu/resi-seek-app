@@ -3,43 +3,125 @@ import PublicLayout from "@/components/PublicLayout";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Link } from "react-router-dom";
-import { Building2, Home, HeartHandshake, ArrowRight } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Building2, Home, HeartHandshake, ArrowRight, GraduationCap, School, Wallet, ShieldCheck } from "lucide-react";
+import { useUserIntent } from "@/contexts/UserIntentContext";
+import type { UserIntent } from "@/lib/intent/userIntentTypes";
 import heroAccommodation from "@/assets/hero-accommodation.jpg";
 import inclusivePathways from "@/assets/hero-inclusive-pathways.jpg";
 import studentsCelebration from "@/assets/students-celebration.jpg";
 
-const livingOptions = [
+/**
+ * Category cards are functional: each one writes real intent and routes to the
+ * page that can actually serve it. None of them are decorative.
+ */
+interface LivingOption {
+  title: string;
+  description: string;
+  to: string;
+  cta: string;
+  image: string;
+  icon: typeof Building2;
+  intent: Partial<UserIntent>;
+}
+
+const livingOptions: LivingOption[] = [
   {
     title: "Student Accommodation",
     description:
       "Verified university and TVET college residences close to campus. Browse real rooms, prices and availability before you commit.",
-    to: "/living/student-accommodation",
+    to: "/find",
     cta: "Explore Residences",
     image: heroAccommodation,
     icon: Building2,
+    intent: { persona: "student", primary_need: "accommodation", looking_for_student_accommodation: true },
+  },
+  {
+    title: "University Accommodation",
+    description:
+      "Residences flagged by our team as accepting university students, matched to your campus.",
+    to: "/find?audience=university",
+    cta: "View University Options",
+    image: heroAccommodation,
+    icon: GraduationCap,
+    intent: { persona: "student", primary_need: "accommodation", institution_type: "university" },
+  },
+  {
+    title: "TVET Accommodation",
+    description:
+      "Only residences an admin has confirmed accept TVET college students. No guesswork, no mislabelling.",
+    to: "/find?audience=tvet",
+    cta: "View TVET Options",
+    image: inclusivePathways,
+    icon: School,
+    intent: { persona: "student", primary_need: "accommodation", institution_type: "tvet" },
+  },
+  {
+    title: "NSFAS Residences",
+    description:
+      "Accommodation carrying NSFAS accreditation context. ResKonnect does not process NSFAS applications.",
+    to: "/find",
+    cta: "View NSFAS Accommodation",
+    image: heroAccommodation,
+    icon: ShieldCheck,
+    intent: {
+      persona: "student",
+      primary_need: "accommodation",
+      funding_type: "nsfas",
+      nsfas_funded: true,
+    },
+  },
+  {
+    title: "Private-Paying Student",
+    description:
+      "Student accommodation that accepts private-paying students. Still student housing — not a private rental.",
+    to: "/find",
+    cta: "View Private-Paying Options",
+    image: inclusivePathways,
+    icon: Wallet,
+    intent: {
+      persona: "student",
+      primary_need: "accommodation",
+      funding_type: "private",
+      student_status: "current_student",
+    },
   },
   {
     title: "Private Rentals",
     description:
-      "Single rooms, bachelor units and shared apartments for students, young professionals and private tenants.",
+      "Non-student rentals for working professionals and private tenants. Handled separately from student residences.",
     to: "/living/private-rentals",
     cta: "Browse Rentals",
     image: inclusivePathways,
     icon: Home,
+    intent: {
+      persona: "private_tenant",
+      primary_need: "private_rental",
+      looking_for_private_rental: true,
+      looking_for_student_accommodation: false,
+    },
   },
   {
     title: "Parent & Guardian Support",
     description:
       "Guidance, off-campus lodging tips and support services for safety, security and peace of mind.",
-    to: "/living/parents",
+    to: "/get-started?persona=parent_guardian",
     cta: "Parent Portal",
     image: studentsCelebration,
     icon: HeartHandshake,
+    intent: { persona: "parent_guardian", parent_mode: true },
   },
 ];
 
 export const Living: React.FC = () => {
+  const navigate = useNavigate();
+  const { setIntent } = useUserIntent();
+
+  const choose = (opt: LivingOption) => {
+    setIntent({ ...opt.intent, completed_guide: true, skipped_guide: false });
+    navigate(opt.to);
+  };
+
   return (
     <PublicLayout>
       <SEO
@@ -65,7 +147,7 @@ export const Living: React.FC = () => {
                 key={opt.title}
                 className="group overflow-hidden border-border/80 transition-all hover:-translate-y-1 hover:shadow-xl"
               >
-                <Link to={opt.to} className="block">
+                <button type="button" onClick={() => choose(opt)} className="block w-full text-left">
                   <div className="relative aspect-[16/10] overflow-hidden bg-muted">
                     <img
                       src={opt.image}
@@ -81,13 +163,11 @@ export const Living: React.FC = () => {
                       <h2 className="text-lg font-bold text-white">{opt.title}</h2>
                     </div>
                   </div>
-                </Link>
+                </button>
                 <CardContent className="p-6 space-y-4">
                   <p className="text-sm text-muted-foreground leading-relaxed">{opt.description}</p>
-                  <Button asChild variant="outline" className="w-full">
-                    <Link to={opt.to}>
-                      {opt.cta} <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
+                  <Button variant="outline" className="w-full" onClick={() => choose(opt)}>
+                    {opt.cta} <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </CardContent>
               </Card>
