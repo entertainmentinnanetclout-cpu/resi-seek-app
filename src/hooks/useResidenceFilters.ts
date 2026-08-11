@@ -188,7 +188,8 @@ export function useResidenceFilters(residences: any[]) {
   const hasActiveFilters = activeFilterCount > 0;
 
   const filteredResidences = useMemo(() => {
-    let filtered = [...residences];
+    // Never mix seed/demo rows into real results.
+    let filtered = residences.filter((r) => !isMockResidence(r));
 
     // Search
     if (filters.searchQuery) {
@@ -201,9 +202,11 @@ export function useResidenceFilters(residences: any[]) {
       );
     }
 
-    // Campus
-    if (filters.campus !== "all") {
-      filtered = filtered.filter((r) => r.campus === filters.campus);
+    // Campus (fuzzy: backend labels drift, e.g. "Pretoria West (Main Campus)")
+    if (filters.campus && filters.campus !== "all") {
+      filtered = filtered.filter((r) =>
+        residenceMatchesCampus(r, filters.campus, filters.institutionType),
+      );
     }
 
     // Category
@@ -216,19 +219,20 @@ export function useResidenceFilters(residences: any[]) {
       filtered = filtered.filter((r) => r.gender === filters.gender || r.gender === "mixed");
     }
 
-    // Audience (institution type)
+    // Audience (institution type) — admin flags are the source of truth.
     if (filters.audience === "university") {
-      filtered = filtered.filter(
-        (r) => r.accepts_university !== false || hasTagLike(r, ["tut", "university", "up", "unisa", "wits", "uj"]),
-      );
+      filtered = filtered.filter((r) => acceptsUniversity(r));
     } else if (filters.audience === "tvet") {
       filtered = filtered.filter(
-        (r) => r.accepts_tvet === true || isLegacyInclusiveResidence(r) || hasTagLike(r, ["tvet", "college", "tshwane north", "tshwane south", "ekurhuleni"]),
+        (r) => r.accepts_tvet === true || hasTagLike(r, ["tvet"]),
       );
     } else if (filters.audience === "private") {
-      filtered = filtered.filter(
-        (r) => r.accepts_private === true || isLegacyInclusiveResidence(r) || hasTagLike(r, ["private", "rentals", "private-accommodations"]),
-      );
+      // "private" here = accepts private-paying students, not private rentals.
+      filtered = filtered.filter((r) => r.accepts_private === true);
+    }
+
+    if (filters.privatePayingOnly) {
+      filtered = filtered.filter((r) => r.accepts_private === true);
     }
 
     if (filters.institutionTag) {
