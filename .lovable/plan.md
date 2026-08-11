@@ -1,85 +1,55 @@
-# ResKonnect Premium Onboarding Upgrade — Frontend Only
+# ResKonnect Premium Upgrade — Intent-Aware Platform
 
-Credit-aware, build-safe, backend-untouched. Structured for handoff to Jules AI if credits run out mid-execution.
+Frontend-only upgrade. No backend migrations, no RLS/Edge Function/secret changes, no deploy.
 
-## Guardrails (non-negotiable)
+## What exists today (verified)
+- Official assets are already in `src/assets` (full logo `RESKONNECT LOGO OFFICIAL VERSION 2.png`, icon-only 128–2048, maskable, apple-touch, favicons).
+- `public/manifest.json` and `index.html` still point at older `/icon-*.png` and `/favicon.png`, theme colour `#141414`.
+- `src/hooks/useResidenceFilters.ts` already supports `audience` (university/tvet/private), `nsfasOnly`, price, room types, availability, sort.
+- Residences carry `accepts_university`, `accepts_tvet`, `accepts_private`, `accepts_nsfas` / `nsfas_accredited`.
+- Onboarding foundation exists: personas, needs, adapter (localStorage), `/get-started`, pillar pages, Admin Onboarding Hub.
 
-- No Supabase tables, migrations, RLS, edge functions, secrets, or env changes.
-- Do not touch `src/integrations/supabase/client.ts`, `types.ts`, or edge functions.
-- Do not remove/replace existing God Mode admin, sidebar items, or hubs — extend only.
-- Do not break existing routes (`/find`, `/apply`, `/dashboard`, `/admin/*`, `/residence/*`, etc.).
-- Exclude NSFAS *application* support entirely (funding-context references may remain where already present).
-- Include required disclaimers on all application-facing pages.
+Important data note: `accepts_private` currently means "accepts private-paying students", not "non-student private rental". There is no confirmed separate private-rental listing type in the data. The private-tenant experience will run through an adapter with a documented backend TODO rather than inventing a field.
 
-## Priority-ordered execution (stop-safe at any priority boundary)
+## Stage 1 — Branding
+- New `src/constants/brand.ts`: name, descriptor (LIVING • AI • OPPORTUNITY), tagline, hero copy, logo/icon imports, contacts (063 732 3192, reskonnect@gmail.com, www.reskonnect.co.za).
+- Swap logos in header, footer, auth, admin sidebar, preloader/loading, using `object-contain`.
+- Update `index.html` icons + theme colour and `public/manifest.json` icon set (copy needed icon files into `public/`), Apple touch icon.
 
-### Priority 1 — Onboarding foundation + homepage entry
+## Stage 2 — Brand colour system
+- Extend `src/index.css` tokens + `tailwind.config.ts` with the navy/blue/gold/green/red palette as semantic tokens (`--brand-navy`, `--cta`, `--success`, etc.). Retire the rainbow accents from primary surfaces; keep them only where already used in secondary decoration.
 
-Shared data layer:
-- `src/lib/onboarding/onboardingTypes.ts` — Persona, Need, OnboardingRequest, Status enums/types.
-- `src/lib/onboarding/onboardingMockData.ts` — seed rows for admin hub demo.
-- `src/lib/onboarding/onboardingAdapter.ts` — `submitOnboardingRequest`, `getOnboardingRequests`, `updateOnboardingRequestStatus`. Backed by `localStorage` + in-memory merge with mock data. Every function carries `// TODO: connect to Supabase onboarding_requests after backend migration is deployed.`
+## Stage 3 — Homepage
+Upgrade `src/pages/Landing.tsx` in place: premium navy hero with headline "Your stay. Your studies. Your future. Connected.", central search block, carousel, Get Started CTA (gold) + Find Accommodation / Partner With ResKonnect, Living/Applications/Opportunities/Partners cards, discovery rails, 8-step journey timeline, parent/private-tenant trust block, landlord CTA, FAQ (incl. required NSFAS answer), premium footer. Reuse existing images in `src/assets`.
 
-Core components under `src/components/onboarding/`:
-- `PersonaSelector.tsx`, `NeedSelector.tsx`, `OnboardingForm.tsx` (conditional fields per persona+need), `OnboardingResultRouter.tsx`, `OnboardingSummaryCard.tsx`, `GuidedOnboardingModal.tsx`.
-- Persona-specific flow wrappers (thin composition around the above): Student, ParentGuardian, PrivateTenant, Applicant, WilApplicant, Landlord, InstitutionBusiness, Unsure.
+## Stage 4 — Intent engine
+- `src/lib/intent/userIntentTypes.ts`, `userIntentAdapter.ts` (localStorage now, TODO sync to `onboarding_requests.metadata`), `src/contexts/UserIntentContext.tsx` + `useUserIntent`.
+- Fields as specified: persona, primary_need, student_status, institution_type/name, campus, funding_type, nsfas_funded, looking_for_* flags, area, budget, room_type, move_in_date, programme, wil_needed, parent_mode, child profile, skipped_guide.
+- Rework `GuidedOnboardingFlow` into a card wizard: Who → What → Where → Budget/Funding → What next, one decision per card, skip and resume supported; still submits via the existing onboarding adapter.
 
-Pages/routes:
-- `src/pages/GetStarted.tsx` → `/get-started` (full-page guided flow).
-- Homepage (`src/pages/Landing.tsx`): add `ServicePillarCards` + "Start with one question" section with the 8 need cards launching the modal or routing to `/get-started`.
+## Stage 5 — Personalised routing
+`OnboardingResultRouter` and post-guide recommendation card branch by persona/need per the rules: student → student accommodation; NSFAS student → NSFAS-accredited + campus prioritised; private-funded → accepts-private student accommodation; private tenant → private rentals only; applicant → Applications/APS; WIL → WIL readiness; parent → child-led routing; landlord/institution → Partners. Skipped guide = no forced filters.
 
-Build gate: run typecheck, verify Landing renders.
+## Stage 6 — Find My Res intent awareness
+- Map intent → initial `ResidenceFilters` on mount (audience, nsfasOnly, campus, budget, room type), all removable.
+- Explanation banner ("Showing NSFAS-accredited…" etc.) and visible chips via existing `ActiveFilterChips`.
+- Add missing filter controls: user type (student vs private tenant), institution, area, funding type, verified only, available now, sort by price/distance/recent.
+- Card upgrade: listing-type badge, verified, NSFAS badge, accepts-private badge, area, nearest campus, room type, price, availability, distance, Apply/Enquire/Save/Compare.
+- Empty state: closest matches + one-tap filter relaxation.
 
-### Priority 2 — Public premium pages
+## Stage 7 — Readiness, status, WhatsApp
+- Applications readiness flow around the existing APS checker: marks → APS → document checklist → official portal links → optional accommodation, with the frontend status set. Copy-my-details card; ZIP noted as backend TODO `application_pack_zip_generation`.
+- Accommodation application status timeline component with the 12 statuses, missing-document alerts and next-action CTAs (frontend rendering over existing application data; unmapped statuses documented).
+- Shared `whatsappLinks.ts` helper for prefilled `wa.me/27637323192` CTAs (support, residence enquiry, viewing request, missing documents). No API, no webhooks.
 
-Create under `src/pages/public/`:
-- `Living.tsx` → `/living` + subroutes `/living/student-accommodation`, `/living/private-rentals`, `/living/parents`.
-- `Applications.tsx` → `/applications` + `/applications/tvet`, `/applications/university`, `/applications/private-college`, `/applications/checker` (marks/APS readiness — client-side calculator, no backend).
-- `Opportunities.tsx` → `/opportunities`, `/opportunities/wil`.
-- `Partners.tsx` → `/partners`, `/partners/landlords`, `/partners/institutions`.
+## Stage 8 — Dashboards
+Extend the existing student dashboard with next-action, readiness and saved-residence blocks; add persona-aware dashboard variants (private tenant, applicant, parent, landlord) as frontend views driven by intent, with TODOs where data is absent.
 
-Every applications-family page renders a `ComplianceDisclaimer` component with the three mandated statements. No NSFAS application CTA anywhere.
+## Stage 9 — Admin polish
+Extend the existing Onboarding Hub with intent-profile columns and attention buckets (needs documents, ready for reservation, skipped guide, incomplete profile, parent/landlord/WIL leads). No God Mode rebuild.
 
-Reuse existing PublicLayout, SEO, Button, Card primitives. Register routes in `src/App.tsx` (lazy-loaded) beside existing public routes — do not disturb existing entries.
+## Stage 10 — SEO + docs
+Titles/meta/canonical/FAQ on new and upgraded pages, journey language, internal links. Update `docs/JULES_FRONTEND_HANDOFF.md` and `docs/FRONTEND_PROGRESS_CHECKLIST.md` with UI/flow/filter/dashboard changes, backend TODOs, build result, and confirmation of no backend changes and no deployment.
 
-Build gate: typecheck + smoke each new route.
-
-### Priority 3 — Admin Onboarding Hub (extend, don't replace)
-
-- Add `AdminOnboardingHub.tsx` under `src/pages/admin/` following existing hub pattern (mirrors `AdminOperationsHub` tab structure).
-- Sub-components under `src/components/admin/onboarding/`: Overview, RequestsTable, RequestCard, QuickActions, Metrics.
-- Register route `/admin/onboarding` in `App.tsx` behind `AdminRoute`.
-- Add sidebar entry in the existing admin sidebar (locate current sidebar file, insert Onboarding Hub between Analytics and TVET Hub) — additive only.
-- All data flows through `onboardingAdapter` — currently returns mock rows. Actions (Assign, Update Status, Add Note) mutate via adapter; TODO comments mark Supabase wiring.
-- CSV export = client-side blob download from current adapter list.
-
-Build gate: typecheck + load `/admin/onboarding`.
-
-### Priority 4 — Polish + handoff
-
-- Responsive review at 375px.
-- Empty-state illustrations/copy.
-- Final typecheck.
-
-Handoff docs (created early and updated after each priority):
-- `docs/JULES_FRONTEND_HANDOFF.md` — completed vs partial, file list, routes, components, known issues, backend hooks awaiting Supabase, exact next steps.
-- `docs/FRONTEND_PROGRESS_CHECKLIST.md` — the full checklist from the spec with live tick state.
-
-## Technical notes
-
-- Reuse: `PublicLayout`, `DashboardLayout`, `AdminLayout`, shadcn `Card/Button/Tabs/Dialog`, Sonner toasts, Lucide icons, existing design tokens (vibrant palette already in `index.css`).
-- Router: keep `BrowserRouter`; new routes added as `lazy(() => import(...))` in existing `<Suspense>`.
-- No new dependencies. Forms use plain React state (persona/need are small enums; skip RHF+Zod overhead).
-- Contact CTA reuses existing WhatsApp number `063 732 3192` from project constants.
-- Compliance strings centralised in `src/lib/onboarding/complianceCopy.ts` so Jules can adjust in one place.
-
-## Explicit non-goals this turn
-
-- No admin sidebar redesign, no removal of any existing tab.
-- No changes to Marketplace paused routes.
-- No auth flow changes.
-- No edge function or SQL work — Jules will wire `onboardingAdapter` to a future `onboarding_requests` table.
-
-## Stop-safe contract
-
-If credits run out mid-priority: current priority's partial files stay behind feature flags or unlinked routes only if fully compilable; otherwise revert the incomplete component to a stub that renders "Coming soon" so build stays green. `JULES_FRONTEND_HANDOFF.md` will name the exact next file and function to resume.
+## Guardrails
+No NSFAS application service, no invented partners/reviews/ratings/socials, existing routes and auth untouched, TypeScript clean, build run after each major stage.
