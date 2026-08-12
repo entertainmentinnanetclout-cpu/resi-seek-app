@@ -11,6 +11,7 @@ export type CourseMatchStatus =
   | "eligible"
   | "academic_minimum_selection_required"
   | "eligible_with_conditional_curriculum_check"
+  | "aps_only_subject_check_required"
   | "not_eligible_aps"
   | "not_eligible_subject";
 
