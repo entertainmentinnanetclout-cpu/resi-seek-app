@@ -5,6 +5,8 @@ export interface CourseMatchSubject {
   mark: number;
 }
 
+export type CourseMatchInstitution = "unisa" | "up";
+
 export type CourseMatchStatus =
   | "eligible"
   | "academic_minimum_selection_required"
@@ -40,12 +42,13 @@ export interface CourseMatchResult {
   entry_route: string;
 }
 
-export const runUnisaCourseMatch = async (
+const runRpc = async (
+  rpcName: "course_match_unisa" | "course_match_up",
   studentAps: number,
   subjects: CourseMatchSubject[],
   includeNonMatches = false,
 ): Promise<CourseMatchResult[]> => {
-  const { data, error } = await (supabase as any).rpc("course_match_unisa", {
+  const { data, error } = await (supabase as any).rpc(rpcName, {
     p_student_aps: studentAps,
     p_subjects: subjects,
     p_include_non_matches: includeNonMatches,
@@ -55,12 +58,13 @@ export const runUnisaCourseMatch = async (
   return (data ?? []) as CourseMatchResult[];
 };
 
-export const saveUnisaCourseMatch = async (
+const saveRpc = async (
+  rpcName: "save_unisa_course_match" | "save_up_course_match",
   studentAps: number,
   subjects: CourseMatchSubject[],
   fullName?: string | null,
 ): Promise<string | null> => {
-  const { data, error } = await (supabase as any).rpc("save_unisa_course_match", {
+  const { data, error } = await (supabase as any).rpc(rpcName, {
     p_student_aps: studentAps,
     p_subjects: subjects,
     p_full_name: fullName ?? null,
@@ -69,6 +73,48 @@ export const saveUnisaCourseMatch = async (
   if (error) throw error;
   return (data as string | null) ?? null;
 };
+
+export const runUnisaCourseMatch = (
+  studentAps: number,
+  subjects: CourseMatchSubject[],
+  includeNonMatches = false,
+) => runRpc("course_match_unisa", studentAps, subjects, includeNonMatches);
+
+export const saveUnisaCourseMatch = (
+  studentAps: number,
+  subjects: CourseMatchSubject[],
+  fullName?: string | null,
+) => saveRpc("save_unisa_course_match", studentAps, subjects, fullName);
+
+export const runUpCourseMatch = (
+  studentAps: number,
+  subjects: CourseMatchSubject[],
+  includeNonMatches = false,
+) => runRpc("course_match_up", studentAps, subjects, includeNonMatches);
+
+export const saveUpCourseMatch = (
+  studentAps: number,
+  subjects: CourseMatchSubject[],
+  fullName?: string | null,
+) => saveRpc("save_up_course_match", studentAps, subjects, fullName);
+
+export const runCourseMatch = (
+  institution: CourseMatchInstitution,
+  studentAps: number,
+  subjects: CourseMatchSubject[],
+  includeNonMatches = false,
+) => institution === "up"
+  ? runUpCourseMatch(studentAps, subjects, includeNonMatches)
+  : runUnisaCourseMatch(studentAps, subjects, includeNonMatches);
+
+export const saveCourseMatch = (
+  institution: CourseMatchInstitution,
+  studentAps: number,
+  subjects: CourseMatchSubject[],
+  fullName?: string | null,
+) => institution === "up"
+  ? saveUpCourseMatch(studentAps, subjects, fullName)
+  : saveUnisaCourseMatch(studentAps, subjects, fullName);
 
 export const nscAchievementLevel = (mark: number): number => {
   if (mark >= 80) return 7;
@@ -83,8 +129,8 @@ export const nscAchievementLevel = (mark: number): number => {
 /**
  * Guidance-only APS estimate used to prefill the Course Match APS field.
  * It sums the six strongest non-Life-Orientation NSC achievement levels.
- * The field remains editable because institutions can use different scoring
- * and UNISA's final selection process is broader than this academic estimate.
+ * The field remains editable because institutions can apply additional
+ * programme-specific scoring, ranking and selection rules.
  */
 export const estimateAcademicAps = (subjects: CourseMatchSubject[]): number => {
   return subjects
