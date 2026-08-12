@@ -8,7 +8,7 @@ import { BRAND } from "@/constants/brand";
 
 export const PUBLIC_NAV = [
   { label: "Living", to: "/living" },
-  { label: "Applications", to: "/applications" },
+  { label: "Applications", to: "/apply" },
   { label: "Opportunities", to: "/opportunities" },
   { label: "Partners", to: "/partners" },
 ] as const;
