@@ -105,6 +105,7 @@ const MyWIL = lazy(() => import("./pages/MyWIL"));
 const AdminWIL = lazy(() => import("./pages/admin/AdminWIL"));
 const AdminOnboardingHub = lazy(() => import("./pages/admin/AdminOnboardingHub"));
 const AdminOperationsHub = lazy(() => import("./pages/admin/AdminOperationsHub"));
+const AdminApplicationHub = lazy(() => import("./pages/admin/AdminApplicationHub"));
 const AdminCommerceHub = lazy(() => import("./pages/admin/AdminCommerceHub"));
 const AdminMediaHub = lazy(() => import("./pages/admin/AdminMediaHub"));
 const AdminSystemHub = lazy(() => import("./pages/admin/AdminSystemHub"));
@@ -237,6 +238,7 @@ const App = () => {
               <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/analytics" element={<ProtectedRoute><AdminRoute><AdminAnalytics /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/operations" element={<ProtectedRoute><AdminRoute><AdminOperationsHub /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/application-hub" element={<ProtectedRoute><AdminRoute><AdminApplicationHub /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/onboarding" element={<ProtectedRoute><AdminRoute><AdminOnboardingHub /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/commerce" element={<ProtectedRoute><AdminRoute><AdminCommerceHub /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/media" element={<ProtectedRoute><AdminRoute><AdminMediaHub /></AdminRoute></ProtectedRoute>} />
