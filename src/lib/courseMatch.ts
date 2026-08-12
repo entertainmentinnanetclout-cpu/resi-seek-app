@@ -5,7 +5,7 @@ export interface CourseMatchSubject {
   mark: number;
 }
 
-export type CourseMatchInstitution = "unisa" | "up";
+export type CourseMatchInstitution = "tut" | "unisa" | "up";
 
 export type CourseMatchStatus =
   | "eligible"
@@ -29,6 +29,7 @@ export interface CourseMatchResult {
     alternative_groups_pass?: boolean;
     unmet_conditional_count?: number;
     selection_rule_count?: number;
+    tut_rule_scope?: string;
   };
   missing_requirements: Array<Record<string, unknown>>;
   matched_requirements: Array<Record<string, unknown>>;
@@ -42,8 +43,27 @@ export interface CourseMatchResult {
   entry_route: string;
 }
 
+export interface InstitutionCourseMatchResult extends CourseMatchResult {
+  institution: CourseMatchInstitution;
+}
+
+type CourseMatchRpc = "course_match_tut" | "course_match_unisa" | "course_match_up";
+type SaveCourseMatchRpc = "save_tut_course_match" | "save_unisa_course_match" | "save_up_course_match";
+
+const MATCH_RPCS: Record<CourseMatchInstitution, CourseMatchRpc> = {
+  tut: "course_match_tut",
+  unisa: "course_match_unisa",
+  up: "course_match_up",
+};
+
+const SAVE_RPCS: Record<CourseMatchInstitution, SaveCourseMatchRpc> = {
+  tut: "save_tut_course_match",
+  unisa: "save_unisa_course_match",
+  up: "save_up_course_match",
+};
+
 const runRpc = async (
-  rpcName: "course_match_unisa" | "course_match_up",
+  rpcName: CourseMatchRpc,
   studentAps: number,
   subjects: CourseMatchSubject[],
   includeNonMatches = false,
@@ -59,7 +79,7 @@ const runRpc = async (
 };
 
 const saveRpc = async (
-  rpcName: "save_unisa_course_match" | "save_up_course_match",
+  rpcName: SaveCourseMatchRpc,
   studentAps: number,
   subjects: CourseMatchSubject[],
   fullName?: string | null,
@@ -73,6 +93,18 @@ const saveRpc = async (
   if (error) throw error;
   return (data as string | null) ?? null;
 };
+
+export const runTutCourseMatch = (
+  studentAps: number,
+  subjects: CourseMatchSubject[],
+  includeNonMatches = false,
+) => runRpc("course_match_tut", studentAps, subjects, includeNonMatches);
+
+export const saveTutCourseMatch = (
+  studentAps: number,
+  subjects: CourseMatchSubject[],
+  fullName?: string | null,
+) => saveRpc("save_tut_course_match", studentAps, subjects, fullName);
 
 export const runUnisaCourseMatch = (
   studentAps: number,
@@ -103,18 +135,38 @@ export const runCourseMatch = (
   studentAps: number,
   subjects: CourseMatchSubject[],
   includeNonMatches = false,
-) => institution === "up"
-  ? runUpCourseMatch(studentAps, subjects, includeNonMatches)
-  : runUnisaCourseMatch(studentAps, subjects, includeNonMatches);
+) => runRpc(MATCH_RPCS[institution], studentAps, subjects, includeNonMatches);
+
+export const runCourseMatchAcross = async (
+  institutions: CourseMatchInstitution[],
+  studentAps: number,
+  subjects: CourseMatchSubject[],
+  includeNonMatches = false,
+): Promise<InstitutionCourseMatchResult[]> => {
+  const batches = await Promise.all(
+    institutions.map(async (institution) => {
+      const rows = await runCourseMatch(institution, studentAps, subjects, includeNonMatches);
+      return rows.map((row) => ({
+        ...row,
+        match_status:
+          subjects.length === 0 &&
+          row.match_status === "not_eligible_subject" &&
+          row.subject_match_summary?.aps_pass
+            ? "eligible_with_conditional_curriculum_check"
+            : row.match_status,
+        institution,
+      }));
+    }),
+  );
+  return batches.flat();
+};
 
 export const saveCourseMatch = (
   institution: CourseMatchInstitution,
   studentAps: number,
   subjects: CourseMatchSubject[],
   fullName?: string | null,
-) => institution === "up"
-  ? saveUpCourseMatch(studentAps, subjects, fullName)
-  : saveUnisaCourseMatch(studentAps, subjects, fullName);
+) => saveRpc(SAVE_RPCS[institution], studentAps, subjects, fullName);
 
 export const nscAchievementLevel = (mark: number): number => {
   if (mark >= 80) return 7;
