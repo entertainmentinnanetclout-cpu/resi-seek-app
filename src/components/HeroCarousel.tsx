@@ -215,7 +215,7 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
                     {slide.cta.text}
                   </Button>
                 )}
-                {location === "landing" && index === currentSlide && <PublicQuickSearch />}
+                {location === "landing" && <PublicQuickSearch />}
               </div>
             </div>
           </div>
