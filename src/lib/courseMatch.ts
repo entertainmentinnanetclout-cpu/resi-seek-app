@@ -11,7 +11,6 @@ export type CourseMatchStatus =
   | "eligible"
   | "academic_minimum_selection_required"
   | "eligible_with_conditional_curriculum_check"
-  | "aps_only_subject_check_required"
   | "not_eligible_aps"
   | "not_eligible_subject";
 
@@ -147,7 +146,16 @@ export const runCourseMatchAcross = async (
   const batches = await Promise.all(
     institutions.map(async (institution) => {
       const rows = await runCourseMatch(institution, studentAps, subjects, includeNonMatches);
-      return rows.map((row) => ({ ...row, institution }));
+      return rows.map((row) => ({
+        ...row,
+        match_status:
+          subjects.length === 0 &&
+          row.match_status === "not_eligible_subject" &&
+          row.subject_match_summary?.aps_pass
+            ? "eligible_with_conditional_curriculum_check"
+            : row.match_status,
+        institution,
+      }));
     }),
   );
   return batches.flat();
