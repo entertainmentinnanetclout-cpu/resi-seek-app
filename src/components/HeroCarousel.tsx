@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import PublicQuickSearch from "@/components/PublicQuickSearch";
 import inclusivePathwaysHero from "@/assets/hero-inclusive-pathways.jpg";
 import applicationsFundingHero from "@/assets/hero-applications-funding.jpg";
 
@@ -155,8 +156,8 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
           className={cn(
             "absolute inset-0 transition-all duration-700 ease-in-out",
             index === currentSlide
-              ? "opacity-100 scale-100"
-              : "opacity-0 scale-105"
+              ? "pointer-events-auto opacity-100 scale-100"
+              : "pointer-events-none opacity-0 scale-105"
           )}
         >
           {/* Background Image with Parallax Effect */}
@@ -197,33 +198,37 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
               >
                 {slide.description}
               </p>
-              {slide.cta && (
-                <Button
-                  variant="hero"
-                  size="lg"
-                  onClick={slide.cta.action}
-                  className={cn(
-                    "transform transition-all duration-700 delay-300",
-                    index === currentSlide
-                      ? "translate-y-0 opacity-100"
-                      : "translate-y-8 opacity-0"
-                  )}
-                >
-                  {slide.cta.text}
-                </Button>
-              )}
+              <div
+                className={cn(
+                  "flex flex-wrap items-center gap-3 transform transition-all duration-700 delay-300",
+                  index === currentSlide
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-8 opacity-0"
+                )}
+              >
+                {slide.cta && (
+                  <Button
+                    variant="hero"
+                    size="lg"
+                    onClick={slide.cta.action}
+                  >
+                    {slide.cta.text}
+                  </Button>
+                )}
+                {location === "landing" && <PublicQuickSearch />}
+              </div>
             </div>
           </div>
         </div>
       ))}
 
       {/* Navigation Arrows */}
-      <div className="absolute inset-0 flex items-center justify-between px-4 md:px-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-4 md:px-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <Button
           variant="outline"
           size="icon"
           onClick={prevSlide}
-          className="w-12 h-12 rounded-full backdrop-blur-glass border-white/20 hover:bg-white/20"
+          className="pointer-events-auto w-12 h-12 rounded-full backdrop-blur-glass border-white/20 hover:bg-white/20"
         >
           <ChevronLeft className="w-6 h-6 text-white" />
         </Button>
@@ -231,7 +236,7 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
           variant="outline"
           size="icon"
           onClick={nextSlide}
-          className="w-12 h-12 rounded-full backdrop-blur-glass border-white/20 hover:bg-white/20"
+          className="pointer-events-auto w-12 h-12 rounded-full backdrop-blur-glass border-white/20 hover:bg-white/20"
         >
           <ChevronRight className="w-6 h-6 text-white" />
         </Button>
