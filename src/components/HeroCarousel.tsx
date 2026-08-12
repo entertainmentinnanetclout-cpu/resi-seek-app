@@ -156,8 +156,8 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
           className={cn(
             "absolute inset-0 transition-all duration-700 ease-in-out",
             index === currentSlide
-              ? "opacity-100 scale-100"
-              : "opacity-0 scale-105"
+              ? "pointer-events-auto opacity-100 scale-100"
+              : "pointer-events-none opacity-0 scale-105"
           )}
         >
           {/* Background Image with Parallax Effect */}
@@ -215,7 +215,7 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
                     {slide.cta.text}
                   </Button>
                 )}
-                {location === "landing" && <PublicQuickSearch />}
+                {location === "landing" && index === currentSlide && <PublicQuickSearch />}
               </div>
             </div>
           </div>
