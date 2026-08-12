@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Building2, Home, LogOut, Menu, LayoutDashboard, RefreshCw, TrendingUp, ShoppingCart, Film, Cpu, GraduationCap, Users } from "lucide-react";
+import { Building2, Home, LogOut, Menu, LayoutDashboard, RefreshCw, TrendingUp, ShoppingCart, Film, Cpu, GraduationCap, Users, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +32,7 @@ const allNavItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/admin", roles: GOD_MODE_ROLES },
   { icon: TrendingUp, label: "Analytics", path: "/admin/analytics", roles: GOD_MODE_ROLES },
   { icon: Building2, label: "Accommodation Hub", path: "/admin/operations", roles: GOD_MODE_ROLES },
+  { icon: ClipboardCheck, label: "Applications Hub", path: "/admin/application-hub", roles: GOD_MODE_ROLES },
   { icon: Users, label: "Onboarding Hub", path: "/admin/onboarding", roles: GOD_MODE_ROLES },
   { icon: GraduationCap, label: "TVET Hub", path: "/admin/tvet", roles: GOD_MODE_ROLES },
   { icon: ShoppingCart, label: "Commerce Hub", path: "/admin/commerce", roles: GOD_MODE_ROLES },
