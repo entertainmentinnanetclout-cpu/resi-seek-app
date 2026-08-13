@@ -63,20 +63,51 @@ const SAVE_RPCS: Record<CourseMatchInstitution, SaveCourseMatchRpc> = {
   up: "save_up_course_match",
 };
 
+const requireActiveSession = async () => {
+  let { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  if (!data.session) {
+    throw new Error("Sign in to calculate your APS and view personalised Course Match results.");
+  }
+
+  const expiresSoon = data.session.expires_at ? data.session.expires_at * 1000 - Date.now() < 60_000 : false;
+  if (expiresSoon) {
+    const refreshed = await supabase.auth.refreshSession();
+    if (refreshed.error) throw refreshed.error;
+    data = { session: refreshed.data.session } as typeof data;
+  }
+
+  if (!data.session) throw new Error("Your sign-in session expired. Please sign in again.");
+  return data.session;
+};
+
 const runRpc = async (
   rpcName: CourseMatchRpc,
   studentAps: number,
   subjects: CourseMatchSubject[],
   includeNonMatches = false,
 ): Promise<CourseMatchResult[]> => {
-  const { data, error } = await (supabase as any).rpc(rpcName, {
+  await requireActiveSession();
+
+  const invoke = () => (supabase as any).rpc(rpcName, {
     p_student_aps: studentAps,
     p_subjects: subjects,
     p_include_non_matches: includeNonMatches,
   });
 
-  if (error) throw error;
-  return (data ?? []) as CourseMatchResult[];
+  let response = await invoke();
+  const permissionDenied = response.error && String(response.error.message ?? "").toLowerCase().includes("permission denied");
+
+  if (permissionDenied) {
+    const refreshed = await supabase.auth.refreshSession();
+    if (refreshed.error || !refreshed.data.session) {
+      throw new Error("Your Course Match session expired. Please sign in again and retry.");
+    }
+    response = await invoke();
+  }
+
+  if (response.error) throw response.error;
+  return (response.data ?? []) as CourseMatchResult[];
 };
 
 const saveRpc = async (
@@ -85,6 +116,7 @@ const saveRpc = async (
   subjects: CourseMatchSubject[],
   fullName?: string | null,
 ): Promise<string | null> => {
+  await requireActiveSession();
   const { data, error } = await (supabase as any).rpc(rpcName, {
     p_student_aps: studentAps,
     p_subjects: subjects,
@@ -144,6 +176,7 @@ export const runCourseMatchAcross = async (
   subjects: CourseMatchSubject[],
   includeNonMatches = false,
 ): Promise<InstitutionCourseMatchResult[]> => {
+  await requireActiveSession();
   const batches = await Promise.all(
     institutions.map(async (institution) => {
       const rows = await runCourseMatch(institution, studentAps, subjects, includeNonMatches);
@@ -215,12 +248,6 @@ export const nscAchievementLevel = (mark: number): number => {
   return mark > 0 ? 1 : 0;
 };
 
-/**
- * Guidance-only APS estimate used to prefill the Course Match APS field.
- * It sums the six strongest non-Life-Orientation NSC achievement levels.
- * The field remains editable because institutions can apply additional
- * programme-specific scoring, ranking and selection rules.
- */
 export const estimateAcademicAps = (subjects: CourseMatchSubject[]): number => {
   return subjects
     .filter((subject) => {

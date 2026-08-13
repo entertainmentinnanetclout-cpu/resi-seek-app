@@ -11,6 +11,7 @@ export const PUBLIC_NAV = [
   { label: "Applications", to: "/apply" },
   { label: "Opportunities", to: "/opportunities" },
   { label: "Partners", to: "/partners" },
+  { label: "About", to: "/about" },
 ] as const;
 
 interface SiteHeaderProps {

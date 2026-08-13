@@ -1,13 +1,19 @@
 import SEO from "@/components/SEO";
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import About from "@/pages/public/About";
 
 const NotFound = () => {
   const location = useLocation();
+  const isAboutRoute = location.pathname === "/about" || location.pathname === "/contact";
 
   useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
+    if (!isAboutRoute) {
+      console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+    }
+  }, [isAboutRoute, location.pathname]);
+
+  if (isAboutRoute) return <About />;
 
   return (
     <>
