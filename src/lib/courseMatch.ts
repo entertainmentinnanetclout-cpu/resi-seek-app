@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { saveProgrammeCheckHistory } from "@/lib/courseMatchHistory";
 
 export interface CourseMatchSubject {
   name: string;
@@ -158,7 +159,43 @@ export const runCourseMatchAcross = async (
       }));
     }),
   );
-  return batches.flat();
+
+  const results = batches.flat();
+  const { data: authData } = await supabase.auth.getUser();
+  if (authData.user) {
+    try {
+      await saveProgrammeCheckHistory({
+        userId: authData.user.id,
+        institutionType: "university",
+        scope: institutions.map((institution) => institution.toUpperCase()),
+        highestGrade: "Grade 12 / NSC",
+        aps: studentAps,
+        subjects,
+        results: results.map((row) => ({
+          programme_id: row.programme_id,
+          programme_requirement_id: row.programme_requirement_id,
+          status: row.match_status,
+          aps_required: row.aps_required,
+          summary: row.subject_match_summary,
+          missing: row.missing_requirements,
+          matched: row.matched_requirements,
+          context: {
+            institution: row.institution,
+            qualification_code: row.qualification_code,
+            programme_name: row.programme_name,
+            qualification_type: row.qualification_type,
+            faculty_or_school: row.faculty_or_school,
+            official_url: row.official_url,
+            entry_route: row.entry_route,
+          },
+        })),
+      });
+    } catch (historyError) {
+      console.warn("University Course Match results could not be added to history", historyError);
+    }
+  }
+
+  return results;
 };
 
 export const saveCourseMatch = (
