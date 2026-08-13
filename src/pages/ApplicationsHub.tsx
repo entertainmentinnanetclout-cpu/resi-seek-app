@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import ApplicationsHubLegacy from "@/pages/ApplicationsHubLegacy";
 import TvetApplicationsHub from "@/pages/TvetApplicationsHub";
-import MyApplicationsCenter from "@/pages/MyApplicationsCenter";
+import MyApplicationsSummary from "@/pages/MyApplicationsSummary";
 
 const ApplicationsHub=()=>{
   const {user,session}=useAuth();
@@ -38,7 +38,7 @@ const ApplicationsHub=()=>{
   },[signedIn,category,navigate,params,view]);
 
   if(view==="mine"){
-    return signedIn?<MyApplicationsCenter/>:null;
+    return signedIn?<MyApplicationsSummary/>:null;
   }
   if(category==="tvet")return <TvetApplicationsHub/>;
   return <>
