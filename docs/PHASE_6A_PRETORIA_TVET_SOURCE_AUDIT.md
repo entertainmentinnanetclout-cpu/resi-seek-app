@@ -2,30 +2,30 @@
 
 ## Scope
 
-Phase 6A expands the Pretoria Applications Hub from universities into the full **public TVET college** boundary for the Tshwane/Pretoria metro.
+Phase 6A expands the Pretoria Applications Hub into the full **public TVET-college institution boundary** for Tshwane/Pretoria.
 
-The Department of Higher Education and Training (DHET) Gauteng TVET directory identifies the two Tshwane public TVET colleges as:
+The Department of Higher Education and Training Gauteng directory places these two public TVET colleges in Tshwane:
 
 1. **Tshwane South TVET College (TSC)**
 2. **Tshwane North TVET College (TNC)**
 
-No other Gauteng public TVET college is represented as a Tshwane/Pretoria college in the DHET directory. Other Gauteng public TVET colleges (Central Johannesburg, Ekurhuleni East, Ekurhuleni West, Sedibeng, South West Gauteng and Western) remain outside this Pretoria-first boundary.
+Other Gauteng public TVET colleges are outside the Pretoria-first boundary.
 
-## Source-year boundary
+## Source-year rule
 
-The live college sources currently expose **2026** catalogues/prospectus material. ResKonnect is planning the 2027 application journey, but Phase 6A does **not** relabel 2026 requirements as 2027 requirements.
+The current official college sites expose **2026** application/catalogue material. ResKonnect is planning the 2027 journey, but Phase 6A does not relabel 2026 information as 2027 requirements.
 
-Every imported row is therefore tagged with:
+Imported catalogue rows therefore use:
 
 - `reference_year = 2026`
 - `planning_year = 2027`
-- a verification note requiring the official 2027 prospectus/curriculum to be checked when the colleges publish it.
+- a reverification note requiring the official 2027 material to replace/reconcile the current reference once published.
 
-This is intentionally conservative. The catalogue can already support programme discovery and official application routing without making unsupported claims about future admission rules.
+This allows programme discovery and official application routing now without making unsupported future-admission claims.
 
 ---
 
-## 1. Tshwane North TVET College (TNC)
+## Tshwane North TVET College (TNC)
 
 ### Official sources
 
@@ -36,81 +36,41 @@ This is intentionally conservative. The catalogue can already support programme 
 
 ### Campus boundary
 
-TNC states that it operates six campuses in the Greater Tshwane Metropolis:
+TNC identifies six Greater Tshwane campuses: Mamelodi, Pretoria, Rosslyn, Soshanguve North, Soshanguve South and Temba.
 
-- Mamelodi
-- Pretoria
-- Rosslyn
-- Soshanguve North
-- Soshanguve South
-- Temba
+### Consolidated current catalogue imported: 31 routes
 
-The consolidated Prospectus & Programmes page is the Phase 6A catalogue authority. Programme rows use `Varies by campus` until each programme-to-campus relationship has been reconciled against the current campus pages/prospectus. This avoids inventing campus availability.
+**Semester — Business Studies N5–N6 (10)**
 
-### Imported programme routes: 31
+Management Assistant; Financial Management; Art and Design; Public Relations; Clothing Production; Tourism; Hospitality & Catering Services; Public Management; Legal Secretary; Business Management.
 
-#### Semester — Business Studies N5–N6 (10)
+**Trimester — Engineering Studies N4–N6 (6)**
 
-1. Management Assistant
-2. Financial Management
-3. Art and Design
-4. Public Relations
-5. Clothing Production
-6. Tourism
-7. Hospitality & Catering Services
-8. Public Management
-9. Legal Secretary
-10. Business Management
+Bricklaying; Plumbing; Electrical; Automotive; Fitting; Boiler Making.
 
-The official TNC programme page publishes programme-specific selection criteria, including English and relevant subject thresholds. These criteria are retained as the source boundary for the later TVET eligibility engine; Phase 6A itself enables catalogue discovery and official application routing rather than presenting a completed automated eligibility decision.
+**Year — Business Studies NC(V) NQF 2–4 (5)**
 
-#### Trimester — Engineering Studies N4–N6 (6)
+Finance, Economics and Accounting; Generic Management; Office Administration; Marketing; Transport and Logistics.
 
-1. Bricklaying
-2. Plumbing
-3. Electrical
-4. Automotive
-5. Fitting
-6. Boiler Making
+**Year — Engineering Studies NC(V) NQF 2–4 (5)**
 
-The official consolidated page requires Matric/Grade 12 or NC(V) Level 4 and publishes Mathematics/Technical Mathematics or Mathematical Literacy and Physical Science thresholds by route.
+Electrical Infrastructure Construction; I.T and Computer Science; Engineering and Related Design; Civil Engineering and Building Construction; Mechatronics.
 
-#### Year — Business Studies NC(V) NQF 2–4 (5)
+**Year — Utility Studies NC(V) NQF 2–4 (4)**
 
-1. Finance, Economics and Accounting
-2. Generic Management
-3. Office Administration
-4. Marketing
-5. Transport and Logistics
+Hospitality; Tourism; Safety in Society; Primary Agriculture.
 
-#### Year — Engineering Studies NC(V) NQF 2–4 (5)
+**Bridging (1)**
 
-1. Electrical Infrastructure Construction
-2. I.T and Computer Science
-3. Engineering and Related Design
-4. Civil Engineering and Building Construction
-5. Mechatronics
+Pre-learning Programme (PLP).
 
-#### Year — Utility Studies NC(V) NQF 2–4 (4)
+The consolidated official TNC page also publishes programme-specific selection criteria. Those criteria are the source boundary for the next TVET eligibility phase; Phase 6A keeps the user-facing decision at programme discovery + official application routing.
 
-1. Hospitality
-2. Tourism
-3. Safety in Society
-4. Primary Agriculture
-
-#### Bridging (1)
-
-1. Pre-learning Programme (PLP)
-
-### TNC application flow
-
-The official TNC application guidance states that applications are submitted online during specified application periods and may also be completed with online walk-in assistance at a campus. An application is not an offer of admission.
-
-ResKonnect therefore routes applicants to the official TNC application page and does not imply admission approval.
+Programme rows use `Varies by campus` unless current campus availability has been separately reconciled, rather than guessing a campus from the consolidated catalogue.
 
 ---
 
-## 2. Tshwane South TVET College (TSC)
+## Tshwane South TVET College (TSC)
 
 ### Official sources
 
@@ -118,93 +78,63 @@ ResKonnect therefore routes applicants to the official TNC application page and 
 - Programmes: https://www.tsc.edu.za/programmes
 - How to Apply: https://www.tsc.edu.za/how-to-apply
 - Documents library: https://www.tsc.edu.za/documents
-- Atteridgeville Campus: https://www.tsc.edu.za/campuses/atteridgeville
-- Centurion Campus: https://www.tsc.edu.za/campuses/centurion
-- Odi Campus: https://www.tsc.edu.za/campuses/odi
+- Atteridgeville: https://www.tsc.edu.za/campuses/atteridgeville
+- Centurion: https://www.tsc.edu.za/campuses/centurion
+- Odi: https://www.tsc.edu.za/campuses/odi
 
 ### Prospectus status
 
-TSC's current official website exposes a **Prospectus** entry in the 2026 study navigation, but the official Documents library currently returns **0 documents**. Phase 6A therefore does not import a third-party prospectus PDF or fabricate an official PDF URL.
+The current TSC site exposes a Prospectus navigation entry, but its official Documents library currently reports **0 documents**. Phase 6A therefore does not use a third-party prospectus PDF or invent an official PDF URL.
 
-Instead, TSC is grounded in its current official programme catalogue and campus programme pages. The metadata records:
+TSC is grounded in the live official programme/campus pages until an official downloadable prospectus is exposed. Institution metadata records that limitation explicitly.
 
-`prospectus_status = official_downloadable_pdf_not_currently_exposed_in_documents_library`
+### Verified current programme rows imported: 25
 
-When TSC publishes an official downloadable prospectus, its URL can be added without replacing or weakening the existing official source trail.
+The import contains **25 routes that are directly verifiable from the current official programme pages and the discoverable Atteridgeville, Centurion and Odi campus catalogues**, plus Pretoria West where an official programme page explicitly confirms it.
 
-### Campus boundary
+This is a **verified-row count, not a claim that 25 is the complete TSC college prospectus total**. The current searchable source does not expose a complete Pretoria West programme index or downloadable prospectus, so Phase 6A deliberately avoids inventing missing routes.
 
-TSC identifies four campuses:
+Verified rows:
 
-- Atteridgeville
-- Centurion
-- Odi
-- Pretoria West
+Bookkeeper Occupational; Bricklayer; Carpenter; Civil & Construction L2–L3; Civil Engineering N4–N6; Financial Management N5–N6; Management Assistant N5–N6; Marketing L2–L4; Natural Sciences — Electrical & Civil Engineering; Office Administration L2–L4; Plumber (Occupational); Retail Buyer Occupational; Cook L4; Electrical Engineering N4–N6; Electrical Infrastructure Engineering L2–L4; Electrician L4; Engineering and Related Design L2–L4; Fitter & Turner L4; Hospitality L2–L4; Hospitality N4–N6; Mechanical Engineering N4–N6; Welder L4; Clothing Production N5–N6; Tourism L2–L4; Tourism N5–N6.
 
-### Imported unique programme routes: 25
+### Verified campus mappings retained
 
-1. Bookkeeper Occupational
-2. Bricklayer
-3. Carpenter
-4. Civil & Construction L2–L3
-5. Civil Engineering N4–N6
-6. Financial Management N5–N6
-7. Management Assistant N5–N6
-8. Marketing L2–L4
-9. Natural Sciences — Electrical & Civil Engineering
-10. Office Administration L2–L4
-11. Plumber (Occupational)
-12. Retail Buyer Occupational
-13. Cook L4
-14. Electrical Engineering N4–N6
-15. Electrical Infrastructure Engineering L2–L4
-16. Electrician L4
-17. Engineering and Related Design L2–L4
-18. Fitter & Turner L4
-19. Hospitality L2–L4
-20. Hospitality N4–N6
-21. Mechanical Engineering N4–N6
-22. Welder L4
-23. Clothing Production N5–N6
-24. Tourism L2–L4
-25. Tourism N5–N6
+- Atteridgeville and Odi mappings come directly from current official campus pages.
+- Centurion mappings come directly from its current official campus page.
+- Pretoria West is recorded for Marketing because the current official Marketing programme page explicitly names Pretoria West.
+- Additional Pretoria West mappings are not inferred from older or third-party sources.
 
-### Verified campus mapping used in Phase 6A
+### Application workflow
 
-- **Atteridgeville:** Bookkeeper Occupational; Bricklayer; Carpenter; Civil & Construction L2–L3; Civil Engineering N4–N6; Financial Management N5–N6; Management Assistant N5–N6; Marketing L2–L4; Natural Sciences — Electrical & Civil Engineering; Office Administration; Plumber; Retail Buyer.
-- **Centurion:** Bookkeeper Occupational; Cook L4; Electrical Engineering N4–N6; Electrical Infrastructure Engineering L2–L4; Electrician L4; Engineering and Related Design L2–L4; Financial Management N5–N6; Fitter & Turner L4; Hospitality L2–L4; Hospitality N4–N6; Management Assistant N5–N6; Marketing L2–L4; Mechanical Engineering N4–N6; Office Administration; Welder L4.
-- **Odi:** Bricklayer; Carpenter; Civil & Construction L2–L3; Civil Engineering N4–N6; Clothing Production N5–N6; Cook L4; Electrical Infrastructure Engineering L2–L4; Fitter & Turner L4; Hospitality L2–L4; Hospitality N4–N6; Management Assistant N5–N6; Marketing L2–L4; Mechanical Engineering N4–N6; Natural Sciences — Electrical & Civil Engineering; Office Administration; Plumber; Tourism L2–L4; Tourism N5–N6.
-- **Pretoria West:** the current official Marketing programme page explicitly includes Pretoria West. The main TSC site confirms Pretoria West as the fourth campus. Phase 6A does not infer additional Pretoria West programme availability from older or non-current sources.
+TSC's official How to Apply page requires career guidance, a compulsory placement assessment and the online application with supporting documents. TNC likewise directs applicants through the college's official online application process.
 
-### TSC application flow
-
-The official TSC process requires applicants to complete career guidance, a compulsory placement assessment and the online application with the required supporting documents. The assessment is described as guidance rather than a simple pass/fail test.
-
-ResKonnect therefore links directly to the official TSC How to Apply route and does not replace the college's assessment/application workflow.
+ResKonnect therefore sends the final application action to the official college route and does not represent a catalogue match as an admission offer.
 
 ---
 
-## Production import
+## Production state
 
-Phase 6A production state after migration:
+After the Phase 6A Supabase migration:
 
-- **2** Pretoria/Tshwane public TVET institutions in the Applications Hub
-- **31** active TNC programme catalogue rows
-- **25** active TSC programme catalogue rows
-- **56** active Pretoria/Tshwane TVET programme rows in total
-- official application routes normalized for both institutions
-- TNC official 2026 prospectus PDF stored in institution metadata
-- TSC official programme catalogue + documents-library status stored in metadata
-- every programme row explicitly tagged as a 2026 reference for 2027 planning/reverification
+- 2 active Pretoria/Tshwane public TVET institutions are configured in the Applications Hub.
+- TNC has 31 current official catalogue rows.
+- TSC has 25 currently verified official catalogue rows under the source limitation above.
+- 56 active Pretoria/Tshwane TVET programme rows are searchable in total.
+- Both institutions use official How to Apply routes.
+- TNC stores the official 2026 prospectus PDF URL.
+- TSC stores its official live catalogue/Documents status rather than an unofficial PDF.
+- Every imported programme is explicitly marked as a 2026 reference for 2027 planning/reverification.
 
-## Deliberate exclusions from Phase 6A
+## Deliberate exclusions
 
-Phase 6A does **not**:
+Phase 6A does not:
 
-- claim that the 2026 catalogue is a 2027 prospectus;
-- import unofficial/third-party TSC prospectus PDFs;
+- claim that 2026 material is a 2027 prospectus;
+- claim that the 25 verified TSC rows prove the complete TSC prospectus count;
+- import unofficial prospectus PDFs;
 - guarantee admission;
-- assume a TNC campus for a programme where the consolidated source does not establish that mapping;
-- turn TVET matching into a university-style APS-only decision.
+- infer unverified campus availability;
+- force TVET admissions into a university-style APS-only matcher.
 
-A later Phase 6B can implement deterministic TVET eligibility rules using each college's actual Grade 9/Grade 12/NC(V), subject and programme-specific selection logic.
+A later Phase 6B can implement TVET eligibility checks using the colleges' actual Grade 9/Grade 12/NC(V), subject and programme-specific selection rules.
