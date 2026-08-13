@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   CommandDialog,
@@ -25,9 +26,8 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 type SearchResult = {
   id: string;
@@ -37,6 +37,17 @@ type SearchResult = {
   path: string;
   icon: typeof Search;
   keywords?: string[];
+};
+
+type HubInstitutionRow = {
+  id: string;
+  institution_id: string | null;
+  slug: string;
+  category: "university" | "tvet" | "private_college";
+  short_name: string;
+  display_name: string;
+  description: string | null;
+  matcher_key: string | null;
 };
 
 const STATIC_RESULTS: SearchResult[] = [
@@ -52,11 +63,11 @@ const STATIC_RESULTS: SearchResult[] = [
   {
     id: "applications",
     label: "Applications & Course Match",
-    description: "TUT, UP, UNISA, APS, programme matching, TVET and private colleges",
+    description: "Universities, Pretoria TVET colleges, courses, APS and application routes",
     category: "Applications",
     path: "/apply",
     icon: GraduationCap,
-    keywords: ["tut", "up", "unisa", "aps", "course", "university", "college", "tvet", "apply"],
+    keywords: ["tut", "up", "unisa", "tnc", "tsc", "aps", "course", "university", "college", "tvet", "apply"],
   },
   {
     id: "accommodation",
@@ -150,8 +161,33 @@ const safeSearchTerm = (value: string) =>
 
 const categoryToHubQuery = (category: string) => {
   if (category === "tvet") return "tvet";
-  if (category === "private_college") return "private_college";
+  if (category === "private_college") return "private";
   return "university";
+};
+
+const institutionPath = (institution: HubInstitutionRow) => {
+  const params = new URLSearchParams({ category: categoryToHubQuery(institution.category) });
+  if (institution.category === "university" && institution.matcher_key) {
+    params.set("institution", institution.matcher_key);
+  } else {
+    params.set("college", institution.slug);
+  }
+  return `/apply?${params.toString()}`;
+};
+
+const programmePath = (programme: any, institution?: HubInstitutionRow) => {
+  const params = new URLSearchParams({
+    category: categoryToHubQuery(institution?.category ?? "university"),
+  });
+
+  if (institution?.category === "university" && institution.matcher_key) {
+    params.set("institution", institution.matcher_key);
+  } else if (institution?.slug) {
+    params.set("college", institution.slug);
+  }
+
+  if (programme.slug) params.set("programme", String(programme.slug));
+  return `/apply?${params.toString()}`;
 };
 
 interface PublicQuickSearchProps {
@@ -190,13 +226,13 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
       setLoading(true);
       const pattern = `%${normalized}%`;
 
-      const [institutions, residences, programmes, bursaries, news, events] = await Promise.all([
+      const [institutionsResult, residences, programmes, bursaries, news, events] = await Promise.all([
         (supabase as any)
           .from("application_hub_institutions")
           .select("id,institution_id,slug,category,short_name,display_name,description,matcher_key")
           .eq("is_active", true)
           .or(`display_name.ilike.${pattern},short_name.ilike.${pattern},description.ilike.${pattern}`)
-          .limit(6),
+          .limit(8),
         (supabase as any)
           .from("residences_public")
           .select("id,name,description")
@@ -204,10 +240,10 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
           .limit(6),
         (supabase as any)
           .from("programmes")
-          .select("id,institution_id,name,qualification_type,faculty_or_school,campus")
+          .select("id,institution_id,name,slug,qualification_type,faculty_or_school,campus")
           .eq("is_active", true)
           .or(`name.ilike.${pattern},qualification_type.ilike.${pattern},faculty_or_school.ilike.${pattern},campus.ilike.${pattern}`)
-          .limit(8),
+          .limit(12),
         (supabase as any)
           .from("bursaries")
           .select("id,name,provider,description")
@@ -229,24 +265,43 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
 
       if (cancelled) return;
 
-      const rows: SearchResult[] = [];
-      const institutionRows = institutions.data ?? [];
-      const institutionById = new Map(
-        institutionRows
-          .filter((row: any) => row.institution_id)
-          .map((row: any) => [String(row.institution_id), row]),
+      const matchingInstitutions = (institutionsResult.data ?? []) as HubInstitutionRow[];
+      const programmeRows = programmes.data ?? [];
+      const programmeInstitutionIds = Array.from(
+        new Set(
+          programmeRows
+            .map((row: any) => row.institution_id)
+            .filter(Boolean)
+            .map(String),
+        ),
       );
 
-      for (const row of institutionRows) {
-        const category = categoryToHubQuery(String(row.category));
-        const params = new URLSearchParams({ category });
-        if (row.matcher_key) params.set("institution", String(row.matcher_key));
+      let contextInstitutions: HubInstitutionRow[] = [];
+      if (programmeInstitutionIds.length > 0) {
+        const { data } = await (supabase as any)
+          .from("application_hub_institutions")
+          .select("id,institution_id,slug,category,short_name,display_name,description,matcher_key")
+          .eq("is_active", true)
+          .in("institution_id", programmeInstitutionIds);
+        contextInstitutions = (data ?? []) as HubInstitutionRow[];
+      }
+
+      if (cancelled) return;
+
+      const institutionById = new Map<string, HubInstitutionRow>();
+      [...matchingInstitutions, ...contextInstitutions].forEach((row) => {
+        if (row.institution_id) institutionById.set(String(row.institution_id), row);
+      });
+
+      const rows: SearchResult[] = [];
+
+      for (const row of matchingInstitutions) {
         rows.push({
           id: `institution-${row.id}`,
           label: row.display_name,
-          description: row.description || `${row.short_name} application and Course Match options`,
-          category: "Institution",
-          path: `/apply?${params.toString()}`,
+          description: row.description || `${row.short_name} programmes and official application options`,
+          category: row.category === "tvet" ? "TVET College" : "Institution",
+          path: institutionPath(row),
           icon: Landmark,
         });
       }
@@ -262,18 +317,17 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
         });
       }
 
-      for (const row of programmes.data ?? []) {
+      for (const row of programmeRows) {
         const institution = institutionById.get(String(row.institution_id));
-        const params = new URLSearchParams({ category: "university" });
-        if (institution?.matcher_key) params.set("institution", String(institution.matcher_key));
         rows.push({
           id: `programme-${row.id}`,
           label: row.name,
-          description: [institution?.short_name, row.qualification_type, row.faculty_or_school, row.campus]
-            .filter(Boolean)
-            .join(" • ") || "Academic programme",
-          category: "Programme",
-          path: `/apply?${params.toString()}`,
+          description:
+            [institution?.short_name, row.qualification_type, row.faculty_or_school, row.campus]
+              .filter(Boolean)
+              .join(" • ") || "Academic programme",
+          category: institution?.category === "tvet" ? "TVET Programme" : "Programme",
+          path: programmePath(row, institution),
           icon: GraduationCap,
         });
       }
@@ -311,7 +365,7 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
         });
       }
 
-      setDynamicResults(rows.slice(0, 24));
+      setDynamicResults(rows.slice(0, 30));
       setLoading(false);
     }, 250);
 
@@ -343,17 +397,20 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
         {label}
       </Button>
 
-      <CommandDialog open={open} onOpenChange={(nextOpen) => {
-        setOpen(nextOpen);
-        if (!nextOpen) {
-          setQuery("");
-          setDynamicResults([]);
-        }
-      }}>
+      <CommandDialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          setOpen(nextOpen);
+          if (!nextOpen) {
+            setQuery("");
+            setDynamicResults([]);
+          }
+        }}
+      >
         <CommandInput
           value={query}
           onValueChange={setQuery}
-          placeholder="Search accommodation, universities, courses, bursaries, news, events..."
+          placeholder="Search accommodation, universities, TVET courses, bursaries, news, events..."
         />
         <CommandList className="max-h-[65vh]">
           {loading && (
@@ -384,7 +441,9 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="truncate font-medium">{result.label}</span>
-                        <Badge variant="outline" className="shrink-0 text-[10px]">{result.category}</Badge>
+                        <Badge variant="outline" className="shrink-0 text-[10px]">
+                          {result.category}
+                        </Badge>
                       </div>
                       <p className="truncate text-xs text-muted-foreground">{result.description}</p>
                     </div>
@@ -413,7 +472,9 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="truncate font-medium">{result.label}</span>
-                          <Badge variant="secondary" className="shrink-0 text-[10px]">{result.category}</Badge>
+                          <Badge variant="secondary" className="shrink-0 text-[10px]">
+                            {result.category}
+                          </Badge>
                         </div>
                         <p className="truncate text-xs text-muted-foreground">{result.description}</p>
                       </div>
