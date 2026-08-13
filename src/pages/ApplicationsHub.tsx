@@ -19,7 +19,9 @@ const ApplicationsHub=()=>{
       if(!button)return;
       const label=(button.textContent||"").toLowerCase();
       if(label.includes("check what i qualify for")){
-        event.preventDefault();event.stopPropagation();
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
         const returnTo=`/apply?${params.toString()||"category=university"}`;
         navigate(`/auth?returnTo=${encodeURIComponent(returnTo)}`);
       }
