@@ -1,5 +1,6 @@
-import type { CourseMatchSubject, TvetHighestLevel } from "@/lib/tvetCourseMatch";
+import type { CourseMatchSubject } from "@/lib/courseMatch";
 
+export type TvetHighestLevel = "grade9" | "grade10" | "grade11" | "grade12" | "ncv4" | "n4" | "n5" | "n6";
 export type RuleSubject = { label: string; aliases: string[]; min?: number; appliesTo?: TvetHighestLevel[] };
 export type RuleGroup = { label: string; options: Array<{ aliases: string[]; min?: number }>; appliesTo?: TvetHighestLevel[] };
 export type TvetRule = {
