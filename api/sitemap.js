@@ -3,11 +3,22 @@ const SUPABASE_URL = "https://mefjzkhobkltlbmhusdh.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lZmp6a2hvYmtsdGxibWh1c2RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzMTE5ODYsImV4cCI6MjA3NTg4Nzk4Nn0.h9VlKqtA4QMidLh_FbIiNviZRzeLe4OsBs1omh3Jy6U";
 
 const STATIC_ROUTES = [
-  "/", "/living", "/student-accommodation", "/find", "/applications", "/applications/tvet",
-  "/applications/university", "/applications/private-college", "/applications/checker", "/opportunities",
-  "/opportunities/wil", "/partners", "/partners/landlords", "/partners/institutions", "/bursaries",
-  "/events", "/campus-news", "/roommates", "/properties", "/property-auctions",
-  "/student-accommodation-for-sale", "/development-opportunities", "/ai", "/guides/how-to-find-safe-student-accommodation"
+  "/", "/get-started", "/living", "/living/student-accommodation", "/living/private-rentals", "/living/parents",
+  "/student-accommodation", "/student-accommodation/pretoria-west", "/student-accommodation/near-tut",
+  "/student-accommodation/near-tut-pretoria-west", "/student-accommodation/near-tshwane-south-tvet",
+  "/student-accommodation/tvet", "/student-accommodation/university", "/student-accommodation/nsfas-accredited",
+  "/private-rentals", "/private-rentals/pretoria-west", "/private-rentals/bachelor-rooms-pretoria",
+  "/find", "/applications", "/applications/tvet", "/applications/university", "/applications/private-college",
+  "/applications/checker", "/applications/application-readiness", "/applications/tvet-application-readiness",
+  "/applications/university-application-readiness", "/applications/aps-checker", "/opportunities", "/opportunities/wil",
+  "/opportunities/wil-placement-support", "/opportunities/internships", "/opportunities/seta", "/partners",
+  "/partners/landlords", "/partners/institutions", "/bursaries", "/events", "/campus-news", "/roommates",
+  "/properties", "/property-auctions", "/student-accommodation-for-sale", "/development-opportunities", "/ai",
+  "/guides/how-to-find-safe-student-accommodation", "/guides/student-accommodation-pretoria-west",
+  "/guides/tvet-application-checklist", "/guides/university-application-checklist",
+  "/guides/what-documents-do-you-need-for-student-accommodation", "/nsfas-accredited-accommodation",
+  "/south-africa-student-accommodation", "/student-accommodation-gauteng", "/student-accommodation-limpopo",
+  "/student-accommodation-western-cape", "/student-accommodation-kwazulu-natal"
 ];
 
 const esc = (value = "") => String(value).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&apos;"}[c]));
@@ -15,11 +26,11 @@ const urlTag = (path, lastmod) => `  <url>\n    <loc>${esc(`${SITE_URL}${path ==
 
 async function getRows(resource, query) {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${resource}?${query}`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${resource}?${query}`, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
     });
-    if (!res.ok) return [];
-    return await res.json();
+    if (!response.ok) return [];
+    return await response.json();
   } catch {
     return [];
   }
