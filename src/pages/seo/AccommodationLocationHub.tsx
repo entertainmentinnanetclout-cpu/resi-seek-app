@@ -7,13 +7,15 @@ import { SITE_URL } from "@/lib/seo/seoConfig";
 const titleCase=(value:string)=>value.split("-").map((part)=>part.charAt(0).toUpperCase()+part.slice(1)).join(" ");
 
 export default function AccommodationLocationHub(){
-  const {locationSlug=""}=useParams(); const location=useLocation();
+  const params=useParams(); const location=useLocation();
+  const locationSlug=params.locationSlug || location.pathname.split("/").filter(Boolean).pop() || "";
   const [page,setPage]=useState<any>(null); const [residences,setResidences]=useState<any[]>([]); const [loading,setLoading]=useState(true);
   const display=titleCase(locationSlug);
   useEffect(()=>{let cancelled=false;(async()=>{
+    const safeTerm=display.replace(/[%(),]/g," ").trim();
     const [{data:seo},{data:res}]=await Promise.all([
       supabase.from("seo_pages" as any).select("path,title,description,h1,primary_keyword,indexable,content_status,last_verified_at,schema_data").eq("path",location.pathname).eq("indexable",true).eq("content_status","published").maybeSingle(),
-      supabase.from("residences").select("id,slug,name,address,price,campus,province,room_type,available_spots,image_url,has_wifi,is_furnished,accepts_nsfas").eq("is_visible",true).or(`address.ilike.%${display}%,campus.ilike.%${display}%,province.ilike.%${display}%`).limit(18),
+      supabase.from("residences").select("id,slug,name,address,price,campus,province,room_type,available_spots,image_url,has_wifi,is_furnished,accepts_nsfas").eq("is_visible",true).or(`address.ilike.%${safeTerm}%,campus.ilike.%${safeTerm}%,province.ilike.%${safeTerm}%`).limit(18),
     ]);
     if(!cancelled){setPage(seo);setResidences((res as any[])||[]);setLoading(false)}
   })();return()=>{cancelled=true}},[location.pathname,display]);
