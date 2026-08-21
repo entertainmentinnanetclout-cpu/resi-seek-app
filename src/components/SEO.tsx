@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
 import { DEFAULT_OG_IMAGE, canonicalUrl, getRouteMeta, isNoIndexPath } from "@/lib/seo/seoConfig";
+import { organizationSchema, webSiteSchema } from "@/lib/seo/jsonLd";
 
 interface SEOProps {
   title?: string;
@@ -14,10 +15,10 @@ interface SEOProps {
   jsonLd?: object | object[];
 }
 
-const SEO: React.FC<SEOProps> = ({ 
-  title, 
-  description, 
-  imageUrl, 
+const SEO: React.FC<SEOProps> = ({
+  title,
+  description,
+  imageUrl,
   keywords,
   canonicalPath,
   type = "website",
@@ -25,30 +26,40 @@ const SEO: React.FC<SEOProps> = ({
   jsonLd,
 }) => {
   const location = useLocation();
-  const defaultKeywords = "ResKonnect, student accommodation, TUT, residence application, student housing, find a res, Pretoria student residence, NSFAS accommodation, Tshwane accommodation, university housing South Africa";
   const currentPath = canonicalPath || location.pathname;
   const routeMeta = getRouteMeta(currentPath);
   const resolvedTitle = title || routeMeta?.title || "ResKonnect | Student Accommodation & Application Readiness";
   const resolvedDescription =
     description ||
     routeMeta?.description ||
-    "Find verified student accommodation, prepare your applications and access WIL support with ResKonnect.";
-  const resolvedKeywords = keywords || routeMeta?.keywords;
+    "Find student accommodation, prepare applications, discover opportunities and explore student-housing intelligence with ResKonnect.";
   const canonical = canonicalUrl(currentPath);
   const defaultImage = routeMeta?.ogImage || DEFAULT_OG_IMAGE;
   const shouldNoIndex = noIndex ?? isNoIndexPath(location.pathname);
-  const schemas = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+  const pageSchemas = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+  const schemas = currentPath === "/"
+    ? [organizationSchema(), webSiteSchema(), ...pageSchemas]
+    : pageSchemas;
+  const robotsDirective = shouldNoIndex
+    ? "noindex, nofollow"
+    : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
 
   return (
     <Helmet>
       <title>{resolvedTitle}</title>
       <meta name="description" content={resolvedDescription} />
-      <meta name="keywords" content={resolvedKeywords ? `${defaultKeywords}, ${resolvedKeywords}` : defaultKeywords} />
-      
-      {/* Robots */}
-      <meta name="robots" content={shouldNoIndex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"} />
-      
-      {/* Open Graph / Facebook */}
+
+      {/* Search crawler directives */}
+      <meta name="robots" content={robotsDirective} />
+      <meta name="googlebot" content={robotsDirective} />
+      <meta name="bingbot" content={robotsDirective} />
+
+      {/* Canonical and language signals */}
+      <link rel="canonical" href={canonical} />
+      <link rel="alternate" hrefLang="en-ZA" href={canonical} />
+      <link rel="alternate" hrefLang="x-default" href={canonical} />
+
+      {/* Open Graph */}
       <meta property="og:type" content={type} />
       <meta property="og:url" content={canonical} />
       <meta property="og:title" content={resolvedTitle} />
@@ -57,7 +68,7 @@ const SEO: React.FC<SEOProps> = ({
       <meta property="og:site_name" content="ResKonnect" />
       <meta property="og:locale" content="en_ZA" />
 
-      {/* Twitter */}
+      {/* Social discovery */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:url" content={canonical} />
       <meta name="twitter:title" content={resolvedTitle} />
@@ -65,11 +76,11 @@ const SEO: React.FC<SEOProps> = ({
       <meta name="twitter:image" content={imageUrl || defaultImage} />
       <meta name="twitter:site" content="@ResKonnect" />
 
-      {/* Other meta tags */}
       <meta name="author" content="ResKonnect" />
       <meta name="geo.region" content="ZA-GT" />
       <meta name="geo.placename" content="Pretoria" />
-      <link rel="canonical" href={canonical} />
+      {keywords && <meta name="news_keywords" content={keywords} />}
+
       {schemas.map((schema, i) => (
         <script key={i} type="application/ld+json">{JSON.stringify(schema)}</script>
       ))}
