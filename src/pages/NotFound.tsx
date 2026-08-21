@@ -2,22 +2,42 @@ import SEO from "@/components/SEO";
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import About from "@/pages/public/About";
+import ManagedSeoPage from "@/pages/seo/ManagedSeoPage";
+import PropertyOpportunityDetail from "@/pages/public/PropertyOpportunityDetail";
+
+const MANAGED_SEARCH_PATHS = new Set([
+  "/ai",
+  "/properties",
+  "/property-auctions",
+  "/student-accommodation-for-sale",
+  "/development-opportunities",
+  "/student-accommodation/pretoria",
+  "/opportunities/internships",
+  "/opportunities/seta",
+]);
 
 const NotFound = () => {
   const location = useLocation();
   const isAboutRoute = location.pathname === "/about" || location.pathname === "/contact";
+  const normalizedPath = location.pathname.length > 1 ? location.pathname.replace(/\/+$/, "") : location.pathname;
+  const isManagedSearchRoute = MANAGED_SEARCH_PATHS.has(normalizedPath);
+  const isPublishedPropertyRoute = /^\/properties\/[^/]+$/.test(normalizedPath);
+  const isKnownFallbackRoute = isAboutRoute || isManagedSearchRoute || isPublishedPropertyRoute;
 
   useEffect(() => {
-    if (!isAboutRoute) {
+    if (!isKnownFallbackRoute) {
       console.error("404 Error: User attempted to access non-existent route:", location.pathname);
     }
-  }, [isAboutRoute, location.pathname]);
+  }, [isKnownFallbackRoute, location.pathname]);
 
   if (isAboutRoute) return <About />;
+  if (isManagedSearchRoute) return <ManagedSeoPage pagePath={normalizedPath} />;
+  if (isPublishedPropertyRoute) return <PropertyOpportunityDetail />;
 
   return (
     <>
       <SEO
+        noIndex
         title="404 - Page Not Found | ResKonnect"
         description="The page you are looking for does not exist."
       />
