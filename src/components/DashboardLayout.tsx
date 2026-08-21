@@ -35,7 +35,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const authNavItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
     { icon: Briefcase, label: "My WIL", path: "/wil" },
-    { icon: FileText, label: "Applications", path: "/applications" },
+    { icon: FileText, label: "Applications", path: "/dashboard/applications" },
   ];
 
   // Admin gets a minimal nav (redirect to admin portal)
