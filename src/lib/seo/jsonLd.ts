@@ -4,20 +4,22 @@ import { SITE_NAME, SITE_URL, canonicalUrl } from "./seoConfig";
 
 const CONTACT_EMAIL = "reskonnect@gmail.com";
 const CONTACT_PHONE = "+27637323192";
+const BRAND_ALIASES = ["Res Konnect", "ResConnect", "Res Connect", "Resconnect"];
 
 export function organizationSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": `${SITE_URL}/#organization`,
     name: SITE_NAME,
-    alternateName: "RESKONNECT",
+    alternateName: BRAND_ALIASES,
     url: SITE_URL,
     logo: `${SITE_URL}/icon-512.png`,
     description:
-      "ResKonnect is a student journey platform for accommodation, application readiness, WIL support, and partner solutions.",
+      "ResKonnect is a South African student journey platform for accommodation, application readiness, AI-powered guidance, WIL opportunities, and student-housing property intelligence.",
     email: CONTACT_EMAIL,
     telephone: CONTACT_PHONE,
-    areaServed: "ZA",
+    areaServed: { "@type": "Country", name: "South Africa" },
     contactPoint: [
       {
         "@type": "ContactPoint",
@@ -25,6 +27,7 @@ export function organizationSchema() {
         email: CONTACT_EMAIL,
         telephone: CONTACT_PHONE,
         availableLanguage: ["en"],
+        areaServed: "ZA",
       },
     ],
   };
@@ -34,8 +37,12 @@ export function webSiteSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": `${SITE_URL}/#website`,
     name: SITE_NAME,
+    alternateName: BRAND_ALIASES,
     url: SITE_URL,
+    inLanguage: "en-ZA",
+    publisher: { "@id": `${SITE_URL}/#organization` },
     potentialAction: {
       "@type": "SearchAction",
       target: {
@@ -70,7 +77,10 @@ export interface FaqItem {
   answer: string;
 }
 
-/** Only call this with FAQs that are actually rendered on the page. */
+/**
+ * Semantic FAQ schema helper retained for consumers that understand Schema.org.
+ * Google no longer exposes FAQ rich results, so this is not emitted by default page templates.
+ */
 export function faqSchema(items: FaqItem[]) {
   return {
     "@context": "https://schema.org",
@@ -97,12 +107,9 @@ export function articleSchema(opts: {
     headline: opts.headline,
     description: opts.description,
     mainEntityOfPage: canonicalUrl(opts.path),
-    author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
-    publisher: {
-      "@type": "Organization",
-      name: SITE_NAME,
-      logo: { "@type": "ImageObject", url: `${SITE_URL}/icon-512.png` },
-    },
+    inLanguage: "en-ZA",
+    author: { "@id": `${SITE_URL}/#organization` },
+    publisher: { "@id": `${SITE_URL}/#organization` },
   };
   if (opts.image) schema.image = opts.image;
   if (opts.datePublished) schema.datePublished = opts.datePublished;
