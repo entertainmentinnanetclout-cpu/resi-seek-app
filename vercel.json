@@ -7,7 +7,15 @@
       "source": "/sitemap.xml",
       "headers": [
         { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=86400, s-maxage=86400" },
+        { "key": "Cache-Control", "value": "public, max-age=300, s-maxage=1800, stale-while-revalidate=86400" },
+        { "key": "X-Robots-Tag", "value": "noindex" }
+      ]
+    },
+    {
+      "source": "/sitemaps/(.*).xml",
+      "headers": [
+        { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=300, s-maxage=1800, stale-while-revalidate=86400" },
         { "key": "X-Robots-Tag", "value": "noindex" }
       ]
     },
@@ -17,11 +25,23 @@
         { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
         { "key": "Cache-Control", "value": "public, max-age=86400, s-maxage=86400" }
       ]
+    },
+    {
+      "source": "/9b698dd216df7a00d2f9a598a4372726.txt",
+      "headers": [
+        { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=86400, s-maxage=86400" }
+      ]
     }
   ],
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/sitemaps/pages.xml", "destination": "/api/sitemap?type=pages" },
+    { "source": "/sitemaps/residences.xml", "destination": "/api/sitemap?type=residences" },
+    { "source": "/sitemaps/properties.xml", "destination": "/api/sitemap?type=properties" },
+    { "source": "/sitemaps/opportunities.xml", "destination": "/api/sitemap?type=opportunities" },
     { "source": "/robots.txt", "destination": "/robots.txt" },
+    { "source": "/9b698dd216df7a00d2f9a598a4372726.txt", "destination": "/9b698dd216df7a00d2f9a598a4372726.txt" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
