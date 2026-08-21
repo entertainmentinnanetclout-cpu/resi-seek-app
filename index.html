@@ -1,62 +1,68 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-ZA">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>ResKonnect | Student Accommodation, Application Readiness &amp; WIL Support</title>
-    <meta name="description" content="ResKonnect helps students, parents, private tenants, landlords, and partners find verified accommodation, prepare application documents, check APS readiness, and access WIL support." />
+    <title>ResKonnect | Student Accommodation, Applications, AI &amp; Opportunities</title>
+    <meta name="description" content="ResKonnect connects student accommodation, university and TVET application readiness, WIL and career opportunities, AI guidance, and student-housing property intelligence across South Africa." />
     <meta name="author" content="ResKonnect" />
-    <meta name="application-name" content="ResKonnect Student Portal" />
+    <meta name="application-name" content="ResKonnect" />
     <meta name="theme-color" content="#071326" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ResKonnect" />
-    <meta name="keywords" content="student accommodation, Pretoria student housing, TUT residence, NSFAS accommodation, university housing South Africa, Tshwane student res, affordable student accommodation, verified residences" />
-    <!-- Robots directives are owned per-route by src/components/SEO.tsx so private routes can emit noindex. -->
+    <meta name="keywords" content="ResKonnect, Res Konnect, ResConnect, Res Connect, student accommodation, TUT accommodation, NSFAS accommodation, university applications, TVET applications, WIL opportunities, internships, student housing investment South Africa" />
+    <!-- Per-route robots directives are owned by src/components/SEO.tsx. -->
     <meta name="geo.region" content="ZA-GT" />
     <meta name="geo.placename" content="Pretoria" />
     <meta name="geo.position" content="-25.7479;28.2293" />
     <meta name="ICBM" content="-25.7479, 28.2293" />
-    
+
+    <link rel="canonical" href="https://www.reskonnect.org" />
     <link rel="icon" type="image/png" href="/favicon-transparent.png?v=2" />
     <link rel="shortcut icon" type="image/png" href="/favicon-transparent.png?v=2" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.reskonnect.org/" />
     <meta property="og:title" content="ResKonnect | Living • AI • Opportunity" />
-    <meta property="og:description" content="Find accommodation, prepare for applications, access WIL support, and connect with partner solutions through ResKonnect." />
+    <meta property="og:description" content="Student accommodation, applications, AI-powered guidance, WIL and career opportunities, and student-housing property intelligence in one South African platform." />
     <meta property="og:image" content="https://www.reskonnect.org/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="ResKonnect" />
     <meta property="og:locale" content="en_ZA" />
 
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@ResKonnect" />
-    <meta name="twitter:title" content="ResKonnect | Student Journey Platform" />
-    <meta name="twitter:description" content="From matric to move-in, from study to opportunity — ResKonnect connects students, parents, tenants, landlords, and partners." />
+    <meta name="twitter:title" content="ResKonnect | Living • AI • Opportunity" />
+    <meta name="twitter:description" content="Connecting students and partners across accommodation, applications, opportunities, AI guidance and student-housing intelligence." />
     <meta name="twitter:image" content="https://www.reskonnect.org/og-image.png" />
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- JSON-LD Structured Data -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "Organization",
+        "@id": "https://www.reskonnect.org/#organization",
         "name": "ResKonnect",
-        "alternateName": "RESKONNECT",
+        "alternateName": ["Res Konnect", "ResConnect", "Res Connect", "RESKONNECT"],
         "url": "https://www.reskonnect.org",
-        "logo": "https://www.reskonnect.org/icon-512.png",
-        "description": "ResKonnect is a student journey platform for accommodation, application readiness, WIL support, and partner solutions.",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.reskonnect.org/icon-512.png"
+        },
+        "description": "ResKonnect is a South African student-living and opportunity platform connecting student accommodation, application readiness, AI-powered guidance, WIL and career opportunities, and student-housing property intelligence.",
         "email": "reskonnect@gmail.com",
         "telephone": "+27637323192",
+        "areaServed": {
+          "@type": "Country",
+          "name": "South Africa"
+        },
         "address": {
           "@type": "PostalAddress",
           "addressLocality": "Pretoria",
@@ -67,7 +73,9 @@
           "@type": "ContactPoint",
           "telephone": "+27-63-732-3192",
           "contactType": "customer service",
-          "email": "reskonnect@gmail.com"
+          "email": "reskonnect@gmail.com",
+          "areaServed": "ZA",
+          "availableLanguage": "en"
         }
       }
     </script>
@@ -75,8 +83,12 @@
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
+        "@id": "https://www.reskonnect.org/#website",
         "name": "ResKonnect",
+        "alternateName": ["Res Konnect", "ResConnect", "Res Connect"],
         "url": "https://www.reskonnect.org",
+        "publisher": { "@id": "https://www.reskonnect.org/#organization" },
+        "inLanguage": "en-ZA",
         "potentialAction": {
           "@type": "SearchAction",
           "target": {
@@ -93,7 +105,6 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Cleanup legacy service worker registered at /sw.js (avoids stale cached source files)
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then((regs) => {
           regs.forEach((reg) => {
