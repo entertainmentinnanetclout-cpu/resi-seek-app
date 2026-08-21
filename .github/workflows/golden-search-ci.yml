@@ -1,0 +1,53 @@
+name: Golden Search CI
+
+on:
+  push:
+    branches:
+      - seo/golden-search-infrastructure
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-seo-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Golden SEO static gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f public/robots.txt
+          test -f public/llms.txt
+          test -f api/sitemap.js
+          grep -q "OAI-SearchBot" public/robots.txt
+          grep -q "Sitemap: https://www.reskonnect.org/sitemap.xml" public/robots.txt
+          grep -q '"alternateName"' index.html
+          grep -q 'path="/properties"' src/App.tsx
+          grep -q 'path="/property-auctions"' src/App.tsx
+          grep -q 'path="/student-accommodation-for-sale"' src/App.tsx
+          grep -q 'path="/ai"' src/App.tsx
+          grep -q 'path="/dashboard/applications"' src/App.tsx
+          if grep -q 'path="/applications" element={<StudentRoute' src/App.tsx; then
+            echo "SEO regression: duplicate protected /applications route detected"
+            exit 1
+          fi
+          echo "Golden Search static gate passed"
