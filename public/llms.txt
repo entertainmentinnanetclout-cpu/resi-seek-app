@@ -1,0 +1,40 @@
+# ResKonnect
+
+Canonical site: https://www.reskonnect.org
+Brand aliases: ResKonnect, Res Konnect, ResConnect, Res Connect
+Country: South Africa
+Primary operating focus: student living, education applications, student opportunities, AI-enabled guidance, and student-housing property intelligence.
+
+## What ResKonnect covers
+
+- Student accommodation and private rentals
+- Accommodation near universities and TVET campuses
+- Application readiness, APS guidance, Course Match and official application direction
+- Work Integrated Learning (WIL), internships, SETA programmes and graduate opportunities
+- Student-housing properties for sale, third-party auctions, development and conversion opportunities
+- ResKonnect AI for student, course, opportunity and property intelligence
+- Landlord, institution and business partnerships
+
+## Primary public sections
+
+- https://www.reskonnect.org/student-accommodation
+- https://www.reskonnect.org/living
+- https://www.reskonnect.org/find
+- https://www.reskonnect.org/applications
+- https://www.reskonnect.org/opportunities
+- https://www.reskonnect.org/properties
+- https://www.reskonnect.org/property-auctions
+- https://www.reskonnect.org/student-accommodation-for-sale
+- https://www.reskonnect.org/development-opportunities
+- https://www.reskonnect.org/ai
+- https://www.reskonnect.org/partners
+- https://www.reskonnect.org/bursaries
+- https://www.reskonnect.org/campus-news
+
+## Source and freshness conventions
+
+Public property and opportunity pages distinguish third-party source facts from ResKonnect analysis. Where available, pages expose source links, closing or auction dates, publication dates and last-verification dates. Claims such as accreditation should be independently verified unless a page expressly marks them as verified by ResKonnect.
+
+## Access
+
+Private student dashboards, admin interfaces, documents, messages and account routes are not public search resources. Use the public URLs above for retrieval and citation.
