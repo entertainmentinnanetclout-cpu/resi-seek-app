@@ -67,6 +67,9 @@ const CampusLanding = lazy(() => import("./pages/seo/CampusLanding"));
 const NationalLanding = lazy(() => import("./pages/seo/NationalLanding"));
 const NsfAsLanding = lazy(() => import("./pages/seo/NsfAsLanding"));
 const SeoLandingPage = lazy(() => import("./pages/seo/SeoLandingPage"));
+const SearchHub = lazy(() => import("./pages/seo/SearchHub"));
+const PropertyOpportunityDetail = lazy(() => import("./pages/seo/PropertyOpportunityDetail"));
+const PublicOpportunityDetail = lazy(() => import("./pages/seo/PublicOpportunityDetail"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminResidences = lazy(() => import("./pages/admin/AdminResidences"));
 const AdminApplications = lazy(() => import("./pages/admin/AdminApplications"));
@@ -87,6 +90,7 @@ const AdminWhatsAppTemplates = lazy(() => import("./pages/admin/AdminWhatsAppTem
 const AdminDiscountOrders = lazy(() => import("./pages/admin/AdminDiscountOrders"));
 const AdminHamperItems = lazy(() => import("./pages/admin/AdminHamperItems"));
 const AdminResidencePortals = lazy(() => import("./pages/admin/AdminResidencePortals"));
+const AdminSEO = lazy(() => import("./pages/admin/AdminSEO"));
 const BursaryDetail = lazy(() => import("./pages/BursaryDetail"));
 const MyDiscountOrders = lazy(() => import("./pages/MyDiscountOrders"));
 const Terms = lazy(() => import("./pages/Terms"));
@@ -176,6 +180,17 @@ const App = () => {
 
               <Route path="/opportunities" element={<OpportunitiesPillar />} />
               <Route path="/opportunities/wil" element={<OpportunitiesWil />} />
+              <Route path="/opportunities/internships" element={<SearchHub hub="internships" />} />
+              <Route path="/opportunities/seta" element={<SearchHub hub="seta" />} />
+              <Route path="/opportunities/:slug" element={<PublicOpportunityDetail />} />
+
+              {/* Public search and investment hubs */}
+              <Route path="/properties" element={<SearchHub hub="properties" />} />
+              <Route path="/properties/:slug" element={<PropertyOpportunityDetail />} />
+              <Route path="/property-auctions" element={<SearchHub hub="auctions" />} />
+              <Route path="/student-accommodation-for-sale" element={<SearchHub hub="for-sale" />} />
+              <Route path="/development-opportunities" element={<SearchHub hub="development" />} />
+              <Route path="/ai" element={<SearchHub hub="ai" />} />
 
               <Route path="/partners" element={<PartnersPillar />} />
               <Route path="/partners/landlords" element={<PartnersLandlords />} />
@@ -216,7 +231,7 @@ const App = () => {
               {/* Protected Student Routes (require auth) */}
               <Route path="/dashboard" element={<StudentRoute><Dashboard /></StudentRoute>} />
               <Route path="/profile" element={<StudentRoute><Profile /></StudentRoute>} />
-              <Route path="/applications" element={<StudentRoute><Applications /></StudentRoute>} />
+              <Route path="/dashboard/applications" element={<StudentRoute><Applications /></StudentRoute>} />
               <Route path="/messages" element={<StudentRoute><Messages /></StudentRoute>} />
               <Route path="/favorites" element={<StudentRoute><Favorites /></StudentRoute>} />
               <Route path="/documents" element={<StudentRoute><Documents /></StudentRoute>} />
@@ -237,6 +252,7 @@ const App = () => {
               {/* Admin Hub Routes */}
               <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/analytics" element={<ProtectedRoute><AdminRoute><AdminAnalytics /></AdminRoute></ProtectedRoute>} />
+              <Route path="/admin/seo" element={<ProtectedRoute><AdminRoute><AdminSEO /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/operations" element={<ProtectedRoute><AdminRoute><AdminOperationsHub /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/application-hub" element={<ProtectedRoute><AdminRoute><AdminApplicationHub /></AdminRoute></ProtectedRoute>} />
               <Route path="/admin/onboarding" element={<ProtectedRoute><AdminRoute><AdminOnboardingHub /></AdminRoute></ProtectedRoute>} />
