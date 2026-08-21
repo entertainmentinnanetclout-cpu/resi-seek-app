@@ -113,7 +113,7 @@ const SmartDashboard = ({ profile, applications, profileCompletion }: SmartDashb
               icon: FileText,
               label: "Track Applications",
               description: "View status and updates",
-              path: "/applications",
+              path: "/dashboard/applications",
               variant: "default" as const,
             },
             {
@@ -136,7 +136,7 @@ const SmartDashboard = ({ profile, applications, profileCompletion }: SmartDashb
               icon: FileText,
               label: "View Approval Details",
               description: "See next steps and contact info",
-              path: "/applications",
+              path: "/dashboard/applications",
               variant: "default" as const,
             },
             {
@@ -195,7 +195,6 @@ const SmartDashboard = ({ profile, applications, profileCompletion }: SmartDashb
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Progress indicator for incomplete profiles */}
         {(journeyStage === "new" || journeyStage === "incomplete") && (
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
@@ -206,7 +205,6 @@ const SmartDashboard = ({ profile, applications, profileCompletion }: SmartDashb
           </div>
         )}
 
-        {/* Action buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
           {smartData.actions.map((action, index) => (
             <Button
@@ -225,18 +223,16 @@ const SmartDashboard = ({ profile, applications, profileCompletion }: SmartDashb
           ))}
         </div>
 
-        {/* Smart tip */}
         <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
           <TrendingUp className="w-4 h-4 text-primary shrink-0 mt-0.5" />
           <p className="text-sm text-muted-foreground">{smartData.tip}</p>
         </div>
 
-        {/* Application summary for active users */}
         {journeyStage === "active" && applications.length > 0 && (
           <div className="pt-2 border-t">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-muted-foreground">Application Status</span>
-              <Link to="/applications" className="text-primary hover:underline">
+              <Link to="/dashboard/applications" className="text-primary hover:underline">
                 View All
               </Link>
             </div>

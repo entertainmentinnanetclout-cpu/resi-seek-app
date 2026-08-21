@@ -22,7 +22,6 @@ import {
   Newspaper,
   MessageSquare,
   Heart,
-  Settings,
   LogOut,
   Command,
 } from "lucide-react";
@@ -41,17 +40,15 @@ interface QuickAction {
 const CommandPalette = () => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { signOut, isAdmin } = useAuth();
+  const { signOut } = useAuth();
 
-  // Handle keyboard shortcut
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((open) => !open);
+        setOpen((value) => !value);
       }
     };
-
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
   }, []);
@@ -69,7 +66,7 @@ const CommandPalette = () => {
   const navigationItems: QuickAction[] = [
     { id: "dashboard", label: "Dashboard", icon: Home, action: () => handleNavigation("/dashboard"), keywords: ["home", "main"], category: "navigation" },
     { id: "find-res", label: "Find My Res", icon: Search, action: () => handleNavigation("/findmyres"), keywords: ["search", "accommodation", "residence"], category: "navigation" },
-    { id: "applications", label: "My Applications", icon: FileText, action: () => handleNavigation("/applications"), keywords: ["apply", "status", "track"], category: "navigation" },
+    { id: "applications", label: "My Applications", icon: FileText, action: () => handleNavigation("/dashboard/applications"), keywords: ["apply", "status", "track"], category: "navigation" },
     { id: "profile", label: "My Profile", icon: User, action: () => handleNavigation("/profile"), keywords: ["account", "settings", "details"], category: "navigation" },
     { id: "notifications", label: "Notifications", icon: Bell, action: () => handleNavigation("/dashboard/updates"), keywords: ["alerts", "updates", "messages"], category: "navigation" },
     { id: "favorites", label: "My Favorites", icon: Heart, action: () => handleNavigation("/favorites"), keywords: ["saved", "liked", "wishlist"], category: "navigation" },
@@ -94,64 +91,25 @@ const CommandPalette = () => {
 
   return (
     <>
-      {/* Keyboard shortcut hint */}
-      <button
-        onClick={() => setOpen(true)}
-        className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-      >
+      <button onClick={() => setOpen(true)} className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground bg-muted/50 rounded-lg hover:bg-muted transition-colors">
         <Search className="w-4 h-4" />
         <span>Quick search...</span>
-        <Badge variant="outline" className="ml-2 text-[10px] px-1.5">
-          <Command className="w-3 h-3 mr-0.5" />K
-        </Badge>
+        <Badge variant="outline" className="ml-2 text-[10px] px-1.5"><Command className="w-3 h-3 mr-0.5" />K</Badge>
       </button>
-
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
-
           <CommandGroup heading="Quick Actions">
-            {quickActions.map((item) => (
-              <CommandItem
-                key={item.id}
-                onSelect={item.action}
-                className="flex items-center gap-3 cursor-pointer"
-              >
-                <item.icon className="w-4 h-4 text-primary" />
-                <span>{item.label}</span>
-              </CommandItem>
-            ))}
+            {quickActions.map((item) => <CommandItem key={item.id} onSelect={item.action} className="flex items-center gap-3 cursor-pointer"><item.icon className="w-4 h-4 text-primary" /><span>{item.label}</span></CommandItem>)}
           </CommandGroup>
-
           <CommandSeparator />
-
           <CommandGroup heading="Navigation">
-            {navigationItems.map((item) => (
-              <CommandItem
-                key={item.id}
-                onSelect={item.action}
-                className="flex items-center gap-3 cursor-pointer"
-              >
-                <item.icon className="w-4 h-4" />
-                <span>{item.label}</span>
-              </CommandItem>
-            ))}
+            {navigationItems.map((item) => <CommandItem key={item.id} onSelect={item.action} className="flex items-center gap-3 cursor-pointer"><item.icon className="w-4 h-4" /><span>{item.label}</span></CommandItem>)}
           </CommandGroup>
-
           <CommandSeparator />
-
           <CommandGroup heading="Account">
-            {actionItems.map((item) => (
-              <CommandItem
-                key={item.id}
-                onSelect={item.action}
-                className="flex items-center gap-3 cursor-pointer"
-              >
-                <item.icon className="w-4 h-4 text-destructive" />
-                <span>{item.label}</span>
-              </CommandItem>
-            ))}
+            {actionItems.map((item) => <CommandItem key={item.id} onSelect={item.action} className="flex items-center gap-3 cursor-pointer"><item.icon className="w-4 h-4 text-destructive" /><span>{item.label}</span></CommandItem>)}
           </CommandGroup>
         </CommandList>
       </CommandDialog>

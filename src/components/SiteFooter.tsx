@@ -7,31 +7,44 @@ const columns = [
     links: [
       { label: "ResKonnect Living", to: "/living" },
       { label: "Find My Res", to: "/find" },
-      { label: "ResKonnect Student Accommodation", to: "/student-accommodation" },
+      { label: "Student Accommodation", to: "/student-accommodation" },
+      { label: "Student Accommodation Pretoria", to: "/student-accommodation/pretoria" },
       { label: "Pretoria West Accommodation", to: "/student-accommodation/pretoria-west" },
       { label: "Accommodation Near TUT", to: "/student-accommodation/near-tut" },
-      { label: "NSFAS Accredited Accommodation", to: "/student-accommodation/nsfas-accredited" },
-      { label: "ResKonnect Private Rentals", to: "/private-rentals" },
-      { label: "For Parents", to: "/living/parents" },
+      { label: "NSFAS Accommodation", to: "/student-accommodation/nsfas-accredited" },
+      { label: "Private Rentals", to: "/private-rentals" },
     ],
   },
   {
     title: "Applications",
     links: [
       { label: "ResKonnect Applications", to: "/applications" },
+      { label: "University Applications", to: "/applications/university" },
+      { label: "TVET Applications", to: "/applications/tvet" },
+      { label: "Private College Applications", to: "/applications/private-college" },
       { label: "Application Readiness", to: "/applications/application-readiness" },
-      { label: "ResKonnect APS Checker", to: "/applications/aps-checker" },
-      { label: "TVET Readiness", to: "/applications/tvet-application-readiness" },
-      { label: "University Readiness", to: "/applications/university-application-readiness" },
+      { label: "APS Checker", to: "/applications/aps-checker" },
     ],
   },
   {
     title: "Opportunities",
     links: [
-      { label: "ResKonnect Opportunities", to: "/opportunities" },
-      { label: "WIL Placement Support", to: "/opportunities/wil-placement-support" },
+      { label: "Student Opportunities", to: "/opportunities" },
+      { label: "WIL Placement Support", to: "/opportunities/wil" },
+      { label: "Student Internships", to: "/opportunities/internships" },
+      { label: "SETA Opportunities", to: "/opportunities/seta" },
       { label: "Bursaries", to: "/bursaries" },
       { label: "Campus News", to: "/campus-news" },
+    ],
+  },
+  {
+    title: "Property & AI",
+    links: [
+      { label: "Property Intelligence", to: "/properties" },
+      { label: "Student Accommodation for Sale", to: "/student-accommodation-for-sale" },
+      { label: "Property Auctions", to: "/property-auctions" },
+      { label: "Development Opportunities", to: "/development-opportunities" },
+      { label: "ResKonnect AI", to: "/ai" },
     ],
   },
   {
@@ -58,9 +71,9 @@ const columns = [
 const SiteFooter = () => (
   <footer className="mt-auto border-t border-border bg-muted/40 text-muted-foreground">
     <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="grid grid-cols-2 gap-8 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-8 md:grid-cols-3 lg:grid-cols-7">
         <div className="col-span-2 md:col-span-3 lg:col-span-1">
-          <img src={BRAND.logos.full} alt={BRAND.name} className="h-12 w-auto object-contain" />
+          <img src={BRAND.logos.full} alt={`${BRAND.name} — student living, AI and opportunity`} className="h-12 w-auto object-contain" />
           <p className="mt-3 text-[10px] tracking-[0.3em] text-muted-foreground">{BRAND.descriptor}</p>
           <p className="mt-3 max-w-xs text-sm text-muted-foreground">
             {BRAND.tagline} {BRAND.journeyLine}

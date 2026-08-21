@@ -7,7 +7,7 @@
       "source": "/sitemap.xml",
       "headers": [
         { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=86400, s-maxage=86400" },
+        { "key": "Cache-Control", "value": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400" },
         { "key": "X-Robots-Tag", "value": "noindex" }
       ]
     },
@@ -15,13 +15,43 @@
       "source": "/robots.txt",
       "headers": [
         { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=86400, s-maxage=86400" }
+        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=86400" }
+      ]
+    },
+    {
+      "source": "/llms.txt",
+      "headers": [
+        { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=86400" }
       ]
     }
   ],
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
-    { "source": "/robots.txt", "destination": "/robots.txt" },
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/", "destination": "/_seo/home.html" },
+    { "source": "/student-accommodation", "destination": "/_seo/student-accommodation.html" },
+    { "source": "/student-accommodation/pretoria", "destination": "/_seo/student-accommodation-pretoria.html" },
+    { "source": "/student-accommodation/pretoria-west", "destination": "/_seo/student-accommodation-pretoria-west.html" },
+    { "source": "/student-accommodation/near-tut", "destination": "/_seo/student-accommodation-near-tut.html" },
+    { "source": "/student-accommodation/nsfas-accredited", "destination": "/_seo/student-accommodation-nsfas-accredited.html" },
+    { "source": "/living", "destination": "/_seo/living.html" },
+    { "source": "/applications", "destination": "/_seo/applications.html" },
+    { "source": "/applications/university", "destination": "/_seo/applications-university.html" },
+    { "source": "/applications/tvet", "destination": "/_seo/applications-tvet.html" },
+    { "source": "/applications/aps-checker", "destination": "/_seo/applications-aps-checker.html" },
+    { "source": "/opportunities", "destination": "/_seo/opportunities.html" },
+    { "source": "/opportunities/wil", "destination": "/_seo/opportunities-wil.html" },
+    { "source": "/opportunities/internships", "destination": "/_seo/opportunities-internships.html" },
+    { "source": "/opportunities/seta", "destination": "/_seo/opportunities-seta.html" },
+    { "source": "/properties", "destination": "/_seo/properties.html" },
+    { "source": "/property-auctions", "destination": "/_seo/property-auctions.html" },
+    { "source": "/student-accommodation-for-sale", "destination": "/_seo/student-accommodation-for-sale.html" },
+    { "source": "/development-opportunities", "destination": "/_seo/development-opportunities.html" },
+    { "source": "/ai", "destination": "/_seo/ai.html" },
+    { "source": "/partners", "destination": "/_seo/partners.html" },
+    { "source": "/partners/landlords", "destination": "/_seo/partners-landlords.html" },
+    { "source": "/bursaries", "destination": "/_seo/bursaries.html" },
+    { "source": "/campus-news", "destination": "/_seo/campus-news.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

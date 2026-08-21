@@ -1,10 +1,13 @@
-# robots.txt for ResKonnect
-# https://www.reskonnect.org
+# ResKonnect public crawler policy
+# Canonical site: https://www.reskonnect.org
+# Public discovery is allowed for standard search engines and OAI-SearchBot.
+# Private/account routes remain excluded.
 
 User-agent: *
+User-agent: OAI-SearchBot
 Allow: /
 
-# Private / internal areas
+# Private / authenticated / internal areas
 Disallow: /admin
 Disallow: /dashboard
 Disallow: /god-mode
@@ -20,9 +23,14 @@ Disallow: /checkout
 Disallow: /media
 Disallow: /commerce
 Disallow: /residence/
+Disallow: /tvet-dashboard
+Disallow: /recruit/dashboard
+Disallow: /recruit/apply
+Disallow: /recruit/auth
 Disallow: /api/
+Disallow: /r/
 
-# Marketplace is on hold
+# Marketplace remains paused publicly; do not index placeholder routes.
 Disallow: /marketplace
 
 Sitemap: https://www.reskonnect.org/sitemap.xml
