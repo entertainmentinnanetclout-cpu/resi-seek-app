@@ -7,6 +7,7 @@ interface SEOProps {
   title?: string;
   description?: string;
   imageUrl?: string;
+  /** Retained for page-template compatibility; modern search engines do not use meta keywords for ranking. */
   keywords?: string;
   canonicalPath?: string;
   type?: "website" | "article" | "product";
@@ -19,7 +20,6 @@ const SEO: React.FC<SEOProps> = ({
   title,
   description,
   imageUrl,
-  keywords,
   canonicalPath,
   type = "website",
   noIndex,
@@ -79,7 +79,6 @@ const SEO: React.FC<SEOProps> = ({
       <meta name="author" content="ResKonnect" />
       <meta name="geo.region" content="ZA-GT" />
       <meta name="geo.placename" content="Pretoria" />
-      {keywords && <meta name="news_keywords" content={keywords} />}
 
       {schemas.map((schema, i) => (
         <script key={i} type="application/ld+json">{JSON.stringify(schema)}</script>
