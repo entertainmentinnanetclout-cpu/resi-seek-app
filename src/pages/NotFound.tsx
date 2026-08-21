@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import About from "@/pages/public/About";
 import ManagedSeoPage from "@/pages/seo/ManagedSeoPage";
 import PropertyOpportunityDetail from "@/pages/public/PropertyOpportunityDetail";
+import PublicOpportunityDetail from "@/pages/public/PublicOpportunityDetail";
 
 const MANAGED_SEARCH_PATHS = new Set([
   "/ai",
@@ -22,7 +23,8 @@ const NotFound = () => {
   const normalizedPath = location.pathname.length > 1 ? location.pathname.replace(/\/+$/, "") : location.pathname;
   const isManagedSearchRoute = MANAGED_SEARCH_PATHS.has(normalizedPath);
   const isPublishedPropertyRoute = /^\/properties\/[^/]+$/.test(normalizedPath);
-  const isKnownFallbackRoute = isAboutRoute || isManagedSearchRoute || isPublishedPropertyRoute;
+  const isPublishedOpportunityRoute = /^\/opportunity\/[^/]+$/.test(normalizedPath);
+  const isKnownFallbackRoute = isAboutRoute || isManagedSearchRoute || isPublishedPropertyRoute || isPublishedOpportunityRoute;
 
   useEffect(() => {
     if (!isKnownFallbackRoute) {
@@ -33,6 +35,7 @@ const NotFound = () => {
   if (isAboutRoute) return <About />;
   if (isManagedSearchRoute) return <ManagedSeoPage pagePath={normalizedPath} />;
   if (isPublishedPropertyRoute) return <PropertyOpportunityDetail />;
+  if (isPublishedOpportunityRoute) return <PublicOpportunityDetail />;
 
   return (
     <>
