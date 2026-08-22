@@ -85,7 +85,7 @@ export async function getManagedSeoLinks(path: string): Promise<ManagedSeoLink[]
 export async function getPublishedPropertyOpportunities() {
   const { data, error } = await db
     .from("property_opportunities")
-    .select("id,slug,name,opportunity_type,status,address,suburb,city,province,asking_price,price_basis,auction_date,advertised_bed_capacity,units,nearest_institution,accreditation_claim,source_name,source_url,summary,reskonnect_score,investment_score,risk_score,last_verified_at,updated_at")
+    .select("id,slug,name,opportunity_type,status,address,suburb,city,province,asking_price,price_basis,auction_date,advertised_bed_capacity,units_count,nearest_institution,accreditation_claim,source_name,source_url,summary,reskonnect_score,investment_score,risk_score,last_verified_at,updated_at")
     .eq("is_published", true)
     .order("last_verified_at", { ascending: false, nullsFirst: false });
 
