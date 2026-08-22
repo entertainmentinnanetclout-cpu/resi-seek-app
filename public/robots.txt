@@ -1,5 +1,7 @@
 # robots.txt for ResKonnect
 # https://www.reskonnect.org
+# Public search crawlers, including Googlebot, bingbot and OAI-SearchBot,
+# inherit this policy. Public discovery is allowed; private application data is blocked.
 
 User-agent: *
 Allow: /
@@ -20,9 +22,17 @@ Disallow: /checkout
 Disallow: /media
 Disallow: /commerce
 Disallow: /residence/
+Disallow: /wil
+Disallow: /my-discount-orders
+Disallow: /my-discount-codes
+Disallow: /recruit/dashboard
+Disallow: /recruiter-dashboard
 Disallow: /api/
 
-# Marketplace is on hold
+# Marketplace is on hold until the public commerce experience is reactivated.
 Disallow: /marketplace
+Disallow: /product/
+Disallow: /store/
+Disallow: /seller-onboarding
 
 Sitemap: https://www.reskonnect.org/sitemap.xml

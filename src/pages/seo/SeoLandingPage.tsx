@@ -8,7 +8,7 @@ import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
 import SeoListingResults from "@/components/seo/SeoListingResults";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { articleSchema, breadcrumbSchema, faqSchema } from "@/lib/seo/jsonLd";
+import { articleSchema, breadcrumbSchema } from "@/lib/seo/jsonLd";
 import { SEO_LANDING_BY_PATH } from "@/lib/seo/landingContent";
 
 interface Props {
@@ -22,7 +22,8 @@ const SeoLandingPage = ({ pageKey }: Props) => {
   if (!page) return null;
 
   const schemas: object[] = [breadcrumbSchema(page.crumbs)];
-  if (page.faqs.length) schemas.push(faqSchema(page.faqs));
+  // FAQs stay visible because they help users and answer engines, but Google no longer
+  // exposes FAQ rich results. We therefore avoid emitting FAQPage solely for ranking UI.
   if (page.kind === "guide") {
     schemas.push(
       articleSchema({ headline: page.h1, description: page.description, path: page.path }),

@@ -40,6 +40,9 @@ export const NOINDEX_PREFIXES = [
   "/my-discount-orders",
   "/my-discount-codes",
   "/seller-onboarding",
+  "/marketplace",
+  "/product",
+  "/store",
   "/r/",
 ];
 
@@ -57,31 +60,83 @@ export function canonicalUrl(pathname: string): string {
 /** Per-route metadata for the main public pillars and utility pages. */
 export const ROUTE_META: Record<string, RouteMeta> = {
   "/": {
-    title: "ResKonnect | Student Accommodation, Application Readiness & WIL Support",
+    title: "ResKonnect | Student Accommodation, Applications & Opportunities",
     description:
-      "ResKonnect helps students, parents, private tenants, landlords, and partners find verified accommodation, prepare application documents, check APS readiness, and access WIL support.",
+      "Find student accommodation, prepare applications, discover WIL and student opportunities, and explore student-housing property intelligence with ResKonnect.",
     keywords:
-      "student accommodation South Africa, Pretoria West accommodation, TUT residence, application readiness, APS checker, WIL placement support",
+      "ResKonnect, Res Konnect, student accommodation South Africa, student applications, WIL opportunities, student housing property",
   },
   "/living": {
-    title: "ResKonnect Living | Student Accommodation & Private Rental Support",
+    title: "ResKonnect Living | Student Accommodation & Private Rentals",
     description:
-      "Browse verified student accommodation, NSFAS accommodation context, private-paying student residences, and private rental support through ResKonnect.",
-    keywords:
-      "student accommodation, private rentals Pretoria, NSFAS accredited accommodation, private paying student residence",
+      "Browse student accommodation, private-paying residences, NSFAS-related accommodation information and private rental support through ResKonnect.",
+    keywords: "student accommodation, student housing, private rentals, NSFAS accommodation",
+  },
+  "/student-accommodation": {
+    title: "Student Accommodation South Africa | ResKonnect",
+    description:
+      "Find student accommodation by university, TVET college, campus, suburb, budget, room type and availability with ResKonnect.",
+    keywords: "student accommodation, student housing, student residence, NSFAS accommodation",
+  },
+  "/student-accommodation/pretoria": {
+    title: "Student Accommodation Pretoria | TUT, UP, UNISA & SMU | ResKonnect",
+    description:
+      "Explore student accommodation across Pretoria, including areas serving TUT, UP, UNISA and SMU, with campus and location context from ResKonnect.",
+    keywords: "student accommodation Pretoria, TUT accommodation, UP accommodation, UNISA accommodation, SMU accommodation",
   },
   "/applications": {
-    title: "ResKonnect Applications | APS Checker & Application Readiness",
+    title: "Student Applications, APS & Course Match | ResKonnect",
     description:
-      "Prepare for TVET, university, or private college applications with APS guidance, document checklists, and official portal direction.",
-    keywords:
-      "application readiness, APS checker, TVET application, university application, matric documents",
+      "Prepare university, TVET and private-college applications with APS guidance, Course Match, document readiness and official application-route support.",
+    keywords: "university applications South Africa, TVET applications, APS checker, Course Match, application readiness",
   },
   "/opportunities": {
-    title: "ResKonnect Opportunities | WIL Placement & Student Support",
+    title: "Student WIL, Internships & Opportunities | ResKonnect",
     description:
-      "Access WIL readiness support, internship guidance, student referral opportunities, and career pathway support through ResKonnect.",
-    keywords: "WIL placement, work integrated learning, internship support, student opportunities",
+      "Discover WIL placements, internships, SETA-linked programmes, bursaries and graduate opportunities through ResKonnect.",
+    keywords: "WIL opportunities, internships South Africa, SETA opportunities, graduate opportunities, bursaries",
+  },
+  "/opportunities/internships": {
+    title: "Student Internships & Graduate Opportunities | ResKonnect",
+    description:
+      "Find published student internships, graduate opportunities and workplace-experience programmes with closing-date and application-route context.",
+    keywords: "student internships South Africa, graduate opportunities, workplace experience",
+  },
+  "/opportunities/seta": {
+    title: "SETA WIL & Internship Opportunities | ResKonnect",
+    description:
+      "Discover published SETA-linked WIL, internship and workplace-experience opportunities for students and graduates.",
+    keywords: "SETA opportunities, SETA internships, SETA WIL, workplace experience",
+  },
+  "/properties": {
+    title: "Student Housing Property Intelligence | ResKonnect",
+    description:
+      "Explore student accommodation for sale, property auctions, conversion opportunities and student-housing investment intelligence on ResKonnect.",
+    keywords: "student accommodation for sale, student housing investment, property auctions, student housing development",
+  },
+  "/property-auctions": {
+    title: "Student Accommodation Property Auctions | ResKonnect",
+    description:
+      "Track third-party property auctions and distressed opportunities relevant to student housing, with source and verification context from ResKonnect.",
+    keywords: "student accommodation auctions, property auctions Pretoria, student housing auction",
+  },
+  "/student-accommodation-for-sale": {
+    title: "Student Accommodation for Sale | ResKonnect",
+    description:
+      "Explore student residences, houses, flats and buildings marketed for sale where there is a credible student-housing investment case.",
+    keywords: "student accommodation for sale, student residence for sale, student housing investment",
+  },
+  "/development-opportunities": {
+    title: "Student Housing Development Opportunities | ResKonnect",
+    description:
+      "Explore buildings, houses and development sites with potential for lawful student-housing conversion, subject to independent planning and compliance checks.",
+    keywords: "student housing development, student accommodation conversion, development sites",
+  },
+  "/ai": {
+    title: "ResKonnect AI | Student, Application & Property Intelligence",
+    description:
+      "Use source-aware ResKonnect AI for student guidance, Course Match, application readiness and student-housing property intelligence.",
+    keywords: "ResKonnect AI, student AI, AI Course Match, property intelligence AI, application AI",
   },
   "/partners": {
     title: "ResKonnect Partners | Landlords, Institutions & Businesses",
@@ -90,18 +145,18 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     keywords: "list student accommodation, landlord leads, institution partnerships, student marketing",
   },
   "/find": {
-    title: "ResKonnect Find My Res | Search Verified Student Accommodation",
+    title: "Find Student Accommodation | ResKonnect Find My Res",
     description:
-      "Search verified student residences, flats, communes and private rentals by campus, budget, room type and availability across South Africa.",
+      "Search student residences, flats, communes and private rentals by campus, budget, room type and availability across South Africa.",
   },
   "/bursaries": {
-    title: "ResKonnect Bursaries | Student Funding Opportunities",
+    title: "Student Bursaries & Funding Opportunities | ResKonnect",
     description:
-      "Browse open bursaries and funding opportunities for South African students, with closing dates, requirements and official application links.",
+      "Browse open bursaries and student funding opportunities with closing dates, requirements and official application links.",
   },
   "/events": {
     title: "ResKonnect Events | Campus Events for South African Students",
-    description: "See what is happening on and around campus — student events, expos, orientation and community activities.",
+    description: "See student events, expos, orientation activities and community events on and around campus.",
   },
   "/campus-news": {
     title: "ResKonnect Campus News | Student Updates & Notices",
@@ -109,16 +164,16 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   },
   "/roommates": {
     title: "ResKonnect Roommate Finder | Share Student Accommodation",
-    description: "Find a compatible roommate to share verified student accommodation and split costs near your campus.",
+    description: "Find a compatible roommate to share student accommodation and split costs near your campus.",
   },
   "/discounts": {
     title: "ResKonnect Student Deals & Discounts",
-    description: "Student-only deals on essentials, move-in items and services from partner businesses.",
+    description: "Student deals on essentials, move-in items and services from participating businesses.",
   },
   "/get-started": {
-    title: "Get Started With ResKonnect | Guided Student Onboarding",
+    title: "Get Started With ResKonnect | Student Journey Onboarding",
     description:
-      "Tell us your institution, funding and area, and we will point you to matching accommodation, application readiness support or WIL guidance.",
+      "Tell ResKonnect your institution, funding and area to reach matching accommodation, application support or opportunity guidance.",
   },
   "/terms": {
     title: "ResKonnect Terms of Use",
@@ -126,7 +181,7 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   },
   "/privacy": {
     title: "ResKonnect Privacy Policy",
-    description: "How ResKonnect collects, uses and protects your personal information.",
+    description: "How ResKonnect collects, uses and protects personal information.",
   },
 };
 

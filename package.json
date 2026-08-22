@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run seo:check && vite build && node scripts/prerender-seo.mjs",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "seo:check": "node scripts/seo-qa.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
