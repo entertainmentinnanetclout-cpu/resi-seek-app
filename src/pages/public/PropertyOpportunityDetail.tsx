@@ -80,7 +80,7 @@ const PropertyOpportunityDetail = () => {
     ["Status", property.status],
     ["Price", price ? `${price}${property.price_basis ? ` · ${property.price_basis}` : ""}` : property.price_basis],
     ["Advertised capacity", property.advertised_bed_capacity ? `${property.advertised_bed_capacity} beds` : null],
-    ["Units", property.units],
+    ["Units", property.units_count],
     ["Nearest institution", property.nearest_institution],
     ["Accreditation claim", property.accreditation_claim],
     ["Source", property.source_name],
