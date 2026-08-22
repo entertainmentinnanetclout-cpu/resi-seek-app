@@ -1,5 +1,57 @@
 const SITE_URL = "https://www.reskonnect.org";
 
+// Curated public routes that are useful even when they are not represented in seo_pages.
+// Dynamic/large-scale programmatic URLs belong in seo_public_pages_v so the database
+// quality gate controls whether they enter search discovery.
+const STATIC_PAGE_PATHS = [
+  "/",
+  "/get-started",
+  "/find",
+  "/living",
+  "/living/student-accommodation",
+  "/living/private-rentals",
+  "/living/parents",
+  "/applications",
+  "/applications/tvet",
+  "/applications/university",
+  "/applications/private-college",
+  "/applications/checker",
+  "/opportunities",
+  "/opportunities/wil",
+  "/partners",
+  "/partners/landlords",
+  "/partners/institutions",
+  "/bursaries",
+  "/discounts",
+  "/events",
+  "/campus-news",
+  "/roommates",
+  "/affiliates",
+  "/student-accommodation",
+  "/student-accommodation/pretoria-west",
+  "/student-accommodation/near-tut",
+  "/student-accommodation/near-tut-pretoria-west",
+  "/student-accommodation/near-tshwane-south-tvet",
+  "/student-accommodation/tvet",
+  "/student-accommodation/university",
+  "/student-accommodation/nsfas-accredited",
+  "/private-rentals",
+  "/private-rentals/pretoria-west",
+  "/private-rentals/bachelor-rooms-pretoria",
+  "/applications/application-readiness",
+  "/applications/tvet-application-readiness",
+  "/applications/university-application-readiness",
+  "/applications/aps-checker",
+  "/opportunities/wil-placement-support",
+  "/guides/how-to-find-safe-student-accommodation",
+  "/guides/student-accommodation-pretoria-west",
+  "/guides/tvet-application-checklist",
+  "/guides/university-application-checklist",
+  "/guides/what-documents-do-you-need-for-student-accommodation",
+  "/terms",
+  "/privacy",
+];
+
 const escapeXml = (value = "") => String(value)
   .replaceAll("&", "&amp;")
   .replaceAll("<", "&lt;")
@@ -7,7 +59,15 @@ const escapeXml = (value = "") => String(value)
   .replaceAll('"', "&quot;")
   .replaceAll("'", "&apos;");
 
-const absoluteUrl = (path = "/") => `${SITE_URL}${path === "/" ? "" : path}`;
+const normalizePath = (path = "/") => {
+  if (!path || path === "/") return "/";
+  return `/${String(path).replace(/^\/+|\/+$/g, "")}`;
+};
+
+const absoluteUrl = (path = "/") => {
+  const normalized = normalizePath(path);
+  return `${SITE_URL}${normalized === "/" ? "" : normalized}`;
+};
 
 function getSupabaseConfig() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -29,8 +89,18 @@ async function rest(path) {
   return response.json();
 }
 
+function dedupeRows(rows) {
+  const byLoc = new Map();
+  for (const row of rows) {
+    if (!row?.loc) continue;
+    const existing = byLoc.get(row.loc);
+    if (!existing || (!existing.lastmod && row.lastmod)) byLoc.set(row.loc, row);
+  }
+  return [...byLoc.values()].sort((a, b) => a.loc.localeCompare(b.loc));
+}
+
 function urlset(rows) {
-  const urls = rows.map(({ loc, lastmod }) => {
+  const urls = dedupeRows(rows).map(({ loc, lastmod }) => {
     const modified = lastmod ? `<lastmod>${escapeXml(new Date(lastmod).toISOString())}</lastmod>` : "";
     return `<url><loc>${escapeXml(loc)}</loc>${modified}</url>`;
   }).join("");
@@ -46,20 +116,22 @@ function sitemapIndex() {
 
 async function rowsFor(type) {
   if (type === "pages") {
+    const staticRows = STATIC_PAGE_PATHS.map((path) => ({ loc: absoluteUrl(path), lastmod: null }));
     const rows = await rest("seo_public_pages_v?select=path,updated_at&order=path.asc&limit=5000");
-    return rows.map((row) => ({ loc: absoluteUrl(row.path), lastmod: row.updated_at }));
+    const managedRows = rows.map((row) => ({ loc: absoluteUrl(row.path), lastmod: row.updated_at }));
+    return dedupeRows([...staticRows, ...managedRows]);
   }
   if (type === "residences") {
     const rows = await rest("residences?select=slug,updated_at&is_visible=eq.true&slug=not.is.null&order=updated_at.desc&limit=5000");
     return rows.filter((row) => row.slug).map((row) => ({ loc: absoluteUrl(`/find-my-res/${encodeURIComponent(row.slug)}`), lastmod: row.updated_at }));
   }
   if (type === "properties") {
-    const rows = await rest("property_opportunities?select=slug,updated_at&is_published=eq.true&order=updated_at.desc&limit=5000");
-    return rows.map((row) => ({ loc: absoluteUrl(`/properties/${encodeURIComponent(row.slug)}`), lastmod: row.updated_at }));
+    const rows = await rest("property_opportunities?select=slug,updated_at&is_published=eq.true&slug=not.is.null&order=updated_at.desc&limit=5000");
+    return rows.filter((row) => row.slug).map((row) => ({ loc: absoluteUrl(`/properties/${encodeURIComponent(row.slug)}`), lastmod: row.updated_at }));
   }
   if (type === "opportunities") {
-    const rows = await rest("public_opportunities?select=slug,updated_at&is_published=eq.true&order=updated_at.desc&limit=5000");
-    return rows.map((row) => ({ loc: absoluteUrl(`/opportunity/${encodeURIComponent(row.slug)}`), lastmod: row.updated_at }));
+    const rows = await rest("public_opportunities?select=slug,updated_at&is_published=eq.true&slug=not.is.null&order=updated_at.desc&limit=5000");
+    return rows.filter((row) => row.slug).map((row) => ({ loc: absoluteUrl(`/opportunity/${encodeURIComponent(row.slug)}`), lastmod: row.updated_at }));
   }
   return [];
 }
@@ -72,6 +144,9 @@ export default async function handler(req, res) {
   try {
     const type = typeof req.query?.type === "string" ? req.query.type : null;
     if (!type) return res.status(200).send(sitemapIndex());
+    if (!["pages", "residences", "properties", "opportunities"].includes(type)) {
+      return res.status(404).send("<?xml version=\"1.0\" encoding=\"UTF-8\"?><urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"></urlset>");
+    }
     const rows = await rowsFor(type);
     return res.status(200).send(urlset(rows));
   } catch (error) {
