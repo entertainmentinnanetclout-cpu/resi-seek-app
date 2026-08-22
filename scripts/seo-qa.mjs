@@ -20,10 +20,16 @@ expect(robots.includes("Disallow: /marketplace"), "paused Marketplace remains ex
 expect(!robots.includes("Disallow: /student-accommodation"), "student-accommodation discovery is crawlable");
 expect(!robots.includes("Disallow: /opportunities/"), "public opportunity discovery is crawlable");
 
+expect(!fs.existsSync("public/sitemap.xml"), "legacy static sitemap cannot override the dynamic sitemap index");
 expect(vercel.includes('"/sitemap.xml"') && vercel.includes('"/api/sitemap"'), "Vercel routes the sitemap index to the dynamic generator");
 for (const type of ["pages", "residences", "properties", "opportunities"]) {
   expect(vercel.includes(`/sitemaps/${type}.xml`) && sitemap.includes(`type === \"${type}\"`), `${type} child sitemap is configured`);
 }
+for (const path of ["/", "/find", "/living", "/applications", "/opportunities", "/partners", "/bursaries", "/student-accommodation/pretoria-west"]) {
+  expect(sitemap.includes(`\"${path}\"`), `pages sitemap preserves curated route ${path}`);
+}
+expect(sitemap.includes("seo_public_pages_v"), "managed SEO pages are added through the database quality-gated public view");
+expect(sitemap.includes("is_published=eq.true") && sitemap.includes("is_visible=eq.true"), "data sitemaps publish only public records");
 
 expect(fs.existsSync("public/9b698dd216df7a00d2f9a598a4372726.txt"), "IndexNow verification file exists");
 expect(read("public/9b698dd216df7a00d2f9a598a4372726.txt").trim() === "9b698dd216df7a00d2f9a598a4372726", "IndexNow verification key is exact");
