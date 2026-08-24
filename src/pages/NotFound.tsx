@@ -7,6 +7,7 @@ import ManagedSeoPage from "@/pages/seo/ManagedSeoPage";
 import PropertyOpportunityDetail from "@/pages/public/PropertyOpportunityDetail";
 import PublicOpportunityDetail from "@/pages/public/PublicOpportunityDetail";
 import TumeloCareerEducation from "@/pages/public/TumeloCareerEducation";
+import AdminCareerEducation from "@/pages/admin/AdminCareerEducation";
 
 const MANAGED_SEARCH_PATHS = new Set([
   "/ai",
@@ -25,6 +26,7 @@ const NotFound = () => {
   const isAboutRoute = normalizedPath === "/about" || normalizedPath === "/contact";
   const isCareerEducationRoute = normalizedPath === "/career-education";
   const isTumeloCareerRoute = normalizedPath === "/career-education/tumelo";
+  const isCareerEducationAdminRoute = normalizedPath === "/admin/career-education";
   const isManagedSearchRoute = MANAGED_SEARCH_PATHS.has(normalizedPath);
   const isPublishedPropertyRoute = /^\/properties\/[^/]+$/.test(normalizedPath);
   const isPublishedOpportunityRoute = /^\/opportunity\/[^/]+$/.test(normalizedPath);
@@ -32,6 +34,7 @@ const NotFound = () => {
     isAboutRoute ||
     isCareerEducationRoute ||
     isTumeloCareerRoute ||
+    isCareerEducationAdminRoute ||
     isManagedSearchRoute ||
     isPublishedPropertyRoute ||
     isPublishedOpportunityRoute;
@@ -45,6 +48,7 @@ const NotFound = () => {
   if (isAboutRoute) return <About />;
   if (isCareerEducationRoute) return <CareerEducation />;
   if (isTumeloCareerRoute) return <TumeloCareerEducation />;
+  if (isCareerEducationAdminRoute) return <AdminCareerEducation />;
   if (isManagedSearchRoute) return <ManagedSeoPage pagePath={normalizedPath} />;
   if (isPublishedPropertyRoute) return <PropertyOpportunityDetail />;
   if (isPublishedOpportunityRoute) return <PublicOpportunityDetail />;
