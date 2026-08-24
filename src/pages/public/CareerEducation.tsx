@@ -85,7 +85,7 @@ const CareerEducation = () => {
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Featured guidance</p>
                   <h2 className="mt-2 text-3xl font-bold">Career & Education contributors</h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Tumelo is the first featured contributor. This section is intentionally structured so additional experts and related service providers can be added without rebuilding navigation or page architecture.
+                    Tumelo leads ResKonnect's featured Career & Education collaboration, bringing practical student-facing guidance on qualifications, applications and career choices into the same journey where students can act on that advice. Her collaboration demonstrates how trusted experts and aligned organizations can contribute meaningful guidance while retaining their own identity and audience.
                   </p>
                 </div>
                 <Button asChild variant="outline">
