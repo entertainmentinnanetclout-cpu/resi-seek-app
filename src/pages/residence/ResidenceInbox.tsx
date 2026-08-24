@@ -1,386 +1,198 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams, useOutletContext } from "react-router-dom";
-import { 
-  Search, Filter, Download, CheckSquare, Square, 
-  Clock, AlertCircle, CheckCircle, XCircle, FileText, Users,
-  ChevronDown, MoreHorizontal
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useOutletContext, useSearchParams } from "react-router-dom";
+import { ArrowRight, FileText, Inbox, RefreshCw, Search, SlidersHorizontal, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import {
+  getResidenceApplicationRef,
+  getResidenceApplicationStatusLabel,
+  RESIDENCE_APPLICATION_GROUPS,
+  statusMatchesGroup,
+  type ResidenceApplicationStatusGroup,
+} from "@/lib/residenceApplications";
 import SEO from "@/components/SEO";
+import type { ResidencePortalContext } from "./ResidenceLayout";
 
-interface ResidenceContext {
-  residence: { id: string; name: string } | null;
-}
-
-interface Application {
+interface ApplicationRow {
   id: string;
   status: string;
-  funding_type: string;
-  created_at: string;
-  updated_at: string;
-  desired_move_in: string | null;
+  funding_type: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  move_in_date: string | null;
   notes: string | null;
-  profiles: { full_name: string; email: string; phone: string | null } | null;
-  document_count?: number;
+  user_id: string | null;
+  institution_type: string | null;
+  profile: {
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+    student_number: string | null;
+    campus: string | null;
+  } | null;
 }
 
-const STATUS_TABS = [
-  { value: 'all', label: 'All', icon: Users },
-  { value: 'new', label: 'New', icon: AlertCircle },
-  { value: 'docs_required', label: 'Docs Required', icon: FileText },
-  { value: 'under_review', label: 'Under Review', icon: Clock },
-  { value: 'approved', label: 'Approved', icon: CheckCircle },
-  { value: 'declined', label: 'Declined', icon: XCircle },
-];
+const statusGroupFromParam = (value: string | null): ResidenceApplicationStatusGroup => {
+  if (!value) return "all";
+  if (RESIDENCE_APPLICATION_GROUPS.some((group) => group.value === value)) return value as ResidenceApplicationStatusGroup;
+  if (value === "submitted") return "new";
+  if (value === "conditionally_approved") return "approved";
+  if (["rejected", "withdrawn"].includes(value)) return "closed";
+  return "all";
+};
 
 const ResidenceInbox = () => {
   const navigate = useNavigate();
+  const { residence } = useOutletContext<ResidencePortalContext>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { residence } = useOutletContext<ResidenceContext>();
-  
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState(searchParams.get('status') || 'all');
+  const [applications, setApplications] = useState<ApplicationRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusGroup, setStatusGroup] = useState<ResidenceApplicationStatusGroup>(() => statusGroupFromParam(searchParams.get("status")));
+  const [funding, setFunding] = useState(searchParams.get("funding") || "all");
+
+  const load = useCallback(async () => {
+    if (!residence?.id) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error: appsError } = await supabase
+        .from("applications")
+        .select("id, status, funding_type, created_at, updated_at, move_in_date, notes, user_id, institution_type")
+        .eq("residence_id", residence.id)
+        .order("created_at", { ascending: false });
+      if (appsError) throw appsError;
+
+      const rows = data || [];
+      const userIds = Array.from(new Set(rows.map((row) => row.user_id).filter(Boolean))) as string[];
+      let profileMap = new Map<string, ApplicationRow["profile"]>();
+
+      if (userIds.length) {
+        const { data: profiles, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, phone, student_number, campus")
+          .in("id", userIds);
+        if (profileError) throw profileError;
+        profileMap = new Map((profiles || []).map((profile) => [profile.id, profile]));
+      }
+
+      setApplications(rows.map((row) => ({ ...row, profile: row.user_id ? profileMap.get(row.user_id) || null : null })) as ApplicationRow[]);
+    } catch (err) {
+      console.error("Residence applications inbox failed:", err);
+      setError("Applications could not be loaded. Please retry.");
+    } finally {
+      setLoading(false);
+    }
+  }, [residence?.id]);
+
+  useEffect(() => {
+    setStatusGroup(statusGroupFromParam(searchParams.get("status")));
+    setFunding(searchParams.get("funding") || "all");
+  }, [searchParams]);
 
   useEffect(() => {
     if (!residence?.id) return;
-
-    const fetchApplications = async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('applications')
-          .select('id, status, funding_type, created_at, updated_at, desired_move_in, notes, user_id')
-          .eq('residence_id', residence.id)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        
-        // Fetch profiles separately
-        const userIds = [...new Set((data || []).map(a => a.user_id))];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name, email, phone')
-          .in('id', userIds);
-        
-        const profileMap = new Map(profiles?.map(p => [p.id, p]));
-        const appsWithProfiles = (data || []).map(app => ({
-          ...app,
-          profiles: profileMap.get(app.user_id) || null
-        }));
-        
-        setApplications(appsWithProfiles as Application[]);
-      } catch (err) {
-        console.error('Error fetching applications:', err);
-        toast.error('Failed to load applications');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchApplications();
-
-    // Subscribe to changes
+    void load();
     const channel = supabase
-      .channel('residence-inbox')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'applications',
-          filter: `residence_id=eq.${residence.id}`
-        },
-        () => fetchApplications()
-      )
+      .channel(`residence-inbox-${residence.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "applications", filter: `residence_id=eq.${residence.id}` }, () => void load())
       .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [residence?.id, load]);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [residence?.id]);
+  const counts = useMemo(() => Object.fromEntries(RESIDENCE_APPLICATION_GROUPS.map((group) => [group.value, applications.filter((app) => statusMatchesGroup(app.status, group.value)).length])), [applications]);
 
-  // Filter applications
-  const filteredApplications = applications.filter(app => {
-    // Status filter
-    if (activeTab !== 'all') {
-      if (activeTab === 'new' && !['new', 'submitted'].includes(app.status)) return false;
-      if (activeTab === 'approved' && !['provisionally_approved', 'approved'].includes(app.status)) return false;
-      if (activeTab === 'declined' && !['declined', 'rejected'].includes(app.status)) return false;
-      if (activeTab === 'under_review' && !['under_review', 'ready_for_review'].includes(app.status)) return false;
-      if (activeTab === 'docs_required' && app.status !== 'docs_required') return false;
-    }
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return applications.filter((app) => {
+      if (!statusMatchesGroup(app.status, statusGroup)) return false;
+      if (funding !== "all" && (app.funding_type || "other") !== funding) return false;
+      if (!q) return true;
+      const haystack = [app.profile?.full_name, app.profile?.email, app.profile?.phone, app.profile?.student_number, app.profile?.campus, getResidenceApplicationRef(app.id)].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [applications, statusGroup, funding, search]);
 
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const name = app.profiles?.full_name?.toLowerCase() || '';
-      const email = app.profiles?.email?.toLowerCase() || '';
-      return name.includes(query) || email.includes(query) || app.id.includes(query);
-    }
-
-    return true;
-  });
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    setSearchParams(value === 'all' ? {} : { status: value });
-    setSelectedIds(new Set());
+  const changeStatus = (value: ResidenceApplicationStatusGroup) => {
+    const next = new URLSearchParams(searchParams);
+    if (value === "all") next.delete("status"); else next.set("status", value);
+    setSearchParams(next, { replace: true });
   };
 
-  const toggleSelect = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedIds(newSelected);
+  const changeFunding = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value === "all") next.delete("funding"); else next.set("funding", value);
+    setSearchParams(next, { replace: true });
   };
 
-  const selectAll = () => {
-    if (selectedIds.size === filteredApplications.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredApplications.map(a => a.id)));
-    }
-  };
+  const nextNew = applications.find((app) => app.status === "submitted");
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; className: string }> = {
-      'new': { label: 'New', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
-      'submitted': { label: 'Submitted', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
-      'docs_required': { label: 'Docs Required', className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' },
-      'ready_for_review': { label: 'Ready', className: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' },
-      'under_review': { label: 'Under Review', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
-      'provisionally_approved': { label: 'Approved', className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
-      'approved': { label: 'Approved', className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
-      'declined': { label: 'Declined', className: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
-      'rejected': { label: 'Rejected', className: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
-      'stale': { label: 'Stale', className: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300' },
-    };
-    const config = statusConfig[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
-    return <Badge className={config.className}>{config.label}</Badge>;
-  };
-
-  const getFundingBadge = (type: string) => {
-    if (type === 'nsfas') {
-      return <Badge variant="outline" className="bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300 text-xs">NSFAS</Badge>;
-    }
-    if (type === 'bursary') {
-      return <Badge variant="outline" className="text-xs">Bursary</Badge>;
-    }
-    if (type === 'private') {
-      return <Badge variant="outline" className="text-xs">Private</Badge>;
-    }
-    return null;
-  };
-
-  const maskName = (name: string) => {
-    if (!name) return 'Unknown';
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return `${parts[0]} ${parts[parts.length - 1][0]}.`;
-    }
-    return name;
-  };
-
-  const getTimeAgo = (date: string) => {
-    const now = new Date();
-    const then = new Date(date);
-    const diffMs = now.getTime() - then.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return `${Math.floor(diffDays / 30)} months ago`;
-  };
-
-  const getTabCount = (tabValue: string) => {
-    if (tabValue === 'all') return applications.length;
-    if (tabValue === 'new') return applications.filter(a => ['new', 'submitted'].includes(a.status)).length;
-    if (tabValue === 'approved') return applications.filter(a => ['provisionally_approved', 'approved'].includes(a.status)).length;
-    if (tabValue === 'declined') return applications.filter(a => ['declined', 'rejected'].includes(a.status)).length;
-    if (tabValue === 'under_review') return applications.filter(a => ['under_review', 'ready_for_review'].includes(a.status)).length;
-    return applications.filter(a => a.status === tabValue).length;
-  };
-
-  if (!residence) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>;
-  }
+  if (!residence) return <div className="flex min-h-[320px] items-center justify-center text-sm text-muted-foreground">Loading your residence...</div>;
 
   return (
     <>
-      <SEO 
-        title={`Applications Inbox | ${residence.name} | ResKonnect`}
-        description="Manage residence applications"
-      />
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <SEO noIndex title={`Applications | ${residence.name} | ResKonnect`} description={`Review accommodation applications for ${residence.name}.`} />
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Applications Inbox</h1>
-            <p className="text-muted-foreground">
-              {filteredApplications.length} application{filteredApplications.length !== 1 ? 's' : ''}
-            </p>
+            <p className="text-sm font-semibold text-primary">{residence.name}</p>
+            <h1 className="mt-1 text-3xl font-black tracking-tight">Applications</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Search, filter and open every application submitted to this accommodation.</p>
           </div>
-          
-          {selectedIds.size > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {selectedIds.size} selected
-              </span>
-              <Button variant="outline" size="sm" disabled>
-                <Download className="mr-2 h-4 w-4" />
-                Download ZIP
-              </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh</Button>
+            {nextNew && <Button onClick={() => navigate(`/residence/application/${nextNew.id}`)}>Review next new <ArrowRight className="ml-2 h-4 w-4" /></Button>}
+          </div>
+        </div>
+
+        <Card className="border-primary/10 shadow-sm">
+          <CardContent className="space-y-4 p-4 sm:p-5">
+            <div className="grid gap-3 md:grid-cols-[1fr_190px]">
+              <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, student number, email, phone, campus or application ref" className="pl-10" /></div>
+              <Select value={funding} onValueChange={changeFunding}><SelectTrigger><SelectValue placeholder="Funding" /></SelectTrigger><SelectContent><SelectItem value="all">All funding</SelectItem><SelectItem value="nsfas">NSFAS</SelectItem><SelectItem value="bursary">Bursary</SelectItem><SelectItem value="private">Private</SelectItem><SelectItem value="other">Other / unspecified</SelectItem></SelectContent></Select>
             </div>
-          )}
-        </div>
 
-        {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, email, or ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {RESIDENCE_APPLICATION_GROUPS.map((group) => (
+                <Button key={group.value} size="sm" variant={statusGroup === group.value ? "default" : "outline"} onClick={() => changeStatus(group.value)} className="shrink-0">
+                  {group.label}<Badge variant={statusGroup === group.value ? "secondary" : "outline"} className="ml-2">{counts[group.value] || 0}</Badge>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Status Tabs */}
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="w-full justify-start overflow-x-auto">
-            {STATUS_TABS.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value} className="gap-2">
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-                <Badge variant="secondary" className="ml-1">
-                  {getTabCount(tab.value)}
-                </Badge>
-              </TabsTrigger>
+        {error ? (
+          <Card className="border-destructive/30 bg-destructive/5"><CardContent className="p-7 text-center"><p className="font-semibold text-destructive">{error}</p><Button className="mt-4" variant="outline" onClick={() => void load()}>Try again</Button></CardContent></Card>
+        ) : loading ? (
+          <Card><CardContent className="py-16 text-center text-sm text-muted-foreground">Loading applications...</CardContent></Card>
+        ) : filtered.length === 0 ? (
+          <Card><CardContent className="py-14 text-center"><Inbox className="mx-auto h-9 w-9 text-muted-foreground" /><p className="mt-3 font-semibold">No matching applications</p><p className="mx-auto mt-1 max-w-lg text-sm leading-6 text-muted-foreground">{applications.length ? "Change the status, funding or search filters to see more applications." : "No student has submitted an application to this accommodation yet. New applications will appear here automatically."}</p>{applications.length > 0 && <Button variant="outline" className="mt-4" onClick={() => { setSearch(""); changeStatus("all"); changeFunding("all"); }}>Clear filters</Button>}</CardContent></Card>
+        ) : (
+          <div className="grid gap-3">
+            {filtered.map((app) => (
+              <Card key={app.id} className="cursor-pointer transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md" onClick={() => navigate(`/residence/application/${app.id}`)}>
+                <CardContent className="p-4 sm:p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Users className="h-5 w-5" /></div>
+                      <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h2 className="truncate font-bold">{app.profile?.full_name || "Applicant"}</h2><Badge variant={app.status === "rejected" ? "destructive" : app.status === "approved" ? "default" : "secondary"}>{getResidenceApplicationStatusLabel(app.status)}</Badge></div><p className="mt-1 text-xs text-muted-foreground">Ref {getResidenceApplicationRef(app.id)} · {app.created_at ? new Date(app.created_at).toLocaleDateString("en-ZA") : "Date unavailable"}</p><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">{app.profile?.student_number && <span>Student: {app.profile.student_number}</span>}{app.profile?.campus && <span>{app.profile.campus}</span>}{app.move_in_date && <span>Move-in: {new Date(`${app.move_in_date}T00:00:00`).toLocaleDateString("en-ZA")}</span>}</div></div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">{app.funding_type && <Badge variant="outline" className="uppercase">{app.funding_type}</Badge>}{app.institution_type && <Badge variant="outline">{app.institution_type}</Badge>}<Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); navigate(`/residence/application/${app.id}`); }}>Open application <ArrowRight className="ml-2 h-3.5 w-3.5" /></Button></div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
-          </TabsList>
+          </div>
+        )}
 
-          <TabsContent value={activeTab} className="mt-6">
-            {/* Applications List */}
-            <Card>
-              <CardHeader className="py-3 px-4 border-b">
-                <div className="flex items-center gap-4">
-                  <Checkbox 
-                    checked={selectedIds.size === filteredApplications.length && filteredApplications.length > 0}
-                    onCheckedChange={selectAll}
-                  />
-                  <span className="text-sm font-medium text-muted-foreground flex-1">
-                    Applicant
-                  </span>
-                  <span className="text-sm font-medium text-muted-foreground hidden md:block w-24">
-                    Funding
-                  </span>
-                  <span className="text-sm font-medium text-muted-foreground hidden lg:block w-28">
-                    Applied
-                  </span>
-                  <span className="text-sm font-medium text-muted-foreground w-28">
-                    Status
-                  </span>
-                  <span className="w-8"></span>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                {isLoading ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    Loading applications...
-                  </div>
-                ) : filteredApplications.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    No applications found
-                  </div>
-                ) : (
-                  <div className="divide-y">
-                    {filteredApplications.map((app) => (
-                      <div 
-                        key={app.id}
-                        className="flex items-center gap-4 p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                        onClick={(e) => {
-                          if ((e.target as HTMLElement).closest('button, [role="checkbox"]')) return;
-                          navigate(`/residence/application/${app.id}`);
-                        }}
-                      >
-                        <Checkbox 
-                          checked={selectedIds.has(app.id)}
-                          onCheckedChange={() => toggleSelect(app.id)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                            <Users className="w-5 h-5 text-primary" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">
-                              {maskName(app.profiles?.full_name || 'Unknown')}
-                            </p>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {app.id.substring(0, 8).toUpperCase()}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="hidden md:block w-24">
-                          {getFundingBadge(app.funding_type)}
-                        </div>
-
-                        <div className="hidden lg:block w-28 text-sm text-muted-foreground">
-                          {getTimeAgo(app.created_at)}
-                        </div>
-
-                        <div className="w-28">
-                          {getStatusBadge(app.status)}
-                        </div>
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/residence/application/${app.id}`)}>
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem disabled>
-                              Download Documents
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {!loading && !error && filtered.length > 0 && <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground"><span>{filtered.length} of {applications.length} applications shown</span><span className="hidden items-center gap-1 sm:flex"><SlidersHorizontal className="h-4 w-4" /> Filters update instantly</span></div>}
       </div>
     </>
   );
