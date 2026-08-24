@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Building2, Home, LogOut, Menu, LayoutDashboard, RefreshCw, TrendingUp, ShoppingCart, Film, Cpu, GraduationCap, Users, ClipboardCheck } from "lucide-react";
+import { BookOpen, Building2, Home, LogOut, Menu, LayoutDashboard, RefreshCw, TrendingUp, ShoppingCart, Film, Cpu, GraduationCap, Users, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +37,7 @@ const allNavItems = [
   { icon: GraduationCap, label: "TVET Hub", path: "/admin/tvet", roles: GOD_MODE_ROLES },
   { icon: ShoppingCart, label: "Commerce Hub", path: "/admin/commerce", roles: GOD_MODE_ROLES },
   { icon: Film, label: "Media Hub", path: "/admin/media", roles: GOD_MODE_ROLES },
+  { icon: BookOpen, label: "Career & Education", path: "/admin/career-education", roles: GOD_MODE_ROLES },
   { icon: Cpu, label: "System Hub", path: "/admin/system", roles: GOD_MODE_ROLES },
 ];
 
@@ -59,9 +60,7 @@ const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
-  const navItems = allNavItems.filter(
-    (item) => staffRole && (item.roles as readonly string[]).includes(staffRole)
-  );
+  const navItems = allNavItems.filter((item) => staffRole && (item.roles as readonly string[]).includes(staffRole));
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -81,9 +80,7 @@ const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
           {!collapsed && (
             <div className="min-w-0">
               <img src={BRAND.logos.full} alt={BRAND.name} className="h-6 w-auto object-contain" />
-              <Badge variant="outline" className="text-[10px] mt-1">
-                {roleLabels[staffRole || "admin"]}
-              </Badge>
+              <Badge variant="outline" className="text-[10px] mt-1">{roleLabels[staffRole || "admin"]}</Badge>
             </div>
           )}
         </div>
@@ -97,15 +94,8 @@ const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
                 const isActive = location.pathname === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      tooltip={item.label}
-                    >
-                      <Link to={item.path}>
-                        <item.icon className="w-4 h-4" />
-                        <span>{item.label}</span>
-                      </Link>
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                      <Link to={item.path}><item.icon className="w-4 h-4" /><span>{item.label}</span></Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -117,28 +107,9 @@ const AdminSidebar = ({ staffRole }: { staffRole: StaffRole | null }) => {
 
       <SidebarFooter className="border-t p-2 space-y-1">
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleRefresh} tooltip="Refresh Data">
-              <RefreshCw className="w-4 h-4" />
-              <span>Refresh Data</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => navigate("/")} tooltip="Public Site">
-              <Home className="w-4 h-4" />
-              <span>View Public Site</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={handleLogout}
-              tooltip="Logout"
-              className="text-destructive hover:text-destructive"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Logout</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          <SidebarMenuItem><SidebarMenuButton onClick={handleRefresh} tooltip="Refresh Data"><RefreshCw className="w-4 h-4" /><span>Refresh Data</span></SidebarMenuButton></SidebarMenuItem>
+          <SidebarMenuItem><SidebarMenuButton onClick={() => navigate("/")} tooltip="Public Site"><Home className="w-4 h-4" /><span>View Public Site</span></SidebarMenuButton></SidebarMenuItem>
+          <SidebarMenuItem><SidebarMenuButton onClick={handleLogout} tooltip="Logout" className="text-destructive hover:text-destructive"><LogOut className="w-4 h-4" /><span>Logout</span></SidebarMenuButton></SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
@@ -150,15 +121,9 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const navigate = useNavigate();
 
   if (!isGodMode && staffRole) {
-    // Safety check: if somehow a scoped staff role gets into AdminLayout,
-    // we should not render it and redirect them immediately.
-    // They should have been caught by AdminRoute, but this is a second layer of protection.
     console.warn(`[AdminLayout] Scoped staff role ${staffRole} detected in AdminLayout. Redirecting...`);
-    if (staffRole === 'tvet_lead') {
-      navigate('/tvet-dashboard');
-    } else {
-      navigate('/dashboard');
-    }
+    if (staffRole === 'tvet_lead') navigate('/tvet-dashboard');
+    else navigate('/dashboard');
     return null;
   }
 
@@ -166,16 +131,9 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AdminSidebar staffRole={staffRole} />
-
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-12 flex items-center justify-between border-b bg-card px-4 shrink-0 sticky top-0 z-40">
-            <SidebarTrigger />
-            <ThemeToggle />
-          </header>
-
-          <main className="flex-1 p-4 md:p-6 lg:p-8">
-            {children}
-          </main>
+          <header className="h-12 flex items-center justify-between border-b bg-card px-4 shrink-0 sticky top-0 z-40"><SidebarTrigger /><ThemeToggle /></header>
+          <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
         </div>
       </div>
     </SidebarProvider>
