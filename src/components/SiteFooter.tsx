@@ -39,7 +39,7 @@ const columns = [
     links: [
       { label: "Partner With ResKonnect", to: "/partners" },
       { label: "List Your Property", to: "/partners/landlords" },
-      { label: "Residence Portal", to: "/residence/login" },
+      { label: "Landlord Portal", to: "/residence/login" },
       { label: "Institutions & Business", to: "/partners/institutions" },
       { label: "Become a Recruiter", to: "/recruit" },
     ],

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Building2, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getAuthErrorMessage } from "@/lib/authErrors";
 import { resolveResidencePortalAccount } from "@/lib/residencePortal";
 import SEO from "@/components/SEO";
+import { BRAND } from "@/constants/brand";
 
 const ResidenceLogin = () => {
   const navigate = useNavigate();
@@ -78,12 +79,15 @@ const ResidenceLogin = () => {
 
   return (
     <>
-      <SEO title="Residence Portal Login | ResKonnect" description="Sign in to review and manage applications for your ResKonnect accommodation listing." noIndex />
+      <SEO title="Landlord Portal Login | ResKonnect" description="Sign in to review and manage applications for your ResKonnect accommodation listing." noIndex />
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-primary/[0.045] p-4">
         <div className="w-full max-w-md">
           <div className="mb-6 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Building2 className="h-8 w-8" />
+            <Link to="/" aria-label="ResKonnect home" className="inline-flex justify-center">
+              <img src={BRAND.logos.full} alt={BRAND.name} className="h-16 w-auto max-w-[260px] object-contain" />
+            </Link>
+            <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-primary">
+              <ShieldCheck className="h-3.5 w-3.5" /> Landlord access
             </div>
             <h1 className="mt-4 text-3xl font-black tracking-tight">Residence Portal</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">Review applications, contact applicants and update decisions for your accommodation only.</p>
