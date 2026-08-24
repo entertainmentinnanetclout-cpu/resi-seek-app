@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
+import AdminPartnerShowcase from "@/components/admin/AdminPartnerShowcase";
 import SEO from "@/components/SEO";
 import AdminCareerEducationContent from "./AdminCareerEducationContent";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,12 +34,13 @@ const AdminCareerEducation = () => {
 
   return (
     <AdminLayout>
-      <SEO title="Career & Education Content | Admin" description="Manage Career & Education providers, partner videos and transcripts." noIndex />
+      <SEO title="Career, Education & Partner Content | Admin" description="Manage Career & Education collaborators, videos and the public partner showcase." noIndex />
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Career & Education Content</h1>
-          <p className="mt-1 text-muted-foreground">Add new partner videos, exact TikTok/YouTube URLs, transcripts and choose the featured video shown on public pages.</p>
+          <h1 className="text-3xl font-bold">Career, Education & Partnerships</h1>
+          <p className="mt-1 text-muted-foreground">Manage Tumelo's collaboration content, contributor videos and the partner/client/institutional logo showcase displayed on the public site.</p>
         </div>
+        <AdminPartnerShowcase />
         <AdminCareerEducationContent />
       </div>
     </AdminLayout>
