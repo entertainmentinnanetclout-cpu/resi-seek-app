@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Building2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Building2, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAuthErrorMessage } from "@/lib/authErrors";
+import { resolveResidencePortalAccount } from "@/lib/residencePortal";
 import SEO from "@/components/SEO";
 
 const ResidenceLogin = () => {
@@ -18,68 +19,58 @@ const ResidenceLogin = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(false);
 
-  // If already logged in, check if they have residence portal access
   useEffect(() => {
-    const checkExistingSession = async () => {
-      if (user) {
-        const { data: portalAccount } = await supabase
-          .from('residence_portal_accounts')
-          .select('residence_id, is_active')
-          .eq('user_id', user.id)
-          .single();
+    let active = true;
 
-        if (portalAccount?.is_active) {
-          navigate('/residence');
-        }
+    const checkExistingSession = async () => {
+      if (!user) return;
+      setCheckingSession(true);
+      try {
+        const account = await resolveResidencePortalAccount(user);
+        if (active && account?.is_active) navigate("/residence", { replace: true });
+      } catch (err) {
+        console.error("Residence portal session check failed:", err);
+      } finally {
+        if (active) setCheckingSession(false);
       }
     };
-    checkExistingSession();
+
+    void checkExistingSession();
+    return () => { active = false; };
   }, [user, navigate]);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
     setIsLoading(true);
 
     try {
-      // Sign in with email/password
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
         password,
       });
+      if (error) throw error;
+      if (!data.user) throw new Error("Login failed");
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error('Login failed');
-      }
-
-      // Check if user has residence portal access
-      const { data: portalAccount, error: portalError } = await supabase
-        .from('residence_portal_accounts')
-        .select('residence_id, is_active')
-        .eq('user_id', authData.user.id)
-        .single();
-
-      if (portalError || !portalAccount) {
-        // Sign out since they don't have portal access
+      const portalAccount = await resolveResidencePortalAccount(data.user);
+      if (!portalAccount) {
         await supabase.auth.signOut();
-        toast.error('This account is not registered as a residence portal user');
+        toast.error("No residence portal access is linked to this email. Ask a ResKonnect administrator to add your residence.");
         return;
       }
 
       if (!portalAccount.is_active) {
         await supabase.auth.signOut();
-        toast.error('Your residence portal account has been deactivated');
+        toast.error("This residence portal account is inactive. Please contact ResKonnect support.");
         return;
       }
 
-      toast.success('Welcome to the Residence Portal!');
-      navigate('/residence');
-
+      toast.success("Residence portal ready.");
+      navigate("/residence", { replace: true });
     } catch (error: any) {
-      console.error('Login error:', error);
-      toast.error(getAuthErrorMessage(error, 'Failed to login'));
+      console.error("Residence portal login error:", error);
+      toast.error(getAuthErrorMessage(error, "Could not sign in to the residence portal"));
     } finally {
       setIsLoading(false);
     }
@@ -87,91 +78,54 @@ const ResidenceLogin = () => {
 
   return (
     <>
-      <SEO 
-        title="Residence Portal Login | ResKonnect"
-        description="Login to manage your residence applications on ResKonnect"
-      />
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-6">
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-              <Building2 className="w-8 h-8 text-primary" />
+      <SEO title="Residence Portal Login | ResKonnect" description="Sign in to review and manage applications for your ResKonnect accommodation listing." noIndex />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-primary/[0.045] p-4">
+        <div className="w-full max-w-md">
+          <div className="mb-6 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Building2 className="h-8 w-8" />
             </div>
-            <h1 className="text-3xl font-bold">Residence Portal</h1>
-            <p className="text-muted-foreground">
-              Manage your residence applications
-            </p>
+            <h1 className="mt-4 text-3xl font-black tracking-tight">Residence Portal</h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">Review applications, contact applicants and update decisions for your accommodation only.</p>
           </div>
 
-          {/* Login Card */}
-          <Card className="border-2">
+          <Card className="border-primary/10 shadow-lg shadow-primary/5">
             <CardHeader>
-              <CardTitle>Welcome back</CardTitle>
-              <CardDescription>
-                Sign in to access your residence dashboard
-              </CardDescription>
+              <CardTitle>Sign in</CardTitle>
+              <CardDescription>Use the email connected to your residence portal account.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="residence@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
+                  <Label htmlFor="residence-email">Email</Label>
+                  <Input id="residence-email" type="email" autoComplete="email" placeholder="admin@yourresidence.co.za" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading || checkingSession} />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="residence-password">Password</Label>
                   <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
+                    <Input id="residence-password" type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading || checkingSession} className="pr-11" />
+                    <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground" aria-label={showPassword ? "Hide password" : "Show password"}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    'Sign In'
-                  )}
+                <Button type="submit" size="lg" className="w-full" disabled={isLoading || checkingSession}>
+                  {(isLoading || checkingSession) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {checkingSession ? "Opening portal..." : isLoading ? "Signing in..." : "Open Residence Portal"}
                 </Button>
               </form>
+
+              <div className="mt-5 flex items-start gap-2 rounded-xl bg-muted/60 p-3 text-xs leading-5 text-muted-foreground">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>Access is restricted to the residence linked to your account. Applications from other accommodations are not visible.</span>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Footer */}
-          <div className="text-center text-sm text-muted-foreground">
-            <p>
-              Need access? Contact ResKonnect admin to set up your residence portal account.
-            </p>
-            <a href="/" className="text-primary hover:underline mt-2 inline-block">
-              ← Back to ResKonnect
-            </a>
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            <p>Need portal access or cannot sign in? Contact the ResKonnect administrator who manages your listing.</p>
+            <Link to="/" className="mt-2 inline-block font-semibold text-primary hover:underline">Back to ResKonnect</Link>
           </div>
         </div>
       </div>
