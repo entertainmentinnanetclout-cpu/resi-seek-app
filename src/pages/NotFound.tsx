@@ -5,6 +5,7 @@ import About from "@/pages/public/About";
 import ManagedSeoPage from "@/pages/seo/ManagedSeoPage";
 import PropertyOpportunityDetail from "@/pages/public/PropertyOpportunityDetail";
 import PublicOpportunityDetail from "@/pages/public/PublicOpportunityDetail";
+import TumeloCareerEducation from "@/pages/public/TumeloCareerEducation";
 
 const MANAGED_SEARCH_PATHS = new Set([
   "/ai",
@@ -19,12 +20,18 @@ const MANAGED_SEARCH_PATHS = new Set([
 
 const NotFound = () => {
   const location = useLocation();
-  const isAboutRoute = location.pathname === "/about" || location.pathname === "/contact";
   const normalizedPath = location.pathname.length > 1 ? location.pathname.replace(/\/+$/, "") : location.pathname;
+  const isAboutRoute = normalizedPath === "/about" || normalizedPath === "/contact";
+  const isTumeloCareerRoute = normalizedPath === "/career-education/tumelo";
   const isManagedSearchRoute = MANAGED_SEARCH_PATHS.has(normalizedPath);
   const isPublishedPropertyRoute = /^\/properties\/[^/]+$/.test(normalizedPath);
   const isPublishedOpportunityRoute = /^\/opportunity\/[^/]+$/.test(normalizedPath);
-  const isKnownFallbackRoute = isAboutRoute || isManagedSearchRoute || isPublishedPropertyRoute || isPublishedOpportunityRoute;
+  const isKnownFallbackRoute =
+    isAboutRoute ||
+    isTumeloCareerRoute ||
+    isManagedSearchRoute ||
+    isPublishedPropertyRoute ||
+    isPublishedOpportunityRoute;
 
   useEffect(() => {
     if (!isKnownFallbackRoute) {
@@ -33,6 +40,7 @@ const NotFound = () => {
   }, [isKnownFallbackRoute, location.pathname]);
 
   if (isAboutRoute) return <About />;
+  if (isTumeloCareerRoute) return <TumeloCareerEducation />;
   if (isManagedSearchRoute) return <ManagedSeoPage pagePath={normalizedPath} />;
   if (isPublishedPropertyRoute) return <PropertyOpportunityDetail />;
   if (isPublishedOpportunityRoute) return <PublicOpportunityDetail />;
