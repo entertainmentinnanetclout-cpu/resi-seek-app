@@ -1,304 +1,155 @@
-import { useState, useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
-import { 
-  TrendingUp, Users, Clock, CheckCircle, XCircle, 
-  FileText, Calendar, BarChart3
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useOutletContext } from "react-router-dom";
+import { ArrowRight, CheckCircle2, Clock3, FileText, Inbox, RefreshCw, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { getResidenceApplicationStatusLabel, RESIDENCE_APPLICATION_STATUS_META } from "@/lib/residenceApplications";
 import SEO from "@/components/SEO";
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
-} from "recharts";
+import type { ResidencePortalContext } from "./ResidenceLayout";
 
-interface ResidenceContext {
-  residence: { id: string; name: string } | null;
+interface AnalyticsRow {
+  status: string;
+  funding_type: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
-
-interface Stats {
-  totalApplications: number;
-  thisMonth: number;
-  lastMonth: number;
-  approvalRate: number;
-  avgResponseTime: number;
-  nsfasPercentage: number;
-  statusBreakdown: { name: string; value: number; color: string }[];
-  fundingBreakdown: { name: string; value: number; color: string }[];
-}
-
-const COLORS = ['#3b82f6', '#22c55e', '#eab308', '#ef4444', '#8b5cf6', '#6b7280'];
 
 const ResidenceAnalytics = () => {
-  const { residence } = useOutletContext<ResidenceContext>();
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const { residence } = useOutletContext<ResidencePortalContext>();
+  const [applications, setApplications] = useState<AnalyticsRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!residence?.id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: queryError } = await supabase
+        .from("applications")
+        .select("status, funding_type, created_at, updated_at")
+        .eq("residence_id", residence.id)
+        .order("created_at", { ascending: false });
+      if (queryError) throw queryError;
+      setApplications((data || []) as AnalyticsRow[]);
+    } catch (err) {
+      console.error("Residence analytics load failed:", err);
+      setError("Analytics could not be loaded right now.");
+    } finally {
+      setLoading(false);
+    }
+  }, [residence?.id]);
 
   useEffect(() => {
     if (!residence?.id) return;
+    void load();
+    const channel = supabase
+      .channel(`residence-analytics-${residence.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "applications", filter: `residence_id=eq.${residence.id}` }, () => void load())
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [residence?.id, load]);
 
-    const fetchAnalytics = async () => {
-      setIsLoading(true);
-      try {
-        const { data: applications, error } = await supabase
-          .from('applications')
-          .select('status, funding_type, created_at, updated_at')
-          .eq('residence_id', residence.id);
+  const analytics = useMemo(() => {
+    const now = new Date();
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+    const lastMonthEnd = thisMonthStart - 1;
 
-        if (error) throw error;
+    const thisMonth = applications.filter((app) => app.created_at && new Date(app.created_at).getTime() >= thisMonthStart).length;
+    const lastMonth = applications.filter((app) => {
+      if (!app.created_at) return false;
+      const time = new Date(app.created_at).getTime();
+      return time >= lastMonthStart && time <= lastMonthEnd;
+    }).length;
 
-        const now = new Date();
-        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+    const approved = applications.filter((app) => ["conditionally_approved", "approved"].includes(app.status)).length;
+    const decided = applications.filter((app) => ["conditionally_approved", "approved", "rejected"].includes(app.status)).length;
+    const nsfas = applications.filter((app) => app.funding_type === "nsfas").length;
+    const pending = applications.filter((app) => ["submitted", "documents_required", "under_review"].includes(app.status)).length;
 
-        const thisMonthApps = applications?.filter(a => new Date(a.created_at) >= thisMonthStart) || [];
-        const lastMonthApps = applications?.filter(a => {
-          const date = new Date(a.created_at);
-          return date >= lastMonthStart && date <= lastMonthEnd;
-        }) || [];
+    const statusCounts = new Map<string, number>();
+    applications.forEach((app) => statusCounts.set(app.status, (statusCounts.get(app.status) || 0) + 1));
+    const fundingCounts = new Map<string, number>();
+    applications.forEach((app) => {
+      const type = app.funding_type || "unspecified";
+      fundingCounts.set(type, (fundingCounts.get(type) || 0) + 1);
+    });
 
-        const approved = applications?.filter(a => 
-          ['provisionally_approved', 'approved'].includes(a.status)
-        ).length || 0;
-        
-        const decided = applications?.filter(a => 
-          ['provisionally_approved', 'approved', 'declined', 'rejected'].includes(a.status)
-        ).length || 0;
-
-        const nsfasCount = applications?.filter(a => a.funding_type === 'nsfas').length || 0;
-
-        // Status breakdown
-        const statusCounts: Record<string, number> = {};
-        applications?.forEach(a => {
-          const displayStatus = 
-            ['new', 'submitted'].includes(a.status) ? 'New' :
-            a.status === 'docs_required' ? 'Docs Required' :
-            ['under_review', 'ready_for_review'].includes(a.status) ? 'Under Review' :
-            ['provisionally_approved', 'approved'].includes(a.status) ? 'Approved' :
-            ['declined', 'rejected'].includes(a.status) ? 'Declined' : 'Other';
-          statusCounts[displayStatus] = (statusCounts[displayStatus] || 0) + 1;
-        });
-
-        const statusBreakdown = [
-          { name: 'New', value: statusCounts['New'] || 0, color: '#3b82f6' },
-          { name: 'Docs Required', value: statusCounts['Docs Required'] || 0, color: '#eab308' },
-          { name: 'Under Review', value: statusCounts['Under Review'] || 0, color: '#8b5cf6' },
-          { name: 'Approved', value: statusCounts['Approved'] || 0, color: '#22c55e' },
-          { name: 'Declined', value: statusCounts['Declined'] || 0, color: '#ef4444' },
-        ].filter(s => s.value > 0);
-
-        // Funding breakdown
-        const fundingCounts: Record<string, number> = {};
-        applications?.forEach(a => {
-          const type = a.funding_type || 'unknown';
-          fundingCounts[type] = (fundingCounts[type] || 0) + 1;
-        });
-
-        const fundingBreakdown = Object.entries(fundingCounts).map(([name, value], i) => ({
-          name: name.charAt(0).toUpperCase() + name.slice(1),
-          value,
-          color: COLORS[i % COLORS.length]
-        }));
-
-        setStats({
-          totalApplications: applications?.length || 0,
-          thisMonth: thisMonthApps.length,
-          lastMonth: lastMonthApps.length,
-          approvalRate: decided > 0 ? Math.round((approved / decided) * 100) : 0,
-          avgResponseTime: 2.5, // Placeholder - would need activity log analysis
-          nsfasPercentage: applications?.length ? Math.round((nsfasCount / applications.length) * 100) : 0,
-          statusBreakdown,
-          fundingBreakdown,
-        });
-      } catch (err) {
-        console.error('Error fetching analytics:', err);
-      } finally {
-        setIsLoading(false);
-      }
+    return {
+      total: applications.length,
+      thisMonth,
+      lastMonth,
+      approved,
+      pending,
+      nsfas,
+      approvalRate: decided ? Math.round((approved / decided) * 100) : 0,
+      statusCounts: Array.from(statusCounts.entries()).sort((a, b) => b[1] - a[1]),
+      fundingCounts: Array.from(fundingCounts.entries()).sort((a, b) => b[1] - a[1]),
     };
+  }, [applications]);
 
-    fetchAnalytics();
-  }, [residence?.id]);
+  if (!residence) return <div className="flex min-h-[320px] items-center justify-center text-sm text-muted-foreground">Loading your residence...</div>;
 
-  if (!residence) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>;
-  }
+  const monthChange = analytics.lastMonth > 0
+    ? Math.round(((analytics.thisMonth - analytics.lastMonth) / analytics.lastMonth) * 100)
+    : null;
 
   return (
     <>
-      <SEO 
-        title={`Analytics | ${residence.name} | ResKonnect`}
-        description="View your residence application analytics"
-      />
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Analytics</h1>
-          <p className="text-muted-foreground">
-            Performance insights for {residence.name}
-          </p>
+      <SEO noIndex title={`Application Analytics | ${residence.name} | ResKonnect`} description={`Application insights for ${residence.name}.`} />
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-primary">{residence.name}</p>
+            <h1 className="mt-1 text-3xl font-black tracking-tight">Application analytics</h1>
+            <p className="mt-2 text-sm text-muted-foreground">A simple operational view of applications submitted to this accommodation.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh</Button>
+            <Button onClick={() => navigate("/residence/inbox")}><Inbox className="mr-2 h-4 w-4" /> Open applications</Button>
+          </div>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoading ? '...' : stats?.totalApplications}
-              </div>
-              <p className="text-xs text-muted-foreground">All time</p>
-            </CardContent>
-          </Card>
+        {error && <Card className="border-destructive/30 bg-destructive/5"><CardContent className="p-5 text-sm text-destructive">{error}</CardContent></Card>}
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">This Month</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoading ? '...' : stats?.thisMonth}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {stats && stats.lastMonth > 0 
-                  ? `${stats.thisMonth >= stats.lastMonth ? '+' : ''}${Math.round(((stats.thisMonth - stats.lastMonth) / stats.lastMonth) * 100)}% vs last month`
-                  : 'vs last month'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Approval Rate</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {isLoading ? '...' : `${stats?.approvalRate}%`}
-              </div>
-              <p className="text-xs text-muted-foreground">Of decided applications</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">NSFAS Applicants</CardTitle>
-              <FileText className="h-4 w-4 text-purple-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {isLoading ? '...' : `${stats?.nsfasPercentage}%`}
-              </div>
-              <p className="text-xs text-muted-foreground">Of total applications</p>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Card><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">Total applications</p><p className="mt-2 text-3xl font-black">{loading ? "—" : analytics.total}</p><p className="mt-1 text-xs text-muted-foreground">All time</p></div><Users className="h-5 w-5 text-primary" /></div></CardContent></Card>
+          <Card><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">This month</p><p className="mt-2 text-3xl font-black">{loading ? "—" : analytics.thisMonth}</p><p className="mt-1 text-xs text-muted-foreground">{monthChange === null ? "No previous-month baseline" : `${monthChange >= 0 ? "+" : ""}${monthChange}% vs last month`}</p></div><Clock3 className="h-5 w-5 text-primary" /></div></CardContent></Card>
+          <Card><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">Approval rate</p><p className="mt-2 text-3xl font-black">{loading ? "—" : `${analytics.approvalRate}%`}</p><p className="mt-1 text-xs text-muted-foreground">Of decided applications</p></div><CheckCircle2 className="h-5 w-5 text-primary" /></div></CardContent></Card>
+          <Card><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">NSFAS applications</p><p className="mt-2 text-3xl font-black">{loading ? "—" : analytics.nsfas}</p><p className="mt-1 text-xs text-muted-foreground">{analytics.total ? `${Math.round((analytics.nsfas / analytics.total) * 100)}% of total` : "0% of total"}</p></div><FileText className="h-5 w-5 text-primary" /></div></CardContent></Card>
         </div>
 
-        {/* Charts */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Status Breakdown */}
           <Card>
-            <CardHeader>
-              <CardTitle>Application Status</CardTitle>
-              <CardDescription>Current status distribution</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  Loading...
-                </div>
-              ) : stats?.statusBreakdown.length === 0 ? (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  No data available
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={280}>
-                  <PieChart>
-                    <Pie
-                      data={stats?.statusBreakdown}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {stats?.statusBreakdown.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
+            <CardHeader><CardTitle>Status breakdown</CardTitle><CardDescription>Current application pipeline</CardDescription></CardHeader>
+            <CardContent className="space-y-3">
+              {analytics.statusCounts.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No application data yet.</p> : analytics.statusCounts.map(([status, count]) => {
+                const percentage = analytics.total ? Math.round((count / analytics.total) * 100) : 0;
+                const group = RESIDENCE_APPLICATION_STATUS_META[status]?.group;
+                return <button key={status} type="button" onClick={() => navigate(`/residence/inbox?status=${group === "all" || !group ? "all" : group}`)} className="w-full rounded-xl border p-4 text-left transition hover:border-primary/30 hover:bg-muted/30"><div className="flex items-center justify-between gap-3"><div><p className="font-semibold">{getResidenceApplicationStatusLabel(status)}</p><p className="mt-1 text-xs text-muted-foreground">{percentage}% of applications</p></div><Badge variant={status === "rejected" ? "destructive" : status === "approved" ? "default" : "secondary"}>{count}</Badge></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${percentage}%` }} /></div></button>;
+              })}
             </CardContent>
           </Card>
 
-          {/* Funding Breakdown */}
           <Card>
-            <CardHeader>
-              <CardTitle>Funding Types</CardTitle>
-              <CardDescription>Distribution by funding source</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  Loading...
-                </div>
-              ) : stats?.fundingBreakdown.length === 0 ? (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  No data available
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={stats?.fundingBreakdown} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={80} />
-                    <Tooltip />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                      {stats?.fundingBreakdown.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
+            <CardHeader><CardTitle>Funding breakdown</CardTitle><CardDescription>How applicants intend to fund accommodation</CardDescription></CardHeader>
+            <CardContent className="space-y-3">
+              {analytics.fundingCounts.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No funding data yet.</p> : analytics.fundingCounts.map(([funding, count]) => {
+                const percentage = analytics.total ? Math.round((count / analytics.total) * 100) : 0;
+                return <button key={funding} type="button" onClick={() => navigate(`/residence/inbox?funding=${funding}`)} className="flex w-full items-center justify-between rounded-xl border p-4 text-left transition hover:border-primary/30 hover:bg-muted/30"><div><p className="font-semibold capitalize">{funding}</p><p className="mt-1 text-xs text-muted-foreground">{percentage}% of applications</p></div><Badge variant="outline">{count}</Badge></button>;
+              })}
             </CardContent>
           </Card>
         </div>
 
-        {/* Performance Insights */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Performance Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="p-4 rounded-lg bg-muted/50">
-                <p className="text-sm text-muted-foreground">Avg. Response Time</p>
-                <p className="text-2xl font-bold">{isLoading ? '...' : '~2.5 days'}</p>
-                <p className="text-xs text-muted-foreground mt-1">First action after submission</p>
-              </div>
-              <div className="p-4 rounded-lg bg-muted/50">
-                <p className="text-sm text-muted-foreground">Conversion Rate</p>
-                <p className="text-2xl font-bold">{isLoading ? '...' : `${stats?.approvalRate}%`}</p>
-                <p className="text-xs text-muted-foreground mt-1">Applications to approvals</p>
-              </div>
-              <div className="p-4 rounded-lg bg-muted/50">
-                <p className="text-sm text-muted-foreground">NSFAS Focus</p>
-                <p className="text-2xl font-bold">{isLoading ? '...' : `${stats?.nsfasPercentage}%`}</p>
-                <p className="text-xs text-muted-foreground mt-1">NSFAS-funded applicants</p>
-              </div>
-            </div>
+        <Card className="border-primary/15 bg-primary/[0.035]">
+          <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div><p className="font-bold">{analytics.pending} application{analytics.pending === 1 ? "" : "s"} still in the active pipeline</p><p className="mt-1 text-sm text-muted-foreground">Submitted, documents required and under-review applications should be handled first.</p></div>
+            <Button variant="outline" onClick={() => navigate("/residence/inbox?status=new")}>Review pipeline <ArrowRight className="ml-2 h-4 w-4" /></Button>
           </CardContent>
         </Card>
       </div>
