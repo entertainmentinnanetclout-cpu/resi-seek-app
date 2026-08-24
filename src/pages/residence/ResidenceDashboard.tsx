@@ -1,18 +1,13 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { 
-  Inbox, Clock, CheckCircle, XCircle, FileText, 
-  TrendingUp, Users, AlertCircle, ArrowRight 
-} from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { AlertCircle, ArrowRight, CheckCircle2, Clock3, FileText, Inbox, RefreshCw, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { getResidenceApplicationRef, getResidenceApplicationStatusLabel } from "@/lib/residenceApplications";
 import SEO from "@/components/SEO";
-
-interface ResidenceContext {
-  residence: { id: string; name: string } | null;
-}
+import type { ResidencePortalContext } from "./ResidenceLayout";
 
 interface Stats {
   total: number;
@@ -20,300 +15,154 @@ interface Stats {
   docsRequired: number;
   underReview: number;
   approved: number;
-  declined: number;
-  nsfasCount: number;
+  closed: number;
+  nsfas: number;
 }
 
 interface RecentApplication {
   id: string;
   status: string;
-  funding_type: string;
-  created_at: string;
-  profiles: { full_name: string } | null;
+  funding_type: string | null;
+  created_at: string | null;
+  user_id: string;
+  full_name: string | null;
 }
 
 const ResidenceDashboard = () => {
   const navigate = useNavigate();
-  const { residence } = useOutletContext<ResidenceContext>();
-  const [stats, setStats] = useState<Stats>({
-    total: 0, new: 0, docsRequired: 0, underReview: 0, approved: 0, declined: 0, nsfasCount: 0
-  });
-  const [recentApplications, setRecentApplications] = useState<RecentApplication[]>([]);
+  const { residence } = useOutletContext<ResidencePortalContext>();
+  const [stats, setStats] = useState<Stats>({ total: 0, new: 0, docsRequired: 0, underReview: 0, approved: 0, closed: 0, nsfas: 0 });
+  const [recent, setRecent] = useState<RecentApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!residence?.id) return;
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { data, error: appsError } = await supabase
+        .from("applications")
+        .select("id, status, funding_type, created_at, user_id")
+        .eq("residence_id", residence.id)
+        .order("created_at", { ascending: false });
+      if (appsError) throw appsError;
+
+      const applications = data || [];
+      setStats({
+        total: applications.length,
+        new: applications.filter((app) => app.status === "submitted").length,
+        docsRequired: applications.filter((app) => app.status === "documents_required").length,
+        underReview: applications.filter((app) => app.status === "under_review").length,
+        approved: applications.filter((app) => ["conditionally_approved", "approved"].includes(app.status || "")).length,
+        closed: applications.filter((app) => ["rejected", "withdrawn"].includes(app.status || "")).length,
+        nsfas: applications.filter((app) => app.funding_type === "nsfas").length,
+      });
+
+      const recentRows = applications.slice(0, 6);
+      const userIds = Array.from(new Set(recentRows.map((app) => app.user_id).filter(Boolean))) as string[];
+      let profileMap = new Map<string, string | null>();
+      if (userIds.length) {
+        const { data: profiles, error: profileError } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
+        if (profileError) throw profileError;
+        profileMap = new Map((profiles || []).map((profile) => [profile.id, profile.full_name]));
+      }
+
+      setRecent(recentRows.map((app) => ({ ...app, user_id: app.user_id as string, full_name: profileMap.get(app.user_id as string) || null })));
+    } catch (err) {
+      console.error("Residence dashboard load failed:", err);
+      setError("Applications could not be loaded. Your portal access is still active; please retry.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [residence?.id]);
 
   useEffect(() => {
     if (!residence?.id) return;
+    void load();
 
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch all applications for this residence
-        const { data: applications, error } = await supabase
-          .from('applications')
-          .select('id, status, funding_type, created_at, user_id')
-          .eq('residence_id', residence.id)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        // Fetch profiles
-        const userIds = [...new Set((applications || []).map(a => a.user_id))];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', userIds);
-        
-        const profileMap = new Map(profiles?.map(p => [p.id, p]));
-
-        // Calculate stats
-        const newStats: Stats = {
-          total: applications?.length || 0,
-          new: applications?.filter(a => a.status === 'new' || a.status === 'submitted').length || 0,
-          docsRequired: applications?.filter(a => a.status === 'docs_required').length || 0,
-          underReview: applications?.filter(a => a.status === 'under_review' || a.status === 'ready_for_review').length || 0,
-          approved: applications?.filter(a => a.status === 'provisionally_approved' || a.status === 'approved').length || 0,
-          declined: applications?.filter(a => a.status === 'declined' || a.status === 'rejected').length || 0,
-          nsfasCount: applications?.filter(a => a.funding_type === 'nsfas').length || 0,
-        };
-        setStats(newStats);
-
-        // Set recent applications (top 5) with profiles
-        const recentApps = (applications || []).slice(0, 5).map(app => ({
-          ...app,
-          profiles: profileMap.get(app.user_id) || null
-        }));
-        setRecentApplications(recentApps as RecentApplication[]);
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-
-    // Subscribe to changes
     const channel = supabase
-      .channel('residence-dashboard')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'applications',
-          filter: `residence_id=eq.${residence.id}`
-        },
-        () => fetchDashboardData()
-      )
+      .channel(`residence-dashboard-${residence.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "applications", filter: `residence_id=eq.${residence.id}` }, () => void load())
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [residence?.id]);
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      'new': { label: 'New', variant: 'default' },
-      'submitted': { label: 'Submitted', variant: 'default' },
-      'docs_required': { label: 'Docs Required', variant: 'secondary' },
-      'ready_for_review': { label: 'Ready', variant: 'outline' },
-      'under_review': { label: 'Reviewing', variant: 'outline' },
-      'provisionally_approved': { label: 'Approved', variant: 'default' },
-      'approved': { label: 'Approved', variant: 'default' },
-      'declined': { label: 'Declined', variant: 'destructive' },
-      'rejected': { label: 'Rejected', variant: 'destructive' },
-    };
-    const config = statusConfig[status] || { label: status, variant: 'outline' as const };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-  };
-
-  const maskName = (name: string) => {
-    if (!name) return 'Unknown';
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return `${parts[0]} ${parts[parts.length - 1][0]}.`;
-    }
-    return name;
-  };
+    return () => { void supabase.removeChannel(channel); };
+  }, [residence?.id, load]);
 
   if (!residence) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading residence information...</p>
-      </div>
-    );
+    return <div className="flex min-h-[320px] items-center justify-center text-sm text-muted-foreground">Loading your residence...</div>;
   }
+
+  const needsAttention = stats.new + stats.docsRequired;
+  const statCards = [
+    { label: "All applications", value: stats.total, icon: Inbox, target: "/residence/inbox", note: "For this residence" },
+    { label: "New", value: stats.new, icon: AlertCircle, target: "/residence/inbox?status=new", note: "Ready to review" },
+    { label: "Needs documents", value: stats.docsRequired, icon: FileText, target: "/residence/inbox?status=documents_required", note: "Waiting on applicant" },
+    { label: "Under review", value: stats.underReview, icon: Clock3, target: "/residence/inbox?status=under_review", note: "In progress" },
+    { label: "Approved", value: stats.approved, icon: CheckCircle2, target: "/residence/inbox?status=approved", note: "Conditional + final" },
+    { label: "NSFAS", value: stats.nsfas, icon: FileText, target: "/residence/inbox?funding=nsfas", note: "Funding type" },
+  ];
 
   return (
     <>
-      <SEO 
-        title={`${residence.name} Dashboard | ResKonnect`}
-        description="Manage your residence applications"
-      />
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Welcome back!</h1>
-          <p className="text-muted-foreground">
-            Here's an overview of your applications for {residence.name}
-          </p>
+      <SEO noIndex title={`${residence.name} Residence Portal | ResKonnect`} description={`Manage accommodation applications for ${residence.name}.`} />
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-primary">Residence administration</p>
+            <h1 className="mt-1 text-3xl font-black tracking-tight">{residence.name}</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Everything here is scoped to applications submitted to this accommodation.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => void load()} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} /> Refresh</Button>
+            <Button onClick={() => navigate("/residence/inbox?status=new")}><Inbox className="mr-2 h-4 w-4" /> Review applications{needsAttention > 0 ? ` (${needsAttention})` : ""}</Button>
+          </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/residence/inbox')}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-              <Inbox className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? '...' : stats.total}</div>
-              <p className="text-xs text-muted-foreground">All time</p>
-            </CardContent>
-          </Card>
+        {error && (
+          <Card className="border-destructive/30 bg-destructive/5"><CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-destructive">{error}</p><Button size="sm" variant="outline" onClick={() => void load()}>Try again</Button></CardContent></Card>
+        )}
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow border-orange-200 dark:border-orange-800" onClick={() => navigate('/residence/inbox?status=new')}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">New Applications</CardTitle>
-              <AlertCircle className="h-4 w-4 text-orange-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{isLoading ? '...' : stats.new}</div>
-              <p className="text-xs text-muted-foreground">Needs attention</p>
+        {needsAttention > 0 && !error && (
+          <Card className="border-primary/20 bg-primary/[0.045]">
+            <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><AlertCircle className="h-5 w-5" /></div><div><p className="font-bold">{needsAttention} application{needsAttention === 1 ? "" : "s"} need attention</p><p className="mt-1 text-sm text-muted-foreground">Open new applications first, then follow up on missing documents.</p></div></div>
+              <Button onClick={() => navigate("/residence/inbox?status=new")} className="shrink-0">Start reviewing <ArrowRight className="ml-2 h-4 w-4" /></Button>
             </CardContent>
           </Card>
+        )}
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/residence/inbox?status=under_review')}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Under Review</CardTitle>
-              <Clock className="h-4 w-4 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? '...' : stats.underReview}</div>
-              <p className="text-xs text-muted-foreground">In progress</p>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow border-green-200 dark:border-green-800" onClick={() => navigate('/residence/inbox?status=approved')}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Approved</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{isLoading ? '...' : stats.approved}</div>
-              <p className="text-xs text-muted-foreground">This period</p>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {statCards.map((item) => (
+            <Card key={item.label} className="cursor-pointer transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md" onClick={() => navigate(item.target)}>
+              <CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">{item.label}</p><p className="mt-2 text-3xl font-black">{isLoading ? "—" : item.value}</p><p className="mt-1 text-xs text-muted-foreground">{item.note}</p></div><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><item.icon className="h-5 w-5" /></div></div></CardContent>
+            </Card>
+          ))}
         </div>
 
-        {/* Additional Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">NSFAS Applications</CardTitle>
-              <FileText className="h-4 w-4 text-purple-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? '...' : stats.nsfasCount}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.total > 0 ? `${Math.round((stats.nsfasCount / stats.total) * 100)}% of total` : '0%'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Docs Required</CardTitle>
-              <AlertCircle className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? '...' : stats.docsRequired}</div>
-              <p className="text-xs text-muted-foreground">Awaiting documents</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Declined</CardTitle>
-              <XCircle className="h-4 w-4 text-destructive" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? '...' : stats.declined}</div>
-              <p className="text-xs text-muted-foreground">This period</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Applications */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Recent Applications</CardTitle>
-              <CardDescription>Latest applications received</CardDescription>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => navigate('/residence/inbox')}>
-              View All
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+          <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <div><CardTitle>Recent applications</CardTitle><CardDescription>Newest submissions for {residence.name}</CardDescription></div>
+            <Button variant="outline" size="sm" onClick={() => navigate("/residence/inbox")}>View all <ArrowRight className="ml-2 h-4 w-4" /></Button>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p className="text-muted-foreground">Loading...</p>
-            ) : recentApplications.length === 0 ? (
-              <p className="text-muted-foreground">No applications yet</p>
+              <div className="py-10 text-center text-sm text-muted-foreground">Loading applications...</div>
+            ) : recent.length === 0 ? (
+              <div className="rounded-xl border border-dashed p-8 text-center"><Inbox className="mx-auto h-8 w-8 text-muted-foreground" /><p className="mt-3 font-semibold">No applications yet</p><p className="mx-auto mt-1 max-w-md text-sm leading-6 text-muted-foreground">When a student applies to this residence, their application will appear here automatically.</p></div>
             ) : (
-              <div className="space-y-4">
-                {recentApplications.map((app) => (
-                  <div 
-                    key={app.id} 
-                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/residence/application/${app.id}`)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Users className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{maskName(app.profiles?.full_name || 'Unknown')}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(app.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {app.funding_type === 'nsfas' && (
-                        <Badge variant="outline" className="bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300">
-                          NSFAS
-                        </Badge>
-                      )}
-                      {getStatusBadge(app.status)}
-                    </div>
-                  </div>
+              <div className="divide-y">
+                {recent.map((app) => (
+                  <button key={app.id} type="button" onClick={() => navigate(`/residence/application/${app.id}`)} className="flex w-full items-center gap-3 px-1 py-4 text-left transition hover:bg-muted/40 sm:px-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Users className="h-5 w-5" /></div>
+                    <div className="min-w-0 flex-1"><p className="truncate font-semibold">{app.full_name || "Applicant"}</p><p className="mt-0.5 text-xs text-muted-foreground">Ref {getResidenceApplicationRef(app.id)} · {app.created_at ? new Date(app.created_at).toLocaleDateString("en-ZA") : "Date unavailable"}</p></div>
+                    {app.funding_type && <Badge variant="outline" className="hidden uppercase sm:inline-flex">{app.funding_type}</Badge>}
+                    <Badge variant={app.status === "rejected" ? "destructive" : app.status === "approved" ? "default" : "secondary"}>{getResidenceApplicationStatusLabel(app.status)}</Badge>
+                  </button>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-4">
-            <Button onClick={() => navigate('/residence/inbox?status=new')}>
-              <AlertCircle className="mr-2 h-4 w-4" />
-              Review New Applications ({stats.new})
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/residence/inbox?status=docs_required')}>
-              <FileText className="mr-2 h-4 w-4" />
-              Pending Documents ({stats.docsRequired})
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/residence/analytics')}>
-              <TrendingUp className="mr-2 h-4 w-4" />
-              View Analytics
-            </Button>
           </CardContent>
         </Card>
       </div>
