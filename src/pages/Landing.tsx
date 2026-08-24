@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -31,47 +31,6 @@ import studentsCelebration from "@/assets/students-celebration.jpg";
 import inclusivePathwaysHero from "@/assets/hero-inclusive-pathways.jpg";
 import applicationsFundingHero from "@/assets/hero-applications-funding.jpg";
 
-/* ── Animated Counter ─────────────────────────────────── */
-const AnimatedCounter = ({ target, suffix = "" }: { target: number; suffix?: string }) => {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-  const started = useRef(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !started.current) {
-          started.current = true;
-          const duration = 1500;
-          const steps = 40;
-          const increment = target / steps;
-          let current = 0;
-          const timer = setInterval(() => {
-            current += increment;
-            if (current >= target) {
-              setCount(target);
-              clearInterval(timer);
-            } else {
-              setCount(Math.floor(current));
-            }
-          }, duration / steps);
-        }
-      },
-      { threshold: 0.3 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [target]);
-
-  return (
-    <div ref={ref} className="text-4xl md:text-5xl font-bold text-primary">
-      {count}
-      {suffix}
-    </div>
-  );
-};
-
-/* ── Landing Page ──────────────────────────────────────── */
 const Landing = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setMenuOpen] = useState(false);
@@ -109,15 +68,6 @@ const Landing = () => {
     { icon: FileCheck, title: "Easy Applications", description: "Apply to multiple residences with our simple process.", cta: { label: "Apply Now", to: "/auth" } },
   ];
 
-  const stats = [
-    { value: 500, suffix: "+", label: "Students Housed" },
-    { value: 30, suffix: "+", label: "Verified Residences" },
-    { value: 7, suffix: "", label: "Campuses Covered" },
-    { value: 9, suffix: "", label: "Provinces Reached" },
-  ];
-
-
-  // Schema data
   const organizationSchema = {
     "@context": "https://schema.org", "@type": "Organization", "name": "ResKonnect",
     "alternateName": "RESKONNECT",
@@ -146,12 +96,10 @@ const Landing = () => {
       <SiteHeader />
 
       <main>
-        {/* ── Hero ──────────────────────────────────────── */}
         <section>
           <HeroCarousel slides={fallbackSlides} autoPlay interval={6000} useDatabase={true} location="landing" />
         </section>
 
-        {/* ── Brand H1 (single H1 for the page) ────────── */}
         <section className="border-b bg-background py-6 md:py-8">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-xl font-bold leading-snug md:text-3xl">
@@ -163,10 +111,8 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* ── Interactive Need Cards section ── */}
         <InteractiveNeedSection />
 
-        {/* ── Audience Selector — University / TVET / Private ── */}
         <section className="py-8 md:py-10 bg-gradient-to-b from-primary/5 to-background">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-5">
@@ -187,34 +133,16 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* ── Stats Counter ─────────────────────────────── */}
-        <section className="py-10 md:py-14 bg-primary/5">
-          <div className="container mx-auto px-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-              {stats.map((s) => (
-                <div key={s.label}>
-                  <AnimatedCounter target={s.value} suffix={s.suffix} />
-                  <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Trusted Residences ────────────────────────── */}
         <section className="py-12 md:py-20 bg-card/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <TrustedResidencesGrid />
           </div>
         </section>
 
-        {/* ── Find Your Next Home (category-first discovery) ── */}
         <CategoryHeroSelector />
 
-        {/* ── Become Accredited (landlord CTA) ───────────── */}
         <AccreditationCTA />
 
-        {/* ── About + Dual CTA ──────────────────────────── */}
         <section className="py-12 md:py-20 bg-card/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -240,7 +168,6 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* ── Landlord Application Portal ───────────────── */}
         <section ref={landlordRef} id="landlord" className="py-12 md:py-20 relative overflow-hidden">
           <FloatingShapes className="opacity-50" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -257,7 +184,6 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* ── Why Choose ────────────────────────────────── */}
         <section className="py-12 md:py-20 relative overflow-hidden">
           <FloatingShapes />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -279,7 +205,6 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* ── Contact ───────────────────────────────────── */}
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-xl mx-auto">
