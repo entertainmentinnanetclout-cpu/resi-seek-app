@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 const client = supabase as any;
 
 const RELATIONSHIP_TYPES = [
+  ["founding_company", "Founding company & product developer"],
   ["partner", "Partner"],
   ["strategic_collaborator", "Strategic collaborator"],
   ["client", "Client"],

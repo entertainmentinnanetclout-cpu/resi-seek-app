@@ -2,33 +2,39 @@ import React from "react";
 import PublicLayout from "@/components/PublicLayout";
 import SEO from "@/components/SEO";
 import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
+import PartnerShowcase from "@/components/landing/PartnerShowcase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Building2, Building, Award, Briefcase, Landmark } from "lucide-react";
+import { Building2, Building, Award, Landmark } from "lucide-react";
 
 export const Partners: React.FC = () => {
   return (
     <PublicLayout>
       <SEO
         title="ResKonnect Partners | Landlords, Institutions & Businesses"
-        description="List student accommodation, receive property leads, support student intake, and partner with ResKonnect for digital student journey solutions."
-        keywords="list student accommodation, landlord leads, institution partnerships, student marketing"
+        description="ResKonnect is a Start To Up product connecting landlords, institutions, businesses and student-support collaborators through one digital ecosystem."
+        keywords="ResKonnect partners, Start To Up, list student accommodation, landlord leads, institution partnerships, student marketing"
         canonicalPath="/partners"
       />
 
       <div className="py-16 md:py-24 bg-gradient-to-b from-primary/5 via-background to-background">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
               ResKonnect Partners Network
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              We connect property owners, public institutions, and corporate businesses to create a seamless tertiary support ecosystem nationwide.
+              ResKonnect is a Start To Up product, built to connect property owners, institutions, businesses and student-support collaborators through a coordinated tertiary ecosystem.
             </p>
           </div>
+        </div>
+      </div>
 
+      <PartnerShowcase />
+
+      <div className="py-16 md:py-20 bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             <Card className="hover:shadow-lg transition-all border-border/80">
               <CardContent className="p-6 space-y-3">
@@ -106,7 +112,6 @@ export const Partners: React.FC = () => {
               ]}
             />
           </div>
-
         </div>
       </div>
     </PublicLayout>
