@@ -1,35 +1,39 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Shield, Star, Building2, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { MapPin, Shield, Star, Building2, Sparkles, ChevronDown, ChevronRight, Search, SlidersHorizontal, WalletCards, Wifi, BedDouble } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import ResidenceImageSlideshow from './ResidenceImageSlideshow';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useResidenceSections, type ResidenceSection } from '@/hooks/useResidenceSections';
+import { useResidenceSections } from '@/hooks/useResidenceSections';
+import TumeloCareerPreview from '@/components/landing/TumeloCareerPreview';
 
 interface Residence {
-  id: string;
-  name: string;
-  address: string;
-  image_url: string | null;
-  images: string[] | null;
-  campus: string | null;
-  verification_level: string | null;
-  available_spots: number;
-  province: string | null;
-  section_category: string | null;
-  room_types: string[] | null;
+  id: string; name: string; address: string; image_url: string | null; images: string[] | null; campus: string | null;
+  verification_level: string | null; available_spots: number; province: string | null; section_category: string | null;
+  room_types: string[] | null; room_type: string | null; price: number | string | null; amenities: string[] | null;
+  distance_from_campus: number | string | null;
 }
+
+const money = (value: Residence['price']) => { const amount = Number(value || 0); return amount > 0 ? `R${amount.toLocaleString('en-ZA')}` : 'Price on request'; };
 
 const TrustedResidencesGrid = () => {
   const [residences, setResidences] = useState<Residence[]>([]);
   const [loading, setLoading] = useState(true);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [query, setQuery] = useState('');
+  const [maxRent, setMaxRent] = useState('');
+  const [campus, setCampus] = useState('all');
+  const [roomType, setRoomType] = useState('all');
+  const [amenity, setAmenity] = useState('all');
+  const [availableOnly, setAvailableOnly] = useState(true);
+  const [sortBy, setSortBy] = useState<'recommended'|'rent'|'distance'|'availability'>('recommended');
   const navigate = useNavigate();
-  const { sections, loading: sectionsLoading } = useResidenceSections("trusted");
+  const { sections, loading: sectionsLoading } = useResidenceSections('trusted');
 
-  // Auto-open first 3 sections
   useEffect(() => {
     if (sections.length > 0 && Object.keys(openSections).length === 0) {
       const initial: Record<string, boolean> = {};
@@ -41,247 +45,89 @@ const TrustedResidencesGrid = () => {
   useEffect(() => {
     const fetchTopResidences = async () => {
       try {
-        const { data, error } = await supabase
-          .from('residences')
-          .select('id, name, address, image_url, images, campus, available_spots, verification_level, province, display_order, section_category, room_types')
-          .eq('is_trusted', true)
-          .order('display_order', { ascending: true })
-          .limit(30);
-
+        const { data, error } = await supabase.from('residences')
+          .select('id, name, address, image_url, images, campus, available_spots, verification_level, province, display_order, section_category, room_types, room_type, price, amenities, distance_from_campus')
+          .eq('is_trusted', true).order('display_order', { ascending: true }).limit(30);
         if (error) throw error;
-
-        setResidences((data || []).map(r => ({
-          ...r,
-          verification_level: r.verification_level || 'basic',
-          province: r.province || 'Gauteng',
-          images: r.images || [],
-          section_category: r.section_category || null,
-          room_types: r.room_types || [],
-        })));
-      } catch (err) {
-        console.error('[TrustedResidencesGrid] Error:', err);
-      } finally {
-        setLoading(false);
-      }
+        setResidences((data || []).map((r: any) => ({ ...r, verification_level: r.verification_level || 'basic', province: r.province || 'Gauteng', images: r.images || [], room_types: r.room_types || [], amenities: Array.isArray(r.amenities) ? r.amenities : [] })));
+      } catch (err) { console.error('[TrustedResidencesGrid] Error:', err); } finally { setLoading(false); }
     };
-
     fetchTopResidences();
-
-    const channel = supabase
-      .channel('trusted-residences')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'residences' }, () => {
-        fetchTopResidences();
-      })
-      .subscribe();
-
+    const channel = supabase.channel('trusted-residences').on('postgres_changes', { event: '*', schema: 'public', table: 'residences' }, fetchTopResidences).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  const campuses = useMemo(() => [...new Set(residences.map(r => r.campus).filter(Boolean) as string[])].sort(), [residences]);
+  const roomTypes = useMemo(() => [...new Set(residences.flatMap(r => [...(r.room_types || []), ...(r.room_type ? [r.room_type] : [])]))].sort(), [residences]);
+  const amenities = useMemo(() => [...new Set(residences.flatMap(r => r.amenities || []))].sort().slice(0, 12), [residences]);
+
+  const filtered = useMemo(() => {
+    const list = residences.filter((r) => {
+      const haystack = `${r.name} ${r.address} ${r.campus || ''} ${(r.amenities || []).join(' ')} ${(r.room_types || []).join(' ')} ${r.room_type || ''}`.toLowerCase();
+      const rent = Number(r.price || 0);
+      const rooms = [...(r.room_types || []), ...(r.room_type ? [r.room_type] : [])];
+      return (!query || haystack.includes(query.toLowerCase()))
+        && (!maxRent || rent === 0 || rent <= Number(maxRent))
+        && (campus === 'all' || r.campus === campus)
+        && (roomType === 'all' || rooms.some(v => v.toLowerCase().includes(roomType.toLowerCase())))
+        && (amenity === 'all' || (r.amenities || []).some(v => v.toLowerCase() === amenity.toLowerCase()))
+        && (!availableOnly || r.available_spots > 0);
+    });
+    if (sortBy === 'rent') return [...list].sort((a,b) => (Number(a.price)||999999) - (Number(b.price)||999999));
+    if (sortBy === 'distance') return [...list].sort((a,b) => (Number(a.distance_from_campus)||999999) - (Number(b.distance_from_campus)||999999));
+    if (sortBy === 'availability') return [...list].sort((a,b) => b.available_spots - a.available_spots);
+    return list;
+  }, [residences, query, maxRent, campus, roomType, amenity, availableOnly, sortBy]);
+
+  const goToFullSearch = () => {
+    const params = new URLSearchParams();
+    if (query) params.set('query', query); if (maxRent) params.set('maxPrice', maxRent); if (campus !== 'all') params.set('campus', campus);
+    if (roomType !== 'all') params.set('roomType', roomType); if (amenity !== 'all') params.set('amenity', amenity); if (availableOnly) params.set('available', 'true');
+    if (sortBy !== 'recommended') params.set('sort', sortBy);
+    navigate(`/find?${params.toString()}`);
+  };
+
   const getVerificationBadge = (level: string | null) => {
-    switch (level) {
-      case 'trusted_partner':
-        return <Badge className="bg-success text-success-foreground gap-1 text-xs"><Shield className="w-3 h-3" /> Trusted Partner</Badge>;
-      case 'premium':
-        return <Badge className="bg-primary text-primary-foreground gap-1 text-xs"><Star className="w-3 h-3" /> Premium</Badge>;
-      case 'verified':
-        return <Badge variant="secondary" className="gap-1 text-xs"><Shield className="w-3 h-3" /> Verified</Badge>;
-      default:
-        return null;
-    }
+    if (level === 'trusted_partner') return <Badge className="bg-success text-success-foreground gap-1 text-xs"><Shield className="w-3 h-3" /> Trusted Partner</Badge>;
+    if (level === 'premium') return <Badge className="bg-primary text-primary-foreground gap-1 text-xs"><Star className="w-3 h-3" /> Premium</Badge>;
+    if (level === 'verified') return <Badge variant="secondary" className="gap-1 text-xs"><Shield className="w-3 h-3" /> Verified</Badge>;
+    return null;
   };
 
-  const toggleSection = (key: string) => {
-    setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
-  };
+  if (loading || sectionsLoading) return <div className="mb-8 h-72 animate-pulse rounded-3xl bg-muted" />;
 
-  if (loading || sectionsLoading) {
-    return (
-      <div className="mb-8 space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5">
-            <Sparkles className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold">Top 30 Trusted Residences</h2>
-            <p className="text-sm text-muted-foreground">Handpicked verified accommodations</p>
-          </div>
-        </div>
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="animate-pulse">
-            <div className="h-10 bg-muted rounded-lg mb-3" />
-            <div className="flex gap-4 overflow-hidden">
-              {[...Array(4)].map((_, j) => (
-                <div key={j} className="min-w-[260px] h-48 bg-muted rounded-lg" />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (residences.length === 0) {
-    return (
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5">
-            <Sparkles className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold">Top 30 Trusted Residences</h2>
-            <p className="text-sm text-muted-foreground">Coming soon...</p>
-          </div>
-        </div>
-        <Card className="p-8 text-center">
-          <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">Trusted residences will appear here once configured.</p>
-        </Card>
-      </div>
-    );
-  }
-
-  // Group residences by section_category using DB sections
   const grouped: Record<string, Residence[]> = {};
-  for (const section of sections) {
-    grouped[section.slug] = residences.filter(r => (r.section_category || '').toUpperCase() === section.slug);
-  }
-  // Uncategorised go into first section
-  const categorisedIds = new Set(Object.values(grouped).flat().map(r => r.id));
-  const uncategorised = residences.filter(r => !categorisedIds.has(r.id));
-  if (uncategorised.length > 0 && sections.length > 0) {
-    const firstSlug = sections[0].slug;
-    grouped[firstSlug] = [...(grouped[firstSlug] || []), ...uncategorised];
-  }
+  sections.forEach(section => { grouped[section.slug] = filtered.filter(r => (r.section_category || '').toUpperCase() === section.slug); });
+  const categorizedIds = new Set(Object.values(grouped).flat().map(r => r.id));
+  const uncategorized = filtered.filter(r => !categorizedIds.has(r.id));
+  if (uncategorized.length && sections.length) grouped[sections[0].slug] = [...(grouped[sections[0].slug] || []), ...uncategorized];
 
-  return (
+  return <>
     <div className="mb-8">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/10">
-            <Sparkles className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Top 30 Trusted Residences</h2>
-            <p className="text-sm sm:text-base text-muted-foreground">Handpicked & verified by ResKonnect</p>
-          </div>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex items-center gap-3"><div className="rounded-xl bg-primary/10 p-2.5"><Sparkles className="w-6 h-6 text-primary" /></div><div><h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Find My Res · Top 30 Verified</h2><p className="text-sm sm:text-base text-muted-foreground">Search trusted accommodation before you leave the landing page.</p></div></div>
+        <Badge variant="outline" className="w-fit gap-1"><Shield className="w-3.5 h-3.5" /> {residences.length} verified listings</Badge>
+      </div>
+
+      <Card className="mb-6 overflow-hidden border-primary/20 shadow-sm"><CardContent className="p-4 sm:p-5">
+        <div className="mb-4 flex items-center gap-2"><SlidersHorizontal className="h-5 w-5 text-primary" /><h3 className="font-bold">Search by your budget, campus and needs</h3></div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+          <div className="relative xl:col-span-2"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input className="pl-9" value={query} onChange={e => setQuery(e.target.value)} placeholder="Residence, area, campus, amenity..." /></div>
+          <div className="relative"><WalletCards className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input className="pl-9" type="number" min="0" step="100" value={maxRent} onChange={e => setMaxRent(e.target.value)} placeholder="Max rent / month" /></div>
+          <select className="h-10 rounded-md border bg-background px-3 text-sm" value={campus} onChange={e => setCampus(e.target.value)}><option value="all">Any campus</option>{campuses.map(v => <option key={v}>{v}</option>)}</select>
+          <select className="h-10 rounded-md border bg-background px-3 text-sm" value={roomType} onChange={e => setRoomType(e.target.value)}><option value="all">Any room type</option>{roomTypes.map(v => <option key={v}>{v}</option>)}</select>
+          <select className="h-10 rounded-md border bg-background px-3 text-sm" value={amenity} onChange={e => setAmenity(e.target.value)}><option value="all">Any amenity</option>{amenities.map(v => <option key={v}>{v}</option>)}</select>
+          <select className="h-10 rounded-md border bg-background px-3 text-sm" value={sortBy} onChange={e => setSortBy(e.target.value as any)}><option value="recommended">Recommended</option><option value="rent">Lowest rent</option><option value="distance">Closest to campus</option><option value="availability">Most spots</option></select>
         </div>
-        <Badge variant="outline" className="hidden sm:flex gap-1 px-3 py-1">
-          <Shield className="w-3.5 h-3.5" />
-          {residences.length} Verified
-        </Badge>
-      </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">{[2500,3000,3500,4000,4500,5500].map(amount=><Button key={amount} type="button" size="sm" variant={maxRent===String(amount)?'default':'outline'} onClick={()=>setMaxRent(String(amount))}>≤ R{amount.toLocaleString()}</Button>)}<Button type="button" size="sm" variant={availableOnly?'default':'outline'} onClick={()=>setAvailableOnly(v=>!v)}>Available now</Button><Button type="button" size="sm" variant="ghost" onClick={()=>{setQuery('');setMaxRent('');setCampus('all');setRoomType('all');setAmenity('all');setAvailableOnly(false);setSortBy('recommended');}}>Clear</Button><span className="ml-auto text-xs font-medium text-muted-foreground">{filtered.length} matching</span></div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-3"><button onClick={()=>setAmenity(amenities.find(a=>a.toLowerCase().includes('wifi'))||'all')} className="rounded-xl border p-3 text-left hover:border-primary/40"><Wifi className="mb-1 h-4 w-4 text-primary" /><span className="text-sm font-semibold">Wi-Fi friendly</span><p className="text-xs text-muted-foreground">Jump to listings with connectivity amenities.</p></button><button onClick={()=>setRoomType(roomTypes.find(r=>r.toLowerCase().includes('single'))||'all')} className="rounded-xl border p-3 text-left hover:border-primary/40"><BedDouble className="mb-1 h-4 w-4 text-primary" /><span className="text-sm font-semibold">Single rooms</span><p className="text-xs text-muted-foreground">Prioritize privacy and single-room options.</p></button><button onClick={goToFullSearch} className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-left hover:bg-primary/10"><MapPin className="mb-1 h-4 w-4 text-primary" /><span className="text-sm font-semibold">Advanced Find My Res</span><p className="text-xs text-muted-foreground">Carry these filters into the full accommodation catalogue.</p></button></div>
+      </CardContent></Card>
 
-      <div className="space-y-4">
-        {sections.map((section) => {
-          const sectionResidences = grouped[section.slug] || [];
-          if (sectionResidences.length === 0) return null;
-          const isOpen = openSections[section.slug] ?? false;
-
-          return (
-            <Collapsible key={section.id} open={isOpen} onOpenChange={() => toggleSection(section.slug)}>
-              <CollapsibleTrigger asChild>
-                <button className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${section.color}`} />
-                    <span className="font-bold text-sm sm:text-base tracking-wide">
-                      {section.name}{section.subtitle ? ` — ${section.subtitle}` : ''}
-                    </span>
-                    <Badge variant="secondary" className="text-xs bg-primary-foreground/20 text-primary-foreground border-0">
-                      {sectionResidences.length}
-                    </Badge>
-                  </div>
-                  {isOpen ? (
-                    <ChevronDown className="w-5 h-5 text-destructive" />
-                  ) : (
-                    <ChevronRight className="w-5 h-5 text-destructive" />
-                  )}
-                </button>
-              </CollapsibleTrigger>
-
-              <CollapsibleContent>
-                <div className="flex gap-4 overflow-x-auto py-4 pb-2 scrollbar-thin scrollbar-thumb-muted">
-                  {sectionResidences.map((residence) => (
-                    <Card
-                      key={residence.id}
-                      className="group min-w-[260px] max-w-[280px] flex-shrink-0 overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border-border/50 hover:border-primary/40 relative"
-                      onClick={() => navigate(`/res/${residence.id}`)}
-                    >
-                      {residences.indexOf(residence) < 3 && (
-                        <div className="absolute top-3 right-3 z-10">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-lg ${
-                            residences.indexOf(residence) === 0 ? 'bg-yellow-500 text-yellow-950' :
-                            residences.indexOf(residence) === 1 ? 'bg-gray-300 text-gray-800' :
-                            'bg-amber-600 text-amber-50'
-                          }`}>
-                            #{residences.indexOf(residence) + 1}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-                        <ResidenceImageSlideshow
-                          mainImage={residence.image_url}
-                          images={residence.images}
-                          alt={residence.name}
-                          autoPlay={true}
-                          interval={3000}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
-
-                        <div className="absolute top-3 left-3 z-10 pointer-events-none">
-                          {getVerificationBadge(residence.verification_level)}
-                        </div>
-
-                        {residence.available_spots === 0 && (
-                          <div className="absolute top-3 left-3 z-20 pointer-events-none" style={{ top: residence.verification_level && residence.verification_level !== 'basic' ? '40px' : '12px' }}>
-                            <Badge variant="destructive" className="animate-pulse text-xs font-bold">
-                              FULL
-                            </Badge>
-                          </div>
-                        )}
-
-                        <div className="absolute bottom-0 left-0 right-0 p-3 text-white pointer-events-none">
-                          <h3 className="font-bold text-sm sm:text-base truncate mb-0.5 drop-shadow-lg">
-                            {residence.name}
-                          </h3>
-                          <p className="text-xs flex items-center gap-1 text-white/90 drop-shadow-md">
-                            <MapPin className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">{(residence.address ?? '').split(',')[0] || 'Location TBA'}</span>
-                          </p>
-                        </div>
-                      </div>
-
-                      <CardContent className="p-3 flex items-center justify-between gap-2">
-                        <div className="flex gap-1.5 flex-wrap">
-                          {residence.campus && (
-                            <Badge variant="secondary" className="text-[10px]">
-                              {residence.campus}
-                            </Badge>
-                          )}
-                          {residence.room_types?.some((t: string) => t.toLowerCase().includes('single')) && (
-                            <Badge variant="outline" className="text-[10px] border-success text-success">
-                              Singles
-                            </Badge>
-                          )}
-                        </div>
-                        {residence.available_spots > 0 ? (
-                          <Badge variant="outline" className="text-[10px] bg-success/10 text-success border-success/30 whitespace-nowrap">
-                            {residence.available_spots} spots
-                          </Badge>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground">View →</span>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          );
-        })}
-      </div>
+      {residences.length===0?<Card className="p-8 text-center"><Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" /><p className="text-muted-foreground">Verified residences will appear here once configured.</p></Card>:filtered.length===0?<Card className="p-8 text-center"><Search className="w-10 h-10 mx-auto text-muted-foreground mb-3" /><h3 className="font-bold">No Top 30 residence matches these filters</h3><p className="mt-1 text-sm text-muted-foreground">Clear a filter or search the full ResKonnect accommodation catalogue.</p><Button className="mt-4" onClick={goToFullSearch}>Search all accommodation</Button></Card>:<div className="space-y-4">{sections.map(section=>{const sectionResidences=grouped[section.slug]||[];if(!sectionResidences.length)return null;const isOpen=openSections[section.slug]??false;return <Collapsible key={section.id} open={isOpen} onOpenChange={()=>setOpenSections(prev=>({...prev,[section.slug]:!prev[section.slug]}))}><CollapsibleTrigger asChild><button className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"><div className="flex items-center gap-2"><div className={`w-3 h-3 rounded-full ${section.color}`} /><span className="font-bold text-sm sm:text-base">{section.name}{section.subtitle?` — ${section.subtitle}`:''}</span><Badge variant="secondary" className="text-xs bg-primary-foreground/20 text-primary-foreground border-0">{sectionResidences.length}</Badge></div>{isOpen?<ChevronDown className="w-5 h-5"/>:<ChevronRight className="w-5 h-5"/>}</button></CollapsibleTrigger><CollapsibleContent><div className="flex gap-4 overflow-x-auto py-4 pb-2">{sectionResidences.map(residence=><Card key={residence.id} className="group min-w-[270px] max-w-[290px] flex-shrink-0 overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all border-border/50 hover:border-primary/40" onClick={()=>navigate(`/res/${residence.id}`)}><div className="relative aspect-[16/10] overflow-hidden bg-muted"><ResidenceImageSlideshow mainImage={residence.image_url} images={residence.images} alt={residence.name} autoPlay interval={3000}/><div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent pointer-events-none"/><div className="absolute top-3 left-3 z-10">{getVerificationBadge(residence.verification_level)}</div><div className="absolute bottom-0 left-0 right-0 p-3 text-white"><h3 className="font-bold truncate">{residence.name}</h3><p className="text-xs flex items-center gap-1"><MapPin className="w-3 h-3"/>{(residence.address||'').split(',')[0]||'Location TBA'}</p></div></div><CardContent className="p-3"><div className="flex items-start justify-between gap-3"><div><p className="text-base font-black text-primary">{money(residence.price)}<span className="text-[10px] font-medium text-muted-foreground"> /mo</span></p>{residence.distance_from_campus&&<p className="text-[11px] text-muted-foreground">{residence.distance_from_campus} from campus</p>}</div><Badge variant={residence.available_spots>0?'outline':'secondary'} className="text-[10px]">{residence.available_spots>0?`${residence.available_spots} spots`:'View'}</Badge></div><div className="mt-2 flex flex-wrap gap-1">{residence.campus&&<Badge variant="secondary" className="text-[10px]">{residence.campus}</Badge>}{(residence.room_types||[]).slice(0,1).map(t=><Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>)}{(residence.amenities||[]).slice(0,2).map(a=><Badge key={a} variant="outline" className="text-[10px]">{a}</Badge>)}</div></CardContent></Card>)}</div></CollapsibleContent></Collapsible>})}</div>}
+      <div className="mt-6 flex justify-center"><Button size="lg" onClick={goToFullSearch} className="gap-2"><Search className="h-4 w-4"/> Search all accommodation with these filters</Button></div>
     </div>
-  );
+    <TumeloCareerPreview />
+  </>;
 };
 
 export default TrustedResidencesGrid;
