@@ -1,596 +1,339 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, useOutletContext } from "react-router-dom";
-import { 
-  ArrowLeft, User, Calendar, FileText, MessageSquare, Clock,
-  CheckCircle, XCircle, AlertCircle, Download, Send, Loader2
-} from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, FileText, Loader2, Mail, MessageSquare, Phone, Send, User, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { getResidenceApplicationRef, getResidenceApplicationStatusLabel } from "@/lib/residenceApplications";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
+import type { ResidencePortalContext } from "./ResidenceLayout";
 
-interface ResidenceContext {
-  residence: { id: string; name: string } | null;
+interface ApplicantProfile {
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  student_number: string | null;
+  campus: string | null;
+  course: string | null;
 }
 
-interface Application {
+interface ApplicationRow {
   id: string;
+  user_id: string;
+  residence_id: string;
   status: string;
-  funding_type: string;
-  created_at: string;
-  updated_at: string;
-  desired_move_in: string | null;
+  funding_type: string | null;
+  created_at: string | null;
+  updated_at: string | null;
   notes: string | null;
-  student_profile: any;
-  profiles: { 
-    full_name: string; 
-    email: string; 
-    phone: string | null;
-    student_number: string | null;
-    campus: string | null;
-    course: string | null;
-  } | null;
+  application_date: string | null;
+  move_in_date: string | null;
+  moved_in: boolean | null;
+  institution_type: string | null;
+  profile: ApplicantProfile | null;
 }
 
-interface Message {
+interface MessageRow {
   id: string;
   sender_type: string;
+  sender_user_id: string | null;
   message: string;
-  created_at: string;
+  created_at: string | null;
 }
 
-interface ActivityLog {
+interface ActivityRow {
   id: string;
   action_type: string;
   actor_type: string;
-  metadata: any;
+  metadata: Record<string, unknown> | null;
   created_at: string;
 }
 
+interface DocumentRow {
+  id: string;
+  doc_type: string;
+  original_filename: string | null;
+  status: string;
+  rejection_reason: string | null;
+  uploaded_at: string;
+}
+
 const STATUS_OPTIONS = [
-  { value: 'docs_required', label: 'Request Documents', icon: FileText },
-  { value: 'under_review', label: 'Under Review', icon: Clock },
-  { value: 'provisionally_approved', label: 'Provisionally Approve', icon: CheckCircle },
-  { value: 'declined', label: 'Decline', icon: XCircle },
-];
+  { value: "documents_required", label: "Request documents", icon: FileText },
+  { value: "under_review", label: "Mark under review", icon: Clock3 },
+  { value: "conditionally_approved", label: "Conditionally approve", icon: CheckCircle2 },
+  { value: "approved", label: "Approve", icon: CheckCircle2 },
+  { value: "rejected", label: "Reject", icon: XCircle },
+] as const;
 
 const MESSAGE_TEMPLATES = [
-  { 
-    label: 'Request Missing Documents', 
-    message: 'Dear Applicant,\n\nThank you for your application. To proceed with your application, we require the following documents:\n\n- [List documents]\n\nPlease upload these at your earliest convenience.\n\nRegards,\nThe Residence Team' 
-  },
-  { 
-    label: 'Under Review Notice', 
-    message: 'Dear Applicant,\n\nYour application is now under review. We will notify you once a decision has been made.\n\nThank you for your patience.\n\nRegards,\nThe Residence Team' 
-  },
-  { 
-    label: 'Provisional Approval', 
-    message: 'Dear Applicant,\n\nCongratulations! Your application has been provisionally approved.\n\nPlease ensure you bring the following original documents when you arrive:\n- South African ID\n- Proof of Registration\n- NSFAS Confirmation (if applicable)\n\nWe look forward to welcoming you.\n\nRegards,\nThe Residence Team' 
-  },
-  { 
-    label: 'Decline Notice', 
-    message: 'Dear Applicant,\n\nThank you for your interest in our residence. After careful consideration, we regret to inform you that we are unable to accommodate your application at this time.\n\nWe encourage you to explore other accommodation options.\n\nRegards,\nThe Residence Team' 
-  },
-];
+  { label: "Request documents", text: "Thank you for your application. We need additional documents before we can continue reviewing it. Please upload the requested documents in ResKonnect, then check your application again." },
+  { label: "Under review", text: "Your accommodation application is now under review. We will update you as soon as a decision is available." },
+  { label: "Conditional approval", text: "Your application has been conditionally approved. Please review the remaining requirements in ResKonnect and complete them as soon as possible." },
+] as const;
+
+const statusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  if (status === "approved") return "default";
+  if (status === "rejected") return "destructive";
+  if (status === "withdrawn") return "outline";
+  return "secondary";
+};
 
 const ResidenceApplicationDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { residence } = useOutletContext<ResidenceContext>();
-  
-  const [application, setApplication] = useState<Application | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSending, setIsSending] = useState(false);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  
-  const [newMessage, setNewMessage] = useState("");
-  const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<string>("");
-  const [statusNotes, setStatusNotes] = useState("");
+  const { residence } = useOutletContext<ResidencePortalContext>();
+  const [application, setApplication] = useState<ApplicationRow | null>(null);
+  const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [statusDialog, setStatusDialog] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [statusNote, setStatusNote] = useState("");
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!id || !residence?.id) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data: appData, error: appError } = await supabase
+        .from("applications")
+        .select("id, user_id, residence_id, status, funding_type, created_at, updated_at, notes, application_date, move_in_date, moved_in, institution_type")
+        .eq("id", id)
+        .eq("residence_id", residence.id)
+        .single();
+      if (appError) throw appError;
+
+      let profile: ApplicantProfile | null = null;
+      if (appData.user_id) {
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("full_name, email, phone, student_number, campus, course")
+          .eq("id", appData.user_id)
+          .single();
+        if (profileError) throw profileError;
+        profile = profileData;
+      }
+
+      const [{ data: messageData }, { data: activityData }, { data: documentData }] = await Promise.all([
+        supabase.from("application_messages").select("id, sender_type, sender_user_id, message, created_at").eq("application_id", id).eq("residence_id", residence.id).order("created_at", { ascending: true }),
+        supabase.from("application_activity_log").select("id, action_type, actor_type, metadata, created_at").eq("application_id", id).eq("residence_id", residence.id).order("created_at", { ascending: false }).limit(20),
+        supabase.from("application_documents").select("id, doc_type, original_filename, status, rejection_reason, uploaded_at").eq("application_id", id).eq("residence_id", residence.id).order("uploaded_at", { ascending: false }),
+      ]);
+
+      setApplication({ ...appData, user_id: appData.user_id as string, profile } as ApplicationRow);
+      setMessages((messageData || []) as MessageRow[]);
+      setActivity((activityData || []) as ActivityRow[]);
+      setDocuments((documentData || []) as DocumentRow[]);
+    } catch (err) {
+      console.error("Residence application detail failed:", err);
+      setError("This application could not be loaded. It may not belong to your residence, or the data is temporarily unavailable.");
+    } finally {
+      setLoading(false);
+    }
+  }, [id, residence?.id]);
 
   useEffect(() => {
     if (!id || !residence?.id) return;
+    void load();
 
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch application
-        const { data: appData, error: appError } = await supabase
-          .from('applications')
-          .select('id, status, funding_type, created_at, updated_at, desired_move_in, notes, student_profile, user_id')
-          .eq('id', id)
-          .eq('residence_id', residence.id)
-          .single();
-
-        if (appError) throw appError;
-        
-        // Fetch profile separately
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, email, phone, student_number, campus, course')
-          .eq('id', appData.user_id)
-          .single();
-        
-        setApplication({ ...appData, profiles: profile } as Application);
-
-        // Log view activity
-        await supabase.from('application_activity_log').insert({
-          application_id: id,
-          residence_id: residence.id,
-          actor_user_id: (await supabase.auth.getUser()).data.user?.id,
-          actor_type: 'residence',
-          action_type: 'viewed',
-          metadata: {}
-        });
-
-        // Fetch messages
-        const { data: msgData } = await supabase
-          .from('application_messages')
-          .select('*')
-          .eq('application_id', id)
-          .order('created_at', { ascending: true });
-        setMessages(msgData || []);
-
-        // Fetch activity log
-        const { data: logData } = await supabase
-          .from('application_activity_log')
-          .select('*')
-          .eq('application_id', id)
-          .order('created_at', { ascending: false })
-          .limit(20);
-        setActivityLog(logData || []);
-
-      } catch (err) {
-        console.error('Error fetching application:', err);
-        toast.error('Failed to load application');
-        navigate('/residence/inbox');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-
-    // Subscribe to message changes
     const channel = supabase
-      .channel(`application-${id}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'application_messages', filter: `application_id=eq.${id}` },
-        (payload) => setMessages(prev => [...prev, payload.new as Message])
-      )
+      .channel(`residence-application-${id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "application_messages", filter: `application_id=eq.${id}` }, (payload) => {
+        const next = payload.new as MessageRow;
+        setMessages((current) => current.some((item) => item.id === next.id) ? current : [...current, next]);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "applications", filter: `id=eq.${id}` }, () => void load())
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [id, residence?.id, navigate]);
+    return () => { void supabase.removeChannel(channel); };
+  }, [id, residence?.id, load]);
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !application) return;
-    
-    setIsSending(true);
+  useEffect(() => {
+    if (!id || !residence?.id || !application) return;
+    const logView = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("application_activity_log").insert({ application_id: id, residence_id: residence.id, actor_user_id: user.id, actor_type: "residence", action_type: "viewed", metadata: {} });
+    };
+    void logView();
+  }, [id, residence?.id, application?.id]);
+
+  const sendMessage = async () => {
+    const body = message.trim();
+    if (!body || !application || !residence) return;
+    setSending(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      const { error } = await supabase.from('application_messages').insert({
-        application_id: application.id,
-        residence_id: residence!.id,
-        sender_type: 'residence',
-        sender_user_id: user?.id,
-        message: newMessage.trim()
+      if (!user) throw new Error("Session expired");
+
+      const { error: sendError } = await supabase.from("application_messages").insert({ application_id: application.id, residence_id: residence.id, sender_type: "residence", sender_user_id: user.id, message: body });
+      if (sendError) throw sendError;
+
+      await supabase.from("notifications").insert({
+        user_id: application.user_id,
+        type: "application_message",
+        title: `Message from ${residence.name}`,
+        message: body.length > 180 ? `${body.slice(0, 177)}...` : body,
+        metadata: { application_id: application.id, residence_id: residence.id },
       });
 
-      if (error) throw error;
-      
-      setNewMessage("");
-      toast.success('Message sent');
+      setMessage("");
+      toast.success("Message sent to applicant.");
     } catch (err) {
-      console.error('Error sending message:', err);
-      toast.error('Failed to send message');
+      console.error("Residence application message failed:", err);
+      toast.error("Message could not be sent.");
     } finally {
-      setIsSending(false);
+      setSending(false);
     }
   };
 
-  const handleStatusChange = async () => {
-    if (!selectedStatus || !application) return;
-    
-    setIsUpdatingStatus(true);
+  const updateStatus = async () => {
+    if (!selectedStatus || !application || !residence) return;
+    setUpdatingStatus(true);
     try {
-      const { invokeEdgeFunction } = await import('@/lib/lovableFunctions');
-      const response = await invokeEdgeFunction<{ referral_claim_created?: boolean }>('update-application-status', {
-        application_id: application.id,
-        new_status: selectedStatus,
-        notes: statusNotes || undefined,
-      });
-      if (response.error) throw new Error(response.error.message);
+      const label = getResidenceApplicationStatusLabel(selectedStatus);
+      const timestamp = new Date().toLocaleString("en-ZA");
+      const note = statusNote.trim();
+      const notes = note ? `${application.notes ? `${application.notes}\n` : ""}[${timestamp}] ${label}: ${note}` : application.notes;
 
-      toast.success(`Application ${selectedStatus.replace('_', ' ')}`);
-      
-      // Refresh application data
-      const { data } = await supabase
-        .from('applications')
-        .select('id, status, funding_type, created_at, updated_at, desired_move_in, notes, student_profile, user_id')
-        .eq('id', application.id)
-        .single();
-      
-      if (data) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, email, phone, student_number, campus, course')
-          .eq('id', data.user_id)
-          .single();
-        setApplication({ ...data, profiles: profile } as Application);
+      const { error: updateError } = await supabase
+        .from("applications")
+        .update({ status: selectedStatus, ...(note ? { notes } : {}) })
+        .eq("id", application.id)
+        .eq("residence_id", residence.id);
+      if (updateError) throw updateError;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("application_activity_log").insert({
+          application_id: application.id,
+          residence_id: residence.id,
+          actor_user_id: user.id,
+          actor_type: "residence",
+          action_type: "status_updated",
+          metadata: { previous_status: application.status, new_status: selectedStatus, note: note || null },
+        });
       }
-      
-      setShowStatusDialog(false);
+
+      await supabase.from("notifications").insert({
+        user_id: application.user_id,
+        type: "application_status",
+        title: `${residence.name}: ${label}`,
+        message: note ? `Your accommodation application is now ${label.toLowerCase()}. ${note}` : `Your accommodation application is now ${label.toLowerCase()}.`,
+        metadata: { application_id: application.id, residence_id: residence.id, status: selectedStatus },
+      });
+
+      toast.success(`Application updated to ${label}.`);
+      setStatusDialog(false);
       setSelectedStatus("");
-      setStatusNotes("");
-      
-      // Show referral claim notice if applicable
-      if (response.data?.referral_claim_created) {
-        toast.info('NSFAS referral claim has been created and will be tracked by ResKonnect.');
-      }
-    } catch (err: any) {
-      console.error('Error updating status:', err);
-      toast.error(err.message || 'Failed to update status');
+      setStatusNote("");
+      await load();
+    } catch (err) {
+      console.error("Residence status update failed:", err);
+      toast.error("Application status could not be updated.");
     } finally {
-      setIsUpdatingStatus(false);
+      setUpdatingStatus(false);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; className: string }> = {
-      'new': { label: 'New', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
-      'submitted': { label: 'Submitted', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
-      'docs_required': { label: 'Docs Required', className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' },
-      'under_review': { label: 'Under Review', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
-      'provisionally_approved': { label: 'Provisionally Approved', className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
-      'declined': { label: 'Declined', className: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
-    };
-    const config = statusConfig[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
-    return <Badge className={`${config.className} text-sm px-3 py-1`}>{config.label}</Badge>;
-  };
+  if (!residence) return <div className="flex min-h-[320px] items-center justify-center text-sm text-muted-foreground">Loading your residence...</div>;
+  if (loading) return <div className="flex min-h-[360px] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>;
 
-  const getRefCode = (id: string) => id.replace(/-/g, '').substring(0, 8).toUpperCase();
-
-  if (isLoading) {
+  if (error || !application) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <Card className="mx-auto max-w-xl"><CardContent className="p-8 text-center"><p className="font-semibold">Application unavailable</p><p className="mt-2 text-sm leading-6 text-muted-foreground">{error || "The application could not be found."}</p><div className="mt-5 flex justify-center gap-2"><Button variant="outline" onClick={() => navigate("/residence/inbox")}>Back to applications</Button><Button onClick={() => void load()}>Try again</Button></div></CardContent></Card>
     );
   }
 
-  if (!application) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Application not found</p>
-        <Button variant="link" onClick={() => navigate('/residence/inbox')}>
-          Back to Inbox
-        </Button>
-      </div>
-    );
-  }
+  const profile = application.profile;
+  const appliedAt = application.application_date || application.created_at;
 
   return (
     <>
-      <SEO 
-        title={`Application ${getRefCode(application.id)} | ResKonnect`}
-        description="Review and manage application"
-      />
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/residence/inbox')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold">{application.profiles?.full_name || 'Unknown Applicant'}</h1>
-                {getStatusBadge(application.status)}
-              </div>
-              <p className="text-muted-foreground">
-                Ref: {getRefCode(application.id)} • Applied {new Date(application.created_at).toLocaleDateString()}
-              </p>
-            </div>
+      <SEO noIndex title={`Application ${getResidenceApplicationRef(application.id)} | ${residence.name} | ResKonnect`} description="Review a residence application." />
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="flex items-start gap-3">
+            <Button variant="outline" size="icon" onClick={() => navigate("/residence/inbox")} aria-label="Back to applications"><ArrowLeft className="h-4 w-4" /></Button>
+            <div><div className="flex flex-wrap items-center gap-2"><h1 className="text-2xl font-black tracking-tight sm:text-3xl">{profile?.full_name || "Applicant"}</h1><Badge variant={statusBadgeVariant(application.status)}>{getResidenceApplicationStatusLabel(application.status)}</Badge></div><p className="mt-1 text-sm text-muted-foreground">Ref {getResidenceApplicationRef(application.id)} · {appliedAt ? `Applied ${new Date(appliedAt).toLocaleDateString("en-ZA")}` : "Application date unavailable"}</p></div>
           </div>
-          
-          <Button onClick={() => setShowStatusDialog(true)}>
-            Update Status
-          </Button>
+          <Button onClick={() => setStatusDialog(true)}>Update application status</Button>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Applicant Details */}
+        <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+          <div className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Applicant Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Full Name</p>
-                  <p className="font-medium">{application.profiles?.full_name || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{application.profiles?.email || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{application.profiles?.phone || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Student Number</p>
-                  <p className="font-medium">{application.profiles?.student_number || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Campus</p>
-                  <p className="font-medium">{application.profiles?.campus || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Course</p>
-                  <p className="font-medium">{application.profiles?.course || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Funding Type</p>
-                  <Badge variant="outline" className="mt-1">
-                    {application.funding_type?.toUpperCase() || 'UNKNOWN'}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Desired Move-in</p>
-                  <p className="font-medium">
-                    {application.desired_move_in 
-                      ? new Date(application.desired_move_in).toLocaleDateString()
-                      : 'Not specified'}
-                  </p>
-                </div>
+              <CardHeader><CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Applicant details</CardTitle><CardDescription>Information supplied through the applicant's ResKonnect profile.</CardDescription></CardHeader>
+              <CardContent className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Full name</p><p className="mt-1 font-semibold">{profile?.full_name || "Not provided"}</p></div>
+                <div><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Student number</p><p className="mt-1 font-semibold">{profile?.student_number || "Not provided"}</p></div>
+                <div><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Campus</p><p className="mt-1 font-semibold">{profile?.campus || "Not provided"}</p></div>
+                <div><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Course</p><p className="mt-1 font-semibold">{profile?.course || "Not provided"}</p></div>
+                <div><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Funding</p><p className="mt-1 font-semibold uppercase">{application.funding_type || "Not specified"}</p></div>
+                <div><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Institution type</p><p className="mt-1 font-semibold capitalize">{application.institution_type || "Not specified"}</p></div>
+                <div><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Move-in date</p><p className="mt-1 font-semibold">{application.move_in_date ? new Date(`${application.move_in_date}T00:00:00`).toLocaleDateString("en-ZA") : "Not specified"}</p></div>
+                <div className="sm:col-span-2"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact</p><div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm">{profile?.email && <a href={`mailto:${profile.email}`} className="inline-flex items-center gap-1.5 text-primary hover:underline"><Mail className="h-3.5 w-3.5" />{profile.email}</a>}{profile?.phone && <a href={`tel:${profile.phone}`} className="inline-flex items-center gap-1.5 text-primary hover:underline"><Phone className="h-3.5 w-3.5" />{profile.phone}</a>}{!profile?.email && !profile?.phone && <span className="text-muted-foreground">No contact details provided</span>}</div></div>
               </CardContent>
             </Card>
 
-            {/* Messaging */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  Messages
-                </CardTitle>
-                <CardDescription>
-                  Communicate with the applicant
-                </CardDescription>
-              </CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /> Applicant messages</CardTitle><CardDescription>Keep application communication inside ResKonnect.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
-                {/* Message Thread */}
-                <div className="max-h-64 overflow-y-auto space-y-3 p-3 bg-muted/30 rounded-lg">
-                  {messages.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-4">
-                      No messages yet
-                    </p>
-                  ) : (
-                    messages.map((msg) => (
-                      <div 
-                        key={msg.id}
-                        className={`p-3 rounded-lg max-w-[85%] ${
-                          msg.sender_type === 'residence' 
-                            ? 'bg-primary text-primary-foreground ml-auto' 
-                            : msg.sender_type === 'system'
-                            ? 'bg-muted mx-auto text-center text-sm'
-                            : 'bg-card border'
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                        <p className={`text-xs mt-1 ${
-                          msg.sender_type === 'residence' ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                        }`}>
-                          {msg.sender_type === 'system' ? 'System' : msg.sender_type === 'residence' ? 'You' : 'Applicant'} • {new Date(msg.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                    ))
-                  )}
+                <div className="max-h-[360px] space-y-3 overflow-y-auto rounded-xl border bg-muted/20 p-3">
+                  {messages.length === 0 ? <div className="py-8 text-center text-sm text-muted-foreground">No messages yet. Send the applicant an update below.</div> : messages.map((item) => (
+                    <div key={item.id} className={`flex ${item.sender_type === "residence" ? "justify-end" : "justify-start"}`}><div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 ${item.sender_type === "residence" ? "bg-primary text-primary-foreground" : "bg-card border"}`}><p className="whitespace-pre-wrap">{item.message}</p><p className={`mt-1 text-[10px] ${item.sender_type === "residence" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{item.created_at ? new Date(item.created_at).toLocaleString("en-ZA") : ""}</p></div></div>
+                  ))}
                 </div>
-
-                {/* Template Selector */}
-                <Select onValueChange={(val) => setNewMessage(MESSAGE_TEMPLATES.find(t => t.label === val)?.message || '')}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Use a template..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MESSAGE_TEMPLATES.map((template) => (
-                      <SelectItem key={template.label} value={template.label}>
-                        {template.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {/* Message Input */}
-                <div className="flex gap-2">
-                  <Textarea 
-                    placeholder="Type your message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    className="min-h-[80px]"
-                  />
-                </div>
-                <Button 
-                  onClick={handleSendMessage} 
-                  disabled={!newMessage.trim() || isSending}
-                  className="w-full"
-                >
-                  {isSending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="mr-2 h-4 w-4" />
-                  )}
-                  Send Message
-                </Button>
+                <div className="flex flex-wrap gap-2">{MESSAGE_TEMPLATES.map((template) => <Button key={template.label} size="sm" variant="outline" onClick={() => setMessage(template.text)}>{template.label}</Button>)}</div>
+                <Textarea rows={4} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Write a message to the applicant..." />
+                <div className="flex justify-end"><Button onClick={sendMessage} disabled={sending || !message.trim()}>{sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />} Send message</Button></div>
               </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Application documents</CardTitle><CardDescription>Documents explicitly shared with this residence application.</CardDescription></CardHeader>
+              <CardContent>{documents.length === 0 ? <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">No application-specific documents have been shared yet.</div> : <div className="divide-y">{documents.map((doc) => <div key={doc.id} className="flex items-start justify-between gap-4 py-3"><div><p className="font-semibold">{doc.original_filename || doc.doc_type.replace(/_/g, " ")}</p><p className="mt-1 text-xs text-muted-foreground">{doc.doc_type.replace(/_/g, " ")} · uploaded {new Date(doc.uploaded_at).toLocaleDateString("en-ZA")}</p>{doc.rejection_reason && <p className="mt-1 text-xs text-destructive">{doc.rejection_reason}</p>}</div><Badge variant={doc.status === "verified" ? "default" : doc.status === "rejected" ? "destructive" : "secondary"}>{doc.status}</Badge></div>)}</div>}</CardContent>
             </Card>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {STATUS_OPTIONS.map((option) => (
-                  <Button 
-                    key={option.value}
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => {
-                      setSelectedStatus(option.value);
-                      setShowStatusDialog(true);
-                    }}
-                    disabled={application.status === option.value}
-                  >
-                    <option.icon className="mr-2 h-4 w-4" />
-                    {option.label}
-                  </Button>
-                ))}
+            <Card className="xl:sticky xl:top-24">
+              <CardHeader><CardTitle>Application actions</CardTitle><CardDescription>Update the application without leaving this page.</CardDescription></CardHeader>
+              <CardContent className="space-y-3">
+                {STATUS_OPTIONS.map((option) => <Button key={option.value} variant={application.status === option.value ? "default" : "outline"} className="w-full justify-start" onClick={() => { setSelectedStatus(option.value); setStatusDialog(true); }}><option.icon className="mr-2 h-4 w-4" />{option.label}</Button>)}
+                {application.notes && <div className="mt-4 rounded-xl bg-muted/50 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Internal application notes</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6">{application.notes}</p></div>}
               </CardContent>
             </Card>
 
-            {/* Activity Log */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {activityLog.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No activity yet</p>
-                  ) : (
-                    activityLog.map((log) => (
-                      <div key={log.id} className="flex gap-3 text-sm">
-                        <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
-                        <div>
-                          <p className="font-medium capitalize">
-                            {log.action_type.replace(/_/g, ' ')}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            {log.actor_type} • {new Date(log.created_at).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
+              <CardHeader><CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5" /> Activity</CardTitle></CardHeader>
+              <CardContent>{activity.length === 0 ? <p className="text-sm text-muted-foreground">No activity recorded yet.</p> : <div className="space-y-3">{activity.slice(0, 10).map((entry) => <div key={entry.id} className="border-l-2 border-primary/20 pl-3"><p className="text-sm font-semibold">{entry.action_type.replace(/_/g, " ")}</p><p className="mt-0.5 text-xs text-muted-foreground">{new Date(entry.created_at).toLocaleString("en-ZA")} · {entry.actor_type}</p></div>)}</div>}</CardContent>
             </Card>
-
-            {/* NSFAS Warning */}
-            {application.funding_type === 'nsfas' && (
-              <Card className="border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10">
-                <CardContent className="pt-6">
-                  <div className="flex gap-3">
-                    <AlertCircle className="h-5 w-5 text-purple-600 shrink-0" />
-                    <div className="text-sm">
-                      <p className="font-medium text-purple-900 dark:text-purple-100">NSFAS Funded Application</p>
-                      <p className="text-purple-700 dark:text-purple-300 mt-1">
-                        Approving this application will create a referral claim tracked by ResKonnect for NSFAS billing.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Status Change Dialog */}
-      <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+      <Dialog open={statusDialog} onOpenChange={setStatusDialog}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Application Status</DialogTitle>
-            <DialogDescription>
-              {selectedStatus === 'provisionally_approved' && application.funding_type === 'nsfas' 
-                ? 'This will create an NSFAS referral claim that will be tracked by ResKonnect.'
-                : 'Change the status of this application. The applicant will be notified.'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select new status" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Textarea
-              placeholder="Add notes (optional)"
-              value={statusNotes}
-              onChange={(e) => setStatusNotes(e.target.value)}
-            />
-
-            {selectedStatus === 'provisionally_approved' && application.funding_type === 'nsfas' && (
-              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-sm">
-                <p className="font-medium text-yellow-800 dark:text-yellow-200">
-                  ⚠️ NSFAS Referral Claim Notice
-                </p>
-                <p className="text-yellow-700 dark:text-yellow-300 mt-1">
-                  A referral claim will be automatically created and tracked. Payment will be processed when NSFAS releases funds.
-                </p>
-              </div>
-            )}
+          <DialogHeader><DialogTitle>Update application status</DialogTitle><DialogDescription>The applicant will receive a ResKonnect notification after the status is saved.</DialogDescription></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2"><Label>Status</Label><Select value={selectedStatus} onValueChange={setSelectedStatus}><SelectTrigger><SelectValue placeholder="Choose a status" /></SelectTrigger><SelectContent>{STATUS_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Optional note</Label><Textarea rows={4} value={statusNote} onChange={(e) => setStatusNote(e.target.value)} placeholder="Add a clear note for the application record and applicant..." /></div>
           </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleStatusChange} 
-              disabled={!selectedStatus || isUpdatingStatus}
-            >
-              {isUpdatingStatus && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Confirm
-            </Button>
-          </DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setStatusDialog(false)}>Cancel</Button><Button onClick={updateStatus} disabled={!selectedStatus || updatingStatus}>{updatingStatus && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save status</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </>
