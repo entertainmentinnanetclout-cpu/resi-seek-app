@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -9,6 +9,7 @@ import {
   FileCheck2,
   GraduationCap,
   Info,
+  Play,
   Search,
   Sparkles,
 } from "lucide-react";
@@ -25,51 +26,50 @@ import {
   type TumeloCareerContent,
 } from "@/features/tumelo/content";
 import { TUMELO_PORTRAIT } from "@/features/tumelo/portrait";
+import {
+  getEmbeddableVideoUrl,
+  loadProviderVideos,
+  type PartnerVideo,
+} from "@/features/careerEducation/data";
 
 const topicIcons = [GraduationCap, BookOpen, CalendarDays, Search, FileCheck2];
 
 const exploreLinks = [
-  {
-    title: "Application readiness",
-    description: "Get your documents, choices and application plan in order.",
-    to: "/applications/application-readiness",
-  },
-  {
-    title: "APS checker",
-    description: "Understand your admission point score before choosing programmes.",
-    to: "/applications/aps-checker",
-  },
-  {
-    title: "WIL placement support",
-    description: "Prepare for workplace-integrated learning and opportunity pathways.",
-    to: "/opportunities/wil-placement-support",
-  },
-  {
-    title: "Student accommodation",
-    description: "Continue your journey with verified accommodation options.",
-    to: "/find",
-  },
+  { title: "Application readiness", description: "Get your documents, choices and application plan in order.", to: "/applications/application-readiness" },
+  { title: "APS checker", description: "Understand your admission point score before choosing programmes.", to: "/applications/aps-checker" },
+  { title: "WIL placement support", description: "Prepare for workplace-integrated learning and opportunity pathways.", to: "/opportunities/wil-placement-support" },
+  { title: "Student accommodation", description: "Continue your journey with verified accommodation options.", to: "/find" },
 ];
 
 const TumeloCareerEducation = () => {
   const [content, setContent] = useState<TumeloCareerContent>(fallbackTumeloCareerContent);
+  const [videos, setVideos] = useState<PartnerVideo[]>([]);
 
   useEffect(() => {
     let active = true;
-    loadTumeloCareerContent().then((next) => {
-      if (active) setContent(next);
+    Promise.all([loadTumeloCareerContent(), loadProviderVideos("tumelo")]).then(([nextContent, nextVideos]) => {
+      if (!active) return;
+      setContent(nextContent);
+      setVideos(nextVideos);
     });
     return () => {
       active = false;
     };
   }, []);
 
-  const copyProfileLink = async () => {
+  const featuredVideo = videos.find((video) => video.is_featured) || videos[0] || null;
+  const embedUrl = useMemo(() => getEmbeddableVideoUrl(featuredVideo), [featuredVideo]);
+  const transcriptIntro = featuredVideo?.transcript || content.summary;
+  const transcriptPoints = featuredVideo?.transcript_points?.length ? featuredVideo.transcript_points : content.bullet_points;
+  const transcriptTags = featuredVideo?.tags?.length ? featuredVideo.tags : content.tags;
+  const watchUrl = featuredVideo?.video_url || content.social_url;
+
+  const copyVideoLink = async () => {
     try {
-      await navigator.clipboard.writeText(content.social_url);
-      toast.success("Tumelo's TikTok link copied.");
+      await navigator.clipboard.writeText(watchUrl);
+      toast.success("Video link copied.");
     } catch {
-      toast.error("Could not copy the link. Please use Watch on TikTok instead.");
+      toast.error("Could not copy the link.");
     }
   };
 
@@ -78,13 +78,8 @@ const TumeloCareerEducation = () => {
     "@type": "WebPage",
     name: "Career & Education with Tumelo",
     url: "https://www.reskonnect.org/career-education/tumelo",
-    description:
-      "Career and education guidance with Tumelo on qualifications, applications, research, documents and student opportunity pathways through ResKonnect.",
-    isPartOf: {
-      "@type": "WebSite",
-      name: "ResKonnect",
-      url: "https://www.reskonnect.org",
-    },
+    description: "Career and education guidance with Tumelo on qualifications, applications, research, documents and student opportunity pathways through ResKonnect.",
+    isPartOf: { "@type": "WebSite", name: "ResKonnect", url: "https://www.reskonnect.org" },
   };
 
   return (
@@ -104,84 +99,76 @@ const TumeloCareerEducation = () => {
           <div className="pointer-events-none absolute -right-24 top-8 h-80 w-80 rounded-full bg-amber-400/10 blur-3xl" />
           <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-6xl text-center">
-              <div className="mx-auto inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-2 text-xs font-semibold text-primary sm:text-sm">
-                <Sparkles className="h-4 w-4" />
-                Strategic collaboration with Tumelo | Career & Education
-              </div>
-              <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-                {content.section_title}
-              </h1>
-              <p className="mx-auto mt-3 max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base md:text-lg">
-                {content.subtitle}
-              </p>
+              <Link to="/career-education" className="mx-auto inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-2 text-xs font-semibold text-primary sm:text-sm">
+                <Sparkles className="h-4 w-4" /> Career & Education / Tumelo
+              </Link>
+              <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">{content.section_title}</h1>
+              <p className="mx-auto mt-3 max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base md:text-lg">{content.subtitle}</p>
             </div>
 
             <div className="mx-auto mt-8 grid max-w-6xl gap-5 lg:grid-cols-[0.82fr_1.18fr]">
               <article className="overflow-hidden rounded-2xl border bg-card shadow-sm">
                 <div className="relative aspect-[4/3] overflow-hidden bg-slate-950">
-                  <img
-                    src={TUMELO_PORTRAIT}
-                    alt="Tumelo, Career and Education collaborator"
-                    className="h-full w-full object-cover object-center"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-black/5" />
-                  <div className="absolute left-4 right-4 top-4 rounded-xl bg-white/95 px-4 py-2.5 text-center text-base font-bold leading-snug text-slate-950 shadow-sm sm:text-lg">
-                    {content.preview_text}
-                  </div>
-                  <div className="absolute inset-x-4 bottom-4 rounded-xl border border-white/15 bg-black/60 p-3.5 text-white backdrop-blur-md">
-                    <p className="text-sm font-bold">Tumelo | Career & Education</p>
-                    <p className="mt-0.5 text-xs text-white/75">{content.social_handle}</p>
-                  </div>
+                  {embedUrl ? (
+                    <iframe
+                      key={embedUrl}
+                      src={embedUrl}
+                      title={featuredVideo?.title || "Tumelo career and education video"}
+                      className="h-full w-full border-0"
+                      allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                      loading="lazy"
+                    />
+                  ) : (
+                    <>
+                      <img src={TUMELO_PORTRAIT} alt="Tumelo, Career and Education collaborator" className="h-full w-full object-cover object-center" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-black/5" />
+                      <a href={watchUrl} target="_blank" rel="noreferrer noopener" className="absolute inset-0 flex items-center justify-center" aria-label="Watch Tumelo on TikTok">
+                        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/95 text-primary shadow-xl transition hover:scale-105"><Play className="ml-1 h-7 w-7 fill-current" /></span>
+                      </a>
+                      <div className="absolute left-4 right-4 top-4 rounded-xl bg-white/95 px-4 py-2.5 text-center text-base font-bold leading-snug text-slate-950 shadow-sm sm:text-lg">
+                        {featuredVideo?.title || content.preview_text}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-3 p-4">
+                  <div>
+                    <p className="text-sm font-bold">Tumelo | Career & Education</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{content.social_handle}</p>
+                  </div>
                   <div className="grid grid-cols-2 gap-2.5">
                     <Button asChild className="gap-2">
-                      <a href={content.social_url} target="_blank" rel="noreferrer noopener">
-                        Watch on TikTok <ExternalLink className="h-4 w-4" />
-                      </a>
+                      <a href={watchUrl} target="_blank" rel="noreferrer noopener">Watch on TikTok <ExternalLink className="h-4 w-4" /></a>
                     </Button>
-                    <Button variant="outline" onClick={copyProfileLink} className="gap-2">
-                      <Clipboard className="h-4 w-4" /> Copy link
-                    </Button>
+                    <Button variant="outline" onClick={copyVideoLink} className="gap-2"><Clipboard className="h-4 w-4" /> Copy link</Button>
                   </div>
                   <div className="flex items-start gap-2 rounded-lg bg-muted/60 p-3 text-xs leading-5 text-muted-foreground">
                     <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>Preview opens on TikTok — content stays on Tumelo's page and is not re-uploaded as independent ResKonnect content.</span>
+                    <span>Videos remain attributed to Tumelo's original channel. When a specific TikTok video URL is published in the Media Hub, its native preview appears here automatically.</span>
                   </div>
                 </div>
               </article>
 
               <article className="rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <BookOpen className="h-5 w-5" />
-                  </div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary"><BookOpen className="h-5 w-5" /></div>
                   <h2 className="text-lg font-bold sm:text-xl">Video summary / transcript</h2>
                 </div>
-                <p className="mt-4 text-sm leading-6 text-muted-foreground">{content.summary}</p>
+                <p className="mt-4 text-sm leading-6 text-muted-foreground">{transcriptIntro}</p>
 
                 <ul className="mt-5 space-y-3">
-                  {content.bullet_points.map((point) => (
-                    <li key={point} className="flex items-start gap-3 text-sm leading-6">
-                      <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
-                      <span>{point}</span>
-                    </li>
+                  {transcriptPoints.map((point) => (
+                    <li key={point} className="flex items-start gap-3 text-sm leading-6"><CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" /><span>{point}</span></li>
                   ))}
                 </ul>
 
                 <div className="mt-6 border-t pt-4">
                   <div className="flex flex-wrap gap-2">
-                    {content.tags.map((tag, index) => {
+                    {transcriptTags.map((tag, index) => {
                       const Icon = topicIcons[index % topicIcons.length];
-                      return (
-                        <span
-                          key={tag}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-primary/15 bg-primary/[0.035] px-3 py-2 text-xs font-semibold text-foreground"
-                        >
-                          <Icon className="h-3.5 w-3.5 text-primary" /> {tag}
-                        </span>
-                      );
+                      return <span key={tag} className="inline-flex items-center gap-1.5 rounded-lg border border-primary/15 bg-primary/[0.035] px-3 py-2 text-xs font-semibold text-foreground"><Icon className="h-3.5 w-3.5 text-primary" /> {tag}</span>;
                     })}
                   </div>
                 </div>
@@ -191,47 +178,46 @@ const TumeloCareerEducation = () => {
             <div className="mx-auto mt-5 flex max-w-6xl flex-col gap-4 rounded-2xl border border-primary/15 bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
               <div>
                 <p className="font-semibold">Learn from Tumelo, then continue your ResKonnect journey.</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Move from guidance to applications, accommodation, WIL and other student opportunities in one connected platform.
-                </p>
+                <p className="mt-1 text-sm text-muted-foreground">Move from guidance to applications, accommodation, WIL and other student opportunities in one connected platform.</p>
               </div>
-              <Button asChild size="lg" className="shrink-0 gap-2">
-                <Link to={content.cta_url || "/get-started"}>
-                  {content.cta_label || "Continue on ResKonnect"} <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
+              <Button asChild size="lg" className="shrink-0 gap-2"><Link to={content.cta_url || "/get-started"}>{content.cta_label || "Continue on ResKonnect"} <ArrowRight className="h-4 w-4" /></Link></Button>
             </div>
           </div>
         </section>
 
+        {videos.length > 1 && (
+          <section className="border-b bg-muted/20 py-10">
+            <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+              <h2 className="text-2xl font-bold">More from Tumelo</h2>
+              <p className="mt-1 text-sm text-muted-foreground">New published videos appear here automatically.</p>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {videos.filter((video) => video.id !== featuredVideo?.id).map((video) => (
+                  <a key={video.id} href={video.video_url || content.social_url} target="_blank" rel="noreferrer noopener" className="group rounded-2xl border bg-card p-5 transition hover:border-primary/30 hover:shadow-md">
+                    <div className="flex items-start justify-between gap-4"><Play className="h-5 w-5 text-primary" /><ExternalLink className="h-4 w-4 text-muted-foreground" /></div>
+                    <h3 className="mt-4 font-bold group-hover:text-primary">{video.title}</h3>
+                    {video.transcript && <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">{video.transcript}</p>}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-6xl">
-              <div className="mb-7">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Explore more</p>
-                <h2 className="mt-2 text-2xl font-bold sm:text-3xl">Everything you need, all in one place.</h2>
-              </div>
+              <div className="mb-7"><p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Explore more</p><h2 className="mt-2 text-2xl font-bold sm:text-3xl">Everything you need, all in one place.</h2></div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {exploreLinks.map((item) => (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className="group rounded-2xl border bg-card p-5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
-                  >
-                    <h3 className="font-bold group-hover:text-primary">{item.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
-                    <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
-                      Explore <ArrowRight className="h-3.5 w-3.5" />
-                    </span>
+                  <Link key={item.to} to={item.to} className="group rounded-2xl border bg-card p-5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+                    <h3 className="font-bold group-hover:text-primary">{item.title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p><span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">Explore <ArrowRight className="h-3.5 w-3.5" /></span>
                   </Link>
                 ))}
               </div>
 
               <div className="mt-8 flex items-start gap-3 rounded-2xl border border-amber-300/40 bg-amber-50/70 p-4 text-sm leading-6 text-amber-950 dark:bg-amber-950/20 dark:text-amber-100">
                 <Info className="mt-0.5 h-5 w-5 shrink-0" />
-                <p>
-                  Career and education guidance is educational support, not a guarantee of admission, funding, accommodation, WIL, internship, learnership or employment. Institution-specific dates, entry requirements and programme information should be confirmed with the relevant official institution or provider.
-                </p>
+                <p>Career and education guidance is educational support, not a guarantee of admission, funding, accommodation, WIL, internship, learnership or employment. Institution-specific dates, entry requirements and programme information should be confirmed with the relevant official institution or provider.</p>
               </div>
             </div>
           </div>
