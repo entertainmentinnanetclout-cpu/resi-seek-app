@@ -68,7 +68,7 @@ const SiteFooter = () => (
             {BRAND.tagline} {BRAND.journeyLine}
           </p>
           <div className="mt-4 rounded-xl border bg-background/70 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-            Platform developed by <span className="font-semibold text-foreground">Startup App Innovations Group</span>.
+            Platform developed by <span className="font-semibold text-foreground">Start To Up Innovations Group</span>.
           </div>
         </div>
 
@@ -117,7 +117,7 @@ const SiteFooter = () => (
       <div className="container mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <div>
           <p>&copy; {new Date().getFullYear()} {BRAND.name}. All rights reserved.</p>
-          <p className="mt-1 text-[10px]">Developed by Startup App Innovations Group.</p>
+          <p className="mt-1 text-[10px]">Developed by Start To Up Innovations Group.</p>
         </div>
         <div className="flex gap-4">
           <Link to="/terms" className="hover:text-foreground">Terms</Link>
