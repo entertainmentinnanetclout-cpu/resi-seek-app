@@ -7,6 +7,7 @@ const columns = [
     links: [
       { label: "ResKonnect Living", to: "/living" },
       { label: "Find My Res", to: "/find" },
+      { label: "2027 Pretoria Reservations", to: "/find?reserve=2027" },
       { label: "ResKonnect Student Accommodation", to: "/student-accommodation" },
       { label: "Pretoria West Accommodation", to: "/student-accommodation/pretoria-west" },
       { label: "Accommodation Near TUT", to: "/student-accommodation/near-tut" },
@@ -66,6 +67,9 @@ const SiteFooter = () => (
           <p className="mt-3 max-w-xs text-sm text-muted-foreground">
             {BRAND.tagline} {BRAND.journeyLine}
           </p>
+          <div className="mt-4 rounded-xl border bg-background/70 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+            Platform developed by <span className="font-semibold text-foreground">Startup App Innovations Group</span>.
+          </div>
         </div>
 
         {columns.map((col) => (
@@ -104,13 +108,17 @@ const SiteFooter = () => (
         <div className="space-y-2 text-xs leading-relaxed text-muted-foreground/80">
           <p>{BRAND.compliance.admissions}</p>
           <p>{BRAND.compliance.nsfas}</p>
+          <p>Private-tenant rates and NSFAS-funded residence rates are separate commercial arrangements and may differ by residence, room type and intake period.</p>
         </div>
       </div>
     </div>
 
     <div className="border-t border-border bg-background">
       <div className="container mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-        <p>&copy; {new Date().getFullYear()} {BRAND.name}. All rights reserved.</p>
+        <div>
+          <p>&copy; {new Date().getFullYear()} {BRAND.name}. All rights reserved.</p>
+          <p className="mt-1 text-[10px]">Developed by Startup App Innovations Group.</p>
+        </div>
         <div className="flex gap-4">
           <Link to="/terms" className="hover:text-foreground">Terms</Link>
           <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
