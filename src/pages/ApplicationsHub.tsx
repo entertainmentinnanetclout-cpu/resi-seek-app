@@ -3,6 +3,7 @@ import { LockKeyhole } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import AssistedApplicationPartnerCard from "@/components/applications/AssistedApplicationPartnerCard";
 import ApplicationsHubLegacy from "@/pages/ApplicationsHubLegacy";
 import TvetApplicationsHub from "@/pages/TvetApplicationsHub";
 import MyApplicationsSummary from "@/pages/MyApplicationsSummary";
@@ -40,10 +41,11 @@ const ApplicationsHub=()=>{
   if(view==="mine"){
     return signedIn?<MyApplicationsSummary/>:null;
   }
-  if(category==="tvet")return <TvetApplicationsHub/>;
+  if(category==="tvet")return <><AssistedApplicationPartnerCard/><TvetApplicationsHub/></>;
   return <>
     {signedIn&&<div className="fixed bottom-5 right-5 z-[79]"><Button variant="outline" className="bg-background/95 shadow-lg backdrop-blur" onClick={()=>navigate("/apply?view=mine")}>My Applications</Button></div>}
     {!signedIn&&category!=="private"&&category!=="private_college"&&<div className="fixed bottom-5 left-1/2 z-[80] w-[min(92vw,620px)] -translate-x-1/2 rounded-2xl border bg-background/95 p-3 shadow-2xl backdrop-blur"><div className="flex flex-col gap-3 sm:flex-row sm:items-center"><div className="flex min-w-0 flex-1 items-start gap-3"><div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><LockKeyhole className="h-4 w-4"/></div><div><p className="text-sm font-bold">Sign in for personalised APS and programme results</p><p className="mt-1 text-xs text-muted-foreground">Institution browsing stays public. Personalised results are private and saved to your ResKonnect account.</p></div></div><Button size="sm" onClick={()=>navigate(`/auth?returnTo=${encodeURIComponent(`/apply?${params.toString()||"category=university"}`)}`)}>Sign in</Button></div></div>}
+    <AssistedApplicationPartnerCard/>
     <ApplicationsHubLegacy/>
   </>;
 };
