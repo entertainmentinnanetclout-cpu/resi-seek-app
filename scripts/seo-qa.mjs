@@ -21,15 +21,16 @@ expect(!robots.includes("Disallow: /student-accommodation"), "student-accommodat
 expect(!robots.includes("Disallow: /opportunities/"), "public opportunity discovery is crawlable");
 
 expect(!fs.existsSync("public/sitemap.xml"), "legacy static sitemap cannot override the dynamic sitemap index");
-expect(vercel.includes('"/sitemap.xml"') && vercel.includes('"/api/sitemap"'), "Vercel routes the sitemap index to the dynamic generator");
+expect(fs.existsSync("api/sitemap.xml.js"), "canonical sitemap index has a native Vercel function route");
 for (const type of ["pages", "residences", "properties", "opportunities"]) {
-  expect(vercel.includes(`/sitemaps/${type}.xml`) && sitemap.includes(`type === \"${type}\"`), `${type} child sitemap is configured`);
+  expect(fs.existsSync(`api/sitemaps/${type}.xml.js`) && sitemap.includes(`type === \"${type}\"`), `${type} child sitemap is configured`);
 }
 for (const path of ["/", "/find", "/living", "/applications", "/opportunities", "/partners", "/bursaries", "/student-accommodation/pretoria-west"]) {
   expect(sitemap.includes(`\"${path}\"`), `pages sitemap preserves curated route ${path}`);
 }
 expect(sitemap.includes("seo_public_pages_v"), "managed SEO pages are added through the database quality-gated public view");
 expect(sitemap.includes("is_published=eq.true") && sitemap.includes("is_visible=eq.true"), "data sitemaps publish only public records");
+expect(!vercel.includes('"source": "/sitemap.xml", "destination": "/api/sitemap"'), "sitemap function routes are not shadowed by rewrites");
 
 expect(fs.existsSync("public/9b698dd216df7a00d2f9a598a4372726.txt"), "IndexNow verification file exists");
 expect(read("public/9b698dd216df7a00d2f9a598a4372726.txt").trim() === "9b698dd216df7a00d2f9a598a4372726", "IndexNow verification key is exact");
@@ -40,14 +41,8 @@ expect(seo.includes("organizationSchema()") && seo.includes("webSiteSchema()"), 
 expect(managed.includes('data-ai-answer="true"'), "managed search pages expose direct AI-readable answer content");
 
 const managedPaths = [
-  "/ai",
-  "/properties",
-  "/property-auctions",
-  "/student-accommodation-for-sale",
-  "/development-opportunities",
-  "/student-accommodation/pretoria",
-  "/opportunities/internships",
-  "/opportunities/seta",
+  "/ai", "/properties", "/property-auctions", "/student-accommodation-for-sale", "/development-opportunities",
+  "/student-accommodation/pretoria", "/opportunities/internships", "/opportunities/seta",
 ];
 for (const path of managedPaths) expect(fallback.includes(`\"${path}\"`), `managed search gateway contains ${path}`);
 expect(fallback.includes("/^\\/properties\\/[^/]+$/"), "published property detail URLs are routed through the search gateway");
