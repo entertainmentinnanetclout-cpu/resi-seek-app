@@ -15,12 +15,12 @@ interface Partner {
 }
 
 const fallback: Partner = {
-  slug: "setup",
-  name: "SETUP",
-  description: "ResKonnect helps you prepare, understand requirements and get your documents ready. SETUP is the assisted-application partner for students who want hands-on support with the actual application submission process.",
+  slug: "tech-up",
+  name: "Tech-Up",
+  description: "ResKonnect helps you prepare, understand requirements and get your documents ready. Tech-Up is the assisted-application partner for students who want hands-on support with the actual university or TVET application process and submission.",
   service_scope: ["University applications", "TVET applications", "Application submission assistance", "Document readiness handover"],
   website_url: null,
-  cta_label: "Application assistance",
+  cta_label: "Get application assistance",
   integration_status: "planned",
 };
 
@@ -33,7 +33,7 @@ export default function AssistedApplicationPartnerCard() {
       const { data } = await db
         .from("application_support_partners")
         .select("slug,name,description,service_scope,website_url,cta_label,integration_status")
-        .eq("slug", "setup")
+        .eq("slug", "tech-up")
         .eq("is_active", true)
         .maybeSingle();
       if (data) setPartner({ ...fallback, ...data, service_scope: data.service_scope || fallback.service_scope });
@@ -69,13 +69,13 @@ export default function AssistedApplicationPartnerCard() {
 
           <div className="p-6 sm:p-8">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Know who does what</p>
-            <h2 className="mt-2 text-2xl font-black sm:text-3xl">We prepare you. SETUP can assist with the actual application.</h2>
+            <h2 className="mt-2 text-2xl font-black sm:text-3xl">We prepare you. Tech-Up can assist with the actual application.</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{partner.description}</p>
             <div className="mt-5 flex flex-wrap gap-2">
               {partner.service_scope.map((item) => <Badge key={item} variant="secondary" className="rounded-full px-3 py-1">{item}</Badge>)}
             </div>
             <div className="mt-6 rounded-2xl border bg-background/70 p-4 text-xs leading-relaxed text-muted-foreground">
-              ResKonnect's core role is application readiness, APS/course guidance and document preparation. Assisted submission is a separate partner service so students can clearly see what support they are choosing.
+              ResKonnect's core role is application readiness, APS/course guidance and document preparation. Hands-on application and submission assistance is provided by Tech-Up as a separate partner service, so students and parents can clearly see what support they are choosing.
             </div>
             <div className="mt-5 flex flex-wrap gap-3">
               {partner.website_url ? (
