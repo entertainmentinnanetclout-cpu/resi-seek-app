@@ -2,7 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, KeyRound, FileText, Users, Phone, FolderOpen, ClipboardList, Layers, Filter, Sparkles } from "lucide-react";
+import { Building2, KeyRound, FileText, Users, Phone, FolderOpen, ClipboardList, Layers, Filter, Sparkles, CalendarDays, BadgePercent } from "lucide-react";
 import { AdminResidencesContent } from "./AdminResidences";
 import { AdminResidencePortalsContent } from "./AdminResidencePortals";
 import { AdminApplicationsContent } from "./AdminApplications";
@@ -13,9 +13,13 @@ import { AdminLandlordApplicationsContent } from "./AdminLandlordApplications";
 import SectionsManager from "@/components/admin/SectionsManager";
 import { AdminFilterConfigContent } from "./AdminFilterConfig";
 import { AdminRecruitmentProgrammeContent } from "./AdminRecruitmentProgramme";
+import { AdminReservations2027Content } from "./AdminReservations2027";
+import { AdminResidenceCommercialContent } from "./AdminResidenceCommercial";
 
 const tabs = [
   { value: "residences", label: "Residences", icon: Building2 },
+  { value: "2027-reservations", label: "2027 Reservations", icon: CalendarDays },
+  { value: "pricing-promos", label: "2027, Pricing & Promos", icon: BadgePercent },
   { value: "sections", label: "Sections", icon: Layers },
   { value: "filters", label: "Filters", icon: Filter },
   { value: "portals", label: "Portals", icon: KeyRound },
@@ -33,11 +37,11 @@ const AdminOperationsHub = () => {
 
   return (
     <AdminLayout>
-      <SEO title="Accommodation Hub | Admin" description="Manage residences, applications, users and documents" />
+      <SEO title="Accommodation Hub | Admin" description="Manage residences, 2027 reservations, pricing, promotions, applications, users and documents" />
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Accommodation Hub</h1>
-          <p className="text-muted-foreground">Residences, sections, applications, users & documents</p>
+          <p className="text-muted-foreground">Residences, 2027 reservations, pricing, promotions, maps, applications, users & documents</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })}>
@@ -51,6 +55,8 @@ const AdminOperationsHub = () => {
           </TabsList>
 
           <TabsContent value="residences"><AdminResidencesContent /></TabsContent>
+          <TabsContent value="2027-reservations"><AdminReservations2027Content /></TabsContent>
+          <TabsContent value="pricing-promos"><AdminResidenceCommercialContent /></TabsContent>
           <TabsContent value="sections"><SectionsManager /></TabsContent>
           <TabsContent value="filters"><AdminFilterConfigContent /></TabsContent>
           <TabsContent value="portals"><AdminResidencePortalsContent /></TabsContent>
