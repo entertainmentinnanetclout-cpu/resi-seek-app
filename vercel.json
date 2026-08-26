@@ -36,6 +36,11 @@
     }
   ],
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/sitemaps/pages.xml", "destination": "/api/sitemap?type=pages" },
+    { "source": "/sitemaps/residences.xml", "destination": "/api/sitemap?type=residences" },
+    { "source": "/sitemaps/properties.xml", "destination": "/api/sitemap?type=properties" },
+    { "source": "/sitemaps/opportunities.xml", "destination": "/api/sitemap?type=opportunities" },
     { "source": "/", "destination": "/_seo/home.html" },
     { "source": "/living", "destination": "/_seo/living.html" },
     { "source": "/student-accommodation", "destination": "/_seo/student-accommodation.html" },
