@@ -15,6 +15,15 @@ Production release bundle for the 2027 accommodation intake.
 - Assisted application submission is attributed to Tech-Up; ResKonnect remains responsible for readiness, APS/course guidance and document preparation.
 - Platform development attribution is Start To Up Innovations Group.
 
+## Backend validation
+
+- Supabase migration applied successfully to the production ResKonnect project.
+- 2027 Pretoria reservation eligibility was activated from the live residence geography data.
+- Reservation RLS allows students to manage their own reservation while authorized ResKonnect operations staff manage the administration workflow.
+- New 2027 reservations create both a student notification and ResKonnect admin alert/system event.
+- The previous recursive applications/referral RLS dependency was repaired with a non-recursive ownership check.
+- The default active landing update is `2027 accommodation reservations are now open` and remains fully editable/disableable by admin.
+
 ## Data integrity notes
 
 Exact residence coordinates must come from verified map data or administrator input; the platform does not fabricate coordinates. Until a precise pin is saved, the map component resolves the residence address.
