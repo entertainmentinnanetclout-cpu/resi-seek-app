@@ -36,14 +36,6 @@
     }
   ],
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
-    { "source": "/sitemaps/pages.xml", "destination": "/api/sitemap?type=pages" },
-    { "source": "/sitemaps/residences.xml", "destination": "/api/sitemap?type=residences" },
-    { "source": "/sitemaps/properties.xml", "destination": "/api/sitemap?type=properties" },
-    { "source": "/sitemaps/opportunities.xml", "destination": "/api/sitemap?type=opportunities" },
-    { "source": "/robots.txt", "destination": "/robots.txt" },
-    { "source": "/9b698dd216df7a00d2f9a598a4372726.txt", "destination": "/9b698dd216df7a00d2f9a598a4372726.txt" },
-
     { "source": "/", "destination": "/_seo/home.html" },
     { "source": "/living", "destination": "/_seo/living.html" },
     { "source": "/student-accommodation", "destination": "/_seo/student-accommodation.html" },
@@ -68,7 +60,6 @@
     { "source": "/partners/landlords", "destination": "/_seo/partners-landlords.html" },
     { "source": "/bursaries", "destination": "/_seo/bursaries.html" },
     { "source": "/campus-news", "destination": "/_seo/campus-news.html" },
-
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
