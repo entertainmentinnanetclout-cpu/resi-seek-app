@@ -1,6 +1,7 @@
 const SITE_URL = "https://www.reskonnect.org";
 
-// Curated public routes that are useful even when they are not represented in seo_pages.
+// Canonical public URLs only. Query-string UI states are deliberately excluded:
+// Google may crawl them, but SEO.tsx canonicalises them to the clean pathname.
 // Dynamic/large-scale programmatic URLs belong in seo_public_pages_v so the database
 // quality gate controls whether they enter search discovery.
 const STATIC_PAGE_PATHS = [
@@ -16,8 +17,15 @@ const STATIC_PAGE_PATHS = [
   "/applications/university",
   "/applications/private-college",
   "/applications/checker",
+  "/applications/application-readiness",
+  "/applications/tvet-application-readiness",
+  "/applications/university-application-readiness",
+  "/applications/aps-checker",
   "/opportunities",
   "/opportunities/wil",
+  "/opportunities/wil-placement-support",
+  "/opportunities/internships",
+  "/opportunities/seta",
   "/partners",
   "/partners/landlords",
   "/partners/institutions",
@@ -28,6 +36,7 @@ const STATIC_PAGE_PATHS = [
   "/roommates",
   "/affiliates",
   "/student-accommodation",
+  "/student-accommodation/pretoria",
   "/student-accommodation/pretoria-west",
   "/student-accommodation/near-tut",
   "/student-accommodation/near-tut-pretoria-west",
@@ -38,11 +47,11 @@ const STATIC_PAGE_PATHS = [
   "/private-rentals",
   "/private-rentals/pretoria-west",
   "/private-rentals/bachelor-rooms-pretoria",
-  "/applications/application-readiness",
-  "/applications/tvet-application-readiness",
-  "/applications/university-application-readiness",
-  "/applications/aps-checker",
-  "/opportunities/wil-placement-support",
+  "/properties",
+  "/property-auctions",
+  "/student-accommodation-for-sale",
+  "/development-opportunities",
+  "/ai",
   "/guides/how-to-find-safe-student-accommodation",
   "/guides/student-accommodation-pretoria-west",
   "/guides/tvet-application-checklist",
