@@ -53,7 +53,7 @@ begin
     insert into public.admin_alerts(title,description,severity,resolved,created_at)
     values('New 2027 accommodation reservation',coalesce(student_name,'A student')||' reserved interest for '||coalesce(residence_name,'a residence')||'. Funding: '||new.funding_type||'.','info',false,now());
     insert into public.system_events(type,actor_user_id,entity,entity_id,metadata,payload,created_at)
-    values('NEW_2027_RESERVATION',new.user_id,'accommodation_reservation',new.id::text,
+    values('NEW_2027_RESERVATION',new.user_id,'accommodation_reservation',new.id,
       jsonb_build_object('residence_id',new.residence_id,'residence_name',residence_name,'funding_type',new.funding_type),
       jsonb_build_object('academic_year',new.academic_year,'status',new.status,'source',new.source),now());
   end if;
