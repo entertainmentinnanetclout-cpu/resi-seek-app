@@ -1,5 +1,5 @@
 import { Fragment, ReactNode, useState } from "react";
-import { ChevronDown, Menu } from "lucide-react";
+import { CalendarDays, ChevronDown, Menu } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -84,6 +84,11 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
 
           <div className="ml-auto hidden items-center gap-2 md:flex">
             <ThemeToggle />
+            {!search && (
+              <Button variant="outline" size="sm" className="gap-1.5 border-primary/25 bg-primary/5 text-primary" onClick={() => navigate("/find?reserve=2027")}>
+                <CalendarDays className="h-4 w-4" /> 2027 Reservations
+              </Button>
+            )}
             <Button variant="ghost" onClick={() => navigate("/auth")}>Sign In</Button>
             <Button onClick={() => navigate("/get-started")} className="bg-cta font-semibold text-cta-foreground hover:bg-cta/90">Get Started</Button>
           </div>
@@ -97,6 +102,11 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
               </SheetTrigger>
               <SheetContent side="right" className="w-full max-w-xs">
                 <div className="mt-10 flex flex-col gap-2">
+                  <SheetClose asChild>
+                    <Link to="/find?reserve=2027" className="mb-2 flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-3 font-bold text-primary">
+                      <CalendarDays className="h-4 w-4" /> 2027 Accommodation Reservations
+                    </Link>
+                  </SheetClose>
                   {PUBLIC_NAV.map((item) => {
                     const children = "children" in item ? item.children : undefined;
                     return (
