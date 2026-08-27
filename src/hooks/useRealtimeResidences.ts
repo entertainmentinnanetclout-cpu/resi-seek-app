@@ -8,57 +8,51 @@ export const useRealtimeResidences = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+
     const fetchResidences = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        console.log('[useRealtimeResidences] Fetching residences...');
-        
-        const { data, error: fetchError } = await supabase
-          .from('residences')
-          .select('*');
-        
-        if (fetchError) {
-          console.error('[useRealtimeResidences] Fetch error:', fetchError);
-          throw fetchError;
+        const db = supabase as any;
+        const [residenceResult, roomPricingResult] = await Promise.all([
+          supabase.from('residences').select('*'),
+          db.from('residence_room_types').select('*').eq('is_active', true),
+        ]);
+        if (residenceResult.error) throw residenceResult.error;
+
+        const pricingByResidence = new Map<string, any[]>();
+        if (!roomPricingResult.error) {
+          (roomPricingResult.data || []).forEach((room: any) => {
+            const rows = pricingByResidence.get(room.residence_id) || [];
+            rows.push(room);
+            pricingByResidence.set(room.residence_id, rows);
+          });
         }
-        
-        console.log(`[useRealtimeResidences] Fetched ${data?.length || 0} residences`);
-        setResidences(data || []);
+
+        const merged = (residenceResult.data || []).map((residence: any) => ({
+          ...residence,
+          room_pricing: pricingByResidence.get(residence.id) || [],
+        }));
+        if (active) setResidences(merged);
       } catch (err: any) {
         console.error('[useRealtimeResidences] Error:', err);
-        setError(err.message);
-        toast.error('Failed to load residences: ' + err.message);
+        if (active) {
+          setError(err.message);
+          toast.error('Failed to load residences: ' + err.message);
+        }
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
-    fetchResidences();
+    void fetchResidences();
+    const channel = supabase.channel('realtime-residences-v3')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'residences' }, () => void fetchResidences())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'residence_room_types' }, () => void fetchResidences())
+      .subscribe();
 
-    const channel = supabase
-      .channel('realtime-residences')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'residences' },
-        (payload) => {
-          console.log('[useRealtimeResidences] Change received:', payload);
-          fetchResidences();
-        }
-      )
-      .subscribe((status, err) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('[useRealtimeResidences] Subscribed to realtime updates');
-        }
-        if (status === 'CHANNEL_ERROR') {
-          console.error('[useRealtimeResidences] Subscription error:', err);
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { active = false; void supabase.removeChannel(channel); };
   }, []);
 
   return { residences, loading, error };
