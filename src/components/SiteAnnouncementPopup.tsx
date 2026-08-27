@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, BellRing, CalendarDays, X } from "lucide-react";
+import { ArrowRight, BellRing, CalendarDays, Megaphone, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,10 +17,20 @@ type Announcement = {
   image_url: string | null;
   graphic_variant: string | null;
   dismissible: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
   updated_at: string;
 };
 
 const dismissalKey = (item: Announcement) => `reskonnect_update_dismissed:${item.id}:${item.updated_at}`;
+
+const isCurrentlyScheduled = (item: Announcement, now: number) => {
+  const starts = item.starts_at ? new Date(item.starts_at).getTime() : Number.NEGATIVE_INFINITY;
+  const ends = item.ends_at ? new Date(item.ends_at).getTime() : Number.POSITIVE_INFINITY;
+  return Number.isFinite(starts) || starts === Number.NEGATIVE_INFINITY
+    ? now >= starts && now <= ends
+    : false;
+};
 
 export default function SiteAnnouncementPopup() {
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
@@ -28,26 +38,41 @@ export default function SiteAnnouncementPopup() {
 
   useEffect(() => {
     let cancelled = false;
+    let revealTimer: number | undefined;
+
     const load = async () => {
       const db = supabase as any;
       const { data, error } = await db
         .from("site_announcements")
-        .select("id,title,subtitle,body,badge,cta_label,cta_url,image_url,graphic_variant,dismissible,updated_at")
+        .select("id,title,subtitle,body,badge,cta_label,cta_url,image_url,graphic_variant,dismissible,starts_at,ends_at,updated_at")
         .eq("is_active", true)
         .order("priority", { ascending: false })
         .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (cancelled || error || !data) return;
-      if (data.dismissible !== false && localStorage.getItem(dismissalKey(data))) return;
-      setAnnouncement(data);
-      window.setTimeout(() => { if (!cancelled) setVisible(true); }, 650);
+        .limit(20);
+
+      if (cancelled || error || !data?.length) return;
+
+      const now = Date.now();
+      const current = (data as Announcement[]).find((item) => isCurrentlyScheduled(item, now));
+      if (!current) return;
+      if (current.dismissible !== false && localStorage.getItem(dismissalKey(current))) return;
+
+      setAnnouncement(current);
+      revealTimer = window.setTimeout(() => {
+        if (!cancelled) setVisible(true);
+      }, 650);
     };
+
     load().catch(() => undefined);
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (revealTimer) window.clearTimeout(revealTimer);
+    };
   }, []);
 
   const isInternal = useMemo(() => Boolean(announcement?.cta_url?.startsWith("/")), [announcement?.cta_url]);
+  const is2027Graphic = announcement?.graphic_variant === "reskonnect_2027" || /2027/.test(`${announcement?.badge || ""} ${announcement?.title || ""}`);
+
   if (!announcement || !visible) return null;
 
   const dismiss = () => {
@@ -91,11 +116,11 @@ export default function SiteAnnouncementPopup() {
               <img src={BRAND.logos.full} alt={BRAND.name} className="h-12 w-fit max-w-[220px] rounded-xl bg-white/95 p-2 object-contain shadow-lg" />
               <div className="mt-10 flex items-end justify-between gap-4">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.22em] text-white/75">Living · 2027 intake</p>
-                  <p className="mt-2 text-3xl font-black leading-none sm:text-4xl">Reserve early.<br />Move smarter.</p>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-white/75">{is2027Graphic ? "Living · 2027 intake" : "ResKonnect · platform update"}</p>
+                  <p className="mt-2 text-3xl font-black leading-none sm:text-4xl">{is2027Graphic ? <>Reserve early.<br />Move smarter.</> : <>Stay informed.<br />Stay connected.</>}</p>
                 </div>
                 <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/25 bg-white/10 sm:flex">
-                  <CalendarDays className="h-8 w-8" />
+                  {is2027Graphic ? <CalendarDays className="h-8 w-8" /> : <Megaphone className="h-8 w-8" />}
                 </div>
               </div>
             </div>
