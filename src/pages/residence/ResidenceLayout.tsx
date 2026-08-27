@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { BRAND, BRAND_COLORS } from "@/constants/brand";
+import { BRAND } from "@/constants/brand";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { resolveResidencePortalAccount } from "@/lib/residencePortal";
@@ -69,17 +69,19 @@ const ResidenceLayout = () => {
     const loadCounts = async () => {
       const [apps, reservations] = await Promise.all([
         supabase.from("applications").select("id", { count: "exact", head: true }).eq("residence_id", residence.id).in("status", [...RESIDENCE_ATTENTION_STATUSES]),
-        (supabase as any).from("residence_portal_reservations_safe").select("id", { count: "exact", head: true }).eq("residence_id", residence.id).eq("academic_year", 2027).neq("status", "cancelled"),
+        (supabase as any).rpc("get_residence_portal_reservations", { p_residence_id: residence.id, p_year: 2027 }),
       ]);
       if (!apps.error) setPendingCount(apps.count || 0);
-      if (!reservations.error) setReservationCount(reservations.count || 0);
+      if (!reservations.error) setReservationCount((reservations.data || []).filter((row: any) => row.status !== "cancelled").length);
     };
     void loadCounts();
-    const channel = supabase.channel(`residence-portal-counts-${residence.id}`)
+    const interval = window.setInterval(() => void loadCounts(), 30_000);
+    const channel = supabase.channel(`residence-portal-app-counts-${residence.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "applications", filter: `residence_id=eq.${residence.id}` }, loadCounts)
-      .on("postgres_changes", { event: "*", schema: "public", table: "accommodation_reservations", filter: `residence_id=eq.${residence.id}` }, loadCounts)
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    const onFocus = () => void loadCounts();
+    window.addEventListener("focus", onFocus);
+    return () => { window.clearInterval(interval); window.removeEventListener("focus", onFocus); void supabase.removeChannel(channel); };
   }, [residence?.id]);
 
   const handleLogout = async () => { await supabase.auth.signOut(); toast.success("Signed out."); navigate("/residence/login", { replace: true }); };
