@@ -74,6 +74,7 @@ const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminSystemStatus = lazy(() => import("./pages/admin/AdminSystemStatus"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminGrowthCommandCentre = lazy(() => import("./pages/admin/AdminGrowthCommandCentre"));
+const AdminPartnershipCommandCentre = lazy(() => import("./pages/admin/AdminPartnershipCommandCentre"));
 const AdminDocuments = lazy(() => import("./pages/admin/AdminDocuments"));
 const AdminStores = lazy(() => import("./pages/admin/AdminStores"));
 const AdminFollowUp = lazy(() => import("./pages/admin/AdminFollowUp"));
@@ -93,6 +94,9 @@ const ResidenceApplicationDetail = lazy(() => import("./pages/residence/Residenc
 const ResidenceAnalytics = lazy(() => import("./pages/residence/ResidenceAnalytics"));
 const ResidenceCRM = lazy(() => import("./pages/residence/ResidenceCRM"));
 const ResidenceInventory = lazy(() => import("./pages/residence/ResidenceInventory"));
+const ResidenceListingProfile = lazy(() => import("./pages/residence/ResidenceListingProfile"));
+const ResidenceRecruitment = lazy(() => import("./pages/residence/ResidenceRecruitment"));
+const ResidenceRecruiterRedirect = lazy(() => import("./pages/ResidenceRecruiterRedirect"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const MyDiscountCodes = lazy(() => import("./pages/MyDiscountCodes"));
 const AdminSellerApprovals = lazy(() => import("./pages/admin/AdminSellerApprovals"));
@@ -181,6 +185,7 @@ const App = () => {
                     <Route path="/roommates" element={<RoommateFinder />} />
                     <Route path="/affiliates" element={<Affiliates />} />
                     <Route path="/r/:code" element={<ReferralRedirect />} />
+                    <Route path="/rr/:key" element={<ResidenceRecruiterRedirect />} />
                     <Route path="/recruit" element={<RecruitLanding />} />
                     <Route path="/recruit/auth" element={<RecruiterAuth />} />
                     <Route path="/recruit/apply" element={<ProtectedRoute><RecruiterApply /></ProtectedRoute>} />
@@ -204,6 +209,7 @@ const App = () => {
                     <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
                     <Route path="/admin/analytics" element={<ProtectedRoute><AdminRoute><AdminAnalytics /></AdminRoute></ProtectedRoute>} />
                     <Route path="/admin/growth" element={<ProtectedRoute><AdminRoute><AdminGrowthCommandCentre /></AdminRoute></ProtectedRoute>} />
+                    <Route path="/admin/partnerships" element={<ProtectedRoute><AdminRoute><AdminPartnershipCommandCentre /></AdminRoute></ProtectedRoute>} />
                     <Route path="/admin/operations" element={<ProtectedRoute><AdminRoute><AdminOperationsHub /></AdminRoute></ProtectedRoute>} />
                     <Route path="/admin/application-hub" element={<ProtectedRoute><AdminRoute><AdminApplicationHub /></AdminRoute></ProtectedRoute>} />
                     <Route path="/admin/onboarding" element={<ProtectedRoute><AdminRoute><AdminOnboardingHub /></AdminRoute></ProtectedRoute>} />
@@ -241,10 +247,12 @@ const App = () => {
                     <Route path="/residence/login" element={<ResidenceLogin />} />
                     <Route path="/residence" element={<ResidenceRoute><ResidenceLayout /></ResidenceRoute>}>
                       <Route index element={<ResidenceDashboard />} />
+                      <Route path="listing" element={<ResidenceListingProfile />} />
                       <Route path="inbox" element={<ResidenceInbox />} />
                       <Route path="application/:id" element={<ResidenceApplicationDetail />} />
                       <Route path="crm" element={<ResidenceCRM />} />
                       <Route path="inventory" element={<ResidenceInventory />} />
+                      <Route path="recruiters" element={<ResidenceRecruitment />} />
                       <Route path="analytics" element={<ResidenceAnalytics />} />
                     </Route>
 
