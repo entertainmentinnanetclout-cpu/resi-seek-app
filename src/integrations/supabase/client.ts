@@ -8,7 +8,7 @@
 // All schema changes must ship as SQL packs under `docs/EXTERNAL_PARITY_*.sql`
 // and be run manually against External Supabase.
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from './types';
+import type { Database } from './types.production.generated';
 
 export const EXTERNAL_SUPABASE_PROJECT_ID = "mefjzkhobkltlbmhusdh";
 export const EXTERNAL_SUPABASE_URL = `https://${EXTERNAL_SUPABASE_PROJECT_ID}.supabase.co`;
