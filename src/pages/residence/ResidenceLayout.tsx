@@ -1,20 +1,31 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Bell, Boxes, Building2, ExternalLink, Home, Inbox, LogOut, Megaphone, Menu, Palette, Target } from "lucide-react";
+import { BarChart3, Bell, Boxes, CalendarDays, ExternalLink, Home, Inbox, LogOut, Megaphone, Menu, Palette, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { BRAND, BRAND_COLORS } from "@/constants/brand";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { resolveResidencePortalAccount } from "@/lib/residencePortal";
 import { RESIDENCE_ATTENTION_STATUSES } from "@/lib/residenceApplications";
 import { toast } from "sonner";
 
-export interface ResidencePortalContext { residence: { id: string; name: string } | null; }
+export interface ResidencePortalContext {
+  residence: {
+    id: string;
+    name: string;
+    cover_image_url?: string | null;
+    image_url?: string | null;
+    place_label?: string | null;
+    reservations_2027_open?: boolean | null;
+  } | null;
+}
 
 const navItems = [
   { icon: Home, label: "Overview", path: "/residence", match: (path: string) => path === "/residence" },
+  { icon: CalendarDays, label: "2027 Reservations", path: "/residence/reservations-2027", match: (path: string) => path.startsWith("/residence/reservations-2027") },
   { icon: Palette, label: "Listing & Brand", path: "/residence/listing", match: (path: string) => path.startsWith("/residence/listing") },
   { icon: Boxes, label: "Inventory & Pricing", path: "/residence/inventory", match: (path: string) => path.startsWith("/residence/inventory") },
   { icon: Megaphone, label: "Recruitment Channel", path: "/residence/recruiters", match: (path: string) => path.startsWith("/residence/recruiters") },
@@ -29,6 +40,7 @@ const ResidenceLayout = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [residence, setResidence] = useState<ResidencePortalContext["residence"]>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [reservationCount, setReservationCount] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -38,7 +50,9 @@ const ResidenceLayout = () => {
       try {
         const account = await resolveResidencePortalAccount(user);
         if (!account?.is_active) return;
-        const { data, error } = await supabase.from("residences").select("id,name").eq("id", account.residence_id).single();
+        const { data, error } = await (supabase as any).from("residences")
+          .select("id,name,cover_image_url,image_url,place_label,reservations_2027_open")
+          .eq("id", account.residence_id).single();
         if (error) throw error;
         if (active) setResidence(data);
       } catch (err) {
@@ -52,30 +66,101 @@ const ResidenceLayout = () => {
 
   useEffect(() => {
     if (!residence?.id) return;
-    const loadAttentionCount = async () => {
-      const { count, error } = await supabase.from("applications").select("id", { count: "exact", head: true }).eq("residence_id", residence.id).in("status", [...RESIDENCE_ATTENTION_STATUSES]);
-      if (!error) setPendingCount(count || 0);
+    const loadCounts = async () => {
+      const [apps, reservations] = await Promise.all([
+        supabase.from("applications").select("id", { count: "exact", head: true }).eq("residence_id", residence.id).in("status", [...RESIDENCE_ATTENTION_STATUSES]),
+        (supabase as any).from("residence_portal_reservations_safe").select("id", { count: "exact", head: true }).eq("residence_id", residence.id).eq("academic_year", 2027).neq("status", "cancelled"),
+      ]);
+      if (!apps.error) setPendingCount(apps.count || 0);
+      if (!reservations.error) setReservationCount(reservations.count || 0);
     };
-    void loadAttentionCount();
-    const channel = supabase.channel(`residence-applications-${residence.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "applications", filter: `residence_id=eq.${residence.id}` }, loadAttentionCount)
+    void loadCounts();
+    const channel = supabase.channel(`residence-portal-counts-${residence.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "applications", filter: `residence_id=eq.${residence.id}` }, loadCounts)
+      .on("postgres_changes", { event: "*", schema: "public", table: "accommodation_reservations", filter: `residence_id=eq.${residence.id}` }, loadCounts)
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [residence?.id]);
 
   const handleLogout = async () => { await supabase.auth.signOut(); toast.success("Signed out."); navigate("/residence/login", { replace: true }); };
+  const cover = residence?.cover_image_url || residence?.image_url;
 
-  const NavContent = () => <div className="flex h-[100dvh] min-h-0 w-full min-w-0 flex-col overflow-hidden">
-    <div className="shrink-0 border-b p-5"><Link to="/residence" onClick={() => setIsOpen(false)} className="flex min-w-0 items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Building2 className="h-5 w-5" /></div><div className="min-w-0"><p className="truncate font-black tracking-tight">ResKonnect</p><p className="truncate text-xs text-muted-foreground">Landlord Portal · Property OS</p></div></Link>{residence && <p className="mt-4 truncate rounded-lg bg-muted/70 px-3 py-2 text-sm font-semibold">{residence.name}</p>}</div>
-    <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-3 [-webkit-overflow-scrolling:touch]">{navItems.map((item) => { const active = item.match(location.pathname); return <Link key={item.path} to={item.path} onClick={() => setIsOpen(false)} className={cn("flex min-w-0 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors", active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted hover:text-foreground")}><item.icon className="h-5 w-5 shrink-0" /><span className="min-w-0 truncate">{item.label}</span>{item.label === "Applications" && pendingCount > 0 && <Badge variant={active ? "secondary" : "destructive"} className="ml-auto shrink-0">{pendingCount}</Badge>}</Link>; })}</nav>
-    <div className="shrink-0 space-y-1 border-t bg-card p-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">{residence && <Button asChild variant="ghost" className="w-full justify-start"><Link to={`/res/${residence.id}`} target="_blank"><ExternalLink className="mr-3 h-4 w-4" />View public listing</Link></Button>}<Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive" onClick={handleLogout}><LogOut className="mr-3 h-4 w-4" />Sign out</Button></div>
-  </div>;
+  const NavContent = () => (
+    <div className="flex h-[100dvh] min-h-0 w-full min-w-0 flex-col overflow-hidden bg-card">
+      <div className="relative shrink-0 overflow-hidden border-b bg-[#071326] p-5 text-white">
+        {cover && <img src={cover} alt="" className="absolute inset-0 h-full w-full object-cover opacity-15" />}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#071326]/95 via-[#071326]/95 to-[#2563EB]/65" />
+        <div className="relative z-10">
+          <Link to="/residence" onClick={() => setIsOpen(false)} className="block rounded-2xl bg-white p-3 shadow-lg">
+            <img src={BRAND.logos.full} alt={BRAND.name} className="h-10 w-auto max-w-[190px] object-contain object-left" />
+          </Link>
+          <div className="mt-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#F5B32F]">Landlord Portal · Property OS</p>
+            <p className="mt-1 truncate text-lg font-black">{residence?.name || "Loading residence..."}</p>
+            <p className="truncate text-xs text-white/65">{residence?.place_label || BRAND.tagline}</p>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-bold">ResKonnect managed</span>
+            {residence?.reservations_2027_open && <span className="rounded-full bg-[#F5B32F] px-2.5 py-1 text-[10px] font-black text-[#071326]">2027 OPEN</span>}
+          </div>
+        </div>
+      </div>
 
-  return <div className="flex min-h-[100dvh] w-full max-w-full min-w-0 overflow-x-hidden bg-muted/20">
-    <aside className="fixed inset-y-0 left-0 hidden h-[100dvh] max-h-[100dvh] w-64 overflow-hidden border-r bg-card lg:block"><NavContent /></aside>
-    <header className="fixed inset-x-0 top-0 z-50 flex h-16 min-w-0 items-center justify-between gap-2 overflow-hidden border-b bg-background/95 px-3 backdrop-blur sm:px-4 lg:hidden"><div className="min-w-0"><p className="truncate font-bold">Landlord Portal</p><p className="max-w-[135px] truncate text-xs text-muted-foreground sm:max-w-[220px]">{residence?.name || "Loading residence..."}</p></div><div className="flex shrink-0 items-center gap-1 sm:gap-2"><Button variant="ghost" size="icon" className="relative" onClick={() => navigate("/residence/inbox?status=new")} aria-label="Applications needing attention"><Bell className="h-5 w-5" />{pendingCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">{pendingCount > 9 ? "9+" : pendingCount}</span>}</Button><ThemeToggle /><Sheet open={isOpen} onOpenChange={setIsOpen}><SheetTrigger asChild><Button variant="outline" size="icon" aria-label="Open residence navigation"><Menu className="h-5 w-5" /></Button></SheetTrigger><SheetContent side="right" className="h-[100dvh] w-[min(92vw,18rem)] max-w-none overflow-hidden p-0"><NavContent /></SheetContent></Sheet></div></header>
-    <main className="min-w-0 max-w-full flex-1 overflow-x-hidden lg:ml-64"><div className="sticky top-0 z-30 hidden h-16 items-center justify-between border-b bg-background/90 px-6 backdrop-blur lg:flex"><div className="min-w-0"><p className="truncate text-sm font-semibold">{residence?.name || "Loading residence..."}</p><p className="truncate text-xs text-muted-foreground">Listing quality, pricing, recruitment, applications and conversion analytics.</p></div><div className="flex shrink-0 items-center gap-2"><Button variant="outline" className="relative" onClick={() => navigate("/residence/inbox?status=new")}><Inbox className="mr-2 h-4 w-4" />Applications{pendingCount > 0 && <Badge variant="destructive" className="ml-2">{pendingCount}</Badge>}</Button><ThemeToggle /></div></div><div className="min-w-0 max-w-full p-3 pt-20 sm:p-4 sm:pt-20 md:p-6 md:pt-20 lg:p-8"><Outlet context={{ residence }} /></div></main>
-  </div>;
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-3 [-webkit-overflow-scrolling:touch]">
+        {navItems.map((item) => {
+          const active = item.match(location.pathname);
+          const badge = item.label === "Applications" ? pendingCount : item.label === "2027 Reservations" ? reservationCount : 0;
+          return (
+            <Link key={item.path} to={item.path} onClick={() => setIsOpen(false)}
+              className={cn("flex min-w-0 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors", active ? "bg-[#071326] text-white shadow-sm" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
+            >
+              <item.icon className={cn("h-5 w-5 shrink-0", active && "text-[#F5B32F]")} />
+              <span className="min-w-0 truncate">{item.label}</span>
+              {badge > 0 && <Badge className={cn("ml-auto shrink-0", active ? "bg-[#F5B32F] text-[#071326] hover:bg-[#F5B32F]" : "bg-primary text-primary-foreground")}>{badge > 99 ? "99+" : badge}</Badge>}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="shrink-0 space-y-1 border-t bg-card p-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
+        {residence && <Button asChild variant="ghost" className="w-full justify-start"><Link to={`/res/${residence.id}`} target="_blank"><ExternalLink className="mr-3 h-4 w-4" />View public listing</Link></Button>}
+        <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive" onClick={handleLogout}><LogOut className="mr-3 h-4 w-4" />Sign out</Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex min-h-[100dvh] w-full max-w-full min-w-0 overflow-x-hidden bg-muted/20">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden h-[100dvh] max-h-[100dvh] w-72 overflow-hidden border-r bg-card lg:block"><NavContent /></aside>
+      <header className="fixed inset-x-0 top-0 z-50 flex h-16 min-w-0 items-center justify-between gap-2 overflow-hidden border-b bg-[#071326] px-3 text-white shadow-md sm:px-4 lg:hidden">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <img src={BRAND.logos.icon} alt={BRAND.name} className="h-9 w-9 shrink-0 rounded-lg bg-white p-1 object-contain" />
+          <div className="min-w-0"><p className="truncate font-black">Property OS</p><p className="max-w-[130px] truncate text-xs text-white/65 sm:max-w-[220px]">{residence?.name || "Loading residence..."}</p></div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <Button variant="ghost" size="icon" className="relative text-white hover:bg-white/10 hover:text-white" onClick={() => navigate("/residence/reservations-2027")} aria-label="2027 reservations"><CalendarDays className="h-5 w-5" />{reservationCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#F5B32F] px-1 text-[10px] font-black text-[#071326]">{reservationCount > 9 ? "9+" : reservationCount}</span>}</Button>
+          <Button variant="ghost" size="icon" className="relative text-white hover:bg-white/10 hover:text-white" onClick={() => navigate("/residence/inbox?status=new")} aria-label="Applications needing attention"><Bell className="h-5 w-5" />{pendingCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">{pendingCount > 9 ? "9+" : pendingCount}</span>}</Button>
+          <ThemeToggle />
+          <Sheet open={isOpen} onOpenChange={setIsOpen}><SheetTrigger asChild><Button variant="outline" size="icon" className="border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white" aria-label="Open residence navigation"><Menu className="h-5 w-5" /></Button></SheetTrigger><SheetContent side="right" className="h-[100dvh] w-[min(92vw,20rem)] max-w-none overflow-hidden p-0"><NavContent /></SheetContent></Sheet>
+        </div>
+      </header>
+
+      <main className="min-w-0 max-w-full flex-1 overflow-x-hidden lg:ml-72">
+        <div className="sticky top-0 z-30 hidden h-16 items-center justify-between border-b bg-background/95 px-6 backdrop-blur lg:flex">
+          <div className="min-w-0"><p className="truncate text-sm font-black text-[#071326] dark:text-foreground">{residence?.name || "Loading residence..."}</p><p className="truncate text-xs text-muted-foreground">Listing quality, 2027 reservations, pricing, recruitment and conversion intelligence.</p></div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button variant="outline" className="relative" onClick={() => navigate("/residence/reservations-2027")}><CalendarDays className="mr-2 h-4 w-4" />2027 Reservations{reservationCount > 0 && <Badge className="ml-2 bg-[#F5B32F] text-[#071326] hover:bg-[#F5B32F]">{reservationCount}</Badge>}</Button>
+            <Button variant="outline" className="relative" onClick={() => navigate("/residence/inbox?status=new")}><Inbox className="mr-2 h-4 w-4" />Applications{pendingCount > 0 && <Badge variant="destructive" className="ml-2">{pendingCount}</Badge>}</Button>
+            <ThemeToggle />
+          </div>
+        </div>
+        <div className="min-w-0 max-w-full p-3 pt-20 sm:p-4 sm:pt-20 md:p-6 md:pt-20 lg:p-8"><Outlet context={{ residence }} /></div>
+        <div className="border-t px-4 py-5 text-center text-[11px] text-muted-foreground lg:px-8">
+          <span className="font-semibold text-foreground">{BRAND.name}</span> · {BRAND.descriptor} · Developed by Start To Up Innovations Group
+        </div>
+      </main>
+    </div>
+  );
 };
 
 export default ResidenceLayout;
