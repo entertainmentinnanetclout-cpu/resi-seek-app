@@ -47,10 +47,16 @@ const CreatorAssistanceCase = () => {
   const save = async () => {
     if (!row) return;
     setSaving(true);
-    const { data, error } = await (supabase as any).from("creator_assistance_cases").update({ status, creator_notes:notes.trim() || null, application_reference:reference.trim() || null }).eq("id",row.id).select("*").single();
+    const { data, error } = await (supabase as any).rpc("creator_update_assistance_case", {
+      p_case_id: row.id,
+      p_status: status,
+      p_notes: notes.trim() || null,
+      p_reference: reference.trim() || null,
+    });
     setSaving(false);
     if (error) return toast.error(error.message || "Could not update assistance case");
-    setRow(data); toast.success("Application assistance case updated");
+    setRow((current: any) => ({ ...current, ...(data || {}), status }));
+    toast.success("Application assistance case updated");
   };
 
   const openDoc = async (doc:any) => {
