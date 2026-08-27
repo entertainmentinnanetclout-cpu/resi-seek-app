@@ -6,6 +6,7 @@ import { Sheet, SheetClose, SheetContent, SheetTrigger } from "@/components/ui/s
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BRAND } from "@/constants/brand";
 import SiteAnnouncementPopup from "@/components/SiteAnnouncementPopup";
+import HomeJourneyBar from "@/components/HomeJourneyBar";
 
 export const PUBLIC_NAV = [
   { label: "Accommodation", to: "/find" },
@@ -92,6 +93,8 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
                     return <div key={item.to} className="rounded-xl border-b border-border/60 pb-1 last:border-0"><SheetClose asChild><Link to={item.to} className="block rounded-lg px-3 py-3 text-base font-medium transition-colors hover:bg-muted">{item.label}</Link></SheetClose>{children?.map((child) => <SheetClose key={child.to} asChild><Link to={child.to} className="ml-3 block rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-primary">{child.label}</Link></SheetClose>)}</div>;
                   })}
                   <div className="mt-3 space-y-2 border-t pt-3">
+                    <SheetClose asChild><Button variant="outline" className="w-full" onClick={() => navigate("/accommodation-request")}>Tell us what accommodation you need</Button></SheetClose>
+                    <SheetClose asChild><Button variant="outline" className="w-full" onClick={() => navigate("/creator-partners")}>Creator Partner Programme</Button></SheetClose>
                     <SheetClose asChild><Button variant="outline" className="w-full gap-2" onClick={() => navigate("/residence/login")}><Building2 className="h-4 w-4" /> Landlord Portal</Button></SheetClose>
                     <SheetClose asChild><Button variant="outline" className="w-full" onClick={() => navigate("/auth")}>Sign In</Button></SheetClose>
                     <SheetClose asChild><Button className="w-full bg-cta font-semibold text-cta-foreground hover:bg-cta/90" onClick={() => navigate("/auth?mode=signup")}>Create Account</Button></SheetClose>
@@ -103,6 +106,7 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
         </div>
         {search ? <div className="border-t border-border px-4 py-2 lg:hidden">{search}</div> : null}
       </header>
+      {location.pathname === "/" && <HomeJourneyBar />}
       {location.pathname === "/" && <SiteAnnouncementPopup />}
     </Fragment>
   );
