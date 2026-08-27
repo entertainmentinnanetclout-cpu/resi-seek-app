@@ -9,15 +9,38 @@ import SiteAnnouncementPopup from "@/components/SiteAnnouncementPopup";
 import HomeJourneyBar from "@/components/HomeJourneyBar";
 
 export const PUBLIC_NAV = [
-  { label: "Accommodation", to: "/find" },
-  { label: "Applications", to: "/apply" },
+  {
+    label: "Accommodation",
+    to: "/find",
+    children: [
+      { label: "Find My Res", to: "/find" },
+      { label: "2027 Reservations", to: "/find?reserve=2027" },
+      { label: "Demand Network", to: "/accommodation-request" },
+    ],
+  },
+  {
+    label: "Applications",
+    to: "/apply",
+    children: [
+      { label: "Application Journey", to: "/apply" },
+      { label: "APS & Programme Checker", to: "/applications/checker" },
+    ],
+  },
   {
     label: "Career & Education",
     to: "/career-education",
     children: [{ label: "Tumelo | Career & Education", to: "/career-education/tumelo" }],
   },
   { label: "Opportunities", to: "/opportunities" },
-  { label: "Partners", to: "/partners" },
+  {
+    label: "Partners",
+    to: "/partners",
+    children: [
+      { label: "Landlords & Property Owners", to: "/partners/landlords" },
+      { label: "Institutions & Business", to: "/partners/institutions" },
+      { label: "Creator Partner Programme", to: "/creator-partners" },
+    ],
+  },
   { label: "About", to: "/about" },
 ] as const;
 
@@ -27,7 +50,10 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
-  const isActive = (to: string) => location.pathname === to || location.pathname.startsWith(`${to}/`);
+  const isActive = (to: string) => {
+    const pathname = to.split("?")[0];
+    return location.pathname === pathname || location.pathname.startsWith(`${pathname}/`);
+  };
 
   return (
     <Fragment>
@@ -57,8 +83,8 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
                   <Link to={item.to} className={`flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${isActive(item.to) ? "text-primary" : "text-foreground/80 hover:text-primary"}`}>
                     {item.label} <ChevronDown className="h-3.5 w-3.5" />
                   </Link>
-                  <div className="invisible absolute left-0 top-full z-50 min-w-[250px] translate-y-1 rounded-xl border bg-popover p-2 opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                    <Link to={item.to} className="block rounded-lg px-3 py-2.5 text-sm font-semibold hover:bg-muted">Explore Career & Education<span className="mt-0.5 block text-xs font-normal text-muted-foreground">Guidance, contributors and student pathways</span></Link>
+                  <div className="invisible absolute left-0 top-full z-50 min-w-[270px] translate-y-1 rounded-xl border bg-popover p-2 opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                    <Link to={item.to} className="block rounded-lg px-3 py-2.5 text-sm font-semibold hover:bg-muted">Explore {item.label}<span className="mt-0.5 block text-xs font-normal text-muted-foreground">Open the main {item.label.toLowerCase()} journey.</span></Link>
                     <div className="my-1 border-t" />
                     {children.map((child) => <Link key={child.to} to={child.to} className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted hover:text-primary">{child.label}</Link>)}
                   </div>
