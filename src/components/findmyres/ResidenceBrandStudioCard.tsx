@@ -31,7 +31,7 @@ export default function ResidenceBrandStudioCard({ residence, className = "", sh
   return (
     <div
       style={style}
-      className={`relative isolate aspect-[4/5] w-full overflow-hidden rounded-[24px] bg-[var(--rk-navy)] text-white shadow-2xl ${className}`}
+      className={`relative isolate aspect-[9/13] w-full min-w-0 overflow-hidden rounded-[24px] bg-[var(--rk-navy)] text-white shadow-2xl ${className}`}
       aria-label={`${residence?.name || "Residence"} branded accommodation card`}
     >
       {cover && !studio && (
@@ -81,7 +81,7 @@ export default function ResidenceBrandStudioCard({ residence, className = "", sh
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 text-[10px] font-semibold text-white/75 sm:text-xs">
-              <MapPin className="h-3.5 w-3.5 text-[var(--rk-gold)]" />
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--rk-gold)]" />
               <span className="truncate">{residence?.address || place}</span>
             </div>
             {showPrice && price && <p className="mt-1 text-xl font-black text-white sm:text-2xl">From {price}<span className="text-[10px] font-semibold text-white/60"> / month</span></p>}
