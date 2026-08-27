@@ -31,8 +31,10 @@ const ResidenceReservations2027 = () => {
   const load = useCallback(async () => {
     if (!residence?.id) return;
     setLoading(true);
-    const { data, error } = await (supabase as any).from("residence_portal_reservations_safe")
-      .select("*").eq("residence_id", residence.id).eq("academic_year", 2027).order("created_at", { ascending: false });
+    const { data, error } = await (supabase as any).rpc("get_residence_portal_reservations", {
+      p_residence_id: residence.id,
+      p_year: 2027,
+    });
     if (error) toast.error(error.message || "Could not load 2027 reservations");
     setRows(data || []);
     setLoading(false);
@@ -41,10 +43,10 @@ const ResidenceReservations2027 = () => {
   useEffect(() => {
     if (!residence?.id) return;
     void load();
-    const channel = supabase.channel(`residence-2027-workspace-${residence.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "accommodation_reservations", filter: `residence_id=eq.${residence.id}` }, () => void load())
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    const interval = window.setInterval(() => void load(), 30_000);
+    const onFocus = () => void load();
+    window.addEventListener("focus", onFocus);
+    return () => { window.clearInterval(interval); window.removeEventListener("focus", onFocus); };
   }, [residence?.id, load]);
 
   const filtered = useMemo(() => rows.filter((row) => {
@@ -81,7 +83,7 @@ const ResidenceReservations2027 = () => {
       <div className="mx-auto max-w-7xl space-y-6">
         <section className="overflow-hidden rounded-3xl bg-[#071326] p-6 text-white shadow-xl md:p-8">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-            <div><div className="inline-flex items-center gap-2 rounded-full bg-[#F5B32F] px-3 py-1 text-xs font-black text-[#071326]"><CalendarDays className="h-3.5 w-3.5" /> 2027 INTAKE</div><h1 className="mt-4 text-3xl font-black md:text-4xl">2027 Reservations</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/70">Manage reservation demand for {residence.name}. This workspace intentionally excludes student phone numbers and email addresses; contact remains controlled through ResKonnect.</p></div>
+            <div><div className="inline-flex items-center gap-2 rounded-full bg-[#F5B32F] px-3 py-1 text-xs font-black text-[#071326]"><CalendarDays className="h-3.5 w-3.5" /> 2027 INTAKE</div><h1 className="mt-4 text-3xl font-black md:text-4xl">2027 Reservations</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/70">Manage reservation demand for {residence.name}. This workspace intentionally excludes student phone numbers, email addresses and ID numbers; contact remains controlled through ResKonnect.</p></div>
             <Button variant="secondary" onClick={() => void load()} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh</Button>
           </div>
         </section>
