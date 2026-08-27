@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import ContactDetailsGate from "@/components/ContactDetailsGate";
 
 export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading, staffRole, isStudent, isRecruiter, isPendingRecruiter } = useAuth();
@@ -10,7 +11,6 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
     if (!isLoading && !user) {
       navigate("/auth", { replace: true });
     } else if (!isLoading && staffRole) {
-      // Redirect any staff user to their admin hub
       const hubMap: Record<string, string> = {
         admin: "/admin",
         operations_lead: "/admin/operations",
@@ -21,12 +21,8 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
       };
       navigate(hubMap[staffRole] || "/admin", { replace: true });
     } else if (!isLoading && !isStudent && (isRecruiter || isPendingRecruiter)) {
-      // Recruiter-only user trying to access student dashboard
-      if (isRecruiter) {
-        navigate("/recruit/dashboard", { replace: true });
-      } else {
-        navigate("/recruit/apply", { replace: true });
-      }
+      if (isRecruiter) navigate("/recruit/dashboard", { replace: true });
+      else navigate("/recruit/apply", { replace: true });
     }
   }, [user, isLoading, staffRole, isStudent, isRecruiter, isPendingRecruiter, navigate]);
 
@@ -41,9 +37,7 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!user || staffRole || (!isStudent && (isRecruiter || isPendingRecruiter))) {
-    return null;
-  }
+  if (!user || staffRole || (!isStudent && (isRecruiter || isPendingRecruiter))) return null;
 
-  return <>{children}</>;
+  return <ContactDetailsGate>{children}</ContactDetailsGate>;
 };
