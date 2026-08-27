@@ -36,6 +36,8 @@ const OpportunitiesWil = lazy(() => import("./pages/public/OpportunitiesWil"));
 const PartnersPillar = lazy(() => import("./pages/public/Partners"));
 const PartnersLandlords = lazy(() => import("./pages/public/PartnersLandlords"));
 const PartnersInstitutions = lazy(() => import("./pages/public/PartnersInstitutions"));
+const CareerEducation = lazy(() => import("./pages/public/CareerEducation"));
+const TumeloCareerEducation = lazy(() => import("./pages/public/TumeloCareerEducation"));
 const ProfileSetup = lazy(() => import("./pages/ProfileSetup"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Updates = lazy(() => import("./pages/Updates"));
@@ -50,6 +52,9 @@ const ResidenceDetail = lazy(() => import("./pages/ResidenceDetail"));
 const AccommodationDemand = lazy(() => import("./pages/AccommodationDemand"));
 const CreatorPartnerPortal = lazy(() => import("./pages/creator/CreatorPartnerPortal"));
 const CreatorLanding = lazy(() => import("./pages/creator/CreatorLanding"));
+const CreatorAssistanceIntake = lazy(() => import("./pages/creator/CreatorAssistanceIntake"));
+const CreatorAssistanceCase = lazy(() => import("./pages/creator/CreatorAssistanceCase"));
+const TumeloIntelligenceOS = lazy(() => import("./pages/partner/TumeloIntelligenceOS"));
 const BursaryFinder = lazy(() => import("./pages/BursaryFinder"));
 const StudentDeals = lazy(() => import("./pages/StudentDeals"));
 const RoommateFinder = lazy(() => import("./pages/RoommateFinder"));
@@ -89,6 +94,7 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const ResidenceLogin = lazy(() => import("./pages/residence/ResidenceLogin"));
 const ResidenceLayout = lazy(() => import("./pages/residence/ResidenceLayout"));
 const ResidenceDashboard = lazy(() => import("./pages/residence/ResidenceDashboard"));
+const ResidenceReservations2027 = lazy(() => import("./pages/residence/ResidenceReservations2027"));
 const ResidenceInbox = lazy(() => import("./pages/residence/ResidenceInbox"));
 const ResidenceApplicationDetail = lazy(() => import("./pages/residence/ResidenceApplicationDetail"));
 const ResidenceAnalytics = lazy(() => import("./pages/residence/ResidenceAnalytics"));
@@ -156,6 +162,8 @@ const App = () => {
                     <Route path="/applications/checker" element={<ApplicationsChecker />} />
                     <Route path="/apply" element={<ApplicationsHub />} />
 
+                    <Route path="/career-education" element={<CareerEducation />} />
+                    <Route path="/career-education/tumelo" element={<TumeloCareerEducation />} />
                     <Route path="/opportunities" element={<OpportunitiesPillar />} />
                     <Route path="/opportunities/wil" element={<OpportunitiesWil />} />
                     <Route path="/partners" element={<PartnersPillar />} />
@@ -163,6 +171,9 @@ const App = () => {
                     <Route path="/partners/institutions" element={<PartnersInstitutions />} />
                     <Route path="/creator-partners" element={<CreatorPartnerPortal />} />
                     <Route path="/creator/:slug" element={<CreatorLanding />} />
+                    <Route path="/creator-assist/:slug" element={<CreatorAssistanceIntake />} />
+                    <Route path="/creator-partners/assist/:caseId" element={<ProtectedRoute><CreatorAssistanceCase /></ProtectedRoute>} />
+                    <Route path="/partner/tumelo/os" element={<ProtectedRoute><TumeloIntelligenceOS /></ProtectedRoute>} />
 
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/terms" element={<Terms />} />
@@ -247,6 +258,7 @@ const App = () => {
                     <Route path="/residence/login" element={<ResidenceLogin />} />
                     <Route path="/residence" element={<ResidenceRoute><ResidenceLayout /></ResidenceRoute>}>
                       <Route index element={<ResidenceDashboard />} />
+                      <Route path="reservations-2027" element={<ResidenceReservations2027 />} />
                       <Route path="listing" element={<ResidenceListingProfile />} />
                       <Route path="inbox" element={<ResidenceInbox />} />
                       <Route path="application/:id" element={<ResidenceApplicationDetail />} />
