@@ -1,160 +1,96 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { ArrowRight, CheckCircle2, Clock3, FileText, Inbox, RefreshCw, Users } from "lucide-react";
+import { ArrowRight, CalendarDays, CheckCircle2, FileText, Inbox, RefreshCw, Target, TrendingUp, Users } from "lucide-react";
+import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { getResidenceApplicationStatusLabel, RESIDENCE_APPLICATION_STATUS_META } from "@/lib/residenceApplications";
-import SEO from "@/components/SEO";
 import type { ResidencePortalContext } from "./ResidenceLayout";
-
-interface AnalyticsRow {
-  status: string;
-  funding_type: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
 
 const ResidenceAnalytics = () => {
   const navigate = useNavigate();
   const { residence } = useOutletContext<ResidencePortalContext>();
-  const [applications, setApplications] = useState<AnalyticsRow[]>([]);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [reservations, setReservations] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
+  const [demand, setDemand] = useState<any>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!residence?.id) return;
     setLoading(true);
-    setError(null);
-    try {
-      const { data, error: queryError } = await supabase
-        .from("applications")
-        .select("status, funding_type, created_at, updated_at")
-        .eq("residence_id", residence.id)
-        .order("created_at", { ascending: false });
-      if (queryError) throw queryError;
-      setApplications((data || []) as AnalyticsRow[]);
-    } catch (err) {
-      console.error("Residence analytics load failed:", err);
-      setError("Analytics could not be loaded right now.");
-    } finally {
-      setLoading(false);
-    }
+    const db = supabase as any;
+    const [apps, resv, crm, demandRes] = await Promise.all([
+      supabase.from("applications").select("status,funding_type,created_at,updated_at").eq("residence_id", residence.id).order("created_at", { ascending: false }),
+      db.from("accommodation_reservations").select("status,funding_type,academic_year,created_at").eq("residence_id", residence.id).order("created_at", { ascending: false }),
+      db.from("residence_leads").select("stage,source_type,funding_type,created_at,updated_at").eq("residence_id", residence.id).order("created_at", { ascending: false }),
+      db.rpc("get_residence_demand_summary", { _residence_id: residence.id }),
+    ]);
+    if (!apps.error) setApplications(apps.data || []);
+    if (!resv.error) setReservations(resv.data || []);
+    if (!crm.error) setLeads(crm.data || []);
+    if (!demandRes.error) setDemand(demandRes.data || {});
+    setLoading(false);
   }, [residence?.id]);
 
   useEffect(() => {
-    if (!residence?.id) return;
     void load();
-    const channel = supabase
-      .channel(`residence-analytics-${residence.id}`)
+    if (!residence?.id) return;
+    const channel = supabase.channel(`residence-analytics-v2-${residence.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "applications", filter: `residence_id=eq.${residence.id}` }, () => void load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "accommodation_reservations", filter: `residence_id=eq.${residence.id}` }, () => void load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "residence_leads", filter: `residence_id=eq.${residence.id}` }, () => void load())
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [residence?.id, load]);
 
   const analytics = useMemo(() => {
-    const now = new Date();
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
-    const lastMonthEnd = thisMonthStart - 1;
-
-    const thisMonth = applications.filter((app) => app.created_at && new Date(app.created_at).getTime() >= thisMonthStart).length;
-    const lastMonth = applications.filter((app) => {
-      if (!app.created_at) return false;
-      const time = new Date(app.created_at).getTime();
-      return time >= lastMonthStart && time <= lastMonthEnd;
-    }).length;
-
-    const approved = applications.filter((app) => ["conditionally_approved", "approved"].includes(app.status)).length;
-    const decided = applications.filter((app) => ["conditionally_approved", "approved", "rejected"].includes(app.status)).length;
-    const nsfas = applications.filter((app) => app.funding_type === "nsfas").length;
-    const pending = applications.filter((app) => ["submitted", "documents_required", "under_review"].includes(app.status)).length;
-
-    const statusCounts = new Map<string, number>();
-    applications.forEach((app) => statusCounts.set(app.status, (statusCounts.get(app.status) || 0) + 1));
-    const fundingCounts = new Map<string, number>();
-    applications.forEach((app) => {
-      const type = app.funding_type || "unspecified";
-      fundingCounts.set(type, (fundingCounts.get(type) || 0) + 1);
-    });
-
+    const approved = applications.filter((a) => ["approved","conditionally_approved"].includes(a.status)).length;
+    const decided = applications.filter((a) => ["approved","conditionally_approved","rejected"].includes(a.status)).length;
+    const res2027 = reservations.filter((r) => Number(r.academic_year) === 2027 && r.status !== "cancelled");
+    const placed = leads.filter((l) => l.stage === "placed").length;
+    const activeLeads = leads.filter((l) => l.stage !== "lost").length;
+    const contacted = leads.filter((l) => !["new","lost"].includes(l.stage)).length;
+    const nsfas = [...applications, ...res2027].filter((r) => r.funding_type === "nsfas").length;
+    const privateCount = [...applications, ...res2027].filter((r) => r.funding_type === "private").length;
+    const statuses = new Map<string, number>();
+    leads.forEach((l) => statuses.set(l.stage, (statuses.get(l.stage) || 0) + 1));
     return {
-      total: applications.length,
-      thisMonth,
-      lastMonth,
-      approved,
-      pending,
-      nsfas,
-      approvalRate: decided ? Math.round((approved / decided) * 100) : 0,
-      statusCounts: Array.from(statusCounts.entries()).sort((a, b) => b[1] - a[1]),
-      fundingCounts: Array.from(fundingCounts.entries()).sort((a, b) => b[1] - a[1]),
+      apps: applications.length, approved, approvalRate: decided ? Math.round(approved / decided * 100) : 0,
+      reservations2027: res2027.length, placed, activeLeads, contacted,
+      placementRate: leads.length ? Math.round(placed / leads.length * 100) : 0,
+      contactRate: activeLeads ? Math.round(contacted / activeLeads * 100) : 0,
+      nsfas, privateCount, stages: [...statuses.entries()].sort((a,b) => b[1]-a[1]),
     };
-  }, [applications]);
+  }, [applications, reservations, leads]);
 
-  if (!residence) return <div className="flex min-h-[320px] items-center justify-center text-sm text-muted-foreground">Loading your residence...</div>;
+  if (!residence) return <div className="py-16 text-center text-sm text-muted-foreground">Loading residence analytics…</div>;
+  const metric = (label: string, value: any, note: string, Icon: any) => <Card><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-black">{loading ? "—" : value}</p><p className="mt-1 text-xs text-muted-foreground">{note}</p></div><Icon className="h-5 w-5 text-primary" /></div></CardContent></Card>;
 
-  const monthChange = analytics.lastMonth > 0
-    ? Math.round(((analytics.thisMonth - analytics.lastMonth) / analytics.lastMonth) * 100)
-    : null;
+  return <>
+    <SEO noIndex title={`Growth Analytics | ${residence.name} | ResKonnect`} description={`Applications, 2027 reservations, demand and placement conversion for ${residence.name}.`} />
+    <div className="mx-auto max-w-7xl space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><p className="text-sm font-semibold text-primary">Landlord Portal 2.0</p><h1 className="mt-1 text-3xl font-black">Growth & conversion analytics</h1><p className="mt-2 text-sm text-muted-foreground">See application demand, 2027 reservations, lead conversion and anonymised market demand in one view.</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => void load()}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh</Button><Button onClick={() => navigate("/residence/crm")}><Target className="mr-2 h-4 w-4" />Open CRM</Button></div></div>
 
-  return (
-    <>
-      <SEO noIndex title={`Application Analytics | ${residence.name} | ResKonnect`} description={`Application insights for ${residence.name}.`} />
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-primary">{residence.name}</p>
-            <h1 className="mt-1 text-3xl font-black tracking-tight">Application analytics</h1>
-            <p className="mt-2 text-sm text-muted-foreground">A simple operational view of applications submitted to this accommodation.</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh</Button>
-            <Button onClick={() => navigate("/residence/inbox")}><Inbox className="mr-2 h-4 w-4" /> Open applications</Button>
-          </div>
-        </div>
-
-        {error && <Card className="border-destructive/30 bg-destructive/5"><CardContent className="p-5 text-sm text-destructive">{error}</CardContent></Card>}
-
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Card><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">Total applications</p><p className="mt-2 text-3xl font-black">{loading ? "—" : analytics.total}</p><p className="mt-1 text-xs text-muted-foreground">All time</p></div><Users className="h-5 w-5 text-primary" /></div></CardContent></Card>
-          <Card><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">This month</p><p className="mt-2 text-3xl font-black">{loading ? "—" : analytics.thisMonth}</p><p className="mt-1 text-xs text-muted-foreground">{monthChange === null ? "No previous-month baseline" : `${monthChange >= 0 ? "+" : ""}${monthChange}% vs last month`}</p></div><Clock3 className="h-5 w-5 text-primary" /></div></CardContent></Card>
-          <Card><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">Approval rate</p><p className="mt-2 text-3xl font-black">{loading ? "—" : `${analytics.approvalRate}%`}</p><p className="mt-1 text-xs text-muted-foreground">Of decided applications</p></div><CheckCircle2 className="h-5 w-5 text-primary" /></div></CardContent></Card>
-          <Card><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">NSFAS applications</p><p className="mt-2 text-3xl font-black">{loading ? "—" : analytics.nsfas}</p><p className="mt-1 text-xs text-muted-foreground">{analytics.total ? `${Math.round((analytics.nsfas / analytics.total) * 100)}% of total` : "0% of total"}</p></div><FileText className="h-5 w-5 text-primary" /></div></CardContent></Card>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader><CardTitle>Status breakdown</CardTitle><CardDescription>Current application pipeline</CardDescription></CardHeader>
-            <CardContent className="space-y-3">
-              {analytics.statusCounts.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No application data yet.</p> : analytics.statusCounts.map(([status, count]) => {
-                const percentage = analytics.total ? Math.round((count / analytics.total) * 100) : 0;
-                const group = RESIDENCE_APPLICATION_STATUS_META[status]?.group;
-                return <button key={status} type="button" onClick={() => navigate(`/residence/inbox?status=${group === "all" || !group ? "all" : group}`)} className="w-full rounded-xl border p-4 text-left transition hover:border-primary/30 hover:bg-muted/30"><div className="flex items-center justify-between gap-3"><div><p className="font-semibold">{getResidenceApplicationStatusLabel(status)}</p><p className="mt-1 text-xs text-muted-foreground">{percentage}% of applications</p></div><Badge variant={status === "rejected" ? "destructive" : status === "approved" ? "default" : "secondary"}>{count}</Badge></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${percentage}%` }} /></div></button>;
-              })}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle>Funding breakdown</CardTitle><CardDescription>How applicants intend to fund accommodation</CardDescription></CardHeader>
-            <CardContent className="space-y-3">
-              {analytics.fundingCounts.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No funding data yet.</p> : analytics.fundingCounts.map(([funding, count]) => {
-                const percentage = analytics.total ? Math.round((count / analytics.total) * 100) : 0;
-                return <button key={funding} type="button" onClick={() => navigate(`/residence/inbox?funding=${funding}`)} className="flex w-full items-center justify-between rounded-xl border p-4 text-left transition hover:border-primary/30 hover:bg-muted/30"><div><p className="font-semibold capitalize">{funding}</p><p className="mt-1 text-xs text-muted-foreground">{percentage}% of applications</p></div><Badge variant="outline">{count}</Badge></button>;
-              })}
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="border-primary/15 bg-primary/[0.035]">
-          <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div><p className="font-bold">{analytics.pending} application{analytics.pending === 1 ? "" : "s"} still in the active pipeline</p><p className="mt-1 text-sm text-muted-foreground">Submitted, documents required and under-review applications should be handled first.</p></div>
-            <Button variant="outline" onClick={() => navigate("/residence/inbox?status=new")}>Review pipeline <ArrowRight className="ml-2 h-4 w-4" /></Button>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {metric("Applications", analytics.apps, `${analytics.approvalRate}% approval rate`, FileText)}
+        {metric("2027 reservations", analytics.reservations2027, "Active reservation interest", CalendarDays)}
+        {metric("Active leads", analytics.activeLeads, `${analytics.contactRate}% contacted`, Users)}
+        {metric("Placed tenants", analytics.placed, `${analytics.placementRate}% lead-to-placement`, CheckCircle2)}
       </div>
-    </>
-  );
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card><CardHeader><CardTitle>Funding demand</CardTitle><CardDescription>Applications + 2027 reservation interest</CardDescription></CardHeader><CardContent className="space-y-3"><div className="flex items-center justify-between rounded-xl bg-muted/40 p-4"><span className="font-semibold">NSFAS-funded</span><Badge>{analytics.nsfas}</Badge></div><div className="flex items-center justify-between rounded-xl bg-muted/40 p-4"><span className="font-semibold">Private / self-funded</span><Badge variant="outline">{analytics.privateCount}</Badge></div><p className="text-xs leading-5 text-muted-foreground">These groups use separate accommodation pricing. Do not assume the published private price is the funded rate.</p></CardContent></Card>
+
+        <Card><CardHeader><CardTitle>CRM pipeline</CardTitle><CardDescription>Current prospect stages</CardDescription></CardHeader><CardContent className="space-y-2">{analytics.stages.length ? analytics.stages.map(([stage,count]) => <button key={stage} onClick={() => navigate(`/residence/crm?stage=${stage}`)} className="flex w-full items-center justify-between rounded-xl border p-3 text-left hover:border-primary/30"><span className="font-semibold capitalize">{stage.replace(/_/g," ")}</span><Badge variant="secondary">{count}</Badge></button>) : <p className="py-8 text-center text-sm text-muted-foreground">CRM data will appear as students apply or reserve.</p>}</CardContent></Card>
+
+        <Card className="border-primary/20 bg-primary/[0.025]"><CardHeader><CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" />Demand Network</CardTitle><CardDescription>Anonymised demand around this residence</CardDescription></CardHeader><CardContent className="space-y-3"><div className="grid grid-cols-2 gap-3"><div className="rounded-xl bg-background p-3"><p className="text-2xl font-black">{demand.searching || 0}</p><p className="text-xs text-muted-foreground">Searching</p></div><div className="rounded-xl bg-background p-3"><p className="text-2xl font-black">{demand["2027"] || 0}</p><p className="text-xs text-muted-foreground">2027 demand</p></div><div className="rounded-xl bg-background p-3"><p className="text-2xl font-black">{demand.nsfas || 0}</p><p className="text-xs text-muted-foreground">NSFAS</p></div><div className="rounded-xl bg-background p-3"><p className="text-2xl font-black">{demand.private || 0}</p><p className="text-xs text-muted-foreground">Private</p></div></div>{demand.average_budget && <p className="text-xs text-muted-foreground">Average declared private budget: R{Number(demand.average_budget).toLocaleString("en-ZA")}/month.</p>}</CardContent></Card>
+      </div>
+
+      <Card className="border-primary/15"><CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold">Turn analytics into action</p><p className="mt-1 text-sm text-muted-foreground">Keep room prices verified, follow up new leads and monitor 2027 demand weekly.</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => navigate("/residence/inventory")}>Manage pricing</Button><Button onClick={() => navigate("/residence/inbox")}><Inbox className="mr-2 h-4 w-4" />Applications <ArrowRight className="ml-2 h-4 w-4" /></Button></div></CardContent></Card>
+    </div>
+  </>;
 };
 
 export default ResidenceAnalytics;
