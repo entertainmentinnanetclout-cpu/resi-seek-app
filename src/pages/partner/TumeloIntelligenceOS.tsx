@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, BarChart3, Eye, FileCheck2, Link2, RefreshCw, ShieldCheck, Sparkles, UserCheck, Users, Video } from "lucide-react";
+import { Activity, BarChart3, CheckCircle2, Eye, FileCheck2, Link2, RefreshCw, ShieldCheck, Sparkles, UserCheck, Users, Video } from "lucide-react";
 import SEO from "@/components/SEO";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
