@@ -4,6 +4,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight, MapPin, Sparkles, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import ResidencePosterDownloadButton from "@/components/findmyres/ResidencePosterDownloadButton";
 import { cn } from "@/lib/utils";
 
 interface ResidenceSpotlightSliderProps {
@@ -12,7 +13,6 @@ interface ResidenceSpotlightSliderProps {
 }
 
 export function ResidenceSpotlightSlider({ residences, loading }: ResidenceSpotlightSliderProps) {
-  // Prefer explicit spotlight, fall back to featured, cap at 8
   const items = (() => {
     const spot = residences.filter((r) => r.is_spotlight === true);
     if (spot.length > 0) return spot.slice(0, 8);
@@ -72,21 +72,21 @@ export function ResidenceSpotlightSlider({ residences, loading }: ResidenceSpotl
           <div className="flex">
             {items.map((r) => {
               const slug = r.slug || r.id;
-              const price = Number(r.price) || 0;
+              const price = Number(r.private_price || r.price) || 0;
+              const preview = r.cover_image_url || r.images?.[0] || r.image_url || "/placeholder.svg";
               return (
                 <div key={r.id} className="relative min-w-0 flex-[0_0_100%]">
                   <Link to={`/find-my-res/${slug}`} className="block">
                     <div className="relative h-64 sm:h-80 md:h-96 overflow-hidden">
                       <img
-                        src={r.image_url || "/placeholder.svg"}
+                        src={preview}
                         alt={r.name}
                         className="w-full h-full object-cover"
                         loading="lazy"
                         onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
                       />
-                      {/* Vibrant overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
-                      <div className="absolute top-4 left-4 flex gap-2">
+                      <div className="absolute top-4 left-4 flex gap-2 pr-28">
                         <Badge className="bg-gradient-spotlight border-0 text-white shadow-md">
                           <Sparkles className="w-3 h-3 mr-1" /> Spotlight
                         </Badge>
@@ -98,7 +98,6 @@ export function ResidenceSpotlightSlider({ residences, loading }: ResidenceSpotl
                         )}
                       </div>
 
-                      {/* Content */}
                       <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 text-white">
                         <div className="flex items-end justify-between gap-4 flex-wrap">
                           <div className="min-w-0">
@@ -117,10 +116,12 @@ export function ResidenceSpotlightSlider({ residences, loading }: ResidenceSpotl
                             )}
                           </div>
                           <div className="flex flex-col items-end gap-2 shrink-0">
-                            <span className="inline-flex items-baseline gap-1 rounded-full bg-gradient-price px-4 py-2 text-white shadow-lg">
-                              <span className="text-xl font-bold">R{price.toLocaleString()}</span>
-                              <span className="text-xs opacity-90">/mo</span>
-                            </span>
+                            {price > 0 && (
+                              <span className="inline-flex items-baseline gap-1 rounded-full bg-gradient-price px-4 py-2 text-white shadow-lg">
+                                <span className="text-xl font-bold">R{price.toLocaleString()}</span>
+                                <span className="text-xs opacity-90">/mo</span>
+                              </span>
+                            )}
                             <Button size="sm" className="bg-white text-foreground hover:bg-white/90 shadow-md">
                               View Details
                             </Button>
@@ -129,6 +130,9 @@ export function ResidenceSpotlightSlider({ residences, loading }: ResidenceSpotl
                       </div>
                     </div>
                   </Link>
+                  <div className="absolute right-4 top-4 z-30">
+                    <ResidencePosterDownloadButton residence={r} compact />
+                  </div>
                 </div>
               );
             })}
@@ -140,20 +144,19 @@ export function ResidenceSpotlightSlider({ residences, loading }: ResidenceSpotl
             <button
               onClick={scrollPrev}
               aria-label="Previous slide"
-              className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-background/90 backdrop-blur shadow-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-background"
+              className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-background text-foreground shadow-xl border border-border transition hover:bg-accent flex items-center justify-center z-40"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={scrollNext}
               aria-label="Next slide"
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-background/90 backdrop-blur shadow-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-background"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-background text-foreground shadow-xl border border-border transition hover:bg-accent flex items-center justify-center z-40"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
 
-            {/* Dots */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-40">
               {scrollSnaps.map((_, i) => (
                 <button
                   key={i}
