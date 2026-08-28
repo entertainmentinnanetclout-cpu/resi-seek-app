@@ -76,7 +76,7 @@ export default function ResidenceBrandStudioCard({ residence, className = "", sh
             <img src={BRAND.logos.icon} alt="" className="h-9 w-9 rounded-lg bg-white/95 p-1 object-contain" />
             <span className="text-lg font-black tracking-tight sm:text-xl">ResKonnect</span>
           </div>
-          <ResidencePosterDownloadButton residence={residence} compact className="h-9 w-9 rounded-full p-0" />
+          <ResidencePosterDownloadButton residence={residence} compact className="shrink-0" />
         </div>
         <div className="mt-5 inline-flex max-w-[72%] items-center rounded-md bg-[var(--rk-gold)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#00102f] shadow-lg sm:text-xs">
           {badge}
