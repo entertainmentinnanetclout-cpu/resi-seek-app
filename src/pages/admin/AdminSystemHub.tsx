@@ -2,15 +2,17 @@ import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Briefcase, MessageSquare, Activity, Settings, HeartPulse, BellRing } from "lucide-react";
+import { Briefcase, MessageSquare, Activity, Settings, HeartPulse, BellRing, Zap } from "lucide-react";
 import { AdminWILContent } from "./AdminWIL";
 import { AdminWhatsAppTemplatesContent } from "./AdminWhatsAppTemplates";
 import { AdminSystemStatusContent } from "./AdminSystemStatus";
 import { AdminSettingsContent } from "./AdminSettings";
 import { AdminBackendHealthContent } from "./AdminBackendHealth";
 import AdminSiteAnnouncementsManager from "@/components/admin/AdminSiteAnnouncementsManager";
+import AutomationQueueContent from "@/components/admin/AutomationQueueContent";
 
 const tabs = [
+  { value: "automation", label: "Automation OS", icon: Zap },
   { value: "wil", label: "WIL Management", icon: Briefcase },
   { value: "site-updates", label: "Site Updates", icon: BellRing },
   { value: "whatsapp", label: "WhatsApp Templates", icon: MessageSquare },
@@ -21,15 +23,15 @@ const tabs = [
 
 const AdminSystemHub = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") || "wil";
+  const activeTab = searchParams.get("tab") || "automation";
 
   return (
     <AdminLayout>
-      <SEO title="System Hub | Admin" description="Managed site updates, WIL management, templates, system status and settings" />
+      <SEO title="System Hub | Admin" description="Automation OS, managed site updates, WIL management, templates, system status and settings" />
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">System Hub</h1>
-          <p className="text-muted-foreground">Site updates, WIL, templates, backend health, system status & settings</p>
+          <p className="text-muted-foreground">Automation OS, site updates, WIL, templates, backend health, system status & settings</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })}>
@@ -42,6 +44,7 @@ const AdminSystemHub = () => {
             ))}
           </TabsList>
 
+          <TabsContent value="automation"><AutomationQueueContent /></TabsContent>
           <TabsContent value="wil"><AdminWILContent /></TabsContent>
           <TabsContent value="site-updates"><AdminSiteAnnouncementsManager /></TabsContent>
           <TabsContent value="whatsapp"><AdminWhatsAppTemplatesContent /></TabsContent>
