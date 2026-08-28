@@ -5,19 +5,19 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-65 disabled:saturate-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-gradient-primary text-primary-foreground hover:shadow-glow shadow-card transition-smooth font-semibold",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border-2 border-primary/20 bg-card/50 backdrop-blur-sm hover:bg-primary/10 hover:border-primary/40 text-foreground transition-smooth",
-        secondary: "bg-gradient-secondary text-secondary-foreground hover:shadow-glow shadow-card transition-smooth font-semibold",
-        ghost: "hover:bg-accent/10 hover:text-accent transition-smooth",
+        default: "border border-[#0B3A75] bg-[#0B3A75] text-white shadow-sm hover:border-[#082E5F] hover:bg-[#082E5F] hover:text-white",
+        destructive: "border border-destructive bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+        outline: "border-2 border-[#0B3A75]/35 bg-background text-[#071326] shadow-sm hover:border-[#0B3A75] hover:bg-[#EAF2FF] hover:text-[#071326] dark:bg-card dark:text-foreground dark:hover:bg-primary/15",
+        secondary: "border border-border bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 hover:text-secondary-foreground",
+        ghost: "text-foreground hover:bg-muted hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        hero: "bg-gradient-hero text-white shadow-premium hover:shadow-glow hover:scale-105 transition-smooth font-bold text-lg",
-        accent: "bg-accent text-accent-foreground hover:shadow-glow shadow-card transition-smooth font-semibold",
-        premium: "bg-gradient-accent text-white shadow-premium hover:shadow-glow hover:scale-105 transition-smooth font-bold",
+        hero: "border border-[#F5B32F] bg-[#F5B32F] text-[#071326] shadow-lg hover:border-[#FFC64D] hover:bg-[#FFC64D] hover:text-[#071326] hover:shadow-xl font-black text-lg",
+        accent: "border border-accent bg-accent text-accent-foreground shadow-sm hover:bg-accent/90 hover:text-accent-foreground",
+        premium: "border border-[#F5B32F] bg-[#071326] text-white shadow-lg hover:bg-[#10284A] hover:text-white hover:shadow-xl font-black",
       },
       size: {
         default: "h-10 px-4 py-2",
