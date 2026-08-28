@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Activity, BarChart3, CheckCircle2, Eye, FileCheck2, Link2, RefreshCw, ShieldCheck, Sparkles, UserCheck, Users, Video } from "lucide-react";
 import SEO from "@/components/SEO";
 import DashboardLayout from "@/components/DashboardLayout";
+import TumeloResourceLibrary from "@/components/tumelo/TumeloResourceLibrary";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,6 +70,8 @@ const TumeloIntelligenceOS = () => {
           totalConversions===0 ? "Push one measurable primary action per campaign: application readiness, assisted application, accommodation reservation or opportunity action." : "Prioritize the conversion types already showing traction and test new creatives against the same outcome.",
         ].map((text)=><div key={text} className="flex gap-3 rounded-xl border p-4 text-sm leading-6"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary"/><span>{text}</span></div>)}</CardContent></Card>
       </div>
+
+      <TumeloResourceLibrary manage />
 
       {adminAccess && <Card className="border-[#F5B32F]/30"><CardHeader><CardTitle>Partnership access control</CardTitle></CardHeader><CardContent><p className="mb-4 text-sm text-muted-foreground">Assign Tumelo or an authorized team member after they create/sign in to a ResKonnect account. This gives access to this Intelligence OS only through the partnership membership layer.</p><div className="grid gap-3 md:grid-cols-[1fr,180px,auto]"><div className="space-y-1.5"><Label>ResKonnect account email</Label><Input type="email" value={memberEmail} onChange={(e)=>setMemberEmail(e.target.value)} placeholder="partner@example.com"/></div><div className="space-y-1.5"><Label>Access role</Label><Select value={memberRole} onValueChange={setMemberRole}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="owner">Owner</SelectItem><SelectItem value="strategist">Strategist</SelectItem><SelectItem value="viewer">Viewer</SelectItem></SelectContent></Select></div><Button className="self-end" disabled={assigning} onClick={()=>void assignAccess()}>{assigning?"Assigning...":"Assign access"}</Button></div></CardContent></Card>}
     </div>
