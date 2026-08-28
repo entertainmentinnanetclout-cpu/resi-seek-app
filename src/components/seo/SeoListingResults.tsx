@@ -4,16 +4,13 @@ import { MapPin, Bed, ShieldCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import ResidencePosterDownloadButton from "@/components/findmyres/ResidencePosterDownloadButton";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ListingQuery {
-  /** Audience the page is written for. */
   audience?: "university" | "tvet" | "private";
-  /** Only NSFAS accredited residences. */
   nsfasOnly?: boolean;
-  /** Free-text area terms matched against address/campus/province. */
   areaTerms?: string[];
-  /** Residence category, e.g. private_rentals. */
   category?: string;
   limit?: number;
 }
@@ -25,19 +22,35 @@ interface Residence {
   address: string;
   campus: string | null;
   province: string | null;
+  city: string | null;
+  place_label: string | null;
   price: number;
+  private_price: number | null;
+  nsfas_price: number | null;
+  promo_price: number | null;
   image_url: string | null;
+  cover_image_url: string | null;
   images: string[] | null;
   available_spots: number;
+  capacity: number | null;
   accepts_nsfas: boolean;
+  accepts_private: boolean;
+  accepts_tvet: boolean;
+  accepts_university: boolean;
+  room_type: string | null;
   room_types: string[] | null;
+  amenities: unknown;
+  has_wifi: boolean | null;
+  has_parking: boolean | null;
+  is_furnished: boolean | null;
+  utilities_included: boolean | null;
+  reservations_2027_open: boolean | null;
 }
 
 interface Props {
   heading: string;
   query: ListingQuery;
   emptyText: string;
-  /** Where users go when nothing matches yet. */
   fallbackTo?: string;
 }
 
@@ -59,7 +72,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
         let req = supabase
           .from("residences")
           .select(
-            "id, slug, name, address, campus, province, price, image_url, images, available_spots, accepts_nsfas, room_types",
+            "id, slug, name, address, campus, province, city, place_label, price, private_price, nsfas_price, promo_price, image_url, cover_image_url, images, available_spots, capacity, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, room_type, room_types, amenities, has_wifi, has_parking, is_furnished, utilities_included, reservations_2027_open",
           )
           .order("display_order", { ascending: true })
           .limit(60);
@@ -118,25 +131,31 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
       ) : (
         <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {residences.map((r) => {
-            const image = r.image_url || r.images?.[0] || "/placeholder.svg";
+            const image = r.cover_image_url || r.images?.[0] || r.image_url || "/placeholder.svg";
             const area = r.campus || r.province || "South Africa";
+            const displayPrice = Number(r.promo_price || r.private_price || r.price || 0);
             return (
               <li key={r.id}>
                 <Card className="h-full overflow-hidden transition-shadow hover:shadow-lg">
-                  <Link to={`/find-my-res/${r.slug || r.id}`} className="block">
-                    <img
-                      src={image}
-                      alt={`${r.name} student accommodation in ${area}`}
-                      width={640}
-                      height={400}
-                      loading="lazy"
-                      decoding="async"
-                      className="aspect-[16/10] w-full object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = "/placeholder.svg";
-                      }}
-                    />
-                  </Link>
+                  <div className="relative">
+                    <Link to={`/find-my-res/${r.slug || r.id}`} className="block">
+                      <img
+                        src={image}
+                        alt={`${r.name} student accommodation in ${area}`}
+                        width={640}
+                        height={400}
+                        loading="lazy"
+                        decoding="async"
+                        className="aspect-[16/10] w-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = "/placeholder.svg";
+                        }}
+                      />
+                    </Link>
+                    <div className="absolute right-3 top-3 z-20">
+                      <ResidencePosterDownloadButton residence={r} compact />
+                    </div>
+                  </div>
                   <CardContent className="space-y-2 p-5">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="text-base font-semibold leading-snug">
@@ -154,12 +173,14 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
                     </p>
                     <p className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Bed className="h-4 w-4" aria-hidden="true" />
-                      <span>{r.available_spots > 0 ? `${r.available_spots} spots available` : "Currently full"}</span>
+                      <span>{r.available_spots > 0 ? `${r.available_spots} spots available` : "Check live availability"}</span>
                     </p>
-                    {Number(r.price) > 0 && (
+                    {displayPrice > 0 ? (
                       <p className="text-sm font-semibold text-foreground">
-                        From R{Number(r.price).toLocaleString("en-ZA")} per month
+                        From R{displayPrice.toLocaleString("en-ZA")} per month
                       </p>
+                    ) : (
+                      <p className="text-sm font-semibold text-muted-foreground">Rate available on listing</p>
                     )}
                     <Button asChild variant="outline" className="mt-2 w-full">
                       <Link to={`/find-my-res/${r.slug || r.id}`}>View residence</Link>
