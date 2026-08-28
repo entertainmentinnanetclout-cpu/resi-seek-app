@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { Building2, Camera, MapPin, ShieldCheck } from "lucide-react";
 import { BRAND } from "@/constants/brand";
+import ResidencePosterDownloadButton from "@/components/findmyres/ResidencePosterDownloadButton";
 
 interface ResidenceBrandStudioCardProps {
   residence: any;
@@ -69,18 +70,19 @@ export default function ResidenceBrandStudioCard({ residence, className = "", sh
       <div className="absolute left-5 top-[49%] h-36 w-36 rounded-full border border-blue-400/10" />
       <div className="absolute right-6 top-[47%] h-20 w-20 rotate-12 rounded-[24px] border-2 border-blue-400/15" />
 
-      {/* ResKonnect brand header — retained on every public property card. */}
       <div className="absolute inset-x-0 top-0 z-30 p-5 sm:p-6">
-        <div className="flex items-center gap-2.5">
-          <img src={BRAND.logos.icon} alt="" className="h-9 w-9 rounded-lg bg-white/95 p-1 object-contain" />
-          <span className="text-lg font-black tracking-tight sm:text-xl">ResKonnect</span>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <img src={BRAND.logos.icon} alt="" className="h-9 w-9 rounded-lg bg-white/95 p-1 object-contain" />
+            <span className="text-lg font-black tracking-tight sm:text-xl">ResKonnect</span>
+          </div>
+          <ResidencePosterDownloadButton residence={residence} compact className="h-9 w-9 rounded-full p-0" />
         </div>
         <div className="mt-5 inline-flex max-w-[72%] items-center rounded-md bg-[var(--rk-gold)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#00102f] shadow-lg sm:text-xs">
           {badge}
         </div>
       </div>
 
-      {/* Real accommodation preview. The property remains the hero while the navy/gold brand frame stays visible. */}
       <div className="absolute inset-x-5 top-[18%] z-20 h-[31%] overflow-hidden rounded-[18px] border border-white/15 bg-[#041a40] shadow-[0_18px_45px_rgba(0,0,0,.36)] sm:inset-x-6">
         {preview ? (
           <>
@@ -130,7 +132,6 @@ export default function ResidenceBrandStudioCard({ residence, className = "", sh
         </p>
       </div>
 
-      {/* Optional transparent studio/cut-out art supplied by the residence. It never replaces the property photo preview. */}
       {studio && preview && studio !== preview && (
         <div className="absolute bottom-[9%] right-[-5%] z-10 h-[31%] w-[46%] opacity-95">
           <img src={studio} alt="" className="h-full w-full object-contain object-bottom drop-shadow-2xl" loading="lazy" decoding="async" />
