@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import DashboardUserManual from "@/components/manuals/DashboardUserManual";
 import { BRAND } from "@/constants/brand";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -143,7 +144,7 @@ const ResidenceLayout = () => {
           <Button variant="ghost" size="icon" className="relative text-white hover:bg-white/10 hover:text-white" onClick={() => navigate("/residence/reservations-2027")} aria-label="2027 reservations"><CalendarDays className="h-5 w-5" />{reservationCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#F5B32F] px-1 text-[10px] font-black text-[#071326]">{reservationCount > 9 ? "9+" : reservationCount}</span>}</Button>
           <Button variant="ghost" size="icon" className="relative text-white hover:bg-white/10 hover:text-white" onClick={() => navigate("/residence/inbox?status=new")} aria-label="Applications needing attention"><Bell className="h-5 w-5" />{pendingCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">{pendingCount > 9 ? "9+" : pendingCount}</span>}</Button>
           <ThemeToggle />
-          <Sheet open={isOpen} onOpenChange={setIsOpen}><SheetTrigger asChild><Button variant="outline" size="icon" className="border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white" aria-label="Open residence navigation"><Menu className="h-5 w-5" /></Button></SheetTrigger><SheetContent side="right" className="h-[100dvh] w-[min(92vw,20rem)] max-w-none overflow-hidden p-0"><NavContent /></SheetContent></Sheet>
+          <Sheet open={isOpen} onOpenChange={setIsOpen}><SheetTrigger asChild><Button variant="outline" size="icon" className="border-white/70 bg-white text-[#071326] hover:bg-[#F5B32F] hover:text-[#071326]" aria-label="Open residence navigation"><Menu className="h-5 w-5" /></Button></SheetTrigger><SheetContent side="right" className="h-[100dvh] w-[min(92vw,20rem)] max-w-none overflow-hidden p-0"><NavContent /></SheetContent></Sheet>
         </div>
       </header>
 
@@ -151,6 +152,7 @@ const ResidenceLayout = () => {
         <div className="sticky top-0 z-30 hidden h-16 items-center justify-between border-b bg-background/95 px-6 backdrop-blur lg:flex">
           <div className="min-w-0"><p className="truncate text-sm font-black text-[#071326] dark:text-foreground">{residence?.name || "Loading residence..."}</p><p className="truncate text-xs text-muted-foreground">Listing quality, 2027 reservations, pricing, recruitment and conversion intelligence.</p></div>
           <div className="flex shrink-0 items-center gap-2">
+            <DashboardUserManual role="landlord" residenceName={residence?.name} inline />
             <Button variant="outline" className="relative" onClick={() => navigate("/residence/reservations-2027")}><CalendarDays className="mr-2 h-4 w-4" />2027 Reservations{reservationCount > 0 && <Badge className="ml-2 bg-[#F5B32F] text-[#071326] hover:bg-[#F5B32F]">{reservationCount}</Badge>}</Button>
             <Button variant="outline" className="relative" onClick={() => navigate("/residence/inbox?status=new")}><Inbox className="mr-2 h-4 w-4" />Applications{pendingCount > 0 && <Badge variant="destructive" className="ml-2">{pendingCount}</Badge>}</Button>
             <ThemeToggle />
@@ -161,6 +163,7 @@ const ResidenceLayout = () => {
           <span className="font-semibold text-foreground">{BRAND.name}</span> · {BRAND.descriptor} · Developed by Start To Up Innovations Group
         </div>
       </main>
+      <div className="lg:hidden"><DashboardUserManual role="landlord" residenceName={residence?.name} /></div>
     </div>
   );
 };
