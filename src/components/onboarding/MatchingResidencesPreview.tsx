@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import ResidencePosterDownloadButton from "@/components/findmyres/ResidencePosterDownloadButton";
 import { useUserIntent } from "@/contexts/UserIntentContext";
 import { isMockResidence } from "@/hooks/useResidenceFilters";
 import { residenceMatchesCampus } from "@/constants/institutionOptions";
@@ -13,15 +14,10 @@ import { deriveFiltersFromIntent } from "@/lib/intent/intentFilters";
 import { BRAND } from "@/constants/brand";
 
 interface MatchingResidencesPreviewProps {
-  /** Continue into the assisted request form ("Request help without choosing") */
   onRequestHelp: () => void;
   onBack?: () => void;
 }
 
-/**
- * Image-first results preview shown straight after the guide answers, so people
- * browse real places before ever meeting a form.
- */
 const MatchingResidencesPreview = ({ onRequestHelp, onBack }: MatchingResidencesPreviewProps) => {
   const navigate = useNavigate();
   const { intent } = useUserIntent();
@@ -44,11 +40,14 @@ const MatchingResidencesPreview = ({ onRequestHelp, onBack }: MatchingResidences
     queryKey: ["guide-matches", patch, privateRentalUnavailable],
     enabled: !privateRentalUnavailable,
     queryFn: async () => {
-      const columns =
-        "id, slug, name, address, campus, image_url, images, price, available_spots, room_types, is_trusted, is_tut_accredited, accepts_university, accepts_tvet, accepts_private, accepts_nsfas, institution_tags, verification_level";
+      const columns = [
+        "id", "slug", "name", "address", "campus", "province", "city", "place_label",
+        "image_url", "images", "cover_image_url", "price", "private_price", "nsfas_price", "promo_price",
+        "available_spots", "capacity", "room_type", "room_types", "amenities", "has_wifi", "has_parking",
+        "is_furnished", "utilities_included", "reservations_2027_open", "is_trusted", "is_tut_accredited",
+        "accepts_university", "accepts_tvet", "accepts_private", "accepts_nsfas", "institution_tags", "verification_level",
+      ].join(",");
 
-      // Audience/NSFAS constraints are hard. Budget is soft so we can offer
-      // clearly-labelled closest matches instead of an empty screen.
       const base = () => {
         let q = supabase.from("residences").select(columns);
         if (patch.audience === "tvet") q = q.eq("accepts_tvet", true);
@@ -128,69 +127,72 @@ const MatchingResidencesPreview = ({ onRequestHelp, onBack }: MatchingResidences
         </div>
       ) : cards.length > 0 ? (
         <>
-        {showingClosest && (
-          <div className="rounded-xl border border-amber/30 bg-amber/10 p-4 text-sm">
-            <p className="font-semibold">No exact matches found</p>
-            <p className="text-muted-foreground">
-              These are the closest matches above your selected budget.
-            </p>
+          {showingClosest && (
+            <div className="rounded-xl border border-amber/30 bg-amber/10 p-4 text-sm">
+              <p className="font-semibold">No exact matches found</p>
+              <p className="text-muted-foreground">
+                These are the closest matches above your selected budget.
+              </p>
+            </div>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {cards.map((r: any) => {
+              const preview = r.cover_image_url || r.images?.[0] || r.image_url || "/placeholder.svg";
+              return (
+                <div
+                  key={r.id}
+                  className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <Link to={`/find-my-res/${r.slug || r.id}`} className="block">
+                    <div className="relative aspect-[16/10] overflow-hidden bg-muted">
+                      <img
+                        src={preview}
+                        alt={r.name}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => ((e.currentTarget as HTMLImageElement).src = "/placeholder.svg")}
+                      />
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-navy/85 to-transparent p-3">
+                        <p className="line-clamp-1 text-sm font-semibold text-white">{r.name}</p>
+                        <p className="flex items-center gap-1 text-xs text-white/75">
+                          <MapPin className="h-3 w-3" /> <span className="line-clamp-1">{r.address}</span>
+                        </p>
+                      </div>
+                      {r.is_trusted && (
+                        <Badge className="absolute left-3 top-3 border-0 bg-brand-green text-white">
+                          <ShieldCheck className="mr-1 h-3 w-3" /> Verified
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="space-y-2 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-base font-bold text-primary">
+                          {Number(r.private_price || r.price || 0) > 0 ? `R${Number(r.private_price || r.price).toLocaleString("en-ZA")}` : "Rate on listing"}
+                          {Number(r.private_price || r.price || 0) > 0 && <span className="text-xs font-normal text-muted-foreground">/mo</span>}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {Number(r.available_spots) > 0 ? `${r.available_spots} spots` : "Check availability"}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(r.room_types || []).slice(0, 2).map((t: string) => (
+                          <Badge key={t} variant="outline" className="text-[10px] capitalize">
+                            <Bed className="mr-1 h-3 w-3" />
+                            {t}
+                          </Badge>
+                        ))}
+                        {r.is_tut_accredited && <Badge variant="outline" className="text-[10px]">NSFAS accommodation</Badge>}
+                        {r.accepts_private && <Badge variant="outline" className="text-[10px]">Accepts private-paying</Badge>}
+                      </div>
+                    </div>
+                  </Link>
+                  <div className="absolute right-3 top-3 z-20">
+                    <ResidencePosterDownloadButton residence={r} compact />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map((r: any) => (
-            <Link
-              key={r.id}
-              to={`/find-my-res/${r.slug || r.id}`}
-              className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-                <img
-                  src={r.images?.[0] || r.image_url || "/placeholder.svg"}
-                  alt={r.name}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  onError={(e) => ((e.currentTarget as HTMLImageElement).src = "/placeholder.svg")}
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-navy/85 to-transparent p-3">
-                  <p className="line-clamp-1 text-sm font-semibold text-white">{r.name}</p>
-                  <p className="flex items-center gap-1 text-xs text-white/75">
-                    <MapPin className="h-3 w-3" /> <span className="line-clamp-1">{r.address}</span>
-                  </p>
-                </div>
-                {r.is_trusted && (
-                  <Badge className="absolute left-3 top-3 border-0 bg-brand-green text-white">
-                    <ShieldCheck className="mr-1 h-3 w-3" /> Verified
-                  </Badge>
-                )}
-              </div>
-              <div className="space-y-2 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-base font-bold text-primary">
-                    R{Number(r.price || 0).toLocaleString("en-ZA")}
-                    <span className="text-xs font-normal text-muted-foreground">/mo</span>
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {Number(r.available_spots) > 0 ? `${r.available_spots} spots` : "Fully booked"}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {(r.room_types || []).slice(0, 2).map((t: string) => (
-                    <Badge key={t} variant="outline" className="text-[10px] capitalize">
-                      <Bed className="mr-1 h-3 w-3" />
-                      {t}
-                    </Badge>
-                  ))}
-                  {r.is_tut_accredited && (
-                    <Badge variant="outline" className="text-[10px]">NSFAS accommodation</Badge>
-                  )}
-                  {r.accepts_private && (
-                    <Badge variant="outline" className="text-[10px]">Accepts private-paying</Badge>
-                  )}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
         </>
       ) : (
         <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
