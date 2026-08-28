@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import NotificationCenter from "@/components/NotificationCenter";
 import CommandPalette from "@/components/CommandPalette";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
+import DashboardUserManual from "@/components/manuals/DashboardUserManual";
 
 interface DashboardLayoutProps { children: ReactNode; }
 
@@ -124,6 +125,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
         <main className="min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">{children}</main>
       </div>
+      {user && <DashboardUserManual />}
     </div>
   );
 };
