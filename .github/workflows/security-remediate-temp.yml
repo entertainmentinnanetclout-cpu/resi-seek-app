@@ -22,11 +22,9 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply non-breaking security fixes
-        run: npm audit fix
-      - name: Upgrade Vite security boundary
-        run: npm install --save-dev vite@8.2.2 @vitejs/plugin-react-swc@4.3.3
-      - name: Refresh PWA integration for Vite 8
-        run: npm install vite-plugin-pwa@1.3.0
+        run: npm audit fix || true
+      - name: Upgrade build and router security boundaries
+        run: npm install --save-dev vite@8.2.2 @vitejs/plugin-react-swc@4.3.3 && npm install vite-plugin-pwa@1.3.0 react-router-dom@7.18.3
       - name: Require zero audit findings
         run: npm audit --audit-level=low
       - name: Production build
