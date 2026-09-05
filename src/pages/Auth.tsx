@@ -30,6 +30,28 @@ const APPLICANT_STAGES = [
   ["other", "Other"],
 ] as const;
 
+const HEARD_ABOUT_US_OPTIONS = [
+  ["instagram", "Instagram"],
+  ["tiktok", "TikTok"],
+  ["facebook", "Facebook"],
+  ["whatsapp", "WhatsApp"],
+  ["youtube", "YouTube"],
+  ["x_twitter", "X / Twitter"],
+  ["linkedin", "LinkedIn"],
+  ["snapchat", "Snapchat"],
+  ["threads", "Threads"],
+  ["telegram", "Telegram"],
+  ["reddit", "Reddit"],
+  ["pinterest", "Pinterest"],
+  ["google_search", "Google / Search engine"],
+  ["tut_campus", "TUT / Campus"],
+  ["event_activation", "Event / Activation"],
+  ["friend_word_of_mouth", "Friend / Word of mouth"],
+  ["residence_landlord", "Residence / Landlord"],
+  ["recruiter", "Recruiter / ResKonnect ambassador"],
+  ["other", "Other"],
+] as const;
+
 const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -40,6 +62,7 @@ const Auth = () => {
   const [selectedCampus, setSelectedCampus] = useState("");
   const [applicantStage, setApplicantStage] = useState("university_student");
   const [identifierType, setIdentifierType] = useState<"student_number" | "identity_number">("student_number");
+  const [heardAboutUs, setHeardAboutUs] = useState("");
   const returnTo = searchParams.get("returnTo");
   const refCode = searchParams.get("ref");
 
@@ -116,9 +139,11 @@ const Auth = () => {
         if (password !== confirmPassword) throw new Error("Passwords don't match");
         const phoneNumber = phoneSchema.parse(String(form.get("phoneNumber") || ""));
         if (!selectedCampus) throw new Error("Select your campus or applicant context");
+        if (!heardAboutUs) throw new Error("Select where you heard about ResKonnect");
         const identifierRaw = String(form.get("identifier") || "").trim();
         if (identifierType === "identity_number") idSchema.parse(identifierRaw);
         else z.string().min(5, "Enter a valid student number").parse(identifierRaw);
+        const recruiterReference = heardAboutUs === "recruiter" ? String(form.get("recruiterReference") || "").trim() : "";
 
         const metadata = {
           full_name: fullName,
@@ -127,6 +152,8 @@ const Auth = () => {
           applicant_stage: applicantStage,
           student_number: identifierType === "student_number" ? identifierRaw : null,
           identity_number: identifierType === "identity_number" ? identifierRaw : null,
+          heard_about_us: heardAboutUs,
+          recruiter_reference: recruiterReference || null,
         };
         const { data, error: signupError } = await supabase.auth.signUp({
           email,
@@ -179,6 +206,21 @@ const Auth = () => {
               <div className="space-y-2"><Label htmlFor="identifier">{identifierLabel} *</Label><Input id="identifier" name="identifier" inputMode={identifierType === "identity_number" ? "numeric" : "text"} maxLength={identifierType === "identity_number" ? 13 : undefined} required placeholder={identifierType === "identity_number" ? "13-digit ID number" : "Student number"} /><p className="text-[11px] text-muted-foreground">TVET students and matriculants can use an SA ID when they do not yet have a student number.</p></div>
               <div className="space-y-2"><Label>Campus / study context *</Label><Select value={selectedCampus} onValueChange={setSelectedCampus}><SelectTrigger><SelectValue placeholder="Select campus or context" /></SelectTrigger><SelectContent>{campusOptions.map((campus) => <SelectItem key={campus.value} value={campus.value}>{campus.label}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-2"><Label htmlFor="phoneNumber">Phone / WhatsApp number *</Label><Input id="phoneNumber" name="phoneNumber" inputMode="tel" required placeholder="0821234567" /></div>
+              <div className="space-y-2">
+                <Label>Where did you hear about us? *</Label>
+                <Select value={heardAboutUs} onValueChange={setHeardAboutUs}>
+                  <SelectTrigger><SelectValue placeholder="Select a source" /></SelectTrigger>
+                  <SelectContent>{HEARD_ABOUT_US_OPTIONS.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">This helps us understand which ResKonnect channels are reaching students.</p>
+              </div>
+              {heardAboutUs === "recruiter" && (
+                <div className="space-y-2 rounded-xl border bg-muted/30 p-3">
+                  <Label htmlFor="recruiterReference">Recruiter / ambassador name or code</Label>
+                  <Input id="recruiterReference" name="recruiterReference" defaultValue={refCode || ""} placeholder="Name or recruiter code (if known)" maxLength={120} />
+                  <p className="text-[11px] text-muted-foreground">Optional. If you were given a recruiter link or code, enter it here.</p>
+                </div>
+              )}
             </>}
 
             <div className="space-y-2"><Label htmlFor="password">Password *</Label><Input id="password" name="password" type="password" autoComplete={isLogin ? "current-password" : "new-password"} required placeholder="••••••••" /></div>
