@@ -10,7 +10,7 @@ import { AdminSettingsContent } from "./AdminSettings";
 import { AdminBackendHealthContent } from "./AdminBackendHealth";
 import AdminSiteAnnouncementsManager from "@/components/admin/AdminSiteAnnouncementsManager";
 import AutomationQueueContent from "@/components/admin/AutomationQueueContent";
-import AdminOSReleaseOneContent from "@/components/admin/AdminOSReleaseOneContent";
+import AdminOSReleaseTwoContent from "@/components/admin/AdminOSReleaseTwoContent";
 
 const tabs = [
   { value: "adminos", label: "AdminOS", icon: Bot },
@@ -46,7 +46,7 @@ const AdminSystemHub = () => {
             ))}
           </TabsList>
 
-          <TabsContent value="adminos"><AdminOSReleaseOneContent /></TabsContent>
+          <TabsContent value="adminos"><AdminOSReleaseTwoContent /></TabsContent>
           <TabsContent value="automation"><AutomationQueueContent /></TabsContent>
           <TabsContent value="wil"><AdminWILContent /></TabsContent>
           <TabsContent value="site-updates"><AdminSiteAnnouncementsManager /></TabsContent>
