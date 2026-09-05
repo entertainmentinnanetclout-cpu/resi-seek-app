@@ -53,3 +53,15 @@ verify_jwt = false
 
 [functions.adminos-paperwork]
 verify_jwt = true
+
+[functions.adminos-sales]
+verify_jwt = true
+
+[functions.adminos-voice]
+verify_jwt = true
+
+[functions.adminos-voice-webhook]
+verify_jwt = false
+
+[functions.adminos-executive]
+verify_jwt = false
