@@ -32,3 +32,12 @@ verify_jwt = false
 
 [functions.send-push]
 verify_jwt = false
+
+[functions.adminos-agent]
+verify_jwt = true
+
+[functions.adminos-enquiry]
+verify_jwt = true
+
+[functions.adminos-email-agent]
+verify_jwt = true
