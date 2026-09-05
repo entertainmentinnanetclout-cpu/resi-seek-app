@@ -1,12 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-
   return {
     server: {
       host: "::",
@@ -14,7 +12,6 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
-      mode === "development" && componentTagger(),
       // Only enable PWA in production to avoid dev caching/black screen issues
       mode === "production" &&
         VitePWA({
@@ -61,7 +58,7 @@ export default defineConfig(({ mode }) => {
                   cacheName: "supabase-cache",
                   expiration: {
                     maxEntries: 50,
-                    maxAgeSeconds: 60 * 60 * 24, // 24 hours
+                    maxAgeSeconds: 60 * 60 * 24,
                   },
                   cacheableResponse: {
                     statuses: [0, 200],
@@ -75,7 +72,7 @@ export default defineConfig(({ mode }) => {
                   cacheName: "static-assets",
                   expiration: {
                     maxEntries: 100,
-                    maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                    maxAgeSeconds: 60 * 60 * 24 * 30,
                   },
                 },
               },
@@ -92,8 +89,7 @@ export default defineConfig(({ mode }) => {
       ],
     },
     build: {
-      chunkSizeWarningLimit: 1600, // ✅ increases limit to 1.6 MB to suppress large bundle warnings
+      chunkSizeWarningLimit: 1600,
     },
   };
 });
-
