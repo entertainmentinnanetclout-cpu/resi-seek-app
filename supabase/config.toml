@@ -41,3 +41,15 @@ verify_jwt = true
 
 [functions.adminos-email-agent]
 verify_jwt = true
+
+[functions.adminos-whatsapp]
+verify_jwt = true
+
+[functions.adminos-whatsapp-webhook]
+verify_jwt = false
+
+[functions.adminos-followup-autopilot]
+verify_jwt = false
+
+[functions.adminos-paperwork]
+verify_jwt = true
