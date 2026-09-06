@@ -51,6 +51,12 @@ verify_jwt = true
 [functions.adminos-whatsapp-webhook]
 verify_jwt = false
 
+[functions.adminos-whatsapp-rich-bootstrap]
+verify_jwt = false
+
+[functions.adminos-whatsapp-event-worker]
+verify_jwt = false
+
 [functions.adminos-twilio-bootstrap]
 verify_jwt = true
 
