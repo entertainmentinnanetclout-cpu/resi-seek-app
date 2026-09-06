@@ -2,7 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Briefcase, MessageSquare, Activity, Settings, HeartPulse, BellRing, Zap, Bot, PhoneCall, MessageCircle } from "lucide-react";
+import { Briefcase, MessageSquare, Activity, Settings, HeartPulse, BellRing, Zap, Bot, PhoneCall, MessageCircle, Sparkles } from "lucide-react";
 import { AdminWILContent } from "./AdminWIL";
 import { AdminWhatsAppTemplatesContent } from "./AdminWhatsAppTemplates";
 import { AdminSystemStatusContent } from "./AdminSystemStatus";
@@ -13,10 +13,12 @@ import AutomationQueueContent from "@/components/admin/AutomationQueueContent";
 import AdminOSMasterContent from "@/components/admin/AdminOSMasterContent";
 import AdminOSTwilioSetup from "@/components/admin/AdminOSTwilioSetup";
 import AdminOSWhatsAppDesk from "@/components/admin/AdminOSWhatsAppDeskPro";
+import AdminOSWhatsAppConcierge from "@/components/admin/AdminOSWhatsAppConcierge";
 
 const tabs = [
   { value: "adminos", label: "AdminOS", icon: Bot },
   { value: "whatsapp-desk", label: "WhatsApp Desk", icon: MessageCircle },
+  { value: "whatsapp-concierge", label: "Luna Concierge", icon: Sparkles },
   { value: "twilio-setup", label: "Twilio Setup", icon: PhoneCall },
   { value: "automation", label: "Automation OS", icon: Zap },
   { value: "wil", label: "WIL Management", icon: Briefcase },
@@ -57,6 +59,7 @@ const AdminSystemHub = () => {
           </TabsList>
           <TabsContent value="adminos"><AdminOSMasterContent /></TabsContent>
           <TabsContent value="whatsapp-desk"><AdminOSWhatsAppDesk /></TabsContent>
+          <TabsContent value="whatsapp-concierge"><AdminOSWhatsAppConcierge /></TabsContent>
           <TabsContent value="twilio-setup"><AdminOSTwilioSetup /></TabsContent>
           <TabsContent value="automation"><AutomationQueueContent /></TabsContent>
           <TabsContent value="wil"><AdminWILContent /></TabsContent>
