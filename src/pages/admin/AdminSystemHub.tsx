@@ -18,6 +18,8 @@ import AdminOSTwilioSetup from "@/components/admin/AdminOSTwilioSetup";
 import AdminOSWhatsAppDeskNext from "@/components/admin/AdminOSWhatsAppDeskNext";
 import AdminOSWhatsAppConcierge from "@/components/admin/AdminOSWhatsAppConcierge";
 import AdminOSResidenceReadiness from "@/components/admin/AdminOSResidenceReadiness";
+import AdminOSServiceIntelligence from "@/components/admin/AdminOSServiceIntelligence";
+import AdminOSCustomer360 from "@/components/admin/AdminOSCustomer360";
 
 const tabs=[
   {value:"communications",label:"Communications",icon:MessageCircle},
@@ -36,17 +38,20 @@ const normalize=(value:string|null)=>value&&tabs.some((t)=>t.value===value)?valu
 const AdminSystemHub=()=>{
   const[searchParams,setSearchParams]=useSearchParams();
   const activeTab=normalize(searchParams.get("tab"));
+  const customerId=searchParams.get("contact");
+  const closeCustomer=()=>{const next=new URLSearchParams(searchParams);next.delete("contact");setSearchParams(next,{replace:true});};
   const setTopLevelTab=(value:string)=>{const next=new URLSearchParams(searchParams);next.set("tab",value);next.delete("adminos_view");setSearchParams(next);};
   return <AdminLayout>
     <SEO title="Admin Command Hubs | ResKonnect" description="ResKonnect communications, automation, operations and platform control hubs"/>
     <div className="space-y-6">
       <section className="rounded-[30px] border bg-gradient-to-br from-background to-muted/35 p-5 shadow-sm sm:p-6"><div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><div className="flex flex-wrap gap-2"><Badge className="rounded-full">Simplified AdminOS</Badge><Badge variant="outline" className="rounded-full">4 command hubs</Badge></div><h1 className="mt-3 text-3xl font-black tracking-tight">ResKonnect Command Centre</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">The old page-heavy admin structure is consolidated into Communications, Automation, Operations and Platform. Specialist tools still exist, but they now live inside the hub where they belong.</p></div><div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4"><MiniStat value="4" label="Hubs"/><MiniStat value="1" label="WhatsApp inbox"/><MiniStat value="24/7" label="Automation"/><MiniStat value="Live" label="Supabase"/></div></div></section>
       <Tabs value={activeTab} onValueChange={setTopLevelTab}><TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl bg-muted/60 p-1 lg:grid-cols-4">{tabs.map((t)=><TabsTrigger key={t.value} value={t.value} className="gap-2 rounded-xl py-2.5"><t.icon className="h-4 w-4"/><span>{t.label}</span></TabsTrigger>)}</TabsList>
-        <TabsContent value="communications" className="space-y-5"><AdminOSWhatsAppDeskNext/><HubPanel title="Luna Concierge Intelligence" description="Interactive journeys, rich WhatsApp content, automated site-event confirmations and AI service rules." icon={Sparkles}><AdminOSWhatsAppConcierge/></HubPanel><HubPanel title="Residence Readiness" description="Luna's live checklist for images, rent, location, availability and public residence links." icon={Building2}><AdminOSResidenceReadiness/></HubPanel><HubPanel title="WhatsApp Templates" description="Meta-approved and pending transactional templates used outside the 24-hour service window." icon={MessageCircle}><AdminWhatsAppTemplatesContent/></HubPanel></TabsContent>
-        <TabsContent value="automation" className="space-y-5"><AutomationQueueContent/><HubPanel title="Advanced AdminOS Controls" description="Release controls, agents, workflows, approvals and lower-level automation administration." icon={Bot}><AdminOSMasterContent/></HubPanel></TabsContent>
+        <TabsContent value="communications" className="space-y-5"><AdminOSWhatsAppDeskNext/><HubPanel title="Dimpho Concierge Intelligence" description="Interactive journeys, rich WhatsApp content, automated site-event confirmations and AI service rules." icon={Sparkles}><AdminOSWhatsAppConcierge/></HubPanel><HubPanel title="Residence Readiness" description="Dimpho's live checklist for images, rent, location, availability and public residence links." icon={Building2}><AdminOSResidenceReadiness/></HubPanel><HubPanel title="WhatsApp Templates" description="Meta-approved and pending transactional templates used outside the 24-hour service window." icon={MessageCircle}><AdminWhatsAppTemplatesContent/></HubPanel></TabsContent>
+        <TabsContent value="automation" className="space-y-5"><AdminOSServiceIntelligence/><AutomationQueueContent/><HubPanel title="Advanced AdminOS Controls" description="Release controls, agents, workflows, approvals and lower-level automation administration." icon={Bot}><AdminOSMasterContent/></HubPanel></TabsContent>
         <TabsContent value="operations" className="space-y-5"><OperationsShortcuts/><HubPanel title="WIL Management" description="Applications, placements and WIL operational management." icon={GraduationCap}><AdminWILContent/></HubPanel><HubPanel title="Site Updates & Announcements" description="Manage operational announcements without adding another top-level admin page." icon={Megaphone}><AdminSiteAnnouncementsManager/></HubPanel></TabsContent>
         <TabsContent value="platform" className="space-y-4"><HubPanel title="Twilio & WhatsApp Provider Setup" description="Sender, credentials health and provider configuration." icon={MessageCircle} defaultOpen><AdminOSTwilioSetup/></HubPanel><HubPanel title="Backend Health" description="Database and backend runtime health." icon={HeartPulse}><AdminBackendHealthContent/></HubPanel><HubPanel title="System Status" description="Production services and platform status." icon={Activity}><AdminSystemStatusContent/></HubPanel><HubPanel title="Platform Settings" description="System configuration and administrator settings." icon={Settings}><AdminSettingsContent/></HubPanel></TabsContent>
       </Tabs>
+      <AdminOSCustomer360 contactId={customerId} open={Boolean(customerId)} onClose={closeCustomer}/>
     </div>
   </AdminLayout>;
 };
