@@ -20,6 +20,7 @@ import { AccreditationCTA } from "@/components/findmyres/AccreditationCTA";
 import { AudienceSelector } from "@/components/findmyres/AudienceSelector";
 import LandlordApplicationTabs from "@/components/LandlordApplicationTabs";
 import InteractiveNeedSection from "@/components/onboarding/InteractiveNeedSection";
+import AutomationAdvantageSection from "@/components/AutomationAdvantageSection";
 import { BRAND } from "@/constants/brand";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -72,7 +73,7 @@ const Landing = () => {
     "@context": "https://schema.org", "@type": "Organization", "name": "ResKonnect",
     "alternateName": "RESKONNECT",
     "url": "https://www.reskonnect.org", "logo": "https://www.reskonnect.org/icon-512.png",
-    "description": "ResKonnect is a Start To Up product and student journey platform for accommodation, application readiness, WIL support, and partner solutions.",
+    "description": "ResKonnect is a Start To Up product and student journey platform for accommodation, application readiness, WIL support, partner solutions and AI-assisted WhatsApp service.",
     "parentOrganization": { "@type": "Organization", "name": "Start To Up", "url": "https://www.start-to-up.co.za/" },
     "email": "reskonnect@gmail.com",
     "telephone": "+27637323192",
@@ -88,8 +89,8 @@ const Landing = () => {
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <SEO
         title="ResKonnect | Student Accommodation, Application Readiness & WIL Support"
-        description="Find verified student accommodation, prepare your application documents, check your APS, request private rental support, and access WIL opportunities with ResKonnect."
-        keywords="Pretoria student accommodation, TUT residence, NSFAS accredited accommodation, application readiness, APS checker, WIL placement support"
+        description="Find verified student accommodation, prepare applications, access WIL opportunities, and get immediate AI-assisted WhatsApp guidance with human handoff through ResKonnect."
+        keywords="Pretoria student accommodation, TUT residence, NSFAS accredited accommodation, application readiness, APS checker, WIL placement support, WhatsApp student support"
         canonicalPath="/"
       />
       <SEOJsonLd schema={[organizationSchema, websiteSchema]} />
@@ -111,6 +112,8 @@ const Landing = () => {
             </p>
           </div>
         </section>
+
+        <AutomationAdvantageSection />
 
         <InteractiveNeedSection />
 
@@ -151,7 +154,7 @@ const Landing = () => {
               <div className="order-2 md:order-1">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">About ResKonnect</h2>
                 <p className="text-muted-foreground mb-4 leading-relaxed">ResKonnect is your trusted partner in finding quality student accommodation. We connect students with verified residences in Pretoria and Tshwane, making the search process simple and stress-free.</p>
-                <p className="text-muted-foreground mb-6 leading-relaxed">Our platform streamlines applications, ensures transparency, and puts students first. Whether you're looking for budget-friendly options or premium facilities, we've got you covered.</p>
+                <p className="text-muted-foreground mb-6 leading-relaxed">Our platform connects living, applications and opportunities with automation that helps route routine questions immediately while keeping people in control of protected decisions.</p>
                 <div className="flex flex-wrap gap-3">
                   <Button onClick={() => navigate("/find")} className="gap-2">
                     <Users className="w-4 h-4" /> I'm a Student
@@ -178,7 +181,7 @@ const Landing = () => {
               </div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">List Your Property or Get Accredited</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Join South Africa's fastest-growing student accommodation platform. Apply to list your property, get NSFAS accreditation, or both — all in one application.
+                Join an automation-first student accommodation platform. Apply to list your property, get NSFAS accreditation support, or both — all in one application.
               </p>
             </div>
             <LandlordApplicationTabs />
