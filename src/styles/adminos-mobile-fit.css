@@ -1,0 +1,253 @@
+.adminos-command-centre,
+.adminos-command-centre * {
+  box-sizing: border-box;
+}
+
+.adminos-command-centre,
+.adminos-command-centre > *,
+.adminos-command-centre [role="tabpanel"],
+.adminos-whatsapp-mobile-fit,
+.adminos-whatsapp-mobile-fit > div,
+.adminos-contacts-mobile-fit,
+.adminos-contacts-mobile-fit > div {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.adminos-command-centre,
+.adminos-whatsapp-mobile-fit,
+.adminos-contacts-mobile-fit {
+  overflow-x: clip;
+}
+
+.adminos-whatsapp-mobile-fit section,
+.adminos-whatsapp-mobile-fit aside,
+.adminos-whatsapp-mobile-fit main,
+.adminos-whatsapp-mobile-fit header,
+.adminos-whatsapp-mobile-fit [data-radix-scroll-area-viewport],
+.adminos-whatsapp-mobile-fit [data-radix-scroll-area-viewport] > div,
+.adminos-contacts-mobile-fit [data-radix-scroll-area-viewport],
+.adminos-contacts-mobile-fit [data-radix-scroll-area-viewport] > div {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.adminos-whatsapp-mobile-fit [class~="overflow-x-auto"],
+.adminos-command-centre [class~="overflow-x-auto"] {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.adminos-whatsapp-mobile-fit [class~="overflow-x-auto"]::-webkit-scrollbar,
+.adminos-command-centre [class~="overflow-x-auto"]::-webkit-scrollbar {
+  display: none;
+}
+
+.adminos-whatsapp-mobile-fit [class~="overflow-x-auto"] > *,
+.adminos-command-centre [class~="overflow-x-auto"] > * {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  max-width: calc(100vw - 3.5rem);
+}
+
+@media (max-width: 767px) {
+  .adminos-command-centre {
+    width: calc(100vw - 1.5rem);
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  .adminos-command-centre > section:first-child,
+  .adminos-whatsapp-mobile-fit section:first-child {
+    border-radius: 22px;
+  }
+
+  .adminos-command-centre > section:first-child {
+    padding: 1rem;
+  }
+
+  .adminos-command-centre > section:first-child > div,
+  .adminos-command-centre > section:first-child > div > div:first-child,
+  .adminos-whatsapp-mobile-fit section:first-child > div:last-child,
+  .adminos-whatsapp-mobile-fit section:first-child > div:last-child > div:first-child,
+  .adminos-whatsapp-mobile-fit section:first-child > div:last-child > div:first-child > div:last-child {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .adminos-whatsapp-mobile-fit section:first-child {
+    padding: 0.875rem;
+  }
+
+  .adminos-whatsapp-mobile-fit section:first-child > div:last-child > div:first-child {
+    gap: 0.75rem;
+  }
+
+  .adminos-whatsapp-mobile-fit section:first-child h2 {
+    font-size: 1.25rem;
+    line-height: 1.6rem;
+    overflow-wrap: anywhere;
+  }
+
+  .adminos-whatsapp-mobile-fit section:first-child p,
+  .adminos-command-centre p,
+  .adminos-command-centre h1,
+  .adminos-command-centre h2,
+  .adminos-command-centre h3 {
+    overflow-wrap: anywhere;
+  }
+
+  .adminos-whatsapp-mobile-fit > div > div:nth-child(2) {
+    min-height: calc(100dvh - 7rem) !important;
+    border-radius: 22px;
+  }
+
+  .adminos-whatsapp-mobile-fit aside,
+  .adminos-whatsapp-mobile-fit main {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .adminos-whatsapp-mobile-fit aside > div:first-child {
+    padding: 0.875rem;
+  }
+
+  .adminos-whatsapp-mobile-fit header {
+    padding: 0.75rem;
+  }
+
+  .adminos-whatsapp-mobile-fit header > div:first-child {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .adminos-whatsapp-mobile-fit header > div:first-child > div:first-child {
+    flex: 1 1 13rem;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .adminos-whatsapp-mobile-fit header > div:first-child > :last-child {
+    flex: 0 0 auto;
+    max-width: 100%;
+    white-space: nowrap;
+  }
+
+  .adminos-whatsapp-mobile-fit header > div:nth-child(2) {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100% !important;
+    max-width: 100%;
+  }
+
+  .adminos-whatsapp-mobile-fit header > div:nth-child(2) > button {
+    min-width: 0;
+    padding-left: 0.45rem;
+    padding-right: 0.45rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .adminos-whatsapp-mobile-fit main [class*="max-w-4xl"] {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .adminos-whatsapp-mobile-fit main [class~="overflow-x-auto"] {
+    scroll-snap-type: inline proximity;
+    padding-bottom: 0.125rem;
+  }
+
+  .adminos-whatsapp-mobile-fit main [class~="overflow-x-auto"] > button,
+  .adminos-whatsapp-mobile-fit aside [class~="overflow-x-auto"] > button {
+    max-width: min(78vw, 18rem);
+    white-space: nowrap;
+  }
+
+  .adminos-whatsapp-mobile-fit textarea,
+  .adminos-whatsapp-mobile-fit input,
+  .adminos-whatsapp-mobile-fit button,
+  .adminos-whatsapp-mobile-fit [role="combobox"] {
+    max-width: 100%;
+  }
+
+  .adminos-whatsapp-mobile-fit img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .adminos-whatsapp-mobile-fit [class*="max-w-[86%]"] {
+    max-width: 88% !important;
+    min-width: 0;
+  }
+
+  .adminos-contacts-mobile-fit > div > div:first-child {
+    padding: 0.875rem;
+  }
+
+  .adminos-contacts-mobile-fit .divide-y > .flex {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.875rem;
+  }
+
+  .adminos-contacts-mobile-fit .divide-y > .flex > button {
+    grid-column: 2;
+    justify-self: start;
+    width: auto;
+    max-width: 100%;
+  }
+
+  .adminos-command-centre [role="tablist"] {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .adminos-command-centre [role="tab"] {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .adminos-command-centre [role="tab"] span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 390px) {
+  .adminos-command-centre {
+    width: calc(100vw - 1.5rem);
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  .adminos-whatsapp-mobile-fit section:first-child > div:last-child > div:first-child {
+    align-items: flex-start;
+  }
+
+  .adminos-whatsapp-mobile-fit section:first-child [class*="h-14"] {
+    height: 2.75rem;
+    width: 2.75rem;
+  }
+
+  .adminos-whatsapp-mobile-fit header > div:first-child > div:first-child {
+    flex-basis: 11rem;
+  }
+
+  .adminos-whatsapp-mobile-fit [class~="overflow-x-auto"] > * {
+    max-width: calc(100vw - 3.75rem);
+  }
+}
