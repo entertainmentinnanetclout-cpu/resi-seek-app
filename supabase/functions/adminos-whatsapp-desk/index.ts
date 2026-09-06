@@ -232,7 +232,7 @@ serve(async (req) => {
 
   try {
     if (action === "staff") {
-      const result = await service.from("profiles").select("id,full_name,email,role,profile_picture_url").in("role", ["admin", "super_admin", "developer", "office_admin"]).order("full_name");
+      const result = await service.from("profiles").select("id,full_name,email,role,profile_picture_url").in("role", ["admin", "operations_lead", "commerce_lead", "growth_lead", "system_operator", "support_agent", "referral_agent", "tvet_lead"]).order("full_name");
       return json({ ok: true, staff: result.data || [] });
     }
 
