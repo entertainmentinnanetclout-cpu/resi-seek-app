@@ -48,6 +48,9 @@ verify_jwt = true
 [functions.adminos-whatsapp-webhook]
 verify_jwt = false
 
+[functions.adminos-twilio-bootstrap]
+verify_jwt = true
+
 [functions.adminos-followup-autopilot]
 verify_jwt = false
 
