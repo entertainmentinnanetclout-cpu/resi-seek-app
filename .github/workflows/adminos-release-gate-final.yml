@@ -1,0 +1,28 @@
+name: AdminOS Release Gate Final
+on:
+  push:
+    branches: [feat/dimpho-service-intelligence-release]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: SEO quality
+        run: npm run seo:check
+      - name: Production build
+        run: npm run build
+      - name: Dependency security
+        run: npm audit --omit=dev --audit-level=high
