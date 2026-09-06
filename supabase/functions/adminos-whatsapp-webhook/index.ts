@@ -3,264 +3,141 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.79.0";
 
 declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
 
-const env = (name: string) => Deno.env.get(name) || "";
-const supabaseUrl = env("SUPABASE_URL") || env("EXTERNAL_SUPABASE_URL");
-const serviceKey = env("SUPABASE_SERVICE_ROLE_KEY") || env("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
-const accountSid = env("TWILIO_ACCOUNT_SID");
-const authToken = env("TWILIO_AUTH_TOKEN");
-const fromNumber = env("TWILIO_WHATSAPP_FROM");
-const canonicalWebhookUrl = env("TWILIO_WHATSAPP_WEBHOOK_URL");
-const statusCallback = env("TWILIO_WHATSAPP_STATUS_CALLBACK_URL");
+const env=(name:string)=>Deno.env.get(name)||"";
+const supabaseUrl=env("SUPABASE_URL")||env("EXTERNAL_SUPABASE_URL");
+const serviceKey=env("SUPABASE_SERVICE_ROLE_KEY")||env("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
+const accountSid=env("TWILIO_ACCOUNT_SID");
+const authToken=env("TWILIO_AUTH_TOKEN");
+const fromNumber=env("TWILIO_WHATSAPP_FROM");
+const canonicalWebhookUrl=env("TWILIO_WHATSAPP_WEBHOOK_URL");
+const statusCallback=env("TWILIO_WHATSAPP_STATUS_CALLBACK_URL");
+const PUBLIC_BASE="https://www.reskonnect.org";
+const link=(path:string)=>`${PUBLIC_BASE}${path.startsWith("/")?path:`/${path}`}`;
 
-const digits = (value = "") => value.replace(/^whatsapp:/i, "").replace(/\D/g, "");
-const e164 = (value = "") => {
-  let d = digits(value);
-  if (d.startsWith("0") && d.length === 10) d = `27${d.slice(1)}`;
-  if (!d.startsWith("27") && d.length === 9) d = `27${d}`;
-  return d ? `+${d}` : "";
-};
-const wa = (value = "") => { const n = e164(value); return n ? `whatsapp:${n}` : ""; };
-const normalized = (value = "") => digits(e164(value));
-const basic = () => `Basic ${btoa(`${accountSid}:${authToken}`)}`;
-const xml = (body = "<Response></Response>", status = 200) => new Response(body, { status, headers: { "Content-Type": "text/xml; charset=utf-8", "Cache-Control": "no-store" } });
+const digits=(value="")=>String(value).replace(/^whatsapp:/i,"").replace(/\D/g,"");
+const e164=(value="")=>{let d=digits(value);if(d.startsWith("0")&&d.length===10)d=`27${d.slice(1)}`;if(!d.startsWith("27")&&d.length===9)d=`27${d}`;return d?`+${d}`:"";};
+const wa=(value="")=>{const n=e164(value);return n?`whatsapp:${n}`:"";};
+const normalized=(value="")=>digits(e164(value));
+const basic=()=>`Basic ${btoa(`${accountSid}:${authToken}`)}`;
+const xml=(body="<Response></Response>",status=200)=>new Response(body,{status,headers:{"Content-Type":"text/xml; charset=utf-8","Cache-Control":"no-store"}});
+const firstName=(value="")=>String(value||"there").trim().split(/\s+/)[0]||"there";
+const text=(value:unknown)=>String(value??"").trim();
 
-async function hmacSha1Base64(keyText: string, value: string) {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey("raw", encoder.encode(keyText), { name: "HMAC", hash: "SHA-1" }, false, ["sign"]);
-  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(value));
-  let binary = "";
-  for (const b of new Uint8Array(sig)) binary += String.fromCharCode(b);
-  return btoa(binary);
+async function hmacSha1Base64(keyText:string,value:string){const enc=new TextEncoder();const key=await crypto.subtle.importKey("raw",enc.encode(keyText),{name:"HMAC",hash:"SHA-1"},false,["sign"]);const sig=await crypto.subtle.sign("HMAC",key,enc.encode(value));let binary="";for(const b of new Uint8Array(sig))binary+=String.fromCharCode(b);return btoa(binary);}
+async function verifySignature(req:Request,params:URLSearchParams){if(!authToken)return false;const received=req.headers.get("X-Twilio-Signature")||"";if(!received)return false;const url=canonicalWebhookUrl||req.url;const keys=Array.from(new Set(Array.from(params.keys()))).sort();let payload=url;for(const key of keys)for(const value of params.getAll(key))payload+=`${key}${value}`;const expected=await hmacSha1Base64(authToken,payload);if(received.length!==expected.length)return false;let diff=0;for(let i=0;i<received.length;i++)diff|=received.charCodeAt(i)^expected.charCodeAt(i);return diff===0;}
+async function twilioFetchMessage(messageSid:string){if(!accountSid||!authToken||!messageSid)throw new Error("Twilio verification unavailable");const r=await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages/${encodeURIComponent(messageSid)}.json`,{headers:{Authorization:basic()}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d?.message||`Twilio HTTP ${r.status}`);return d;}
+async function verifyViaTwilioRest(params:URLSearchParams){try{const sid=params.get("MessageSid")||params.get("SmsSid")||"";const postedAccount=params.get("AccountSid")||"";if(!sid||!postedAccount||postedAccount!==accountSid)return false;const remote=await twilioFetchMessage(sid);if(remote?.sid!==sid||remote?.account_sid!==accountSid)return false;const from=params.get("From"),to=params.get("To"),body=params.get("Body");if(from&&String(remote?.from||"")!==from)return false;if(to&&String(remote?.to||"")!==to)return false;if(body!==null&&String(remote?.body||"")!==body)return false;return true;}catch{return false;}}
+
+async function twilioSend(form:URLSearchParams){if(!accountSid||!authToken||!fromNumber)throw new Error("Twilio WhatsApp secrets are not configured");if(statusCallback)form.set("StatusCallback",statusCallback);const r=await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,{method:"POST",headers:{Authorization:basic(),"Content-Type":"application/x-www-form-urlencoded"},body:form});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d?.message||`Twilio HTTP ${r.status}`);return d;}
+async function addActivity(service:any,threadId:string,eventType:string,metadata:Record<string,unknown>={}){await service.from("adminos_whatsapp_activity").insert({thread_id:threadId,actor_id:null,event_type:eventType,metadata});}
+async function persistSent(service:any,thread:any,contactId:string|null,to:string,sent:any,bodyText:string|null,metadata:Record<string,unknown>={},media:any[]=[]){const now=new Date().toISOString();const row=await service.from("adminos_whatsapp_messages").upsert({thread_id:thread.id,contact_id:contactId,twilio_message_sid:sent.sid,direction:"outbound",from_address:wa(fromNumber),to_address:wa(to),body_text:bodyText,media,message_kind:"service",status:sent.status==="queued"?"queued":"sent",risk_level:"green",sent_at:now,metadata:{source:"premium_whatsapp_concierge",author_type:"ai",...metadata}},{onConflict:"twilio_message_sid"}).select("id").maybeSingle();await service.from("adminos_whatsapp_threads").update({last_message_at:now,last_outbound_at:now,status:"waiting",updated_at:now}).eq("id",thread.id);await addActivity(service,thread.id,"concierge.sent",{message_id:row.data?.id||null,twilio_message_sid:sent.sid,...metadata});return row.data;}
+async function sendText(service:any,thread:any,contactId:string|null,to:string,body:string,metadata:Record<string,unknown>={}){const clipped=body.trim().slice(0,3500);const sent=await twilioSend(new URLSearchParams({From:wa(fromNumber),To:wa(to),Body:clipped}));await persistSent(service,thread,contactId,to,sent,clipped,metadata);return sent;}
+async function sendMedia(service:any,thread:any,contactId:string|null,to:string,body:string,mediaUrl:string,metadata:Record<string,unknown>={}){const clipped=body.trim().slice(0,3000);const sent=await twilioSend(new URLSearchParams({From:wa(fromNumber),To:wa(to),Body:clipped,MediaUrl:mediaUrl}));await persistSent(service,thread,contactId,to,sent,clipped,{...metadata,rich_media:true},[{url:mediaUrl,content_type:"image/*",source:"residence"}]);return sent;}
+async function sendRich(service:any,thread:any,contactId:string|null,to:string,contentKey:string,vars:Record<string,string>={}){const row=await service.from("adminos_whatsapp_rich_content").select("*").eq("content_key",contentKey).maybeSingle();if(!row.data?.content_sid)throw new Error(`Rich WhatsApp content ${contentKey} is not ready`);const form=new URLSearchParams({From:wa(fromNumber),To:wa(to),ContentSid:row.data.content_sid});if(Object.keys(vars).length)form.set("ContentVariables",JSON.stringify(vars));const sent=await twilioSend(form);await persistSent(service,thread,contactId,to,sent,String(row.data.config?.body||row.data.display_name),{content_key:contentKey,content_sid:row.data.content_sid,variables:vars});await service.from("adminos_whatsapp_threads").update({last_menu_key:contentKey,last_menu_at:new Date().toISOString()}).eq("id",thread.id);thread.last_menu_key=contentKey;thread.last_menu_at=new Date().toISOString();return sent;}
+
+async function linkedProfile(service:any,contactId:string|null,from:string){let contact:any=null;if(contactId)contact=(await service.from("adminos_contacts").select("*").eq("id",contactId).maybeSingle()).data||null;let profile:any=null;if(contact?.profile_user_id)profile=(await service.from("profiles").select("id,full_name,email,phone,phone_number,student_number,campus,profile_picture_url").eq("id",contact.profile_user_id).maybeSingle()).data||null;if(!profile){const intl=e164(from);const local=intl.startsWith("+27")?`0${intl.slice(3)}`:intl;const p=await service.from("profiles").select("id,full_name,email,phone,phone_number,student_number,campus,profile_picture_url").or(`phone.eq.${intl},phone_number.eq.${intl},phone.eq.${local},phone_number.eq.${local}`).limit(1).maybeSingle();profile=p.data||null;if(profile&&contactId&&!contact?.profile_user_id)await service.from("adminos_contacts").update({profile_user_id:profile.id,full_name:contact?.full_name||profile.full_name,email:contact?.email||profile.email,student_number:contact?.student_number||profile.student_number,campus:contact?.campus||profile.campus,updated_at:new Date().toISOString()}).eq("id",contactId);}return{contact,profile};}
+async function mergeState(service:any,thread:any,patch:Record<string,unknown>){const next={...(thread.conversation_state||{}),...patch};await service.from("adminos_whatsapp_threads").update({conversation_state:next,intent:String((patch as any).intent||thread.intent||"")||null,updated_at:new Date().toISOString()}).eq("id",thread.id);thread.conversation_state=next;if((patch as any).intent)thread.intent=(patch as any).intent;return next;}
+
+function selectionFrom(params:URLSearchParams,body:string){const direct=text(params.get("ButtonPayload"));if(direct)return direct;const interactive=text(params.get("InteractiveData"));if(interactive){try{const d=JSON.parse(interactive);return text(d?.id||d?.payload||d?.button_payload||d?.selected_id)||body;}catch{/* ignore */}}return body;}
+function isGreeting(value:string){return /^(hi|hii+|hello|hey|good\s*(morning|afternoon|evening)|menu|start|help|howzit|dumelang|sawubona)[!.\s]*$/i.test(value.trim());}
+function accommodationText(value:string){return /\b(accommodation|student res|residence|room|rent|nsfas|tut accommodation|tvet|college accommodation|private tenant|2026 accommodation|2027 accommodation)\b/i.test(value);}
+function companyText(value:string){return /\b(about reskonnect|what (do|does) (you|reskonnect) do|your services|company services|services do you offer|tell me about reskonnect|who are you)\b/i.test(value);}
+function inferAccommodationState(value:string,current:any={}){const v=value.toLowerCase();const patch:any={...current,intent:"accommodation"};if(/\b2027\b/.test(v))patch.year=2027;else if(/\b2026\b/.test(v))patch.year=2026;if(/\bnsfas\b/.test(v))patch.funding="nsfas";else if(/\bbursary|sponsor/.test(v))patch.funding="bursary";else if(/private funded|self[- ]?funded|cash/.test(v))patch.funding="private";if(/\btut\b/.test(v))patch.institution="tut";else if(/tvet|college/.test(v))patch.institution="tvet";if(/private tenant|non[- ]?student/.test(v))patch.tenant="private";else if(/\bstudent\b/.test(v))patch.tenant="student";return patch;}
+
+async function matchResidences(service:any,state:any){const q=await service.from("residences").select("id,name,slug,campus,city,address,price,private_price,nsfas_price,available_spots,accepts_tvet,accepts_university,accepts_private,accepts_nsfas,is_tut_accredited,reservations_2027_open,cover_image_url,image_url,images,is_spotlight,is_featured,featured,trusted,is_trusted,data_quality_score,room_type,room_types").or("is_visible.eq.true,is_visible.is.null").limit(500);if(q.error)throw q.error;let rows=q.data||[];rows=rows.filter((r:any)=>Number(r.available_spots??1)!==0);if(Number(state.year)===2027)rows=rows.filter((r:any)=>r.reservations_2027_open===true);if(state.institution==="tut")rows=rows.filter((r:any)=>r.is_tut_accredited===true||r.accepts_university===true);if(state.institution==="tvet")rows=rows.filter((r:any)=>r.accepts_tvet===true);if(state.funding==="nsfas")rows=rows.filter((r:any)=>r.accepts_nsfas===true);if(state.funding==="private"||state.tenant==="private")rows=rows.filter((r:any)=>r.accepts_private===true);rows.sort((a:any,b:any)=>Number(Boolean(b.is_spotlight))-Number(Boolean(a.is_spotlight))||Number(Boolean(b.is_featured||b.featured))-Number(Boolean(a.is_featured||a.featured))||Number(Boolean(b.is_trusted||b.trusted))-Number(Boolean(a.is_trusted||a.trusted))||Number(Boolean(b.cover_image_url||b.image_url||(Array.isArray(b.images)&&b.images[0])))-Number(Boolean(a.cover_image_url||a.image_url||(Array.isArray(a.images)&&a.images[0])))||Number(b.data_quality_score||0)-Number(a.data_quality_score||0)||Number(b.available_spots||0)-Number(a.available_spots||0));return rows.slice(0,5);}
+function residencePrice(r:any,state:any){if(state.funding==="nsfas"&&r.nsfas_price)return`R${Number(r.nsfas_price).toLocaleString("en-ZA")}`;if((state.funding==="private"||state.tenant==="private")&&r.private_price)return`R${Number(r.private_price).toLocaleString("en-ZA")}`;return r.price?`R${Number(r.price).toLocaleString("en-ZA")}`:"Price available on ResKonnect";}
+async function sendResidenceMatches(service:any,thread:any,contactId:string|null,from:string,state:any){const rows=await matchResidences(service,state);if(!rows.length){await sendText(service,thread,contactId,from,`I couldn't find a currently published residence that matches every selected filter. You can broaden the search or explore all available options here: ${link("/findmyres")}`,{intent:"accommodation",result:"no_match"});await sendRich(service,thread,contactId,from,"rk_accommodation_menu");return true;}await sendText(service,thread,contactId,from,`I found ${rows.length} strong match${rows.length===1?"":"es"} using the latest ResKonnect listing data. Images, rent, location and availability are pulled live from the residence records.`,{intent:"accommodation",result_count:rows.length});for(const r of rows){const image=text(r.cover_image_url||r.image_url||(Array.isArray(r.images)?r.images[0]:""));const url=link(`/find-my-res/${r.slug||r.id}`);const location=[r.campus,r.city].filter(Boolean).join(" · ")||r.address||null;const body=[`🏠 ${r.name}`,location?`📍 ${location}`:null,`💳 ${residencePrice(r,state)}`,r.available_spots!=null?`Availability: ${r.available_spots} spot${Number(r.available_spots)===1?"":"s"}`:null,`View & apply: ${url}`].filter(Boolean).join("\n");if(image)await sendMedia(service,thread,contactId,from,body,image,{intent:"accommodation",residence_id:r.id});else await sendText(service,thread,contactId,from,body,{intent:"accommodation",residence_id:r.id,media_missing:true});}await sendRich(service,thread,contactId,from,"rk_accommodation_menu");return true;}
+
+async function applicationStatus(service:any,thread:any,contactId:string|null,from:string,profile:any){if(!profile?.id){await sendText(service,thread,contactId,from,`I can help with application tracking, but I can't securely link this WhatsApp number to a ResKonnect profile yet. Sign in and make sure the same number is on your profile: ${link("/my-applications")}`,{intent:"applications",verified:false});await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}const q=await service.from("applications").select("id,status,funding_type,application_date,move_in_date,residence_id,residences(name,slug,cover_image_url,image_url)").eq("user_id",profile.id).order("created_at",{ascending:false}).limit(1);const app=q.data?.[0];if(!app){await sendText(service,thread,contactId,from,`I don't see an accommodation application linked to this ResKonnect profile yet. You can browse residences or start from the applications hub: ${link("/apply")}`,{intent:"applications",result:"none"});await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}const r:any=app.residences||{};const body=[`Application status: ${app.status||"Submitted"}`,r.name?`Residence: ${r.name}`:null,app.funding_type?`Funding: ${app.funding_type}`:null,app.move_in_date?`Move-in: ${app.move_in_date}`:null,`Manage application: ${link("/my-applications")}`].filter(Boolean).join("\n");const image=text(r.cover_image_url||r.image_url);if(image)await sendMedia(service,thread,contactId,from,body,image,{intent:"applications",application_id:app.id});else await sendText(service,thread,contactId,from,body,{intent:"applications",application_id:app.id});await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}
+async function missingDocuments(service:any,thread:any,contactId:string|null,from:string,profile:any){if(!profile?.id){await sendText(service,thread,contactId,from,`For privacy, I need this WhatsApp number linked to your ResKonnect profile before checking application documents. Sign in here: ${link("/my-applications")}`,{intent:"applications",verified:false});return true;}const apps=await service.from("applications").select("id").eq("user_id",profile.id).order("created_at",{ascending:false}).limit(1);const app=apps.data?.[0];if(!app){await sendText(service,thread,contactId,from,`There is no accommodation application linked to this profile yet. Start here: ${link("/findmyres")}`,{intent:"applications"});return true;}const docs=await service.from("application_documents").select("doc_type,status,rejection_reason").eq("application_id",app.id).in("status",["rejected","missing","invalid","needs_action"]).order("uploaded_at",{ascending:false});if(!docs.data?.length){await sendText(service,thread,contactId,from,`I don't see a document issue recorded against your latest accommodation application. Verify the full checklist securely here: ${link("/my-applications")}`,{intent:"applications",document_attention:0});}else{const lines=docs.data.slice(0,8).map((d:any)=>`• ${d.doc_type||"Document"}: ${d.status}${d.rejection_reason?` — ${d.rejection_reason}`:""}`);await sendText(service,thread,contactId,from,`Your latest application needs attention on:\n${lines.join("\n")}\n\nUpload or replace sensitive documents in the secure portal rather than open WhatsApp chat: ${link("/my-applications")}`,{intent:"applications",document_attention:docs.data.length});}await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}
+async function wilStatus(service:any,thread:any,contactId:string|null,from:string,profile:any){if(!profile?.id){await sendText(service,thread,contactId,from,`I can track WIL once this WhatsApp number is linked to your ResKonnect profile. Sign in and check WIL here: ${link("/wil")}`,{intent:"wil",verified:false});return true;}const q=await service.from("wil_applications").select("id,status,course,year_level,wil_duration,funding_status,campus,preferred_area,updated_at").eq("student_id",profile.id).order("created_at",{ascending:false}).limit(1);const w=q.data?.[0];if(!w){await sendText(service,thread,contactId,from,`I don't see a WIL application linked to this profile yet. Explore WIL and current opportunities here: ${link("/opportunities/wil")}`,{intent:"wil",result:"none"});await sendRich(service,thread,contactId,from,"rk_wil_menu_v2");return true;}await sendText(service,thread,contactId,from,[`WIL status: ${w.status||"Submitted"}`,w.course?`Course: ${w.course}`:null,w.campus?`Campus: ${w.campus}`:null,w.wil_duration?`Required duration: ${w.wil_duration}`:null,w.funding_status?`Funding: ${w.funding_status}`:null,`Manage WIL: ${link("/wil")}`].filter(Boolean).join("\n"),{intent:"wil",wil_application_id:w.id});await sendRich(service,thread,contactId,from,"rk_wil_menu_v2");return true;}
+
+async function handoff(service:any,thread:any,contactId:string|null,from:string,reason:string){const now=new Date().toISOString();await service.from("adminos_whatsapp_threads").update({status:"escalated",mode:"escalated",priority:"high",intent:"human",updated_at:now}).eq("id",thread.id);thread.mode="escalated";thread.status="escalated";await service.from("adminos_automation_events").insert({event_type:"whatsapp.escalated",entity_type:"whatsapp_thread",entity_id:thread.id,contact_id:contactId,payload:{reason,risk:"amber"}});await sendRich(service,thread,contactId,from,"rk_handoff_menu");await addActivity(service,thread.id,"human_handoff",{reason});return true;}
+
+async function premiumRouter(service:any,input:{thread:any;contactId:string|null;from:string;body:string;selection:string;messageId:string;mediaCount?:number}){
+  const {thread,contactId,from,body}=input;const selection=text(input.selection||body);const lower=selection.toLowerCase();const identity=await linkedProfile(service,contactId,from);const name=firstName(identity.profile?.full_name||identity.contact?.full_name||"there");
+  if(/^(stop|unsubscribe|cancel messages|opt out)$/i.test(body.trim())){if(contactId){const existing=await service.from("adminos_communication_preferences").select("id").eq("contact_id",contactId).maybeSingle();if(existing.data)await service.from("adminos_communication_preferences").update({do_not_contact:true,whatsapp_allowed:false,updated_at:new Date().toISOString()}).eq("id",existing.data.id);else await service.from("adminos_communication_preferences").insert({contact_id:contactId,do_not_contact:true,whatsapp_allowed:false});}await sendText(service,thread,contactId,from,"You're opted out of ResKonnect WhatsApp automation. You can contact our team again whenever you need assistance.",{intent:"opt_out"});return true;}
+  if(lower==="menu:main"||isGreeting(body)){await service.from("adminos_whatsapp_threads").update({mode:"ai_auto",status:"open",priority:"normal",intent:"main",conversation_state:{},updated_at:new Date().toISOString()}).eq("id",thread.id);thread.mode="ai_auto";await sendRich(service,thread,contactId,from,"rk_main_menu",{"1":name});return true;}
+  if(lower==="human:wait"){await service.from("adminos_whatsapp_threads").update({mode:"human",status:"escalated",priority:"high",updated_at:new Date().toISOString()}).eq("id",thread.id);await sendText(service,thread,contactId,from,"A ResKonnect team member will take over this conversation. Your message and context are already in the queue, so you do not need to repeat yourself.",{intent:"human"});return true;}
+  if(lower==="menu:human"||lower==="menu:partnerships"||/\b(partnership|partner with|business proposal|residence owner|landlord partnership|collaboration|sponsor|sponsorship|speak to (the )?(owner|director|manager|human|agent))\b/i.test(body))return await handoff(service,thread,contactId,from,lower==="menu:partnerships"?"partnership_or_business_enquiry":"human_requested");
+
+  if(lower==="menu:applications"){await mergeState(service,thread,{intent:"applications"});await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}
+  if(lower==="app:status")return await applicationStatus(service,thread,contactId,from,identity.profile);
+  if(lower==="app:missing")return await missingDocuments(service,thread,contactId,from,identity.profile);
+  if(lower==="app:university"){await sendText(service,thread,contactId,from,`University applications: compare requirements, prepare documents and continue through ResKonnect here: ${link("/applications/university")}`,{intent:"applications",pathway:"university"});await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}
+  if(lower==="app:tvet"){await sendText(service,thread,contactId,from,`TVET and public college applications: use the guided pathway here: ${link("/applications/tvet")}`,{intent:"applications",pathway:"tvet"});await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}
+  if(lower==="app:private-college"){await sendText(service,thread,contactId,from,`Private college applications and readiness guidance are available here: ${link("/applications/private-college")}`,{intent:"applications",pathway:"private_college"});await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}
+  if(lower==="app:checker"){await sendText(service,thread,contactId,from,`Use ResKonnect's application checker to review readiness and your next application step: ${link("/applications/checker")}`,{intent:"applications",action:"checker"});await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}
+  if(lower==="app:start"){await sendText(service,thread,contactId,from,`Start from the ResKonnect Applications Hub: ${link("/apply")}\n\nYou can return here at any time and I can help you understand the next step.`,{intent:"applications",action:"start"});await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}
+  if(lower==="app:upload"){await sendText(service,thread,contactId,from,`Upload or replace accommodation-application documents securely here: ${link("/my-applications")}\n\nDo not send passwords, OTPs, banking details or identity documents in open WhatsApp.`,{intent:"applications",action:"upload"});await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}
+  if(lower==="app:residence")return await applicationStatus(service,thread,contactId,from,identity.profile);
+  if(lower==="app:help"){await sendText(service,thread,contactId,from,"I can guide university, TVET, private-college, readiness, accommodation-application and document questions. Choose the closest option below, or type the exact issue.",{intent:"applications"});await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}
+
+  if(lower==="menu:opportunities"){await mergeState(service,thread,{intent:"wil"});await sendRich(service,thread,contactId,from,"rk_wil_menu_v2");return true;}
+  if(lower==="wil:status")return await wilStatus(service,thread,contactId,from,identity.profile);
+  if(lower==="wil:apply"){await sendText(service,thread,contactId,from,`Start with the WIL & Opportunities pathway here: ${link("/opportunities/wil")}\n\nIf you already applied through ResKonnect, choose “Check WIL status” instead.`,{intent:"wil",action:"apply"});await sendRich(service,thread,contactId,from,"rk_wil_menu_v2");return true;}
+  if(lower==="wil:requirements"){await sendText(service,thread,contactId,from,`WIL requirements depend on the institution, qualification and host opportunity. ResKonnect can guide readiness without inventing programme-specific rules. Start here: ${link("/opportunities/wil")}\n\nTell me your institution, course and required WIL duration if you want more specific guidance.`,{intent:"wil",action:"requirements"});await sendRich(service,thread,contactId,from,"rk_wil_menu_v2");return true;}
+  if(lower==="wil:documents"){await sendText(service,thread,contactId,from,`Manage WIL documents securely inside your ResKonnect WIL workspace: ${link("/wil")}\n\nIf the portal flags a particular document, tell me the document name and status and I will guide the next step.`,{intent:"wil",action:"documents"});await sendRich(service,thread,contactId,from,"rk_wil_menu_v2");return true;}
+  if(lower==="wil:placement"){await sendText(service,thread,contactId,from,"I can guide placement progress, readiness and normal employer requirements. If your case needs a placement decision, employer commitment or protected judgement, I will escalate it rather than guessing.",{intent:"wil",action:"placement"});await sendRich(service,thread,contactId,from,"rk_wil_menu_v2");return true;}
+  if(lower==="wil:opportunities"){await sendText(service,thread,contactId,from,`Explore currently published WIL, internship and workplace-experience opportunities here: ${link("/opportunities")}`,{intent:"wil",action:"opportunities"});await sendRich(service,thread,contactId,from,"rk_wil_menu_v2");return true;}
+  if(lower==="wil:employer"){await sendText(service,thread,contactId,from,`For employers or host companies, the partnership pathway is here: ${link("/partners")}\n\nI will also escalate this conversation so the ResKonnect team can review the organisation-specific opportunity.`,{intent:"wil",action:"employer"});return await handoff(service,thread,contactId,from,"wil_employer_or_host_company");}
+  if(lower==="wil:funding"){await sendText(service,thread,contactId,from,"Funding and stipends vary by programme, employer and funding arrangement. I will only confirm an amount when it exists in verified ResKonnect programme data. Tell me which opportunity or programme you mean, or browse current opportunities below.",{intent:"wil",action:"funding"});await sendRich(service,thread,contactId,from,"rk_wil_menu_v2");return true;}
+
+  if(lower==="menu:other"||lower==="menu:company"||companyText(body)){await mergeState(service,thread,{intent:"company"});await sendRich(service,thread,contactId,from,"rk_company_menu");return true;}
+  if(lower==="company:about"){await sendText(service,thread,contactId,from,`ResKonnect connects Living, Applications and Opportunities in one platform. We help students and private tenants discover accommodation, prepare and track application journeys, access WIL/opportunity support, and help property owners and partners operate through digital tools.\n\nExplore ResKonnect: ${PUBLIC_BASE}`,{intent:"company",topic:"about"});await sendRich(service,thread,contactId,from,"rk_company_menu");return true;}
+  if(lower==="company:living"){await sendText(service,thread,contactId,from,`ResKonnect Living covers verified student accommodation, private-rental pathways, residence discovery, applications and reservation support. Browse here: ${link("/living")}`,{intent:"company",topic:"living"});await sendRich(service,thread,contactId,from,"rk_accommodation_menu");return true;}
+  if(lower==="company:applications"){await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}
+  if(lower==="company:opportunities"){await sendRich(service,thread,contactId,from,"rk_wil_menu_v2");return true;}
+  if(lower==="company:property"){await sendText(service,thread,contactId,from,`Property owners and residence operators can explore listing, partnership and property-support pathways here: ${link("/partners/landlords")}`,{intent:"company",topic:"property"});await sendRich(service,thread,contactId,from,"rk_company_menu");return true;}
+  if(lower==="company:ai"){await sendText(service,thread,contactId,from,`ResKonnect uses AI and automation to deliver faster enquiry routing, application updates, accommodation matching and operational support while keeping protected decisions under human control. Learn more across the platform: ${PUBLIC_BASE}`,{intent:"company",topic:"ai"});await sendRich(service,thread,contactId,from,"rk_company_menu");return true;}
+
+  if(lower==="menu:technical"){await mergeState(service,thread,{intent:"technical"});await sendRich(service,thread,contactId,from,"rk_support_menu");return true;}
+  if(lower==="support:account"){await sendText(service,thread,contactId,from,`For login or account access, confirm you are using the email linked to your ResKonnect account, then use the password-reset option on the sign-in screen: ${link("/auth")}\n\nNever send me your password or OTP.`,{intent:"technical",issue:"account"});await sendRich(service,thread,contactId,from,"rk_support_menu");return true;}
+  if(lower==="support:technical"){await sendText(service,thread,contactId,from,"Tell me what page you were on, what you expected to happen and the exact error you see. I can troubleshoot common ResKonnect issues; if it needs a developer or account-level fix, I will escalate it with the conversation context attached.",{intent:"technical",issue:"app"});return true;}
+
+  if(lower==="menu:reservations"||lower==="menu:accommodation"){await mergeState(service,thread,{intent:"accommodation"});await sendRich(service,thread,contactId,from,"rk_accommodation_menu");return true;}
+  if(lower==="acc:find"){await mergeState(service,thread,{intent:"accommodation"});await sendRich(service,thread,contactId,from,"rk_year_menu");return true;}
+  if(lower.startsWith("acc:year:")){const raw=lower.split(":")[2];const year=raw==="2026"||raw==="2027"?Number(raw):null;await mergeState(service,thread,{intent:"accommodation",year});await sendRich(service,thread,contactId,from,"rk_funding_menu");return true;}
+  if(lower.startsWith("acc:institution:")){const institution=lower.split(":")[2];await mergeState(service,thread,{intent:"accommodation",institution});await sendRich(service,thread,contactId,from,"rk_funding_menu");return true;}
+  if(lower.startsWith("acc:funding:")){const funding=lower.split(":")[2];await mergeState(service,thread,{intent:"accommodation",funding});await sendRich(service,thread,contactId,from,"rk_tenant_menu");return true;}
+  if(lower.startsWith("acc:tenant:")){const tenant=lower.split(":")[2];const state=await mergeState(service,thread,{intent:"accommodation",tenant});return await sendResidenceMatches(service,thread,contactId,from,state);}
+  if(accommodationText(body)){const inferred=inferAccommodationState(body,thread.conversation_state?.intent==="accommodation"?thread.conversation_state:{});const state=await mergeState(service,thread,inferred);if(state.year&&state.funding&&(state.institution||state.tenant))return await sendResidenceMatches(service,thread,contactId,from,state);await sendRich(service,thread,contactId,from,"rk_accommodation_menu");return true;}
+  if(/\b(application|aps|university application|college application|missing document|documents missing)\b/i.test(body)){await sendRich(service,thread,contactId,from,"rk_application_menu_v2");return true;}
+  if(/\b(wil|work integrated learning|internship|placement|host company)\b/i.test(body)){await sendRich(service,thread,contactId,from,"rk_wil_menu_v2");return true;}
+  if((input.mediaCount||0)>0&&!body.trim()){await sendText(service,thread,contactId,from,"I received your attachment and AdminOS is securing a private copy for the ResKonnect team. Tell me what you want help with, or choose a service below. Please do not send passwords, OTPs or banking credentials.",{intent:"attachment_received"});await sendRich(service,thread,contactId,from,"rk_main_menu",{"1":name});return true;}
+  return false;
 }
 
-async function verifySignature(req: Request, params: URLSearchParams) {
-  if (!authToken) return false;
-  const received = req.headers.get("X-Twilio-Signature") || "";
-  if (!received) return false;
-  const url = canonicalWebhookUrl || req.url;
-  const keys = Array.from(new Set(Array.from(params.keys()))).sort();
-  let payload = url;
-  for (const key of keys) for (const value of params.getAll(key)) payload += `${key}${value}`;
-  const expected = await hmacSha1Base64(authToken, payload);
-  if (received.length !== expected.length) return false;
-  let diff = 0;
-  for (let i = 0; i < received.length; i++) diff |= received.charCodeAt(i) ^ expected.charCodeAt(i);
-  return diff === 0;
+async function processInbound(service:any,input:{thread:any;contactId:string|null;from:string;body:string;selection:string;messageId:string;authMode:string;mediaCount?:number}){
+  const {thread,contactId,from,body,messageId,authMode}=input;
+  try{
+    const prefs=contactId?(await service.from("adminos_communication_preferences").select("do_not_contact,whatsapp_allowed").eq("contact_id",contactId).maybeSingle()).data:null;
+    if((prefs?.do_not_contact||prefs?.whatsapp_allowed===false)&&!/^(start|subscribe|resume)$/i.test(body.trim()))return;
+    if(await premiumRouter(service,{thread,contactId,from,body,selection:input.selection,messageId,mediaCount:input.mediaCount}))return;
+    const mode=thread.mode||"ai_auto";
+    if(mode==="human"){await service.from("adminos_automation_events").insert({event_type:"whatsapp.human_mode_waiting",entity_type:"whatsapp_thread",entity_id:thread.id,contact_id:contactId,payload:{message_id:messageId,mode,auth_mode:authMode}});return;}
+    if(mode==="escalated"){const last=thread.last_menu_at?new Date(thread.last_menu_at).getTime():0;if(thread.last_menu_key!=="rk_handoff_menu"||Date.now()-last>30*60*1000)await sendRich(service,thread,contactId,from,"rk_handoff_menu");return;}
+    const historyRes=await service.from("adminos_whatsapp_messages").select("direction,body_text,metadata,created_at,received_at,sent_at").eq("thread_id",thread.id).order("created_at",{ascending:false}).limit(24);
+    const history=(historyRes.data||[]).reverse().map((m:any)=>({direction:m.direction,body:m.body_text,author_type:m.metadata?.author_type||null,content_key:m.metadata?.content_key||null,at:m.sent_at||m.received_at||m.created_at}));
+    const identity=await linkedProfile(service,contactId,from);const customer=identity.contact||identity.profile||null;
+    const agentResp=await fetch(`${supabaseUrl}/functions/v1/adminos-agent`,{method:"POST",headers:{Authorization:`Bearer ${serviceKey}`,apikey:serviceKey,"Content-Type":"application/json"},body:JSON.stringify({action:"public_enquiry",message:body,contact_id:contactId,context:{channel:"whatsapp",verified_phone_contact:Boolean(contactId),conversation_history:history,customer,conversation_state:thread.conversation_state||{},canonical_website:PUBLIC_BASE,instruction:"You are Luna, ResKonnect's premium WhatsApp concierge. Resolve routine enquiries using verified context. Use full conversation history and short contextual replies. Never invent availability, pricing, application status, funding outcomes or policy. Never request passwords, OTPs, banking details, identity numbers or sensitive documents in open WhatsApp. All ResKonnect links must use the canonical https://www.reskonnect.org domain. For protected decisions, safety/scam/legal matters, partnerships needing an owner, or issues you cannot reliably resolve, acknowledge the user and request human escalation. Never leave a legitimate user without a useful response."}})});
+    const agent=await agentResp.json().catch(()=>({}));if(!agentResp.ok||!agent.answer)throw new Error(agent.error||`Agent HTTP ${agentResp.status}`);const answer=String(agent.answer).replaceAll("https://reskonnect.org","https://www.reskonnect.org").slice(0,2000);
+    if(mode==="assist"){await service.from("adminos_whatsapp_drafts").update({status:"superseded",updated_at:new Date().toISOString()}).eq("thread_id",thread.id).eq("status","ready");const draft=await service.from("adminos_whatsapp_drafts").insert({thread_id:thread.id,source_message_id:messageId,body_text:answer,status:"ready",risk_level:["green","amber","red"].includes(agent.risk)?agent.risk:"amber",confidence:agent.confidence||null,agent_run_id:agent.run_id||null,metadata:{source:"assist_auto_draft",reason:agent.reason||null}}).select("id").single();await service.from("adminos_whatsapp_threads").update({status:agent.risk==="red"?"escalated":"open",priority:agent.risk==="red"?"high":thread.priority,updated_at:new Date().toISOString()}).eq("id",thread.id);await addActivity(service,thread.id,"ai_draft.created",{draft_id:draft.data?.id||null,source_message_id:messageId,risk:agent.risk,confidence:agent.confidence,automatic:true});return;}
+    if(agent.risk!=="red"&&!agent.escalate){const sent=await twilioSend(new URLSearchParams({From:wa(fromNumber),To:wa(from),Body:answer}));const now=new Date().toISOString();const inserted=await service.from("adminos_whatsapp_messages").upsert({thread_id:thread.id,contact_id:contactId,twilio_message_sid:sent.sid,direction:"outbound",from_address:wa(fromNumber),to_address:wa(from),body_text:answer,message_kind:"service",status:sent.status==="queued"?"queued":"sent",risk_level:agent.risk||"green",confidence:agent.confidence||null,agent_run_id:agent.run_id||null,sent_at:now,metadata:{source:"whatsapp_auto_reply",author_type:"ai",auth_mode:authMode}},{onConflict:"twilio_message_sid"}).select("id").maybeSingle();await service.from("adminos_whatsapp_threads").update({last_message_at:now,last_outbound_at:now,status:"waiting",updated_at:now}).eq("id",thread.id);await addActivity(service,thread.id,"ai_reply.sent",{message_id:inserted.data?.id||null,twilio_message_sid:sent.sid,confidence:agent.confidence,risk:agent.risk});return;}
+    await sendText(service,thread,contactId,from,answer||"Thanks — I have your message. This needs a ResKonnect team member to review it, and I have escalated the conversation with the context attached.",{intent:"escalation",risk:agent.risk||"amber"});await handoff(service,thread,contactId,from,agent.reason||"agent_requested_escalation");
+  }catch(error){const reason=error instanceof Error?error.message:String(error);await sendText(service,thread,contactId,from,"Thanks — I have your message. I couldn't complete this safely on automation, so I have escalated it to a ResKonnect human assistant with the conversation context attached.",{intent:"system_escalation"}).catch(()=>null);await service.from("adminos_whatsapp_threads").update({status:"escalated",mode:"escalated",priority:"high",updated_at:new Date().toISOString()}).eq("id",thread.id);await service.from("adminos_automation_events").insert({event_type:"whatsapp.escalated",entity_type:"whatsapp_thread",entity_id:thread.id,contact_id:contactId,payload:{reason,risk:"amber",message_id:messageId}});await addActivity(service,thread.id,"system.error",{reason,message_id:messageId});}
 }
 
-async function twilioFetchMessage(messageSid: string) {
-  if (!accountSid || !authToken || !messageSid) throw new Error("Twilio verification unavailable");
-  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages/${encodeURIComponent(messageSid)}.json`, { headers: { Authorization: basic() } });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.message || `Twilio HTTP ${response.status}`);
-  return data;
-}
-
-async function verifyViaTwilioRest(params: URLSearchParams) {
-  try {
-    const messageSid = params.get("MessageSid") || params.get("SmsSid") || "";
-    const postedAccount = params.get("AccountSid") || "";
-    if (!messageSid || !postedAccount || postedAccount !== accountSid) return false;
-    const remote = await twilioFetchMessage(messageSid);
-    if (remote?.sid !== messageSid || remote?.account_sid !== accountSid) return false;
-    const postedFrom = params.get("From");
-    const postedTo = params.get("To");
-    const postedBody = params.get("Body");
-    if (postedFrom && String(remote?.from || "") !== postedFrom) return false;
-    if (postedTo && String(remote?.to || "") !== postedTo) return false;
-    if (postedBody !== null && String(remote?.body || "") !== postedBody) return false;
-    return true;
-  } catch { return false; }
-}
-
-async function twilioSend(to: string, body: string) {
-  if (!accountSid || !authToken || !fromNumber) throw new Error("Twilio WhatsApp secrets are not configured");
-  const form = new URLSearchParams({ From: wa(fromNumber), To: wa(to), Body: body });
-  if (statusCallback) form.set("StatusCallback", statusCallback);
-  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-    method: "POST",
-    headers: { Authorization: basic(), "Content-Type": "application/x-www-form-urlencoded" },
-    body: form,
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.message || `Twilio HTTP ${response.status}`);
-  return data;
-}
-
-async function addActivity(service: any, threadId: string, eventType: string, metadata: Record<string, unknown> = {}) {
-  await service.from("adminos_whatsapp_activity").insert({ thread_id: threadId, actor_id: null, event_type: eventType, metadata });
-}
-
-async function processInbound(service: any, input: { thread: any; contactId: string | null; from: string; body: string; messageId: string; authMode: string }) {
-  const { thread, contactId, from, body, messageId, authMode } = input;
-  try {
-    if (!body.trim()) return;
-    const prefs = contactId ? (await service.from("adminos_communication_preferences").select("do_not_contact,whatsapp_allowed").eq("contact_id", contactId).maybeSingle()).data : null;
-    if (prefs?.do_not_contact || prefs?.whatsapp_allowed === false) return;
-
-    const mode = thread.mode || "ai_auto";
-    if (["human", "escalated", "closed"].includes(mode)) {
-      await service.from("adminos_automation_events").insert({ event_type: "whatsapp.human_mode_waiting", entity_type: "whatsapp_thread", entity_id: thread.id, contact_id: contactId, payload: { message_id: messageId, mode, auth_mode: authMode } });
-      return;
-    }
-
-    const historyRes = await service.from("adminos_whatsapp_messages")
-      .select("direction,body_text,metadata,created_at,received_at,sent_at")
-      .eq("thread_id", thread.id)
-      .order("created_at", { ascending: false })
-      .limit(18);
-    const history = (historyRes.data || []).reverse().map((m: any) => ({ direction: m.direction, body: m.body_text, author_type: m.metadata?.author_type || null, at: m.sent_at || m.received_at || m.created_at }));
-    const contact = contactId ? (await service.from("adminos_contacts").select("full_name,contact_type,student_number,campus").eq("id", contactId).maybeSingle()).data : null;
-
-    const agentResp = await fetch(`${supabaseUrl}/functions/v1/adminos-agent`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "public_enquiry",
-        message: body,
-        context: {
-          channel: "whatsapp",
-          verified_phone_contact: Boolean(contactId),
-          conversation_history: history,
-          customer: contact,
-          instruction: "Use the full conversation history. Interpret short replies such as dates, amounts, locations or yes/no answers as answers to the immediately preceding question. Do not treat a contextual short answer as incomplete just because it is short.",
-        },
-      }),
-    });
-    const agent = await agentResp.json().catch(() => ({}));
-    if (!agentResp.ok || !agent.answer) throw new Error(agent.error || `Agent HTTP ${agentResp.status}`);
-
-    const answer = String(agent.answer).slice(0, 1500);
-    if (mode === "assist") {
-      await service.from("adminos_whatsapp_drafts").update({ status: "superseded", updated_at: new Date().toISOString() }).eq("thread_id", thread.id).eq("status", "ready");
-      const draft = await service.from("adminos_whatsapp_drafts").insert({
-        thread_id: thread.id,
-        source_message_id: messageId,
-        body_text: answer,
-        status: "ready",
-        risk_level: ["green", "amber", "red"].includes(agent.risk) ? agent.risk : "amber",
-        confidence: agent.confidence || null,
-        agent_run_id: agent.run_id || null,
-        metadata: { source: "assist_auto_draft", reason: agent.reason || null },
-      }).select("id").single();
-      const status = agent.escalate || agent.risk === "red" ? "escalated" : "open";
-      await service.from("adminos_whatsapp_threads").update({ status, priority: status === "escalated" ? "high" : thread.priority, updated_at: new Date().toISOString() }).eq("id", thread.id);
-      await addActivity(service, thread.id, "ai_draft.created", { draft_id: draft.data?.id || null, source_message_id: messageId, risk: agent.risk, confidence: agent.confidence, automatic: true });
-      return;
-    }
-
-    if (agent.risk === "green" && !agent.escalate) {
-      const sent = await twilioSend(from, answer);
-      const sentAt = new Date().toISOString();
-      const inserted = await service.from("adminos_whatsapp_messages").upsert({
-        thread_id: thread.id,
-        contact_id: contactId,
-        twilio_message_sid: sent.sid,
-        direction: "outbound",
-        from_address: wa(fromNumber),
-        to_address: wa(from),
-        body_text: answer,
-        message_kind: "service",
-        status: sent.status === "queued" ? "queued" : "sent",
-        risk_level: "green",
-        confidence: agent.confidence || null,
-        agent_run_id: agent.run_id || null,
-        sent_at: sentAt,
-        metadata: { source: "whatsapp_auto_reply", author_type: "ai", auth_mode: authMode },
-      }, { onConflict: "twilio_message_sid" }).select("id").maybeSingle();
-      await service.from("adminos_whatsapp_threads").update({ last_message_at: sentAt, last_outbound_at: sentAt, status: "waiting", updated_at: sentAt }).eq("id", thread.id);
-      await addActivity(service, thread.id, "ai_reply.sent", { message_id: inserted.data?.id || null, twilio_message_sid: sent.sid, confidence: agent.confidence });
-    } else {
-      const now = new Date().toISOString();
-      await service.from("adminos_whatsapp_threads").update({ status: "escalated", mode: "escalated", priority: "high", updated_at: now }).eq("id", thread.id);
-      await service.from("adminos_automation_events").insert({ event_type: "whatsapp.escalated", entity_type: "whatsapp_thread", entity_id: thread.id, contact_id: contactId, payload: { reason: agent.reason || "Agent escalation", risk: agent.risk || "amber", message_id: messageId } });
-      await addActivity(service, thread.id, "ai_escalation", { reason: agent.reason || null, risk: agent.risk || "amber", message_id: messageId });
-    }
-  } catch (error) {
-    const now = new Date().toISOString();
-    await service.from("adminos_whatsapp_threads").update({ status: "escalated", mode: "escalated", priority: "high", updated_at: now }).eq("id", thread.id);
-    await service.from("adminos_automation_events").insert({ event_type: "whatsapp.escalated", entity_type: "whatsapp_thread", entity_id: thread.id, contact_id: contactId, payload: { reason: error instanceof Error ? error.message : String(error), risk: "amber", message_id: messageId } });
-    await addActivity(service, thread.id, "system.error", { reason: error instanceof Error ? error.message : String(error), message_id: messageId });
-  }
-}
-
-serve(async (req) => {
-  if (req.method !== "POST") return xml("<Response></Response>", 405);
-  if (!supabaseUrl || !serviceKey) return xml("<Response></Response>", 500);
-
-  const raw = await req.text();
-  const params = new URLSearchParams(raw);
-  const signatureVerified = await verifySignature(req, params);
-  const restVerified = signatureVerified ? false : await verifyViaTwilioRest(params);
-  if (!signatureVerified && !restVerified) return xml("<Response></Response>", 403);
-  const authMode = signatureVerified ? "signature" : "rest_fallback";
-
-  const service = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-  const sid = params.get("MessageSid") || params.get("SmsSid") || "";
-  const status = params.get("MessageStatus") || params.get("SmsStatus") || "";
-  const from = params.get("From") || "";
-  const to = params.get("To") || "";
-  const body = (params.get("Body") || "").slice(0, 12000);
-
-  if (sid && status && !body.trim() && ["queued", "sent", "delivered", "read", "failed", "undelivered"].includes(status)) {
-    const patch: any = { status };
-    if (status === "delivered" || status === "read") patch.delivered_at = new Date().toISOString();
-    await service.from("adminos_whatsapp_messages").update(patch).eq("twilio_message_sid", sid);
-    await service.from("adminos_whatsapp_outbox").update({ status: ["failed", "undelivered"].includes(status) ? "failed" : "sent", last_error: ["failed", "undelivered"].includes(status) ? (params.get("ErrorMessage") || params.get("ErrorCode") || status) : null }).eq("twilio_message_sid", sid);
-    return xml();
-  }
-
-  if (!sid || !from) return xml();
-  const norm = normalized(from);
-  if (!norm) return xml();
-
-  const resolved = await service.rpc("adminos_resolve_contact", {
-    p_full_name: params.get("ProfileName") || null,
-    p_email: null,
-    p_phone: e164(from),
-    p_profile_user_id: null,
-    p_source_type: "whatsapp",
-    p_source_id: null,
-    p_metadata: { source: "twilio_whatsapp_inbound", twilio_sid: sid },
-  });
-  const contactId = resolved.data || null;
-
-  let thread = (await service.from("adminos_whatsapp_threads").select("*").eq("normalized_address", norm).maybeSingle()).data;
-  if (!thread) {
-    const created = await service.from("adminos_whatsapp_threads").insert({ contact_id: contactId, channel_address: wa(from), normalized_address: norm, status: "open", mode: "ai_auto", metadata: { source: "twilio" } }).select("*").single();
-    thread = created.data;
-  }
-  if (!thread) return xml();
-
-  const mediaCount = Math.max(0, Math.min(10, Number(params.get("NumMedia") || 0)));
-  const media: any[] = [];
-  for (let i = 0; i < mediaCount; i++) media.push({ url: params.get(`MediaUrl${i}`), content_type: params.get(`MediaContentType${i}`) });
-  const now = new Date();
-  const nowIso = now.toISOString();
-  const expires = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
-
-  const inserted = await service.from("adminos_whatsapp_messages").upsert({
-    thread_id: thread.id,
-    contact_id: contactId,
-    twilio_message_sid: sid,
-    direction: "inbound",
-    from_address: wa(from),
-    to_address: wa(to),
-    body_text: body || null,
-    media,
-    message_kind: "service",
-    status: "received",
-    received_at: nowIso,
-    metadata: { account_sid: params.get("AccountSid"), profile_name: params.get("ProfileName") || null, author_type: "contact", auth_mode: authMode },
-  }, { onConflict: "twilio_message_sid" }).select("id").maybeSingle();
-
-  const reopenedMode = thread.mode === "closed" ? "ai_auto" : (thread.mode || "ai_auto");
-  await service.from("adminos_whatsapp_threads").update({ contact_id: contactId || thread.contact_id, last_message_at: nowIso, last_inbound_at: nowIso, customer_window_expires_at: expires, unread_count: Number(thread.unread_count || 0) + (inserted.data ? 1 : 0), status: "open", mode: reopenedMode, resolved_at: null, resolved_by: null, updated_at: nowIso }).eq("id", thread.id);
-
-  if (!inserted.data) return xml();
-  await service.from("adminos_automation_events").insert({ event_type: "whatsapp.received", entity_type: "whatsapp_thread", entity_id: thread.id, contact_id: contactId, payload: { message_id: inserted.data.id, message_sid: sid, body: body.slice(0, 1000), auth_mode: authMode } });
-  await addActivity(service, thread.id, "message.received", { message_id: inserted.data.id, message_sid: sid });
-
-  EdgeRuntime.waitUntil(processInbound(service, { thread: { ...thread, mode: reopenedMode }, contactId, from, body, messageId: inserted.data.id, authMode }));
-  return xml();
+serve(async(req)=>{
+  if(req.method!=="POST")return xml("<Response></Response>",405);if(!supabaseUrl||!serviceKey)return xml("<Response></Response>",500);
+  const raw=await req.text();const params=new URLSearchParams(raw);const signatureVerified=await verifySignature(req,params);const restVerified=signatureVerified?false:await verifyViaTwilioRest(params);if(!signatureVerified&&!restVerified)return xml("<Response></Response>",403);const authMode=signatureVerified?"signature":"rest_fallback";
+  const service=createClient(supabaseUrl,serviceKey,{auth:{persistSession:false}});const sid=params.get("MessageSid")||params.get("SmsSid")||"";const status=params.get("MessageStatus")||params.get("SmsStatus")||"";const from=params.get("From")||"";const to=params.get("To")||"";const body=(params.get("Body")||"").slice(0,12000);
+  if(sid&&status&&!body.trim()&&["queued","sent","delivered","read","failed","undelivered"].includes(status)){const patch:any={status};if(status==="delivered"||status==="read")patch.delivered_at=new Date().toISOString();await service.from("adminos_whatsapp_messages").update(patch).eq("twilio_message_sid",sid);await service.from("adminos_whatsapp_outbox").update({status:["failed","undelivered"].includes(status)?"failed":"sent",last_error:["failed","undelivered"].includes(status)?(params.get("ErrorMessage")||params.get("ErrorCode")||status):null}).eq("twilio_message_sid",sid);return xml();}
+  if(!sid||!from)return xml();const norm=normalized(from);if(!norm)return xml();
+  const resolved=await service.rpc("adminos_resolve_contact",{p_full_name:params.get("ProfileName")||null,p_email:null,p_phone:e164(from),p_profile_user_id:null,p_source_type:"whatsapp",p_source_id:null,p_metadata:{source:"twilio_whatsapp_inbound",twilio_sid:sid}});const contactId=resolved.data||null;
+  let thread=(await service.from("adminos_whatsapp_threads").select("*").eq("normalized_address",norm).maybeSingle()).data;if(!thread){const created=await service.from("adminos_whatsapp_threads").insert({contact_id:contactId,channel_address:wa(from),normalized_address:norm,status:"open",mode:"ai_auto",metadata:{source:"twilio"}}).select("*").single();thread=created.data;}if(!thread)return xml();
+  const mediaCount=Math.max(0,Math.min(10,Number(params.get("NumMedia")||0)));const media:any[]=[];for(let i=0;i<mediaCount;i++)media.push({url:params.get(`MediaUrl${i}`),content_type:params.get(`MediaContentType${i}`),name:`WhatsApp attachment ${i+1}`});const now=new Date();const nowIso=now.toISOString();const expires=new Date(now.getTime()+24*60*60*1000).toISOString();const selection=selectionFrom(params,body);const buttonPayload=params.get("ButtonPayload")||null;const buttonText=params.get("ButtonText")||null;const interactiveData=params.get("InteractiveData")||null;
+  const inserted=await service.from("adminos_whatsapp_messages").upsert({thread_id:thread.id,contact_id:contactId,twilio_message_sid:sid,direction:"inbound",from_address:wa(from),to_address:wa(to),body_text:body||buttonText||selection||null,media,message_kind:"service",status:"received",received_at:nowIso,metadata:{account_sid:params.get("AccountSid"),profile_name:params.get("ProfileName")||null,author_type:"contact",auth_mode:authMode,button_payload:buttonPayload,button_text:buttonText,interactive_data:interactiveData,selection:selection||null}},{onConflict:"twilio_message_sid"}).select("id").maybeSingle();
+  const reopenedMode=thread.mode==="closed"?"ai_auto":(thread.mode||"ai_auto");await service.from("adminos_whatsapp_threads").update({contact_id:contactId||thread.contact_id,last_message_at:nowIso,last_inbound_at:nowIso,customer_window_expires_at:expires,unread_count:Number(thread.unread_count||0)+(inserted.data?1:0),status:"open",mode:reopenedMode,resolved_at:null,resolved_by:null,updated_at:nowIso}).eq("id",thread.id);if(!inserted.data)return xml();await service.from("adminos_automation_events").insert({event_type:"whatsapp.received",entity_type:"whatsapp_thread",entity_id:thread.id,contact_id:contactId,payload:{message_id:inserted.data.id,message_sid:sid,body:body.slice(0,1000),selection,media_count:mediaCount,auth_mode:authMode}});await addActivity(service,thread.id,"message.received",{message_id:inserted.data.id,message_sid:sid,selection:selection||null,media_count:mediaCount});
+  EdgeRuntime.waitUntil(processInbound(service,{thread:{...thread,mode:reopenedMode,customer_window_expires_at:expires},contactId,from,body:body||buttonText||selection||"",selection,messageId:inserted.data.id,authMode,mediaCount}));return xml();
 });
