@@ -1,10 +1,13 @@
 name: AdminOS Release Gate Final
 on:
   push:
-    branches: [feat/dimpho-service-intelligence-release]
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
+concurrency:
+  group: adminos-release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -27,7 +30,7 @@ jobs:
       - name: Upload production build
         uses: actions/upload-artifact@v4
         with:
-          name: adminos-production-dist
+          name: adminos-production-dist-${{ github.sha }}
           path: dist
           if-no-files-found: error
           retention-days: 1
