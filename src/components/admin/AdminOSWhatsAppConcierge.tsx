@@ -112,7 +112,7 @@ export default function AdminOSWhatsAppConcierge() {
       setIntegration(integrationRes.data || null);
       setResidence(residenceRes.data || null);
     } catch (error: any) {
-      toast.error(error?.message || "Could not load Luna Concierge");
+      toast.error(error?.message || "Could not load Dimpho Concierge");
     } finally {
       setLoading(false);
     }
@@ -146,12 +146,12 @@ export default function AdminOSWhatsAppConcierge() {
         <div className="relative grid gap-7 xl:grid-cols-[1.05fr_.95fr] xl:items-center">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="rounded-full gap-1.5 px-3 py-1"><Sparkles className="h-3.5 w-3.5" /> Luna Premium Concierge</Badge>
+              <Badge className="rounded-full gap-1.5 px-3 py-1"><Sparkles className="h-3.5 w-3.5" /> Dimpho Premium Concierge</Badge>
               <Badge variant="outline" className="rounded-full px-3 py-1">OpenAI + Twilio</Badge>
               <Badge variant="outline" className="rounded-full px-3 py-1">Rich WhatsApp UI</Badge>
             </div>
             <h2 className="mt-4 max-w-3xl text-3xl font-black tracking-[-0.035em] sm:text-4xl">A guided WhatsApp concierge — not a text-only bot.</h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">Luna now routes routine enquiries through interactive menus, verified ResKonnect data, rich residence media and site-event automations. Human intervention is reserved for protected decisions, partnerships and genuine exceptions.</p>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">Dimpho now routes routine enquiries through interactive menus, verified ResKonnect data, rich residence media and site-event automations. Human intervention is reserved for protected decisions, partnerships and genuine exceptions.</p>
             <div className="mt-5 flex flex-wrap gap-2">
               <StatusPill label="Twilio sender" value={integration?.status === "connected" ? "Live" : "Attention"} good={integration?.status === "connected"} />
               <StatusPill label="Rich content" value={`${operational}/${rich.length} operational`} good={operational > 0} />
@@ -176,7 +176,7 @@ export default function AdminOSWhatsAppConcierge() {
         <Card className="rounded-[28px] shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-3">
-              <div><CardTitle className="text-xl">Journey coverage</CardTitle><p className="mt-1 text-xs text-muted-foreground">What Luna can route before falling back to open-ended AI.</p></div>
+              <div><CardTitle className="text-xl">Journey coverage</CardTitle><p className="mt-1 text-xs text-muted-foreground">What Dimpho can route before falling back to open-ended AI.</p></div>
               <Button variant="outline" size="sm" className="rounded-full" onClick={() => void load()} disabled={loading}><RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} /> Refresh</Button>
             </div>
           </CardHeader>
@@ -187,7 +187,7 @@ export default function AdminOSWhatsAppConcierge() {
                 <div key={journey.id} className="rounded-[22px] border bg-muted/20 p-4 transition hover:bg-muted/35">
                   <div className="flex items-start justify-between gap-3">
                     <div className="grid h-10 w-10 place-items-center rounded-2xl bg-background shadow-sm ring-1 ring-black/5"><Icon className="h-4 w-4" /></div>
-                    <Badge variant="outline" className={cn("rounded-full text-[10px]", journey.escalation_required ? "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300" : "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300")}>{journey.escalation_required ? "Human gate" : "Luna managed"}</Badge>
+                    <Badge variant="outline" className={cn("rounded-full text-[10px]", journey.escalation_required ? "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300" : "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300")}>{journey.escalation_required ? "Human gate" : "Dimpho managed"}</Badge>
                   </div>
                   <p className="mt-4 font-black">{journey.display_name}</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">{journey.description}</p>
@@ -235,7 +235,7 @@ export default function AdminOSWhatsAppConcierge() {
         <Card className="rounded-[28px] shadow-sm">
           <CardHeader className="pb-3"><CardTitle className="text-xl">Operating rules</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <Rule good title="Luna resolves routine enquiries" text="Accommodation, applications, WIL, general support and standard platform questions remain automated when verified data is available." />
+            <Rule good title="Dimpho resolves routine enquiries" text="Accommodation, applications, WIL, general support and standard platform questions remain automated when verified data is available." />
             <Rule good title="Rich UI first" text="Greetings and known intents use menus or quick replies before relying on open-ended text." />
             <Rule good title="Verified property facts" text="Availability, price and residence recommendations come from published ResKonnect residence records." />
             <Rule good title="Privacy-aware" text="Sensitive documents and credentials are routed to secure portal pages, not requested in open chat." />
@@ -260,7 +260,7 @@ function PhonePreview({ menuItems, residence }: { menuItems: any[]; residence: a
       <div className="overflow-hidden rounded-[30px] border bg-muted/20">
         <div className="flex items-center gap-3 border-b bg-background/90 px-4 py-3 backdrop-blur-xl">
           <img src="/icon-512.png" alt="ResKonnect" className="h-10 w-10 rounded-full bg-white object-cover ring-1 ring-black/5" />
-          <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">ResKonnect</p><p className="text-[10px] text-emerald-600">Business · Luna Concierge</p></div>
+          <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">ResKonnect</p><p className="text-[10px] text-emerald-600">Business · Dimpho Concierge</p></div>
           <Sparkles className="h-4 w-4 text-violet-500" />
         </div>
         <div className="min-h-[490px] space-y-3 bg-gradient-to-b from-emerald-500/[.04] to-background p-3">
