@@ -5,7 +5,13 @@
   "buildCommand": "npm run build",
   "git": {
     "deploymentEnabled": {
-      "feat/adminos-whatsapp-premium-concierge": false
+      "main": true,
+      "feat/*": false,
+      "fix/*": false,
+      "chore/*": false,
+      "hotfix/*": false,
+      "release/*": false,
+      "seo/*": false
     }
   },
   "headers": [
