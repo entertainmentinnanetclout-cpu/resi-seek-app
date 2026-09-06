@@ -60,6 +60,9 @@ verify_jwt = false
 [functions.adminos-whatsapp-media-worker]
 verify_jwt = false
 
+[functions.adminos-escalation-worker]
+verify_jwt = false
+
 [functions.adminos-twilio-bootstrap]
 verify_jwt = true
 
