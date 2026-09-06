@@ -11,6 +11,7 @@ import { AdminBackendHealthContent } from "./AdminBackendHealth";
 import AdminSiteAnnouncementsManager from "@/components/admin/AdminSiteAnnouncementsManager";
 import AutomationQueueContent from "@/components/admin/AutomationQueueContent";
 import AdminOSReleaseFourContent from "@/components/admin/AdminOSReleaseFourContent";
+import AdminOSOpenAIStatus from "@/components/admin/AdminOSOpenAIStatus";
 
 const tabs = [
   { value: "adminos", label: "AdminOS", icon: Bot },
@@ -33,7 +34,7 @@ const AdminSystemHub = () => {
         <div><h1 className="text-3xl font-bold">System Hub</h1><p className="text-muted-foreground">AdminOS command, automation, communications, executive exceptions, WIL, backend health, system status & settings</p></div>
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })}>
           <TabsList className="flex flex-wrap h-auto gap-1">{tabs.map((t) => <TabsTrigger key={t.value} value={t.value} className="gap-1.5"><t.icon className="w-4 h-4" /><span className="hidden sm:inline">{t.label}</span></TabsTrigger>)}</TabsList>
-          <TabsContent value="adminos"><AdminOSReleaseFourContent /></TabsContent>
+          <TabsContent value="adminos"><div className="space-y-4"><AdminOSOpenAIStatus /><AdminOSReleaseFourContent /></div></TabsContent>
           <TabsContent value="automation"><AutomationQueueContent /></TabsContent>
           <TabsContent value="wil"><AdminWILContent /></TabsContent>
           <TabsContent value="site-updates"><AdminSiteAnnouncementsManager /></TabsContent>
