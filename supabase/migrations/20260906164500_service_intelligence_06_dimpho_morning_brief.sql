@@ -1,15 +1,12 @@
 -- Phase 6/10: Dimpho Executive Morning Brief
--- Generated entirely from SQL metrics; no AI token usage.
+-- Extends the existing executive brief ledger. Generated entirely from SQL metrics; no AI token usage.
 
-create table if not exists public.adminos_executive_briefs (
-  id uuid primary key default gen_random_uuid(),
-  brief_date date not null unique,
-  persona text not null default 'Dimpho',
-  headline text not null,
-  metrics jsonb not null default '{}'::jsonb,
-  priorities jsonb not null default '[]'::jsonb,
-  generated_at timestamptz not null default now()
-);
+alter table public.adminos_executive_briefs
+  add column if not exists persona text not null default 'Dimpho',
+  add column if not exists priorities jsonb not null default '[]'::jsonb,
+  add column if not exists generated_at timestamptz not null default now();
+create unique index if not exists idx_adminos_executive_briefs_date_unique on public.adminos_executive_briefs(brief_date);
+
 alter table public.adminos_executive_briefs enable row level security;
 drop policy if exists "AdminOS staff read executive briefs" on public.adminos_executive_briefs;
 create policy "AdminOS staff read executive briefs" on public.adminos_executive_briefs for select to authenticated using ((select public.adminos_is_staff()));
@@ -32,8 +29,15 @@ declare
   v_outbound_24h integer := 0;
   v_active_actions integer := 0;
   priorities_value jsonb := '[]'::jsonb;
+  recommendations_value jsonb := '[]'::jsonb;
+  v_period_start timestamptz;
+  v_period_end timestamptz;
+  v_headline text;
   result public.adminos_executive_briefs%rowtype;
 begin
+  v_period_start := (p_date::timestamp at time zone 'Africa/Johannesburg');
+  v_period_end := v_period_start + interval '1 day';
+
   select coalesce(sum(t.unread_count),0)::integer,
          count(*) filter (where t.status='escalated' or t.mode='escalated')::integer
   into v_unread_count,v_escalated_count from public.adminos_whatsapp_threads t;
@@ -65,9 +69,14 @@ begin
   if v_residence_missing_images>0 then priorities_value:=priorities_value||jsonb_build_array(jsonb_build_object('priority',75,'area','residences','title',concat(v_residence_missing_images,' published residence',case when v_residence_missing_images=1 then '' else 's' end,' need images'),'url','/admin/system?tab=communications')); end if;
   if v_proactive_waiting>0 then priorities_value:=priorities_value||jsonb_build_array(jsonb_build_object('priority',65,'area','automation','title',concat(v_proactive_waiting,' proactive WhatsApp notification',case when v_proactive_waiting=1 then '' else 's' end,' waiting'),'url','/admin/system?tab=automation')); end if;
 
-  insert into public.adminos_executive_briefs(brief_date,persona,headline,metrics,priorities,generated_at)
-  values(p_date,'Dimpho',
-    concat('Dimpho brief: ',v_escalated_count,' escalated conversations, ',v_application_attention+v_application_blocked,' applications needing attention, and ',v_residence_needs_data,' residences below service-readiness target.'),
+  select coalesce(jsonb_agg(jsonb_build_object('priority',x.priority,'title',x.title,'rationale',x.rationale,'url',x.action_url,'action_type',x.action_type) order by x.priority desc),'[]'::jsonb)
+  into recommendations_value from (select priority,title,rationale,action_url,action_type from public.adminos_next_best_actions where active=true and completed_at is null and (expires_at is null or expires_at>now()) order by priority desc limit 8) x;
+
+  v_headline := concat('Dimpho brief: ',v_escalated_count,' escalated conversations, ',v_application_attention+v_application_blocked,' applications needing attention, and ',v_residence_needs_data,' residences below service-readiness target.');
+
+  insert into public.adminos_executive_briefs(brief_date,period_start,period_end,headline,summary,metrics,attention,recommendations,generated_by_type,provider,model,metadata,persona,priorities,generated_at)
+  values(p_date,v_period_start,v_period_end,v_headline,
+    concat('Service activity in the last 24 hours: ',v_inbound_24h,' inbound WhatsApp messages and ',v_outbound_24h,' outbound replies. ',v_active_actions,' deterministic next-best-actions are active.'),
     jsonb_build_object(
       'whatsapp_unread',v_unread_count,'whatsapp_escalated',v_escalated_count,
       'applications_attention',v_application_attention,'applications_blocked',v_application_blocked,
@@ -75,8 +84,8 @@ begin
       'wil_open',v_open_wil,'proactive_waiting',v_proactive_waiting,
       'whatsapp_inbound_24h',v_inbound_24h,'whatsapp_outbound_24h',v_outbound_24h,
       'active_next_best_actions',v_active_actions
-    ),priorities_value,now())
-  on conflict (brief_date) do update set persona=excluded.persona,headline=excluded.headline,metrics=excluded.metrics,priorities=excluded.priorities,generated_at=excluded.generated_at
+    ),priorities_value,recommendations_value,'scheduler','rules',null,jsonb_build_object('ai_calls',0,'timezone','Africa/Johannesburg'),'Dimpho',priorities_value,now())
+  on conflict (brief_date) do update set period_start=excluded.period_start,period_end=excluded.period_end,headline=excluded.headline,summary=excluded.summary,metrics=excluded.metrics,attention=excluded.attention,recommendations=excluded.recommendations,generated_by_type=excluded.generated_by_type,provider=excluded.provider,model=excluded.model,metadata=excluded.metadata,persona=excluded.persona,priorities=excluded.priorities,generated_at=excluded.generated_at
   returning * into result;
   return result;
 end; $$;
