@@ -45,6 +45,9 @@ verify_jwt = true
 [functions.adminos-whatsapp]
 verify_jwt = true
 
+[functions.adminos-whatsapp-desk]
+verify_jwt = true
+
 [functions.adminos-whatsapp-webhook]
 verify_jwt = false
 
