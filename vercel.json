@@ -3,6 +3,11 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "buildCommand": "npm run build",
+  "git": {
+    "deploymentEnabled": {
+      "feat/adminos-whatsapp-premium-concierge": false
+    }
+  },
   "headers": [
     {
       "source": "/sitemap.xml",
