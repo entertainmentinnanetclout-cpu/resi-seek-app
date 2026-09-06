@@ -42,7 +42,7 @@ begin
   new.last_quality_check_at := now();
   new.service_ready := score_value>=70 and has_price and has_location and has_link;
   new.premium_eligible := score_value>=85 and not critical_missing;
-  new.data_quality_status := case when score_value>=85 and not critical_missing then 'premium_ready' when score_value>=70 then 'service_ready' else 'needs_data' end;
+  new.data_quality_status := case when score_value>=90 and not critical_missing then 'excellent' when score_value>=80 and not critical_missing then 'strong' when score_value>=70 then 'ready' else 'needs_data' end;
   new.quality_block_reason := case when critical_missing then concat('Missing critical fields: ',array_to_string(array(select x from unnest(missing) x where x in ('images','rent','location','public_link')),', ')) else null end;
 
   -- Keep the listing visible, but do not allow a low-data residence to be newly promoted as Spotlight/Featured.
@@ -66,7 +66,7 @@ update public.residences r set
   last_quality_check_at = now(),
   service_ready = v.readiness_score>=70 and v.has_price and v.has_location and v.has_public_link,
   premium_eligible = v.readiness_score>=85 and v.has_image and v.has_price and v.has_location and v.has_public_link,
-  data_quality_status = case when v.readiness_score>=85 and v.has_image and v.has_price and v.has_location and v.has_public_link then 'premium_ready' when v.readiness_score>=70 then 'service_ready' else 'needs_data' end,
+  data_quality_status = case when v.readiness_score>=90 and v.has_image and v.has_price and v.has_location and v.has_public_link then 'excellent' when v.readiness_score>=80 and v.has_image and v.has_price and v.has_location and v.has_public_link then 'strong' when v.readiness_score>=70 then 'ready' else 'needs_data' end,
   quality_block_reason = case when not(v.has_image and v.has_price and v.has_location and v.has_public_link) then concat('Missing critical fields: ',array_to_string(array(select x from unnest(v.missing_fields) x where x in ('images','rent','location','public_link')),', ')) else null end
 from public.adminos_residence_readiness_v v where v.id=r.id;
 
