@@ -24,5 +24,12 @@ jobs:
         run: npm run seo:check
       - name: Production build
         run: npm run build
+      - name: Upload production build
+        uses: actions/upload-artifact@v4
+        with:
+          name: adminos-production-dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 1
       - name: Dependency security
         run: npm audit --omit=dev --audit-level=high
