@@ -12,7 +12,7 @@ import AdminSiteAnnouncementsManager from "@/components/admin/AdminSiteAnnouncem
 import AutomationQueueContent from "@/components/admin/AutomationQueueContent";
 import AdminOSMasterContent from "@/components/admin/AdminOSMasterContent";
 import AdminOSTwilioSetup from "@/components/admin/AdminOSTwilioSetup";
-import AdminOSWhatsAppDesk from "@/components/admin/AdminOSWhatsAppDesk";
+import AdminOSWhatsAppDesk from "@/components/admin/AdminOSWhatsAppDeskPro";
 
 const tabs = [
   { value: "adminos", label: "AdminOS", icon: Bot },

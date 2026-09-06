@@ -40,10 +40,7 @@ async function verifySignature(req: Request, params: URLSearchParams) {
   const url = canonicalWebhookUrl || req.url;
   const keys = Array.from(new Set(Array.from(params.keys()))).sort();
   let payload = url;
-  for (const key of keys) {
-    const values = params.getAll(key);
-    for (const value of values) payload += `${key}${value}`;
-  }
+  for (const key of keys) for (const value of params.getAll(key)) payload += `${key}${value}`;
   const expected = await hmacSha1Base64(authToken, payload);
   if (received.length !== expected.length) return false;
   let diff = 0;
@@ -53,9 +50,7 @@ async function verifySignature(req: Request, params: URLSearchParams) {
 
 async function twilioFetchMessage(messageSid: string) {
   if (!accountSid || !authToken || !messageSid) throw new Error("Twilio verification unavailable");
-  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages/${encodeURIComponent(messageSid)}.json`, {
-    headers: { Authorization: basic() },
-  });
+  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages/${encodeURIComponent(messageSid)}.json`, { headers: { Authorization: basic() } });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.message || `Twilio HTTP ${response.status}`);
   return data;
@@ -75,58 +70,89 @@ async function verifyViaTwilioRest(params: URLSearchParams) {
     if (postedTo && String(remote?.to || "") !== postedTo) return false;
     if (postedBody !== null && String(remote?.body || "") !== postedBody) return false;
     return true;
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
 
 async function twilioSend(to: string, body: string) {
   if (!accountSid || !authToken || !fromNumber) throw new Error("Twilio WhatsApp secrets are not configured");
   const form = new URLSearchParams({ From: wa(fromNumber), To: wa(to), Body: body });
   if (statusCallback) form.set("StatusCallback", statusCallback);
-  const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
     method: "POST",
     headers: { Authorization: basic(), "Content-Type": "application/x-www-form-urlencoded" },
     body: form,
   });
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data?.message || `Twilio HTTP ${r.status}`);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.message || `Twilio HTTP ${response.status}`);
   return data;
+}
+
+async function addActivity(service: any, threadId: string, eventType: string, metadata: Record<string, unknown> = {}) {
+  await service.from("adminos_whatsapp_activity").insert({ thread_id: threadId, actor_id: null, event_type: eventType, metadata });
 }
 
 async function processInbound(service: any, input: { thread: any; contactId: string | null; from: string; body: string; messageId: string; authMode: string }) {
   const { thread, contactId, from, body, messageId, authMode } = input;
   try {
     if (!body.trim()) return;
-    const prefs = contactId
-      ? (await service.from("adminos_communication_preferences").select("do_not_contact,whatsapp_allowed").eq("contact_id", contactId).maybeSingle()).data
-      : null;
+    const prefs = contactId ? (await service.from("adminos_communication_preferences").select("do_not_contact,whatsapp_allowed").eq("contact_id", contactId).maybeSingle()).data : null;
     if (prefs?.do_not_contact || prefs?.whatsapp_allowed === false) return;
 
     const mode = thread.mode || "ai_auto";
-    if (mode !== "ai_auto") {
-      await service.from("adminos_automation_events").insert({
-        event_type: "whatsapp.human_mode_waiting",
-        entity_type: "whatsapp_thread",
-        entity_id: thread.id,
-        contact_id: contactId,
-        payload: { message_id: messageId, mode, auth_mode: authMode },
-      });
+    if (["human", "escalated", "closed"].includes(mode)) {
+      await service.from("adminos_automation_events").insert({ event_type: "whatsapp.human_mode_waiting", entity_type: "whatsapp_thread", entity_id: thread.id, contact_id: contactId, payload: { message_id: messageId, mode, auth_mode: authMode } });
       return;
     }
+
+    const historyRes = await service.from("adminos_whatsapp_messages")
+      .select("direction,body_text,metadata,created_at,received_at,sent_at")
+      .eq("thread_id", thread.id)
+      .order("created_at", { ascending: false })
+      .limit(18);
+    const history = (historyRes.data || []).reverse().map((m: any) => ({ direction: m.direction, body: m.body_text, author_type: m.metadata?.author_type || null, at: m.sent_at || m.received_at || m.created_at }));
+    const contact = contactId ? (await service.from("adminos_contacts").select("full_name,contact_type,student_number,campus").eq("id", contactId).maybeSingle()).data : null;
 
     const agentResp = await fetch(`${supabaseUrl}/functions/v1/adminos-agent`, {
       method: "POST",
       headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "public_enquiry", message: body, context: { channel: "whatsapp", verified_phone_contact: Boolean(contactId) } }),
+      body: JSON.stringify({
+        action: "public_enquiry",
+        message: body,
+        context: {
+          channel: "whatsapp",
+          verified_phone_contact: Boolean(contactId),
+          conversation_history: history,
+          customer: contact,
+          instruction: "Use the full conversation history. Interpret short replies such as dates, amounts, locations or yes/no answers as answers to the immediately preceding question. Do not treat a contextual short answer as incomplete just because it is short.",
+        },
+      }),
     });
     const agent = await agentResp.json().catch(() => ({}));
+    if (!agentResp.ok || !agent.answer) throw new Error(agent.error || `Agent HTTP ${agentResp.status}`);
 
-    if (agentResp.ok && agent.answer && agent.risk === "green" && !agent.escalate) {
-      const answer = String(agent.answer).slice(0, 1500);
+    const answer = String(agent.answer).slice(0, 1500);
+    if (mode === "assist") {
+      await service.from("adminos_whatsapp_drafts").update({ status: "superseded", updated_at: new Date().toISOString() }).eq("thread_id", thread.id).eq("status", "ready");
+      const draft = await service.from("adminos_whatsapp_drafts").insert({
+        thread_id: thread.id,
+        source_message_id: messageId,
+        body_text: answer,
+        status: "ready",
+        risk_level: ["green", "amber", "red"].includes(agent.risk) ? agent.risk : "amber",
+        confidence: agent.confidence || null,
+        agent_run_id: agent.run_id || null,
+        metadata: { source: "assist_auto_draft", reason: agent.reason || null },
+      }).select("id").single();
+      const status = agent.escalate || agent.risk === "red" ? "escalated" : "open";
+      await service.from("adminos_whatsapp_threads").update({ status, priority: status === "escalated" ? "high" : thread.priority, updated_at: new Date().toISOString() }).eq("id", thread.id);
+      await addActivity(service, thread.id, "ai_draft.created", { draft_id: draft.data?.id || null, source_message_id: messageId, risk: agent.risk, confidence: agent.confidence, automatic: true });
+      return;
+    }
+
+    if (agent.risk === "green" && !agent.escalate) {
       const sent = await twilioSend(from, answer);
       const sentAt = new Date().toISOString();
-      await service.from("adminos_whatsapp_messages").upsert({
+      const inserted = await service.from("adminos_whatsapp_messages").upsert({
         thread_id: thread.id,
         contact_id: contactId,
         twilio_message_sid: sent.sid,
@@ -141,35 +167,20 @@ async function processInbound(service: any, input: { thread: any; contactId: str
         agent_run_id: agent.run_id || null,
         sent_at: sentAt,
         metadata: { source: "whatsapp_auto_reply", author_type: "ai", auth_mode: authMode },
-      }, { onConflict: "twilio_message_sid" });
-      await service.from("adminos_whatsapp_threads").update({
-        last_message_at: sentAt,
-        last_outbound_at: sentAt,
-        status: "waiting",
-        last_summary: agent.summary || thread.last_summary || null,
-        updated_at: sentAt,
-      }).eq("id", thread.id);
+      }, { onConflict: "twilio_message_sid" }).select("id").maybeSingle();
+      await service.from("adminos_whatsapp_threads").update({ last_message_at: sentAt, last_outbound_at: sentAt, status: "waiting", updated_at: sentAt }).eq("id", thread.id);
+      await addActivity(service, thread.id, "ai_reply.sent", { message_id: inserted.data?.id || null, twilio_message_sid: sent.sid, confidence: agent.confidence });
     } else {
       const now = new Date().toISOString();
-      await service.from("adminos_whatsapp_threads").update({ status: "escalated", mode: "escalated", updated_at: now }).eq("id", thread.id);
-      await service.from("adminos_automation_events").insert({
-        event_type: "whatsapp.escalated",
-        entity_type: "whatsapp_thread",
-        entity_id: thread.id,
-        contact_id: contactId,
-        payload: { reason: agent.reason || agent.error || "Agent escalation", risk: agent.risk || "amber", message_id: messageId },
-      });
+      await service.from("adminos_whatsapp_threads").update({ status: "escalated", mode: "escalated", priority: "high", updated_at: now }).eq("id", thread.id);
+      await service.from("adminos_automation_events").insert({ event_type: "whatsapp.escalated", entity_type: "whatsapp_thread", entity_id: thread.id, contact_id: contactId, payload: { reason: agent.reason || "Agent escalation", risk: agent.risk || "amber", message_id: messageId } });
+      await addActivity(service, thread.id, "ai_escalation", { reason: agent.reason || null, risk: agent.risk || "amber", message_id: messageId });
     }
   } catch (error) {
     const now = new Date().toISOString();
-    await service.from("adminos_whatsapp_threads").update({ status: "escalated", mode: "escalated", updated_at: now }).eq("id", thread.id);
-    await service.from("adminos_automation_events").insert({
-      event_type: "whatsapp.escalated",
-      entity_type: "whatsapp_thread",
-      entity_id: thread.id,
-      contact_id: contactId,
-      payload: { reason: error instanceof Error ? error.message : String(error), risk: "amber", message_id: messageId },
-    });
+    await service.from("adminos_whatsapp_threads").update({ status: "escalated", mode: "escalated", priority: "high", updated_at: now }).eq("id", thread.id);
+    await service.from("adminos_automation_events").insert({ event_type: "whatsapp.escalated", entity_type: "whatsapp_thread", entity_id: thread.id, contact_id: contactId, payload: { reason: error instanceof Error ? error.message : String(error), risk: "amber", message_id: messageId } });
+    await addActivity(service, thread.id, "system.error", { reason: error instanceof Error ? error.message : String(error), message_id: messageId });
   }
 }
 
@@ -192,14 +203,10 @@ serve(async (req) => {
   const body = (params.get("Body") || "").slice(0, 12000);
 
   if (sid && status && !body.trim() && ["queued", "sent", "delivered", "read", "failed", "undelivered"].includes(status)) {
-    const mapped = status;
-    const patch: any = { status: mapped };
-    if (mapped === "delivered" || mapped === "read") patch.delivered_at = new Date().toISOString();
+    const patch: any = { status };
+    if (status === "delivered" || status === "read") patch.delivered_at = new Date().toISOString();
     await service.from("adminos_whatsapp_messages").update(patch).eq("twilio_message_sid", sid);
-    await service.from("adminos_whatsapp_outbox").update({
-      status: ["failed", "undelivered"].includes(mapped) ? "failed" : "sent",
-      last_error: ["failed", "undelivered"].includes(mapped) ? (params.get("ErrorMessage") || params.get("ErrorCode") || mapped) : null,
-    }).eq("twilio_message_sid", sid);
+    await service.from("adminos_whatsapp_outbox").update({ status: ["failed", "undelivered"].includes(status) ? "failed" : "sent", last_error: ["failed", "undelivered"].includes(status) ? (params.get("ErrorMessage") || params.get("ErrorCode") || status) : null }).eq("twilio_message_sid", sid);
     return xml();
   }
 
@@ -220,14 +227,7 @@ serve(async (req) => {
 
   let thread = (await service.from("adminos_whatsapp_threads").select("*").eq("normalized_address", norm).maybeSingle()).data;
   if (!thread) {
-    const created = await service.from("adminos_whatsapp_threads").insert({
-      contact_id: contactId,
-      channel_address: wa(from),
-      normalized_address: norm,
-      status: "open",
-      mode: "ai_auto",
-      metadata: { source: "twilio" },
-    }).select("*").single();
+    const created = await service.from("adminos_whatsapp_threads").insert({ contact_id: contactId, channel_address: wa(from), normalized_address: norm, status: "open", mode: "ai_auto", metadata: { source: "twilio" } }).select("*").single();
     thread = created.data;
   }
   if (!thread) return xml();
@@ -255,25 +255,11 @@ serve(async (req) => {
   }, { onConflict: "twilio_message_sid" }).select("id").maybeSingle();
 
   const reopenedMode = thread.mode === "closed" ? "ai_auto" : (thread.mode || "ai_auto");
-  await service.from("adminos_whatsapp_threads").update({
-    contact_id: contactId || thread.contact_id,
-    last_message_at: nowIso,
-    last_inbound_at: nowIso,
-    customer_window_expires_at: expires,
-    unread_count: Number(thread.unread_count || 0) + (inserted.data ? 1 : 0),
-    status: "open",
-    mode: reopenedMode,
-    updated_at: nowIso,
-  }).eq("id", thread.id);
+  await service.from("adminos_whatsapp_threads").update({ contact_id: contactId || thread.contact_id, last_message_at: nowIso, last_inbound_at: nowIso, customer_window_expires_at: expires, unread_count: Number(thread.unread_count || 0) + (inserted.data ? 1 : 0), status: "open", mode: reopenedMode, resolved_at: null, resolved_by: null, updated_at: nowIso }).eq("id", thread.id);
 
   if (!inserted.data) return xml();
-  await service.from("adminos_automation_events").insert({
-    event_type: "whatsapp.received",
-    entity_type: "whatsapp_thread",
-    entity_id: thread.id,
-    contact_id: contactId,
-    payload: { message_id: inserted.data.id, message_sid: sid, body: body.slice(0, 1000), auth_mode: authMode },
-  });
+  await service.from("adminos_automation_events").insert({ event_type: "whatsapp.received", entity_type: "whatsapp_thread", entity_id: thread.id, contact_id: contactId, payload: { message_id: inserted.data.id, message_sid: sid, body: body.slice(0, 1000), auth_mode: authMode } });
+  await addActivity(service, thread.id, "message.received", { message_id: inserted.data.id, message_sid: sid });
 
   EdgeRuntime.waitUntil(processInbound(service, { thread: { ...thread, mode: reopenedMode }, contactId, from, body, messageId: inserted.data.id, authMode }));
   return xml();
