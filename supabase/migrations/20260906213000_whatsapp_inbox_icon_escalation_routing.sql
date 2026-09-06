@@ -1,6 +1,38 @@
 -- Focus the WhatsApp Desk on real inbound enquiries and route human escalations
 -- to configured executive WhatsApp recipients without using AI.
 
+-- Staff should see customer conversations only after an inbound WhatsApp exists.
+-- Proactive-only/site-event threads remain available to service-role automation and analytics,
+-- while CRM contacts stay accessible through the separate Contact Directory.
+drop policy if exists "AdminOS staff access" on public.adminos_whatsapp_threads;
+drop policy if exists "AdminOS staff select inbound threads" on public.adminos_whatsapp_threads;
+drop policy if exists "AdminOS staff insert threads" on public.adminos_whatsapp_threads;
+drop policy if exists "AdminOS staff update threads" on public.adminos_whatsapp_threads;
+drop policy if exists "AdminOS staff delete threads" on public.adminos_whatsapp_threads;
+
+create policy "AdminOS staff select inbound threads"
+  on public.adminos_whatsapp_threads for select to authenticated
+  using (
+    (select public.adminos_is_staff())
+    and (
+      last_inbound_at is not null
+      or coalesce(metadata->>'source','') <> 'site_event'
+    )
+  );
+
+create policy "AdminOS staff insert threads"
+  on public.adminos_whatsapp_threads for insert to authenticated
+  with check ((select public.adminos_is_staff()));
+
+create policy "AdminOS staff update threads"
+  on public.adminos_whatsapp_threads for update to authenticated
+  using ((select public.adminos_is_staff()))
+  with check ((select public.adminos_is_staff()));
+
+create policy "AdminOS staff delete threads"
+  on public.adminos_whatsapp_threads for delete to authenticated
+  using ((select public.adminos_is_staff()));
+
 create table if not exists public.adminos_escalation_recipients (
   id uuid primary key default gen_random_uuid(),
   label text not null,
