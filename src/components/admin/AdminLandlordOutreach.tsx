@@ -68,7 +68,7 @@ export default function AdminLandlordOutreach(){
     if(!selected)return;
     setWorking("recipients");
     try{
-      const result=await db.rpc("adminos_build_landlord_campaign_recipients",{p_campaign_id:selected.id});
+      const result=await db.rpc("adminos_staff_build_landlord_campaign_recipients",{p_campaign_id:selected.id});
       if(result.error)throw result.error;
       toast.success(`${result.data?.eligible_count||0} consented WhatsApp contacts are eligible`);
       await Promise.all([load(),loadRecipients(selected.id)]);
@@ -80,7 +80,7 @@ export default function AdminLandlordOutreach(){
     if(!selected.eligible_count)return toast.error("Build recipients first. Only opted-in landlord contacts can be queued.");
     setWorking("queue");
     try{
-      const result=await db.rpc("adminos_queue_landlord_campaign",{p_campaign_id:selected.id});
+      const result=await db.rpc("adminos_staff_queue_landlord_campaign",{p_campaign_id:selected.id});
       if(result.error)throw result.error;
       toast.success(`${Number(result.data||0)} eligible landlord WhatsApp messages queued`);
       setConfirmed(false);await Promise.all([load(),loadRecipients(selected.id)]);
