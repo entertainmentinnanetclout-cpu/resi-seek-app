@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { ArrowRight, CalendarDays, CheckCircle2, FileText, Inbox, RefreshCw, Target, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, BarChart3, CalendarDays, CheckCircle2, FileText, Inbox, RefreshCw, Target, TrendingUp, Users } from "lucide-react";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,22 +15,25 @@ const ResidenceAnalytics = () => {
   const [reservations, setReservations] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [demand, setDemand] = useState<any>({});
+  const [partnerIntel, setPartnerIntel] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!residence?.id) return;
     setLoading(true);
     const db = supabase as any;
-    const [apps, resv, crm, demandRes] = await Promise.all([
+    const [apps, resv, crm, demandRes, partner] = await Promise.all([
       supabase.from("applications").select("status,funding_type,created_at,updated_at").eq("residence_id", residence.id).order("created_at", { ascending: false }),
       db.from("accommodation_reservations").select("status,funding_type,academic_year,created_at").eq("residence_id", residence.id).order("created_at", { ascending: false }),
       db.from("residence_leads").select("stage,source_type,funding_type,created_at,updated_at").eq("residence_id", residence.id).order("created_at", { ascending: false }),
       db.rpc("get_residence_demand_summary", { _residence_id: residence.id }),
+      db.rpc("housing_intel_property_partner", { p_residence_id: residence.id, p_days: 90 }),
     ]);
     if (!apps.error) setApplications(apps.data || []);
     if (!resv.error) setReservations(resv.data || []);
     if (!crm.error) setLeads(crm.data || []);
     if (!demandRes.error) setDemand(demandRes.data || {});
+    if (!partner.error) setPartnerIntel(partner.data || null);
     setLoading(false);
   }, [residence?.id]);
 
@@ -67,11 +70,14 @@ const ResidenceAnalytics = () => {
 
   if (!residence) return <div className="py-16 text-center text-sm text-muted-foreground">Loading residence analytics…</div>;
   const metric = (label: string, value: any, note: string, Icon: any) => <Card><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-black">{loading ? "—" : value}</p><p className="mt-1 text-xs text-muted-foreground">{note}</p></div><Icon className="h-5 w-5 text-primary" /></div></CardContent></Card>;
+  const benchmark = partnerIntel?.benchmark || {};
+  const market = partnerIntel?.market_position || {};
+  const performance = partnerIntel?.performance || {};
 
   return <>
     <SEO noIndex title={`Growth Analytics | ${residence.name} | ResKonnect`} description={`Applications, 2027 reservations, demand and placement conversion for ${residence.name}.`} />
     <div className="mx-auto max-w-7xl space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><p className="text-sm font-semibold text-primary">Landlord Portal 2.0</p><h1 className="mt-1 text-3xl font-black">Growth & conversion analytics</h1><p className="mt-2 text-sm text-muted-foreground">See application demand, 2027 reservations, lead conversion and anonymised market demand in one view.</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => void load()}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh</Button><Button onClick={() => navigate("/residence/crm")}><Target className="mr-2 h-4 w-4" />Open CRM</Button></div></div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><p className="text-sm font-semibold text-primary">Landlord Portal 2.0 · Housing Intelligence Network</p><h1 className="mt-1 text-3xl font-black">Growth & conversion analytics</h1><p className="mt-2 text-sm text-muted-foreground">See application demand, 2027 reservations, lead conversion and your property’s private campus benchmark in one view.</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => void load()}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh</Button><Button onClick={() => navigate("/residence/crm")}><Target className="mr-2 h-4 w-4" />Open CRM</Button></div></div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metric("Applications", analytics.apps, `${analytics.approvalRate}% approval rate`, FileText)}
@@ -79,6 +85,8 @@ const ResidenceAnalytics = () => {
         {metric("Active leads", analytics.activeLeads, `${analytics.contactRate}% contacted`, Users)}
         {metric("Placed tenants", analytics.placed, `${analytics.placementRate}% lead-to-placement`, CheckCircle2)}
       </div>
+
+      {partnerIntel && <Card className="border-primary/25 bg-primary/[0.025]"><CardHeader><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-primary" />Property Partner Benchmark</CardTitle><CardDescription>Phase 22 · Your private 90-day performance compared with the campus market.</CardDescription></div><Badge variant="outline">{benchmark.campus_residences || 0} campus residences</Badge></div></CardHeader><CardContent><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">Application index</p><p className="mt-1 text-2xl font-black">{market.application_index ?? "—"}</p><p className="text-xs text-muted-foreground">100 = campus average</p></div><div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">Reservation index</p><p className="mt-1 text-2xl font-black">{market.reservation_index ?? "—"}</p><p className="text-xs text-muted-foreground">100 = campus average</p></div><div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">Listing views</p><p className="mt-1 text-2xl font-black">{performance.views || 0}</p><p className="text-xs text-muted-foreground">ResMap activity</p></div><div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">Listing saves</p><p className="mt-1 text-2xl font-black">{performance.saves || 0}</p><p className="text-xs text-muted-foreground">High-intent signal</p></div><div className="rounded-2xl border bg-background p-4"><p className="text-xs text-muted-foreground">Price vs campus</p><p className="mt-1 text-2xl font-black">{market.price_delta == null ? "—" : `${Number(market.price_delta) >= 0 ? "+" : ""}R${Number(market.price_delta).toLocaleString("en-ZA")}`}</p><p className="text-xs text-muted-foreground">Campus avg R{Number(benchmark.average_private_price || 0).toLocaleString("en-ZA")}</p></div></div><p className="mt-4 text-xs leading-5 text-muted-foreground">Benchmark data is aggregate. ResKonnect does not expose another residence’s private CRM, student records, or identifiable applicant data.</p></CardContent></Card>}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card><CardHeader><CardTitle>Funding demand</CardTitle><CardDescription>Applications + 2027 reservation interest</CardDescription></CardHeader><CardContent className="space-y-3"><div className="flex items-center justify-between rounded-xl bg-muted/40 p-4"><span className="font-semibold">NSFAS-funded</span><Badge>{analytics.nsfas}</Badge></div><div className="flex items-center justify-between rounded-xl bg-muted/40 p-4"><span className="font-semibold">Private / self-funded</span><Badge variant="outline">{analytics.privateCount}</Badge></div><p className="text-xs leading-5 text-muted-foreground">These groups use separate accommodation pricing. Do not assume the published private price is the funded rate.</p></CardContent></Card>
@@ -88,7 +96,7 @@ const ResidenceAnalytics = () => {
         <Card className="border-primary/20 bg-primary/[0.025]"><CardHeader><CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" />Demand Network</CardTitle><CardDescription>Anonymised demand around this residence</CardDescription></CardHeader><CardContent className="space-y-3"><div className="grid grid-cols-2 gap-3"><div className="rounded-xl bg-background p-3"><p className="text-2xl font-black">{demand.searching || 0}</p><p className="text-xs text-muted-foreground">Searching</p></div><div className="rounded-xl bg-background p-3"><p className="text-2xl font-black">{demand["2027"] || 0}</p><p className="text-xs text-muted-foreground">2027 demand</p></div><div className="rounded-xl bg-background p-3"><p className="text-2xl font-black">{demand.nsfas || 0}</p><p className="text-xs text-muted-foreground">NSFAS</p></div><div className="rounded-xl bg-background p-3"><p className="text-2xl font-black">{demand.private || 0}</p><p className="text-xs text-muted-foreground">Private</p></div></div>{demand.average_budget && <p className="text-xs text-muted-foreground">Average declared private budget: R{Number(demand.average_budget).toLocaleString("en-ZA")}/month.</p>}</CardContent></Card>
       </div>
 
-      <Card className="border-primary/15"><CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold">Turn analytics into action</p><p className="mt-1 text-sm text-muted-foreground">Keep room prices verified, follow up new leads and monitor 2027 demand weekly.</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => navigate("/residence/inventory")}>Manage pricing</Button><Button onClick={() => navigate("/residence/inbox")}><Inbox className="mr-2 h-4 w-4" />Applications <ArrowRight className="ml-2 h-4 w-4" /></Button></div></CardContent></Card>
+      <Card className="border-primary/15"><CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold">Turn analytics into action</p><p className="mt-1 text-sm text-muted-foreground">Keep room prices verified, follow up new leads and monitor the Housing Intelligence Network weekly.</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => navigate("/residence/inventory")}>Manage pricing</Button><Button onClick={() => navigate("/residence/inbox")}><Inbox className="mr-2 h-4 w-4" />Applications <ArrowRight className="ml-2 h-4 w-4" /></Button></div></CardContent></Card>
     </div>
   </>;
 };
