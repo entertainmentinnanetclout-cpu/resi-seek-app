@@ -89,3 +89,6 @@ verify_jwt = false
 
 [functions.resmap-spatial]
 verify_jwt = false
+
+[functions.resmap-visual-search]
+verify_jwt = false
