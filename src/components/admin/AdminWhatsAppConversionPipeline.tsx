@@ -1,0 +1,24 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowRight, CheckCircle2, Clock3, MessageCircle, RefreshCw, Target } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+type Lead={id:string;thread_id:string;intent?:string|null;stage:string;campus?:string|null;funding?:string|null;academic_year?:number|null;selected_residence_id?:string|null;next_follow_up_at?:string|null;follow_up_count:number;converted_at?:string|null;updated_at:string;contact_id?:string|null};
+
+export default function AdminWhatsAppConversionPipeline(){
+  const [rows,setRows]=useState<Lead[]>([]);const[loading,setLoading]=useState(true);
+  const load=useCallback(async()=>{setLoading(true);try{const r=await (supabase as any).from("adminos_whatsapp_conversion_leads").select("*").order("updated_at",{ascending:false}).limit(250);if(r.error)throw r.error;setRows(r.data||[]);}catch(e:any){toast.error(e?.message||"Could not load conversion pipeline");}finally{setLoading(false);}},[]);
+  useEffect(()=>{void load();},[load]);
+  const stats=useMemo(()=>{const now=Date.now();return{open:rows.filter((r)=>!r.converted_at).length,matched:rows.filter((r)=>r.stage==="matched").length,lead:rows.filter((r)=>r.stage==="lead_created").length,reservation:rows.filter((r)=>r.stage==="reservation_started").length,converted:rows.filter((r)=>Boolean(r.converted_at)||r.stage==="converted").length,due:rows.filter((r)=>!r.converted_at&&r.next_follow_up_at&&new Date(r.next_follow_up_at).getTime()<=now).length};},[rows]);
+  const conversionRate=rows.length?Math.round(stats.converted/rows.length*100):0;
+  return <Card className="min-w-0 overflow-hidden"><CardHeader><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><Target className="h-5 w-5 text-primary"/>WhatsApp conversion pipeline</CardTitle><p className="mt-1 text-xs leading-5 text-muted-foreground">Every legitimate WhatsApp enquiry is tracked toward a concrete next action. Follow-up scheduling is deterministic and does not spend AI credits.</p></div><Button variant="outline" className="w-full rounded-full sm:w-auto" onClick={()=>void load()} disabled={loading}><RefreshCw className={`h-4 w-4 ${loading?"animate-spin":""}`}/>Refresh</Button></div></CardHeader><CardContent className="space-y-4">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6"><Metric value={stats.open} label="Open enquiries"/><Metric value={stats.matched} label="Matched"/><Metric value={stats.lead} label="Interest captured"/><Metric value={stats.reservation} label="Reservation step"/><Metric value={stats.converted} label="Converted"/><Metric value={`${conversionRate}%`} label="Conversion rate"/></div>
+    {stats.due>0&&<div className="flex flex-wrap items-center gap-2 rounded-2xl border bg-amber-500/5 p-3 text-xs"><Clock3 className="h-4 w-4"/><strong>{stats.due} follow-up{stats.due===1?"":"s"} due</strong><span className="text-muted-foreground">The scheduled follow-up engine will process eligible contacts automatically.</span></div>}
+    <div className="divide-y overflow-hidden rounded-2xl border">{rows.slice(0,8).map((r)=><div key={r.id} className="grid min-w-0 gap-2 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div className="min-w-0"><div className="flex min-w-0 flex-wrap items-center gap-2"><Badge variant={r.converted_at?"default":"secondary"}>{r.converted_at?<><CheckCircle2 className="mr-1 h-3 w-3"/>Converted</>:r.stage.replaceAll("_"," ")}</Badge><span className="truncate text-xs font-bold">{r.intent||"general enquiry"}</span></div><p className="mt-1 truncate text-[11px] text-muted-foreground">{[r.campus,r.academic_year,r.funding].filter(Boolean).join(" · ")||"Qualification in progress"}</p></div><Link to={`/admin/system?tab=communications&thread=${r.thread_id}`} className="inline-flex items-center gap-1 text-xs font-bold text-primary">Open chat <ArrowRight className="h-3 w-3"/></Link></div>)}{!rows.length&&!loading&&<p className="p-8 text-center text-sm text-muted-foreground"><MessageCircle className="mx-auto mb-2 h-5 w-5"/>New WhatsApp enquiries will appear here as the conversion engine qualifies them.</p>}</div>
+  </CardContent></Card>;
+}
+function Metric({value,label}:{value:number|string;label:string}){return <div className="min-w-0 rounded-2xl border bg-muted/20 p-3"><p className="text-xl font-black">{typeof value==="number"?value.toLocaleString("en-ZA"):value}</p><p className="mt-1 truncate text-[9px] uppercase tracking-wide text-muted-foreground">{label}</p></div>;}
