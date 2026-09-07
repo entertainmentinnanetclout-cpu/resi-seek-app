@@ -23,6 +23,7 @@ import PushPrompt from "@/components/PushPrompt";
 
 const GetStarted = lazy(() => import("./pages/GetStarted"));
 const Living = lazy(() => import("./pages/public/Living"));
+const HousingIntelligence = lazy(() => import("./pages/public/HousingIntelligence"));
 const StudentAccommodation = lazy(() => import("./pages/public/StudentAccommodation"));
 const PrivateRentals = lazy(() => import("./pages/public/PrivateRentals"));
 const Parents = lazy(() => import("./pages/public/Parents"));
@@ -155,6 +156,7 @@ const App = () => {
                     <Route path="/living/student-accommodation" element={<StudentAccommodation />} />
                     <Route path="/living/private-rentals" element={<PrivateRentals />} />
                     <Route path="/living/parents" element={<Parents />} />
+                    <Route path="/housing-intelligence" element={<HousingIntelligence />} />
 
                     <Route path="/applications" element={<ApplicationsPillar />} />
                     <Route path="/applications/tvet" element={<TvetApplication />} />
