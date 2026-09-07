@@ -83,3 +83,12 @@ verify_jwt = false
 
 [functions.adminos-executive]
 verify_jwt = false
+
+[functions.resmap-geocode-worker]
+verify_jwt = false
+
+[functions.resmap-spatial]
+verify_jwt = false
+
+[functions.resmap-visual-search]
+verify_jwt = false

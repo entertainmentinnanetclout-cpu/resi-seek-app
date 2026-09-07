@@ -49,6 +49,7 @@ const Messages = lazy(() => import("./pages/Messages"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const ApplicationsHub = lazy(() => import("./pages/ApplicationsHub"));
 const ResidenceDetail = lazy(() => import("./pages/ResidenceDetail"));
+const ImmersiveResidence = lazy(() => import("./pages/ImmersiveResidence"));
 const AccommodationDemand = lazy(() => import("./pages/AccommodationDemand"));
 const CreatorPartnerPortal = lazy(() => import("./pages/creator/CreatorPartnerPortal"));
 const CreatorLanding = lazy(() => import("./pages/creator/CreatorLanding"));
@@ -183,6 +184,7 @@ const App = () => {
                     <Route path="/accommodation-request" element={<AccommodationDemand />} />
                     <Route path="/res/:id" element={<ResidenceDetail />} />
                     <Route path="/find-my-res/:slug" element={<ResidenceDetail />} />
+                    <Route path="/find-my-res/:slug/immersive" element={<ImmersiveResidence />} />
                     <Route path="/bursaries" element={<BursaryFinder />} />
                     <Route path="/bursary/:id" element={<BursaryDetail />} />
                     <Route path="/marketplace" element={<MarketplaceComingSoon />} />
