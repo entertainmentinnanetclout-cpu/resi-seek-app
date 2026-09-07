@@ -3,7 +3,7 @@ const SITE_URL = "https://www.reskonnect.org";
 // Canonical public URLs only. Query-string UI states are deliberately excluded.
 // Dynamic managed URLs are added from seo_public_pages_v after passing database quality gates.
 const STATIC_PAGE_PATHS = [
-  "/", "/get-started", "/find", "/living", "/living/student-accommodation", "/living/private-rentals", "/living/parents",
+  "/", "/get-started", "/find", "/living", "/living/student-accommodation", "/living/private-rentals", "/living/parents", "/housing-intelligence",
   "/applications", "/applications/tvet", "/applications/university", "/applications/private-college", "/applications/checker",
   "/applications/application-readiness", "/applications/tvet-application-readiness", "/applications/university-application-readiness", "/applications/aps-checker",
   "/opportunities", "/opportunities/wil", "/opportunities/wil-placement-support", "/opportunities/internships", "/opportunities/seta",
