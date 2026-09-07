@@ -21,7 +21,7 @@ function samplesFor(config:any){
   const raw=JSON.stringify(config||{}); const vars:Record<string,string>={};
   for(const m of raw.matchAll(/\{\{(\d+)\}\}/g)){
     const n=m[1];
-    vars[n]=n==="1"?"Ayanda":n==="2"?"Example Residence":"Under review";
+    vars[n]=n==="1"?"Ayanda":n==="2"?"student accommodation":n==="3"?"https://www.reskonnect.org":"Update";
   }
   return vars;
 }
@@ -37,9 +37,9 @@ async function approvalStatus(sid:string){
   return {status:String(wa.status||"unknown").toLowerCase(),rejection_reason:wa.rejection_reason||null,category:wa.category||null};
 }
 
-async function submitApproval(sid:string,name:string){
+async function submitApproval(sid:string,name:string,category:string){
   try{
-    return await twilioJson(`https://content.twilio.com/v1/Content/${encodeURIComponent(sid)}/ApprovalRequests/whatsapp`,{method:"POST",body:JSON.stringify({name,category:"UTILITY"})});
+    return await twilioJson(`https://content.twilio.com/v1/Content/${encodeURIComponent(sid)}/ApprovalRequests/whatsapp`,{method:"POST",body:JSON.stringify({name,category})});
   }catch(e){
     const msg=e instanceof Error?e.message:String(e);
     if(/already|submitted|exists|duplicate/i.test(msg)) return {status:"pending",duplicate:true};
@@ -79,11 +79,13 @@ serve(async(req)=>{
           await service.from("adminos_whatsapp_rich_content").update({content_sid:sid,status:"created",metadata:{...(row.metadata||{}),created_at_twilio:new Date().toISOString()},updated_at:new Date().toISOString()}).eq("id",row.id);
         }
         if(row.approval_required){
-          if(action!=="sync")await submitApproval(sid,row.content_key);
-          const a=await approvalStatus(sid).catch(()=>({status:"pending",rejection_reason:null,category:"UTILITY"}));
+          const requested=String(row.metadata?.category||(row.purpose==="marketing"?"MARKETING":"UTILITY")).toUpperCase();
+          const category=requested==="MARKETING"?"MARKETING":"UTILITY";
+          if(action!=="sync")await submitApproval(sid,row.content_key,category);
+          const a=await approvalStatus(sid).catch(()=>({status:"pending",rejection_reason:null,category}));
           const mapped=a.status==="approved"?"approved":a.status==="rejected"?"rejected":"pending_approval";
-          await service.from("adminos_whatsapp_rich_content").update({status:mapped,metadata:{...(row.metadata||{}),twilio_approval:a,synced_at:new Date().toISOString()},updated_at:new Date().toISOString()}).eq("id",row.id);
-          results.push({content_key:row.content_key,content_sid:sid,status:mapped,rejection_reason:a.rejection_reason});
+          await service.from("adminos_whatsapp_rich_content").update({status:mapped,metadata:{...(row.metadata||{}),requested_category:category,twilio_approval:a,synced_at:new Date().toISOString()},updated_at:new Date().toISOString()}).eq("id",row.id);
+          results.push({content_key:row.content_key,content_sid:sid,status:mapped,category,rejection_reason:a.rejection_reason});
         }else{
           await service.from("adminos_whatsapp_rich_content").update({status:"created",updated_at:new Date().toISOString()}).eq("id",row.id);
           results.push({content_key:row.content_key,content_sid:sid,status:"created"});
