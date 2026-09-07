@@ -79,7 +79,8 @@ serve(async(req)=>{
           await service.from("adminos_whatsapp_rich_content").update({content_sid:sid,status:"created",metadata:{...(row.metadata||{}),created_at_twilio:new Date().toISOString()},updated_at:new Date().toISOString()}).eq("id",row.id);
         }
         if(row.approval_required){
-          const category=String(row.metadata?.category||row.purpose==="marketing"?"MARKETING":"UTILITY").toUpperCase()==="MARKETING"?"MARKETING":"UTILITY";
+          const requested=String(row.metadata?.category||(row.purpose==="marketing"?"MARKETING":"UTILITY")).toUpperCase();
+          const category=requested==="MARKETING"?"MARKETING":"UTILITY";
           if(action!=="sync")await submitApproval(sid,row.content_key,category);
           const a=await approvalStatus(sid).catch(()=>({status:"pending",rejection_reason:null,category}));
           const mapped=a.status==="approved"?"approved":a.status==="rejected"?"rejected":"pending_approval";
