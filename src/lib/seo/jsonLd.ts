@@ -15,11 +15,22 @@ export function organizationSchema() {
     alternateName: BRAND_ALIASES,
     url: SITE_URL,
     logo: `${SITE_URL}/icon-512.png`,
+    slogan: "Connecting Residents. Advancing Futures.",
     description:
-      "ResKonnect is a South African student journey platform for accommodation, application readiness, AI-powered guidance, WIL opportunities, and student-housing property intelligence.",
+      "ResKonnect is an Africa-built student accommodation technology platform combining verified accommodation discovery, Dimpho AI, photorealistic ResMap 3D, live navigation, accommodation placement workflows, application readiness and student opportunity intelligence.",
     email: CONTACT_EMAIL,
     telephone: CONTACT_PHONE,
     areaServed: { "@type": "Country", name: "South Africa" },
+    knowsAbout: [
+      "Student accommodation",
+      "Student housing technology",
+      "AI-assisted accommodation discovery",
+      "Photorealistic 3D accommodation maps",
+      "Student accommodation placement",
+      "University and TVET application readiness",
+      "Work-integrated learning opportunities",
+      "Student-housing property intelligence",
+    ],
     contactPoint: [
       {
         "@type": "ContactPoint",
@@ -43,11 +54,16 @@ export function webSiteSchema() {
     url: SITE_URL,
     inLanguage: "en-ZA",
     publisher: { "@id": `${SITE_URL}/#organization` },
+    about: [
+      { "@type": "Thing", name: "Student accommodation in Africa" },
+      { "@type": "Thing", name: "Dimpho AI" },
+      { "@type": "Thing", name: "ResMap 3D" },
+    ],
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${SITE_URL}/find?q={search_term_string}`,
+        urlTemplate: `${SITE_URL}/findmyres?q={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },
