@@ -1,16 +1,24 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
+const TUMELO_DASHBOARD = "/partner/tumelo/os";
+
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isTumeloPartner, staffRole } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isTumeloOnly = !!user && isTumeloPartner && !staffRole;
 
   useEffect(() => {
     if (!isLoading && !user) {
       navigate("/auth", { replace: true });
+      return;
     }
-  }, [user, isLoading, navigate]);
+    if (!isLoading && isTumeloOnly && location.pathname !== TUMELO_DASHBOARD) {
+      navigate(TUMELO_DASHBOARD, { replace: true });
+    }
+  }, [user, isLoading, isTumeloOnly, location.pathname, navigate]);
 
   if (isLoading) {
     return (
@@ -23,7 +31,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!user) {
+  if (!user || (isTumeloOnly && location.pathname !== TUMELO_DASHBOARD)) {
     return null;
   }
 
