@@ -13,6 +13,7 @@ const serviceKey = env("SUPABASE_SERVICE_ROLE_KEY") || env("EXTERNAL_SUPABASE_SE
 const anonKey = env("SUPABASE_ANON_KEY") || env("EXTERNAL_SUPABASE_ANON_KEY");
 const routineModel = "gpt-5.6-luna";
 const complexModel = "gpt-5.6-terra";
+const PUBLIC_BASE = "https://www.reskonnect.org";
 
 const extractText = (data: any) => {
   if (typeof data?.output_text === "string") return data.output_text;
@@ -20,19 +21,46 @@ const extractText = (data: any) => {
   return data?.choices?.[0]?.message?.content || "";
 };
 
+/**
+ * Free-form AI text is never trusted to construct a route. This canonicalizes
+ * the domain, fixes the historic generic /find-my-res alias, and strips prose
+ * punctuation that WhatsApp otherwise includes in the clickable URL.
+ */
+const sanitizeResKonnectLinks = (value: string) => {
+  const source = String(value || "")
+    .replace(/https:\/\/reskonnect\.org/gi, PUBLIC_BASE)
+    .replace(/https:\/\/www\.reskonnect\.org/gi, PUBLIC_BASE);
+
+  return source.replace(/https:\/\/www\.reskonnect\.org(?:\/[^\s<>]*)?/gi, (raw) => {
+    let cleaned = raw.replace(/[.,;:!?]+$/g, "");
+    while (/[)\]}]$/.test(cleaned)) cleaned = cleaned.slice(0, -1);
+    try {
+      const url = new URL(cleaned);
+      if (url.origin !== PUBLIC_BASE) return PUBLIC_BASE;
+      const barePath = url.pathname.replace(/\/+$/, "") || "/";
+      if (barePath === "/find-my-res") url.pathname = "/findmyres";
+      url.hostname = "www.reskonnect.org";
+      url.protocol = "https:";
+      return url.toString().replace(/\/$/, url.pathname === "/" ? "/" : "");
+    } catch {
+      return PUBLIC_BASE;
+    }
+  });
+};
+
 const parseAgentJson = (raw: string) => {
   const cleaned = raw.trim().replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
   try {
     const parsed = JSON.parse(cleaned);
     return {
-      answer: String(parsed.answer || ""),
+      answer: sanitizeResKonnectLinks(String(parsed.answer || "")),
       confidence: Math.max(0, Math.min(1, Number(parsed.confidence ?? 0.75))),
       risk: ["green", "amber", "red"].includes(parsed.risk) ? parsed.risk : "amber",
       escalate: Boolean(parsed.escalate),
       reason: String(parsed.reason || ""),
     };
   } catch {
-    return { answer: raw.trim(), confidence: 0.72, risk: "amber", escalate: true, reason: "Model output was not structured." };
+    return { answer: sanitizeResKonnectLinks(raw.trim()), confidence: 0.72, risk: "amber", escalate: true, reason: "Model output was not structured." };
   }
 };
 
