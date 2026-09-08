@@ -64,6 +64,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
+      // A new authenticated session must resolve all scoped roles before any
+      // route is allowed to render. This prevents partner accounts from being
+      // treated as students for one render while their partnership RPC is pending.
+      if (nextSession) setIsLoading(true);
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setSessionChecked(true);
@@ -114,12 +118,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsAdmin(isGod);
 
       const resolvedTumeloRole = (tumeloRoleRes.data as TumeloPartnerRole) || null;
+      const partnershipOnly = !!resolvedTumeloRole;
       setTumeloPartnerRole(resolvedTumeloRole);
-      setIsTumeloPartner(!!resolvedTumeloRole);
+      setIsTumeloPartner(partnershipOnly);
 
       setIsRecruiter((recruiterRes.data as any)?.status === "approved");
       setIsPendingRecruiter((pendingRes.data as any)?.status === "pending");
-      setIsStudent(!!profileRes.data?.student_number);
+      // Partnership ownership is authoritative. Even if an old profile value is
+      // accidentally reintroduced, the account never becomes a student in-app.
+      const resolvedStudent = !partnershipOnly && !!profileRes.data?.student_number;
+      setIsStudent(resolvedStudent);
 
       console.log("[AuthContext] Status check:", {
         email: user.email,
@@ -127,7 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         tumeloPartnerRole: resolvedTumeloRole,
         isRecruiter: (recruiterRes.data as any)?.status === "approved",
         isPendingRecruiter: (pendingRes.data as any)?.status === "pending",
-        isStudent: !!profileRes.data?.student_number,
+        isStudent: resolvedStudent,
       });
     } catch (e) {
       console.error("[AuthContext] Status check failed:", e);
