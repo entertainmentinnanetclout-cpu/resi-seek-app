@@ -4,12 +4,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import ContactDetailsGate from "@/components/ContactDetailsGate";
 
 export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading, staffRole, isStudent, isRecruiter, isPendingRecruiter } = useAuth();
+  const { user, isLoading, staffRole, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!isLoading && !user) {
       navigate("/auth", { replace: true });
+    } else if (!isLoading && isTumeloPartner) {
+      navigate("/partner/tumelo/os", { replace: true });
     } else if (!isLoading && staffRole) {
       const hubMap: Record<string, string> = {
         admin: "/admin",
@@ -24,7 +26,7 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
       if (isRecruiter) navigate("/recruit/dashboard", { replace: true });
       else navigate("/recruit/apply", { replace: true });
     }
-  }, [user, isLoading, staffRole, isStudent, isRecruiter, isPendingRecruiter, navigate]);
+  }, [user, isLoading, staffRole, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner, navigate]);
 
   if (isLoading) {
     return (
@@ -37,7 +39,7 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!user || staffRole || (!isStudent && (isRecruiter || isPendingRecruiter))) return null;
+  if (!user || isTumeloPartner || staffRole || (!isStudent && (isRecruiter || isPendingRecruiter))) return null;
 
   return <ContactDetailsGate>{children}</ContactDetailsGate>;
 };
