@@ -15,7 +15,7 @@ let loader: Promise<any> | null = null;
 const criticalCss = `
 .maplibregl-map{font:12px/20px "Helvetica Neue",Arial,Helvetica,sans-serif;overflow:hidden;position:relative;-webkit-tap-highlight-color:rgba(0,0,0,0)}
 .maplibregl-canvas-container{position:absolute;inset:0;width:100%;height:100%}
-.maplibregl-canvas{position:absolute;left:0;top:0;width:100%;height:100%}
+.maplibregl-canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 .maplibregl-canvas-container.maplibregl-interactive{cursor:grab;user-select:none;-webkit-user-select:none}
 .maplibregl-canvas-container.maplibregl-interactive:active{cursor:grabbing}
 .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-top-left,.maplibregl-ctrl-top-right{position:absolute;pointer-events:none;z-index:2}
@@ -35,11 +35,11 @@ function ensureCriticalCss() {
   document.head.appendChild(style);
 }
 
-function isLegacyIOS() {
+function isIOSDevice() {
   const ua = navigator.userAgent || "";
-  if (!/iP(?:hone|ad|od)/i.test(ua)) return false;
-  const match = ua.match(/OS (\d+)[._]/i);
-  return Boolean(match && Number(match[1]) <= 16);
+  const classicIOS = /iP(?:hone|ad|od)/i.test(ua);
+  const iPadDesktopMode = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  return classicIOS || iPadDesktopMode;
 }
 
 function supportsWebGL2() {
@@ -52,13 +52,40 @@ function supportsWebGL2() {
 }
 
 function selectedVersion() {
-  // MapLibre 5 is the normal path. iOS 16 and devices without WebGL2 use the
-  // proven 4.7 compatibility build so the map never degrades to a blank canvas.
-  return isLegacyIOS() || !supportsWebGL2() ? MAPLIBRE_COMPAT_VERSION : MAPLIBRE_MODERN_VERSION;
+  // iOS Safari is deliberately pinned to MapLibre 4.7.1. In production we saw
+  // modern iPhones successfully create a WebGL2 context while MapLibre 5 still
+  // produced a transparent/blank canvas after Safari browser-chrome resizes.
+  // The 4.7 runtime renders the same OpenFreeMap vector style and 3D extrusion
+  // path while avoiding that WebKit regression. Desktop/Android stay on v5.
+  return isIOSDevice() || !supportsWebGL2() ? MAPLIBRE_COMPAT_VERSION : MAPLIBRE_MODERN_VERSION;
+}
+
+function major(version: unknown) {
+  const value = String(version || "").trim();
+  const match = value.match(/^(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
+function runtimeMatches(version: string) {
+  if (!window.maplibregl) return false;
+  const existingMajor = major(window.maplibregl.version);
+  const wantedMajor = major(version);
+  // If a global runtime does not expose a version, keep it rather than risking
+  // replacement of an active map. Known mismatches are reloaded deterministically.
+  return existingMajor == null || wantedMajor == null || existingMajor === wantedMajor;
+}
+
+function removeFullCss() {
+  document.getElementById(CSS_ID)?.remove();
+  document.getElementById(`${CSS_ID}-fallback`)?.remove();
 }
 
 function ensureFullCss(version: string) {
-  if (document.getElementById(CSS_ID)) return;
+  const existing = document.getElementById(CSS_ID) as HTMLLinkElement | null;
+  const desired = `maplibre-gl@${version}`;
+  if (existing?.href?.includes(desired)) return;
+  if (existing) removeFullCss();
+
   const primary = document.createElement("link");
   primary.id = CSS_ID;
   primary.rel = "stylesheet";
@@ -137,12 +164,14 @@ function prepareMapLibre(maplibregl: any) {
       this.__rkVisualViewport = window.visualViewport;
       this.__rkVisualViewport?.addEventListener("resize", resize, { passive: true });
 
-      // iOS Safari can report an intermediate viewport while its browser chrome
-      // is settling. Re-measure after mount, after paint, and once the map loads.
+      // iOS Safari can report intermediate viewport geometry while browser chrome
+      // settles. Re-measure repeatedly through the first second and again at load.
       requestAnimationFrame(() => resize());
-      window.setTimeout(resize, 80);
-      window.setTimeout(resize, 320);
-      window.setTimeout(resize, 900);
+      window.setTimeout(resize, 50);
+      window.setTimeout(resize, 160);
+      window.setTimeout(resize, 360);
+      window.setTimeout(resize, 700);
+      window.setTimeout(resize, 1200);
       this.on("load", resize);
       this.on("idle", resize);
       this.on("remove", () => {
@@ -166,17 +195,40 @@ export function loadMapLibre() {
   const version = selectedVersion();
   ensureFullCss(version);
 
-  if (window.maplibregl) return Promise.resolve(prepareMapLibre(window.maplibregl));
+  if (window.maplibregl && runtimeMatches(version)) {
+    return Promise.resolve(prepareMapLibre(window.maplibregl));
+  }
+
+  if (window.maplibregl && !runtimeMatches(version)) {
+    // A previous route can leave MapLibre v5 on window before ResMap opens.
+    // On iOS that would bypass compatibility selection and reproduce the blank
+    // canvas. With no map instance mounted on this route, replace the stale runtime.
+    try { delete window.maplibregl; } catch { window.maplibregl = undefined; }
+    document.getElementById(SCRIPT_ID)?.remove();
+    loader = null;
+  }
+
   if (loader) return loader;
 
   loader = loadMapLibreScript(version)
     .then((maplibregl) => prepareMapLibre(maplibregl))
-    .catch((error) => {
-      // A transient CDN/network failure must not poison every later attempt in
-      // the same browsing session. Re-opening ResMap gets a clean retry.
+    .catch(async (error) => {
+      // One final compatibility retry is useful on browsers that claim WebGL2
+      // support but fail during real map initialization/CDN evaluation.
+      if (version !== MAPLIBRE_COMPAT_VERSION) {
+        try {
+          try { delete window.maplibregl; } catch { window.maplibregl = undefined; }
+          document.getElementById(SCRIPT_ID)?.remove();
+          removeFullCss();
+          ensureFullCss(MAPLIBRE_COMPAT_VERSION);
+          const compat = await loadMapLibreScript(MAPLIBRE_COMPAT_VERSION);
+          return prepareMapLibre(compat);
+        } catch {
+          // fall through to the original error below
+        }
+      }
       loader = null;
-      const stale = document.getElementById(SCRIPT_ID);
-      stale?.remove();
+      document.getElementById(SCRIPT_ID)?.remove();
       throw error;
     });
 
