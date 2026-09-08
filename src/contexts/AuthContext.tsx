@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { AppStaffRole, GOD_MODE_ROLES } from "@/lib/constants/roles";
 
 export type StaffRole = AppStaffRole | null;
+export type TumeloPartnerRole = "owner" | "strategist" | "viewer" | null;
 
 interface AuthContextType {
   user: User | null;
@@ -15,6 +16,8 @@ interface AuthContextType {
   isRecruiter: boolean;
   isPendingRecruiter: boolean;
   isStudent: boolean;
+  isTumeloPartner: boolean;
+  tumeloPartnerRole: TumeloPartnerRole;
   staffRole: StaffRole;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -31,6 +34,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isRecruiter, setIsRecruiter] = useState(false);
   const [isPendingRecruiter, setIsPendingRecruiter] = useState(false);
   const [isStudent, setIsStudent] = useState(false);
+  const [isTumeloPartner, setIsTumeloPartner] = useState(false);
+  const [tumeloPartnerRole, setTumeloPartnerRole] = useState<TumeloPartnerRole>(null);
   const [staffRole, setStaffRole] = useState<StaffRole>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
   const navigate = useNavigate();
@@ -81,6 +86,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsRecruiter(false);
       setIsPendingRecruiter(false);
       setIsStudent(false);
+      setIsTumeloPartner(false);
+      setTumeloPartnerRole(null);
       setIsLoading(false);
       return;
     }
@@ -88,39 +95,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
 
     try {
-      // 1. Check Staff Role
-      const { data: roleData, error: roleError } = await supabase.rpc("get_user_staff_role", {
-        _user_id: user.id,
-      });
-      if (roleError) throw roleError;
-      const role = (roleData as string | null) as StaffRole;
+      const [roleRes, recruiterRes, pendingRes, profileRes, tumeloRoleRes] = await Promise.all([
+        supabase.rpc("get_user_staff_role", { _user_id: user.id }),
+        supabase.from("referral_agents" as any).select("status").eq("user_id", user.id).eq("program_key", "student_recruitment").maybeSingle(),
+        supabase.from("recruiter_applications" as any).select("status").eq("user_id", user.id).eq("program_key", "student_recruitment").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("profiles").select("student_number").eq("id", user.id).maybeSingle(),
+        (supabase as any).rpc("get_my_partnership_role", { p_slug: "tumelo-career-education" }),
+      ]);
+
+      if (roleRes.error) throw roleRes.error;
+      if (tumeloRoleRes.error && String(tumeloRoleRes.error?.code || "") !== "PGRST202") throw tumeloRoleRes.error;
+
+      const role = (roleRes.data as string | null) as StaffRole;
       setStaffRole(role);
 
       const isGod = !!role && (GOD_MODE_ROLES as readonly string[]).includes(role);
-
       setIsGodMode(isGod);
-      setIsAdmin(isGod); // Historically isAdmin often meant God Mode in this codebase
+      setIsAdmin(isGod);
 
-      // 2. Check Recruiter Status & Student Profile in parallel
-      const [recruiterRes, pendingRes, profileRes] = await Promise.all([
-        supabase.from("referral_agents" as any).select("status").eq("user_id", user.id).eq("program_key", "student_recruitment").maybeSingle(),
-        supabase.from("recruiter_applications" as any).select("status").eq("user_id", user.id).eq("program_key", "student_recruitment").order("created_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("profiles").select("student_number").eq("id", user.id).maybeSingle()
-      ]);
+      const resolvedTumeloRole = (tumeloRoleRes.data as TumeloPartnerRole) || null;
+      setTumeloPartnerRole(resolvedTumeloRole);
+      setIsTumeloPartner(!!resolvedTumeloRole);
 
-      setIsRecruiter((recruiterRes.data as any)?.status === 'approved');
-      setIsPendingRecruiter((pendingRes.data as any)?.status === 'pending');
+      setIsRecruiter((recruiterRes.data as any)?.status === "approved");
+      setIsPendingRecruiter((pendingRes.data as any)?.status === "pending");
       setIsStudent(!!profileRes.data?.student_number);
 
       console.log("[AuthContext] Status check:", {
         email: user.email,
         resolvedRole: role,
-        isRecruiter: (recruiterRes.data as any)?.status === 'approved',
-        isPendingRecruiter: (pendingRes.data as any)?.status === 'pending',
-        isStudent: !!profileRes.data?.student_number
+        tumeloPartnerRole: resolvedTumeloRole,
+        isRecruiter: (recruiterRes.data as any)?.status === "approved",
+        isPendingRecruiter: (pendingRes.data as any)?.status === "pending",
+        isStudent: !!profileRes.data?.student_number,
       });
     } catch (e) {
       console.error("[AuthContext] Status check failed:", e);
+      setIsTumeloPartner(false);
+      setTumeloPartnerRole(null);
     } finally {
       setIsLoading(false);
     }
@@ -140,12 +152,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsRecruiter(false);
     setIsPendingRecruiter(false);
     setIsStudent(false);
+    setIsTumeloPartner(false);
+    setTumeloPartnerRole(null);
     navigate("/auth");
   };
 
   return (
     <AuthContext.Provider value={{
-      user, session, isLoading, isAdmin, isGodMode, isRecruiter, isPendingRecruiter, isStudent, staffRole, signOut, refreshProfile: checkStatus
+      user,
+      session,
+      isLoading,
+      isAdmin,
+      isGodMode,
+      isRecruiter,
+      isPendingRecruiter,
+      isStudent,
+      isTumeloPartner,
+      tumeloPartnerRole,
+      staffRole,
+      signOut,
+      refreshProfile: checkStatus,
     }}>
       {children}
     </AuthContext.Provider>
