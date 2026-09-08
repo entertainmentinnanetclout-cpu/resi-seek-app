@@ -8,8 +8,9 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { getCampusOptions } from "@/constants/institutionOptions";
 import type { ResidenceFilters } from "@/hooks/useResidenceFilters";
-import ResMapExperience from "@/components/resmap/ResMapExperienceStable";
+import ResMapExperience from "@/components/resmap/ResMapExperiencePremium";
 import ResDiscoveryEngine from "@/components/resmap/ResDiscoveryEngine";
+import { FindMyResLocationPrompt } from "@/components/findmyres/FindMyResLocationPrompt";
 
 interface SmartSearchBarProps {
   filters: ResidenceFilters;
@@ -71,6 +72,8 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
   };
 
   return <>
+    <FindMyResLocationPrompt />
+
     <div className="border-b bg-gradient-to-br from-primary/10 via-accent/5 to-background">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
         <div className="mb-6 text-center">
@@ -79,7 +82,7 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
             <button onClick={openDiscovery} className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1.5 text-xs font-black text-violet-700 transition hover:bg-violet-500/15 dark:text-violet-300"><WandSparkles className="h-3.5 w-3.5" />NEW · Discovery Engine</button>
           </div>
           <h1 className="mb-2 text-3xl font-bold sm:text-4xl">Find Your Perfect Accommodation</h1>
-          <p className="text-sm text-muted-foreground sm:text-base">Search traditionally, move around the live accommodation map, use photorealistic 3D where connected, or let Dimpho rank every residence around your Res DNA.</p>
+          <p className="text-sm text-muted-foreground sm:text-base">Search traditionally, explore accommodation around your live position, or let Dimpho reshape the map around your Res DNA.</p>
         </div>
 
         <div className="space-y-4 rounded-xl border bg-card/80 p-4 shadow-lg backdrop-blur-lg sm:p-6">
