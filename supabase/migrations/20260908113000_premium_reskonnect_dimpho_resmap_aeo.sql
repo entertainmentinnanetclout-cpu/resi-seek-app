@@ -174,5 +174,10 @@ insert into public.seo_page_links(from_path,to_path,anchor_text,relation_type,so
 on conflict do nothing;
 
 insert into public.seo_index_queue(path,action,engines,status)
-select path,'updated',array['bing_indexnow']::text[],'pending'
-from (values ('/'),('/findmyres'),('/student-accommodation'),('/ai'),('/living')) as updated_paths(path);
+select p.path,'updated',array['bing_indexnow']::text[],'pending'
+from (values ('/'),('/findmyres'),('/student-accommodation'),('/ai'),('/living')) as p(path)
+where not exists (
+  select 1
+  from public.seo_index_queue q
+  where q.path=p.path and q.action='updated' and q.status in ('pending','processing')
+);
