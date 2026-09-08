@@ -7,20 +7,22 @@ import appIcon from "@/assets/reskonnect-app-icon-1024.png";
 
 export const BRAND = {
   name: "ResKonnect",
-  descriptor: "LIVING • AI • OPPORTUNITY",
+  descriptor: "LIVING • DIMPHO AI • RESMAP 3D • OPPORTUNITY",
   tagline: "Connecting Residents. Advancing Futures.",
-  journeyLine: "From matric to move-in, from study to opportunity.",
+  journeyLine: "From search to placement, from study to opportunity.",
+  positioning:
+    "An Africa-built student accommodation technology platform combining verified accommodation discovery, guaranteed accommodation placement for eligible placement clients, Dimpho AI, live ResMap navigation and photorealistic 3D exploration.",
   hero: {
-    headline: "Your stay. Your studies. Your future. Connected.",
+    headline: "The next generation of student accommodation discovery — built in Africa.",
     subcopy:
-      "One connected platform for student accommodation, private rentals, applications guidance, WIL support, and partner solutions.",
-    primaryCta: { label: "Get Started", to: "/get-started" },
+      "Find, explore and secure student accommodation through one intelligent platform with Dimpho AI, ResMap 3D, live navigation, verified listings and an accommodation placement guarantee for eligible placement clients.",
+    primaryCta: { label: "Find My Res", to: "/findmyres" },
     secondaryCtas: [
-      { label: "Find Accommodation", to: "/find" },
+      { label: "Explore ResMap 3D", to: "/findmyres?view=map&mode=3d" },
       { label: "Partner With ResKonnect", to: "/partners" },
     ],
     searchPlaceholder:
-      "Search by campus, area, residence, institution, or service...",
+      "Search by campus, area, residence, institution, or ask Dimpho...",
   },
   logos: {
     full: fullLogo,
@@ -38,7 +40,9 @@ export const BRAND = {
   },
   compliance: {
     admissions:
-      "ResKonnect is not an admissions office and does not replace official institution application systems. We assist with guidance, readiness checks, document preparation, accommodation matching, WIL support, and partner solutions.",
+      "ResKonnect is not an admissions office and does not replace official institution application systems. We assist with guidance, readiness checks, document preparation, accommodation placement, WIL support, and partner solutions.",
+    accommodationPlacement:
+      "ResKonnect guarantees accommodation placement for eligible placement clients who complete the required placement process, provide the required documents and accept an available suitable accommodation match. The guarantee is for accommodation placement; it does not guarantee a particular building, room, rent amount, institution admission, NSFAS funding, WIL placement or employment outcome where those decisions depend on third parties or live inventory.",
     nsfas:
       "ResKonnect does not provide NSFAS application services. NSFAS may only appear as a funding or accommodation accreditation context where relevant.",
   },
