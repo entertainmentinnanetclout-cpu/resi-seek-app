@@ -1,0 +1,1 @@
+Release 5 promotion is gated by the pull-request CI checks and exact-SHA production verification described in `release-5-gate-record.md`.
