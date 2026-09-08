@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
-  BedDouble,
   Bike,
   Bus,
   Car,
@@ -16,7 +15,6 @@ import {
   LocateFixed,
   MapPin,
   Navigation,
-  Route,
   Search,
   SlidersHorizontal,
   Sparkles,
@@ -266,7 +264,8 @@ function pointAlongRoute(coords: number[][], cumulative: number[], progressM: nu
       };
     }
   }
-  return { latitude: Number(coords.at(-1)?.[1]), longitude: Number(coords.at(-1)?.[0]) };
+  const last = coords[coords.length - 1];
+  return { latitude: Number(last?.[1]), longitude: Number(last?.[0]) };
 }
 
 function humanDistance(meters: number) {
@@ -332,7 +331,9 @@ export default function ResMapExperiencePremiumV2({ filters, updateFilter, reset
   const lastLocalSyncRef = useRef(0);
   const pulseTimerRef = useRef<number | null>(null);
 
-  const [config, setConfig] = useState<MapConfig>({ google_maps_enabled: false });
+  // Start in a neutral loading state. The live config arrives immediately from Supabase;
+  // using true here prevents the legacy fallback from winning a race before that fetch resolves.
+  const [config, setConfig] = useState<MapConfig>({ google_maps_enabled: true });
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [googleStatus, setGoogleStatus] = useState<"loading" | "ready" | "failed">("loading");
   const [mapZoom, setMapZoom] = useState(11);
@@ -443,6 +444,7 @@ export default function ResMapExperiencePremiumV2({ filters, updateFilter, reset
       ]);
       if (!active) return;
       if (configRes.data) setConfig(configRes.data as MapConfig);
+      else setGoogleStatus("failed");
       setCampuses((campusRes.data || []).filter((row: any) => validCoord(row)) as Campus[]);
     })();
     return () => { active = false; };
@@ -478,9 +480,7 @@ export default function ResMapExperiencePremiumV2({ filters, updateFilter, reset
       mapRef.current = map;
       setMapZoom(map.getZoom() || 11);
       map.addListener("zoom_changed", () => setMapZoom(map.getZoom() || 11));
-      map.addListener("dragstart", () => {
-        if (navigationActive) setFollowUser(false);
-      });
+      map.addListener("dragstart", () => setFollowUser(false));
       setGoogleStatus("ready");
     }).catch((error) => {
       console.error("ResMap Google map failed", error);
@@ -667,14 +667,16 @@ export default function ResMapExperiencePremiumV2({ filters, updateFilter, reset
 
   const logNavigationEvent = useCallback(async (eventType: string, payload: Record<string, unknown> = {}) => {
     if (!user?.id || !sessionIdRef.current) return;
-    await (supabase as any).from("resmap_navigation_events").insert({
-      session_id: sessionIdRef.current,
-      user_id: user.id,
-      event_type: eventType,
-      latitude: live.position?.latitude ?? null,
-      longitude: live.position?.longitude ?? null,
-      payload,
-    }).catch(() => null);
+    try {
+      await (supabase as any).from("resmap_navigation_events").insert({
+        session_id: sessionIdRef.current,
+        user_id: user.id,
+        event_type: eventType,
+        latitude: live.position?.latitude ?? null,
+        longitude: live.position?.longitude ?? null,
+        payload,
+      });
+    } catch { /* navigation must not depend on analytics */ }
   }, [live.position?.latitude, live.position?.longitude, user?.id]);
 
   const startSession = async (residence: any, info: RouteInfo, origin: Center) => {
@@ -701,7 +703,7 @@ export default function ResMapExperiencePremiumV2({ filters, updateFilter, reset
         metadata: { source: "find_my_res_google_live_navigation_v2" },
       }).select("id").single();
       if (data?.id) sessionIdRef.current = data.id;
-    } catch { /* navigation remains functional offline from session logging */ }
+    } catch { /* navigation remains functional if logging is unavailable */ }
   };
 
   const buildRoute = useCallback(async (
@@ -943,6 +945,7 @@ export default function ResMapExperiencePremiumV2({ filters, updateFilter, reset
         visible: true,
       });
     } else {
+      panoramaRef.current.setVisible(true);
       panoramaRef.current.setPano(panoId);
       panoramaRef.current.setPov({ heading, pitch: 0 });
     }
@@ -967,6 +970,11 @@ export default function ResMapExperiencePremiumV2({ filters, updateFilter, reset
       } else {
         streetDestinationMarkerRef.current.setMap(panoramaRef.current);
         streetDestinationMarkerRef.current.setPosition({ lat: Number(destination.latitude), lng: Number(destination.longitude) });
+        streetDestinationMarkerRef.current.setIcon({
+          url: destinationSvg(arrived),
+          scaledSize: new google.maps.Size(48, 58),
+          anchor: new google.maps.Point(24, 56),
+        });
       }
     }
   }, [
@@ -1139,8 +1147,7 @@ export default function ResMapExperiencePremiumV2({ filters, updateFilter, reset
   }
 
   const eta = new Date(Date.now() + remainingDurationS * 1000);
-  const modeIcon = travelMode === "walk" ? Footprints : travelMode === "bike" ? Bike : travelMode === "transport" ? Bus : Car;
-  const TravelIcon = modeIcon;
+  const TravelIcon = travelMode === "walk" ? Footprints : travelMode === "bike" ? Bike : travelMode === "transport" ? Bus : Car;
 
   return (
     <div className="fixed inset-0 z-[120] h-[100dvh] w-screen overflow-hidden bg-slate-100 text-slate-950">
