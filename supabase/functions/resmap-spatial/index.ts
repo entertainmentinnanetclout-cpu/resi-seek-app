@@ -16,6 +16,48 @@ function estimateSeconds(distance:number,profile:string){const speed=profile==="
 async function hash(input:string){const data=new TextEncoder().encode(input);const digest=await crypto.subtle.digest("SHA-256",data);return Array.from(new Uint8Array(digest)).map((b)=>b.toString(16).padStart(2,"0")).join("");}
 async function routeKey(profile:string,a:any,b:any){return await hash(`${profile}:${a.lat.toFixed(5)},${a.lng.toFixed(5)}:${b.lat.toFixed(5)},${b.lng.toFixed(5)}`);}
 
+function instructionFor(step:any,index:number,total:number){
+  const maneuver=step?.maneuver||{};
+  const type=String(maneuver.type||"").toLowerCase();
+  const modifier=String(maneuver.modifier||"").toLowerCase();
+  const street=String(step?.name||"").trim();
+  const onto=street?` onto ${street}`:"";
+  if(type==="depart")return street?`Head along ${street}`:"Start on the route";
+  if(type==="arrive"||index===total-1)return "Arrive at your destination";
+  if(type==="roundabout"||type==="rotary")return `Enter the roundabout${onto}`;
+  if(type==="merge")return `Merge${onto}`;
+  if(type==="fork")return modifier.includes("left")?`Keep left${onto}`:`Keep right${onto}`;
+  if(modifier.includes("uturn"))return `Make a U-turn${onto}`;
+  if(modifier.includes("left"))return modifier.includes("slight")?`Bear left${onto}`:`Turn left${onto}`;
+  if(modifier.includes("right"))return modifier.includes("slight")?`Bear right${onto}`:`Turn right${onto}`;
+  return street?`Continue on ${street}`:"Continue straight";
+}
+
+function normalizeSteps(route:any,origin:{lat:number,lng:number},destination:{lat:number,lng:number}){
+  const raw=(route?.legs||[]).flatMap((leg:any)=>Array.isArray(leg?.steps)?leg.steps:[]);
+  if(!raw.length){
+    return [
+      {distance_m:0,duration_s:0,name:"",type:"depart",modifier:null,instruction:"Start on the route",bearing_before:null,bearing_after:null,location:{lat:origin.lat,lng:origin.lng}},
+      {distance_m:0,duration_s:0,name:"",type:"arrive",modifier:null,instruction:"Arrive at your destination",bearing_before:null,bearing_after:null,location:{lat:destination.lat,lng:destination.lng}},
+    ];
+  }
+  return raw.map((step:any,index:number)=>{
+    const maneuver=step?.maneuver||{};
+    const location=Array.isArray(maneuver.location)?maneuver.location:[null,null];
+    return {
+      distance_m:Math.max(0,Math.round(Number(step?.distance)||0)),
+      duration_s:Math.max(0,Math.round(Number(step?.duration)||0)),
+      name:String(step?.name||""),
+      type:String(maneuver.type||"continue"),
+      modifier:maneuver.modifier?String(maneuver.modifier):null,
+      instruction:instructionFor(step,index,raw.length),
+      bearing_before:Number.isFinite(Number(maneuver.bearing_before))?Number(maneuver.bearing_before):null,
+      bearing_after:Number.isFinite(Number(maneuver.bearing_after))?Number(maneuver.bearing_after):null,
+      location:{lat:Number(location[1]),lng:Number(location[0])},
+    };
+  }).filter((step:any)=>validPoint(step.location.lat,step.location.lng));
+}
+
 async function route(service:any,body:any){
   const origin={lat:Number(body.origin?.lat),lng:Number(body.origin?.lng)};
   const destination={lat:Number(body.destination?.lat),lng:Number(body.destination?.lng)};
@@ -23,18 +65,31 @@ async function route(service:any,body:any){
   if(!validPoint(origin.lat,origin.lng)||!validPoint(destination.lat,destination.lng))throw new Error("Route coordinates must be valid South African points");
   const key=await routeKey(profile,origin,destination);
   const cached=(await service.from("resmap_route_cache").select("*").eq("route_key",key).gt("expires_at",new Date().toISOString()).maybeSingle()).data;
-  if(cached)return {cached:true,profile,distance_m:cached.distance_m,duration_s:cached.duration_s,geometry:cached.geometry,provider:cached.provider};
+  if(cached&&Array.isArray(cached.steps)&&cached.steps.length){return {cached:true,profile,distance_m:cached.distance_m,duration_s:cached.duration_s,geometry:cached.geometry,steps:cached.steps,provider:cached.provider};}
+
   const endpoint=profile==="walk"?"routed-foot":profile==="bike"?"routed-bike":"routed-car";
   const url=`${ROUTING_BASE}/${endpoint}/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&steps=true&alternatives=false`;
-  let distance=Math.round(haversine(origin,destination)),duration=estimateSeconds(distance,profile),geometry:any={type:"LineString",coordinates:[[origin.lng,origin.lat],[destination.lng,destination.lat]]},provider="geodesic-fallback";
+  let distance=Math.round(haversine(origin,destination));
+  let duration=estimateSeconds(distance,profile);
+  let geometry:any={type:"LineString",coordinates:[[origin.lng,origin.lat],[destination.lng,destination.lat]]};
+  let steps:any[]=normalizeSteps(null,origin,destination);
+  let provider="geodesic-fallback";
   try{
-    const response=await fetch(url,{headers:{"User-Agent":"ResKonnect-ResMap/1.0 (+https://www.reskonnect.org)","Referer":"https://www.reskonnect.org/"}});
+    const response=await fetch(url,{headers:{"User-Agent":"ResKonnect-ResMap/2.0 (+https://www.reskonnect.org)","Referer":"https://www.reskonnect.org/"}});
     const data=await response.json().catch(()=>({}));
     const first=data?.routes?.[0];
-    if(response.ok&&first?.geometry?.coordinates){distance=Math.round(Number(first.distance)||distance);duration=Math.round(Number(first.duration)||duration);if(profile==="transport")duration+=300;geometry=first.geometry;provider=`openstreetmap.de/${endpoint}`;}
-  }catch{/* deterministic fallback remains */}
-  await service.from("resmap_route_cache").upsert({route_key:key,profile,origin_lat:origin.lat,origin_lng:origin.lng,destination_lat:destination.lat,destination_lng:destination.lng,distance_m:distance,duration_s:duration,geometry,provider,expires_at:new Date(Date.now()+7*86400000).toISOString(),updated_at:new Date().toISOString()});
-  return {cached:false,profile,distance_m:distance,duration_s:duration,geometry,provider};
+    if(response.ok&&first?.geometry?.coordinates){
+      distance=Math.round(Number(first.distance)||distance);
+      duration=Math.round(Number(first.duration)||duration);
+      if(profile==="transport")duration+=300;
+      geometry=first.geometry;
+      steps=normalizeSteps(first,origin,destination);
+      provider=`openstreetmap.de/${endpoint}`;
+    }
+  }catch{/* deterministic route fallback remains */}
+
+  await service.from("resmap_route_cache").upsert({route_key:key,profile,origin_lat:origin.lat,origin_lng:origin.lng,destination_lat:destination.lat,destination_lng:destination.lng,distance_m:distance,duration_s:duration,geometry,steps,provider,expires_at:new Date(Date.now()+7*86400000).toISOString(),updated_at:new Date().toISOString()});
+  return {cached:false,profile,distance_m:distance,duration_s:duration,geometry,steps,provider};
 }
 
 function extractOutputText(data:any){if(typeof data?.output_text==="string")return data.output_text;for(const item of data?.output||[])for(const c of item?.content||[])if(c?.type==="output_text"&&typeof c.text==="string")return c.text;return "";}
