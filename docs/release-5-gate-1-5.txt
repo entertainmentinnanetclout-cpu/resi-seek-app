@@ -1,0 +1,5 @@
+Gate 1: product/data contract
+Gate 2: spatial/mobile reliability
+Gate 3: security/privacy
+Gate 4: TypeScript/SEO/build/dependency verification
+Gate 5: merge + exact-SHA production verification

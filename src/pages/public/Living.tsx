@@ -113,6 +113,7 @@ export const Living: React.FC = () => {
               heading="Explore living options"
               links={[
                 { label: "Student accommodation", to: "/student-accommodation", description: "Verified residences across our coverage areas." },
+                { label: "Housing intelligence network", to: "/housing-intelligence", description: "Live supply, demand heat, institution pressure and development opportunity intelligence." },
                 { label: "NSFAS accredited accommodation", to: "/student-accommodation/nsfas-accredited", description: "Listings with NSFAS accreditation context." },
                 { label: "Private-paying student accommodation", to: "/student-accommodation/university", description: "Off-campus residences for self-funded students." },
                 { label: "Private rentals", to: "/private-rentals", description: "Rooms and flats for private-paying tenants." },
