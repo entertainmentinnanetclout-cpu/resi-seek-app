@@ -60,29 +60,29 @@ export function canonicalUrl(pathname: string): string {
 /** Per-route metadata for the main public pillars and utility pages. */
 export const ROUTE_META: Record<string, RouteMeta> = {
   "/": {
-    title: "ResKonnect | Student Accommodation, Applications & Opportunities",
+    title: "ResKonnect | Dimpho AI Student Accommodation & ResMap 3D",
     description:
-      "Find student accommodation, prepare applications, discover WIL and student opportunities, and explore student-housing property intelligence with ResKonnect.",
+      "Africa-built student accommodation technology combining Dimpho AI, verified accommodation discovery, ResMap 3D, live navigation and guaranteed accommodation placement for eligible placement clients.",
     keywords:
-      "ResKonnect, Res Konnect, student accommodation South Africa, student applications, WIL opportunities, student housing property",
+      "ResKonnect, Res Konnect, student accommodation Africa, AI student accommodation, Dimpho AI, ResMap 3D, guaranteed student accommodation placement, student housing technology Africa, photorealistic student accommodation map",
   },
   "/living": {
-    title: "ResKonnect Living | Student Accommodation & Private Rentals",
+    title: "ResKonnect Living | Intelligent Student Accommodation Discovery",
     description:
-      "Browse student accommodation, private-paying residences, NSFAS-related accommodation information and private rental support through ResKonnect.",
-    keywords: "student accommodation, student housing, private rentals, NSFAS accommodation",
+      "Discover student accommodation through ResKonnect Living with verified listings, Dimpho AI guidance, ResMap 3D exploration, live navigation and accommodation placement support.",
+    keywords: "student accommodation Africa, student housing, private rentals, Dimpho AI accommodation, ResMap 3D, NSFAS accommodation",
   },
   "/student-accommodation": {
-    title: "Student Accommodation South Africa | ResKonnect",
+    title: "Student Accommodation | AI Discovery, 3D Maps & Placement | ResKonnect",
     description:
-      "Find student accommodation by university, TVET college, campus, suburb, budget, room type and availability with ResKonnect.",
-    keywords: "student accommodation, student housing, student residence, NSFAS accommodation",
+      "Find student accommodation with Dimpho AI, verified listings, photorealistic ResMap 3D, live route navigation and a defined accommodation placement guarantee for eligible ResKonnect placement clients.",
+    keywords: "student accommodation Africa, student housing platform, student residence, AI accommodation search, 3D accommodation map, guaranteed accommodation placement",
   },
   "/student-accommodation/pretoria": {
     title: "Student Accommodation Pretoria | TUT, UP, UNISA & SMU | ResKonnect",
     description:
-      "Explore student accommodation across Pretoria, including areas serving TUT, UP, UNISA and SMU, with campus and location context from ResKonnect.",
-    keywords: "student accommodation Pretoria, TUT accommodation, UP accommodation, UNISA accommodation, SMU accommodation",
+      "Explore student accommodation across Pretoria, including areas serving TUT, UP, UNISA and SMU, with Dimpho AI and ResMap location intelligence from ResKonnect.",
+    keywords: "student accommodation Pretoria, TUT accommodation, UP accommodation, UNISA accommodation, SMU accommodation, ResMap Pretoria",
   },
   "/applications": {
     title: "Student Applications, APS & Course Match | ResKonnect",
@@ -133,21 +133,27 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     keywords: "student housing development, student accommodation conversion, development sites",
   },
   "/ai": {
-    title: "ResKonnect AI | Student, Application & Property Intelligence",
+    title: "Dimpho AI by ResKonnect | Student Accommodation Intelligence",
     description:
-      "Use source-aware ResKonnect AI for student guidance, Course Match, application readiness and student-housing property intelligence.",
-    keywords: "ResKonnect AI, student AI, AI Course Match, property intelligence AI, application AI",
+      "Meet Dimpho, ResKonnect's AI layer for accommodation discovery, ResMap intelligence, application readiness and student journey guidance using structured ResKonnect data.",
+    keywords: "Dimpho AI, ResKonnect AI, student accommodation AI Africa, student AI, AI Course Match, ResMap AI, property intelligence AI",
   },
   "/partners": {
     title: "ResKonnect Partners | Landlords, Institutions & Businesses",
     description:
-      "List student accommodation, receive property leads, support student intake, and partner with ResKonnect for digital student journey solutions.",
-    keywords: "list student accommodation, landlord leads, institution partnerships, student marketing",
+      "List student accommodation, receive property leads, support student intake, and partner with ResKonnect for AI-enabled student accommodation and digital journey solutions.",
+    keywords: "list student accommodation, landlord leads, institution partnerships, student housing technology Africa, student marketing",
   },
   "/find": {
     title: "Find Student Accommodation | ResKonnect Find My Res",
     description:
-      "Search student residences, flats, communes and private rentals by campus, budget, room type and availability across South Africa.",
+      "Search student residences, flats, communes and private rentals by campus, budget, room type and availability with ResKonnect.",
+  },
+  "/findmyres": {
+    title: "Find My Res | Dimpho AI + Live ResMap 3D | ResKonnect",
+    description:
+      "Use ResKonnect Find My Res to discover verified accommodation, ask Dimpho, explore photorealistic 3D areas, use live navigation and enter the accommodation placement process.",
+    keywords: "Find My Res, ResMap 3D, Dimpho AI, student accommodation map, student accommodation near me, guaranteed accommodation placement",
   },
   "/bursaries": {
     title: "Student Bursaries & Funding Opportunities | ResKonnect",
@@ -171,9 +177,9 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     description: "Student deals on essentials, move-in items and services from participating businesses.",
   },
   "/get-started": {
-    title: "Get Started With ResKonnect | Student Journey Onboarding",
+    title: "Get Started With ResKonnect | Student Accommodation & Journey Onboarding",
     description:
-      "Tell ResKonnect your institution, funding and area to reach matching accommodation, application support or opportunity guidance.",
+      "Tell ResKonnect your institution, funding and area to reach matching accommodation, Dimpho guidance, application support or opportunity guidance.",
   },
   "/terms": {
     title: "ResKonnect Terms of Use",
