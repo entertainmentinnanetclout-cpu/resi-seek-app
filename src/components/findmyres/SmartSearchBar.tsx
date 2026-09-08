@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { getCampusOptions } from "@/constants/institutionOptions";
 import type { ResidenceFilters } from "@/hooks/useResidenceFilters";
-import ResMapExperience from "@/components/resmap/ResMapExperiencePremiumV2";
+import ResMapExperience from "@/components/resmap/ResMapExperiencePremiumV3";
 import ResDiscoveryEngine from "@/components/resmap/ResDiscoveryEngine";
 import { FindMyResLocationPrompt } from "@/components/findmyres/FindMyResLocationPrompt";
 
@@ -43,6 +43,7 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
     setMapOpen(false);
     const url = new URL(window.location.href);
     url.searchParams.delete("view");
+    url.searchParams.delete("mode");
     window.history.replaceState({}, "", url);
   };
 
@@ -51,6 +52,7 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
     setDiscoveryOpen(true);
     const url = new URL(window.location.href);
     url.searchParams.delete("view");
+    url.searchParams.delete("mode");
     url.searchParams.set("discovery", "discover");
     window.history.replaceState({}, "", url);
   };
@@ -78,11 +80,11 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
         <div className="mb-6 text-center">
           <div className="mb-3 flex flex-wrap justify-center gap-2">
-            <button onClick={openMap} className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-500/15 dark:text-blue-300"><MapPinned className="h-3.5 w-3.5" />Live ResMap</button>
+            <button onClick={openMap} className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-500/15 dark:text-blue-300"><MapPinned className="h-3.5 w-3.5" />Live ResMap · 2D/3D</button>
             <button onClick={openDiscovery} className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1.5 text-xs font-black text-violet-700 transition hover:bg-violet-500/15 dark:text-violet-300"><WandSparkles className="h-3.5 w-3.5" />NEW · Discovery Engine</button>
           </div>
           <h1 className="mb-2 text-3xl font-bold sm:text-4xl">Find Your Perfect Accommodation</h1>
-          <p className="text-sm text-muted-foreground sm:text-base">Search traditionally, explore accommodation around your live position, or let Dimpho reshape the map around your Res DNA.</p>
+          <p className="text-sm text-muted-foreground sm:text-base">Search traditionally, explore accommodation around your live position in 2D or photorealistic 3D, or let Dimpho reshape the map around your Res DNA.</p>
         </div>
 
         <div className="space-y-4 rounded-xl border bg-card/80 p-4 shadow-lg backdrop-blur-lg sm:p-6">
