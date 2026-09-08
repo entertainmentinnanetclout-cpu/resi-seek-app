@@ -206,7 +206,7 @@ export function stopLiveLocation() {
 export function subscribeLiveLocation(listener: (next: LiveLocationState) => void) {
   subscribers.add(listener);
   listener(state);
-  return () => subscribers.delete(listener);
+  return () => { subscribers.delete(listener); };
 }
 
 export function getLiveLocationState() {
