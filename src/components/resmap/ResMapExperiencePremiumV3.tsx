@@ -129,20 +129,38 @@ function validPoint(row: PointRow) {
 function waitFor3DSteady(map3d: any, timeoutMs = 12000) {
   return new Promise<void>((resolve, reject) => {
     let settled = false;
-    const finish = (ok: boolean) => {
+    let timer = 0;
+
+    const cleanup = () => {
+      window.clearTimeout(timer);
+      try { map3d.removeEventListener("gmp-steadychange", onSteady); } catch { /* no-op */ }
+      // Keep compatibility with older/experimental Maps 3D builds while the
+      // current production reference uses gmp-steadychange.
+      try { map3d.removeEventListener("gmp-steadystate", onSteady); } catch { /* no-op */ }
+      try { map3d.removeEventListener("gmp-error", onError); } catch { /* no-op */ }
+      try { map3d.removeEventListener("gmp-map-id-error", onMapIdError); } catch { /* no-op */ }
+    };
+
+    const finish = (error?: Error) => {
       if (settled) return;
       settled = true;
-      window.clearTimeout(timer);
-      try { map3d.removeEventListener("gmp-steadystate", onSteady); } catch { /* no-op */ }
-      if (ok) resolve();
-      else reject(new Error("Photorealistic 3D render timed out"));
+      cleanup();
+      if (error) reject(error);
+      else resolve();
     };
+
     const onSteady = (event: any) => {
-      if (event?.isSteady === false) return;
-      finish(true);
+      if (event?.isSteady !== true) return;
+      finish();
     };
-    const timer = window.setTimeout(() => finish(false), timeoutMs);
+    const onError = () => finish(new Error("Google Photorealistic 3D failed to initialize"));
+    const onMapIdError = () => finish(new Error("Google Maps rejected the configured 3D map ID"));
+
+    map3d.addEventListener("gmp-steadychange", onSteady);
     map3d.addEventListener("gmp-steadystate", onSteady);
+    map3d.addEventListener("gmp-error", onError);
+    map3d.addEventListener("gmp-map-id-error", onMapIdError);
+    timer = window.setTimeout(() => finish(new Error("Photorealistic 3D render timed out")), timeoutMs);
   });
 }
 
@@ -232,9 +250,12 @@ function ThreeDOverlay({ open, onClose }: { open: boolean; onClose: () => void }
         });
         map3d.style.width = "100%";
         map3d.style.height = "100%";
-        nodeRef.current.replaceChildren(map3d);
 
-        await waitFor3DSteady(map3d);
+        // Register readiness/error listeners before inserting the custom element
+        // so an exceptionally fast initial steady event cannot be missed.
+        const readyPromise = waitFor3DSteady(map3d);
+        nodeRef.current.replaceChildren(map3d);
+        await readyPromise;
         if (disposed) return;
 
         markerRefs.current = [];
