@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { getCampusOptions } from "@/constants/institutionOptions";
 import type { ResidenceFilters } from "@/hooks/useResidenceFilters";
-import ResMapExperience from "@/components/resmap/ResMapExperience";
+import ResMapExperience from "@/components/resmap/ResMapExperienceReliable";
 import ResDiscoveryEngine from "@/components/resmap/ResDiscoveryEngine";
 
 interface SmartSearchBarProps {
