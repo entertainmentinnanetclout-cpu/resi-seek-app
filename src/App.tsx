@@ -51,6 +51,7 @@ const Favorites = lazy(() => import("./pages/Favorites"));
 const ApplicationsHub = lazy(() => import("./pages/ApplicationsHub"));
 const ResidenceDetail = lazy(() => import("./pages/ResidenceDetail"));
 const ImmersiveResidence = lazy(() => import("./pages/ImmersiveResidence"));
+const VirtualTourViewerPage = lazy(() => import("./pages/VirtualTourViewerPage"));
 const AccommodationDemand = lazy(() => import("./pages/AccommodationDemand"));
 const CreatorPartnerPortal = lazy(() => import("./pages/creator/CreatorPartnerPortal"));
 const CreatorLanding = lazy(() => import("./pages/creator/CreatorLanding"));
@@ -104,6 +105,7 @@ const ResidenceCRM = lazy(() => import("./pages/residence/ResidenceCRM"));
 const ResidenceInventory = lazy(() => import("./pages/residence/ResidenceInventory"));
 const ResidenceListingProfile = lazy(() => import("./pages/residence/ResidenceListingProfile"));
 const ResidenceRecruitment = lazy(() => import("./pages/residence/ResidenceRecruitment"));
+const ResidenceVirtualTour = lazy(() => import("./pages/residence/ResidenceVirtualTour"));
 const ResidenceRecruiterRedirect = lazy(() => import("./pages/ResidenceRecruiterRedirect"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const MyDiscountCodes = lazy(() => import("./pages/MyDiscountCodes"));
@@ -187,6 +189,7 @@ const App = () => {
                     <Route path="/res/:id" element={<ResidenceDetail />} />
                     <Route path="/find-my-res/:slug" element={<ResidenceDetail />} />
                     <Route path="/find-my-res/:slug/immersive" element={<ImmersiveResidence />} />
+                    <Route path="/tour/:token" element={<VirtualTourViewerPage />} />
                     <Route path="/bursaries" element={<BursaryFinder />} />
                     <Route path="/bursary/:id" element={<BursaryDetail />} />
                     <Route path="/marketplace" element={<MarketplaceComingSoon />} />
@@ -264,6 +267,7 @@ const App = () => {
                       <Route index element={<ResidenceDashboard />} />
                       <Route path="reservations-2027" element={<ResidenceReservations2027 />} />
                       <Route path="listing" element={<ResidenceListingProfile />} />
+                      <Route path="virtual-tour" element={<ResidenceVirtualTour />} />
                       <Route path="inbox" element={<ResidenceInbox />} />
                       <Route path="application/:id" element={<ResidenceApplicationDetail />} />
                       <Route path="crm" element={<ResidenceCRM />} />
