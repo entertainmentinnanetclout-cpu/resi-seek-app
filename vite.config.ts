@@ -32,6 +32,8 @@ export default defineConfig(({ mode }) => {
             background_color: "#FFFFFF",
             display: "standalone",
             orientation: "portrait-primary",
+            start_url: "/",
+            scope: "/",
             icons: [
               {
                 src: "/icon-192.png",
@@ -67,12 +69,23 @@ export default defineConfig(({ mode }) => {
           },
           workbox: {
             maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+            cleanupOutdatedCaches: true,
+            clientsClaim: true,
+            skipWaiting: true,
+            navigateFallback: "/index.html",
+            navigateFallbackDenylist: [
+              /^\/api\//,
+              /^\/sitemap(?:s)?\//,
+              /^\/sitemap\.xml$/,
+              /^\/robots\.txt$/,
+            ],
             runtimeCaching: [
               {
                 urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
                 handler: "NetworkFirst",
                 options: {
-                  cacheName: "supabase-cache",
+                  cacheName: "supabase-cache-v2",
+                  networkTimeoutSeconds: 8,
                   expiration: {
                     maxEntries: 50,
                     maxAgeSeconds: 60 * 60 * 24,
@@ -83,13 +96,31 @@ export default defineConfig(({ mode }) => {
                 },
               },
               {
-                urlPattern: /\.(js|css|html|png|jpg|jpeg|svg|webp)$/,
+                urlPattern: ({ request }) => request.mode === "navigate",
+                handler: "NetworkFirst",
+                options: {
+                  cacheName: "navigation-pages-v2",
+                  networkTimeoutSeconds: 4,
+                  expiration: {
+                    maxEntries: 40,
+                    maxAgeSeconds: 60 * 60 * 24,
+                  },
+                  cacheableResponse: {
+                    statuses: [0, 200],
+                  },
+                },
+              },
+              {
+                urlPattern: /\.(js|css|png|jpg|jpeg|svg|webp|woff|woff2|ttf)$/,
                 handler: "CacheFirst",
                 options: {
-                  cacheName: "static-assets",
+                  cacheName: "static-assets-v2",
                   expiration: {
-                    maxEntries: 100,
+                    maxEntries: 160,
                     maxAgeSeconds: 60 * 60 * 24 * 30,
+                  },
+                  cacheableResponse: {
+                    statuses: [0, 200],
                   },
                 },
               },
