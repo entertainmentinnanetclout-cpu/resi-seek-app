@@ -9,12 +9,13 @@ import { toast } from "sonner";
 
 type Props = { residenceId: string };
 
+type UpgradePlan = "premium" | "gold";
 const metric = (value: unknown) => Number(value || 0).toLocaleString("en-ZA");
 
 export default function VirtualTourGoldAnalytics({ residenceId }: Props) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [upgradeBusy, setUpgradeBusy] = useState(false);
+  const [upgradeBusy, setUpgradeBusy] = useState<UpgradePlan | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -31,22 +32,31 @@ export default function VirtualTourGoldAnalytics({ residenceId }: Props) {
     return opens > 0 ? Math.min(100, conversions / opens * 100) : 0;
   }, [data]);
 
-  const requestUpgrade = async () => {
-    setUpgradeBusy(true);
+  const requestUpgrade = async (plan: UpgradePlan) => {
+    setUpgradeBusy(plan);
     try {
-      const result = await tourApi<any>("request_upgrade", { residence_id: residenceId, requested_plan: "gold" });
+      const result = await tourApi<any>("request_upgrade", { residence_id: residenceId, requested_plan: plan });
       if (result?.whatsapp_url) window.open(result.whatsapp_url, "_blank", "noopener,noreferrer");
-      toast.success("Gold upgrade request prepared.");
-    } catch (error: any) { toast.error(error?.message || "Could not prepare Gold upgrade request."); }
-    finally { setUpgradeBusy(false); }
+      toast.success(`${plan === "gold" ? "Gold" : "Premium"} upgrade request prepared.`);
+    } catch (error: any) { toast.error(error?.message || `Could not prepare ${plan} upgrade request.`); }
+    finally { setUpgradeBusy(null); }
   };
 
   if (loading) return <Card><CardContent className="flex min-h-40 items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading 360 intelligence…</CardContent></Card>;
 
-  if (data?.locked) return <Card className="overflow-hidden border-[#F5B32F]/30">
-    <CardHeader className="bg-gradient-to-r from-[#071326] to-[#0b2752] text-white"><div className="flex items-center gap-3"><Crown className="h-7 w-7 text-[#F5B32F]" /><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#F5B32F]">Gold Intelligence</p><CardTitle>Unlock tour analytics</CardTitle></div></div></CardHeader>
-    <CardContent className="space-y-4 p-5"><p className="text-sm text-muted-foreground">Gold residences receive 30-day engagement intelligence, scene popularity, guided-tour completion and conversion tracking from the 4K viewer.</p><Button onClick={() => void requestUpgrade()} disabled={upgradeBusy} className="bg-[#F5B32F] font-black text-[#071326] hover:bg-[#ffd16e]">{upgradeBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Request Gold access</Button></CardContent>
-  </Card>;
+  if (data?.locked) {
+    const currentPlan = String(data?.plan || "standard").toLowerCase();
+    return <Card className="overflow-hidden border-[#F5B32F]/30">
+      <CardHeader className="bg-gradient-to-r from-[#071326] to-[#0b2752] text-white"><div className="flex items-center gap-3"><Crown className="h-7 w-7 text-[#F5B32F]" /><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#F5B32F]">ResKonnect Premium Tools</p><CardTitle>{currentPlan === "premium" ? "Upgrade to Gold Intelligence" : "Unlock 360 Studio"}</CardTitle></div></div></CardHeader>
+      <CardContent className="space-y-5 p-5">
+        <p className="text-sm text-muted-foreground">{currentPlan === "premium" ? "Your Premium plan includes 4K capture and publishing requests. Gold adds engagement analytics, scene popularity, guided-tour conversion intelligence and extended scene capacity." : "Premium unlocks guided mobile 4K capture and publishing. Gold adds the complete production suite: analytics, guided-tour intelligence and extended scene capacity."}</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {currentPlan !== "premium" && <div className="rounded-2xl border p-4"><p className="font-black">Premium</p><p className="mt-1 text-xs text-muted-foreground">4K mobile capture · Tour Builder · publish review · up to 36 scenes.</p><Button variant="outline" className="mt-4 w-full" onClick={() => void requestUpgrade("premium")} disabled={Boolean(upgradeBusy)}>{upgradeBusy === "premium" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Request Premium</Button></div>}
+          <div className="rounded-2xl border border-[#F5B32F]/40 bg-[#F5B32F]/5 p-4"><div className="flex items-center justify-between gap-2"><p className="font-black">Gold</p><Badge className="bg-[#071326] text-white"><Crown className="mr-1 h-3 w-3 text-[#F5B32F]"/>Full suite</Badge></div><p className="mt-1 text-xs text-muted-foreground">Everything in Premium + analytics · guided intelligence · extended scene capacity.</p><Button className="mt-4 w-full bg-[#F5B32F] font-black text-[#071326] hover:bg-[#ffd16e]" onClick={() => void requestUpgrade("gold")} disabled={Boolean(upgradeBusy)}>{upgradeBusy === "gold" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Request Gold</Button></div>
+        </div>
+      </CardContent>
+    </Card>;
+  }
 
   const metrics = data?.metrics || {};
   return <Card className="overflow-hidden border-[#F5B32F]/25">
