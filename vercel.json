@@ -129,6 +129,8 @@
     { "source": "/partners/landlords", "destination": "/_seo/partners-landlords.html" },
     { "source": "/bursaries", "destination": "/_seo/bursaries.html" },
     { "source": "/campus-news", "destination": "/_seo/campus-news.html" },
+    { "source": "/360-studio", "destination": "/index.html" },
+    { "source": "/360-studio/:path*", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
