@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Bell, Boxes, CalendarDays, ExternalLink, Home, Inbox, LogOut, Megaphone, Menu, Palette, Target } from "lucide-react";
+import { BarChart3, Bell, Boxes, CalendarDays, ExternalLink, Home, Inbox, LogOut, Megaphone, Menu, Palette, Target, Rotate3D } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -28,6 +28,7 @@ const navItems = [
   { icon: Home, label: "Overview", path: "/residence", match: (path: string) => path === "/residence" },
   { icon: CalendarDays, label: "2027 Reservations", path: "/residence/reservations-2027", match: (path: string) => path.startsWith("/residence/reservations-2027") },
   { icon: Palette, label: "Listing & Brand", path: "/residence/listing", match: (path: string) => path.startsWith("/residence/listing") },
+  { icon: Rotate3D, label: "360 Studio", path: "/residence/virtual-tour", match: (path: string) => path.startsWith("/residence/virtual-tour") },
   { icon: Boxes, label: "Inventory & Pricing", path: "/residence/inventory", match: (path: string) => path.startsWith("/residence/inventory") },
   { icon: Megaphone, label: "Recruitment Channel", path: "/residence/recruiters", match: (path: string) => path.startsWith("/residence/recruiters") },
   { icon: Inbox, label: "Applications", path: "/residence/inbox", match: (path: string) => path.startsWith("/residence/inbox") || path.startsWith("/residence/application/") },
@@ -119,6 +120,7 @@ const ResidenceLayout = () => {
             >
               <item.icon className={cn("h-5 w-5 shrink-0", active && "text-[#F5B32F]")} />
               <span className="min-w-0 truncate">{item.label}</span>
+              {item.label === "360 Studio" && <Badge className={cn("ml-auto shrink-0 text-[9px]", active ? "bg-[#F5B32F] text-[#071326]" : "bg-[#071326] text-white")}>PREMIUM</Badge>}
               {badge > 0 && <Badge className={cn("ml-auto shrink-0", active ? "bg-[#F5B32F] text-[#071326] hover:bg-[#F5B32F]" : "bg-primary text-primary-foreground")}>{badge > 99 ? "99+" : badge}</Badge>}
             </Link>
           );
@@ -150,9 +152,10 @@ const ResidenceLayout = () => {
 
       <main className="min-w-0 max-w-full flex-1 overflow-x-hidden lg:ml-72">
         <div className="sticky top-0 z-30 hidden h-16 items-center justify-between border-b bg-background/95 px-6 backdrop-blur lg:flex">
-          <div className="min-w-0"><p className="truncate text-sm font-black text-[#071326] dark:text-foreground">{residence?.name || "Loading residence..."}</p><p className="truncate text-xs text-muted-foreground">Listing quality, 2027 reservations, pricing, recruitment and conversion intelligence.</p></div>
+          <div className="min-w-0"><p className="truncate text-sm font-black text-[#071326] dark:text-foreground">{residence?.name || "Loading residence..."}</p><p className="truncate text-xs text-muted-foreground">Listing quality, 360 Studio, 2027 reservations, pricing, recruitment and conversion intelligence.</p></div>
           <div className="flex shrink-0 items-center gap-2">
             <DashboardUserManual role="landlord" residenceName={residence?.name} inline />
+            <Button variant="outline" className="relative" onClick={() => navigate("/residence/virtual-tour")}><Rotate3D className="mr-2 h-4 w-4" />360 Studio</Button>
             <Button variant="outline" className="relative" onClick={() => navigate("/residence/reservations-2027")}><CalendarDays className="mr-2 h-4 w-4" />2027 Reservations{reservationCount > 0 && <Badge className="ml-2 bg-[#F5B32F] text-[#071326] hover:bg-[#F5B32F]">{reservationCount}</Badge>}</Button>
             <Button variant="outline" className="relative" onClick={() => navigate("/residence/inbox?status=new")}><Inbox className="mr-2 h-4 w-4" />Applications{pendingCount > 0 && <Badge variant="destructive" className="ml-2">{pendingCount}</Badge>}</Button>
             <ThemeToggle />
