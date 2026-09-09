@@ -1,7 +1,7 @@
 // Universal share helpers — canonical URLs + dynamic OG images
 
-const SITE_URL = "https://www.reskonnect.org";
 import { EXTERNAL_SUPABASE_PROJECT_ID } from "@/integrations/supabase/client";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/publicUrl";
 
 const PROJECT_ID = EXTERNAL_SUPABASE_PROJECT_ID;
 
@@ -24,9 +24,9 @@ export function getShareUrl(type: ShareableType, id: string, slug?: string): str
   // For query-style entries (hamper/deal) build differently
   let url: string;
   if (base.includes("?")) {
-    url = `${SITE_URL}${base}=${encodeURIComponent(id)}`;
+    url = `${PUBLIC_SITE_ORIGIN}${base}=${encodeURIComponent(id)}`;
   } else {
-    url = `${SITE_URL}${path}`;
+    url = `${PUBLIC_SITE_ORIGIN}${path}`;
   }
   return `${url}${url.includes("?") ? "&" : "?"}utm_source=share&utm_medium=social`;
 }
