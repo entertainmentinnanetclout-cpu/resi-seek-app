@@ -214,13 +214,25 @@ export function getLiveLocationState() {
 }
 
 export function useLiveLocation() {
-  const [snapshot, setSnapshot] = useState<LiveLocationState>(state);
+  // The subscription forces React renders whenever the GPS/orientation source changes.
+  // The returned properties deliberately read the module source-of-truth through getters.
+  // That matters for async user gestures: after requestLiveLocation() resolves, a callback
+  // created by the previous render must see the newly acquired GPS fix immediately rather
+  // than a stale closure and requiring a second tap.
+  const [, setSnapshot] = useState<LiveLocationState>(state);
   useEffect(() => {
     resumeLiveLocationIfOptedIn();
     return subscribeLiveLocation(setSnapshot);
   }, []);
-  const effectiveHeading = snapshot.position?.heading ?? snapshot.deviceHeading;
-  return { ...snapshot, effectiveHeading };
+
+  return {
+    get status() { return state.status; },
+    get position() { return state.position; },
+    get deviceHeading() { return state.deviceHeading; },
+    get orientationAvailable() { return state.orientationAvailable; },
+    get error() { return state.error; },
+    get effectiveHeading() { return state.position?.heading ?? state.deviceHeading; },
+  };
 }
 
 export function distanceKm(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) {
