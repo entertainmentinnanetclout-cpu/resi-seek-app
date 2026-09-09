@@ -52,6 +52,7 @@ const ApplicationsHub = lazy(() => import("./pages/ApplicationsHub"));
 const ResidenceDetail = lazy(() => import("./pages/ResidenceDetail"));
 const ImmersiveResidence = lazy(() => import("./pages/ImmersiveResidence"));
 const VirtualTourViewerPage = lazy(() => import("./pages/VirtualTourViewerPage"));
+const VirtualTourStudioPage = lazy(() => import("./pages/VirtualTourStudioPage"));
 const AccommodationDemand = lazy(() => import("./pages/AccommodationDemand"));
 const CreatorPartnerPortal = lazy(() => import("./pages/creator/CreatorPartnerPortal"));
 const CreatorLanding = lazy(() => import("./pages/creator/CreatorLanding"));
@@ -153,20 +154,17 @@ const App = () => {
                   <Routes>
                     <Route path="/" element={<Landing />} />
                     <Route path="/get-started" element={<GetStarted />} />
-
                     <Route path="/living" element={<Living />} />
                     <Route path="/living/student-accommodation" element={<StudentAccommodation />} />
                     <Route path="/living/private-rentals" element={<PrivateRentals />} />
                     <Route path="/living/parents" element={<Parents />} />
                     <Route path="/housing-intelligence" element={<HousingIntelligence />} />
-
                     <Route path="/applications" element={<ApplicationsPillar />} />
                     <Route path="/applications/tvet" element={<TvetApplication />} />
                     <Route path="/applications/university" element={<UniversityApplication />} />
                     <Route path="/applications/private-college" element={<PrivateCollegeApplication />} />
                     <Route path="/applications/checker" element={<ApplicationsChecker />} />
                     <Route path="/apply" element={<ApplicationsHub />} />
-
                     <Route path="/career-education" element={<CareerEducation />} />
                     <Route path="/career-education/tumelo" element={<TumeloCareerEducation />} />
                     <Route path="/opportunities" element={<OpportunitiesPillar />} />
@@ -179,7 +177,6 @@ const App = () => {
                     <Route path="/creator-assist/:slug" element={<CreatorAssistanceIntake />} />
                     <Route path="/creator-partners/assist/:caseId" element={<ProtectedRoute><CreatorAssistanceCase /></ProtectedRoute>} />
                     <Route path="/partner/tumelo/os" element={<ProtectedRoute><TumeloIntelligenceOS /></ProtectedRoute>} />
-
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/terms" element={<Terms />} />
                     <Route path="/privacy" element={<Privacy />} />
@@ -190,6 +187,7 @@ const App = () => {
                     <Route path="/find-my-res/:slug" element={<ResidenceDetail />} />
                     <Route path="/find-my-res/:slug/immersive" element={<ImmersiveResidence />} />
                     <Route path="/tour/:token" element={<VirtualTourViewerPage />} />
+                    <Route path="/360-studio" element={<ProtectedRoute><VirtualTourStudioPage /></ProtectedRoute>} />
                     <Route path="/bursaries" element={<BursaryFinder />} />
                     <Route path="/bursary/:id" element={<BursaryDetail />} />
                     <Route path="/marketplace" element={<MarketplaceComingSoon />} />
@@ -210,7 +208,6 @@ const App = () => {
                     <Route path="/recruit/dashboard" element={<ProtectedRoute><RecruiterDashboard /></ProtectedRoute>} />
                     <Route path="/referrals" element={<Referrals />} />
                     <Route path="/recruiter-dashboard" element={<ProtectedRoute><RecruiterDashboard /></ProtectedRoute>} />
-
                     <Route path="/dashboard" element={<StudentRoute><Dashboard /></StudentRoute>} />
                     <Route path="/profile" element={<StudentRoute><Profile /></StudentRoute>} />
                     <Route path="/my-applications" element={<StudentRoute><Applications /></StudentRoute>} />
@@ -223,7 +220,6 @@ const App = () => {
                     <Route path="/setup-profile" element={<StudentRoute><ProfileSetup /></StudentRoute>} />
                     <Route path="/dashboard/updates" element={<StudentRoute><Updates /></StudentRoute>} />
                     <Route path="/my-discount-codes" element={<StudentRoute><MyDiscountCodes /></StudentRoute>} />
-
                     <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
                     <Route path="/admin/analytics" element={<ProtectedRoute><AdminRoute><AdminAnalytics /></AdminRoute></ProtectedRoute>} />
                     <Route path="/admin/growth" element={<ProtectedRoute><AdminRoute><AdminGrowthCommandCentre /></AdminRoute></ProtectedRoute>} />
@@ -236,7 +232,6 @@ const App = () => {
                     <Route path="/admin/system" element={<ProtectedRoute><AdminRoute><AdminSystemHub /></AdminRoute></ProtectedRoute>} />
                     <Route path="/media" element={<ProtectedRoute><SpecialistRoute allowedRoles={["admin", "growth_lead"]}><MediaDashboard /></SpecialistRoute></ProtectedRoute>} />
                     <Route path="/commerce" element={<ProtectedRoute><SpecialistRoute allowedRoles={["admin", "commerce_lead"]}><CommerceDashboard /></SpecialistRoute></ProtectedRoute>} />
-
                     <Route path="/admin/residences" element={<ProtectedRoute><AdminRoute><AdminResidences /></AdminRoute></ProtectedRoute>} />
                     <Route path="/admin/applications" element={<ProtectedRoute><AdminRoute><AdminApplications /></AdminRoute></ProtectedRoute>} />
                     <Route path="/admin/documents" element={<ProtectedRoute><AdminRoute><AdminDocuments /></AdminRoute></ProtectedRoute>} />
@@ -259,9 +254,7 @@ const App = () => {
                     <Route path="/admin/seller-approvals" element={<ProtectedRoute><AdminRoute><AdminSellerApprovals /></AdminRoute></ProtectedRoute>} />
                     <Route path="/admin/recruitment" element={<ProtectedRoute><AdminRoute><AdminRecruitmentProgramme /></AdminRoute></ProtectedRoute>} />
                     <Route path="/admin/tvet" element={<ProtectedRoute><AdminRoute><AdminTvetHub /></AdminRoute></ProtectedRoute>} />
-
                     <Route path="/tvet-dashboard" element={<ProtectedRoute><SpecialistRoute allowedRoles={["tvet_lead", "admin", "super_admin", "developer", "owner"]}><TvetDashboard /></SpecialistRoute></ProtectedRoute>} />
-
                     <Route path="/residence/login" element={<ResidenceLogin />} />
                     <Route path="/residence" element={<ResidenceRoute><ResidenceLayout /></ResidenceRoute>}>
                       <Route index element={<ResidenceDashboard />} />
@@ -275,7 +268,6 @@ const App = () => {
                       <Route path="recruiters" element={<ResidenceRecruitment />} />
                       <Route path="analytics" element={<ResidenceAnalytics />} />
                     </Route>
-
                     <Route path="/student-accommodation" element={<SeoLandingPage pageKey="/student-accommodation" />} />
                     <Route path="/student-accommodation/pretoria-west" element={<SeoLandingPage pageKey="/student-accommodation/pretoria-west" />} />
                     <Route path="/student-accommodation/near-tut" element={<SeoLandingPage pageKey="/student-accommodation/near-tut" />} />
