@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Search, FileText, Menu, LogOut, GraduationCap, Shield, RefreshCw, Briefcase, LogIn, UserPlus, Sparkles } from "lucide-react";
+import { Home, Search, FileText, Menu, LogOut, GraduationCap, Shield, RefreshCw, Briefcase, LogIn, UserPlus, Sparkles, Rotate3D } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -29,10 +29,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   ];
   const authNavItems = [
     { icon: Home, label: "Home", path: "/dashboard" },
+    { icon: Rotate3D, label: "360 Studio", path: "/360-studio" },
     { icon: Briefcase, label: "My WIL", path: "/wil" },
     { icon: FileText, label: "Applications", path: "/applications" },
   ];
-  const adminNavItems = [{ icon: Shield, label: "Admin Portal", path: "/admin" }];
+  const adminNavItems = [{ icon: Shield, label: "Admin Portal", path: "/admin" }, { icon: Rotate3D, label: "360 Studio", path: "/360-studio" }];
   const recruiterNavItems = isRecruiter ? [{ icon: Sparkles, label: "Recruitments", path: "/recruit/dashboard" }] : [];
   const navItems = isAdmin ? adminNavItems : user ? [authNavItems[0], ...publicNavItems, ...authNavItems.slice(1), ...recruiterNavItems] : publicNavItems;
 
