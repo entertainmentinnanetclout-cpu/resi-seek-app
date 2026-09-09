@@ -1,14 +1,14 @@
-// Build: 2026-02-04 v2 - Force env refresh
+// Build: 2026-09-09 - ResMap route Street View bridge
 import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
+import ResMapLiveStreetViewBridge from "@/components/resmap/ResMapLiveStreetViewBridge";
 import "./index.css";
 import "./styles/mobile-foundation.css";
 
 createRoot(document.getElementById("root")!).render(
-  // SEO: The HelmetProvider is essential for managing document head changes with react-helmet-async.
-  // It must wrap your application's root component.
   <HelmetProvider>
     <App />
+    <ResMapLiveStreetViewBridge />
   </HelmetProvider>
 );
