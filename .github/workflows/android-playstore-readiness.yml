@@ -1,0 +1,25 @@
+name: Android Play Store Readiness
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "android/**"
+      - "capacitor.config.*"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/android-playstore-readiness.mjs"
+      - ".github/workflows/android-playstore-readiness.yml"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Android / Play Store audit
+        run: node scripts/android-playstore-readiness.mjs
