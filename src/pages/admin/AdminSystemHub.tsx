@@ -5,7 +5,7 @@ import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Activity, Bot, Brain, Building2, ChevronDown, ClipboardCheck, Cpu, GraduationCap, HeartPulse, Layers3, Megaphone, MessageCircle, Settings, Sparkles, Users, Zap } from "lucide-react";
+import { Activity, Bot, Brain, Building2, ChevronDown, ClipboardCheck, Cpu, GraduationCap, HeartPulse, Layers3, Megaphone, MessageCircle, Settings, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
 import { AdminWILContent } from "./AdminWIL";
 import { AdminWhatsAppTemplatesContent } from "./AdminWhatsAppTemplates";
 import { AdminSystemStatusContent } from "./AdminSystemStatus";
