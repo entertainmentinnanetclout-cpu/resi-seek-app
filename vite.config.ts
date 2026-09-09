@@ -3,7 +3,6 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { VitePWA } from "vite-plugin-pwa";
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   return {
     server: {
@@ -12,39 +11,57 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
-      // Only enable PWA in production to avoid dev caching/black screen issues
       mode === "production" &&
         VitePWA({
           registerType: "autoUpdate",
           devOptions: { enabled: false },
-          includeAssets: ["icon-192.png", "icon-512.png", "icon-1024.png"],
+          includeAssets: [
+            "apple-touch-icon.png",
+            "icon-192.png",
+            "icon-512.png",
+            "icon-1024.png",
+            "maskable-icon-192.png",
+            "maskable-icon-512.png",
+          ],
           manifest: {
-            name: "ResKonnect Simplified Portal",
+            name: "ResKonnect — Living, AI, Opportunity",
             short_name: "ResKonnect",
             description:
-              "Student Hub and Marketplace – campus life, accommodation, and career connection made easy.",
-            theme_color: "#141414",
-            background_color: "#000000",
+              "Student accommodation, application readiness, live ResMap navigation, opportunities and AI guidance.",
+            theme_color: "#071326",
+            background_color: "#FFFFFF",
             display: "standalone",
-            orientation: "portrait",
+            orientation: "portrait-primary",
             icons: [
               {
                 src: "/icon-192.png",
                 sizes: "192x192",
                 type: "image/png",
-                purpose: "any maskable",
+                purpose: "any",
               },
               {
                 src: "/icon-512.png",
                 sizes: "512x512",
                 type: "image/png",
-                purpose: "any maskable",
+                purpose: "any",
               },
               {
                 src: "/icon-1024.png",
                 sizes: "1024x1024",
                 type: "image/png",
-                purpose: "any maskable",
+                purpose: "any",
+              },
+              {
+                src: "/maskable-icon-192.png",
+                sizes: "192x192",
+                type: "image/png",
+                purpose: "maskable",
+              },
+              {
+                src: "/maskable-icon-512.png",
+                sizes: "512x512",
+                type: "image/png",
+                purpose: "maskable",
               },
             ],
           },
