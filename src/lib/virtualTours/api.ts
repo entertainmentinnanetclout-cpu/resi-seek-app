@@ -59,10 +59,34 @@ export async function tourApi<T = any>(action: string, payload: Record<string, a
     const row=await db.from("virtual_tour_entitlements").insert({residence_id:residenceId,plan,entitlements,is_active:true,source:"god_mode",granted_by:user.id}).select("*").single();
     return {ok:true,entitlement:unwrap(row)} as T;
   }
+  if (action === "request_upgrade") {
+    const residenceId=safe(payload.residence_id,64); await accessForResidence(residenceId);
+    const requestedPlan=["premium","gold"].includes(payload.requested_plan)?payload.requested_plan:"gold";
+    const residence=unwrap<any>(await db.from("residences").select("id,name").eq("id",residenceId).maybeSingle(),null);
+    const message=`Hi ResKonnect, I would like to upgrade ${residence?.name || "my residence"} to the ${String(requestedPlan).toUpperCase()} 360 Studio plan.`;
+    try { await db.from("virtual_tour_upgrade_requests").insert({residence_id:residenceId,requested_by:user.id,requested_plan:requestedPlan,status:"pending",metadata:{source:"property_os",release:"rg3-rg4"}}); } catch { /* WhatsApp fallback remains available before migration rollout. */ }
+    return {ok:true,requested_plan:requestedPlan,whatsapp_url:`https://wa.me/27637323192?text=${encodeURIComponent(message)}`} as T;
+  }
   if (action === "residence_workspace") {
     const residenceId=safe(payload.residence_id,64); const access=await accessForResidence(residenceId);
     const [residence,tours]=await Promise.all([db.from("residences").select("id,name,slug,campus,city,cover_image_url,image_url").eq("id",residenceId).maybeSingle(),db.from("virtual_tours").select("id,title,status,quality_tier,public_token,current_version,published_at,updated_at,virtual_tour_scenes(id,name,area_type,floor_label,status,quality_score,panorama_url,thumbnail_path,is_start,sort_order)").eq("residence_id",residenceId).order("updated_at",{ascending:false})]);
     return {ok:true,access,residence:unwrap(residence,null),tours:unwrap(tours,[])} as T;
+  }
+  if (action === "analytics_summary") {
+    const residenceId=safe(payload.residence_id,64); const access=await accessForResidence(residenceId);
+    const analyticsAllowed=Boolean(access.admin)||access.plan==="gold"||access.plan==="internal"||(access.entitlements||[]).includes("virtual_tour.analytics");
+    if(!analyticsAllowed) return {ok:true,locked:true,plan:access.plan,days:30} as T;
+    const days=Math.max(1,Math.min(180,Number(payload.days||30)||30)); const since=new Date(Date.now()-days*86400000).toISOString();
+    const tours=await db.from("virtual_tours").select("id,title").eq("residence_id",residenceId); if(tours.error) throw tours.error;
+    const ids=(tours.data||[]).map((row:any)=>row.id); if(!ids.length) return {ok:true,locked:false,days,metrics:{tour_opens:0,unique_viewers:0,scene_views:0,conversion_actions:0,guided_starts:0,guided_completions:0},top_scenes:[]} as T;
+    const events=await db.from("virtual_tour_analytics").select("tour_id,scene_id,event_type,viewer_session,created_at,metadata").in("tour_id",ids).gte("created_at",since).order("created_at",{ascending:false}).limit(10000); if(events.error) throw events.error;
+    const sceneRows=await db.from("virtual_tour_scenes").select("id,name,area_type").in("tour_id",ids); if(sceneRows.error) throw sceneRows.error;
+    const rows=events.data||[]; const count=(type:string)=>rows.filter((row:any)=>row.event_type===type).length;
+    const conversionTypes=new Set(["listing_click","apply_click","contact_click","whatsapp_click","guided_complete","hotspot_cta"]);
+    const sceneViews=new Map<string,number>(); rows.filter((row:any)=>row.event_type==="scene_view"&&row.scene_id).forEach((row:any)=>sceneViews.set(row.scene_id,(sceneViews.get(row.scene_id)||0)+1));
+    const sceneMap=new Map((sceneRows.data||[]).map((scene:any)=>[scene.id,scene]));
+    const topScenes=[...sceneViews.entries()].map(([sceneId,views])=>({...sceneMap.get(sceneId),scene_id:sceneId,views})).sort((a:any,b:any)=>b.views-a.views).slice(0,10);
+    return {ok:true,locked:false,days,metrics:{tour_opens:count("tour_open"),unique_viewers:new Set(rows.map((row:any)=>row.viewer_session).filter(Boolean)).size,scene_views:count("scene_view"),conversion_actions:rows.filter((row:any)=>conversionTypes.has(row.event_type)).length,guided_starts:count("guided_start"),guided_completions:count("guided_complete"),fullscreen:count("fullscreen"),apply_clicks:count("apply_click"),listing_clicks:count("listing_click"),contact_clicks:count("contact_click")},top_scenes:topScenes} as T;
   }
   if (action === "create_tour") {
     const residenceId=safe(payload.residence_id,64); const access=await accessForResidence(residenceId); if(!access.allowed) throw new Error("360 Studio Premium or Gold entitlement required");
@@ -72,7 +96,8 @@ export async function tourApi<T = any>(action: string, payload: Record<string, a
   }
   if (action === "create_scene") {
     const tour=await getTour(safe(payload.tour_id,64)); if(!tour) throw new Error("Tour not found"); const access=await accessForResidence(tour.residence_id); if(!access.allowed) throw new Error("Tour access denied");
-    const count=await db.from("virtual_tour_scenes").select("id",{count:"exact",head:true}).eq("tour_id",tour.id); if(count.error) throw count.error; const n=Number(count.count||0); if(n>=120) throw new Error("Scene limit reached");
+    const count=await db.from("virtual_tour_scenes").select("id",{count:"exact",head:true}).eq("tour_id",tour.id); if(count.error) throw count.error; const n=Number(count.count||0);
+    const unlimited=Boolean(access.admin)||access.plan==="gold"||access.plan==="internal"||(access.entitlements||[]).includes("virtual_tour.unlimited_scenes"); const limit=unlimited?120:36; if(n>=limit) throw new Error(unlimited?"Scene safety limit reached":"Premium includes up to 36 scenes. Upgrade to Gold for extended scene capacity.");
     const sourceMode=["guided_mobile","equirectangular_import","camera_360_import"].includes(payload.source_mode)?payload.source_mode:"guided_mobile";
     const row=await db.from("virtual_tour_scenes").insert({tour_id:tour.id,name:safe(payload.name,120)||`Scene ${n+1}`,area_type:safe(payload.area_type,30)||"room",floor_label:safe(payload.floor_label,80)||null,room_label:safe(payload.room_label,80)||null,source_mode:sourceMode,sort_order:n,is_start:n===0}).select("*").single();
     if(tour.status!=="published") await db.from("virtual_tours").update({status:"capturing"}).eq("id",tour.id); return {ok:true,scene:unwrap(row)} as T;
@@ -109,6 +134,12 @@ export async function tourApi<T = any>(action: string, payload: Record<string, a
 
 export async function uploadSignedAsset(input: { bucket: string; path: string; token?: string; file: Blob; contentType?: string }) {
   const storage=supabase.storage.from(input.bucket); const options={contentType:input.contentType||input.file.type||"image/jpeg",upsert:false}; const result=input.token?await storage.uploadToSignedUrl(input.path,input.token,input.file,options):await storage.upload(input.path,input.file,options); if(result.error) throw result.error; return input.path;
+}
+export async function publicTourForResidence(residenceId: string) {
+  if (!residenceId) return null;
+  const now=new Date().toISOString();
+  const result=await db.from("virtual_tour_publications").select("tour_id,residence_id,version_number,public_token,published_at,valid_until,status").eq("residence_id",residenceId).eq("status","published").or(`valid_until.is.null,valid_until.gt.${now}`).order("published_at",{ascending:false}).limit(1).maybeSingle();
+  if(result.error){console.warn("[360 Studio] marketplace lookup failed",result.error);return null;} return result.data||null;
 }
 export async function publicTourSnapshot(publicToken: string) { const {data,error}=await db.rpc("virtual_tour_public_snapshot",{p_public_token:publicToken}); if(error) throw error; return data||{}; }
 export async function recordTourEvent(input: { tourId: string; sceneId?: string | null; eventType: string; viewerSession: string; anonymousId?: string; metadata?: Record<string, unknown> }) { const {error}=await db.rpc("record_virtual_tour_event",{p_tour_id:input.tourId,p_scene_id:input.sceneId||null,p_event_type:input.eventType,p_viewer_session:input.viewerSession,p_anonymous_id:input.anonymousId||null,p_metadata:input.metadata||{}}); if(error) console.warn("[360 Studio] analytics event failed",error); }
