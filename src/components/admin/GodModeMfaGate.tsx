@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 interface Props {
@@ -37,8 +38,24 @@ function normalizeQr(value?: string | null) {
   return value;
 }
 
+function readAal(accessToken?: string | null): "aal1" | "aal2" | null {
+  if (!accessToken) return null;
+  try {
+    const payload = accessToken.split(".")[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const decoded = JSON.parse(atob(padded));
+    return decoded?.aal === "aal2" ? "aal2" : decoded?.aal === "aal1" ? "aal1" : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function GodModeMfaGate({ children }: Props) {
-  const [state, setState] = useState<GateState>("checking");
+  const { session } = useAuth();
+  const tokenAal = useMemo(() => readAal(session?.access_token), [session?.access_token]);
+  const [state, setState] = useState<GateState>(() => tokenAal === "aal2" ? "ready" : "checking");
   const [factor, setFactor] = useState<EnrolledFactor | null>(null);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [code, setCode] = useState("");
@@ -46,6 +63,15 @@ export default function GodModeMfaGate({ children }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const verifySession = useCallback(async () => {
+    // A signed Supabase access token already carries the authoritative AAL claim.
+    // Backend RLS/RPC policies still enforce AAL2, so this optimization only
+    // prevents unnecessary UI challenges and does not weaken authorization.
+    if (readAal(session?.access_token) === "aal2") {
+      setState("ready");
+      setErrorMessage(null);
+      return;
+    }
+
     setState("checking");
     setErrorMessage(null);
 
@@ -81,9 +107,15 @@ export default function GodModeMfaGate({ children }: Props) {
     setEnrollment(data as Enrollment);
     setFactor({ id: data.id, status: "unverified", friendly_name: "ResKonnect God Mode" });
     setState("enroll");
-  }, []);
+  }, [session?.access_token]);
 
   useEffect(() => {
+    if (tokenAal === "aal2") {
+      setState("ready");
+      setErrorMessage(null);
+      return;
+    }
+
     let active = true;
     verifySession().catch((error) => {
       if (!active) return;
@@ -92,7 +124,7 @@ export default function GodModeMfaGate({ children }: Props) {
       setState("error");
     });
     return () => { active = false; };
-  }, [verifySession]);
+  }, [tokenAal, verifySession]);
 
   const submitCode = async () => {
     if (!factor?.id || !/^\d{6}$/.test(code)) {
