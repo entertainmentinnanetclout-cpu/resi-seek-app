@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BedDouble, Bike, Building2, Bus, Car, CheckCircle2, Clock3, ExternalLink, Footprints, MapPin, Route, ShieldCheck, Sparkles, View, Wifi, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ interface Props {
   routeInfo?: RouteInfo | null;
   nearby?: NearbyPlace[];
   travelMode: TravelMode;
-  onRoute: () => void;
+  onRoute: () => void | Promise<void>;
   onClose: () => void;
 }
 
@@ -22,6 +22,7 @@ const iconForMode = (mode: TravelMode) => mode === "walk" ? Footprints : mode ==
 
 export default function ResMapResidenceCard({ residence, routeInfo, nearby = [], travelMode, onRoute, onClose }: Props) {
   const navigate = useNavigate();
+  const [routing, setRouting] = useState(false);
   const image = residence.cover_image_url || residence.image_url || (Array.isArray(residence.images) ? residence.images[0] : null);
   const slug = residence.slug || residence.id;
   const spots = Number(residence.available_spots || 0);
@@ -29,6 +30,16 @@ export default function ResMapResidenceCard({ residence, routeInfo, nearby = [],
   const ModeIcon = iconForMode(travelMode);
   const roomTypes = useMemo(() => Array.from(new Set([...(residence.room_types || []), residence.room_type].filter(Boolean))) as string[], [residence]);
   const approximate = residence.location_verification_status === "approximate" || residence.geocode_source === "campus_area_approximation";
+
+  const startRoute = async () => {
+    if (routing || approximate) return;
+    setRouting(true);
+    try {
+      await onRoute();
+    } finally {
+      setRouting(false);
+    }
+  };
 
   return (
     <section
@@ -71,7 +82,7 @@ export default function ResMapResidenceCard({ residence, routeInfo, nearby = [],
           {nearby.length > 0 && <div><div className="mb-2 flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /><p className="text-sm font-bold">Nearby on the live map</p></div><div className="flex gap-2 overflow-x-auto pb-1">{nearby.slice(0, 6).map((place) => <div key={`${place.name}-${place.kind}`} className="min-w-[140px] rounded-xl border bg-background p-2"><p className="truncate text-xs font-semibold">{place.name}</p><p className="mt-0.5 text-[10px] capitalize text-muted-foreground">{place.kind}{place.distanceKm != null ? ` · ${place.distanceKm.toFixed(1)} km` : ""}</p></div>)}</div></div>}
 
           <div className="grid grid-cols-2 gap-2">
-            <Button className="min-w-0" variant="outline" disabled={approximate} onClick={onRoute}><Route className="mr-1.5 h-4 w-4 shrink-0" /><span className="truncate">{approximate ? "Route pending" : "Route here"}</span></Button>
+            <Button className="min-w-0" variant="outline" disabled={approximate || routing} aria-busy={routing} onClick={() => void startRoute()}><Route className={`mr-1.5 h-4 w-4 shrink-0 ${routing ? "animate-pulse" : ""}`} /><span className="truncate">{routing ? "Starting route…" : approximate ? "Route pending" : "Route here"}</span></Button>
             <Button className="min-w-0" onClick={() => navigate(`/find-my-res/${slug}?intent=secure`)}><CheckCircle2 className="mr-1.5 h-4 w-4 shrink-0" /><span className="truncate">View & secure</span></Button>
           </div>
           <Button className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white" onClick={() => navigate(`/find-my-res/${slug}/immersive`)}><View className="mr-2 h-4 w-4" />Open Immersive Living</Button>
