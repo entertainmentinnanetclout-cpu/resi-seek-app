@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Home, LogOut, LayoutDashboard, RefreshCw, TrendingUp, Cpu, MessageCircle, Layers3 } from "lucide-react";
+import { Home, LogOut, LayoutDashboard, RefreshCw, TrendingUp, Cpu, MessageCircle, Layers3, Rotate3D } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import DashboardUserManual from "@/components/manuals/DashboardUserManual";
 import AdminOSCommandBar from "@/components/admin/AdminOSCommandBar";
@@ -17,6 +17,7 @@ const allNavItems=[
   {icon:LayoutDashboard,label:"Overview",path:"/admin",roles:GOD_MODE_ROLES},
   {icon:MessageCircle,label:"Communications",path:"/admin/system?tab=communications",roles:GOD_MODE_ROLES},
   {icon:Layers3,label:"Operations",path:"/admin/system?tab=operations",roles:GOD_MODE_ROLES},
+  {icon:Rotate3D,label:"360 Studio",path:"/admin/operations?tab=360-gold",roles:GOD_MODE_ROLES},
   {icon:TrendingUp,label:"Growth & Partners",path:"/admin/growth",roles:GOD_MODE_ROLES},
   {icon:Cpu,label:"Platform",path:"/admin/system?tab=platform",roles:GOD_MODE_ROLES},
 ];

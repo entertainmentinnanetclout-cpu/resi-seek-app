@@ -24,6 +24,15 @@ async function caller(req:Request,body:any){
   return{internal:false,userId:user?.id||null,staff,role:staff?"staff":"user"};
 }
 
+async function publishedTourForResidence(residenceId:string){
+  const now=new Date().toISOString();
+  const {data,error}=await service!.from("virtual_tour_publications").select("tour_id,residence_id,version_number,public_token,snapshot,published_at,valid_until,status").eq("residence_id",residenceId).eq("status","published").or(`valid_until.is.null,valid_until.gt.${now}`).order("published_at",{ascending:false}).limit(1).maybeSingle();
+  if(error)throw error;
+  if(!data)return null;
+  const scenes=Array.isArray(data.snapshot?.scenes)?data.snapshot.scenes:[];
+  return{tour_id:data.tour_id,public_token:data.public_token,version_number:data.version_number,published_at:data.published_at,valid_until:data.valid_until,url:`${PUBLIC_BASE}/tour/${data.public_token}`,scene_count:scenes.length,scenes:scenes.map((s:any)=>({id:s.id,name:s.name,area_type:s.area_type,floor_label:s.floor_label||null,room_label:s.room_label||null,quality_score:Number(s.quality_score||0),is_start:Boolean(s.is_start),panorama_url:s.panorama_url||null})).slice(0,120)};
+}
+
 async function executeTool(toolKey:string,args:any,contextUserId:string|null,contactId:string|null,threadRef:string|null){
   const a=args&&typeof args==="object"?args:{};
   if(toolKey==="get_customer_profile"){
@@ -55,14 +64,35 @@ async function executeTool(toolKey:string,args:any,contextUserId:string|null,con
     if(a.nsfas===true)q=q.eq("accepts_nsfas",true);
     const room=safeText(a.room_type,80);if(room)q=q.ilike("room_type",`%${room}%`);
     const {data,error}=await q;if(error)throw error;
-    return{residences:(data||[]).map((r:any)=>({...r,url:r.slug?`${PUBLIC_BASE}/find-my-res/${encodeURIComponent(r.slug)}`:PUBLIC_BASE+"/find"}))};
+    const rows=data||[];
+    const tours=await Promise.all(rows.map((r:any)=>publishedTourForResidence(r.id).catch(()=>null)));
+    return{residences:rows.map((r:any,index:number)=>({...r,url:r.slug?`${PUBLIC_BASE}/find-my-res/${encodeURIComponent(r.slug)}`:PUBLIC_BASE+"/find",virtual_tour:tours[index]?{available:true,url:tours[index].url,scene_count:tours[index].scene_count,published_at:tours[index].published_at}:null}))};
   }
   if(toolKey==="get_residence_details"){
     const id=safeText(a.residence_id,64),slug=safeText(a.slug,180);if(!id&&!slug)throw new Error("residence_id or slug required");
     let q=service!.from("residences").select("id,name,slug,address,canonical_address,campus,city,province,description,price,private_price,nsfas_price,available_spots,capacity,room_type,room_types,amenities,accepts_nsfas,is_tut_accredited,has_wifi,is_furnished,has_parking,utilities_included,distance_from_campus,verification_level,location_verification_status,cover_image_url,image_url,images,whatsapp_phone").eq("is_visible",true).eq("map_hidden",false);
     q=id?q.eq("id",id):q.eq("slug",slug);
     const {data,error}=await q.maybeSingle();if(error)throw error;
-    return{residence:data?{...data,url:data.slug?`${PUBLIC_BASE}/find-my-res/${encodeURIComponent(data.slug)}`:PUBLIC_BASE+"/find"}:null};
+    const vt=data?await publishedTourForResidence(data.id).catch(()=>null):null;
+    return{residence:data?{...data,url:data.slug?`${PUBLIC_BASE}/find-my-res/${encodeURIComponent(data.slug)}`:PUBLIC_BASE+"/find",virtual_tour:vt?{available:true,url:vt.url,scene_count:vt.scene_count,published_at:vt.published_at}:null}:null};
+  }
+  if(toolKey==="get_virtual_tour"){
+    const id=safeText(a.residence_id,64),slug=safeText(a.slug,180);if(!id&&!slug)throw new Error("residence_id or slug required");
+    let q=service!.from("residences").select("id,name,slug,campus,address,is_visible,map_hidden").eq("is_visible",true).eq("map_hidden",false);
+    q=id?q.eq("id",id):q.eq("slug",slug);
+    const {data:residence,error}=await q.maybeSingle();if(error)throw error;if(!residence)return{residence:null,virtual_tour:null};
+    const vt=await publishedTourForResidence(residence.id);
+    return{residence:{id:residence.id,name:residence.name,slug:residence.slug,campus:residence.campus,address:residence.address,url:residence.slug?`${PUBLIC_BASE}/find-my-res/${encodeURIComponent(residence.slug)}`:PUBLIC_BASE+"/find"},virtual_tour:vt?{available:true,url:vt.url,public_token:vt.public_token,scene_count:vt.scene_count,published_at:vt.published_at,valid_until:vt.valid_until,scenes:vt.scenes.map((s:any)=>({id:s.id,name:s.name,area_type:s.area_type,floor_label:s.floor_label,quality_score:s.quality_score,is_start:s.is_start}))}:null};
+  }
+  if(toolKey==="get_virtual_tour_scene"){
+    const token=safeText(a.public_token,64);if(!token)throw new Error("public_token required");
+    const now=new Date().toISOString();
+    const {data:pub,error}=await service!.from("virtual_tour_publications").select("tour_id,residence_id,public_token,snapshot,published_at,valid_until,status").eq("public_token",token).eq("status","published").or(`valid_until.is.null,valid_until.gt.${now}`).maybeSingle();
+    if(error)throw error;if(!pub)return{scene:null};
+    const scenes=Array.isArray(pub.snapshot?.scenes)?pub.snapshot.scenes:[];
+    const wantedName=safeText(a.scene_name,120).toLowerCase(),wantedArea=safeText(a.area_type,60).toLowerCase();
+    const matches=scenes.filter((s:any)=>(!wantedName||String(s.name||"").toLowerCase().includes(wantedName))&&(!wantedArea||String(s.area_type||"").toLowerCase()===wantedArea));
+    return{tour_url:`${PUBLIC_BASE}/tour/${pub.public_token}`,published_at:pub.published_at,scenes:matches.slice(0,12).map((s:any)=>({id:s.id,name:s.name,area_type:s.area_type,floor_label:s.floor_label||null,room_label:s.room_label||null,quality_score:Number(s.quality_score||0),is_start:Boolean(s.is_start),panorama_url:s.panorama_url||null}))};
   }
   if(toolKey==="get_opportunities"){
     const limit=clamp(Number(a.limit||8)||8,1,20);

@@ -40,6 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [sessionChecked, setSessionChecked] = useState(false);
   const navigate = useNavigate();
   const initRef = useRef(false);
+  const currentUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (initRef.current) return;
@@ -52,6 +53,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data: { session: existingSession } } = await supabase.auth.getSession();
         if (!mounted) return;
         if (existingSession) {
+          currentUserIdRef.current = existingSession.user.id;
           setSession(existingSession);
           setUser(existingSession.user);
         }
@@ -64,13 +66,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
-      // A new authenticated session must resolve all scoped roles before any
-      // route is allowed to render. This prevents partner accounts from being
-      // treated as students for one render while their partnership RPC is pending.
-      if (nextSession) setIsLoading(true);
+
+      const nextUserId = nextSession?.user?.id ?? null;
+      const identityChanged = currentUserIdRef.current !== nextUserId;
+      currentUserIdRef.current = nextUserId;
+
+      // TOKEN_REFRESHED is a normal background security event. It must update the
+      // tokens without tearing down the authenticated UI or remounting MFA gates.
+      // Only an actual identity/session boundary blocks the app for role resolution.
+      if (identityChanged && nextSession) setIsLoading(true);
+
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setSessionChecked(true);
+
+      if (!nextSession && event === "SIGNED_OUT") {
+        setIsLoading(false);
+      }
     });
 
     initAuth();
@@ -152,6 +164,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    currentUserIdRef.current = null;
     setUser(null);
     setSession(null);
     setIsAdmin(false);
