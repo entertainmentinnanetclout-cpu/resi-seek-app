@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { Building2, Camera, MapPin, ShieldCheck } from "lucide-react";
 import { BRAND } from "@/constants/brand";
 import ResidencePosterDownloadButton from "@/components/findmyres/ResidencePosterDownloadButton";
+import VirtualTourMarketBadge from "@/components/virtualTours/VirtualTourMarketBadge";
 
 interface ResidenceBrandStudioCardProps {
   residence: any;
@@ -78,8 +79,9 @@ export default function ResidenceBrandStudioCard({ residence, className = "", sh
           </div>
           <ResidencePosterDownloadButton residence={residence} compact className="shrink-0" />
         </div>
-        <div className="mt-5 inline-flex max-w-[72%] items-center rounded-md bg-[var(--rk-gold)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#00102f] shadow-lg sm:text-xs">
-          {badge}
+        <div className="mt-5 flex max-w-[88%] flex-wrap items-center gap-2">
+          <span className="inline-flex max-w-[72%] items-center rounded-md bg-[var(--rk-gold)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#00102f] shadow-lg sm:text-xs">{badge}</span>
+          <VirtualTourMarketBadge residenceId={residence?.id} residenceName={residence?.name} compact />
         </div>
       </div>
 
