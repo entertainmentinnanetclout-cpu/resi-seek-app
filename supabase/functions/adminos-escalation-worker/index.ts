@@ -9,6 +9,7 @@ const authToken = env("TWILIO_AUTH_TOKEN");
 const fromNumber = env("TWILIO_WHATSAPP_FROM");
 const statusCallback = env("TWILIO_WHATSAPP_STATUS_CALLBACK_URL");
 const CONTENT_KEY = "rk_internal_escalation_alert_v1";
+const ADMINOS_DECK_URL = "https://www.reskonnect.org/admin/system?tab=communications";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -26,6 +27,7 @@ const wa = (value = "") => {
   return n ? `whatsapp:${n}` : "";
 };
 const basic = () => `Basic ${btoa(`${accountSid}:${authToken}`)}`;
+const directChatUrl = (threadId: string) => `${ADMINOS_DECK_URL}&thread=${encodeURIComponent(threadId)}`;
 
 async function authorized(req: Request, service: any) {
   const token = req.headers.get("x-adminos-cron-token") || "";
@@ -74,13 +76,22 @@ async function sendAlert(service: any, alert: any, template: any) {
 
   const reason = String(alert.reason || "Human assistance requested on WhatsApp").slice(0, 300);
   const customer = String(alert.customer_label || "WhatsApp customer").slice(0, 120);
+  const threadId = String(alert.thread_id || "");
+  if (!threadId) throw new Error("Escalation alert is missing its WhatsApp thread ID");
+  const chatUrl = directChatUrl(threadId);
   const openWindow = await recipientWindowOpen(service, recipient);
 
   let sent: any;
   let deliveryMode: "session_text" | "approved_template";
 
   if (openWindow) {
-    const body = `ResKonnect escalation alert. ${customer} needs human attention. Reason: ${reason}. Open AdminOS: https://www.reskonnect.org/admin/system?tab=communications`;
+    const body = [
+      "ResKonnect escalation alert.",
+      `${customer} needs human attention.`,
+      `Reason: ${reason}`,
+      `Open this chat: ${chatUrl}`,
+      `WhatsApp Deck: ${ADMINOS_DECK_URL}`,
+    ].join("\n");
     sent = await twilioSend(new URLSearchParams({
       From: wa(fromNumber),
       To: wa(recipient),
@@ -90,11 +101,16 @@ async function sendAlert(service: any, alert: any, template: any) {
   } else {
     if (!template?.content_sid) return { waiting: true, reason: "escalation_template_not_created" };
     if (template.status !== "approved") return { waiting: true, reason: `escalation_template_${template.status || "not_ready"}` };
+
+    // Preserve the already Meta-approved utility template. Variable 2 carries the
+    // reason plus the exact conversation deep-link; the approved static body still
+    // appends the general AdminOS Communications link, so executives receive both.
+    const reasonWithChat = `${reason}. Open this chat: ${chatUrl}`.slice(0, 900);
     sent = await twilioSend(new URLSearchParams({
       From: wa(fromNumber),
       To: wa(recipient),
       ContentSid: template.content_sid,
-      ContentVariables: JSON.stringify({ "1": customer, "2": reason }),
+      ContentVariables: JSON.stringify({ "1": customer, "2": reasonWithChat }),
     }));
     deliveryMode = "approved_template";
   }
@@ -110,10 +126,12 @@ async function sendAlert(service: any, alert: any, template: any) {
       delivery_mode: deliveryMode,
       persona: "Dimpho",
       alert_id: alert.id,
+      chat_url: chatUrl,
+      deck_url: ADMINOS_DECK_URL,
     },
   });
 
-  return { waiting: false, sent, deliveryMode };
+  return { waiting: false, sent, deliveryMode, chatUrl };
 }
 
 serve(async (req) => {
@@ -165,7 +183,7 @@ serve(async (req) => {
         last_error: null,
         updated_at: new Date().toISOString(),
       }).eq("id", alert.id);
-      results.push({ id: alert.id, status: "sent", delivery_mode: result.deliveryMode });
+      results.push({ id: alert.id, status: "sent", delivery_mode: result.deliveryMode, chat_url: result.chatUrl });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const blocked = attempts >= 6;
