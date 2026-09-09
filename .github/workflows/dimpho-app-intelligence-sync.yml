@@ -1,0 +1,37 @@
+name: Dimpho App Intelligence Sync
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync production app graph
+        env:
+          DIMPHO_WORKER_URL: https://mefjzkhobkltlbmhusdh.supabase.co/functions/v1/dimpho-intelligence-worker
+        run: |
+          set -euo pipefail
+          response="$(curl --fail-with-body --retry 3 --retry-delay 3 --max-time 120 -sS \
+            -H 'Content-Type: application/json' \
+            -d "{\"action\":\"app_sync\",\"source\":\"github_action\",\"commit\":\"${GITHUB_SHA}\"}" \
+            "$DIMPHO_WORKER_URL")"
+          echo "$response"
+          echo "$response" | grep -q '"ok":true'
+
+      - name: Index new route and feature knowledge
+        env:
+          DIMPHO_WORKER_URL: https://mefjzkhobkltlbmhusdh.supabase.co/functions/v1/dimpho-intelligence-worker
+        run: |
+          set -euo pipefail
+          response="$(curl --fail-with-body --retry 3 --retry-delay 3 --max-time 120 -sS \
+            -H 'Content-Type: application/json' \
+            -d '{"action":"knowledge","source":"github_action"}' \
+            "$DIMPHO_WORKER_URL")"
+          echo "$response"
+          echo "$response" | grep -q '"ok":true'
