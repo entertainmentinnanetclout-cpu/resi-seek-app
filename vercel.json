@@ -14,7 +14,60 @@
       "seo/*": false
     }
   },
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        { "type": "header", "key": "host", "value": "reskonnect.org" }
+      ],
+      "destination": "https://www.reskonnect.org/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        { "type": "header", "key": "host", "value": "reskonnect.co.za" }
+      ],
+      "destination": "https://www.reskonnect.org/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        { "type": "header", "key": "host", "value": "www.reskonnect.co.za" }
+      ],
+      "destination": "https://www.reskonnect.org/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        { "type": "header", "key": "host", "value": { "suf": ".vercel.app" } }
+      ],
+      "destination": "https://www.reskonnect.org/:path*",
+      "permanent": true
+    },
+    { "source": "/find-my-res", "destination": "/find", "permanent": true }
+  ],
   "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/registerSW.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
+      ]
+    },
     {
       "source": "/sitemap.xml",
       "headers": [
