@@ -84,6 +84,9 @@ verify_jwt = false
 [functions.adminos-executive]
 verify_jwt = false
 
+[functions.dimpho-intelligence-worker]
+verify_jwt = false
+
 [functions.resmap-geocode-worker]
 verify_jwt = false
 
