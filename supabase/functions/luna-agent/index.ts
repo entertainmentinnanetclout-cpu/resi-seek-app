@@ -130,7 +130,7 @@ Deno.serve(async(req)=>{
   }catch(error){
     const detail=error instanceof Error?error.message:String(error);
     if(runId)await service.from("adminos_agent_runs").update({status:"failed",output:{error:detail},completed_at:new Date().toISOString()}).eq("id",runId);
-    await service.from("adminos_agent_errors").insert({agent_key:"luna_core",run_id:runId,error_code:"LUNA_RUNTIME",error_message:detail,retryable:true,context:{action}}).catch(()=>null);
+    try{await service.from("adminos_agent_errors").insert({run_id:runId,error_code:"LUNA_RUNTIME",error_message:detail,retryable:true,context:{agent_key:"luna_core",action}});}catch{/* error logging must not mask the original failure */}
     return json({error:"Luna is temporarily unavailable",detail,answer:"I can’t verify a safe answer right now. Your enquiry can be reviewed rather than guessed.",confidence:.3,risk:"amber",escalate:true,identity:"luna",release:RELEASE},503);
   }
 });
