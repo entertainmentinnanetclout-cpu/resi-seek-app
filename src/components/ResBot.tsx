@@ -18,18 +18,18 @@ interface Message {
 const getFallbackResponse = (input: string): string => {
   const lower = input.toLowerCase();
   if (/^(hi|hello|hey|howzit|molo|sawubona|dumelang)/i.test(lower)) {
-    return "Hi! I’m ResBot, powered by Konnect Agent. I can help with ResKonnect, accommodation and application questions.";
+    return "Hi, I’m Luna — ResKonnect’s website intelligence assistant. I can help with accommodation, applications, opportunities and ResKonnect services.";
   }
   if (/nsfas/i.test(lower)) {
-    return "NSFAS eligibility and accommodation rules can change. Check the current residence listing and your live application details in ResKonnect; if something is unclear, I’ll route it to the team rather than guess.";
+    return "NSFAS eligibility and accommodation rules can change. Check the current residence listing and your live application details in ResKonnect; if something is unclear, I won’t guess.";
   }
   if (/price|cost|cheap|affordable/i.test(lower)) {
-    return "Use Find My Res for current prices and availability. I won’t quote a residence price unless it is available in the live ResKonnect data.";
+    return "Use Find My Res for current prices and availability. I won’t quote a residence price unless it is available in live ResKonnect data.";
   }
   if (/apply|application/i.test(lower)) {
-    return "Sign in and open your Applications page for your live status. I can explain what the current status means, but I won’t invent or change an approval decision.";
+    return "Sign in and open your Applications page for your live status. I can explain verified status information, but I won’t invent or change an application decision.";
   }
-  return "I can help with ResKonnect, residences and application support. Sign in for account-specific answers.";
+  return "I can help with ResKonnect, accommodation, applications and opportunities. Sign in for account-specific answers.";
 };
 
 const quickQuestions = ["How do I apply?", "My application status", "NSFAS accommodation", "Find a residence"];
@@ -40,7 +40,7 @@ const ResBot = () => {
     {
       id: "welcome",
       role: "bot",
-      content: "Hi! I’m ResBot, now powered by ResKonnect’s Konnect Agent. Sign in for secure, account-specific application support, or ask a general question.",
+      content: "Hi, I’m Luna — ResKonnect’s website intelligence assistant. Sign in for secure account-specific support, or ask a general question.",
       timestamp: new Date(),
     },
   ]);
@@ -70,7 +70,7 @@ const ResBot = () => {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       const signedIn = Boolean(user && accessToken);
-      const response = await fetch(externalFunctionUrl(signedIn ? "adminos-enquiry" : "adminos-agent"), {
+      const response = await fetch(externalFunctionUrl(signedIn ? "adminos-enquiry" : "luna-agent"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,13 +87,13 @@ const ResBot = () => {
         aiResponse = data.error === "Sign in is required for account-specific enquiries"
           ? "Please sign in so I can securely access your own ResKonnect application details."
           : getFallbackResponse(messageText);
-        if (response.status === 429 || response.status === 503) toast.error("Konnect Agent is temporarily unavailable; a safe fallback was used.");
+        if (response.status === 429 || response.status === 503) toast.error("Luna is temporarily unavailable; a safe fallback was used.");
       }
       if (data.thread_id) setThreadId(data.thread_id);
-      if (data.escalated) toast.info("This enquiry was escalated to the ResKonnect team for human review.");
+      if (data.escalated) toast.info("This enquiry was escalated for review.");
       setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: "bot", content: aiResponse, timestamp: new Date() }]);
     } catch (error) {
-      console.error("ResBot error:", error);
+      console.error("Luna website assistant error:", error);
       setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: "bot", content: getFallbackResponse(messageText), timestamp: new Date() }]);
     } finally {
       setIsTyping(false);
@@ -107,7 +107,7 @@ const ResBot = () => {
 
   return (
     <>
-      <button onClick={() => setIsOpen(!isOpen)} className={cn("fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-premium flex items-center justify-center transition-all duration-300 hover:scale-110", isOpen ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground")} aria-label={isOpen ? "Close chat" : "Open chat"}>
+      <button onClick={() => setIsOpen(!isOpen)} className={cn("fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-premium flex items-center justify-center transition-all duration-300 hover:scale-110", isOpen ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground")} aria-label={isOpen ? "Close Luna" : "Open Luna"}>
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
       {isOpen && (
@@ -115,8 +115,8 @@ const ResBot = () => {
           <div className="bg-gradient-primary p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center"><Bot className="w-6 h-6 text-primary-foreground" /></div>
             <div className="flex-1">
-              <h3 className="font-semibold text-primary-foreground flex items-center gap-2">ResBot <Sparkles className="w-4 h-4 text-yellow-300" /></h3>
-              <p className="text-xs text-primary-foreground/80 flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />Konnect Agent • Secure support</p>
+              <h3 className="font-semibold text-primary-foreground flex items-center gap-2">Luna <Sparkles className="w-4 h-4 text-yellow-300" /></h3>
+              <p className="text-xs text-primary-foreground/80 flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />ResKonnect Intelligence • Live data</p>
             </div>
           </div>
           <ScrollArea className="h-80 p-4" ref={scrollRef}>
@@ -128,13 +128,13 @@ const ResBot = () => {
                   {message.role === "user" && <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center shrink-0"><User className="w-4 h-4 text-secondary" /></div>}
                 </div>
               ))}
-              {isTyping && <div className="flex gap-2 items-center"><div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><Bot className="w-4 h-4 text-primary" /></div><div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin text-primary" /><span className="text-sm text-muted-foreground">Checking trusted data...</span></div></div>}
+              {isTyping && <div className="flex gap-2 items-center"><div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><Bot className="w-4 h-4 text-primary" /></div><div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin text-primary" /><span className="text-sm text-muted-foreground">Checking verified ResKonnect data...</span></div></div>}
             </div>
           </ScrollArea>
           <div className="px-4 pb-2 flex gap-2 flex-wrap">{quickQuestions.map((q) => <button key={q} onClick={() => void handleSend(q)} disabled={isTyping} className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground transition-colors disabled:opacity-50">{q}</button>)}</div>
           <div className="p-4 pt-2 border-t border-border">
             <div className="flex gap-2">
-              <Input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={user ? "Ask about your ResKonnect account..." : "Ask a general question..."} disabled={isTyping} className="flex-1" />
+              <Input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={user ? "Ask Luna about your ResKonnect account..." : "Ask Luna about ResKonnect..."} disabled={isTyping} className="flex-1" />
               <Button onClick={() => void handleSend()} disabled={!input.trim() || isTyping} size="icon" className="shrink-0">{isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}</Button>
             </div>
           </div>
