@@ -103,7 +103,7 @@ Deno.serve(async(req)=>{
     const inserted=await service.from("adminos_demand_snapshots").insert({days,fingerprint,supply,demand,institutions,housing_opportunities:housingOpps,ranked_opportunities:ranked,source_counts:sourceCounts,summary:generated.summary||fallbackSummary,provider:generated.provider||"deterministic",model:generated.model||"luna-demand-rg2",status:"completed",metadata:{release:RELEASE,phase:PHASE,changed,narrative_refreshed:Boolean(changed||stale)}}).select("id,generated_at,summary,ranked_opportunities,source_counts,provider,model").single();
     if(inserted.error)throw inserted.error;
     const snapshot=inserted.data;
-    const automationEvents=[{event_type:"growth.demand_snapshot_created",entity_type:"demand_snapshot",entity_id:snapshot.id,payload:{days,top:ranked.slice(0,3),source_counts:sourceCounts},correlation_id:`luna:demand:${fingerprint}:${snapshot.id}`}];
+    const automationEvents:any[]=[{event_type:"growth.demand_snapshot_created",entity_type:"demand_snapshot",entity_id:snapshot.id,payload:{days,top:ranked.slice(0,3),source_counts:sourceCounts},correlation_id:`luna:demand:${fingerprint}:${snapshot.id}`}];
     for(const item of ranked.slice(0,3).filter((x:any)=>x.campaign_priority>=55))automationEvents.push({event_type:"growth.opportunity_detected",entity_type:"demand_snapshot",entity_id:snapshot.id,payload:item,correlation_id:`luna:opportunity:${snapshot.id}:${item.campus_key}`});
     await service.from("adminos_automation_events").insert(automationEvents);
     if(runId)await service.from("adminos_agent_runs").update({status:"completed",output:{snapshot_id:snapshot.id,ranked:ranked.slice(0,8),source_counts:sourceCounts},completed_at:new Date().toISOString()}).eq("id",runId);
