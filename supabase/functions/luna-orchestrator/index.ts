@@ -15,6 +15,7 @@ const costFor=(model:string,input=0,output=0)=>{const rates:Record<string,[numbe
 const secureEqual=(a:string,b:string)=>{if(!a||!b||a.length!==b.length)return false;let d=0;for(let i=0;i<a.length;i++)d|=a.charCodeAt(i)^b.charCodeAt(i);return d===0;};
 const slug=(v:unknown)=>safe(v,180).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 const scale=(n:number,mult=18)=>Math.min(100,Math.round(mult*Math.log1p(Math.max(0,n))));
+const errorText=(error:unknown)=>error instanceof Error?error.message:(typeof error==="string"?error:JSON.stringify(error));
 
 async function authorize(req:Request,service:any){
   const cron=req.headers.get("x-luna-cron-token")||"";
@@ -75,10 +76,12 @@ Deno.serve(async(req)=>{
       service.rpc("luna_demand_event_summary",{p_days:days}),
       service.from("resmap_campuses").select("campus_key,name,short_name,aliases").eq("is_active",true),
       service.from("adminos_whatsapp_conversion_leads").select("campus,stage,created_at,converted_at").gte("created_at",since).limit(5000),
-      service.from("applications").select("id,status,created_at,residence_id,residences(campus)").gte("created_at",since).limit(5000),
+      service.from("applications").select("id,status,created_at,residence_id,residences!applications_residence_id_fkey(campus)").gte("created_at",since).limit(5000),
       service.from("adminos_agent_prompt_versions").select("system_prompt").eq("agent_key","luna_demand").eq("active",true).order("version",{ascending:false}).limit(1).maybeSingle(),
     ]);
-    const error=supplyR.error||demandR.error||institutionR.error||opportunityR.error||eventR.error||campusR.error||waR.error||appR.error;if(error)throw error;
+    const sourceErrors={supply:supplyR.error,demand:demandR.error,institutions:institutionR.error,opportunities:opportunityR.error,demand_events:eventR.error,campuses:campusR.error,whatsapp:waR.error,applications:appR.error,prompt:promptR.error};
+    const failed=Object.entries(sourceErrors).find(([,value])=>Boolean(value));
+    if(failed)throw new Error(`${failed[0]} source failed: ${errorText(failed[1])}`);
     const supply=supplyR.data||[], demand=demandR.data||[], institutions=institutionR.data||[], housingOpps=opportunityR.data||[], events=eventR.data||[];
     const resolve=campusResolver(campusR.data||[]);
     const demandMap=new Map(demand.map((x:any)=>[String(x.campus_key),x]));
@@ -105,12 +108,12 @@ Deno.serve(async(req)=>{
     const snapshot=inserted.data;
     const automationEvents:any[]=[{event_type:"growth.demand_snapshot_created",entity_type:"demand_snapshot",entity_id:snapshot.id,payload:{days,top:ranked.slice(0,3),source_counts:sourceCounts},correlation_id:`luna:demand:${fingerprint}:${snapshot.id}`}];
     for(const item of ranked.slice(0,3).filter((x:any)=>x.campaign_priority>=55))automationEvents.push({event_type:"growth.opportunity_detected",entity_type:"demand_snapshot",entity_id:snapshot.id,payload:item,correlation_id:`luna:opportunity:${snapshot.id}:${item.campus_key}`});
-    await service.from("adminos_automation_events").insert(automationEvents);
+    const eventInsert=await service.from("adminos_automation_events").insert(automationEvents);if(eventInsert.error)throw new Error(`automation event insert failed: ${errorText(eventInsert.error)}`);
     if(runId)await service.from("adminos_agent_runs").update({status:"completed",output:{snapshot_id:snapshot.id,ranked:ranked.slice(0,8),source_counts:sourceCounts},completed_at:new Date().toISOString()}).eq("id",runId);
     if(runId&&generated.usage)await service.from("adminos_agent_usage").insert({run_id:runId,agent_key:"luna_demand",provider:"openai",model:generated.model||agentConfig?.config?.primary_model||"gpt-5.6-luna",input_tokens:Number(generated.usage.input_tokens||0),output_tokens:Number(generated.usage.output_tokens||0),estimated_cost_usd:costFor(generated.model||"gpt-5.6-luna",Number(generated.usage.input_tokens||0),Number(generated.usage.output_tokens||0)),latency_ms:Date.now()-started});
     return json({ok:true,identity:"luna_demand",release:RELEASE,phase:PHASE,snapshot_id:snapshot.id,generated_at:snapshot.generated_at,summary:snapshot.summary,ranked_opportunities:ranked.slice(0,12),source_counts:sourceCounts,narrative_refreshed:Boolean(changed||stale)});
   }catch(error){
-    const detail=error instanceof Error?error.message:String(error);if(runId)await service.from("adminos_agent_runs").update({status:"failed",output:{error:detail},completed_at:new Date().toISOString()}).eq("id",runId);
+    const detail=errorText(error);if(runId)await service.from("adminos_agent_runs").update({status:"failed",output:{error:detail},completed_at:new Date().toISOString()}).eq("id",runId);
     return json({error:"Luna demand cycle failed",detail,release:RELEASE,phase:PHASE},500);
   }
 });
