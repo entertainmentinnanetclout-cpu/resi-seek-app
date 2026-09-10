@@ -78,7 +78,7 @@ async function loadPublicFacts(service:any,message:string){
 async function loadUserFacts(service:any,user:any,applicationId:string|null){
   if(!user)return null;
   const {data:profile}=await service.from("profiles").select("id,full_name,campus,student_number").eq("id",user.id).maybeSingle();
-  let q=service.from("applications").select("id,status,created_at,updated_at,funding_type,move_in_date,moved_in,residence_id,residences(name,slug,campus,available_spots,price,private_price,nsfas_price)").eq("user_id",user.id).order("created_at",{ascending:false}).limit(8);
+  let q=service.from("applications").select("id,status,created_at,updated_at,funding_type,move_in_date,moved_in,residence_id,residences!applications_residence_id_fkey(name,slug,campus,available_spots,price,private_price,nsfas_price)").eq("user_id",user.id).order("created_at",{ascending:false}).limit(8);
   if(applicationId)q=q.eq("id",applicationId);
   const {data:applications}=await q;
   return{profile,applications:applications||[]};
