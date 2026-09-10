@@ -1,5 +1,6 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { residenceMatchesCampus, type InstitutionTypeKey } from "@/constants/institutionOptions";
+import { captureLunaDemandEvent } from "@/lib/lunaGrowth";
 
 export interface ResidenceFilters {
   searchQuery: string;
@@ -150,6 +151,7 @@ const acceptsUniversity = (r: any) =>
 
 export function useResidenceFilters(residences: any[]) {
   const [filters, setFilters] = useState<ResidenceFilters>(DEFAULT_FILTERS);
+  const lastDemandSignature = useRef("");
 
   const updateFilter = useCallback(
     <K extends keyof ResidenceFilters>(key: K, value: ResidenceFilters[K]) => {
@@ -342,6 +344,41 @@ export function useResidenceFilters(residences: any[]) {
 
     return withScores;
   }, [residences, filters]);
+
+  // Demand telemetry is debounced and de-duplicated. It captures intent, not PII,
+  // and complements the existing residence-level ResMap interaction events.
+  useEffect(() => {
+    const payload = {
+      surface: "find_my_res",
+      path: typeof window === "undefined" ? "/find" : window.location.pathname,
+      campus: filters.campus !== "all" ? filters.campus : null,
+      search_query: filters.searchQuery || null,
+      price_min: filters.priceMin,
+      price_max: filters.priceMax,
+      distance_max: filters.distanceMax,
+      room_types: filters.roomTypes,
+      amenities: filters.amenities,
+      funding_type: filters.nsfasOnly ? "nsfas" : filters.privatePayingOnly ? "private" : null,
+      audience: filters.audience !== "all" ? filters.audience : null,
+      institution_tag: filters.institutionTag || null,
+      result_count: filteredResidences.length,
+      sort_by: filters.sortBy,
+      category: filters.category,
+      availability: filters.availability,
+      nsfas_only: filters.nsfasOnly,
+      tut_only: filters.tutOnly,
+      furnished_only: filters.furnishedOnly,
+      wifi_only: filters.wifiOnly,
+      parking_only: filters.parkingOnly,
+    };
+    const signature = JSON.stringify(payload);
+    if (signature === lastDemandSignature.current) return;
+    const timer = window.setTimeout(() => {
+      lastDemandSignature.current = signature;
+      void captureLunaDemandEvent("residence_search", payload);
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [filters, filteredResidences.length]);
 
   /**
    * Closest matches when the budget filter empties the list: same criteria,
