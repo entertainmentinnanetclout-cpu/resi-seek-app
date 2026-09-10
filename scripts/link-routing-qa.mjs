@@ -14,9 +14,25 @@ const rewrites = Array.isArray(config.rewrites) ? config.rewrites : [];
 const headers = Array.isArray(config.headers) ? config.headers : [];
 
 const spaFallback = rewrites.find(
-  (rule) => rule.source === "/(.*)" && rule.destination === "/index.html",
+  (rule) => rule.source === "/(.*)" && rule.destination === "/index",
 );
-if (!spaFallback) fail("Vercel SPA deep-link fallback /(.*) -> /index.html is missing.");
+if (!spaFallback) fail("Vercel SPA deep-link fallback /(.*) -> /index is missing.");
+
+if (config.cleanUrls === true) {
+  const badStaticTarget = rewrites.find(
+    (rule) => typeof rule.destination === "string" && !rule.destination.startsWith("/api/") && /\.html(?:$|\?)/i.test(rule.destination),
+  );
+  if (badStaticTarget) {
+    fail(`cleanUrls is enabled but rewrite ${badStaticTarget.source} targets ${badStaticTarget.destination}; use the extensionless clean URL instead.`);
+  }
+}
+
+for (const source of ["/applications", "/living", "/opportunities", "/bursaries"]) {
+  const rule = rewrites.find((candidate) => candidate.source === source);
+  if (!rule || !String(rule.destination || "").startsWith("/_seo/") || String(rule.destination).endsWith(".html")) {
+    fail(`${source} must target its extensionless prerender output when cleanUrls is enabled.`);
+  }
+}
 
 const canonicalOrigin = "https://www.reskonnect.org";
 for (const host of ["reskonnect.org", "reskonnect.co.za", "www.reskonnect.co.za"]) {
@@ -80,4 +96,4 @@ if (/urlPattern:\s*\/\\\.\(js\|css\|html\|/m.test(vite)) {
 const share = read("src/lib/share.ts");
 if (!share.includes("PUBLIC_SITE_ORIGIN")) fail("Universal share links are not pinned to the canonical public origin.");
 
-console.log("Link routing QA passed: canonical hosts, SPA deep links, PWA recovery and share origin are protected.");
+console.log("Link routing QA passed: clean URL rewrites, canonical hosts, SPA deep links, PWA recovery and share origin are protected.");
