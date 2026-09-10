@@ -44,7 +44,7 @@ serve(async (req) => {
     p_profile_user_id: profile.id,
     p_source_type: "profile",
     p_source_id: profile.id,
-    p_metadata: { source: "internal_enquiry" },
+    p_metadata: { source: "internal_enquiry", agent: "luna" },
   });
   if (contactError || !contactId) return json({ error: "Could not resolve CRM contact" }, 500);
 
@@ -63,7 +63,7 @@ serve(async (req) => {
     const { data: created, error } = await service.from("adminos_enquiry_threads").insert({
       contact_id: contactId, profile_user_id: user.id, application_id: applicationId,
       subject: applicationId ? "Application enquiry" : "ResKonnect enquiry",
-      channel: "in_app", status: "open", metadata: { created_by: "adminos_enquiry" },
+      channel: "in_app", status: "open", metadata: { created_by: "adminos_enquiry", agent: "luna" },
     }).select("id").single();
     if (error || !created) return json({ error: "Could not create enquiry thread" }, 500);
     threadId = created.id;
@@ -71,17 +71,17 @@ serve(async (req) => {
 
   const { error: inboundError } = await service.from("adminos_enquiry_messages").insert({
     thread_id: threadId, sender_type: "user", sender_user_id: user.id, content: message,
-    direction: "inbound", status: "delivered",
+    direction: "inbound", status: "delivered", metadata: { agent_route: "luna" },
   });
   if (inboundError) return json({ error: "Could not save enquiry" }, 500);
 
   await service.from("adminos_enquiry_threads").update({ last_message_at: new Date().toISOString(), status: "open" }).eq("id", threadId);
   await service.from("adminos_automation_events").insert({
     event_type: "enquiry.received", entity_type: "enquiry_thread", entity_id: threadId, contact_id: contactId,
-    payload: { application_id: applicationId, channel: "in_app" }, correlation_id: `enquiry:${threadId}:${Date.now()}`,
+    payload: { application_id: applicationId, channel: "in_app", agent: "luna" }, correlation_id: `enquiry:${threadId}:${Date.now()}`,
   });
 
-  const agentResponse = await fetch(`${supabaseUrl}/functions/v1/adminos-agent`, {
+  const agentResponse = await fetch(`${supabaseUrl}/functions/v1/luna-agent`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: authHeader, apikey: anonKey },
     body: JSON.stringify({ action: "enquiry_reply", contact_id: contactId, thread_id: threadId, application_id: applicationId, message }),
@@ -89,24 +89,24 @@ serve(async (req) => {
   const agent = await agentResponse.json().catch(() => ({}));
 
   if (!agentResponse.ok || !agent.answer) {
-    const fallback = "I’ve saved your enquiry for the ResKonnect team because I can’t verify a safe answer right now. A staff member can review it from AdminOS.";
+    const fallback = "I’ve saved your enquiry because Luna can’t verify a safe answer right now. It has been marked for review rather than guessed.";
     await service.from("adminos_enquiry_messages").insert({
       thread_id: threadId, sender_type: "agent", content: fallback, direction: "outbound", status: "delivered", risk_level: "amber",
-      metadata: { fallback: true, provider_error: agent.error || `HTTP ${agentResponse.status}` },
+      metadata: { agent: "luna", fallback: true, provider_error: agent.error || `HTTP ${agentResponse.status}` },
     });
     await service.from("adminos_enquiry_threads").update({ status: "escalated", priority: "high", last_message_at: new Date().toISOString() }).eq("id", threadId);
     await service.from("adminos_automation_events").insert({
       event_type: "enquiry.escalated", entity_type: "enquiry_thread", entity_id: threadId, contact_id: contactId,
-      payload: { reason: agent.error || "agent_unavailable", application_id: applicationId }, correlation_id: `enquiry:${threadId}:escalated:${Date.now()}`,
+      payload: { agent: "luna", reason: agent.error || "agent_unavailable", application_id: applicationId }, correlation_id: `enquiry:${threadId}:escalated:${Date.now()}`,
     });
-    return json({ response: fallback, thread_id: threadId, escalated: true, risk: "amber" });
+    return json({ response: fallback, thread_id: threadId, escalated: true, risk: "amber", identity: "luna" });
   }
 
   const escalated = Boolean(agent.escalate) || agent.risk !== "green";
   await service.from("adminos_enquiry_messages").insert({
     thread_id: threadId, sender_type: "agent", content: String(agent.answer), direction: "outbound", status: "delivered",
     confidence: Number(agent.confidence || 0), risk_level: agent.risk || "amber", agent_run_id: agent.run_id || null,
-    metadata: { provider: agent.provider, model: agent.model, reason: agent.reason },
+    metadata: { agent: "luna", provider: agent.provider, model: agent.model, reason: agent.reason },
   });
   await service.from("adminos_enquiry_threads").update({
     status: escalated ? "escalated" : "open",
@@ -117,10 +117,10 @@ serve(async (req) => {
   if (escalated) {
     await service.from("adminos_automation_events").insert({
       event_type: "enquiry.escalated", entity_type: "enquiry_thread", entity_id: threadId, contact_id: contactId,
-      payload: { reason: agent.reason, risk: agent.risk, confidence: agent.confidence, application_id: applicationId },
+      payload: { agent: "luna", reason: agent.reason, risk: agent.risk, confidence: agent.confidence, application_id: applicationId },
       correlation_id: `enquiry:${threadId}:escalated:${agent.run_id || Date.now()}`,
     });
   }
 
-  return json({ response: agent.answer, thread_id: threadId, escalated, risk: agent.risk, confidence: agent.confidence, provider: agent.provider, model: agent.model, release: 2, phase: 4 });
+  return json({ response: agent.answer, thread_id: threadId, escalated, risk: agent.risk, confidence: agent.confidence, provider: agent.provider, model: agent.model, identity: "luna", luna_release: 1, release: 2, phase: 4 });
 });
