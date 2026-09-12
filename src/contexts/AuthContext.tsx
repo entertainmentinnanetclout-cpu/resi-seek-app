@@ -3,6 +3,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { AppStaffRole, GOD_MODE_ROLES } from "@/lib/constants/roles";
+import { AdminDepartmentKey } from "@/lib/adminDepartments";
 
 export type StaffRole = AppStaffRole | null;
 export type TumeloPartnerRole = "owner" | "strategist" | "viewer" | null;
@@ -19,6 +20,7 @@ interface AuthContextType {
   isTumeloPartner: boolean;
   tumeloPartnerRole: TumeloPartnerRole;
   staffRole: StaffRole;
+  adminDepartments: AdminDepartmentKey[];
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -37,6 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isTumeloPartner, setIsTumeloPartner] = useState(false);
   const [tumeloPartnerRole, setTumeloPartnerRole] = useState<TumeloPartnerRole>(null);
   const [staffRole, setStaffRole] = useState<StaffRole>(null);
+  const [adminDepartments, setAdminDepartments] = useState<AdminDepartmentKey[]>([]);
   const [sessionChecked, setSessionChecked] = useState(false);
   const navigate = useNavigate();
   const initRef = useRef(false);
@@ -99,11 +102,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsAdmin(false);
       setIsGodMode(false);
       setStaffRole(null);
+      setAdminDepartments([]);
       setIsRecruiter(false);
       setIsPendingRecruiter(false);
       setIsStudent(false);
       setIsTumeloPartner(false);
       setTumeloPartnerRole(null);
+      setAdminDepartments([]);
       setIsLoading(false);
       return;
     }
@@ -111,8 +116,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
 
     try {
-      const [roleRes, recruiterRes, pendingRes, profileRes, tumeloRoleRes] = await Promise.all([
+      const [roleRes, departmentRes, recruiterRes, pendingRes, profileRes, tumeloRoleRes] = await Promise.all([
         supabase.rpc("get_user_staff_role", { _user_id: user.id }),
+        (supabase as any).rpc("get_my_admin_departments"),
         supabase.from("referral_agents" as any).select("status").eq("user_id", user.id).eq("program_key", "student_recruitment").maybeSingle(),
         supabase.from("recruiter_applications" as any).select("status").eq("user_id", user.id).eq("program_key", "student_recruitment").order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("profiles").select("student_number").eq("id", user.id).maybeSingle(),
@@ -124,6 +130,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       const role = (roleRes.data as string | null) as StaffRole;
       setStaffRole(role);
+      setAdminDepartments((Array.isArray(departmentRes.data) ? departmentRes.data : []) as AdminDepartmentKey[]);
 
       const isGod = !!role && (GOD_MODE_ROLES as readonly string[]).includes(role);
       setIsGodMode(isGod);
@@ -144,6 +151,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("[AuthContext] Status check:", {
         email: user.email,
         resolvedRole: role,
+        adminDepartments: departmentRes.data || [],
         tumeloPartnerRole: resolvedTumeloRole,
         isRecruiter: (recruiterRes.data as any)?.status === "approved",
         isPendingRecruiter: (pendingRes.data as any)?.status === "pending",
@@ -170,6 +178,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsAdmin(false);
     setIsGodMode(false);
     setStaffRole(null);
+    setAdminDepartments([]);
     setIsRecruiter(false);
     setIsPendingRecruiter(false);
     setIsStudent(false);
@@ -191,6 +200,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       isTumeloPartner,
       tumeloPartnerRole,
       staffRole,
+      adminDepartments,
       signOut,
       refreshProfile: checkStatus,
     }}>
