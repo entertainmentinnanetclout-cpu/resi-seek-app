@@ -35,6 +35,7 @@ expect(config.includes("[functions.luna-agent]")&&config.includes("[functions.lu
 
 const socialMigration=read("supabase/migrations/20260912131500_luna_rg3_rg5_social_demand_manual_publish.sql");
 const growthUi=read("src/components/admin/AdminOSLunaGrowth.tsx");
+const supplyQuality=read("supabase/migrations/20260912132000_luna_rg3_supply_quality_hardening.sql");
 
 expect(orchestrator.includes('action==="content_cycle"')&&orchestrator.includes("manual_publish_required:true"),"RG3 must generate content packs without publishing");
 expect(orchestrator.includes('provider:"manual"')&&!orchestrator.includes("api/v2/scheduler/posts"),"Luna orchestrator must not contain a Metricool scheduler/publishing path");
@@ -44,5 +45,8 @@ expect(socialMigration.includes("'publishing_enabled',false")&&socialMigration.i
 expect(socialMigration.includes("manual_publish_required boolean not null default true"),"social posts must default to manual publishing");
 expect(socialMigration.includes("luna_mark_social_post_published"),"manual posting feedback must be captured in Supabase");
 expect(growthUi.includes("Metricool = Demand Analysis")&&growthUi.includes("Posting = Manual"),"AdminOS must clearly display the Metricool analysis-only boundary");
+expect(supplyQuality.includes("verified_available_spots")&&supplyQuality.includes("Pretoria West (Main Campus)"),"public inventory evidence must be verified and campus naming canonical");
+expect(orchestrator.includes('inventory_evidence:verifiedInventoryCount>0?"verified":"reported_internal_only"'),"RG3 content must distinguish verified from internal-only reported inventory");
+expect(orchestrator.includes("can_claim_exact_availability:verifiedInventoryCount>0"),"RG3 exact availability claims must require verified inventory");
 
 console.log("Luna Growth QA passed: RG0–RG5 boundaries, year-isolated demand, Metricool analysis-only policy and manual publishing are protected.");
