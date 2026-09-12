@@ -134,7 +134,7 @@ const toForm = (row: InstitutionRow): InstitutionForm => ({
   sort_order: row.sort_order,
 });
 
-const AdminApplicationHub = () => {
+export const AdminApplicationHubContent = () => {
   const [view, setView] = useState<"institutions" | "requests">("institutions");
   const [institutions, setInstitutions] = useState<InstitutionRow[]>([]);
   const [requests, setRequests] = useState<AssistanceRequest[]>([]);
@@ -279,7 +279,7 @@ const AdminApplicationHub = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <SEO
         title="Applications Hub | Admin"
         description="Manage institution cards, official application routes, branding and R50 live application guidance requests."
@@ -592,8 +592,10 @@ const AdminApplicationHub = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminApplicationHub = () => <AdminLayout><AdminApplicationHubContent /></AdminLayout>;
 
 export default AdminApplicationHub;
