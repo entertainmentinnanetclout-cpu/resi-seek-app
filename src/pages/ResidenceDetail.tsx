@@ -239,12 +239,14 @@ const ResidenceDetail = () => {
         user_id: user.id,
         residence_id: residenceId,
         academic_year: 2027,
+        academic_cycle: "unspecified",
+        academic_period: 0,
         funding_type: fundingType,
         room_preference: roomPreference.trim() || null,
         notes: reservationNotes.trim() || null,
         status: "reserved",
         source: "residence_detail",
-      }, { onConflict: "user_id,residence_id,academic_year" });
+      }, { onConflict: "user_id,residence_id,academic_year,academic_cycle,academic_period" });
       if (error) throw error;
       setShowReserve(false);
       setReservationNotes("");
