@@ -56,7 +56,7 @@ const tabs = [
   { value: "bursaries", label: "Bursaries", icon: GraduationCap },
 ];
 
-const AdminMediaHub = () => {
+export const AdminMediaHubContent = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "overview";
   const [stats, setStats] = useState<MediaStats | null>(null);
@@ -459,8 +459,8 @@ const AdminMediaHub = () => {
   };
 
   return (
-    <AdminLayout>
-      <SEO title="Media Hub | Admin" description="Manage hero slides, news, events and bursaries" />
+    <>
+      <SEO title="Corporate Affairs Content | Admin" description="Manage public slides, news, events and bursary content" />
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Media Hub</h1>
@@ -486,9 +486,11 @@ const AdminMediaHub = () => {
           <TabsContent value="bursaries"><AdminBursariesContent /></TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminMediaHub = () => <AdminLayout><AdminMediaHubContent /></AdminLayout>;
 
 // Health bar sub-component
 const HealthItem = ({ label, detail, percentage }: { label: string; detail: string; percentage: number }) => {
