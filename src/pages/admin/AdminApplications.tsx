@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
 import HandoverExportPanel from "@/components/admin/HandoverExportPanel";
+import ResidenceFillVisualTabs from "@/components/admin/ResidenceFillVisualTabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +63,7 @@ export const AdminApplicationsContent = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [institutionFilter, setInstitutionFilter] = useState<"all" | "university" | "tvet" | "private" | "other">("all");
+  const [residenceFilter, setResidenceFilter] = useState("all");
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
@@ -155,8 +157,9 @@ export const AdminApplicationsContent = () => {
     const matchesStatus = statusFilter === "all" || app.application_status === statusFilter;
     const inst = app.institution_type;
     const matchesInstitution = institutionFilter === "all" || (institutionFilter === "other" ? !inst : inst === institutionFilter);
-    return matchesSearch && matchesStatus && matchesInstitution;
-  }), [applications, searchQuery, statusFilter, institutionFilter]);
+    const matchesResidence = residenceFilter === "all" || app.residence_id === residenceFilter;
+    return matchesSearch && matchesStatus && matchesInstitution && matchesResidence;
+  }), [applications, searchQuery, statusFilter, institutionFilter, residenceFilter]);
 
   const pendingIds = useMemo(() => filteredApplications.filter((app) => app.application_status === "submitted" || app.application_status === "pending").map((app) => app.application_id), [filteredApplications]);
   const pendingCount = pendingIds.length;
@@ -187,6 +190,13 @@ export const AdminApplicationsContent = () => {
           <div><h1 className="text-3xl font-black">Applications</h1><p className="text-muted-foreground">Review and manage source applications. Handover exports are available only through GOD MODE OS above.</p></div>
           <Badge variant="outline" className="w-fit gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Legacy handover export disabled</Badge>
         </div>
+
+        <ResidenceFillVisualTabs
+          mode="applications"
+          activityRows={applications}
+          selectedResidenceId={residenceFilter}
+          onSelectResidence={setResidenceFilter}
+        />
 
         {selectedIds.size > 0 && <Card className="border-primary/50 bg-primary/5"><CardContent className="flex flex-wrap items-center gap-3 py-3"><span className="font-medium">{selectedIds.size} selected</span><Button size="sm" onClick={() => void bulkUpdateStatus("approved")} disabled={bulkProcessing}><CheckCheck className="mr-2 h-4 w-4" />Approve All</Button><Button size="sm" variant="destructive" onClick={() => void bulkUpdateStatus("rejected")} disabled={bulkProcessing}><XCircle className="mr-2 h-4 w-4" />Reject All</Button><Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>Clear Selection</Button></CardContent></Card>}
 
