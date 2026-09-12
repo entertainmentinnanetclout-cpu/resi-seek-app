@@ -345,7 +345,7 @@ $$;
 create or replace function public.adminos_rg12_seo_cycle()
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare hygiene integer:=0;metric_rows integer:=0;signals integer:=0;tasks integer:=0;
-declare indexable integer:=0;citation integer:=0;avg_quality numeric:=0;impressions bigint:=0;clicks bigint:=0;avg_pos numeric:=null;pending integer:=0;stale integer:=0;high_signals integer:=0;
+declare v_indexable integer:=0;v_citation integer:=0;v_avg_quality numeric:=0;v_impressions bigint:=0;v_clicks bigint:=0;v_avg_pos numeric:=null;v_pending integer:=0;v_stale integer:=0;v_high_signals integer:=0;
 begin
   hygiene:=public.adminos_rg12_safe_metadata_hygiene();
   metric_rows:=public.adminos_rg12_refresh_page_metrics();
@@ -355,25 +355,25 @@ begin
   select count(*) filter(where indexable and content_status='published')::integer,
          count(*) filter(where indexable and content_status='published' and ai_citation_ready)::integer,
          coalesce(avg(quality_score) filter(where indexable and content_status='published'),0)
-  into indexable,citation,avg_quality from public.seo_pages;
+  into v_indexable,v_citation,v_avg_quality from public.seo_pages;
 
   select coalesce(sum(impressions),0)::bigint,coalesce(sum(clicks),0)::bigint,
          case when sum(impressions)>0 then sum(coalesce(avg_position,0)*impressions)/sum(impressions) else null end
-  into impressions,clicks,avg_pos
+  into v_impressions,v_clicks,v_avg_pos
   from public.adminos_search_console_query_metrics where metric_date>=current_date-28;
 
   select count(*) filter(where status='pending')::integer,
          count(*) filter(where status in ('pending','processing','failed') and queued_at<now()-interval '30 minutes')::integer
-  into pending,stale from public.seo_index_queue;
+  into v_pending,v_stale from public.seo_index_queue;
 
-  select count(*)::integer into high_signals from public.adminos_seo_growth_signals where status='open' and priority>=80;
+  select count(*)::integer into v_high_signals from public.adminos_seo_growth_signals where status='open' and priority>=80;
 
   insert into public.adminos_seo_growth_snapshots(
     snapshot_date,indexable_pages,citation_ready_pages,avg_quality_score,impressions_28d,clicks_28d,ctr_28d,avg_position_28d,
     pending_index_urls,stale_index_urls,open_growth_signals,high_priority_signals,metadata,generated_at
   ) values(
-    current_date,indexable,citation,avg_quality,impressions,clicks,
-    case when impressions>0 then clicks::numeric/impressions else 0 end,avg_pos,pending,stale,signals,high_signals,
+    current_date,v_indexable,v_citation,v_avg_quality,v_impressions,v_clicks,
+    case when v_impressions>0 then v_clicks::numeric/v_impressions else 0 end,v_avg_pos,v_pending,v_stale,signals,v_high_signals,
     jsonb_build_object('safe_metadata_updates',hygiene,'page_metric_rows_refreshed',metric_rows,'department_tasks',tasks),now()
   )
   on conflict(snapshot_date) do update set
@@ -383,7 +383,7 @@ begin
     high_priority_signals=excluded.high_priority_signals,metadata=excluded.metadata,generated_at=now();
 
   return jsonb_build_object('safe_metadata_updates',hygiene,'page_metric_rows_refreshed',metric_rows,'open_signals',signals,'department_tasks',tasks,
-    'indexable_pages',indexable,'citation_ready_pages',citation,'pending_index_urls',pending,'stale_index_urls',stale,'gsc_impressions_28d',impressions,'gsc_clicks_28d',clicks,'run_at',now());
+    'indexable_pages',v_indexable,'citation_ready_pages',v_citation,'pending_index_urls',v_pending,'stale_index_urls',v_stale,'gsc_impressions_28d',v_impressions,'gsc_clicks_28d',v_clicks,'run_at',now());
 end;
 $$;
 
