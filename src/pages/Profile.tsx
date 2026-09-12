@@ -90,9 +90,14 @@ const Profile = () => {
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
-    const { id, created_at, email, ...updateData } = formData;
+    const { id, created_at, email, ...rawUpdateData } = formData;
+    const updateData = {
+      ...rawUpdateData,
+      academic_year: Number(rawUpdateData.academic_year || new Date().getFullYear()),
+      academic_period: Number(rawUpdateData.academic_period || 0),
+    };
     try {
-      const { error } = await supabase.from("profiles").update(updateData).eq("id", user.id);
+      const { error } = await supabase.from("profiles").update(updateData as any).eq("id", user.id);
       if (error) throw error;
       setProfile(formData);
       toast.success('Profile updated successfully!');
