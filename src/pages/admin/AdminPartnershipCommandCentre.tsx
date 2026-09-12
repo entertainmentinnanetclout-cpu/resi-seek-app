@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { BarChart3, Building2, Eye, Handshake, Link2, Plus, RefreshCw, Rocket, Target, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import AdminPartnershipAutomation from "@/components/admin/AdminPartnershipAutomation";
+import AdminDepartmentTaskQueue from "@/components/admin/AdminDepartmentTaskQueue";
 
 const emptyPartner={name:"",slug:"",partnership_type:"strategic",status:"active",visibility:"public",public_path:"/partners",conversion_goal:"",notes:""};
 const slugify=(v:string)=>v.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
@@ -32,6 +34,9 @@ export default function AdminPartnershipCommandCentre(){
     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-sm font-semibold text-primary">Partnerships Department</p><h1 className="mt-1 text-3xl font-black">Partnerships & Engagements</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">One departmental workspace for strategic partners, institutions, creator channels, residence recruitment, engagements, public visibility, attribution and conversion outcomes.</p></div><div className="flex flex-wrap gap-2"><Select value={days} onValueChange={setDays}><SelectTrigger className="w-36"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="7">Last 7 days</SelectItem><SelectItem value="30">Last 30 days</SelectItem><SelectItem value="90">Last 90 days</SelectItem></SelectContent></Select><Button variant="outline" onClick={()=>void load()} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading?"animate-spin":""}`}/>Refresh</Button><Button onClick={create}><Plus className="mr-2 h-4 w-4"/>New partner</Button></div></div>
 
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6"><Metric icon={Handshake} label="Active partners" value={totals.activePartners||0}/><Metric icon={Eye} label="Public visibility" value={`${visibilityPct}%`}/><Metric icon={Users} label="Attributed users" value={totals.attributedUsers||0}/><Metric icon={BarChart3} label="Partner page views" value={totals.partnerPageViews||0}/><Metric icon={Rocket} label="Partner conversions" value={funnelTotal}/><Metric icon={Link2} label="Recruiter-res links" value={totals.activeRecruiterResidenceLinks||0}/></div>
+
+    <AdminPartnershipAutomation/>
+    <AdminDepartmentTaskQueue departmentKey="partnerships_engagements" title="Partnerships automation queue"/>
 
     <div className="grid gap-5 xl:grid-cols-[1.25fr_.75fr]">
       <Card><CardHeader><CardTitle>Partner performance</CardTitle></CardHeader><CardContent>{partnerRows.length===0?<p className="py-10 text-center text-sm text-muted-foreground">No partnership performance yet.</p>:<div className="space-y-3">{partnerRows.map((p:any)=><button key={p.id} type="button" onClick={()=>{const full=partners.find((x)=>x.id===p.id);if(full)edit(full);}} className="grid w-full gap-3 rounded-2xl border p-4 text-left transition hover:border-primary/30 md:grid-cols-[1fr_repeat(4,90px)] md:items-center"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="truncate font-black">{p.name}</p><Badge variant={p.status==="active"?"default":"secondary"}>{p.status}</Badge><Badge variant="outline">{p.visibility}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{p.partnership_type} · {p.public_path||"Internal"}</p></div><Stat label="Views" value={p.views}/><Stat label="Applications" value={p.applications}/><Stat label="Reservations" value={p.reservations}/><Stat label="Placements" value={p.placements}/></button>)}</div>}</CardContent></Card>
