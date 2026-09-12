@@ -177,6 +177,20 @@ begin
       'Trace the failing agent/run and correct the root cause before retrying. Production code changes remain release-gated.');
   end loop;
 
+  for rec in
+    select agent_key,count(*)::integer total,max(started_at) latest
+    from public.adminos_agent_runs
+    where status='failed' and started_at>=now()-interval '24 hours'
+      and not (coalesce(output->>'reconciled','false')='true')
+    group by agent_key
+  loop
+    k:=concat('rg14:failed-run:',rec.agent_key);active_keys:=array_append(active_keys,k);
+    perform public.adminos_rg14_upsert_incident(k,'agents','failed_agent_runs',
+      case when rec.total>=10 then 'critical' when rec.total>=3 then 'high' else 'medium' end,
+      rec.total,jsonb_build_object('agent_key',rec.agent_key,'failed_runs_24h',rec.total,'latest_failed_at',rec.latest),
+      'Inspect the most recent failed run output and correct the deterministic contract or dependency before the next scheduled cycle.');
+  end loop;
+
   select count(*)::integer into cnt from public.adminos_automation_events
   where status in ('new','failed','blocked') and created_at<now()-interval '30 minutes';
   if cnt>0 then
