@@ -11,7 +11,6 @@ import {
   Image,
   Newspaper,
   Calendar,
-  GraduationCap,
   LayoutDashboard,
   Eye,
   EyeOff,
@@ -25,7 +24,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminSlidesContent } from "./AdminSlides";
 import { AdminNewsContent } from "./AdminNews";
 import { AdminEventsContent } from "./AdminEvents";
-import { AdminBursariesContent } from "./AdminBursaries";
 import { AdminMarketplaceBannersContent } from "./AdminMarketplaceBanners";
 import { AdminCategoryCardsContent } from "./AdminCategoryCards";
 import { formatDistanceToNow, format, isPast, isFuture } from "date-fns";
@@ -53,7 +51,6 @@ const tabs = [
   { value: "category-cards", label: "Category Cards", icon: LayoutDashboard },
   { value: "news", label: "News", icon: Newspaper },
   { value: "events", label: "Events", icon: Calendar },
-  { value: "bursaries", label: "Bursaries", icon: GraduationCap },
 ];
 
 export const AdminMediaHubContent = () => {
@@ -483,7 +480,6 @@ export const AdminMediaHubContent = () => {
           <TabsContent value="category-cards"><AdminCategoryCardsContent /></TabsContent>
           <TabsContent value="news"><AdminNewsContent /></TabsContent>
           <TabsContent value="events"><AdminEventsContent /></TabsContent>
-          <TabsContent value="bursaries"><AdminBursariesContent /></TabsContent>
         </Tabs>
       </div>
     </>
