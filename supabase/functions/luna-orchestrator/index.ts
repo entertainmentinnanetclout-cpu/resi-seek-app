@@ -47,6 +47,11 @@ const hasUnsafeClaim=(value:unknown)=>{
   const text=JSON.stringify(value||{}).toLowerCase();
   return ["guaranteed placement","guarantee placement","first in africa","official partner","nsfas accredited","government partner","100% placement"].some(x=>text.includes(x));
 };
+const hasUnverifiedAvailabilityClaim=(value:unknown,canClaimExact:boolean)=>{
+  if(canClaimExact)return false;
+  const text=JSON.stringify(value||{}).toLowerCase();
+  return ["rooms available","spaces available","beds available","available now","secure your space","limited rooms","limited spaces","verified accommodation options are currently available"].some(x=>text.includes(x));
+};
 
 async function contentDraft(prompt:string,model:string,facts:any,social:any[]){
   if(!openAIKey)return{draft:null,provider:null,model:null,usage:null};
@@ -106,6 +111,7 @@ async function runContentCycle(service:any,authz:any,body:any){
         .eq("academic_year",academicYear).eq("status","completed").order("generated_at",{ascending:false}).limit(1).maybeSingle(),
       service.from("adminos_social_demand_snapshots")
         .select("id,network,period_start,period_end,metrics,top_content,best_times,demand_score,demand_signal,source,imported_at")
+        .gte("imported_at",new Date(Date.now()-36*3600000).toISOString())
         .order("imported_at",{ascending:false}).limit(40),
       service.from("adminos_agent_prompt_versions")
         .select("system_prompt").eq("agent_key","luna_content").eq("active",true).order("version",{ascending:false}).limit(1).maybeSingle()
@@ -166,9 +172,9 @@ async function runContentCycle(service:any,authz:any,body:any){
     const fallback={
       objective:"Generate qualified student accommodation demand",
       audience:`Students seeking accommodation around ${opportunity.campus_name}`,
-      hook:`${opportunity.campus_name}: verified accommodation options are currently available on ResKonnect.`,
-      offer:"Compare available accommodation on ResKonnect using live listing information.",
-      cta:"Open Find My Res and compare available options.",
+      hook:`${opportunity.campus_name}: use ResKonnect to compare student accommodation listings and your next application steps.`,
+      offer:"Explore accommodation listings on ResKonnect using current listing information.",
+      cta:"Open Find My Res and compare listed options.",
       content_format:"vertical short-form video or residence carousel",
       quality_score:82,
       risk_level:"green",
@@ -183,7 +189,8 @@ async function runContentCycle(service:any,authz:any,body:any){
     let quality=clampScore(draft.quality_score||fallback.quality_score);
     let risk=["green","amber","red"].includes(String(draft.risk_level))?String(draft.risk_level):"green";
     const unsafe=hasUnsafeClaim(draft);
-    if(unsafe){quality=Math.min(quality,70);risk="amber";}
+    const unverifiedAvailabilityClaim=hasUnverifiedAvailabilityClaim(draft,Boolean(facts.can_claim_exact_availability));
+    if(unsafe||unverifiedAvailabilityClaim){quality=Math.min(quality,70);risk="amber";}
     const status=quality>=85&&risk==="green"?"validated":"draft";
     const campusKey=slug(opportunity.campus_key||opportunity.campus_name).slice(0,12).toUpperCase()||"MARKET";
     const day=new Date().toISOString().slice(0,10).replaceAll("-","");
@@ -214,7 +221,7 @@ async function runContentCycle(service:any,authz:any,body:any){
       objective:safe(draft.objective||fallback.objective,1000),
       platform_variants:draft.variants||fallback.variants,
       facts_snapshot:{...facts,social_demand:socialForPrompt},
-      validation:{unsafe_claim_detected:unsafe,manual_publish_required:true,metricool_publishing:false,quality_threshold:85},
+      validation:{unsafe_claim_detected:unsafe,unverified_availability_claim:unverifiedAvailabilityClaim,manual_publish_required:true,metricool_publishing:false,quality_threshold:85,social_demand_max_age_hours:36},
       risk_level:risk,quality_score:quality,generated_by:"luna_content"
     }).select("id,status,quality_score,platform_variants,created_at").single();
     if(insertedPlan.error)throw insertedPlan.error;
