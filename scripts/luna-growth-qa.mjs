@@ -31,4 +31,17 @@ expect(migration.includes("'luna-demand-cycle'")&&migration.includes("'*/15 * * 
 expect(migration.includes("'campaign_creation',false")&&migration.includes("'publishing',false"),"RG2 must not silently enable campaign creation or publishing");
 expect(config.includes("[functions.luna-agent]")&&config.includes("[functions.luna-orchestrator]"),"Luna Edge Functions must be source-controlled in Supabase config");
 
-console.log("Luna Growth QA passed: RG0 identity boundary, RG1 attribution/telemetry and RG2 demand intelligence are protected.");
+
+const socialMigration=read("supabase/migrations/20260912131500_luna_rg3_rg5_social_demand_manual_publish.sql");
+const growthUi=read("src/components/admin/AdminOSLunaGrowth.tsx");
+
+expect(orchestrator.includes('action==="content_cycle"')&&orchestrator.includes("manual_publish_required:true"),"RG3 must generate content packs without publishing");
+expect(orchestrator.includes('provider:"manual"')&&!orchestrator.includes("api/v2/scheduler/posts"),"Luna orchestrator must not contain a Metricool scheduler/publishing path");
+expect(orchestrator.includes('service.rpc("luna_academic_supply_live"')&&orchestrator.includes("academicYear"),"Luna demand must use year-isolated academic inventory");
+expect(socialMigration.includes("adminos_social_demand_snapshots")&&socialMigration.includes("Metricool · Social Demand Intelligence"),"RG4 Metricool social-demand intelligence must be source-controlled");
+expect(socialMigration.includes("'publishing_enabled',false")&&socialMigration.includes("'manual_posting',true"),"Metricool publishing must remain disabled by policy");
+expect(socialMigration.includes("manual_publish_required boolean not null default true"),"social posts must default to manual publishing");
+expect(socialMigration.includes("luna_mark_social_post_published"),"manual posting feedback must be captured in Supabase");
+expect(growthUi.includes("Metricool = Demand Analysis")&&growthUi.includes("Posting = Manual"),"AdminOS must clearly display the Metricool analysis-only boundary");
+
+console.log("Luna Growth QA passed: RG0–RG5 boundaries, year-isolated demand, Metricool analysis-only policy and manual publishing are protected.");
