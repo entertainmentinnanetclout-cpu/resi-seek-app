@@ -18,6 +18,7 @@ import { TUT_CAMPUSES } from "@/lib/campuses";
 import { attachReferralToUser } from "@/lib/referrals/referralApi";
 import { clearPendingApplication, clearPendingRecruiter, readPendingApplication, readPendingRecruiter, readReferral } from "@/lib/referrals/referralStorage";
 import GoogleLogo from "@/components/auth/GoogleLogo";
+import { clearWeakPassword, rememberWeakPassword } from "@/lib/passwordSecurity";
 
 const passwordSchema = z.string().min(8, "Password must be at least 8 characters").regex(/[A-Z]/, "Must contain an uppercase letter").regex(/[a-z]/, "Must contain a lowercase letter").regex(/[0-9]/, "Must contain a number");
 const phoneSchema = z.string().regex(/^(\+27|0)[6-8][0-9]{8}$/, "Enter a valid South African mobile number");
@@ -75,6 +76,8 @@ const Auth = () => {
   const [applicantStage, setApplicantStage] = useState("university_student");
   const [identifierType, setIdentifierType] = useState<"student_number" | "identity_number">("student_number");
   const [heardAboutUs, setHeardAboutUs] = useState("");
+  const [emailValue, setEmailValue] = useState("");
+  const [resetSending, setResetSending] = useState(false);
   const returnTo = safeLocalReturnPath(searchParams.get("returnTo"));
   const refCode = searchParams.get("ref");
 
@@ -141,9 +144,15 @@ const Auth = () => {
       const password = String(form.get("password") || "");
       if (isLogin) {
         z.string().min(1, "Password is required").parse(password);
-        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
         if (loginError) throw loginError;
-        toast.success("Welcome back!");
+        if (loginData.user?.id && loginData.weakPassword) {
+          rememberWeakPassword(loginData.user.id, loginData.weakPassword);
+          toast.warning("You are signed in. For your security, please replace this password when convenient.", { duration: 9000 });
+        } else if (loginData.user?.id) {
+          clearWeakPassword(loginData.user.id);
+          toast.success("Welcome back!");
+        }
       } else {
         const fullName = z.string().min(2, "Enter your full name").parse(String(form.get("fullName") || ""));
         passwordSchema.parse(password);
@@ -195,6 +204,31 @@ const Auth = () => {
     }
   };
 
+  const handlePasswordReset = async () => {
+    const parsed = z.string().email("Enter your email address first").safeParse(emailValue.trim());
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message || "Enter a valid email address.";
+      setError(message);
+      toast.error(message);
+      return;
+    }
+
+    setResetSending(true);
+    setError(null);
+    try {
+      const redirectTo = `${window.location.origin}/reset-password?returnTo=${encodeURIComponent(returnTo || "/dashboard")}`;
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo });
+      if (resetError) throw resetError;
+      toast.success("If this email is registered, a secure reset link has been sent.");
+    } catch (resetError) {
+      const message = getAuthErrorMessage(resetError, "Could not send the reset email.");
+      setError(message);
+      toast.error(message);
+    } finally {
+      setResetSending(false);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
@@ -224,7 +258,7 @@ const Auth = () => {
           {error && <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-5">
             {!isLogin && <div className="space-y-2"><Label htmlFor="fullName">Full name *</Label><Input id="fullName" name="fullName" required autoComplete="name" placeholder="Your full name" /></div>}
-            <div className="space-y-2"><Label htmlFor="email">Email address *</Label><Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@example.com" /></div>
+            <div className="space-y-2"><Label htmlFor="email">Email address *</Label><Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@example.com" value={emailValue} onChange={(event) => setEmailValue(event.target.value)} /></div>
 
             {!isLogin && <>
               <div className="space-y-2"><Label>I am a *</Label><Select value={applicantStage} onValueChange={setApplicantStage}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{APPLICANT_STAGES.map(([value,label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div>
@@ -249,7 +283,7 @@ const Auth = () => {
               )}
             </>}
 
-            <div className="space-y-2"><Label htmlFor="password">Password *</Label><Input id="password" name="password" type="password" autoComplete={isLogin ? "current-password" : "new-password"} required placeholder="••••••••" /></div>
+            <div className="space-y-2"><div className="flex items-center justify-between gap-3"><Label htmlFor="password">Password *</Label>{isLogin && <button type="button" onClick={() => void handlePasswordReset()} disabled={resetSending} className="text-xs font-semibold text-primary hover:underline disabled:opacity-50">{resetSending ? "Sending..." : "Forgot password?"}</button>}</div><Input id="password" name="password" type="password" autoComplete={isLogin ? "current-password" : "new-password"} required placeholder="••••••••" /></div>
             {!isLogin && <><div className="space-y-2"><Label htmlFor="confirmPassword">Confirm password *</Label><Input id="confirmPassword" name="confirmPassword" type="password" required placeholder="••••••••" /></div><div className="flex items-start gap-3"><Checkbox id="terms" required /><Label htmlFor="terms" className="-mt-1 text-sm leading-6 text-muted-foreground">I agree to the <a href="/terms" className="underline">Terms</a> and <a href="/privacy" className="underline">Privacy Policy</a>.</Label></div></>}
             <Button type="submit" className="w-full" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{isLogin ? "Sign In" : "Create Account"}</Button>
           </form>
