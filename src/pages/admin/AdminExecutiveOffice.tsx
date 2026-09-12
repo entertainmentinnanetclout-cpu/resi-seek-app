@@ -10,9 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, BriefcaseBusiness, ClipboardCheck, Plus, RefreshCw, Sparkles, Target } from "lucide-react";
+import { AlertTriangle, BriefcaseBusiness, ClipboardCheck, Plus, RefreshCw, Sparkles, Target, Bot } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import AdminExecutiveOperatingLayer from "@/components/admin/AdminExecutiveOperatingLayer";
 
 type Task={id:string;title:string;description?:string|null;priority:string;status:string;assigned_staff_id?:string|null;due_at?:string|null;next_action?:string|null;created_at:string};
 type Staff={id:string;full_name:string|null};
@@ -91,7 +92,8 @@ export default function AdminExecutiveOffice(){
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList className="flex h-auto flex-wrap gap-1"><TabsTrigger value="overview">Strategy brief</TabsTrigger><TabsTrigger value="delegation">Delegation</TabsTrigger><TabsTrigger value="approvals">Approvals</TabsTrigger><TabsTrigger value="alerts">Escalations</TabsTrigger></TabsList>
+        <TabsList className="flex h-auto flex-wrap gap-1"><TabsTrigger value="agentos" className="gap-2"><Bot className="h-4 w-4"/>RG15 AgentOS</TabsTrigger><TabsTrigger value="overview">Strategy brief</TabsTrigger><TabsTrigger value="delegation">Delegation</TabsTrigger><TabsTrigger value="approvals">Approvals</TabsTrigger><TabsTrigger value="alerts">Escalations</TabsTrigger></TabsList>
+        <TabsContent value="agentos"><AdminExecutiveOperatingLayer/></TabsContent>
         <TabsContent value="overview" className="space-y-4">
           <Card><CardHeader><CardTitle className="flex items-center gap-2"><BriefcaseBusiness className="h-5 w-5"/>Latest executive brief</CardTitle></CardHeader><CardContent>{brief?<div className="space-y-3"><div><p className="text-xl font-black">{brief.headline||"Executive brief"}</p><p className="mt-2 text-sm leading-6 text-muted-foreground">{brief.summary||"No narrative summary."}</p></div><div className="flex flex-wrap gap-2"><Badge variant="outline">{brief.brief_date||"Latest"}</Badge><Badge variant="outline">{brief.provider||"system"} · {brief.model||"deterministic"}</Badge></div>{Array.isArray(brief.priorities)&&brief.priorities.length>0&&<div className="grid gap-2 md:grid-cols-2">{brief.priorities.slice(0,8).map((item:any,index:number)=><div key={index} className="rounded-xl border p-3 text-sm">{typeof item==="string"?item:item?.title||item?.summary||JSON.stringify(item)}</div>)}</div>}</div>:<p className="text-sm text-muted-foreground">No executive brief has been generated yet.</p>}</CardContent></Card>
         </TabsContent>
