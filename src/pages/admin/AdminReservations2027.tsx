@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import ResidenceFillVisualTabs from "@/components/admin/ResidenceFillVisualTabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -40,6 +41,7 @@ export const AdminReservations2027Content = () => {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [funding, setFunding] = useState("all");
+  const [residenceFilter, setResidenceFilter] = useState("all");
   const [notes, setNotes] = useState<Record<string, string>>({});
   const db = supabase as any;
 
@@ -53,12 +55,18 @@ export const AdminReservations2027Content = () => {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    void load();
+    const channel = supabase.channel("admin-reservations-2027-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "accommodation_reservations" }, () => void load())
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, []);
 
   const filtered = useMemo(() => rows.filter((r) => {
     const haystack = `${r.student_name || ""} ${r.student_number || ""} ${r.student_email || ""} ${r.student_phone || ""} ${r.residence_name || ""} ${r.residence_campus || ""}`.toLowerCase();
-    return (!query || haystack.includes(query.toLowerCase())) && (status === "all" || r.status === status) && (funding === "all" || r.funding_type === funding);
-  }), [rows, query, status, funding]);
+    return (!query || haystack.includes(query.toLowerCase())) && (status === "all" || r.status === status) && (funding === "all" || r.funding_type === funding) && (residenceFilter === "all" || r.residence_id === residenceFilter);
+  }), [rows, query, status, funding, residenceFilter]);
 
   const total = rows.length;
   const pending = rows.filter((r) => ["reserved", "contacted", "provisional_hold"].includes(r.status)).length;
@@ -95,6 +103,13 @@ export const AdminReservations2027Content = () => {
         <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-muted-foreground">Needs follow-up</p><p className="mt-1 text-2xl font-black">{pending}</p></div><Clock3 className="h-6 w-6 text-amber-500" /></div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-muted-foreground">Confirmed</p><p className="mt-1 text-2xl font-black">{confirmed}</p></div><CheckCircle2 className="h-6 w-6 text-emerald-500" /></div></CardContent></Card>
       </div>
+
+      <ResidenceFillVisualTabs
+        mode="reservations"
+        activityRows={rows}
+        selectedResidenceId={residenceFilter}
+        onSelectResidence={setResidenceFilter}
+      />
 
       <div className="grid gap-3 lg:grid-cols-[1fr_190px_190px]">
         <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search student, number, residence or campus…" /></div>
