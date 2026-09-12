@@ -214,10 +214,16 @@ async function recordResidenceLead(s: any, thread: any, contactId: string | null
 }
 async function secureResidence(s: any, thread: any, contactId: string | null, from: string, who: any, residence: any, st: any) {
   const leadId = await recordResidenceLead(s, thread, contactId, from, who, residence, st); await touchConversion(s, thread, contactId, who.profile, "accommodation", "lead_created", { ...st, selected_residence_id: residence.id, residence_lead_id: leadId });
-  const year = Number(st.year || 2027);
-  if (who.profile?.id && year >= 2027) {
+  const year = Math.max(2020, Math.min(2100, Number(st.year || new Date().getFullYear())));
+  if (who.profile?.id) {
     const funding = ["private", "nsfas"].includes(st.funding) ? st.funding : st.funding ? "other" : "undecided";
-    const result = await s.from("accommodation_reservations").upsert({ user_id: who.profile.id, residence_id: residence.id, academic_year: year, funding_type: funding, room_preference: st.room_preference || null, status: "reserved", source: "whatsapp_dimpho", applicant_name: who.profile.full_name || who.contact?.full_name || null, notes: "Reservation interest created from WhatsApp via Dimpho" }, { onConflict: "user_id,residence_id,academic_year" }).select("id,status").single(); if (result.error) throw result.error;
+    const rawCycle = String(st.academic_cycle || st.cycle || "unspecified").toLowerCase();
+    const academicCycle = ["annual", "semester", "trimester"].includes(rawCycle) ? rawCycle : "unspecified";
+    const rawPeriod = Number(st.academic_period || st.period || 0);
+    const academicPeriod = academicCycle === "annual" ? 1 : academicCycle === "semester" ? Math.max(1, Math.min(2, rawPeriod || 1)) : academicCycle === "trimester" ? Math.max(1, Math.min(3, rawPeriod || 1)) : 0;
+    const studyLevel = ["undergraduate", "postgraduate", "advanced", "other"].includes(String(st.study_level || "").toLowerCase()) ? String(st.study_level).toLowerCase() : "unspecified";
+    const studentStage = ["first_time", "continuing", "returning", "advanced", "graduating", "other"].includes(String(st.student_stage || "").toLowerCase()) ? String(st.student_stage).toLowerCase() : "unspecified";
+    const result = await s.from("accommodation_reservations").upsert({ user_id: who.profile.id, residence_id: residence.id, academic_year: year, academic_cycle: academicCycle, academic_period: academicPeriod, study_level: studyLevel, student_stage: studentStage, funding_type: funding, room_preference: st.room_preference || null, status: "reserved", source: "whatsapp_dimpho", applicant_name: who.profile.full_name || who.contact?.full_name || null, notes: "Reservation interest created from WhatsApp via Dimpho" }, { onConflict: "user_id,residence_id,academic_year,academic_cycle,academic_period" }).select("id,status").single(); if (result.error) throw result.error;
     await touchConversion(s, thread, contactId, who.profile, "accommodation", "reservation_started", { ...st, selected_residence_id: residence.id, reservation_id: result.data?.id });
     await resolvedReply(s, thread, contactId, from, `I’ve recorded your ${year} reservation interest for ${residence.name}. This is not a final room allocation yet. Continue the secure application here: ${link(`/find-my-res/${residence.slug || residence.id}`)}`, "accommodation_reservation", { intent: "accommodation", conversion: "reservation_started", residence_id: residence.id }); return;
   }

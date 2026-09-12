@@ -16,21 +16,28 @@ type ActivityRow = {
   application_status?: string | null;
 };
 
-type ResidenceCapacity = {
+type AcademicInventory = {
+  residence_id: string;
+  capacity: number;
+  reported_available_beds: number | null;
+  blocked_beds: number;
+  inventory_status: "planning" | "reported" | "verified" | "closed";
+  residences?: { name?: string | null; campus?: string | null } | null;
+};
+
+type FillRow = {
   id: string;
   name: string;
   campus: string | null;
   capacity: number | null;
-  available_spots: number | null;
-};
-
-type FillRow = ResidenceCapacity & {
+  reportedAvailable: number | null;
+  blocked: number;
   occupied: number | null;
   fillPct: number | null;
-  remaining: number | null;
   activityCount: number;
   securedCount: number;
   activeCount: number;
+  inventoryStatus: string;
   bucket: "full" | "near_full" | "filling" | "available" | "unknown";
 };
 
@@ -56,7 +63,7 @@ const bucketLabel: Record<FillRow["bucket"], string> = {
   near_full: "Near full",
   filling: "Filling",
   available: "Space available",
-  unknown: "Capacity needed",
+  unknown: "Awaiting report",
 };
 
 const bucketBadgeClass: Record<FillRow["bucket"], string> = {
@@ -69,16 +76,18 @@ const bucketBadgeClass: Record<FillRow["bucket"], string> = {
 
 export default function ResidenceFillVisualTabs({
   mode,
+  academicYear,
   activityRows,
   selectedResidenceId = "all",
   onSelectResidence,
 }: {
   mode: Mode;
+  academicYear: number;
   activityRows: ActivityRow[];
   selectedResidenceId?: string;
   onSelectResidence?: (residenceId: string) => void;
 }) {
-  const [residences, setResidences] = useState<ResidenceCapacity[]>([]);
+  const [inventory, setInventory] = useState<AcademicInventory[]>([]);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("all");
   const db = supabase as any;
@@ -87,23 +96,24 @@ export default function ResidenceFillVisualTabs({
     let active = true;
     const load = async () => {
       const { data } = await db
-        .from("residences")
-        .select("id,name,campus,capacity,available_spots")
-        .order("name");
-      if (active) setResidences((data || []) as ResidenceCapacity[]);
+        .from("residence_academic_inventory")
+        .select("residence_id,capacity,reported_available_beds,blocked_beds,inventory_status,residences(name,campus)")
+        .eq("academic_year", academicYear)
+        .order("residence_id");
+      if (active) setInventory((data || []) as AcademicInventory[]);
     };
     void load();
 
     const channel = supabase
-      .channel(`admin-fill-visual-${mode}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "residences" }, () => void load())
+      .channel(`admin-fill-visual-${mode}-${academicYear}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "residence_academic_inventory", filter: `academic_year=eq.${academicYear}` }, () => void load())
       .subscribe();
 
     return () => {
       active = false;
       void supabase.removeChannel(channel);
     };
-  }, [mode]);
+  }, [academicYear, mode]);
 
   const rows = useMemo<FillRow[]>(() => {
     const activityByResidence = new Map<string, { total: number; active: number; secured: number }>();
@@ -126,28 +136,32 @@ export default function ResidenceFillVisualTabs({
       activityByResidence.set(row.residence_id, current);
     }
 
-    const known = residences.map((residence) => {
-      const capacity = Number(residence.capacity || 0) || null;
-      const availableRaw = residence.available_spots === null || residence.available_spots === undefined
+    const known = inventory.map((entry) => {
+      const capacity = Number(entry.capacity || 0) || null;
+      const availableRaw = entry.reported_available_beds === null || entry.reported_available_beds === undefined
         ? null
-        : Number(residence.available_spots);
+        : Number(entry.reported_available_beds);
       const available = availableRaw === null || Number.isNaN(availableRaw) ? null : Math.max(0, availableRaw);
-      const occupied = capacity && available !== null ? clamp(capacity - available, 0, capacity) : null;
+      const blocked = Math.max(0, Number(entry.blocked_beds || 0));
+      const occupied = capacity && available !== null ? clamp(capacity - available - blocked, 0, capacity) : null;
       const fillPct = capacity && occupied !== null ? clamp((occupied / capacity) * 100) : null;
-      const activity = activityByResidence.get(residence.id) || { total: 0, active: 0, secured: 0 };
+      const activity = activityByResidence.get(entry.residence_id) || { total: 0, active: 0, secured: 0 };
 
       return {
-        ...residence,
+        id: entry.residence_id,
+        name: entry.residences?.name || "Residence",
+        campus: entry.residences?.campus || null,
         capacity,
-        available_spots: available,
+        reportedAvailable: available,
+        blocked,
         occupied,
         fillPct,
-        remaining: available,
         activityCount: activity.total,
         activeCount: activity.active,
         securedCount: activity.secured,
+        inventoryStatus: entry.inventory_status,
         bucket: occupancyBucket(capacity, available),
-      };
+      } satisfies FillRow;
     });
 
     const knownIds = new Set(known.map((row) => row.id));
@@ -159,13 +173,14 @@ export default function ResidenceFillVisualTabs({
         name: activity.residence_name || "Residence",
         campus: null,
         capacity: null,
-        available_spots: null,
+        reportedAvailable: null,
+        blocked: 0,
         occupied: null,
         fillPct: null,
-        remaining: null,
         activityCount: counts.total,
         activeCount: counts.active,
         securedCount: counts.secured,
+        inventoryStatus: "planning",
         bucket: "unknown",
       });
       knownIds.add(activity.residence_id);
@@ -178,7 +193,7 @@ export default function ResidenceFillVisualTabs({
         || b.activeCount - a.activeCount
         || a.name.localeCompare(b.name);
     });
-  }, [activityRows, residences, mode]);
+  }, [activityRows, inventory, mode]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -190,18 +205,21 @@ export default function ResidenceFillVisualTabs({
   }, [rows, tab, query]);
 
   const totals = useMemo(() => {
-    const measurable = rows.filter((row) => row.capacity !== null && row.remaining !== null);
+    const measurable = rows.filter((row) => row.capacity !== null && row.reportedAvailable !== null);
     const capacity = measurable.reduce((sum, row) => sum + Number(row.capacity || 0), 0);
-    const remaining = measurable.reduce((sum, row) => sum + Number(row.remaining || 0), 0);
-    const occupied = Math.max(0, capacity - remaining);
+    const available = measurable.reduce((sum, row) => sum + Number(row.reportedAvailable || 0), 0);
+    const blocked = measurable.reduce((sum, row) => sum + Number(row.blocked || 0), 0);
+    const occupied = Math.max(0, capacity - available - blocked);
     const nearFull = rows.filter((row) => row.bucket === "full" || row.bucket === "near_full").length;
     return {
       capacity,
       occupied,
-      remaining,
+      available,
+      blocked,
       occupancy: capacity > 0 ? Math.round((occupied / capacity) * 100) : 0,
       nearFull,
       unknown: rows.filter((row) => row.bucket === "unknown").length,
+      reporting: measurable.length,
     };
   }, [rows]);
 
@@ -216,10 +234,10 @@ export default function ResidenceFillVisualTabs({
             <div>
               <div className="flex items-center gap-2">
                 <Gauge className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-black">Residence fill command view</h3>
+                <h3 className="text-lg font-black">{academicYear} residence fill command view</h3>
               </div>
               <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">
-                Scan occupancy before opening the detailed list. Fill percentage uses each residence&apos;s capacity and live available-spots fields; {activityLabel} are shown separately as demand signals so they are not double-counted as occupied beds.
+                Occupancy uses only the {academicYear} academic inventory ledger. {activityLabel} are demand signals and are not double-counted as occupied beds. A different year can never change this view.
               </p>
             </div>
             <div className="relative w-full xl:w-72">
@@ -228,12 +246,13 @@ export default function ResidenceFillVisualTabs({
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-5">
-            <Metric icon={BedDouble} label="Total capacity" value={totals.capacity.toLocaleString("en-ZA")} />
-            <Metric icon={CheckCircle2} label="Occupied" value={totals.occupied.toLocaleString("en-ZA")} />
-            <Metric icon={Activity} label="Overall fill" value={`${totals.occupancy}%`} />
+          <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-6">
+            <Metric icon={BedDouble} label="Reported capacity" value={totals.capacity.toLocaleString("en-ZA")} />
+            <Metric icon={CheckCircle2} label="Reported occupied" value={totals.occupied.toLocaleString("en-ZA")} />
+            <Metric icon={Activity} label="Reported fill" value={`${totals.occupancy}%`} />
+            <Metric icon={BedDouble} label="Reported open" value={totals.available.toLocaleString("en-ZA")} />
             <Metric icon={CircleAlert} label="Near / at full" value={String(totals.nearFull)} />
-            <Metric icon={Building2} label="Capacity missing" value={String(totals.unknown)} />
+            <Metric icon={Building2} label="Awaiting report" value={String(totals.unknown)} />
           </div>
         </div>
 
@@ -244,14 +263,14 @@ export default function ResidenceFillVisualTabs({
             <TabsTrigger value="full">Full {rows.filter((r) => r.bucket === "full").length}</TabsTrigger>
             <TabsTrigger value="filling">Filling {rows.filter((r) => r.bucket === "filling").length}</TabsTrigger>
             <TabsTrigger value="available">Available {rows.filter((r) => r.bucket === "available").length}</TabsTrigger>
-            <TabsTrigger value="unknown">Needs capacity {rows.filter((r) => r.bucket === "unknown").length}</TabsTrigger>
+            <TabsTrigger value="unknown">Awaiting report {rows.filter((r) => r.bucket === "unknown").length}</TabsTrigger>
           </TabsList>
 
           {["all", "attention", "full", "filling", "available", "unknown"].map((value) => (
             <TabsContent key={value} value={value} className="mt-4">
               {filtered.length === 0 ? (
                 <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-                  No residences match this fill view.
+                  No residences match this {academicYear} fill view.
                 </div>
               ) : (
                 <div className="max-h-[680px] overflow-y-auto pr-1">
@@ -268,21 +287,21 @@ export default function ResidenceFillVisualTabs({
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <p className="truncate font-black">{row.name}</p>
-                              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{row.campus || "Campus not set"}</p>
+                              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{row.campus || "Campus not set"} · {row.inventoryStatus}</p>
                             </div>
                             <Badge variant="outline" className={`shrink-0 ${bucketBadgeClass[row.bucket]}`}>{bucketLabel[row.bucket]}</Badge>
                           </div>
 
                           {row.fillPct === null ? (
                             <div className="mt-4 rounded-xl bg-muted/45 p-3">
-                              <p className="text-xs font-bold">Capacity data required</p>
-                              <p className="mt-1 text-[11px] text-muted-foreground">Set capacity and available spots to calculate the fill percentage.</p>
+                              <p className="text-xs font-bold">{academicYear} availability not reported</p>
+                              <p className="mt-1 text-[11px] text-muted-foreground">Capacity may be planned, but occupancy stays unknown until this academic year&apos;s open beds are explicitly reported.</p>
                             </div>
                           ) : (
                             <>
                               <div className="mt-4 flex items-end justify-between gap-3">
-                                <div><p className="text-3xl font-black tracking-tight">{Math.round(row.fillPct)}%</p><p className="text-[11px] text-muted-foreground">occupied</p></div>
-                                <div className="text-right"><p className="text-sm font-black">{Number(row.remaining || 0).toLocaleString("en-ZA")} left</p><p className="text-[11px] text-muted-foreground">{Number(row.occupied || 0).toLocaleString("en-ZA")} / {Number(row.capacity || 0).toLocaleString("en-ZA")} beds</p></div>
+                                <div><p className="text-3xl font-black tracking-tight">{Math.round(row.fillPct)}%</p><p className="text-[11px] text-muted-foreground">reported occupied</p></div>
+                                <div className="text-right"><p className="text-sm font-black">{Number(row.reportedAvailable || 0).toLocaleString("en-ZA")} open</p><p className="text-[11px] text-muted-foreground">{Number(row.occupied || 0).toLocaleString("en-ZA")} / {Number(row.capacity || 0).toLocaleString("en-ZA")} beds{row.blocked ? ` · ${row.blocked} blocked` : ""}</p></div>
                               </div>
                               <Progress value={row.fillPct} className="mt-3 h-2.5" />
                             </>

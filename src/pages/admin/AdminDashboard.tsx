@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface OverviewStats {
@@ -41,6 +42,21 @@ interface OverviewStats {
   unresolvedAlerts: number;
   publishedPartners: number;
   generatedAt: string | null;
+  academicYear: number;
+  academicCapacity: number;
+  reportedAvailableBeds: number;
+  reportedOccupiedBeds: number;
+  inventoryResidenceCount: number;
+  inventoryReportedCount: number;
+  inventoryVerifiedCount: number;
+  fullAcademicResidences: number;
+  academicApplications: number;
+  academicPendingApplications: number;
+  academicApprovedApplications: number;
+  academicMovedInStudents: number;
+  academicReservations: number;
+  academicConfirmedReservations: number;
+  academicProvisionalHolds: number;
 }
 
 const initialStats: OverviewStats = {
@@ -70,7 +86,27 @@ const initialStats: OverviewStats = {
   unresolvedAlerts: 0,
   publishedPartners: 0,
   generatedAt: null,
+  academicYear: new Date().getFullYear(),
+  academicCapacity: 0,
+  reportedAvailableBeds: 0,
+  reportedOccupiedBeds: 0,
+  inventoryResidenceCount: 0,
+  inventoryReportedCount: 0,
+  inventoryVerifiedCount: 0,
+  fullAcademicResidences: 0,
+  academicApplications: 0,
+  academicPendingApplications: 0,
+  academicApprovedApplications: 0,
+  academicMovedInStudents: 0,
+  academicReservations: 0,
+  academicConfirmedReservations: 0,
+  academicProvisionalHolds: 0,
 };
+
+const currentAcademicYear = new Date().getFullYear();
+const dashboardYears = Array.from({ length: 5 }, (_, index) => currentAcademicYear - 1 + index);
+const academicLabel = (value: string) => value.replaceAll("_", " ").replace(/\b\w/g, (x) => x.toUpperCase());
+const periodsForCycle = (cycle: string) => cycle === "semester" ? [1, 2] : cycle === "trimester" ? [1, 2, 3] : cycle === "annual" ? [1] : [1, 2, 3];
 
 const AdminDashboard = () => {
   const { isGodMode, staffRole, isLoading: authLoading } = useAuth();
@@ -82,6 +118,12 @@ const AdminDashboard = () => {
   const [recentApplications, setRecentApplications] = useState<any[]>([]);
   const [recentEvents, setRecentEvents] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [academicYear, setAcademicYear] = useState(currentAcademicYear);
+  const [academicCycle, setAcademicCycle] = useState("all");
+  const [academicPeriod, setAcademicPeriod] = useState("all");
+  const [studyLevel, setStudyLevel] = useState("all");
+  const [studentStage, setStudentStage] = useState("all");
+  const [academicBreakdown, setAcademicBreakdown] = useState<any>({ cycle: {}, studyLevel: {}, studentStage: {} });
 
   useEffect(() => {
     if (!authLoading && !isGodMode) {
@@ -94,7 +136,13 @@ const AdminDashboard = () => {
     if (!silent) setRefreshing(true);
     try {
       setOverviewError(null);
-      const { data, error } = await (supabase as any).rpc("admin_dashboard_overview");
+      const { data, error } = await (supabase as any).rpc("admin_dashboard_overview", {
+        p_academic_year: academicYear,
+        p_academic_cycle: academicCycle === "all" ? null : academicCycle,
+        p_academic_period: academicPeriod === "all" ? null : Number(academicPeriod),
+        p_study_level: studyLevel === "all" ? null : studyLevel,
+        p_student_stage: studentStage === "all" ? null : studentStage,
+      });
       if (error) throw error;
 
       const payload = typeof data === "string" ? JSON.parse(data) : (data || {});
@@ -102,6 +150,7 @@ const AdminDashboard = () => {
       setRecentApplications(Array.isArray(payload.recentApplications) ? payload.recentApplications : []);
       setRecentEvents(Array.isArray(payload.recentEvents) ? payload.recentEvents : []);
       setAlerts(Array.isArray(payload.alerts) ? payload.alerts : []);
+      setAcademicBreakdown(payload.academicBreakdown || { cycle: {}, studyLevel: {}, studentStage: {} });
     } catch (error: any) {
       console.error("[AdminDashboard] Backend overview failed:", error);
       setOverviewError(error?.message || "The backend overview could not be loaded.");
@@ -109,7 +158,7 @@ const AdminDashboard = () => {
       setLoading(false);
       if (!silent) setRefreshing(false);
     }
-  }, []);
+  }, [academicYear, academicCycle, academicPeriod, studyLevel, studentStage]);
 
   useEffect(() => {
     void fetchOverview(true);
@@ -119,6 +168,8 @@ const AdminDashboard = () => {
       .channel("admin-overview-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "applications" }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "residences" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "residence_academic_inventory" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "accommodation_reservations" }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "residence_portal_accounts" }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "marketplace_listings" }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "wil_applications" }, refresh)
@@ -197,7 +248,7 @@ const AdminDashboard = () => {
               <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Platform Overview</h1>
               <Badge variant="outline" className="gap-1 border-primary/30 text-primary"><Wifi className="h-3 w-3" /> LIVE BACKEND</Badge>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">One backend aggregate for accommodation, applications, users, commerce, media, WIL, alerts and partnerships.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Institutional service-provider command centre for academic-year occupancy, intake cohorts, accommodation, applications, WIL, partnerships and platform operations.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {generatedAt && <span className="text-xs text-muted-foreground">Synced {generatedAt.toLocaleString("en-ZA")}</span>}
@@ -220,7 +271,57 @@ const AdminDashboard = () => {
           </Card>
         )}
 
-        {(stats.pendingApplications > 0 || stats.unverifiedListings > 0 || stats.pendingWilApps > 0 || stats.fullResidences > 0 || stats.unresolvedAlerts > 0) && (
+        <Card className="border-primary/20 bg-primary/[0.025]">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+              <div>
+                <CardTitle className="text-base">Institutional Academic Operations</CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground">Occupancy is isolated by academic year; annual, semester and trimester cohorts are reportable independently.</p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                <Select value={String(academicYear)} onValueChange={(value) => setAcademicYear(Number(value))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{dashboardYears.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}</SelectContent></Select>
+                <Select value={academicCycle} onValueChange={(value) => { setAcademicCycle(value); setAcademicPeriod("all"); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All cycles</SelectItem><SelectItem value="annual">Annual</SelectItem><SelectItem value="semester">Semester</SelectItem><SelectItem value="trimester">Trimester</SelectItem><SelectItem value="unspecified">Unspecified</SelectItem></SelectContent></Select>
+                <Select value={academicPeriod} onValueChange={setAcademicPeriod}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All periods</SelectItem>{periodsForCycle(academicCycle).map((period) => <SelectItem key={period} value={String(period)}>Period {period}</SelectItem>)}</SelectContent></Select>
+                <Select value={studyLevel} onValueChange={setStudyLevel}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All study levels</SelectItem><SelectItem value="undergraduate">Undergraduate</SelectItem><SelectItem value="postgraduate">Postgraduate</SelectItem><SelectItem value="advanced">Advanced</SelectItem><SelectItem value="other">Other</SelectItem><SelectItem value="unspecified">Unspecified</SelectItem></SelectContent></Select>
+                <Select value={studentStage} onValueChange={setStudentStage}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All student stages</SelectItem><SelectItem value="first_time">First-time</SelectItem><SelectItem value="continuing">Continuing</SelectItem><SelectItem value="returning">Returning</SelectItem><SelectItem value="advanced">Advanced</SelectItem><SelectItem value="graduating">Graduating</SelectItem><SelectItem value="other">Other</SelectItem><SelectItem value="unspecified">Unspecified</SelectItem></SelectContent></Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
+              {[
+                ["Year capacity", stats.academicCapacity],
+                ["Reported open", stats.reportedAvailableBeds],
+                ["Reported occupied", stats.reportedOccupiedBeds],
+                ["Applications", stats.academicApplications],
+                ["Moved in", stats.academicMovedInStudents],
+                ["Reservations", stats.academicReservations],
+                ["Confirmed", stats.academicConfirmedReservations],
+                ["Provisional holds", stats.academicProvisionalHolds],
+              ].map(([label, value]) => <div key={String(label)} className="rounded-xl border bg-background p-3"><p className="text-xl font-black">{v(Number(value))}</p><p className="text-[11px] text-muted-foreground">{label}</p></div>)}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Badge variant="outline">{academicYear} academic year</Badge>
+              <Badge variant="outline">{academicCycle === "all" ? "All cycles" : academicLabel(academicCycle)}</Badge>
+              {academicPeriod !== "all" && <Badge variant="outline">Period {academicPeriod}</Badge>}
+              <Badge variant="outline">Inventory reporting {stats.inventoryReportedCount}/{stats.inventoryResidenceCount}</Badge>
+              <Badge variant="outline">Verified {stats.inventoryVerifiedCount}</Badge>
+              <Badge variant="outline">Annual apps {Number(academicBreakdown?.cycle?.annual || 0).toLocaleString("en-ZA")}</Badge>
+              <Badge variant="outline">Semester apps {Number(academicBreakdown?.cycle?.semester || 0).toLocaleString("en-ZA")}</Badge>
+              <Badge variant="outline">Trimester apps {Number(academicBreakdown?.cycle?.trimester || 0).toLocaleString("en-ZA")}</Badge>
+              <Badge variant="outline">Undergrad {Number(academicBreakdown?.studyLevel?.undergraduate || 0).toLocaleString("en-ZA")}</Badge>
+              <Badge variant="outline">Postgrad {Number(academicBreakdown?.studyLevel?.postgraduate || 0).toLocaleString("en-ZA")}</Badge>
+              <Badge variant="outline">Advanced {Number(academicBreakdown?.studyLevel?.advanced || 0).toLocaleString("en-ZA")}</Badge>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" asChild><Link to="/admin/operations?tab=academic-inventory">Manage academic inventory</Link></Button>
+              <Button size="sm" variant="outline" asChild><Link to="/admin/operations?tab=2027-reservations">Review academic intake</Link></Button>
+              <Button size="sm" variant="outline" asChild><Link to="/admin/operations?tab=applications">Review cohort applications</Link></Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {(stats.pendingApplications > 0 || stats.unverifiedListings > 0 || stats.pendingWilApps > 0 || stats.fullAcademicResidences > 0 || stats.unresolvedAlerts > 0) && (
           <Card className="border-warning/40 bg-warning/5">
             <CardContent className="p-4">
               <div className="mb-3 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-warning" /><span className="text-sm font-bold">Needs attention</span></div>
@@ -228,7 +329,7 @@ const AdminDashboard = () => {
                 {[
                   stats.pendingApplications > 0 && { label: "Active app reviews", value: stats.pendingApplications, path: "/admin/operations?tab=applications" },
                   stats.unverifiedListings > 0 && { label: "Unverified listings", value: stats.unverifiedListings, path: "/admin/commerce?tab=marketplace" },
-                  stats.fullResidences > 0 && { label: "Full residences", value: stats.fullResidences, path: "/admin/operations?tab=residences" },
+                  stats.fullAcademicResidences > 0 && { label: `${academicYear} reported full`, value: stats.fullAcademicResidences, path: "/admin/operations?tab=academic-inventory" },
                   stats.pendingWilApps > 0 && { label: "WIL pending", value: stats.pendingWilApps, path: "/admin/system?tab=wil" },
                   stats.unresolvedAlerts > 0 && { label: "System alerts", value: stats.unresolvedAlerts, path: "/admin/system?tab=system-status" },
                 ].filter(Boolean).map((item: any) => (
@@ -245,8 +346,8 @@ const AdminDashboard = () => {
           <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Find My Res intelligence</h2>
           <MetricGrid columns="lg:grid-cols-5" items={[
             { icon: Layers, label: "Active Sections", value: stats.totalSections, path: "/admin/operations?tab=residences", color: "text-violet-500" },
-            { icon: MapPin, label: "Available Spots", value: stats.totalAvailableSpots, path: "/admin/operations?tab=residences", color: "text-green-500" },
-            { icon: Ban, label: "Full Residences", value: stats.fullResidences, path: "/admin/operations?tab=residences", color: "text-destructive" },
+            { icon: MapPin, label: "Current Listing Spots", value: stats.totalAvailableSpots, path: "/admin/operations?tab=residences", color: "text-green-500" },
+            { icon: Ban, label: "Current Listing Full", value: stats.fullResidences, path: "/admin/operations?tab=residences", color: "text-destructive" },
             { icon: Eye, label: "Residence Events", value: stats.totalViews, path: "/admin/analytics", color: "text-orange-500" },
             { icon: Bell, label: "Unresolved Alerts", value: stats.unresolvedAlerts, path: "/admin/system?tab=system-status", color: "text-warning" },
           ]} />

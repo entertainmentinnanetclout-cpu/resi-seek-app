@@ -51,6 +51,11 @@ const ProfileSetup = () => {
       campus: profile.campus ?? "",
       course: profile.course ?? "",
       year_of_study: profile.year_of_study ?? "",
+      academic_year: extended.academic_year ?? new Date().getFullYear(),
+      academic_cycle: extended.academic_cycle ?? "unspecified",
+      academic_period: extended.academic_period ?? 0,
+      study_level: extended.study_level ?? "unspecified",
+      student_stage: extended.student_stage ?? "unspecified",
     });
   }, [profile, user]);
 
@@ -73,6 +78,14 @@ const ProfileSetup = () => {
     ? String(formData.student_number || "").trim().length >= 5
     : idPattern.test(String(formData.identity_number || "").trim());
   const contactValid = String(formData.full_name || "").trim().length >= 2 && phonePattern.test(String(formData.phone || "").trim()) && Boolean(formData.campus) && identifierValid;
+  const academicContextRequired = ["university_student", "tvet_student"].includes(stage);
+  const academicContextValid = !academicContextRequired || (
+    Number(formData.academic_year) >= 2020
+    && ["annual", "semester", "trimester"].includes(String(formData.academic_cycle || ""))
+    && ["undergraduate", "postgraduate", "advanced", "other"].includes(String(formData.study_level || ""))
+    && ["first_time", "continuing", "returning", "advanced", "graduating", "other"].includes(String(formData.student_stage || ""))
+  );
+  const academicPeriodOptions = formData.academic_cycle === "semester" ? [1, 2] : formData.academic_cycle === "trimester" ? [1, 2, 3] : formData.academic_cycle === "annual" ? [1] : [];
 
   const handleFileUpload = async (docType: keyof typeof uploadedDocs, event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -104,6 +117,7 @@ const ProfileSetup = () => {
     event.preventDefault();
     if (!user) return;
     if (!contactValid) return toast.error(identifierType === "identity_number" ? "Complete your details with a valid phone number and 13-digit South African ID." : "Complete your details with a valid phone number and student number.");
+    if (!academicContextValid) return toast.error("Select your academic year, annual/semester/trimester cycle, study level and student stage.");
     if (!uploadedDocs.id || (registrationRequired && !uploadedDocs.registration)) return toast.error(registrationRequired ? "Upload your ID and proof of registration before continuing." : "Upload your ID before continuing.");
 
     try {
@@ -116,6 +130,11 @@ const ProfileSetup = () => {
         identity_number: identifierType === "identity_number" ? String(formData.identity_number || "").trim() : null,
         course: String(formData.course || "").trim() || null,
         year_of_study: formData.year_of_study || null,
+        academic_year: Number(formData.academic_year || new Date().getFullYear()),
+        academic_cycle: academicContextRequired ? formData.academic_cycle : (formData.academic_cycle || "unspecified"),
+        academic_period: academicContextRequired ? Number(formData.academic_period || (formData.academic_cycle === "annual" ? 1 : 0)) : Number(formData.academic_period || 0),
+        study_level: academicContextRequired ? formData.study_level : (formData.study_level || "unspecified"),
+        student_stage: academicContextRequired ? formData.student_stage : (formData.student_stage || "unspecified"),
       };
       const { error } = await (supabase as any).from("profiles").update(payload).eq("id", user.id);
       if (error) throw error;
@@ -155,8 +174,20 @@ const ProfileSetup = () => {
             <div className="grid gap-4 md:grid-cols-2"><div className="space-y-2"><Label htmlFor="course">Course / intended course</Label><Input id="course" name="course" value={formData.course || ""} onChange={handleInputChange} placeholder={stage === "matriculant" ? "What would you like to study?" : "Current course"} /></div><div className="space-y-2"><Label>Year of study</Label><Select value={formData.year_of_study || ""} onValueChange={(value) => handleSelectChange("year_of_study", value)}><SelectTrigger><SelectValue placeholder="Select if applicable" /></SelectTrigger><SelectContent><SelectItem value="1">1st Year</SelectItem><SelectItem value="2">2nd Year</SelectItem><SelectItem value="3">3rd Year</SelectItem><SelectItem value="4">4th Year</SelectItem><SelectItem value="postgrad">Postgraduate</SelectItem><SelectItem value="not_started">Not started yet</SelectItem></SelectContent></Select></div></div>
           </CardContent></Card>
 
+          <Card><CardHeader><CardTitle>Academic classification</CardTitle><CardDescription>Used to place your accommodation demand in the correct academic year and intake. 2027 activity never changes 2026 occupancy.</CardDescription></CardHeader><CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2"><Label>Academic year{academicContextRequired ? " *" : ""}</Label><Select value={String(formData.academic_year || new Date().getFullYear())} onValueChange={(value) => handleSelectChange("academic_year", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: 4 }, (_, index) => new Date().getFullYear() - 1 + index).map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2"><Label>Academic cycle{academicContextRequired ? " *" : ""}</Label><Select value={formData.academic_cycle || "unspecified"} onValueChange={(value) => setFormData((prev:any) => ({ ...prev, academic_cycle:value, academic_period:value === "annual" ? 1 : value === "unspecified" ? 0 : 1 }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{!academicContextRequired && <SelectItem value="unspecified">Not known yet</SelectItem>}<SelectItem value="annual">Annual course</SelectItem><SelectItem value="semester">Semester course</SelectItem><SelectItem value="trimester">Trimester course</SelectItem></SelectContent></Select></div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2"><Label>Period / intake</Label><Select value={String(formData.academic_period ?? 0)} onValueChange={(value) => handleSelectChange("academic_period", value)} disabled={academicPeriodOptions.length === 0}><SelectTrigger><SelectValue placeholder="Select period" /></SelectTrigger><SelectContent>{academicPeriodOptions.map((period) => <SelectItem key={period} value={String(period)}>{formData.academic_cycle === "annual" ? "Annual" : `${formData.academic_cycle === "semester" ? "Semester" : "Trimester"} ${period}`}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2"><Label>Study level{academicContextRequired ? " *" : ""}</Label><Select value={formData.study_level || "unspecified"} onValueChange={(value) => handleSelectChange("study_level", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{!academicContextRequired && <SelectItem value="unspecified">Not known yet</SelectItem>}<SelectItem value="undergraduate">Undergraduate</SelectItem><SelectItem value="postgraduate">Postgraduate</SelectItem><SelectItem value="advanced">Advanced qualification</SelectItem><SelectItem value="other">Other / college level</SelectItem></SelectContent></Select></div>
+              <div className="space-y-2"><Label>Student stage{academicContextRequired ? " *" : ""}</Label><Select value={formData.student_stage || "unspecified"} onValueChange={(value) => handleSelectChange("student_stage", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{!academicContextRequired && <SelectItem value="unspecified">Not known yet</SelectItem>}<SelectItem value="first_time">First-time student</SelectItem><SelectItem value="continuing">Continuing student</SelectItem><SelectItem value="returning">Returning student</SelectItem><SelectItem value="advanced">Advanced-stage student</SelectItem><SelectItem value="graduating">Final / graduating year</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
+            </div>
+          </CardContent></Card>
+
           <Card><CardHeader><CardTitle>Verification documents</CardTitle><CardDescription>{registrationRequired ? "ID and proof of registration are required for your current student stage." : "Your ID is required. Registration can be added later once you are admitted/registered."}</CardDescription></CardHeader><CardContent className="space-y-4"><DocumentUploadBox label="ID Copy" docType="id" isUploaded={uploadedDocs.id} /><DocumentUploadBox label="Proof of Registration" docType="registration" isUploaded={uploadedDocs.registration} optional={!registrationRequired} /><DocumentUploadBox label="Proof of Funding" docType="funding" isUploaded={uploadedDocs.funding} optional /></CardContent></Card>
-          <Button type="submit" className="w-full" size="lg" disabled={!contactValid}>Complete Setup & Continue</Button>
+          <Button type="submit" className="w-full" size="lg" disabled={!contactValid || !academicContextValid}>Complete Setup & Continue</Button>
         </form>
       </div>
     </div>

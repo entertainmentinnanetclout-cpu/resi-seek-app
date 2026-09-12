@@ -90,9 +90,14 @@ const Profile = () => {
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
-    const { id, created_at, email, ...updateData } = formData;
+    const { id, created_at, email, ...rawUpdateData } = formData;
+    const updateData = {
+      ...rawUpdateData,
+      academic_year: Number(rawUpdateData.academic_year || new Date().getFullYear()),
+      academic_period: Number(rawUpdateData.academic_period || 0),
+    };
     try {
-      const { error } = await supabase.from("profiles").update(updateData).eq("id", user.id);
+      const { error } = await supabase.from("profiles").update(updateData as any).eq("id", user.id);
       if (error) throw error;
       setProfile(formData);
       toast.success('Profile updated successfully!');
@@ -273,6 +278,56 @@ const Profile = () => {
                         </Button>
                       </div>
                     )}
+                  </div>
+                </AccordionItem>
+
+                <AccordionItem title="Academic Classification" description="Keep your academic year and intake context accurate for accommodation services." id="academic_context">
+                  <div className="space-y-4">
+                    <div className="rounded-xl border bg-muted/30 p-3 text-xs text-muted-foreground">
+                      Academic years are isolated. Your 2027 intake or reservation does not change 2026 occupancy reporting.
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Academic Year</Label>
+                        <Select value={String(formData.academic_year || new Date().getFullYear())} onValueChange={(v) => handleSelectChange("academic_year", v)} disabled={!isEditing}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>{Array.from({ length: 4 }, (_, index) => new Date().getFullYear() - 1 + index).map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Academic Cycle</Label>
+                        <Select value={formData.academic_cycle || "unspecified"} onValueChange={(v) => setFormData((prev:any) => ({ ...prev, academic_cycle:v, academic_period:v === "annual" ? 1 : v === "unspecified" ? 0 : 1 }))} disabled={!isEditing}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent><SelectItem value="unspecified">Unspecified</SelectItem><SelectItem value="annual">Annual</SelectItem><SelectItem value="semester">Semester</SelectItem><SelectItem value="trimester">Trimester</SelectItem></SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Period / Intake</Label>
+                        <Select value={String(formData.academic_period ?? 0)} onValueChange={(v) => handleSelectChange("academic_period", v)} disabled={!isEditing || formData.academic_cycle === "unspecified"}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {formData.academic_cycle === "annual" && <SelectItem value="1">Annual</SelectItem>}
+                            {formData.academic_cycle === "semester" && <><SelectItem value="1">Semester 1</SelectItem><SelectItem value="2">Semester 2</SelectItem></>}
+                            {formData.academic_cycle === "trimester" && <><SelectItem value="1">Trimester 1</SelectItem><SelectItem value="2">Trimester 2</SelectItem><SelectItem value="3">Trimester 3</SelectItem></>}
+                            {(!formData.academic_cycle || formData.academic_cycle === "unspecified") && <SelectItem value="0">Unspecified</SelectItem>}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Study Level</Label>
+                        <Select value={formData.study_level || "unspecified"} onValueChange={(v) => handleSelectChange("study_level", v)} disabled={!isEditing}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent><SelectItem value="unspecified">Unspecified</SelectItem><SelectItem value="undergraduate">Undergraduate</SelectItem><SelectItem value="postgraduate">Postgraduate</SelectItem><SelectItem value="advanced">Advanced qualification</SelectItem><SelectItem value="other">Other / college level</SelectItem></SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Student Stage</Label>
+                        <Select value={formData.student_stage || "unspecified"} onValueChange={(v) => handleSelectChange("student_stage", v)} disabled={!isEditing}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent><SelectItem value="unspecified">Unspecified</SelectItem><SelectItem value="first_time">First-time student</SelectItem><SelectItem value="continuing">Continuing student</SelectItem><SelectItem value="returning">Returning student</SelectItem><SelectItem value="advanced">Advanced-stage student</SelectItem><SelectItem value="graduating">Final / graduating year</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
                 </AccordionItem>
 

@@ -36,6 +36,12 @@ verify_jwt = false
 [functions.adminos-agent]
 verify_jwt = true
 
+[functions.luna-agent]
+verify_jwt = true
+
+[functions.luna-orchestrator]
+verify_jwt = false
+
 [functions.adminos-enquiry]
 verify_jwt = true
 
