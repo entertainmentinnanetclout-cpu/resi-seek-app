@@ -7,8 +7,8 @@ const supabaseUrl=env("SUPABASE_URL")||env("EXTERNAL_SUPABASE_URL");
 const serviceKey=env("SUPABASE_SERVICE_ROLE_KEY")||env("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
 const anonKey=env("SUPABASE_ANON_KEY")||env("EXTERNAL_SUPABASE_ANON_KEY");
 const openAIKey=env("OPENAI_API_KEY");
-const RELEASE=1;
-const PHASE=2;
+const RELEASE=2;
+const PHASE=5;
 const safe=(v:unknown,max=240)=>String(v??"").trim().slice(0,max);
 const extractText=(data:any)=>{if(typeof data?.output_text==="string")return data.output_text;for(const item of data?.output||[])for(const part of item?.content||[])if(part?.type==="output_text"&&typeof part?.text==="string")return part.text;return "";};
 const costFor=(model:string,input=0,output=0)=>{const rates:Record<string,[number,number]>={"gpt-5.6-luna":[.20,1.20],"gpt-5.6-terra":[2,12],"gpt-5.6-sol":[4,20]};const [ri,ro]=rates[model]||[0,0];return input/1e6*ri+output/1e6*ro;};
@@ -19,7 +19,10 @@ const errorText=(error:unknown)=>error instanceof Error?error.message:(typeof er
 
 async function authorize(req:Request,service:any){
   const cron=req.headers.get("x-luna-cron-token")||"";
-  if(cron){const {data}=await service.from("adminos_scheduler_secrets").select("secret_value").eq("secret_key","luna_demand").maybeSingle();if(secureEqual(cron,data?.secret_value||""))return{ok:true,actor:"scheduler",userId:null};}
+  if(cron){
+    const {data}=await service.from("adminos_scheduler_secrets").select("secret_key,secret_value").in("secret_key",["luna_demand","luna_content"]);
+    if((data||[]).some((row:any)=>secureEqual(cron,row.secret_value||"")))return{ok:true,actor:"scheduler",userId:null};
+  }
   const authHeader=req.headers.get("Authorization")||"";
   if(!authHeader||!anonKey)return{ok:false,actor:null,userId:null};
   const auth=createClient(supabaseUrl,anonKey,{global:{headers:{Authorization:authHeader}},auth:{persistSession:false}});
@@ -30,6 +33,45 @@ async function authorize(req:Request,service:any){
 }
 
 async function hash(value:string){const bytes=new TextEncoder().encode(value);const digest=await crypto.subtle.digest("SHA-256",bytes);return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,"0")).join("");}
+
+const clampScore=(v:unknown)=>Math.max(0,Math.min(100,Math.round(Number(v)||0)));
+const jsonFromText=(text:string)=>{
+  const clean=text.trim().replace(/^\`\`\`(?:json)?/i,"").replace(/\`\`\`$/,"").trim();
+  try{return JSON.parse(clean);}catch{
+    const first=clean.indexOf("{"),last=clean.lastIndexOf("}");
+    if(first>=0&&last>first){try{return JSON.parse(clean.slice(first,last+1));}catch{/* fall through */}}
+    return null;
+  }
+};
+const hasUnsafeClaim=(value:unknown)=>{
+  const text=JSON.stringify(value||{}).toLowerCase();
+  return ["guaranteed placement","guarantee placement","first in africa","official partner","nsfas accredited","government partner","100% placement"].some(x=>text.includes(x));
+};
+
+async function contentDraft(prompt:string,model:string,facts:any,social:any[]){
+  if(!openAIKey)return{draft:null,provider:null,model:null,usage:null};
+  const schema={
+    objective:"short string",audience:"short string",hook:"short string",offer:"short string",cta:"short string",
+    content_format:"short string",quality_score:88,risk_level:"green",
+    variants:{
+      tiktok:{title:"",caption:"",asset_brief:"",hashtags:[]},
+      instagram:{title:"",caption:"",asset_brief:"",hashtags:[]},
+      facebook:{title:"",caption:"",asset_brief:"",hashtags:[]},
+      youtube:{title:"",caption:"",asset_brief:"",hashtags:[]}
+    }
+  };
+  const r=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${openAIKey}`,"Content-Type":"application/json"},body:JSON.stringify({
+    model,
+    input:[
+      {role:"system",content:[{type:"input_text",text:prompt}]},
+      {role:"user",content:[{type:"input_text",text:JSON.stringify({verified_facts:facts,social_demand:social,required_json_schema:schema})}]}
+    ],
+    max_output_tokens:1400
+  })});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)return{draft:null,provider:null,model:null,usage:null};
+  return{draft:jsonFromText(extractText(data)),provider:"openai",model:data?.model||model,usage:data?.usage||null};
+}
 
 function campusResolver(campuses:any[]){
   const index=new Map<string,string>();
