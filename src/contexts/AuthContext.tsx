@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const initRef = useRef(false);
   const currentUserIdRef = useRef<string | null>(null);
+  const identitySyncUserRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (initRef.current) return;
@@ -95,6 +96,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    const accessToken = session?.access_token;
+    if (!userId || !accessToken || identitySyncUserRef.current === userId) return;
+
+    identitySyncUserRef.current = userId;
+    void supabase.functions.invoke("identity-sync", {
+      body: {},
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }).then(({ error }) => {
+      if (error) console.warn("[AuthContext] Identity sync failed safely:", error.message);
+    }).catch((error) => {
+      console.warn("[AuthContext] Identity sync unavailable:", error);
+    });
+  }, [session?.user?.id, session?.access_token]);
 
   const checkStatus = async () => {
     if (!sessionChecked) return;
@@ -173,6 +190,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     await supabase.auth.signOut();
     currentUserIdRef.current = null;
+    identitySyncUserRef.current = null;
     setUser(null);
     setSession(null);
     setIsAdmin(false);
