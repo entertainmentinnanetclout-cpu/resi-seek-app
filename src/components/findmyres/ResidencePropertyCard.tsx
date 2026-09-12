@@ -87,12 +87,14 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
         user_id: user.id,
         residence_id: residence.id,
         academic_year: 2027,
+        academic_cycle: "unspecified",
+        academic_period: 0,
         funding_type: fundingType,
         room_preference: roomPreference || null,
         notes: reservationNotes || null,
         status: "reserved",
         source: "find_my_res_card",
-      }, { onConflict: "user_id,residence_id,academic_year" });
+      }, { onConflict: "user_id,residence_id,academic_year,academic_cycle,academic_period" });
       if (error) throw error;
       toast.success(`2027 reservation saved for ${residence.name}`);
       setReservationOpen(false);
