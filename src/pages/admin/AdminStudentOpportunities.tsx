@@ -6,7 +6,8 @@ import { AdminApplicationHubContent } from "./AdminApplicationHub";
 import { AdminWILContent } from "./AdminWIL";
 import { AdminBursariesContent } from "./AdminBursaries";
 import { AdminOnboardingHub } from "@/components/admin/onboarding/AdminOnboardingHubContent";
-import { BriefcaseBusiness, GraduationCap, HandCoins, Inbox } from "lucide-react";
+import { BriefcaseBusiness, GraduationCap, HandCoins, Inbox, School } from "lucide-react";
+import { AdminTvetHubContent } from "./AdminTvetHub";
 
 export default function AdminStudentOpportunities(){
   return <AdminLayout>
@@ -20,11 +21,13 @@ export default function AdminStudentOpportunities(){
       <Tabs defaultValue="applications">
         <TabsList className="flex h-auto flex-wrap gap-1">
           <TabsTrigger value="applications" className="gap-2"><GraduationCap className="h-4 w-4"/>Application Services</TabsTrigger>
+          <TabsTrigger value="tvet" className="gap-2"><School className="h-4 w-4"/>TVET Operations</TabsTrigger>
           <TabsTrigger value="wil" className="gap-2"><BriefcaseBusiness className="h-4 w-4"/>WIL & Placement</TabsTrigger>
           <TabsTrigger value="bursaries" className="gap-2"><HandCoins className="h-4 w-4"/>Bursaries & Funding</TabsTrigger>
           <TabsTrigger value="enquiries" className="gap-2"><Inbox className="h-4 w-4"/>Service Enquiries</TabsTrigger>
         </TabsList>
         <TabsContent value="applications"><AdminApplicationHubContent/></TabsContent>
+        <TabsContent value="tvet"><AdminTvetHubContent/></TabsContent>
         <TabsContent value="wil"><AdminWILContent/></TabsContent>
         <TabsContent value="bursaries"><AdminBursariesContent/></TabsContent>
         <TabsContent value="enquiries" className="space-y-4">
