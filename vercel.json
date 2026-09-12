@@ -18,7 +18,11 @@
     {
       "source": "/:path*",
       "has": [
-        { "type": "header", "key": "host", "value": "reskonnect.org" }
+        {
+          "type": "header",
+          "key": "host",
+          "value": "reskonnect.org"
+        }
       ],
       "destination": "https://www.reskonnect.org/:path*",
       "permanent": true
@@ -26,7 +30,11 @@
     {
       "source": "/:path*",
       "has": [
-        { "type": "header", "key": "host", "value": "reskonnect.co.za" }
+        {
+          "type": "header",
+          "key": "host",
+          "value": "reskonnect.co.za"
+        }
       ],
       "destination": "https://www.reskonnect.org/:path*",
       "permanent": true
@@ -34,7 +42,11 @@
     {
       "source": "/:path*",
       "has": [
-        { "type": "header", "key": "host", "value": "www.reskonnect.co.za" }
+        {
+          "type": "header",
+          "key": "host",
+          "value": "www.reskonnect.co.za"
+        }
       ],
       "destination": "https://www.reskonnect.org/:path*",
       "permanent": true
@@ -42,95 +54,273 @@
     {
       "source": "/:path*",
       "has": [
-        { "type": "header", "key": "host", "value": { "suf": ".vercel.app" } }
+        {
+          "type": "header",
+          "key": "host",
+          "value": {
+            "suf": ".vercel.app"
+          }
+        }
       ],
       "destination": "https://www.reskonnect.org/:path*",
       "permanent": true
     },
-    { "source": "/find-my-res", "destination": "/find", "permanent": true }
+    {
+      "source": "/find-my-res",
+      "destination": "/find",
+      "permanent": true
+    }
   ],
   "headers": [
     {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(self), geolocation=(self), microphone=(self), payment=(self)"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        },
+        {
+          "key": "X-DNS-Prefetch-Control",
+          "value": "off"
+        }
+      ]
+    },
+    {
       "source": "/sw.js",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
       ]
     },
     {
       "source": "/registerSW.js",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
       ]
     },
     {
       "source": "/manifest.webmanifest",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, must-revalidate"
+        }
       ]
     },
     {
       "source": "/sitemap.xml",
       "headers": [
-        { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=300, s-maxage=1800, stale-while-revalidate=86400" },
-        { "key": "X-Robots-Tag", "value": "noindex" }
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, s-maxage=1800, stale-while-revalidate=86400"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
       ]
     },
     {
       "source": "/sitemaps/(.*).xml",
       "headers": [
-        { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=300, s-maxage=1800, stale-while-revalidate=86400" },
-        { "key": "X-Robots-Tag", "value": "noindex" }
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, s-maxage=1800, stale-while-revalidate=86400"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
       ]
     },
     {
       "source": "/robots.txt",
       "headers": [
-        { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=86400, s-maxage=86400" }
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, s-maxage=86400"
+        }
       ]
     },
     {
       "source": "/9b698dd216df7a00d2f9a598a4372726.txt",
       "headers": [
-        { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=86400, s-maxage=86400" }
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, s-maxage=86400"
+        }
       ]
     }
   ],
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/api/sitemap.xml" },
-    { "source": "/sitemaps/pages.xml", "destination": "/api/sitemaps/pages.xml" },
-    { "source": "/sitemaps/residences.xml", "destination": "/api/sitemaps/residences.xml" },
-    { "source": "/sitemaps/properties.xml", "destination": "/api/sitemaps/properties.xml" },
-    { "source": "/sitemaps/opportunities.xml", "destination": "/api/sitemaps/opportunities.xml" },
-    { "source": "/", "destination": "/_seo/home" },
-    { "source": "/living", "destination": "/_seo/living" },
-    { "source": "/student-accommodation", "destination": "/_seo/student-accommodation" },
-    { "source": "/student-accommodation/pretoria", "destination": "/_seo/student-accommodation-pretoria" },
-    { "source": "/student-accommodation/pretoria-west", "destination": "/_seo/student-accommodation-pretoria-west" },
-    { "source": "/student-accommodation/near-tut", "destination": "/_seo/student-accommodation-near-tut" },
-    { "source": "/student-accommodation/nsfas-accredited", "destination": "/_seo/student-accommodation-nsfas-accredited" },
-    { "source": "/applications", "destination": "/_seo/applications" },
-    { "source": "/applications/university", "destination": "/_seo/applications-university" },
-    { "source": "/applications/tvet", "destination": "/_seo/applications-tvet" },
-    { "source": "/applications/aps-checker", "destination": "/_seo/applications-aps-checker" },
-    { "source": "/opportunities", "destination": "/_seo/opportunities" },
-    { "source": "/opportunities/wil", "destination": "/_seo/opportunities-wil" },
-    { "source": "/opportunities/internships", "destination": "/_seo/opportunities-internships" },
-    { "source": "/opportunities/seta", "destination": "/_seo/opportunities-seta" },
-    { "source": "/properties", "destination": "/_seo/properties" },
-    { "source": "/property-auctions", "destination": "/_seo/property-auctions" },
-    { "source": "/student-accommodation-for-sale", "destination": "/_seo/student-accommodation-for-sale" },
-    { "source": "/development-opportunities", "destination": "/_seo/development-opportunities" },
-    { "source": "/ai", "destination": "/_seo/ai" },
-    { "source": "/partners", "destination": "/_seo/partners" },
-    { "source": "/partners/landlords", "destination": "/_seo/partners-landlords" },
-    { "source": "/bursaries", "destination": "/_seo/bursaries" },
-    { "source": "/campus-news", "destination": "/_seo/campus-news" },
-    { "source": "/360-studio", "destination": "/360-studio" },
-    { "source": "/360-studio/:path*", "destination": "/360-studio" },
-    { "source": "/(.*)", "destination": "/index" }
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap.xml"
+    },
+    {
+      "source": "/sitemaps/pages.xml",
+      "destination": "/api/sitemaps/pages.xml"
+    },
+    {
+      "source": "/sitemaps/residences.xml",
+      "destination": "/api/sitemaps/residences.xml"
+    },
+    {
+      "source": "/sitemaps/properties.xml",
+      "destination": "/api/sitemaps/properties.xml"
+    },
+    {
+      "source": "/sitemaps/opportunities.xml",
+      "destination": "/api/sitemaps/opportunities.xml"
+    },
+    {
+      "source": "/",
+      "destination": "/_seo/home"
+    },
+    {
+      "source": "/living",
+      "destination": "/_seo/living"
+    },
+    {
+      "source": "/student-accommodation",
+      "destination": "/_seo/student-accommodation"
+    },
+    {
+      "source": "/student-accommodation/pretoria",
+      "destination": "/_seo/student-accommodation-pretoria"
+    },
+    {
+      "source": "/student-accommodation/pretoria-west",
+      "destination": "/_seo/student-accommodation-pretoria-west"
+    },
+    {
+      "source": "/student-accommodation/near-tut",
+      "destination": "/_seo/student-accommodation-near-tut"
+    },
+    {
+      "source": "/student-accommodation/nsfas-accredited",
+      "destination": "/_seo/student-accommodation-nsfas-accredited"
+    },
+    {
+      "source": "/applications",
+      "destination": "/_seo/applications"
+    },
+    {
+      "source": "/applications/university",
+      "destination": "/_seo/applications-university"
+    },
+    {
+      "source": "/applications/tvet",
+      "destination": "/_seo/applications-tvet"
+    },
+    {
+      "source": "/applications/aps-checker",
+      "destination": "/_seo/applications-aps-checker"
+    },
+    {
+      "source": "/opportunities",
+      "destination": "/_seo/opportunities"
+    },
+    {
+      "source": "/opportunities/wil",
+      "destination": "/_seo/opportunities-wil"
+    },
+    {
+      "source": "/opportunities/internships",
+      "destination": "/_seo/opportunities-internships"
+    },
+    {
+      "source": "/opportunities/seta",
+      "destination": "/_seo/opportunities-seta"
+    },
+    {
+      "source": "/properties",
+      "destination": "/_seo/properties"
+    },
+    {
+      "source": "/property-auctions",
+      "destination": "/_seo/property-auctions"
+    },
+    {
+      "source": "/student-accommodation-for-sale",
+      "destination": "/_seo/student-accommodation-for-sale"
+    },
+    {
+      "source": "/development-opportunities",
+      "destination": "/_seo/development-opportunities"
+    },
+    {
+      "source": "/ai",
+      "destination": "/_seo/ai"
+    },
+    {
+      "source": "/partners",
+      "destination": "/_seo/partners"
+    },
+    {
+      "source": "/partners/landlords",
+      "destination": "/_seo/partners-landlords"
+    },
+    {
+      "source": "/bursaries",
+      "destination": "/_seo/bursaries"
+    },
+    {
+      "source": "/campus-news",
+      "destination": "/_seo/campus-news"
+    },
+    {
+      "source": "/360-studio",
+      "destination": "/360-studio"
+    },
+    {
+      "source": "/360-studio/:path*",
+      "destination": "/360-studio"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index"
+    }
   ]
 }
