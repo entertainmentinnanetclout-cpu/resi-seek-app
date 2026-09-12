@@ -2,7 +2,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, Bot, BrainCircuit, Cable, ShieldCheck, ServerCog } from "lucide-react";
+import { Activity, Bot, BrainCircuit, Cable, ShieldCheck, ServerCog, LockKeyhole } from "lucide-react";
 import AdminOSTwilioSetup from "@/components/admin/AdminOSTwilioSetup";
 import { AdminBackendHealthContent } from "./AdminBackendHealth";
 import { AdminSystemStatusContent } from "./AdminSystemStatus";
@@ -11,6 +11,7 @@ import DimphoIntelligenceStudio from "@/components/admin/DimphoIntelligenceStudi
 import DimphoReleaseControl from "@/components/admin/DimphoReleaseControl";
 import AdminReliabilityAutomation from "@/components/admin/AdminReliabilityAutomation";
 import AdminDepartmentTaskQueue from "@/components/admin/AdminDepartmentTaskQueue";
+import AdminGoldSecurity from "@/components/admin/AdminGoldSecurity";
 
 export default function AdminTechnologySystems(){
   return <AdminLayout>
@@ -23,6 +24,7 @@ export default function AdminTechnologySystems(){
       </header>
       <Tabs defaultValue="health">
         <TabsList className="flex h-auto flex-wrap gap-1">
+          <TabsTrigger value="security" className="gap-2"><LockKeyhole className="h-4 w-4"/>Gold Security</TabsTrigger>
           <TabsTrigger value="reliability" className="gap-2"><ServerCog className="h-4 w-4"/>RG14 Reliability</TabsTrigger>
           <TabsTrigger value="health" className="gap-2"><Activity className="h-4 w-4"/>Platform Health</TabsTrigger>
           <TabsTrigger value="integrations" className="gap-2"><Cable className="h-4 w-4"/>Integrations</TabsTrigger>
@@ -30,6 +32,7 @@ export default function AdminTechnologySystems(){
           <TabsTrigger value="release" className="gap-2"><ShieldCheck className="h-4 w-4"/>Release Control</TabsTrigger>
           <TabsTrigger value="advanced" className="gap-2"><Bot className="h-4 w-4"/>Advanced AdminOS</TabsTrigger>
         </TabsList>
+        <TabsContent value="security"><AdminGoldSecurity/></TabsContent>
         <TabsContent value="reliability" className="space-y-4"><AdminReliabilityAutomation/><AdminDepartmentTaskQueue departmentKey="technology_systems" title="Technology reliability queue"/></TabsContent>
         <TabsContent value="health" className="space-y-5"><AdminBackendHealthContent/><AdminSystemStatusContent/></TabsContent>
         <TabsContent value="integrations"><AdminOSTwilioSetup/></TabsContent>
