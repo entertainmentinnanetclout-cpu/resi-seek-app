@@ -2,12 +2,13 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Brain, MessageSquareText, Radar } from "lucide-react";
+import { BarChart3, Brain, MessageSquareText, Radar, SearchCheck } from "lucide-react";
 import { AdminAnalyticsContent } from "./AdminAnalytics";
 import AdminSocialDemandAnalytics from "@/components/admin/AdminSocialDemandAnalytics";
 import AdminOSLunaGrowth from "@/components/admin/AdminOSLunaGrowth";
 import AdminOSServiceIntelligence from "@/components/admin/AdminOSServiceIntelligence";
 import AdminOccupancyIntelligence from "@/components/admin/AdminOccupancyIntelligence";
+import AdminSeoAeoAutomation from "@/components/admin/AdminSeoAeoAutomation";
 
 export default function AdminIntelligenceAnalytics(){
   return <AdminLayout>
@@ -25,12 +26,14 @@ export default function AdminIntelligenceAnalytics(){
           <TabsTrigger value="social" className="gap-2"><Brain className="h-4 w-4"/>Social Intelligence</TabsTrigger>
           <TabsTrigger value="service" className="gap-2"><MessageSquareText className="h-4 w-4"/>Service Intelligence</TabsTrigger>
           <TabsTrigger value="occupancy" className="gap-2"><Radar className="h-4 w-4"/>Occupancy Intelligence</TabsTrigger>
+          <TabsTrigger value="search-growth" className="gap-2"><SearchCheck className="h-4 w-4"/>RG12 Search Growth</TabsTrigger>
         </TabsList>
         <TabsContent value="company"><AdminAnalyticsContent/></TabsContent>
         <TabsContent value="demand"><AdminOSLunaGrowth/></TabsContent>
         <TabsContent value="social"><AdminSocialDemandAnalytics/></TabsContent>
         <TabsContent value="service"><AdminOSServiceIntelligence/></TabsContent>
         <TabsContent value="occupancy"><AdminOccupancyIntelligence/></TabsContent>
+        <TabsContent value="search-growth"><AdminSeoAeoAutomation/></TabsContent>
       </Tabs>
     </div>
   </AdminLayout>;
