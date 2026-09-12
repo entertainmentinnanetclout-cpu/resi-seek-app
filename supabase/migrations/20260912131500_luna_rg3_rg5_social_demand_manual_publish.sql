@@ -7,6 +7,64 @@
 --   * Every generated social post requires manual publication unless a future
 --     explicit founder-authorized release changes this policy.
 
+alter table public.adminos_demand_snapshots
+  add column if not exists academic_year integer;
+
+update public.adminos_demand_snapshots
+set academic_year=coalesce(academic_year,extract(year from generated_at)::integer)
+where academic_year is null;
+
+alter table public.adminos_demand_snapshots
+  alter column academic_year set default (extract(year from current_date)::integer),
+  alter column academic_year set not null;
+
+alter table public.adminos_demand_snapshots
+  drop constraint if exists adminos_demand_snapshots_academic_year_check;
+alter table public.adminos_demand_snapshots
+  add constraint adminos_demand_snapshots_academic_year_check check (academic_year between 2020 and 2100);
+
+create index if not exists idx_demand_snapshots_academic_year
+  on public.adminos_demand_snapshots(academic_year,generated_at desc);
+
+create or replace function public.luna_academic_supply_live(p_academic_year integer default extract(year from current_date)::integer)
+returns table(
+  campus_name text,
+  residence_count bigint,
+  reported_residence_count bigint,
+  total_capacity bigint,
+  available_spots bigint,
+  blocked_beds bigint,
+  availability_rate numeric,
+  average_price numeric
+)
+language sql stable security definer set search_path=public
+as $
+  select
+    coalesce(nullif(trim(r.campus),''),'Unspecified') as campus_name,
+    count(distinct r.id)::bigint as residence_count,
+    count(*) filter(where i.reported_available_beds is not null)::bigint as reported_residence_count,
+    coalesce(sum(i.capacity),0)::bigint as total_capacity,
+    coalesce(sum(i.reported_available_beds) filter(where i.reported_available_beds is not null),0)::bigint as available_spots,
+    coalesce(sum(i.blocked_beds),0)::bigint as blocked_beds,
+    case
+      when coalesce(sum(i.capacity) filter(where i.reported_available_beds is not null),0)>0
+      then round(
+        100.0*coalesce(sum(i.reported_available_beds) filter(where i.reported_available_beds is not null),0)
+        / nullif(sum(i.capacity) filter(where i.reported_available_beds is not null),0),2
+      )
+      else 0
+    end as availability_rate,
+    round(avg(r.price)::numeric,2) as average_price
+  from public.residence_academic_inventory i
+  join public.residences r on r.id=i.residence_id
+  where i.academic_year=p_academic_year
+  group by 1
+  order by available_spots desc,campus_name;
+$;
+
+revoke all on function public.luna_academic_supply_live(integer) from public,anon;
+grant execute on function public.luna_academic_supply_live(integer) to authenticated,service_role;
+
 create table if not exists public.adminos_social_demand_snapshots (
   id uuid primary key default gen_random_uuid(),
   snapshot_key text not null unique,
