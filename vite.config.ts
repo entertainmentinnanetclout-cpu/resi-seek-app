@@ -81,14 +81,16 @@ export default defineConfig(({ mode }) => {
             ],
             runtimeCaching: [
               {
-                urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-                handler: "NetworkFirst",
+                // Only public storage objects may be cached. Auth, REST, Realtime
+                // and Edge Function responses can contain user or operational data
+                // and must never enter the service-worker runtime cache.
+                urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*/i,
+                handler: "CacheFirst",
                 options: {
-                  cacheName: "supabase-cache-v2",
-                  networkTimeoutSeconds: 8,
+                  cacheName: "supabase-public-assets-v3",
                   expiration: {
-                    maxEntries: 50,
-                    maxAgeSeconds: 60 * 60 * 24,
+                    maxEntries: 80,
+                    maxAgeSeconds: 60 * 60 * 24 * 7,
                   },
                   cacheableResponse: {
                     statuses: [0, 200],
@@ -96,10 +98,16 @@ export default defineConfig(({ mode }) => {
                 },
               },
               {
+                urlPattern: ({ url, request }) =>
+                  request.mode === "navigate" &&
+                  /^(\/auth|\/admin|\/dashboard|\/profile|\/applications|\/reservations|\/recruit|\/residence)(\/|$)/.test(url.pathname),
+                handler: "NetworkOnly",
+              },
+              {
                 urlPattern: ({ request }) => request.mode === "navigate",
                 handler: "NetworkFirst",
                 options: {
-                  cacheName: "navigation-pages-v2",
+                  cacheName: "navigation-pages-v3",
                   networkTimeoutSeconds: 4,
                   expiration: {
                     maxEntries: 40,
@@ -114,7 +122,7 @@ export default defineConfig(({ mode }) => {
                 urlPattern: /\.(js|css|png|jpg|jpeg|svg|webp|woff|woff2|ttf)$/,
                 handler: "CacheFirst",
                 options: {
-                  cacheName: "static-assets-v2",
+                  cacheName: "static-assets-v3",
                   expiration: {
                     maxEntries: 160,
                     maxAgeSeconds: 60 * 60 * 24 * 30,

@@ -33,5 +33,5 @@ export default function DepartmentRoute({
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Verifying department access…</div>;
   }
 
-  return isGodMode ? <GodModeMfaGate>{children}</GodModeMfaGate> : <>{children}</>;
+  return <GodModeMfaGate mode={isGodMode ? "god" : "staff"}>{children}</GodModeMfaGate>;
 }

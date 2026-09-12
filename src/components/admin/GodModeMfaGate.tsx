@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 interface Props {
   children: React.ReactNode;
+  mode?: "god" | "staff";
 }
 
 type GateState = "checking" | "enroll" | "verify" | "ready" | "error";
@@ -52,7 +53,7 @@ function readAal(accessToken?: string | null): "aal1" | "aal2" | null {
   }
 }
 
-export default function GodModeMfaGate({ children }: Props) {
+export default function GodModeMfaGate({ children, mode = "god" }: Props) {
   const { session } = useAuth();
   const tokenAal = useMemo(() => readAal(session?.access_token), [session?.access_token]);
   const [state, setState] = useState<GateState>(() => tokenAal === "aal2" ? "ready" : "checking");
@@ -101,13 +102,13 @@ export default function GodModeMfaGate({ children }: Props) {
 
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: "totp",
-      friendlyName: "ResKonnect God Mode",
+      friendlyName: mode === "god" ? "ResKonnect God Mode" : "ResKonnect Staff Access",
     });
     if (error) throw error;
     setEnrollment(data as Enrollment);
-    setFactor({ id: data.id, status: "unverified", friendly_name: "ResKonnect God Mode" });
+    setFactor({ id: data.id, status: "unverified", friendly_name: mode === "god" ? "ResKonnect God Mode" : "ResKonnect Staff Access" });
     setState("enroll");
-  }, [session?.access_token]);
+  }, [session?.access_token, mode]);
 
   useEffect(() => {
     if (tokenAal === "aal2") {
@@ -147,7 +148,7 @@ export default function GodModeMfaGate({ children }: Props) {
 
       setCode("");
       setState("ready");
-      toast.success("God Mode unlocked with two-factor authentication.");
+      toast.success(mode === "god" ? "God Mode unlocked with two-factor authentication." : "Staff access unlocked with two-factor authentication.");
     } catch (error: any) {
       setCode("");
       setErrorMessage(error?.message || "The verification code was not accepted.");
@@ -173,11 +174,11 @@ export default function GodModeMfaGate({ children }: Props) {
         <CardHeader className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-500/15 text-cyan-300"><ShieldCheck className="h-6 w-6" /></div>
-            <Badge className="border border-cyan-400/20 bg-cyan-500/10 text-cyan-200">GOD MODE · AAL2 REQUIRED</Badge>
+            <Badge className="border border-cyan-400/20 bg-cyan-500/10 text-cyan-200">{mode === "god" ? "GOD MODE · AAL2 REQUIRED" : "STAFF ACCESS · AAL2 REQUIRED"}</Badge>
           </div>
           <div>
-            <CardTitle className="text-2xl font-black text-white">Two-factor authentication</CardTitle>
-            <CardDescription className="mt-2 text-slate-300">Privileged ResKonnect administration requires a password/session plus a time-based authenticator code.</CardDescription>
+            <CardTitle className="text-2xl font-black text-white">{mode === "god" ? "God Mode security challenge" : "Staff security challenge"}</CardTitle>
+            <CardDescription className="mt-2 text-slate-300">Privileged ResKonnect access requires your signed-in identity plus a time-based authenticator code. Backend RLS remains locked until AAL2 is verified.</CardDescription>
           </div>
         </CardHeader>
 
@@ -220,7 +221,7 @@ export default function GodModeMfaGate({ children }: Props) {
 
           {errorMessage && state !== "error" && <p className="text-sm text-red-300">{errorMessage}</p>}
 
-          <div className="flex items-center justify-between border-t border-white/10 pt-4 text-xs text-slate-400"><span>God Mode remains locked until AAL2 is verified.</span><button type="button" onClick={() => void signOut()} className="inline-flex items-center gap-1.5 font-bold text-slate-200 hover:text-white"><LogOut className="h-3.5 w-3.5" />Sign out</button></div>
+          <div className="flex items-center justify-between border-t border-white/10 pt-4 text-xs text-slate-400"><span>{mode === "god" ? "God Mode" : "Staff access"} remains locked until AAL2 is verified.</span><button type="button" onClick={() => void signOut()} className="inline-flex items-center gap-1.5 font-bold text-slate-200 hover:text-white"><LogOut className="h-3.5 w-3.5" />Sign out</button></div>
         </CardContent>
       </Card>
     </div>
