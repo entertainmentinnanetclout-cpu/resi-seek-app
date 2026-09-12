@@ -965,4 +965,11 @@ begin
   perform cron.schedule(
     'adminos-rg8-occupancy-intelligence',
     '*/30 * * * *',
-    $job$select public.adminos_rg8_occupancy_cycle();
+    $job$select public.adminos_rg8_occupancy_cycle();$job$
+  );
+end $$;
+
+-- Prime all three engines once on migration.
+update public.adminos_whatsapp_conversion_leads set updated_at=updated_at;
+select public.adminos_rg7_application_operations_cycle();
+select public.adminos_rg8_occupancy_cycle();
