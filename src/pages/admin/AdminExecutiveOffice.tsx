@@ -25,7 +25,7 @@ export default function AdminExecutiveOffice(){
   const[staff,setStaff]=useState<Staff[]>([]);
   const[loading,setLoading]=useState(true);
   const[open,setOpen]=useState(false);
-  const[draft,setDraft]=useState({title:"",description:"",priority:"medium",due_at:"",assigned_staff_id:"unassigned"});
+  const[draft,setDraft]=useState({title:"",description:"",priority:"normal",due_at:"",assigned_staff_id:"unassigned"});
 
   const load=useCallback(async()=>{
     setLoading(true);
@@ -63,7 +63,7 @@ export default function AdminExecutiveOffice(){
     });
     if(error)return toast.error(error.message||"Could not create task");
     toast.success("Executive task delegated");
-    setOpen(false);setDraft({title:"",description:"",priority:"medium",due_at:"",assigned_staff_id:"unassigned"});await load();
+    setOpen(false);setDraft({title:"",description:"",priority:"normal",due_at:"",assigned_staff_id:"unassigned"});await load();
   };
 
   const patchTask=async(id:string,patch:Record<string,unknown>)=>{
@@ -79,7 +79,7 @@ export default function AdminExecutiveOffice(){
         <div><div className="flex flex-wrap gap-2"><Badge>Executive Office</Badge><Badge variant="outline">Strategy · Planning · Delegation</Badge></div><h1 className="mt-3 text-3xl font-black tracking-tight">Executive Office</h1><p className="mt-1 max-w-3xl text-sm text-muted-foreground">Company-wide priorities, strategic briefs, approvals, delegated work and exception management. Departments execute; the Executive Office sets direction and resolves escalation.</p></div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={()=>void load()} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading?"animate-spin":""}`}/>Refresh</Button>
-          <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4"/>Delegate task</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>Executive delegation</DialogTitle></DialogHeader><div className="space-y-4"><div><Label>Task</Label><Input value={draft.title} onChange={(e)=>setDraft({...draft,title:e.target.value})}/></div><div><Label>Description</Label><Textarea value={draft.description} onChange={(e)=>setDraft({...draft,description:e.target.value})}/></div><div className="grid gap-3 sm:grid-cols-2"><div><Label>Priority</Label><Select value={draft.priority} onValueChange={(v)=>setDraft({...draft,priority:v})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="low">Low</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="urgent">Urgent</SelectItem></SelectContent></Select></div><div><Label>Assign to</Label><Select value={draft.assigned_staff_id} onValueChange={(v)=>setDraft({...draft,assigned_staff_id:v})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="unassigned">Unassigned</SelectItem>{staff.map((s)=><SelectItem key={s.id} value={s.id}>{s.full_name||"Staff account"}</SelectItem>)}</SelectContent></Select></div></div><div><Label>Due</Label><Input type="datetime-local" value={draft.due_at} onChange={(e)=>setDraft({...draft,due_at:e.target.value})}/></div></div><DialogFooter><Button variant="outline" onClick={()=>setOpen(false)}>Cancel</Button><Button onClick={()=>void createTask()}>Delegate</Button></DialogFooter></DialogContent></Dialog>
+          <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4"/>Delegate task</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>Executive delegation</DialogTitle></DialogHeader><div className="space-y-4"><div><Label>Task</Label><Input value={draft.title} onChange={(e)=>setDraft({...draft,title:e.target.value})}/></div><div><Label>Description</Label><Textarea value={draft.description} onChange={(e)=>setDraft({...draft,description:e.target.value})}/></div><div className="grid gap-3 sm:grid-cols-2"><div><Label>Priority</Label><Select value={draft.priority} onValueChange={(v)=>setDraft({...draft,priority:v})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="low">Low</SelectItem><SelectItem value="normal">Normal</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="urgent">Urgent</SelectItem></SelectContent></Select></div><div><Label>Assign to</Label><Select value={draft.assigned_staff_id} onValueChange={(v)=>setDraft({...draft,assigned_staff_id:v})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="unassigned">Unassigned</SelectItem>{staff.map((s)=><SelectItem key={s.id} value={s.id}>{s.full_name||"Staff account"}</SelectItem>)}</SelectContent></Select></div></div><div><Label>Due</Label><Input type="datetime-local" value={draft.due_at} onChange={(e)=>setDraft({...draft,due_at:e.target.value})}/></div></div><DialogFooter><Button variant="outline" onClick={()=>setOpen(false)}>Cancel</Button><Button onClick={()=>void createTask()}>Delegate</Button></DialogFooter></DialogContent></Dialog>
         </div>
       </header>
 
