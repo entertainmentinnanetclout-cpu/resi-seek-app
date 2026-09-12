@@ -19,6 +19,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { UserIntentProvider } from "@/contexts/UserIntentContext";
 import { ResidenceRoute } from "./components/ResidenceRoute";
 import { SpecialistRoute } from "@/components/SpecialistRoute";
+import DepartmentRoute from "@/components/DepartmentRoute";
 import PushPrompt from "@/components/PushPrompt";
 
 const GetStarted = lazy(() => import("./pages/GetStarted"));
@@ -126,6 +127,14 @@ const ReferralRedirect = lazy(() => import("./pages/ReferralRedirect"));
 const RecruiterDashboard = lazy(() => import("./pages/RecruiterDashboard"));
 const AdminRecruitmentProgramme = lazy(() => import("./pages/admin/AdminRecruitmentProgramme"));
 const AdminTvetHub = lazy(() => import("./pages/admin/AdminTvetHub"));
+const AdminExecutiveOffice = lazy(() => import("./pages/admin/AdminExecutiveOffice"));
+const AdminStudentOpportunities = lazy(() => import("./pages/admin/AdminStudentOpportunities"));
+const AdminCorporateAffairs = lazy(() => import("./pages/admin/AdminCorporateAffairs"));
+const AdminCommunicationsDepartment = lazy(() => import("./pages/admin/AdminCommunicationsDepartment"));
+const AdminOperationsOffice = lazy(() => import("./pages/admin/AdminOperationsOffice"));
+const AdminFinanceAdmin = lazy(() => import("./pages/admin/AdminFinanceAdmin"));
+const AdminIntelligenceAnalytics = lazy(() => import("./pages/admin/AdminIntelligenceAnalytics"));
+const AdminTechnologySystems = lazy(() => import("./pages/admin/AdminTechnologySystems"));
 const TvetDashboard = lazy(() => import("./pages/tvet/TvetDashboard"));
 const RecruitLanding = lazy(() => import("./pages/recruit/RecruitLanding"));
 const RecruiterAuth = lazy(() => import("./pages/recruit/RecruiterAuth"));
@@ -220,16 +229,27 @@ const App = () => {
                     <Route path="/setup-profile" element={<StudentRoute><ProfileSetup /></StudentRoute>} />
                     <Route path="/dashboard/updates" element={<StudentRoute><Updates /></StudentRoute>} />
                     <Route path="/my-discount-codes" element={<StudentRoute><MyDiscountCodes /></StudentRoute>} />
-                    <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminDashboard /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/analytics" element={<ProtectedRoute><AdminRoute><AdminAnalytics /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/growth" element={<ProtectedRoute><AdminRoute><AdminGrowthCommandCentre /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/partnerships" element={<ProtectedRoute><AdminRoute><AdminPartnershipCommandCentre /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/operations" element={<ProtectedRoute><AdminRoute><AdminOperationsHub /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/application-hub" element={<ProtectedRoute><AdminRoute><AdminApplicationHub /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/onboarding" element={<ProtectedRoute><AdminRoute><AdminOnboardingHub /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/commerce" element={<ProtectedRoute><AdminRoute><AdminCommerceHub /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/media" element={<ProtectedRoute><AdminRoute><AdminMediaHub /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/system" element={<ProtectedRoute><AdminRoute><AdminSystemHub /></AdminRoute></ProtectedRoute>} />
+                    <Route path="/admin" element={<ProtectedRoute><DepartmentRoute department="executive"><AdminExecutiveOffice /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/executive" element={<ProtectedRoute><DepartmentRoute department="executive"><AdminExecutiveOffice /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/accommodation" element={<ProtectedRoute><DepartmentRoute department="accommodation"><AdminOperationsHub /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/opportunities" element={<ProtectedRoute><DepartmentRoute department="student_opportunities"><AdminStudentOpportunities /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/corporate-affairs" element={<ProtectedRoute><DepartmentRoute department="marketing_corporate_affairs"><AdminCorporateAffairs /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/partnerships" element={<ProtectedRoute><DepartmentRoute department="partnerships_engagements"><AdminPartnershipCommandCentre /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/communications" element={<ProtectedRoute><DepartmentRoute department="communications_service"><AdminCommunicationsDepartment /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/operations-office" element={<ProtectedRoute><DepartmentRoute department="operations"><AdminOperationsOffice /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/finance-admin" element={<ProtectedRoute><DepartmentRoute department="finance_admin"><AdminFinanceAdmin /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/intelligence" element={<ProtectedRoute><DepartmentRoute department="intelligence_analytics"><AdminIntelligenceAnalytics /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/technology" element={<ProtectedRoute><DepartmentRoute department="technology_systems"><AdminTechnologySystems /></DepartmentRoute></ProtectedRoute>} />
+
+                    {/* Legacy admin URLs resolve into the new departmental operating model. */}
+                    <Route path="/admin/analytics" element={<ProtectedRoute><DepartmentRoute department="intelligence_analytics"><AdminIntelligenceAnalytics /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/growth" element={<ProtectedRoute><DepartmentRoute department="marketing_corporate_affairs"><AdminCorporateAffairs /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/operations" element={<ProtectedRoute><DepartmentRoute department="accommodation"><AdminOperationsHub /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/application-hub" element={<ProtectedRoute><DepartmentRoute department="student_opportunities"><AdminStudentOpportunities /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/onboarding" element={<ProtectedRoute><DepartmentRoute department="operations"><AdminOperationsOffice /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/commerce" element={<ProtectedRoute><DepartmentRoute department="finance_admin"><AdminFinanceAdmin /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/media" element={<ProtectedRoute><DepartmentRoute department="marketing_corporate_affairs"><AdminCorporateAffairs /></DepartmentRoute></ProtectedRoute>} />
+                    <Route path="/admin/system" element={<ProtectedRoute><DepartmentRoute department="technology_systems"><AdminTechnologySystems /></DepartmentRoute></ProtectedRoute>} />
                     <Route path="/media" element={<ProtectedRoute><SpecialistRoute allowedRoles={["admin", "growth_lead"]}><MediaDashboard /></SpecialistRoute></ProtectedRoute>} />
                     <Route path="/commerce" element={<ProtectedRoute><SpecialistRoute allowedRoles={["admin", "commerce_lead"]}><CommerceDashboard /></SpecialistRoute></ProtectedRoute>} />
                     <Route path="/admin/residences" element={<ProtectedRoute><AdminRoute><AdminResidences /></AdminRoute></ProtectedRoute>} />
