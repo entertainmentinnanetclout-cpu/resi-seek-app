@@ -89,7 +89,6 @@ export default function ResidenceFillVisualTabs({
       const { data } = await db
         .from("residences")
         .select("id,name,campus,capacity,available_spots")
-        .eq("is_visible", true)
         .order("name");
       if (active) setResidences((data || []) as ResidenceCapacity[]);
     };
