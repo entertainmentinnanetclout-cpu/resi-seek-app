@@ -15,4 +15,6 @@ export type GodModeRole = (typeof GOD_MODE_ROLES)[number];
 export type ScopedStaffRole = (typeof SCOPED_STAFF_ROLES)[number];
 export type ResidenceAdminRole = (typeof RESIDENCE_ADMIN_ROLES)[number];
 
-export type AppStaffRole = GodModeRole | ScopedStaffRole | ResidenceAdminRole;
+export type DepartmentStaffRole = "department_staff";
+
+export type AppStaffRole = GodModeRole | ScopedStaffRole | ResidenceAdminRole | DepartmentStaffRole;
