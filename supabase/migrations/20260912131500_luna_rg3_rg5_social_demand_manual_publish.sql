@@ -400,6 +400,18 @@ begin
       'ready',(select count(*) from public.adminos_social_posts where manual_publish_required=true and status='validated'),
       'published',(select count(*) from public.adminos_social_posts where manual_publish_required=true and status='published' and manual_published_at is not null)
     ),
+    'recent_social_posts',(
+      select coalesce(jsonb_agg(to_jsonb(x) order by x.created_at desc),'[]'::jsonb)
+      from (
+        select sp.id,sp.network,sp.status,sp.title,sp.caption,sp.payload,sp.recommended_publish_at,
+               sp.manual_publish_required,sp.external_url,sp.created_at,
+               gc.campaign_code,gc.campus,gc.name as campaign_name
+        from public.adminos_social_posts sp
+        left join public.adminos_growth_campaigns gc on gc.id=sp.campaign_id
+        order by sp.created_at desc
+        limit 16
+      ) x
+    ),
     'publishing_policy',jsonb_build_object(
       'metricool_analysis',true,
       'metricool_publishing',false,
