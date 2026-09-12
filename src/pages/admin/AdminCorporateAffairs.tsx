@@ -2,12 +2,13 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Bot, Megaphone, Newspaper } from "lucide-react";
+import { BarChart3, Bot, Megaphone, Newspaper, ShieldAlert } from "lucide-react";
 import AdminSocialDemandAnalytics from "@/components/admin/AdminSocialDemandAnalytics";
 import { AdminMediaHubContent } from "./AdminMediaHub";
 import AdminSiteAnnouncementsManager from "@/components/admin/AdminSiteAnnouncementsManager";
 import AdminOSLunaGrowth from "@/components/admin/AdminOSLunaGrowth";
 import AdminDepartmentTaskQueue from "@/components/admin/AdminDepartmentTaskQueue";
+import AdminCorporateAffairsAutomation from "@/components/admin/AdminCorporateAffairsAutomation";
 
 export default function AdminCorporateAffairs(){
   return <AdminLayout>
@@ -23,12 +24,14 @@ export default function AdminCorporateAffairs(){
         <TabsList className="flex h-auto flex-wrap gap-1">
           <TabsTrigger value="social" className="gap-2"><BarChart3 className="h-4 w-4"/>Social Demand & Content</TabsTrigger>
           <TabsTrigger value="public-content" className="gap-2"><Newspaper className="h-4 w-4"/>Public Content</TabsTrigger>
+          <TabsTrigger value="reputation" className="gap-2"><ShieldAlert className="h-4 w-4"/>RG11 Reputation</TabsTrigger>
           <TabsTrigger value="pr" className="gap-2"><Megaphone className="h-4 w-4"/>PR & Announcements</TabsTrigger>
           <TabsTrigger value="luna" className="gap-2"><Bot className="h-4 w-4"/>Luna Growth Intelligence</TabsTrigger>
           <TabsTrigger value="occupancy-handoffs" className="gap-2"><Megaphone className="h-4 w-4"/>Occupancy Handoffs</TabsTrigger>
         </TabsList>
         <TabsContent value="social"><AdminSocialDemandAnalytics/></TabsContent>
         <TabsContent value="public-content"><AdminMediaHubContent/></TabsContent>
+        <TabsContent value="reputation" className="space-y-4"><AdminCorporateAffairsAutomation/><AdminDepartmentTaskQueue departmentKey="marketing_corporate_affairs" title="Corporate Affairs automation queue"/></TabsContent>
         <TabsContent value="pr" className="space-y-4"><div className="rounded-2xl border bg-muted/25 p-4"><p className="font-black">Public communications control</p><p className="mt-1 text-xs text-muted-foreground">Use verified announcements for public operational notices. Partnership, government, legal, pricing and controversy-sensitive statements remain executive approval items.</p></div><AdminSiteAnnouncementsManager/></TabsContent>
         <TabsContent value="luna"><AdminOSLunaGrowth/></TabsContent>
         <TabsContent value="occupancy-handoffs"><AdminDepartmentTaskQueue departmentKey="marketing_corporate_affairs" title="RG8 vacancy-demand handoffs" /></TabsContent>
