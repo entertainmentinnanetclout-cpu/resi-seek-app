@@ -31,6 +31,17 @@ const APPLICANT_STAGES = [
   ["other", "Other"],
 ] as const;
 
+const safeLocalReturnPath = (value: string | null) => {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
+  try {
+    const parsed = new URL(value, window.location.origin);
+    if (parsed.origin !== window.location.origin) return null;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
+};
+
 const HEARD_ABOUT_US_OPTIONS = [
   ["instagram", "Instagram"],
   ["tiktok", "TikTok"],
@@ -64,7 +75,7 @@ const Auth = () => {
   const [applicantStage, setApplicantStage] = useState("university_student");
   const [identifierType, setIdentifierType] = useState<"student_number" | "identity_number">("student_number");
   const [heardAboutUs, setHeardAboutUs] = useState("");
-  const returnTo = searchParams.get("returnTo");
+  const returnTo = safeLocalReturnPath(searchParams.get("returnTo"));
   const refCode = searchParams.get("ref");
 
   useEffect(() => {
