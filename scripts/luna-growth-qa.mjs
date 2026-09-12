@@ -48,5 +48,7 @@ expect(growthUi.includes("Metricool = Demand Analysis")&&growthUi.includes("Post
 expect(supplyQuality.includes("verified_available_spots")&&supplyQuality.includes("Pretoria West (Main Campus)"),"public inventory evidence must be verified and campus naming canonical");
 expect(orchestrator.includes('inventory_evidence:verifiedInventoryCount>0?"verified":"reported_internal_only"'),"RG3 content must distinguish verified from internal-only reported inventory");
 expect(orchestrator.includes("can_claim_exact_availability:verifiedInventoryCount>0"),"RG3 exact availability claims must require verified inventory");
+expect(orchestrator.includes("hasUnverifiedAvailabilityClaim")&&orchestrator.includes("social_demand_max_age_hours:36"),"RG3 must reject unverified vacancy language and stale social-demand evidence");
+expect(!orchestrator.includes("verified accommodation options are currently available on ResKonnect"),"fallback content must not claim verified vacancy without verified inventory");
 
 console.log("Luna Growth QA passed: RG0–RG5 boundaries, year-isolated demand, Metricool analysis-only policy and manual publishing are protected.");
