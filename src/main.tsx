@@ -21,6 +21,14 @@ if (shouldCanonicalize) {
   const target = `${CANONICAL_ORIGIN}${window.location.pathname}${window.location.search}${window.location.hash}`;
   window.location.replace(target);
 } else {
+  // Purge the historical API runtime cache used by older PWA builds. It may
+  // contain authenticated Supabase responses and must not survive the upgrade.
+  if ("caches" in window) {
+    void caches.keys()
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith("supabase-cache")).map((key) => caches.delete(key))))
+      .catch(() => undefined);
+  }
+
   void initLunaAttribution();
   createRoot(document.getElementById("root")!).render(
     <HelmetProvider>
