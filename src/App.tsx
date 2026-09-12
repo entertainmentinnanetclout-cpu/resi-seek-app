@@ -23,6 +23,7 @@ import DepartmentRoute from "@/components/DepartmentRoute";
 import PushPrompt from "@/components/PushPrompt";
 
 const GetStarted = lazy(() => import("./pages/GetStarted"));
+const PasswordReset = lazy(() => import("./pages/PasswordReset"));
 const Living = lazy(() => import("./pages/public/Living"));
 const HousingIntelligence = lazy(() => import("./pages/public/HousingIntelligence"));
 const StudentAccommodation = lazy(() => import("./pages/public/StudentAccommodation"));
@@ -187,6 +188,7 @@ const App = () => {
                     <Route path="/creator-partners/assist/:caseId" element={<ProtectedRoute><CreatorAssistanceCase /></ProtectedRoute>} />
                     <Route path="/partner/tumelo/os" element={<ProtectedRoute><TumeloIntelligenceOS /></ProtectedRoute>} />
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/reset-password" element={<PasswordReset />} />
                     <Route path="/terms" element={<Terms />} />
                     <Route path="/privacy" element={<Privacy />} />
                     <Route path="/find" element={<FindMyRes />} />
