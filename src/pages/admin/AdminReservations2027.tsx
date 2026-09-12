@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ResidenceFillVisualTabs from "@/components/admin/ResidenceFillVisualTabs";
 
 type Reservation = {
   id: string;
@@ -60,6 +61,7 @@ export const AdminReservations2027Content = () => {
   const [studyLevel, setStudyLevel] = useState("all");
   const [status, setStatus] = useState("all");
   const [funding, setFunding] = useState("all");
+  const [residenceFilter, setResidenceFilter] = useState("all");
   const [notes, setNotes] = useState<Record<string, string>>({});
   const db = supabase as any;
 
@@ -98,8 +100,9 @@ export const AdminReservations2027Content = () => {
     const haystack = `${r.student_name || ""} ${r.student_number || ""} ${r.student_email || ""} ${r.student_phone || ""} ${r.residence_name || ""} ${r.residence_campus || ""}`.toLowerCase();
     return (!query || haystack.includes(query.toLowerCase()))
       && (status === "all" || r.status === status)
-      && (funding === "all" || r.funding_type === funding);
-  }), [rows, query, status, funding]);
+      && (funding === "all" || r.funding_type === funding)
+      && (residenceFilter === "all" || r.residence_id === residenceFilter);
+  }), [rows, query, status, funding, residenceFilter]);
 
   const total = rows.length;
   const pending = rows.filter((r) => ["reserved", "contacted", "provisional_hold"].includes(r.status)).length;
@@ -164,6 +167,14 @@ export const AdminReservations2027Content = () => {
           <Select value={funding} onValueChange={setFunding}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All funding</SelectItem><SelectItem value="private">Private</SelectItem><SelectItem value="nsfas">NSFAS</SelectItem><SelectItem value="undecided">Undecided</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select>
         </div>
       </CardContent></Card>
+
+      <ResidenceFillVisualTabs
+        mode="reservations"
+        academicYear={academicYear}
+        activityRows={rows}
+        selectedResidenceId={residenceFilter}
+        onSelectResidence={setResidenceFilter}
+      />
 
       <div className="relative max-w-2xl"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search student, number, residence or campus…" /></div>
 
