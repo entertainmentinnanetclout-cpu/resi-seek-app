@@ -8,8 +8,12 @@ import { Banknote, Bot, ShoppingBag, Users } from "lucide-react";
 import { AdminCommerceContent } from "./AdminCommerceHub";
 import { AdminUsersContent } from "./AdminUsers";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminSettingsContent } from "./AdminSettings";
+import { useAuth } from "@/contexts/AuthContext";
+import { ShieldCheck } from "lucide-react";
 
 export default function AdminFinanceAdmin(){
+  const { isGodMode } = useAuth();
   return <AdminLayout>
     <SEO noIndex title="Finance & Administration | ResKonnect Admin" description="Revenue administration, commercial operations, AI costs and account administration."/>
     <div className="space-y-6">
@@ -24,10 +28,12 @@ export default function AdminFinanceAdmin(){
           <TabsTrigger value="commercial" className="gap-2"><ShoppingBag className="h-4 w-4"/>Commercial Administration</TabsTrigger>
           <TabsTrigger value="costs" className="gap-2"><Bot className="h-4 w-4"/>AI & API Cost Ledger</TabsTrigger>
           <TabsTrigger value="accounts" className="gap-2"><Users className="h-4 w-4"/>User Administration</TabsTrigger>
+          {isGodMode&&<TabsTrigger value="financial-settings" className="gap-2"><ShieldCheck className="h-4 w-4"/>Restricted Financial Settings</TabsTrigger>}
         </TabsList>
         <TabsContent value="commercial"><AdminCommerceContent/></TabsContent>
         <TabsContent value="costs"><AgentCostLedger/></TabsContent>
         <TabsContent value="accounts"><AdminUsersContent/></TabsContent>
+        {isGodMode&&<TabsContent value="financial-settings"><div className="mb-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4"><p className="font-black">God Mode restricted</p><p className="mt-1 text-xs text-muted-foreground">Banking and payment configuration is intentionally excluded from department delegation and autonomous agents.</p></div><AdminSettingsContent/></TabsContent>}
       </Tabs>
     </div>
   </AdminLayout>;
