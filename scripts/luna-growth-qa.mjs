@@ -21,7 +21,13 @@ expect(!enquiry.includes('/functions/v1/adminos-agent'),"in-app website enquiry 
 expect(lunaAgent.includes('.eq("agent_key","luna_core")'),"Luna agent must load the luna_core policy");
 expect(!lunaAgent.includes("dimpho_personas")&&!lunaAgent.includes("dimpho_customer_memory")&&!lunaAgent.includes("dimpho-tool-engine"),"Luna runtime must not depend on Dimpho persona, memory or tool engine");
 expect(hardening.includes("Dimpho must not learn from Luna-routed conversations")&&hardening.includes("new.metadata->>'agent_route'"),"Dimpho learning must exclude Luna in-app conversations");
-expect(orchestrator.includes("housing_intel_supply_live")&&orchestrator.includes("housing_intel_demand_heat")&&orchestrator.includes("housing_intel_opportunities"),"RG2 must reuse verified Housing Intelligence");
+expect(
+  orchestrator.includes("luna_academic_supply_live")
+    && orchestrator.includes("luna_academic_demand_heat")
+    && orchestrator.includes("housing_intel_institution_snapshot")
+    && orchestrator.includes("verified_residence_count"),
+  "RG2 must reuse verified, academic-year-scoped Housing Intelligence"
+);
 expect(growth.includes("luna_capture_attribution")&&growth.includes("luna_log_demand_event"),"client attribution and demand RPCs must be wired");
 expect(growth.includes("ATTR_TTL_MS=30*24*60*60*1000")&&growth.includes("onAuthStateChange"),"campaign attribution must persist for 30 days and re-bind after authentication");
 expect(filters.includes('captureLunaDemandEvent("residence_search"'),"Find My Res filters must emit debounced search intent");
@@ -31,4 +37,4 @@ expect(migration.includes("'luna-demand-cycle'")&&migration.includes("'*/15 * * 
 expect(migration.includes("'campaign_creation',false")&&migration.includes("'publishing',false"),"RG2 must not silently enable campaign creation or publishing");
 expect(config.includes("[functions.luna-agent]")&&config.includes("[functions.luna-orchestrator]"),"Luna Edge Functions must be source-controlled in Supabase config");
 
-console.log("Luna Growth QA passed: RG0 identity boundary, RG1 attribution/telemetry and RG2 demand intelligence are protected.");
+console.log("Luna Growth QA passed: RG0 identity boundary, RG1 attribution/telemetry, RG2 year-scoped demand intelligence and RG3-RG5 manual content controls are protected.");

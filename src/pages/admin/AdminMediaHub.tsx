@@ -11,7 +11,6 @@ import {
   Image,
   Newspaper,
   Calendar,
-  GraduationCap,
   LayoutDashboard,
   Eye,
   EyeOff,
@@ -25,7 +24,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminSlidesContent } from "./AdminSlides";
 import { AdminNewsContent } from "./AdminNews";
 import { AdminEventsContent } from "./AdminEvents";
-import { AdminBursariesContent } from "./AdminBursaries";
 import { AdminMarketplaceBannersContent } from "./AdminMarketplaceBanners";
 import { AdminCategoryCardsContent } from "./AdminCategoryCards";
 import { formatDistanceToNow, format, isPast, isFuture } from "date-fns";
@@ -53,10 +51,9 @@ const tabs = [
   { value: "category-cards", label: "Category Cards", icon: LayoutDashboard },
   { value: "news", label: "News", icon: Newspaper },
   { value: "events", label: "Events", icon: Calendar },
-  { value: "bursaries", label: "Bursaries", icon: GraduationCap },
 ];
 
-const AdminMediaHub = () => {
+export const AdminMediaHubContent = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "overview";
   const [stats, setStats] = useState<MediaStats | null>(null);
@@ -459,12 +456,12 @@ const AdminMediaHub = () => {
   };
 
   return (
-    <AdminLayout>
-      <SEO title="Media Hub | Admin" description="Manage hero slides, news, events and bursaries" />
+    <>
+      <SEO title="Corporate Affairs Content | Admin" description="Manage public slides, news, events and bursary content" />
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Media Hub</h1>
-          <p className="text-muted-foreground">Content management for slides, news, events & bursaries</p>
+          <h1 className="text-3xl font-bold">Public Content & Media</h1>
+          <p className="text-muted-foreground">Public-facing content management for slides, news, events and funding information</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })}>
@@ -483,12 +480,13 @@ const AdminMediaHub = () => {
           <TabsContent value="category-cards"><AdminCategoryCardsContent /></TabsContent>
           <TabsContent value="news"><AdminNewsContent /></TabsContent>
           <TabsContent value="events"><AdminEventsContent /></TabsContent>
-          <TabsContent value="bursaries"><AdminBursariesContent /></TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminMediaHub = () => <AdminLayout><AdminMediaHubContent /></AdminLayout>;
 
 // Health bar sub-component
 const HealthItem = ({ label, detail, percentage }: { label: string; detail: string; percentage: number }) => {

@@ -2,9 +2,10 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import ContactDetailsGate from "@/components/ContactDetailsGate";
+import { DEPARTMENT_BY_KEY } from "@/lib/adminDepartments";
 
 export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading, staffRole, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner } = useAuth();
+  const { user, isLoading, staffRole, adminDepartments, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,12 +22,13 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
         system_operator: "/admin/system",
         support_agent: "/admin/operations",
       };
-      navigate(hubMap[staffRole] || "/admin", { replace: true });
+      const departmentPath = adminDepartments[0] ? DEPARTMENT_BY_KEY[adminDepartments[0]].path : null;
+      navigate(departmentPath || hubMap[staffRole] || "/admin", { replace: true });
     } else if (!isLoading && !isStudent && (isRecruiter || isPendingRecruiter)) {
       if (isRecruiter) navigate("/recruit/dashboard", { replace: true });
       else navigate("/recruit/apply", { replace: true });
     }
-  }, [user, isLoading, staffRole, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner, navigate]);
+  }, [user, isLoading, staffRole, adminDepartments, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner, navigate]);
 
   if (isLoading) {
     return (

@@ -1,90 +1,91 @@
-import { useCallback, useEffect, useState } from "react";
-import { Activity, Brain, CheckCircle2, Link2, Radar, RefreshCw, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Activity, Brain, CheckCircle2, FileEdit, Link2, Radar, RefreshCw, Send, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type Opportunity={
-  campus_key:string;
-  campus_name:string;
-  campaign_priority:number;
-  available_spots:number;
-  demand_index:number;
-  demand_count:number;
-  website_searches:number;
-  whatsapp_leads:number;
-  applications:number;
-  reason:string;
+  campus_key:string;campus_name:string;campaign_priority:number;available_spots:number;demand_index:number;
+  demand_count:number;website_searches:number;whatsapp_leads:number;applications:number;reason:string;
 };
-
 type Overview={
   agents:any[];
-  latest_snapshot?:{
-    id:string;
-    generated_at:string;
-    summary:string;
-    ranked_opportunities:Opportunity[];
-    source_counts:Record<string,number>;
-    provider:string;
-    model:string;
-    status:string;
-  }|null;
-  events_24h:number;
-  searches_24h:number;
-  campaign_visits_24h:number;
-  attributed_applications_30d:number;
-  attributed_placements_30d:number;
+  latest_snapshot?:{id:string;academic_year?:number;generated_at:string;summary:string;ranked_opportunities:Opportunity[];source_counts:Record<string,number>;provider:string;model:string;status:string}|null;
+  events_24h:number;searches_24h:number;campaign_visits_24h:number;attributed_applications_30d:number;attributed_placements_30d:number;
   growth_campaigns?:{total:number;active:number;draft:number};
 };
-
+type SocialSummary={network:string;demand_score:number|string;demand_signal:string;imported_at:string};
 const fmt=(v:unknown)=>Number(v||0).toLocaleString("en-ZA");
 
 export default function AdminOSLunaGrowth(){
   const[data,setData]=useState<Overview|null>(null);
+  const[social,setSocial]=useState<SocialSummary[]>([]);
+  const[manualDrafts,setManualDrafts]=useState(0);
   const[loading,setLoading]=useState(true);
-  const[running,setRunning]=useState(false);
+  const[running,setRunning]=useState<"demand"|"content"|null>(null);
+  const[academicYear,setAcademicYear]=useState("2026");
+
   const load=useCallback(async()=>{
     setLoading(true);
-    const {data:overview,error}=await(supabase as any).rpc("luna_growth_overview");
-    if(error){toast.error(error.message||"Could not load Luna Growth Intelligence");setLoading(false);return;}
-    setData(overview as Overview);setLoading(false);
+    const[overviewR,socialR,postsR]=await Promise.all([
+      (supabase as any).rpc("luna_growth_overview"),
+      (supabase as any).from("adminos_social_demand_snapshots").select("network,demand_score,demand_signal,imported_at").order("imported_at",{ascending:false}).limit(40),
+      (supabase as any).from("adminos_social_posts").select("id",{count:"exact",head:true}).eq("manual_publish_required",true).in("status",["draft","validated"]),
+    ]);
+    if(overviewR.error)toast.error(overviewR.error.message||"Could not load Luna Growth Intelligence");
+    setData((overviewR.data||null) as Overview|null);
+    const seen=new Set<string>();const latest:SocialSummary[]=[];
+    for(const row of socialR.data||[]){if(seen.has(row.network))continue;seen.add(row.network);latest.push(row);}
+    setSocial(latest);setManualDrafts(postsR.count||0);setLoading(false);
   },[]);
   useEffect(()=>{void load();},[load]);
 
-  const runCycle=async()=>{
-    setRunning(true);
-    const {data:result,error}=await supabase.functions.invoke("luna-orchestrator",{body:{action:"demand_cycle",days:30,source:"adminos_manual"}});
-    if(error||result?.error)toast.error(result?.detail||result?.error||error?.message||"Demand cycle failed");
-    else toast.success(`Luna demand cycle complete · ${result?.ranked_opportunities?.length||0} market signals ranked`);
-    setRunning(false);await load();
+  const runCycle=async(action:"demand_cycle"|"content_cycle")=>{
+    setRunning(action==="demand_cycle"?"demand":"content");
+    const{data:result,error}=await supabase.functions.invoke("luna-orchestrator",{body:{action,days:30,academic_year:Number(academicYear),source:"adminos_manual"}});
+    if(error||result?.error)toast.error(result?.detail||result?.error||error?.message||"Luna cycle failed");
+    else if(result?.skipped)toast.info(result?.reason||"Luna correctly skipped this cycle");
+    else toast.success(action==="demand_cycle"?`Demand cycle complete · ${result?.ranked_opportunities?.length||0} markets ranked`:`Founder-ready content pack prepared · quality ${result?.quality_score||0}/100`);
+    setRunning(null);await load();
   };
 
   const agents=data?.agents||[];
-  const lunaCore=agents.find((x:any)=>x.agent_key==="luna_core");
-  const lunaDemand=agents.find((x:any)=>x.agent_key==="luna_demand");
+  const byKey=(key:string)=>agents.find((x:any)=>x.agent_key===key);
   const ranked=data?.latest_snapshot?.ranked_opportunities||[];
+  const strongestSocial=useMemo(()=>[...social].sort((a,b)=>Number(b.demand_score||0)-Number(a.demand_score||0))[0],[social]);
 
   return <section className="min-w-0 space-y-4">
-    <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-      <div className="min-w-0"><div className="flex flex-wrap gap-2"><Badge className="rounded-full">Luna AgentOS</Badge><Badge variant="outline" className="rounded-full">RG0–RG2</Badge><Badge variant="outline" className="rounded-full">Publishing OFF</Badge></div><h2 className="mt-3 text-2xl font-black tracking-tight">Autonomous Growth Foundation</h2><p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">Luna owns website intelligence and demand analysis. Dimpho remains the WhatsApp conversion specialist. Supabase is the source of truth; this release does not create or publish social campaigns yet.</p></div>
-      <Button onClick={runCycle} disabled={running||loading} className="shrink-0"><RefreshCw className={`mr-2 h-4 w-4 ${running?"animate-spin":""}`}/>{running?"Running demand cycle…":"Run demand cycle"}</Button>
+    <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap gap-2"><Badge className="rounded-full">Luna AgentOS</Badge><Badge variant="outline" className="rounded-full">RG0–RG5</Badge><Badge variant="outline" className="rounded-full">Metricool ANALYSIS ONLY</Badge><Badge variant="outline" className="rounded-full">Founder posting</Badge></div>
+        <h2 className="mt-3 text-2xl font-black tracking-tight">Demand → Intelligence → Founder-Ready Content</h2>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">Luna owns company and demand intelligence. Metricool contributes social performance evidence. Luna can prepare platform-specific content, but cannot schedule or publish social posts unless you explicitly change that policy.</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Select value={academicYear} onValueChange={setAcademicYear}><SelectTrigger className="w-28"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="2026">2026</SelectItem><SelectItem value="2027">2027</SelectItem></SelectContent></Select>
+        <Button variant="outline" onClick={()=>void runCycle("demand_cycle")} disabled={Boolean(running)||loading}><RefreshCw className={`mr-2 h-4 w-4 ${running==="demand"?"animate-spin":""}`}/>Run demand</Button>
+        <Button onClick={()=>void runCycle("content_cycle")} disabled={Boolean(running)||loading}><FileEdit className={`mr-2 h-4 w-4 ${running==="content"?"animate-pulse":""}`}/>Prepare content</Button>
+      </div>
     </div>
 
-    <div className="grid gap-3 md:grid-cols-3">
-      <GateCard icon={Brain} gate="RG0" title="Luna / Dimpho split" ok={Boolean(lunaCore?.enabled)} text={lunaCore?.enabled?"Website and in-app intelligence assigned to Luna; Dimpho remains isolated to service/WhatsApp workflows.":"Luna core is disabled."}/>
-      <GateCard icon={Link2} gate="RG1" title="Attribution + demand events" ok={!loading} text={`${fmt(data?.events_24h)} demand events · ${fmt(data?.campaign_visits_24h)} campaign visits in 24h · ${fmt(data?.attributed_applications_30d)} attributed applications in 30d.`}/>
-      <GateCard icon={Radar} gate="RG2" title="Demand Intelligence" ok={Boolean(lunaDemand?.enabled&&data?.latest_snapshot)} text={data?.latest_snapshot?`Latest verified cycle ${new Date(data.latest_snapshot.generated_at).toLocaleString("en-ZA")}.`:lunaDemand?.enabled?"Luna Demand is enabled; first snapshot is pending.":"Luna Demand is disabled."}/>
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <GateCard icon={Brain} gate="RG0" title="Luna / Dimpho boundary" ok={Boolean(byKey("luna_core")?.enabled)} text="Luna = website/company intelligence. Dimpho = WhatsApp conversion and service."/>
+      <GateCard icon={Link2} gate="RG1" title="Attribution" ok={!loading} text={`${fmt(data?.campaign_visits_24h)} campaign visits · ${fmt(data?.attributed_applications_30d)} attributed applications in 30d.`}/>
+      <GateCard icon={Radar} gate="RG2" title="Demand Intelligence" ok={Boolean(byKey("luna_demand")?.enabled&&data?.latest_snapshot)} text={data?.latest_snapshot?`Latest ranked snapshot: ${new Date(data.latest_snapshot.generated_at).toLocaleString("en-ZA")}.`:"Demand snapshot pending."}/>
+      <GateCard icon={Sparkles} gate="RG3–4" title="Content + Social Demand" ok={Boolean(byKey("luna_content")?.enabled||byKey("luna_social_demand")?.enabled||social.length)} text={strongestSocial?`Strongest social signal: ${strongestSocial.network} ${Math.round(Number(strongestSocial.demand_score||0))}/100.`:"Waiting for measurable social performance."}/>
+      <GateCard icon={Send} gate="RG5" title="Manual Publishing" ok={true} text={`${manualDrafts} founder-ready draft(s). Metricool publishing remains disabled.`}/>
     </div>
 
-    <Card className="overflow-hidden rounded-[26px]"><CardHeader className="pb-3"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5"/>Latest Luna demand brief</CardTitle><p className="mt-1 text-xs text-muted-foreground">Deterministic ranking; OpenAI narrative refreshes only when the market fingerprint changes or becomes stale.</p></div>{data?.latest_snapshot&&<Badge variant="outline">{data.latest_snapshot.provider} · {data.latest_snapshot.model}</Badge>}</div></CardHeader><CardContent><p className="text-sm leading-6">{loading?"Loading verified demand intelligence…":data?.latest_snapshot?.summary||"No demand snapshot has been generated yet."}</p>{data?.latest_snapshot?.source_counts&&<div className="mt-4 flex flex-wrap gap-2">{Object.entries(data.latest_snapshot.source_counts).map(([key,value])=><Badge key={key} variant="secondary" className="font-medium">{key.replaceAll("_"," ")}: {fmt(value)}</Badge>)}</div>}</CardContent></Card>
+    <Card className="overflow-hidden rounded-[26px]"><CardHeader className="pb-3"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5"/>Latest Luna demand brief</CardTitle><p className="mt-1 text-xs text-muted-foreground">Year-scoped deterministic ranking; narrative only summarizes verified internal evidence.</p></div>{data?.latest_snapshot&&<Badge variant="outline">{data.latest_snapshot.provider} · {data.latest_snapshot.model}</Badge>}</div></CardHeader><CardContent><p className="text-sm leading-6">{loading?"Loading verified demand intelligence…":data?.latest_snapshot?.summary||"No demand snapshot has been generated yet."}</p>{data?.latest_snapshot?.source_counts&&<div className="mt-4 flex flex-wrap gap-2">{Object.entries(data.latest_snapshot.source_counts).map(([key,value])=><Badge key={key} variant="secondary" className="font-medium">{key.replaceAll("_"," ")}: {fmt(value)}</Badge>)}</div>}</CardContent></Card>
 
     <div className="grid gap-3 xl:grid-cols-2">
-      {ranked.slice(0,8).map((item,index)=><Card key={item.campus_key} className="rounded-[22px]"><CardContent className="p-5"><div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><Badge variant={item.campaign_priority>=70?"default":"secondary"}>#{index+1}</Badge><p className="font-black">{item.campus_name}</p></div><p className="mt-1 text-xs text-muted-foreground">{item.reason}</p></div><div className="text-right"><p className="text-2xl font-black">{item.campaign_priority}</p><p className="text-[10px] uppercase tracking-wide text-muted-foreground">priority / 100</p></div></div><div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5"><Metric value={item.available_spots} label="spots"/><Metric value={item.demand_index} label="demand"/><Metric value={item.website_searches} label="web searches"/><Metric value={item.whatsapp_leads} label="WA leads"/><Metric value={item.applications} label="applications"/></div></CardContent></Card>)}
+      {ranked.slice(0,8).map((item,index)=><Card key={item.campus_key} className="rounded-[22px]"><CardContent className="p-5"><div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><Badge variant={item.campaign_priority>=70?"default":"secondary"}>#{index+1}</Badge><p className="font-black">{item.campus_name}</p></div><p className="mt-1 text-xs text-muted-foreground">{item.reason}</p></div><div className="text-right"><p className="text-2xl font-black">{item.campaign_priority}</p><p className="text-[10px] uppercase tracking-wide text-muted-foreground">priority / 100</p></div></div><div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5"><Metric value={item.available_spots} label="reported spots"/><Metric value={item.demand_index} label="demand"/><Metric value={item.website_searches} label="web searches"/><Metric value={item.whatsapp_leads} label="WA leads"/><Metric value={item.applications} label="applications"/></div></CardContent></Card>)}
     </div>
 
-    {!loading&&ranked.length===0&&<div className="rounded-2xl border border-dashed p-6 text-center"><Activity className="mx-auto h-6 w-6 text-muted-foreground"/><p className="mt-2 font-bold">No market with reported available inventory is currently ranked.</p><p className="mt-1 text-xs text-muted-foreground">This is a valid data state, not an AI failure.</p></div>}
+    {!loading&&ranked.length===0&&<div className="rounded-2xl border border-dashed p-6 text-center"><Activity className="mx-auto h-6 w-6 text-muted-foreground"/><p className="mt-2 font-bold">No inventory-backed market is currently eligible for a demand campaign.</p><p className="mt-1 text-xs text-muted-foreground">Luna treats this as a valid no-action state and does not manufacture content demand.</p></div>}
   </section>;
 }
 

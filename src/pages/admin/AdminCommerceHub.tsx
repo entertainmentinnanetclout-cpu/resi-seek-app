@@ -29,17 +29,17 @@ const tabs = [
   { value: "earnings", label: "Earnings", icon: DollarSign },
 ];
 
-const AdminCommerceHub = () => {
+export const AdminCommerceContent = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "marketplace";
 
   return (
-    <AdminLayout>
-      <SEO title="Commerce Hub | Admin" description="Manage marketplace, stores, discounts and hampers" />
+    <>
+      <SEO title="Finance & Commerce Administration | Admin" description="Manage marketplace revenue operations, sellers, orders, discounts and earnings" />
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Commerce Hub</h1>
-          <p className="text-muted-foreground">Marketplace, stores, discounts & hampers</p>
+          <h1 className="text-3xl font-bold">Commercial Administration</h1>
+          <p className="text-muted-foreground">Revenue administration, marketplace, sellers, orders, discounts and commercial records</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })}>
@@ -65,8 +65,10 @@ const AdminCommerceHub = () => {
           <TabsContent value="earnings"><AdminSellerEarningsContent /></TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminCommerceHub = () => <AdminLayout><AdminCommerceContent /></AdminLayout>;
 
 export default AdminCommerceHub;
