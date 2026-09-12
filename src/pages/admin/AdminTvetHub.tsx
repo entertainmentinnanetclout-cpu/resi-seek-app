@@ -9,27 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { GraduationCap, Users, FileText, CheckCircle2, Search, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { safeFormatDate } from "@/lib/utils";
 
-export default function AdminTvetHub() {
-  const { staffRole, isLoading } = useAuth();
-  const navigate = useNavigate();
+export function AdminTvetHubContent() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [recruiterFilter, setRecruiterFilter] = useState<string>("all");
-
-  useEffect(() => {
-    if (!isLoading && staffRole && staffRole !== "admin" && staffRole !== "tvet_lead") {
-      toast.error("Access denied: TVET Lead or Admin required");
-      navigate("/admin");
-    }
-  }, [staffRole, isLoading, navigate]);
 
   useEffect(() => {
     (async () => {
@@ -89,13 +78,13 @@ export default function AdminTvetHub() {
   }), [rows]);
 
   return (
-    <AdminLayout>
-      <SEO title="TVET Hub | Admin" description="Manage TVET student applications and recruiter attribution" />
+    <>
+      <SEO title="TVET Application Operations | Admin" description="Manage TVET student applications and recruiter attribution" />
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10 text-primary"><GraduationCap className="w-6 h-6" /></div>
           <div>
-            <h1 className="text-3xl font-bold">TVET Hub</h1>
+            <h1 className="text-3xl font-bold">TVET Application Operations</h1>
             <p className="text-muted-foreground">All applications from TVET college students, with recruiter attribution.</p>
           </div>
         </div>
@@ -186,8 +175,12 @@ export default function AdminTvetHub() {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </>
   );
+}
+
+export default function AdminTvetHub(){
+  return <AdminLayout><AdminTvetHubContent/></AdminLayout>;
 }
 
 function StatBox({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) {
