@@ -55,14 +55,14 @@ create index if not exists idx_phone_verification_user_requested
 create index if not exists idx_phone_verification_phone_requested
   on public.user_phone_verification_attempts(phone_e164, requested_at desc);
 
-create or replace function public.rk_normalize_za_phone(p_phone text)
+create or replace function public.rk_normalize_za_phone(p_value text)
 returns text
 language plpgsql
 immutable
 set search_path = ''
 as $rk_phone$
 declare
-  digits text := regexp_replace(coalesce(p_phone, ''), '[^0-9]', '', 'g');
+  digits text := regexp_replace(coalesce(p_value, ''), '[^0-9]', '', 'g');
 begin
   if digits ~ '^27[6-8][0-9]{8}$' then
     return '+' || digits;
