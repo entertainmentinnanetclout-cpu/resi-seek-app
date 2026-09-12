@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, BriefcaseBusiness, CheckCircle2, ClipboardCheck, ListTodo, Plus, RefreshCw, Sparkles, Target } from "lucide-react";
+import { AlertTriangle, BriefcaseBusiness, ClipboardCheck, Plus, RefreshCw, Sparkles, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -33,7 +33,7 @@ export default function AdminExecutiveOffice(){
       (supabase as any).from("adminos_executive_briefs").select("*").order("generated_at",{ascending:false}).limit(1).maybeSingle(),
       (supabase as any).from("adminos_executive_alerts").select("*").neq("status","resolved").order("created_at",{ascending:false}).limit(30),
       (supabase as any).from("adminos_approval_requests").select("*").eq("status","pending").order("created_at",{ascending:false}).limit(30),
-      (supabase as any).from("staff_tasks").select("*").in("status",["open","in_progress","pending"]).order("due_at",{ascending:true}).limit(100),
+      (supabase as any).from("staff_tasks").select("*").in("status",["open","in_progress","waiting"]).order("due_at",{ascending:true}).limit(100),
       (supabase as any).from("profiles").select("id,full_name").limit(500),
       (supabase as any).from("user_roles").select("user_id,role"),
     ]);
