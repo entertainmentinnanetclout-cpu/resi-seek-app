@@ -26,7 +26,7 @@ import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
-const AdminAnalytics = () => {
+export const AdminAnalyticsContent = () => {
   const [dateRange, setDateRange] = useState("30");
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -179,8 +179,8 @@ const AdminAnalytics = () => {
   );
 
   return (
-    <AdminLayout>
-      <SEO title="Analytics | Admin" description="Platform analytics and insights" />
+    <>
+      <SEO title="Platform Analytics | Admin" description="Platform analytics and performance intelligence" />
       
       <div className="space-y-6">
         {/* Header */}
@@ -367,8 +367,10 @@ const AdminAnalytics = () => {
           </Card>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 };
+
+const AdminAnalytics = () => <AdminLayout><AdminAnalyticsContent /></AdminLayout>;
 
 export default AdminAnalytics;
