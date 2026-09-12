@@ -293,42 +293,37 @@ Deno.serve(async(req)=>{
   const runId=run.data?.id||null;const started=Date.now();
   try{
     const since=new Date(Date.now()-days*86400000).toISOString();
-    const [supplyR,demandR,institutionR,opportunityR,eventR,campusR,waR,appR,promptR]=await Promise.all([
+    const [supplyR,demandR,institutionR,campusR,waR,appR,promptR]=await Promise.all([
       service.rpc("luna_academic_supply_live",{p_academic_year:academicYear}),
-      service.rpc("housing_intel_demand_heat",{p_days:days}),
+      service.rpc("luna_academic_demand_heat",{p_academic_year:academicYear,p_days:days}),
       service.rpc("housing_intel_institution_snapshot",{p_days:days}),
-      service.rpc("housing_intel_opportunities",{p_days:days}),
-      service.rpc("luna_demand_event_summary",{p_days:days}),
       service.from("resmap_campuses").select("campus_key,name,short_name,aliases").eq("is_active",true),
-      service.from("adminos_whatsapp_conversion_leads").select("campus,stage,created_at,converted_at").gte("created_at",since).limit(5000),
+      service.from("adminos_whatsapp_conversion_leads").select("campus,stage,created_at,converted_at,academic_year").eq("academic_year",academicYear).gte("created_at",since).limit(5000),
       service.from("applications").select("id,status,created_at,residence_id,academic_year,residences!applications_residence_id_fkey(campus)").eq("academic_year",academicYear).gte("created_at",since).limit(5000),
       service.from("adminos_agent_prompt_versions").select("system_prompt").eq("agent_key","luna_demand").eq("active",true).order("version",{ascending:false}).limit(1).maybeSingle(),
     ]);
-    const sourceErrors={supply:supplyR.error,demand:demandR.error,institutions:institutionR.error,opportunities:opportunityR.error,demand_events:eventR.error,campuses:campusR.error,whatsapp:waR.error,applications:appR.error,prompt:promptR.error};
+    const sourceErrors={supply:supplyR.error,demand:demandR.error,institutions:institutionR.error,campuses:campusR.error,whatsapp:waR.error,applications:appR.error,prompt:promptR.error};
     const failed=Object.entries(sourceErrors).find(([,value])=>Boolean(value));
     if(failed)throw new Error(`${failed[0]} source failed: ${errorText(failed[1])}`);
-    const supply=supplyR.data||[], demand=demandR.data||[], institutions=institutionR.data||[], housingOpps=opportunityR.data||[], events=eventR.data||[];
+    const supply=supplyR.data||[], demand=demandR.data||[], institutions=institutionR.data||[];
     const resolve=campusResolver(campusR.data||[]);
     const demandMap=new Map(demand.map((x:any)=>[String(x.campus_key),x]));
-    const oppMap=new Map(housingOpps.map((x:any)=>[String(x.campus_key),x]));
-    const eventMap=new Map<string,{searches:number,visitors:number}>();
-    for(const e of events){const key=resolve(e.campus);const prev=eventMap.get(key)||{searches:0,visitors:0};if(["residence_search","filter_change"].includes(String(e.event_type))){prev.searches+=Number(e.event_count||0);prev.visitors+=Number(e.unique_visitors||0);}eventMap.set(key,prev);}
     const waMap=new Map<string,{leads:number,converted:number}>();for(const w of waR.data||[]){const key=resolve(w.campus);const p=waMap.get(key)||{leads:0,converted:0};p.leads++;if(w.converted_at||["converted","placed","applied"].includes(String(w.stage||"").toLowerCase()))p.converted++;waMap.set(key,p);}
     const appMap=new Map<string,number>();for(const a of appR.data||[]){const relation=Array.isArray(a.residences)?a.residences[0]:a.residences;const key=resolve(relation?.campus);appMap.set(key,(appMap.get(key)||0)+1);}
     const ranked=supply.filter((s:any)=>Number(s.available_spots||0)>0).map((s:any)=>{
-      const key=String(s.campus_key||resolve(s.campus_name));const d=demandMap.get(key)||{};const e=eventMap.get(key)||{searches:0,visitors:0};const w=waMap.get(key)||{leads:0,converted:0};const apps=appMap.get(key)||0;const h=oppMap.get(key)||{};
-      const demandScore=Number(d.demand_index||0);const availabilityRate=Number(s.availability_rate||0);const vacancyScore=Math.min(100,Math.round(scale(Number(s.available_spots||0),14)*.65+Math.min(100,availabilityRate*1.5)*.35));const searchScore=scale(e.searches,20);const whatsappScore=scale(w.leads,22);const applicationScore=scale(apps,18);
-      const campaignPriority=Math.round(demandScore*.35+vacancyScore*.30+searchScore*.15+whatsappScore*.10+applicationScore*.10);
-      return{campus_key:key,campus_name:s.campus_name,campaign_priority:campaignPriority,available_spots:Number(s.available_spots||0),total_capacity:Number(s.total_capacity||0),availability_rate:availabilityRate,average_price:s.average_price==null?null:Number(s.average_price),demand_index:demandScore,demand_count:Number(d.demand_count||0),search_signals:Number(d.search_signals||0),website_searches:e.searches,website_unique_visitors:e.visitors,whatsapp_leads:w.leads,whatsapp_converted:w.converted,applications:apps,housing_opportunity_score:Number(h.opportunity_score||0),housing_signal:h.signal||null,reason:campaignPriority>=70?"high-priority demand generation":campaignPriority>=50?"rising growth opportunity":"monitor"};
+      const key=String(s.campus_key||resolve(s.campus_name));const d=demandMap.get(key)||{};const w=waMap.get(key)||{leads:0,converted:0};const apps=appMap.get(key)||0;
+      const demandScore=Number(d.demand_index||0);const availabilityRate=Number(s.availability_rate||0);const vacancyScore=Math.min(100,Math.round(scale(Number(s.available_spots||0),14)*.65+Math.min(100,availabilityRate*1.5)*.35));const scopedSearches=Number(d.scoped_search_signals||0);const searchScore=scale(scopedSearches,20);const whatsappScore=scale(w.leads,22);const applicationScore=scale(apps,18);
+      const campaignPriority=Math.round(demandScore*.40+vacancyScore*.30+searchScore*.10+whatsappScore*.10+applicationScore*.10);
+      return{academic_year:academicYear,campus_key:key,campus_name:s.campus_name,campaign_priority:campaignPriority,available_spots:Number(s.available_spots||0),total_capacity:Number(s.total_capacity||0),reported_residence_count:Number(s.reported_residence_count||0),availability_rate:availabilityRate,average_price:s.average_price==null?null:Number(s.average_price),demand_index:demandScore,demand_count:Number(d.demand_count||0),search_signals:scopedSearches,website_searches:scopedSearches,website_unique_visitors:0,whatsapp_leads:w.leads,whatsapp_converted:w.converted,applications:apps,housing_opportunity_score:campaignPriority,housing_signal:campaignPriority>=70?"strong":campaignPriority>=50?"rising":"monitor",reason:campaignPriority>=70?"high-priority year-scoped demand generation":campaignPriority>=50?"rising year-scoped growth opportunity":"monitor"};
     }).sort((a:any,b:any)=>b.campaign_priority-a.campaign_priority||b.available_spots-a.available_spots);
-    const sourceCounts={academic_year:academicYear,housing_supply_campuses:supply.length,housing_demand_campuses:demand.length,demand_event_groups:events.length,whatsapp_leads:(waR.data||[]).length,applications:(appR.data||[]).length,ranked_campuses:ranked.length};
+    const sourceCounts={academic_year:academicYear,housing_supply_campuses:supply.length,housing_demand_campuses:demand.length,scoped_search_signals:demand.reduce((sum:number,row:any)=>sum+Number(row.scoped_search_signals||0),0),whatsapp_leads:(waR.data||[]).length,applications:(appR.data||[]).length,ranked_campuses:ranked.length};
     const fingerprint=await hash(JSON.stringify([academicYear,...ranked.slice(0,8).map((x:any)=>[x.campus_key,x.campaign_priority,x.available_spots,x.demand_count,x.website_searches,x.whatsapp_leads,x.applications])]));
     const {data:last}=await service.from("adminos_demand_snapshots").select("fingerprint,generated_at,summary,provider,model").eq("academic_year",academicYear).order("generated_at",{ascending:false}).limit(1).maybeSingle();
     const changed=!last||last.fingerprint!==fingerprint;const stale=!last||Date.now()-new Date(last.generated_at).getTime()>4*3600000;
     let generated:any={summary:last?.summary||null,provider:last?.provider||null,model:last?.model||null,usage:null};
     if(changed||stale){generated=await narrative(promptR.data?.system_prompt||"Summarize the verified ResKonnect demand opportunities without inventing facts.",agentConfig?.config?.primary_model||"gpt-5.6-luna",ranked,sourceCounts);}
     const fallbackSummary=ranked.length?`Top demand-generation opportunity: ${ranked[0].campus_name} (priority ${ranked[0].campaign_priority}/100, ${ranked[0].available_spots} available spots). ${ranked.length} campus market(s) currently have reported available inventory.`:"No campus with reported available inventory is currently eligible for a demand campaign.";
-    const inserted=await service.from("adminos_demand_snapshots").insert({academic_year:academicYear,days,fingerprint,supply,demand,institutions,housing_opportunities:housingOpps,ranked_opportunities:ranked,source_counts:sourceCounts,summary:generated.summary||fallbackSummary,provider:generated.provider||"deterministic",model:generated.model||"luna-demand-rg2",status:"completed",metadata:{release:RELEASE,phase:PHASE,changed,narrative_refreshed:Boolean(changed||stale),academic_year:academicYear}}).select("id,academic_year,generated_at,summary,ranked_opportunities,source_counts,provider,model").single();
+    const inserted=await service.from("adminos_demand_snapshots").insert({academic_year:academicYear,days,fingerprint,supply,demand,institutions,housing_opportunities:[],ranked_opportunities:ranked,source_counts:sourceCounts,summary:generated.summary||fallbackSummary,provider:generated.provider||"deterministic",model:generated.model||"luna-demand-rg2",status:"completed",metadata:{release:RELEASE,phase:PHASE,changed,narrative_refreshed:Boolean(changed||stale),academic_year:academicYear,year_scoped:true}}).select("id,academic_year,generated_at,summary,ranked_opportunities,source_counts,provider,model").single();
     if(inserted.error)throw inserted.error;
     const snapshot=inserted.data;
     const automationEvents:any[]=[{event_type:"growth.demand_snapshot_created",entity_type:"demand_snapshot",entity_id:snapshot.id,payload:{academic_year:academicYear,days,top:ranked.slice(0,3),source_counts:sourceCounts},correlation_id:`luna:demand:${academicYear}:${fingerprint}:${snapshot.id}`}];
