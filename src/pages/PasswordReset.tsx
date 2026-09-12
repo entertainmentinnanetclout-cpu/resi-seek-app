@@ -51,7 +51,7 @@ export default function PasswordReset() {
 
     setBusy(true);
     try {
-      const redirectTo = `${window.location.origin}/reset-password?returnTo=${encodeURIComponent(returnTo)}`;
+      const redirectTo = `${window.location.origin}/auth?mode=password-reset&returnTo=${encodeURIComponent(returnTo)}`;
       const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo });
       if (error) throw error;
       setEmailSent(true);
