@@ -2,11 +2,10 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, Bot, BrainCircuit, Cable, Cpu, Settings, ShieldCheck } from "lucide-react";
+import { Activity, Bot, BrainCircuit, Cable, ShieldCheck } from "lucide-react";
 import AdminOSTwilioSetup from "@/components/admin/AdminOSTwilioSetup";
 import { AdminBackendHealthContent } from "./AdminBackendHealth";
 import { AdminSystemStatusContent } from "./AdminSystemStatus";
-import { AdminSettingsContent } from "./AdminSettings";
 import AdminOSMasterContent from "@/components/admin/AdminOSMasterContent";
 import DimphoIntelligenceStudio from "@/components/admin/DimphoIntelligenceStudio";
 import DimphoReleaseControl from "@/components/admin/DimphoReleaseControl";
@@ -27,14 +26,12 @@ export default function AdminTechnologySystems(){
           <TabsTrigger value="ai" className="gap-2"><BrainCircuit className="h-4 w-4"/>AI Operations</TabsTrigger>
           <TabsTrigger value="release" className="gap-2"><ShieldCheck className="h-4 w-4"/>Release Control</TabsTrigger>
           <TabsTrigger value="advanced" className="gap-2"><Bot className="h-4 w-4"/>Advanced AdminOS</TabsTrigger>
-          <TabsTrigger value="settings" className="gap-2"><Settings className="h-4 w-4"/>Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="health" className="space-y-5"><AdminBackendHealthContent/><AdminSystemStatusContent/></TabsContent>
         <TabsContent value="integrations"><AdminOSTwilioSetup/></TabsContent>
         <TabsContent value="ai"><DimphoIntelligenceStudio/></TabsContent>
         <TabsContent value="release"><DimphoReleaseControl/></TabsContent>
         <TabsContent value="advanced"><AdminOSMasterContent/></TabsContent>
-        <TabsContent value="settings"><AdminSettingsContent/></TabsContent>
       </Tabs>
     </div>
   </AdminLayout>;
