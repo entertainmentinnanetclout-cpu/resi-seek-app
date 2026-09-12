@@ -403,7 +403,7 @@ grant execute on function public.rk_my_security_status() to authenticated;
 
 insert into public.adminos_integration_connections(provider,display_name,status,enabled,setup_step,external_account_label,config,secret_refs,setup_url,docs_url)
 values(
-  'twilio_verify','Twilio Verify · WhatsApp','ready',true,2,'ResKonnect Security',
+  'twilio_verify','Twilio Verify · WhatsApp','not_connected',true,1,'ResKonnect Security',
   jsonb_build_object('channel','whatsapp','purpose','phone_ownership_verification','service_auto_provision',true,'otp_ttl_minutes',10),
   jsonb_build_object('account_sid_env','TWILIO_ACCOUNT_SID','auth_token_env','TWILIO_AUTH_TOKEN','whatsapp_from_env','TWILIO_WHATSAPP_FROM'),
   'https://console.twilio.com/us1/develop/verify/services','https://www.twilio.com/docs/verify'
