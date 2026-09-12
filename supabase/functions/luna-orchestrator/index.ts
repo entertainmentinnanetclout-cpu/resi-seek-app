@@ -127,6 +127,7 @@ async function runContentCycle(service:any,authz:any,body:any){
     for(const row of socialR.data||[]){const network=String(row.network);if(seen.has(network))continue;seen.add(network);socialLatest.push(row);}
     socialLatest.sort((a,b)=>Number(b.demand_score||0)-Number(a.demand_score||0));
 
+    const verifiedInventoryCount=Number(opportunity.verified_residence_count||0);
     const facts={
       academic_year:academicYear,
       demand_snapshot_id:demand.id,
@@ -134,16 +135,17 @@ async function runContentCycle(service:any,authz:any,body:any){
       campus_key:opportunity.campus_key,
       campus_name:opportunity.campus_name,
       campaign_priority:Number(opportunity.campaign_priority||0),
-      reported_available_spots:Number(opportunity.available_spots||0),
-      reported_total_capacity:Number(opportunity.total_capacity||0),
-      availability_rate:Number(opportunity.availability_rate||0),
-      average_price:opportunity.average_price==null?null:Number(opportunity.average_price),
+      inventory_evidence:verifiedInventoryCount>0?"verified":"reported_internal_only",
+      can_claim_exact_availability:verifiedInventoryCount>0,
+      verified_available_spots:verifiedInventoryCount>0?Number(opportunity.verified_available_spots||0):null,
+      verified_residence_count:verifiedInventoryCount,
       demand_index:Number(opportunity.demand_index||0),
       website_searches:Number(opportunity.website_searches||0),
       whatsapp_leads:Number(opportunity.whatsapp_leads||0),
       applications:Number(opportunity.applications||0),
       housing_signal:opportunity.housing_signal||null,
-      target_path:`/find?campus=${encodeURIComponent(String(opportunity.campus_name||""))}`
+      target_path:`/find?campus=${encodeURIComponent(String(opportunity.campus_name||""))}`,
+      public_claim_rule:"Do not state exact bed counts, prices, accreditation, guarantees or institutional endorsement unless explicitly verified in these public facts."
     };
     const socialForPrompt=socialLatest.map((x:any)=>({
       network:x.network,demand_score:Number(x.demand_score||0),demand_signal:x.demand_signal,
@@ -314,7 +316,7 @@ Deno.serve(async(req)=>{
       const key=String(s.campus_key||resolve(s.campus_name));const d=demandMap.get(key)||{};const w=waMap.get(key)||{leads:0,converted:0};const apps=appMap.get(key)||0;
       const demandScore=Number(d.demand_index||0);const availabilityRate=Number(s.availability_rate||0);const vacancyScore=Math.min(100,Math.round(scale(Number(s.available_spots||0),14)*.65+Math.min(100,availabilityRate*1.5)*.35));const scopedSearches=Number(d.scoped_search_signals||0);const searchScore=scale(scopedSearches,20);const whatsappScore=scale(w.leads,22);const applicationScore=scale(apps,18);
       const campaignPriority=Math.round(demandScore*.40+vacancyScore*.30+searchScore*.10+whatsappScore*.10+applicationScore*.10);
-      return{academic_year:academicYear,campus_key:key,campus_name:s.campus_name,campaign_priority:campaignPriority,available_spots:Number(s.available_spots||0),total_capacity:Number(s.total_capacity||0),reported_residence_count:Number(s.reported_residence_count||0),availability_rate:availabilityRate,average_price:s.average_price==null?null:Number(s.average_price),demand_index:demandScore,demand_count:Number(d.demand_count||0),search_signals:scopedSearches,website_searches:scopedSearches,website_unique_visitors:0,whatsapp_leads:w.leads,whatsapp_converted:w.converted,applications:apps,housing_opportunity_score:campaignPriority,housing_signal:campaignPriority>=70?"strong":campaignPriority>=50?"rising":"monitor",reason:campaignPriority>=70?"high-priority year-scoped demand generation":campaignPriority>=50?"rising year-scoped growth opportunity":"monitor"};
+      return{academic_year:academicYear,campus_key:key,campus_name:s.campus_name,campaign_priority:campaignPriority,available_spots:Number(s.available_spots||0),verified_available_spots:Number(s.verified_available_spots||0),total_capacity:Number(s.total_capacity||0),reported_residence_count:Number(s.reported_residence_count||0),verified_residence_count:Number(s.verified_residence_count||0),availability_rate:availabilityRate,average_price:s.average_price==null?null:Number(s.average_price),demand_index:demandScore,demand_count:Number(d.demand_count||0),search_signals:scopedSearches,website_searches:scopedSearches,website_unique_visitors:0,whatsapp_leads:w.leads,whatsapp_converted:w.converted,applications:apps,housing_opportunity_score:campaignPriority,housing_signal:campaignPriority>=70?"strong":campaignPriority>=50?"rising":"monitor",reason:campaignPriority>=70?"high-priority year-scoped demand generation":campaignPriority>=50?"rising year-scoped growth opportunity":"monitor"};
     }).sort((a:any,b:any)=>b.campaign_priority-a.campaign_priority||b.available_spots-a.available_spots);
     const sourceCounts={academic_year:academicYear,housing_supply_campuses:supply.length,housing_demand_campuses:demand.length,scoped_search_signals:demand.reduce((sum:number,row:any)=>sum+Number(row.scoped_search_signals||0),0),whatsapp_leads:(waR.data||[]).length,applications:(appR.data||[]).length,ranked_campuses:ranked.length};
     const fingerprint=await hash(JSON.stringify([academicYear,...ranked.slice(0,8).map((x:any)=>[x.campus_key,x.campaign_priority,x.available_spots,x.demand_count,x.website_searches,x.whatsapp_leads,x.applications])]));
