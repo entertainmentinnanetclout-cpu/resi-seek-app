@@ -7,6 +7,7 @@ import { AdminAnalyticsContent } from "./AdminAnalytics";
 import AdminSocialDemandAnalytics from "@/components/admin/AdminSocialDemandAnalytics";
 import AdminOSLunaGrowth from "@/components/admin/AdminOSLunaGrowth";
 import AdminOSServiceIntelligence from "@/components/admin/AdminOSServiceIntelligence";
+import AdminOccupancyIntelligence from "@/components/admin/AdminOccupancyIntelligence";
 
 export default function AdminIntelligenceAnalytics(){
   return <AdminLayout>
@@ -23,11 +24,13 @@ export default function AdminIntelligenceAnalytics(){
           <TabsTrigger value="demand" className="gap-2"><Radar className="h-4 w-4"/>Demand Intelligence</TabsTrigger>
           <TabsTrigger value="social" className="gap-2"><Brain className="h-4 w-4"/>Social Intelligence</TabsTrigger>
           <TabsTrigger value="service" className="gap-2"><MessageSquareText className="h-4 w-4"/>Service Intelligence</TabsTrigger>
+          <TabsTrigger value="occupancy" className="gap-2"><Radar className="h-4 w-4"/>Occupancy Intelligence</TabsTrigger>
         </TabsList>
         <TabsContent value="company"><AdminAnalyticsContent/></TabsContent>
         <TabsContent value="demand"><AdminOSLunaGrowth/></TabsContent>
         <TabsContent value="social"><AdminSocialDemandAnalytics/></TabsContent>
         <TabsContent value="service"><AdminOSServiceIntelligence/></TabsContent>
+        <TabsContent value="occupancy"><AdminOccupancyIntelligence/></TabsContent>
       </Tabs>
     </div>
   </AdminLayout>;
