@@ -1,7 +1,7 @@
 import SEO from "@/components/SEO";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Chrome, Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { getAuthErrorMessage } from "@/lib/authErrors";
 import { TUT_CAMPUSES } from "@/lib/campuses";
 import { attachReferralToUser } from "@/lib/referrals/referralApi";
 import { clearPendingApplication, clearPendingRecruiter, readPendingApplication, readPendingRecruiter, readReferral } from "@/lib/referrals/referralStorage";
+import GoogleLogo from "@/components/auth/GoogleLogo";
 
 const passwordSchema = z.string().min(8, "Password must be at least 8 characters").regex(/[A-Z]/, "Must contain an uppercase letter").regex(/[a-z]/, "Must contain a lowercase letter").regex(/[0-9]/, "Must contain a number");
 const phoneSchema = z.string().regex(/^(\+27|0)[6-8][0-9]{8}$/, "Enter a valid South African mobile number");
@@ -29,6 +30,17 @@ const APPLICANT_STAGES = [
   ["private_applicant", "Private college / other applicant"],
   ["other", "Other"],
 ] as const;
+
+const safeLocalReturnPath = (value: string | null) => {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
+  try {
+    const parsed = new URL(value, window.location.origin);
+    if (parsed.origin !== window.location.origin) return null;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
+};
 
 const HEARD_ABOUT_US_OPTIONS = [
   ["instagram", "Instagram"],
@@ -63,7 +75,7 @@ const Auth = () => {
   const [applicantStage, setApplicantStage] = useState("university_student");
   const [identifierType, setIdentifierType] = useState<"student_number" | "identity_number">("student_number");
   const [heardAboutUs, setHeardAboutUs] = useState("");
-  const returnTo = searchParams.get("returnTo");
+  const returnTo = safeLocalReturnPath(searchParams.get("returnTo"));
   const refCode = searchParams.get("ref");
 
   useEffect(() => {
@@ -185,8 +197,22 @@ const Auth = () => {
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/auth${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}` } });
-    if (oauthError) { toast.error(getAuthErrorMessage(oauthError)); setIsLoading(false); }
+    setError(null);
+    const redirectTo = `${window.location.origin}/auth${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo,
+        scopes: "openid email profile",
+        queryParams: { prompt: "select_account" },
+      },
+    });
+    if (oauthError) {
+      const message = getAuthErrorMessage(oauthError);
+      setError(message);
+      toast.error(message);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -228,7 +254,32 @@ const Auth = () => {
             <Button type="submit" className="w-full" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{isLogin ? "Sign In" : "Create Account"}</Button>
           </form>
 
-          {isLogin && <><div className="relative my-5"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">Or continue with</span></div></div><Button type="button" variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading}><Chrome className="mr-2 h-5 w-5" />Sign in with Google</Button></>}
+          <>
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+              <div className="relative flex justify-center text-xs font-semibold uppercase tracking-[0.14em]">
+                <span className="bg-card px-3 text-muted-foreground">Or continue securely</span>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="group relative h-12 w-full overflow-hidden border-amber-300/70 bg-gradient-to-r from-white via-amber-50/60 to-white text-slate-900 shadow-[0_12px_34px_rgba(146,104,18,0.10)] transition-all hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-[0_16px_40px_rgba(146,104,18,0.16)] dark:border-amber-500/30 dark:from-slate-950 dark:via-amber-950/20 dark:to-slate-950 dark:text-white"
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+            >
+              <span className="absolute left-3 flex h-8 w-8 items-center justify-center rounded-xl border bg-white shadow-sm">
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-slate-600" /> : <GoogleLogo className="h-5 w-5" />}
+              </span>
+              <span className="font-black">{isLogin ? "Continue with Google" : "Create account with Google"}</span>
+              <span className="absolute right-3 hidden items-center gap-1 rounded-full border border-amber-300/70 bg-amber-100/80 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-900 sm:flex dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-200">
+                <ShieldCheck className="h-3 w-3" /> Premium
+              </span>
+            </Button>
+            <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
+              Google verifies your email identity. ResKonnect then collects only the contact and student details needed for your services.
+            </p>
+          </>
           <button type="button" onClick={() => { setIsLogin((v) => !v); setError(null); }} className="mt-5 w-full text-center text-sm font-semibold text-primary hover:underline">{isLogin ? "New here? Create an account" : "Already have an account? Sign in"}</button>
         </CardContent></Card>
         <p className="mt-6 text-center text-xs text-muted-foreground">{BRAND.tagline}</p>

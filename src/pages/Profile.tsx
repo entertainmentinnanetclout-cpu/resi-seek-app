@@ -16,6 +16,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbS
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import DocumentUploader from "@/components/DocumentUploader";
 import ProfilePictureUpload from "@/components/ProfilePictureUpload";
+import WhatsAppPhoneVerification from "@/components/security/WhatsAppPhoneVerification";
 
 const Profile = () => {
   const shouldBlock = useAdminRedirect();
@@ -90,22 +91,50 @@ const Profile = () => {
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
-    const { id, created_at, email, ...rawUpdateData } = formData;
+
+    // Explicit allow-list: browser profile forms must never be able to submit
+    // auth/security-owned fields such as role, provider, verification timestamps
+    // or account trust level.
     const updateData = {
-      ...rawUpdateData,
-      academic_year: Number(rawUpdateData.academic_year || new Date().getFullYear()),
-      academic_period: Number(rawUpdateData.academic_period || 0),
+      full_name: formData.full_name ?? null,
+      student_number: formData.student_number ?? null,
+      phone: formData.phone ?? null,
+      campus: formData.campus ?? null,
+      course: formData.course ?? null,
+      year_of_study: formData.year_of_study ?? null,
+      profile_picture_url: formData.profile_picture_url ?? null,
+      lifestyle_preferences: formData.lifestyle_preferences ?? {},
+      looking_for_roommate: Boolean(formData.looking_for_roommate),
+      identity_number: formData.identity_number ?? null,
+      applicant_stage: formData.applicant_stage ?? null,
+      surname: formData.surname ?? null,
+      heard_about_us: formData.heard_about_us ?? null,
+      recruiter_reference: formData.recruiter_reference ?? null,
+      academic_year: Number(formData.academic_year || new Date().getFullYear()),
+      academic_cycle: formData.academic_cycle || "unspecified",
+      academic_period: Number(formData.academic_period || 0),
+      study_level: formData.study_level || "unspecified",
+      student_stage: formData.student_stage || "unspecified",
+      updated_at: new Date().toISOString(),
     };
+
     try {
-      const { error } = await supabase.from("profiles").update(updateData as any).eq("id", user.id);
+      const { data, error } = await supabase
+        .from("profiles")
+        .update(updateData as any)
+        .eq("id", user.id)
+        .select("*")
+        .maybeSingle();
       if (error) throw error;
-      setProfile(formData);
-      toast.success('Profile updated successfully!');
+      if (!data) throw new Error("Profile update was not persisted.");
+      setProfile(data);
+      setFormData(data);
+      toast.success("Profile updated successfully!");
       setIsEditing(false);
       localStorage.removeItem(`profileDraft_${user.id}`);
     } catch (error) {
-      console.error('Save error:', error);
-      toast.error('Failed to save changes. Please try again.');
+      console.error("Save error:", error);
+      toast.error("Failed to save changes. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -277,6 +306,26 @@ const Profile = () => {
                           Save Changes
                         </Button>
                       </div>
+                    )}
+                  </div>
+                </AccordionItem>
+
+                <AccordionItem title="Account Security" description="Verify contact ownership and strengthen your account trust." id="account_security">
+                  <div className="space-y-3">
+                    <WhatsAppPhoneVerification
+                      phone={profile.phone || ""}
+                      onVerified={(next) => {
+                        setProfile((prev: any) => ({
+                          ...prev,
+                          phone_verified_at: next.phone_verified_at || new Date().toISOString(),
+                          security_level: next.security_level || "contact_verified",
+                        }));
+                      }}
+                    />
+                    {isEditing && formData.phone !== profile.phone && (
+                      <p className="rounded-xl border border-amber-300/50 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/20 dark:text-amber-200">
+                        Save the new phone number first. Changing a verified number automatically removes its verification until the new number is confirmed.
+                      </p>
                     )}
                   </div>
                 </AccordionItem>

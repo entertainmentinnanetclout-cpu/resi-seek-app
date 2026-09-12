@@ -81,19 +81,11 @@ export default defineConfig(({ mode }) => {
             ],
             runtimeCaching: [
               {
+                // Never persist authenticated Supabase REST/Auth/Functions/Storage
+                // responses in the service-worker cache. Offline UX is provided by
+                // the app shell and static assets, not by retaining user API data.
                 urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-                handler: "NetworkFirst",
-                options: {
-                  cacheName: "supabase-cache-v2",
-                  networkTimeoutSeconds: 8,
-                  expiration: {
-                    maxEntries: 50,
-                    maxAgeSeconds: 60 * 60 * 24,
-                  },
-                  cacheableResponse: {
-                    statuses: [0, 200],
-                  },
-                },
+                handler: "NetworkOnly",
               },
               {
                 urlPattern: ({ request }) => request.mode === "navigate",

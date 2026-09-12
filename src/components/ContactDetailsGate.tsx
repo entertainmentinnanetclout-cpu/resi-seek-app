@@ -8,7 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TUT_CAMPUSES } from "@/lib/campuses";
 import { toast } from "sonner";
-import { Loader2, Phone, ShieldCheck } from "lucide-react";
+import { Loader2, MessageCircle, Phone, ShieldCheck } from "lucide-react";
+import WhatsAppPhoneVerification from "@/components/security/WhatsAppPhoneVerification";
 
 const phonePattern = /^(\+27|0)[6-8][0-9]{8}$/;
 const idPattern = /^\d{13}$/;
@@ -25,6 +26,7 @@ export default function ContactDetailsGate({ children }: { children: React.React
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [complete, setComplete] = useState(false);
+  const [verificationStep, setVerificationStep] = useState(false);
   const [identifierType, setIdentifierType] = useState<"student_number" | "identity_number">("student_number");
   const [form, setForm] = useState({ full_name: "", phone: "", student_number: "", identity_number: "", campus: "", applicant_stage: "university_student" });
 
@@ -63,23 +65,23 @@ export default function ContactDetailsGate({ children }: { children: React.React
       return;
     }
     setSaving(true);
-    const { error } = await (supabase as any).from("profiles").upsert({
-      id: user.id,
+    const { data, error } = await (supabase as any).from("profiles").update({
       full_name: form.full_name.trim(),
       phone: form.phone.trim(),
       student_number: identifierType === "student_number" ? form.student_number.trim() : null,
       identity_number: identifierType === "identity_number" ? form.identity_number.trim() : null,
       campus: form.campus,
       applicant_stage: form.applicant_stage,
-      email: user.email || null,
-    }, { onConflict: "id" });
+      updated_at: new Date().toISOString(),
+    }).eq("id", user.id).select("id").maybeSingle();
     setSaving(false);
-    if (error) {
-      toast.error(error.message || "Could not save your contact details.");
+    if (error || !data?.id) {
+      toast.error(error?.message || "Could not save your contact details.");
       return;
     }
     setComplete(true);
-    toast.success("Contact details saved. Your ResKonnect profile is ready.");
+    setVerificationStep(true);
+    toast.success("Contact details saved. You can now verify your WhatsApp number.");
   };
 
   if (loading) return <>{children}</>;
@@ -87,10 +89,35 @@ export default function ContactDetailsGate({ children }: { children: React.React
   return (
     <>
       {children}
-      <Dialog open={!complete}>
+      <Dialog open={!complete || verificationStep}>
         <DialogContent className="max-h-[92dvh] max-w-md overflow-y-auto" onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Phone className="h-6 w-6" /></div>
+          {verificationStep ? (
+            <>
+              <DialogHeader>
+                <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#25D366]/10 text-[#128C7E]"><MessageCircle className="h-6 w-6" /></div>
+                <DialogTitle>Secure your contact with WhatsApp</DialogTitle>
+                <DialogDescription>
+                  Confirm that you control the number you just saved. This adds a contact-verified trust level to your ResKonnect account and helps protect sensitive account recovery and communication flows.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 pt-2">
+                <WhatsAppPhoneVerification
+                  phone={form.phone}
+                  onVerified={() => setVerificationStep(false)}
+                  compact
+                />
+                <Button type="button" variant="ghost" className="w-full text-muted-foreground" onClick={() => setVerificationStep(false)}>
+                  Continue for now
+                </Button>
+                <p className="text-center text-[11px] text-muted-foreground">
+                  Verification is optional for normal browsing right now. Privileged staff security remains protected by separate MFA controls.
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Phone className="h-6 w-6" /></div>
             <DialogTitle>Complete your contact details</DialogTitle>
             <DialogDescription>ResKonnect requires complete contact details for accommodation reservations and application support. TVET students and matriculants may use their South African ID instead of a student number.</DialogDescription>
           </DialogHeader>
@@ -104,6 +131,8 @@ export default function ContactDetailsGate({ children }: { children: React.React
             <div className="rounded-xl border bg-muted/40 p-3 text-xs text-muted-foreground"><ShieldCheck className="mr-1 inline h-3.5 w-3.5 text-primary" />Your identifier is protected profile information. Residence portals do not receive student phone numbers, email addresses or ID numbers.</div>
             <Button className="w-full" onClick={() => void save()} disabled={!valid || saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save & continue</Button>
           </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>
