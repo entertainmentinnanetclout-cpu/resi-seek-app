@@ -113,4 +113,4 @@ verify_jwt = false
 
 
 [functions.phone-whatsapp-verification]
-verify_jwt = false
+verify_jwt = true
