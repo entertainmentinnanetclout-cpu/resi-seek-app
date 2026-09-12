@@ -33,6 +33,20 @@ const studentOffice=read("src/pages/admin/AdminStudentOpportunities.tsx");
 const partnershipsOffice=read("src/pages/admin/AdminPartnershipCommandCentre.tsx");
 const corporateOffice=read("src/pages/admin/AdminCorporateAffairs.tsx");
 const announcementsUi=read("src/components/admin/AdminSiteAnnouncementsManager.tsx");
+const rg12=read("supabase/migrations/20260912194000_agentos_rg12_seo_aeo_growth.sql");
+const rg13=read("supabase/migrations/20260912201000_agentos_rg13_finance_admin.sql");
+const rg14=read("supabase/migrations/20260912204000_agentos_rg14_reliability.sql");
+const rg15=read("supabase/migrations/20260912211000_agentos_rg15_executive_operating_layer.sql");
+const indexNowWorker=read("supabase/functions/seo-indexnow-worker/index.ts");
+const searchConsoleWorker=read("supabase/functions/seo-search-console-sync/index.ts");
+const rg12Ui=read("src/components/admin/AdminSeoAeoAutomation.tsx");
+const rg13Ui=read("src/components/admin/AdminFinanceAutomation.tsx");
+const rg14Ui=read("src/components/admin/AdminReliabilityAutomation.tsx");
+const rg15Ui=read("src/components/admin/AdminExecutiveOperatingLayer.tsx");
+const intelligenceOffice=read("src/pages/admin/AdminIntelligenceAnalytics.tsx");
+const financeOffice=read("src/pages/admin/AdminFinanceAdmin.tsx");
+const technologyOffice=read("src/pages/admin/AdminTechnologySystems.tsx");
+const executiveOffice=read("src/pages/admin/AdminExecutiveOffice.tsx");
 
 expect(bot.includes('externalFunctionUrl(signedIn ? "adminos-enquiry" : "luna-agent")'),"public website assistant must route to luna-agent");
 expect(bot.includes("Luna")&&!bot.includes("Konnect Agent • Secure support"),"website assistant identity must be Luna");
@@ -96,4 +110,34 @@ expect(corporateOffice.includes('value="reputation"')&&corporateOffice.includes(
 expect(announcementsUi.includes("adminos_approve_site_announcement")&&announcementsUi.includes("Executive approval is required"),"Site-announcement UI must enforce Executive approval for sensitive content");
 expect(rgTaskReconciliation.includes("automation_key")&&rgTaskReconciliation.includes("adminos_rg9_reconcile_tasks")&&rgTaskReconciliation.includes("adminos_rg10_reconcile_tasks")&&rgTaskReconciliation.includes("adminos_rg11_reconcile_tasks"),"RG9-RG11 task queues must remain state-keyed and idempotent");
 
-console.log("Luna/AgentOS QA passed: RG0-RG11 identity, demand, conversion, application, occupancy, student-opportunity, partnership and Corporate Affairs governance are protected.");
+expect(rg12.includes("adminos_search_console_query_metrics")&&rg12.includes("adminos_seo_growth_signals")&&rg12.includes("adminos_seo_growth_snapshots"),"RG12 must retain Search Console evidence, growth signals and snapshots");
+expect(rg12.includes("adminos_rg12_safe_metadata_hygiene")&&rg12.includes("'auto_rewrite_public_claims',false")&&rg12.includes("'auto_publish_content',false"),"RG12 may automate mechanical metadata but not public factual claims/content");
+expect(rg12.includes("'adminos-rg12-indexnow-worker'")&&rg12.includes("'*/5 * * * *'")&&rg12.includes("'adminos-rg12-search-console-sync'"),"RG12 IndexNow and Search Console workers must remain scheduled");
+expect(indexNowWorker.includes("https://api.indexnow.org/indexnow")&&indexNowWorker.includes('HOST="www.reskonnect.org"'),"RG12 must submit canonical ResKonnect URLs through IndexNow");
+expect(searchConsoleWorker.includes("webmasters.readonly")&&searchConsoleWorker.includes("searchAnalytics/query"),"RG12 Search Console sync must remain read-only and use Search Analytics");
+expect(config.includes("[functions.seo-indexnow-worker]")&&config.includes("[functions.seo-search-console-sync]"),"RG12 search workers must be source-controlled in Supabase config");
+expect(rg12Ui.includes("Mechanical indexing autonomous")&&rg12Ui.includes("does not invent market-superlative claims"),"RG12 UI must expose safe search-growth authority");
+expect(intelligenceOffice.includes("AdminSeoAeoAutomation")&&intelligenceOffice.includes('value="search-growth"'),"Intelligence office must expose RG12");
+
+expect(rg13.includes("adminos_finance_snapshots")&&rg13.includes("adminos_finance_anomalies"),"RG13 must retain finance snapshots and anomaly controls");
+expect(rg13.includes("adminos_rg13_payout_status_guard")&&rg13.includes("Executive approval is required before payout status can advance"),"RG13 payout progression must be Executive-gated");
+expect(rg13.includes("'bank_transfers',false")&&rg13.includes("'payout_execution',false")&&rg13.includes("'refund_execution',false")&&rg13.includes("'banking_changes',false"),"RG13 must prohibit autonomous money movement and banking changes");
+expect(rg13.includes("'adminos-rg13-finance-admin'")&&rg13.includes("'*/30 * * * *'"),"RG13 finance controls must remain scheduled every 30 minutes");
+expect(rg13Ui.includes("No autonomous money movement")&&rg13Ui.includes("never executes a bank transfer"),"RG13 UI must make money-movement controls explicit");
+expect(financeOffice.includes("AdminFinanceAutomation")&&financeOffice.includes('value="automation"'),"Finance office must expose RG13");
+
+expect(rg14.includes("adminos_reliability_incidents")&&rg14.includes("adminos_reliability_snapshots")&&rg14.includes("adminos_reliability_expectations"),"RG14 must keep reliability incidents, snapshots and expectations");
+expect(rg14.includes("'production_patch',false")&&rg14.includes("'production_deploy',false")&&rg14.includes("'delete_production_data',false")&&rg14.includes("'credential_rotation',false"),"RG14 must keep production remediation release-gated");
+expect(rg14.includes("'adminos-rg14-reliability'")&&rg14.includes("'*/10 * * * *'"),"RG14 reliability cycle must remain scheduled every 10 minutes");
+expect(rg14Ui.includes("Release-gated remediation")&&rg14Ui.includes("production patches, deployments, credential rotation"),"RG14 UI must disclose diagnostic vs deployment authority");
+expect(technologyOffice.includes("AdminReliabilityAutomation")&&technologyOffice.includes('value="reliability"'),"Technology office must expose RG14");
+
+expect(rg15.includes("adminos_executive_authority_policy")&&rg15.includes("adminos_executive_priorities")&&rg15.includes("adminos_company_operating_snapshots"),"RG15 must retain explicit authority policy, priorities and company operating snapshots");
+expect(rg15.includes("'persona','Luna'")||rg15.includes("'Luna',priorities_value"),"RG15 executive brief must use Luna rather than Dimpho");
+expect(rg15.includes("'contract_signature'")&&rg15.includes("'banking_change'")&&rg15.includes("'ownership_or_shareholding'")&&rg15.includes("'public_crisis_statement'"),"RG15 must explicitly constitutionally restrict material founder actions");
+expect(rg15.includes("'adminos-rg15-executive-operating-cycle'")&&rg15.includes("'*/15 * * * *'"),"RG15 executive operating cycle must remain scheduled every 15 minutes");
+expect(rg15Ui.includes("Exception-based founder control")&&rg15Ui.includes("contracts, banking, ownership/legal admissions"),"RG15 UI must preserve founder exception authority");
+expect(executiveOffice.includes("AdminExecutiveOperatingLayer")&&executiveOffice.includes('value="agentos"'),"Executive Office must expose RG15 AgentOS");
+expect(rg15Ui.includes("adminos_rg13_decide_payout_approval")&&rg15Ui.includes("adminos_decide_approval"),"RG15 Executive Office must support approval decisions including guarded seller payouts");
+
+console.log("Luna/AgentOS QA passed: RG0-RG15 full operating architecture and governance invariants are protected.");
