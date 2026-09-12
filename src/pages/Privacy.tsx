@@ -23,7 +23,7 @@ const Privacy = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl">Privacy Policy</CardTitle>
-            <p className="text-muted-foreground">Last updated: January 2026</p>
+            <p className="text-muted-foreground">Last updated: September 2026</p>
           </CardHeader>
           <CardContent className="prose prose-sm dark:prose-invert max-w-none space-y-6">
             <section>
@@ -100,21 +100,35 @@ const Privacy = () => {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold mb-3">9. Third-Party Services</h2>
+              <h2 className="text-xl font-semibold mb-3">9. Google Sign-In and Google User Data</h2>
               <p className="text-muted-foreground">
-                Our platform may contain links to third-party websites or services. We are not responsible for the privacy practices of these external sites. We encourage you to review their privacy policies.
+                ResKonnect offers Google Sign-In as an optional authentication method. When you choose to sign in with Google, we request only the basic identity information needed to create and authenticate your ResKonnect account, such as your Google account email address, display name, profile identifier, and profile image when available.
+              </p>
+              <ul className="list-disc pl-6 text-muted-foreground space-y-2 mt-2">
+                <li>We use this information to authenticate you, associate your Google identity with your ResKonnect account, and prefill basic account information.</li>
+                <li>Google Sign-In does not give ResKonnect access to your Gmail messages, Google Drive files, Search Console data, contacts, calendar, or other Google services.</li>
+                <li>Google authentication data is processed through our authentication provider and stored only as necessary to operate and secure your ResKonnect account.</li>
+                <li>We do not sell Google user data or use Google Sign-In information for advertising.</li>
+                <li>You may revoke ResKonnect's Google account access through your Google Account permissions. You may also request account deletion through ResKonnect's account controls, subject to applicable legal retention requirements.</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-semibold mb-3">10. Third-Party Services</h2>
+              <p className="text-muted-foreground">
+                We use service providers, including authentication, hosting, communications, analytics, and infrastructure providers, to operate ResKonnect. These providers process information only for the services they provide to us and are subject to their own legal and privacy obligations. Our platform may also contain links to independent third-party websites or services; their privacy practices are governed by their own policies.
               </p>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold mb-3">10. Changes to This Policy</h2>
+              <h2 className="text-xl font-semibold mb-3">11. Changes to This Policy</h2>
               <p className="text-muted-foreground">
                 We may update this Privacy Policy from time to time. We will notify you of significant changes via email or platform notifications. Your continued use of the platform after changes constitutes acceptance.
               </p>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold mb-3">11. Contact Us</h2>
+              <h2 className="text-xl font-semibold mb-3">12. Contact Us</h2>
               <p className="text-muted-foreground">
                 For privacy-related inquiries or to exercise your rights, please contact our Information Officer at:
               </p>
