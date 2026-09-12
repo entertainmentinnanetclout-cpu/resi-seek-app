@@ -51,7 +51,7 @@ const ResidenceLogin = () => {
     }
     setIsLoading(true);
     try {
-      const redirectTo = `${window.location.origin}/reset-password?returnTo=${encodeURIComponent("/residence")}`;
+      const redirectTo = `${window.location.origin}/auth?mode=password-reset&returnTo=${encodeURIComponent("/residence")}`;
       const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo });
       if (error) throw error;
       toast.success("If this email is registered, a secure reset link has been sent.");
