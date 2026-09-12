@@ -110,3 +110,7 @@ verify_jwt = false
 
 [functions.seo-search-console-sync]
 verify_jwt = false
+
+
+[functions.phone-whatsapp-verification]
+verify_jwt = false
