@@ -7,6 +7,7 @@ import AdminSocialDemandAnalytics from "@/components/admin/AdminSocialDemandAnal
 import { AdminMediaHubContent } from "./AdminMediaHub";
 import AdminSiteAnnouncementsManager from "@/components/admin/AdminSiteAnnouncementsManager";
 import AdminOSLunaGrowth from "@/components/admin/AdminOSLunaGrowth";
+import AdminDepartmentTaskQueue from "@/components/admin/AdminDepartmentTaskQueue";
 
 export default function AdminCorporateAffairs(){
   return <AdminLayout>
@@ -24,11 +25,13 @@ export default function AdminCorporateAffairs(){
           <TabsTrigger value="public-content" className="gap-2"><Newspaper className="h-4 w-4"/>Public Content</TabsTrigger>
           <TabsTrigger value="pr" className="gap-2"><Megaphone className="h-4 w-4"/>PR & Announcements</TabsTrigger>
           <TabsTrigger value="luna" className="gap-2"><Bot className="h-4 w-4"/>Luna Growth Intelligence</TabsTrigger>
+          <TabsTrigger value="occupancy-handoffs" className="gap-2"><Megaphone className="h-4 w-4"/>Occupancy Handoffs</TabsTrigger>
         </TabsList>
         <TabsContent value="social"><AdminSocialDemandAnalytics/></TabsContent>
         <TabsContent value="public-content"><AdminMediaHubContent/></TabsContent>
         <TabsContent value="pr" className="space-y-4"><div className="rounded-2xl border bg-muted/25 p-4"><p className="font-black">Public communications control</p><p className="mt-1 text-xs text-muted-foreground">Use verified announcements for public operational notices. Partnership, government, legal, pricing and controversy-sensitive statements remain executive approval items.</p></div><AdminSiteAnnouncementsManager/></TabsContent>
         <TabsContent value="luna"><AdminOSLunaGrowth/></TabsContent>
+        <TabsContent value="occupancy-handoffs"><AdminDepartmentTaskQueue departmentKey="marketing_corporate_affairs" title="RG8 vacancy-demand handoffs" /></TabsContent>
       </Tabs>
     </div>
   </AdminLayout>;

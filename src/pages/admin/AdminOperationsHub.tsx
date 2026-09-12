@@ -17,6 +17,9 @@ import { AdminResidenceCommercialContent } from "./AdminResidenceCommercial";
 import VirtualTourStudioWorkspace from "@/components/virtualTours/VirtualTourStudioWorkspace";
 import VirtualTourPlanControl from "@/components/virtualTours/VirtualTourPlanControl";
 import AcademicInventoryManager from "@/components/admin/AcademicInventoryManager";
+import AdminApplicationOperationsPanel from "@/components/admin/AdminApplicationOperationsPanel";
+import AdminOccupancyIntelligence from "@/components/admin/AdminOccupancyIntelligence";
+import AdminDepartmentTaskQueue from "@/components/admin/AdminDepartmentTaskQueue";
 
 const normalize=(value:string|null)=>{
   const legacy:Record<string,string>={
@@ -35,9 +38,9 @@ export default function AdminOperationsHub(){
   const setTab=(tab:string)=>{const next=new URLSearchParams(searchParams);next.set("tab",tab);setSearchParams(next);};
 
   return <AdminLayout>
-    <SEO noIndex title="Accommodation Department | ResKonnect Admin" description="Accommodation applications, reservations, occupancy, residences, commercial controls and operational delivery."/>
+    <SEO noIndex title="Accommodation Department | ResKonnect Admin" description="Accommodation applications, reservations, RG7 application automation, RG8 occupancy intelligence, residences and operational delivery."/>
     <div className="space-y-6">
-      <header><div className="flex flex-wrap gap-2"><span className="rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-wider text-primary-foreground">Accommodation Department</span><span className="rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Institutional service delivery</span></div><h1 className="mt-3 text-3xl font-black tracking-tight">Accommodation Operations</h1><p className="mt-1 max-w-4xl text-sm text-muted-foreground">One departmental workspace for the complete accommodation lifecycle: inventory → applications and reservations → review → occupancy → portals → commercial delivery. Academic years remain isolated.</p></header>
+      <header><div className="flex flex-wrap gap-2"><span className="rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-wider text-primary-foreground">Accommodation Department</span><span className="rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Institutional service delivery</span></div><h1 className="mt-3 text-3xl font-black tracking-tight">Accommodation Operations</h1><p className="mt-1 max-w-4xl text-sm text-muted-foreground">One departmental workspace for the complete accommodation lifecycle: inventory → applications and reservations → RG7 health automation → RG8 year-isolated occupancy intelligence → portals → commercial delivery. Academic years remain isolated and room allocation remains human-controlled.</p></header>
 
       <Tabs value={activeTab} onValueChange={setTab}>
         <TabsList className="flex h-auto flex-wrap gap-1">
@@ -52,14 +55,26 @@ export default function AdminOperationsHub(){
 
         <TabsContent value="applications-reservations" className="space-y-4">
           <Tabs defaultValue="applications">
-            <TabsList className="flex h-auto flex-wrap gap-1 rounded-xl bg-muted/45 p-1"><TabsTrigger value="applications">Applications</TabsTrigger><TabsTrigger value="reservations">Reservations / Academic intake</TabsTrigger><TabsTrigger value="follow-up">Follow-up & conversion</TabsTrigger></TabsList>
+            <TabsList className="flex h-auto flex-wrap gap-1 rounded-xl bg-muted/45 p-1"><TabsTrigger value="applications">Applications</TabsTrigger><TabsTrigger value="reservations">Reservations / Academic intake</TabsTrigger><TabsTrigger value="automation">RG7 Automation</TabsTrigger><TabsTrigger value="follow-up">Follow-up & conversion</TabsTrigger></TabsList>
             <TabsContent value="applications"><AdminApplicationsContent /></TabsContent>
             <TabsContent value="reservations"><AdminReservations2027Content /></TabsContent>
+            <TabsContent value="automation"><AdminApplicationOperationsPanel /></TabsContent>
             <TabsContent value="follow-up"><AdminFollowUpContent /></TabsContent>
           </Tabs>
         </TabsContent>
 
-        <TabsContent value="inventory-occupancy"><AcademicInventoryManager /></TabsContent>
+        <TabsContent value="inventory-occupancy" className="space-y-4">
+          <Tabs defaultValue="intelligence">
+            <TabsList className="flex h-auto flex-wrap gap-1 rounded-xl bg-muted/45 p-1">
+              <TabsTrigger value="intelligence">RG8 Occupancy Intelligence</TabsTrigger>
+              <TabsTrigger value="inventory">Academic Inventory</TabsTrigger>
+              <TabsTrigger value="tasks">Accommodation Exceptions</TabsTrigger>
+            </TabsList>
+            <TabsContent value="intelligence"><AdminOccupancyIntelligence /></TabsContent>
+            <TabsContent value="inventory"><AcademicInventoryManager /></TabsContent>
+            <TabsContent value="tasks"><AdminDepartmentTaskQueue departmentKey="accommodation" title="Accommodation automation queue" /></TabsContent>
+          </Tabs>
+        </TabsContent>
         <TabsContent value="residences"><AdminResidencesContent /></TabsContent>
 
         <TabsContent value="commercial" className="space-y-4">
