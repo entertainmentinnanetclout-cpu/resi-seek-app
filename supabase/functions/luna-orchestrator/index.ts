@@ -128,7 +128,7 @@ async function runContentCycle(service:any,authz:any,body:any){
     const ranked=Array.isArray(demand.ranked_opportunities)?demand.ranked_opportunities:[];
     const opportunity=ranked.find((x:any)=>Number(x.available_spots||0)>0&&Number(x.campaign_priority||0)>=35);
     if(!opportunity){
-      if(runId)await service.from("adminos_agent_runs").update({status:"succeeded",output:{skipped:true,reason:"no_eligible_inventory_backed_opportunity",academic_year:academicYear},completed_at:new Date().toISOString()}).eq("id",runId);
+      if(runId)await service.from("adminos_agent_runs").update({status:"completed",output:{skipped:true,reason:"no_eligible_inventory_backed_opportunity",academic_year:academicYear},completed_at:new Date().toISOString()}).eq("id",runId);
       return json({ok:true,skipped:true,reason:"No inventory-backed demand opportunity is eligible for content planning",academic_year:academicYear,release:RELEASE,phase:PHASE});
     }
 
