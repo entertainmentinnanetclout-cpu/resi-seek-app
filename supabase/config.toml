@@ -104,3 +104,9 @@ verify_jwt = false
 
 [functions.housing-intelligence]
 verify_jwt = false
+
+[functions.seo-indexnow-worker]
+verify_jwt = false
+
+[functions.seo-search-console-sync]
+verify_jwt = false
