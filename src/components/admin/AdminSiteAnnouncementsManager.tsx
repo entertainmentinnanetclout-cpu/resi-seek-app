@@ -28,6 +28,11 @@ type Announcement = {
   ends_at: string | null;
   created_at: string;
   updated_at: string;
+  risk_level?: "green" | "amber" | "red";
+  requires_executive_approval?: boolean;
+  approval_status?: "not_required" | "pending" | "approved" | "rejected";
+  approved_by?: string | null;
+  approved_at?: string | null;
 };
 
 type Draft = Omit<Announcement, "id" | "created_at" | "updated_at">;
@@ -57,6 +62,7 @@ export default function AdminSiteAnnouncementsManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [saving, setSaving] = useState(false);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const db = supabase as any;
   const activeCount = useMemo(() => items.filter((x) => x.is_active).length, [items]);
@@ -129,9 +135,22 @@ export default function AdminSiteAnnouncementsManager() {
   };
 
   const toggle = async (item: Announcement) => {
+    if (!item.is_active && item.requires_executive_approval && item.approval_status !== "approved") {
+      toast.error("Executive approval is required before this announcement can be enabled.");
+      return;
+    }
     const { error } = await db.from("site_announcements").update({ is_active: !item.is_active }).eq("id", item.id);
     if (error) return toast.error(error.message || "Could not change update status");
     toast.success(!item.is_active ? "Update enabled" : "Update disabled");
+    await load();
+  };
+
+  const approveAnnouncement = async (item: Announcement, approve: boolean, activate = false) => {
+    setApprovingId(item.id);
+    const { error } = await db.rpc("adminos_approve_site_announcement", { p_id: item.id, p_approve: approve, p_activate: activate });
+    setApprovingId(null);
+    if (error) return toast.error(error.message || "Executive approval could not be applied");
+    toast.success(approve ? (activate ? "Announcement approved and activated" : "Announcement approved") : "Announcement rejected");
     await load();
   };
 
@@ -148,7 +167,7 @@ export default function AdminSiteAnnouncementsManager() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2"><BellRing className="h-5 w-5 text-primary" /><h2 className="text-2xl font-bold">Site Updates & Landing Popup</h2></div>
-          <p className="mt-1 text-sm text-muted-foreground">Create, edit, schedule, enable or disable the branded centre-screen update shown to visitors.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Create and schedule public updates with RG11 statement-risk governance. Partnership, government, pricing, legal and crisis-sensitive notices require Executive approval before activation.</p>
         </div>
         <Button onClick={createNew}><Plus className="mr-2 h-4 w-4" />New update</Button>
       </div>
@@ -170,6 +189,8 @@ export default function AdminSiteAnnouncementsManager() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={item.is_active ? "default" : "secondary"}>{item.is_active ? "Enabled" : "Disabled"}</Badge>
+                    <Badge variant={item.risk_level === "red" ? "destructive" : "outline"}>{(item.risk_level || "green").toUpperCase()} risk</Badge>
+                    {item.requires_executive_approval && <Badge variant="secondary">Approval: {(item.approval_status || "pending").replaceAll("_", " ")}</Badge>}
                     {item.badge && <Badge variant="outline">{item.badge}</Badge>}
                     <span className="text-xs text-muted-foreground">Priority {item.priority}</span>
                   </div>
@@ -182,7 +203,11 @@ export default function AdminSiteAnnouncementsManager() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => toggle(item)}>{item.is_active ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}{item.is_active ? "Disable" : "Enable"}</Button>
+                  {item.requires_executive_approval && item.approval_status === "pending" && <>
+                    <Button size="sm" variant="outline" onClick={() => void approveAnnouncement(item, false)} disabled={approvingId === item.id}>Reject</Button>
+                    <Button size="sm" onClick={() => void approveAnnouncement(item, true, true)} disabled={approvingId === item.id}>Executive approve & activate</Button>
+                  </>}
+                  <Button size="sm" variant="outline" onClick={() => void toggle(item)}>{item.is_active ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}{item.is_active ? "Disable" : "Enable"}</Button>
                   <Button size="sm" variant="outline" onClick={() => edit(item)}><Edit3 className="mr-2 h-4 w-4" />Edit</Button>
                   <Button size="sm" variant="outline" className="text-destructive" onClick={() => remove(item)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
                 </div>
