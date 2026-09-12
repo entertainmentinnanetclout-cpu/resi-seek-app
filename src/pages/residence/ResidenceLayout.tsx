@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { resolveResidencePortalAccount } from "@/lib/residencePortal";
 import { RESIDENCE_ATTENTION_STATUSES } from "@/lib/residenceApplications";
 import { toast } from "sonner";
+import WeakPasswordBanner from "@/components/security/WeakPasswordBanner";
 
 export interface ResidencePortalContext {
   residence: {
@@ -150,7 +151,7 @@ const ResidenceLayout = () => {
         </div>
       </header>
 
-      <main className="min-w-0 max-w-full flex-1 overflow-x-hidden lg:ml-72">
+      <main className="min-w-0 max-w-full flex-1 overflow-x-hidden lg:ml-72"><WeakPasswordBanner returnTo="/residence" />
         <div className="sticky top-0 z-30 hidden h-16 items-center justify-between border-b bg-background/95 px-6 backdrop-blur lg:flex">
           <div className="min-w-0"><p className="truncate text-sm font-black text-[#071326] dark:text-foreground">{residence?.name || "Loading residence..."}</p><p className="truncate text-xs text-muted-foreground">Listing quality, 360 Studio, 2027 reservations, pricing, recruitment and conversion intelligence.</p></div>
           <div className="flex shrink-0 items-center gap-2">
