@@ -12,6 +12,7 @@ import { getAuthErrorMessage } from "@/lib/authErrors";
 import { resolveResidencePortalAccount } from "@/lib/residencePortal";
 import SEO from "@/components/SEO";
 import { BRAND } from "@/constants/brand";
+import { clearWeakPassword, rememberWeakPassword } from "@/lib/passwordSecurity";
 
 const ResidenceLogin = () => {
   const navigate = useNavigate();
@@ -42,6 +43,25 @@ const ResidenceLogin = () => {
     return () => { active = false; };
   }, [user, navigate]);
 
+  const handleResetPassword = async () => {
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail || !normalizedEmail.includes("@")) {
+      toast.error("Enter your residence portal email first.");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const redirectTo = `${window.location.origin}/auth?mode=password-reset&returnTo=${encodeURIComponent("/residence")}`;
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo });
+      if (error) throw error;
+      toast.success("If this email is registered, a secure reset link has been sent.");
+    } catch (error) {
+      toast.error(getAuthErrorMessage(error, "Could not send a password reset email."));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
@@ -53,6 +73,12 @@ const ResidenceLogin = () => {
       });
       if (error) throw error;
       if (!data.user) throw new Error("Login failed");
+      if (data.weakPassword) {
+        rememberWeakPassword(data.user.id, data.weakPassword);
+        toast.warning("Signed in. This password should be replaced because it was flagged as weak or exposed.", { duration: 9000 });
+      } else {
+        clearWeakPassword(data.user.id);
+      }
 
       const portalAccount = await resolveResidencePortalAccount(data.user);
       if (!portalAccount) {
@@ -105,7 +131,7 @@ const ResidenceLogin = () => {
                   <Input id="residence-email" type="email" autoComplete="email" placeholder="admin@yourresidence.co.za" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading || checkingSession} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="residence-password">Password</Label>
+                  <div className="flex items-center justify-between gap-3"><Label htmlFor="residence-password">Password</Label><button type="button" onClick={() => void handleResetPassword()} disabled={isLoading || checkingSession} className="text-xs font-semibold text-primary hover:underline disabled:opacity-50">Forgot password?</button></div>
                   <div className="relative">
                     <Input id="residence-password" type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading || checkingSession} className="pr-11" />
                     <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground" aria-label={showPassword ? "Hide password" : "Show password"}>

@@ -13,6 +13,8 @@ import { z } from "zod";
 import { BRAND } from "@/constants/brand";
 import { Loader2, Chrome, ArrowLeft } from "lucide-react";
 import { savePendingRecruiter, readPendingRecruiter, clearPendingRecruiter } from "@/lib/referrals/referralStorage";
+import { clearWeakPassword, rememberWeakPassword } from "@/lib/passwordSecurity";
+import { getAuthErrorMessage } from "@/lib/authErrors";
 
 const loginSchema = z.object({ email: z.string().email("Invalid email address"), password: z.string().min(1, "Password is required") });
 const signupSchema = z.object({
@@ -29,6 +31,8 @@ export default function RecruiterAuth() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailValue, setEmailValue] = useState("");
+  const [resetSending, setResetSending] = useState(false);
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo");
 
@@ -46,6 +50,25 @@ export default function RecruiterAuth() {
       return () => clearTimeout(timer);
     }
   }, [user, authLoading, navigate, returnTo]);
+
+  const handleResetPassword = async () => {
+    const parsed = z.string().email("Enter your recruiter email first").safeParse(emailValue.trim());
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || "Enter a valid email address.");
+      return;
+    }
+    setResetSending(true);
+    try {
+      const redirectTo = `${window.location.origin}/auth?mode=password-reset&returnTo=${encodeURIComponent("/recruit/dashboard")}`;
+      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo });
+      if (error) throw error;
+      toast.success("If this email is registered, a secure reset link has been sent.");
+    } catch (error) {
+      toast.error(getAuthErrorMessage(error, "Could not send a password reset email."));
+    } finally {
+      setResetSending(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -67,9 +90,15 @@ export default function RecruiterAuth() {
       const validated = schema.parse(data);
 
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email: validated.email, password: validated.password });
+        const { data: loginData, error } = await supabase.auth.signInWithPassword({ email: validated.email, password: validated.password });
         if (error) throw error;
-        toast.success("Welcome back, Recruiter!");
+        if (loginData.user?.id && loginData.weakPassword) {
+          rememberWeakPassword(loginData.user.id, loginData.weakPassword);
+          toast.warning("You are signed in. Please replace this password when convenient because it was flagged as weak or exposed.", { duration: 9000 });
+        } else if (loginData.user?.id) {
+          clearWeakPassword(loginData.user.id);
+          toast.success("Welcome back, Recruiter!");
+        }
       } else {
         const signupData = validated as z.infer<typeof signupSchema>;
         savePendingRecruiter();
@@ -120,7 +149,7 @@ export default function RecruiterAuth() {
             )}
             <div className="space-y-1">
               <Label htmlFor="email">Email Address</Label>
-              <Input id="email" name="email" type="email" required placeholder="you@example.com" />
+              <Input id="email" name="email" type="email" required placeholder="you@example.com" value={emailValue} onChange={(event) => setEmailValue(event.target.value)} />
             </div>
             {!isLogin && (
               <div className="space-y-1">
@@ -129,7 +158,7 @@ export default function RecruiterAuth() {
               </div>
             )}
             <div className="space-y-1">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between gap-3"><Label htmlFor="password">Password</Label>{isLogin && <button type="button" onClick={() => void handleResetPassword()} disabled={resetSending} className="text-xs font-semibold text-primary hover:underline disabled:opacity-50">{resetSending ? "Sending..." : "Forgot password?"}</button>}</div>
               <Input id="password" name="password" type="password" required placeholder="••••••••" />
             </div>
             {!isLogin && (

@@ -13,6 +13,7 @@ import NotificationCenter from "@/components/NotificationCenter";
 import CommandPalette from "@/components/CommandPalette";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import DashboardUserManual from "@/components/manuals/DashboardUserManual";
+import WeakPasswordBanner from "@/components/security/WeakPasswordBanner";
 
 interface DashboardLayoutProps { children: ReactNode; }
 
@@ -124,7 +125,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
         </header>
 
-        <main className="min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">{children}</main>
+        <main className="min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">{user && <WeakPasswordBanner returnTo={location.pathname} />}{children}</main>
       </div>
       {user && <DashboardUserManual />}
     </div>
