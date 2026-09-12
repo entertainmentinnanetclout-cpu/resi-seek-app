@@ -47,6 +47,18 @@ const intelligenceOffice=read("src/pages/admin/AdminIntelligenceAnalytics.tsx");
 const financeOffice=read("src/pages/admin/AdminFinanceAdmin.tsx");
 const technologyOffice=read("src/pages/admin/AdminTechnologySystems.tsx");
 const executiveOffice=read("src/pages/admin/AdminExecutiveOffice.tsx");
+const goldSecurity=read("supabase/migrations/20260912220000_google_identity_whatsapp_verification_gold_security.sql");
+const securityAdvisorHardening=read("supabase/migrations/20260912221500_gold_security_advisor_hardening.sql");
+const securityRpcCleanup=read("supabase/migrations/20260912222000_gold_security_rpc_surface_cleanup.sql");
+const phoneVerify=read("supabase/functions/phone-whatsapp-verification/index.ts");
+const authPage=read("src/pages/Auth.tsx");
+const contactGate=read("src/components/ContactDetailsGate.tsx");
+const mfaGate=read("src/components/admin/GodModeMfaGate.tsx");
+const departmentRoute=read("src/components/DepartmentRoute.tsx");
+const goldSecurityUi=read("src/components/admin/AdminGoldSecurity.tsx");
+const mainEntry=read("src/main.tsx");
+const viteConfig=read("vite.config.ts");
+const vercelConfig=read("vercel.json");
 
 expect(bot.includes('externalFunctionUrl(signedIn ? "adminos-enquiry" : "luna-agent")'),"public website assistant must route to luna-agent");
 expect(bot.includes("Luna")&&!bot.includes("Konnect Agent • Secure support"),"website assistant identity must be Luna");
@@ -140,4 +152,23 @@ expect(rg15Ui.includes("Exception-based founder control")&&rg15Ui.includes("cont
 expect(executiveOffice.includes("AdminExecutiveOperatingLayer")&&executiveOffice.includes('value="agentos"'),"Executive Office must expose RG15 AgentOS");
 expect(rg15Ui.includes("adminos_rg13_decide_payout_approval")&&rg15Ui.includes("adminos_decide_approval"),"RG15 Executive Office must support approval decisions including guarded seller payouts");
 
-console.log("Luna/AgentOS QA passed: RG0-RG15 full operating architecture and governance invariants are protected.");
+expect(goldSecurity.includes("'auto_admin_from_email',false")&&goldSecurity.includes("legacy email-based admin grant")&&!goldSecurity.includes("forevertal1.enquiries@gmail.com"),"Gold Security must prohibit email-based automatic admin elevation");
+expect(goldSecurity.includes("phone_verified_at")&&goldSecurity.includes("phone_verification_method")&&goldSecurity.includes("security_level"),"Gold Security must persist verified-contact state separately from user-entered phone data");
+expect(goldSecurity.includes("coalesce(auth.jwt()->>'aal','aal1')='aal2'")&&goldSecurity.includes("has_admin_department_access"),"Department backend access must require AAL2");
+expect(goldSecurity.includes("platform_security_policy")&&goldSecurity.includes("'attack_challenge_mode_default',false"),"Gold Security policy must remain explicit and keep attack challenge mode off by default");
+expect(securityAdvisorHardening.includes("join pg_trigger")&&securityAdvisorHardening.includes("revoke all on function")&&securityAdvisorHardening.includes("adminos_gold_security_summary"),"Gold Security must hide trigger-only SECURITY DEFINER RPCs and expose aggregate posture instead");
+expect(securityRpcCleanup.includes("handover_integrity_scan")&&securityRpcCleanup.includes("dimpho_model_router_snapshot")&&securityRpcCleanup.includes("intentionally remain callable"),"Gold Security must reduce anonymous privileged RPC surface while documenting intentional public telemetry");
+expect(phoneVerify.includes('Channel:"whatsapp"')&&phoneVerify.includes("VerificationCheck")&&phoneVerify.includes("check_attempts")&&phoneVerify.includes("rateLimit"),"WhatsApp verification must use Twilio Verify with OTP checking and abuse throttles");
+expect(phoneVerify.includes("phone_verification.approved")&&phoneVerify.includes('security_level:"contact_verified"'),"Successful WhatsApp verification must elevate verified-contact trust and log the security event");
+expect(config.includes("[functions.phone-whatsapp-verification]"),"WhatsApp verification Edge Function must be source-controlled in Supabase config");
+expect(authPage.includes('fill="#4285F4"')&&authPage.includes('fill="#34A853"')&&authPage.includes('fill="#FBBC05"')&&authPage.includes('fill="#EA4335"'),"Google authentication button must retain the full-colour Google mark");
+expect(authPage.includes("Continue with Google")&&authPage.includes("Create account with Google")&&authPage.includes("Fast secure access"),"Google authentication control must remain premium and available for sign-in/sign-up");
+expect(contactGate.includes('phone-whatsapp-verification')&&contactGate.includes("Save & verify WhatsApp")&&contactGate.includes("Google identity connected"),"Student onboarding must combine provider identity, institutional profile and WhatsApp proof");
+expect(departmentRoute.includes('mode={isGodMode ? "god" : "staff"}'),"All privileged department routes must step up through the AAL2 MFA gate");
+expect(mfaGate.includes('"god" | "staff"')&&mfaGate.includes("AAL2 REQUIRED"),"MFA gate must support both God Mode and privileged staff AAL2");
+expect(!viteConfig.includes('urlPattern: /^https:\\/\\/.*\\.supabase\\.co\\/.*')&&viteConfig.includes("supabase-public-assets-v3")&&viteConfig.includes('handler: "NetworkOnly"'),"PWA must never runtime-cache authenticated Supabase APIs or private route navigations");
+expect(mainEntry.includes("supabase-cache-v2")&&mainEntry.includes("navigation-pages-v2")&&mainEntry.includes("caches.delete"),"Client boot must purge legacy sensitive runtime caches");
+expect(vercelConfig.includes("Strict-Transport-Security")&&vercelConfig.includes("X-Content-Type-Options")&&vercelConfig.includes("Permissions-Policy")&&vercelConfig.includes("private, no-store"),"Production must keep transport, browser and private-page cache hardening headers");
+expect(goldSecurityUi.includes("Gold Security Mode")&&goldSecurityUi.includes("trigger_rpc_exposure_count")&&technologyOffice.includes("AdminGoldSecurity"),"Technology office must expose the Gold Security posture dashboard");
+
+console.log("Luna/AgentOS QA passed: RG0-RG15 plus Gold Security identity, contact verification, AAL2 and browser/runtime controls are protected.");
