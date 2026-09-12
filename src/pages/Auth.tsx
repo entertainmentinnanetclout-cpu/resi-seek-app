@@ -19,6 +19,7 @@ import { attachReferralToUser } from "@/lib/referrals/referralApi";
 import { clearPendingApplication, clearPendingRecruiter, readPendingApplication, readPendingRecruiter, readReferral } from "@/lib/referrals/referralStorage";
 import GoogleLogo from "@/components/auth/GoogleLogo";
 import { clearWeakPassword, rememberWeakPassword } from "@/lib/passwordSecurity";
+import PasswordReset from "@/pages/PasswordReset";
 
 const passwordSchema = z.string().min(8, "Password must be at least 8 characters").regex(/[A-Z]/, "Must contain an uppercase letter").regex(/[a-z]/, "Must contain a lowercase letter").regex(/[0-9]/, "Must contain a number");
 const phoneSchema = z.string().regex(/^(\+27|0)[6-8][0-9]{8}$/, "Enter a valid South African mobile number");
@@ -80,13 +81,14 @@ const Auth = () => {
   const [resetSending, setResetSending] = useState(false);
   const returnTo = safeLocalReturnPath(searchParams.get("returnTo"));
   const refCode = searchParams.get("ref");
+  const isPasswordRecovery = searchParams.get("mode") === "password-reset";
 
   useEffect(() => {
     if (["tvet_student", "matriculant"].includes(applicantStage)) setIdentifierType("identity_number");
   }, [applicantStage]);
 
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (isPasswordRecovery || authLoading || !user) return;
     const timer = setTimeout(async () => {
       const ref = readReferral();
       if (ref?.sessionId) { try { await attachReferralToUser(ref.sessionId); } catch {} }
@@ -124,7 +126,7 @@ const Auth = () => {
       navigate(returnTo || "/dashboard", { replace: true });
     }, 150);
     return () => clearTimeout(timer);
-  }, [user, authLoading, isGodMode, staffRole, isRecruiter, isPendingRecruiter, navigate, returnTo]);
+  }, [user, authLoading, isGodMode, staffRole, isRecruiter, isPendingRecruiter, navigate, returnTo, isPasswordRecovery]);
 
   const identifierLabel = identifierType === "identity_number" ? "South African ID number" : "Student number";
   const campusOptions = useMemo(() => [
@@ -216,7 +218,7 @@ const Auth = () => {
     setResetSending(true);
     setError(null);
     try {
-      const redirectTo = `${window.location.origin}/reset-password?returnTo=${encodeURIComponent(returnTo || "/dashboard")}`;
+      const redirectTo = `${window.location.origin}/auth?mode=password-reset&returnTo=${encodeURIComponent(returnTo || "/dashboard")}`;
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo });
       if (resetError) throw resetError;
       toast.success("If this email is registered, a secure reset link has been sent.");
@@ -248,6 +250,8 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  if (isPasswordRecovery) return <PasswordReset />;
 
   return (
     <div className="flex min-h-screen flex-col justify-center bg-background px-4 py-10 sm:px-6">
