@@ -13,6 +13,14 @@ const filters=read("src/hooks/useResidenceFilters.ts");
 const migration=read("supabase/migrations/20260910093000_luna_agentos_rg0_rg1_rg2.sql");
 const hardening=read("supabase/migrations/20260910093100_luna_agentos_rg0_rg1_hardening.sql");
 const config=read("supabase/config.toml");
+const rg6rg8=read("supabase/migrations/20260912162000_agentos_rg6_rg8.sql");
+const rg6rg8Tuning=read("supabase/migrations/20260912163500_agentos_rg6_rg8_launch_tuning.sql");
+const rg6Profile=read("supabase/migrations/20260912165500_rg6_profile_context_inheritance.sql");
+const conversionUi=read("src/components/admin/AdminWhatsAppConversionPipeline.tsx");
+const applicationOpsUi=read("src/components/admin/AdminApplicationOperationsPanel.tsx");
+const occupancyUi=read("src/components/admin/AdminOccupancyIntelligence.tsx");
+const accommodationOffice=read("src/pages/admin/AdminOperationsHub.tsx");
+const communicationsOffice=read("src/pages/admin/AdminCommunicationsDepartment.tsx");
 
 expect(bot.includes('externalFunctionUrl(signedIn ? "adminos-enquiry" : "luna-agent")'),"public website assistant must route to luna-agent");
 expect(bot.includes("Luna")&&!bot.includes("Konnect Agent • Secure support"),"website assistant identity must be Luna");
@@ -37,4 +45,18 @@ expect(migration.includes("'luna-demand-cycle'")&&migration.includes("'*/15 * * 
 expect(migration.includes("'campaign_creation',false")&&migration.includes("'publishing',false"),"RG2 must not silently enable campaign creation or publishing");
 expect(config.includes("[functions.luna-agent]")&&config.includes("[functions.luna-orchestrator]"),"Luna Edge Functions must be source-controlled in Supabase config");
 
-console.log("Luna Growth QA passed: RG0 identity boundary, RG1 attribution/telemetry, RG2 year-scoped demand intelligence and RG3-RG5 manual content controls are protected.");
+expect(rg6rg8.includes("lead_score")&&rg6rg8.includes("qualification_band")&&rg6rg8.includes("next_best_action"),"RG6 must keep deterministic lead scoring and next-best-action fields");
+expect(rg6rg8.includes("adminos_generate_conversion_followups")&&rg6rg8.includes("respect_consent")&&rg6rg8.includes("respect_do_not_contact"),"RG6 must retain consent-aware conversion follow-ups");
+expect(rg6rg8.includes("'approve_application'")&&rg6rg8.includes("'reject_application'")&&rg6rg8.includes("'allocate_room'"),"RG6 must block protected accommodation decisions");
+expect(rg6Profile.includes("trg_adminos_rg6_00_profile_context")&&rg6Profile.includes("academic_cycle")&&rg6Profile.includes("study_level"),"RG6 must inherit verified profile academic context before scoring");
+expect(rg6rg8.includes("adminos_application_health_scores")&&rg6rg8.includes("automation_state")&&rg6rg8.includes("stale_days"),"RG7 must keep application health and stale-case state");
+expect(rg6rg8Tuning.includes("limit 25")&&rg6rg8Tuning.includes("interval '72 hours'"),"RG7 reminders must remain bounded to 25 per cycle with a 72h cooldown");
+expect(rg6rg8.includes("protected_status_decisions")&&rg6rg8.includes("'human_only'"),"RG7 approval/rejection must remain human-only");
+expect(rg6rg8.includes("adminos_occupancy_intelligence")&&rg6rg8.includes("academic_year=p_academic_year"),"RG8 occupancy must remain isolated by academic year");
+expect(rg6rg8.includes("cycle_cohorts_not_capacity_pools")&&rg6rg8.includes("'auto_publish',false"),"RG8 must keep cycles as cohorts and marketing publishing disabled");
+expect(rg6rg8Tuning.includes("status_rank<=20")&&rg6rg8Tuning.includes("marketing_corporate_affairs"),"RG8 must keep marketing handoffs exception-based instead of flooding departments");
+expect(conversionUi.includes("RG6 · Dimpho Conversion Automation")&&communicationsOffice.includes('value="conversion"'),"Communications must expose the RG6 conversion workspace");
+expect(applicationOpsUi.includes("RG7")&&accommodationOffice.includes("AdminApplicationOperationsPanel"),"Accommodation must expose RG7 application automation");
+expect(occupancyUi.includes("RG8")&&accommodationOffice.includes("AdminOccupancyIntelligence"),"Accommodation must expose RG8 occupancy intelligence");
+
+console.log("Luna/AgentOS QA passed: RG0-RG5 foundations plus RG6 conversion, RG7 application operations and RG8 academic-year occupancy controls are protected.");
