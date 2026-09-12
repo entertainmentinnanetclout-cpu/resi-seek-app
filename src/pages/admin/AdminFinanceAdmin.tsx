@@ -4,13 +4,15 @@ import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Banknote, Bot, ShoppingBag, Users } from "lucide-react";
+import { Banknote, Bot, ShoppingBag, Users, Sparkles } from "lucide-react";
 import { AdminCommerceContent } from "./AdminCommerceHub";
 import { AdminUsersContent } from "./AdminUsers";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminSettingsContent } from "./AdminSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShieldCheck } from "lucide-react";
+import AdminFinanceAutomation from "@/components/admin/AdminFinanceAutomation";
+import AdminDepartmentTaskQueue from "@/components/admin/AdminDepartmentTaskQueue";
 
 export default function AdminFinanceAdmin(){
   const { isGodMode } = useAuth();
@@ -25,11 +27,13 @@ export default function AdminFinanceAdmin(){
       <FinancePulse/>
       <Tabs defaultValue="commercial">
         <TabsList className="flex h-auto flex-wrap gap-1">
+          <TabsTrigger value="automation" className="gap-2"><Sparkles className="h-4 w-4"/>RG13 Finance Automation</TabsTrigger>
           <TabsTrigger value="commercial" className="gap-2"><ShoppingBag className="h-4 w-4"/>Commercial Administration</TabsTrigger>
           <TabsTrigger value="costs" className="gap-2"><Bot className="h-4 w-4"/>AI & API Cost Ledger</TabsTrigger>
           <TabsTrigger value="accounts" className="gap-2"><Users className="h-4 w-4"/>User Administration</TabsTrigger>
           {isGodMode&&<TabsTrigger value="financial-settings" className="gap-2"><ShieldCheck className="h-4 w-4"/>Restricted Financial Settings</TabsTrigger>}
         </TabsList>
+        <TabsContent value="automation" className="space-y-4"><AdminFinanceAutomation/><AdminDepartmentTaskQueue departmentKey="finance_admin" title="Finance automation queue"/></TabsContent>
         <TabsContent value="commercial"><AdminCommerceContent/></TabsContent>
         <TabsContent value="costs"><AgentCostLedger/></TabsContent>
         <TabsContent value="accounts"><AdminUsersContent/></TabsContent>
