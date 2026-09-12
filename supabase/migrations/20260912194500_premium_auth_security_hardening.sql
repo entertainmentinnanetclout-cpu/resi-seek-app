@@ -106,6 +106,18 @@ begin
       errcode = '42501',
       message = 'Security-managed profile fields cannot be changed directly';
   end if;
+
+  -- A user may change their own contact number, but trust never follows the
+  -- old number. Any material phone change immediately clears ownership proof.
+  if request_role = 'authenticated'
+     and public.rk_normalize_za_phone(new.phone) is distinct from public.rk_normalize_za_phone(old.phone) then
+    new.phone_e164 := public.rk_normalize_za_phone(new.phone);
+    new.phone_number := new.phone;
+    new.phone_verified_at := null;
+    new.phone_verification_method := null;
+    new.security_level := public.rk_security_level(old.email_verified_at, null, false);
+  end if;
+
   return new;
 end;
 $$;
@@ -127,7 +139,6 @@ grant update (
   phone,
   student_number,
   profile_picture_url,
-  phone_number,
   lifestyle_preferences,
   looking_for_roommate,
   identity_number,
