@@ -370,7 +370,7 @@ $$;
 create or replace function public.adminos_rg9_refresh_matches()
 returns integer
 language plpgsql security definer set search_path=public as $$
-declare generated integer:=0;
+declare generated integer:=0; step_count integer:=0;
 begin
   update public.adminos_student_opportunity_matches
   set status='expired'
@@ -439,7 +439,8 @@ begin
     requires_official_confirmation=true,expires_at=excluded.expires_at,generated_at=now(),metadata=excluded.metadata,
     status=case when adminos_student_opportunity_matches.status='expired' then 'suggested' else adminos_student_opportunity_matches.status end;
 
-  get diagnostics generated=generated+row_count;
+  get diagnostics step_count=row_count;
+  generated:=generated+step_count;
   return generated;
 end;
 $$;
