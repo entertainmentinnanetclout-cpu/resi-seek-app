@@ -160,7 +160,7 @@ export const AdminApplicationHubContent = () => {
         .limit(250),
     ]);
 
-    if (institutionResult.error) toast.error("Could not load Applications Hub institutions");
+    if (institutionResult.error) toast.error("Could not load Application Services institutions");
     else setInstitutions((institutionResult.data ?? []) as InstitutionRow[]);
 
     if (requestResult.error) toast.error("Could not load live application requests");
@@ -281,7 +281,7 @@ export const AdminApplicationHubContent = () => {
   return (
     <>
       <SEO
-        title="Applications Hub | Admin"
+        title="Application Services | Admin"
         description="Manage institution cards, official application routes, branding and R50 live application guidance requests."
       />
 
@@ -289,7 +289,7 @@ export const AdminApplicationHubContent = () => {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <Badge variant="outline" className="mb-2">Pretoria v1</Badge>
-            <h1 className="text-3xl font-black tracking-tight">Applications Hub</h1>
+            <h1 className="text-3xl font-black tracking-tight">Application Services</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Control the student-facing institution directory, branding, official application links and live application support queue.
             </p>
