@@ -463,8 +463,8 @@ export const AdminMediaHubContent = () => {
       <SEO title="Corporate Affairs Content | Admin" description="Manage public slides, news, events and bursary content" />
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Media Hub</h1>
-          <p className="text-muted-foreground">Content management for slides, news, events & bursaries</p>
+          <h1 className="text-3xl font-bold">Public Content & Media</h1>
+          <p className="text-muted-foreground">Public-facing content management for slides, news, events and funding information</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })}>
