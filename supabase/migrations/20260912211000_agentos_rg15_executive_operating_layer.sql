@@ -263,7 +263,7 @@ begin
   select count(*)::integer into student_attention from public.adminos_student_opportunity_cases where automation_state='staff_attention';
   select count(*)::integer into partner_attention from public.adminos_partnership_relationship_health where automation_state in ('follow_up','executive_review');
   select count(*)::integer into app_attention from public.adminos_application_health_scores where automation_state in ('staff_attention','human_review') or health_band in ('attention','blocked','incomplete');
-  select count(*)::integer into occupancy_attention from public.adminos_occupancy_intelligence where marketing_handoff=true;
+  select count(*)::integer into occupancy_attention from public.adminos_occupancy_intelligence where action_priority>=70;
 
   select coalesce(jsonb_object_agg(department_key,jsonb_build_object('open',total,'urgent',urgent,'high',high_count)),'{}'::jsonb) into dept
   from (
