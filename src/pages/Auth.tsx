@@ -44,6 +44,8 @@ const safeLocalReturnPath = (value: string | null) => {
   }
 };
 
+const DIRECT_REF_KEY = "rk_pending_direct_ref";
+
 const HEARD_ABOUT_US_OPTIONS = [
   ["instagram", "Instagram"],
   ["tiktok", "TikTok"],
@@ -94,6 +96,30 @@ const Auth = () => {
     const timer = setTimeout(async () => {
       const ref = readReferral();
       if (ref?.sessionId) { try { await attachReferralToUser(ref.sessionId); } catch {} }
+
+      // Direct ?ref= links are retained until an authenticated session exists.
+      // Production referral-capture derives the referred user from this JWT,
+      // so a browser can never attach an arbitrary user id.
+      try {
+        const pendingDirectRef = localStorage.getItem(DIRECT_REF_KEY);
+        if (pendingDirectRef) {
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          if (currentSession?.access_token) {
+            const response = await fetch(externalFunctionUrl("referral-capture"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: EXTERNAL_SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${currentSession.access_token}`,
+              },
+              body: JSON.stringify({ code: pendingDirectRef }),
+            });
+            if (response.ok) localStorage.removeItem(DIRECT_REF_KEY);
+          }
+        }
+      } catch (error) {
+        console.warn("Deferred referral capture unavailable:", error);
+      }
 
       if (isGodMode) return navigate("/admin", { replace: true });
       if (staffRole === "tvet_lead") return navigate("/tvet-dashboard", { replace: true });
@@ -187,14 +213,24 @@ const Auth = () => {
         });
         if (signupError) throw signupError;
 
-        if (refCode && data.user?.id) {
-          try {
-            await fetch(externalFunctionUrl("referral-capture"), {
-              method: "POST",
-              headers: { "Content-Type": "application/json", apikey: EXTERNAL_SUPABASE_ANON_KEY },
-              body: JSON.stringify({ code: refCode, referred_user_id: data.user.id }),
-            });
-          } catch (e) { console.warn("referral capture failed", e); }
+        if (refCode) {
+          try { localStorage.setItem(DIRECT_REF_KEY, refCode.trim().toUpperCase()); } catch {}
+          if (data.session?.access_token) {
+            try {
+              const response = await fetch(externalFunctionUrl("referral-capture"), {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  apikey: EXTERNAL_SUPABASE_ANON_KEY,
+                  Authorization: `Bearer ${data.session.access_token}`,
+                },
+                body: JSON.stringify({ code: refCode }),
+              });
+              if (response.ok) localStorage.removeItem(DIRECT_REF_KEY);
+            } catch (error) {
+              console.warn("Referral capture deferred until the next authenticated session:", error);
+            }
+          }
         }
         toast.success("Account created. Check your email if verification is required.");
         if (!data.session) setIsLogin(true);
