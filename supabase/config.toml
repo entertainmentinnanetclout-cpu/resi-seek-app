@@ -1,25 +1,25 @@
-project_id = "vmqqkebojldjsyxcewdb"
+project_id = "mefjzkhobkltlbmhusdh"
 
 [functions.resbot-ai]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-residence-portal-user]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-booking-slip]
-verify_jwt = false
+verify_jwt = true
 
 [functions.download-handover-pack]
-verify_jwt = false
+verify_jwt = true
 
 [functions.yoco-checkout]
-verify_jwt = false
+verify_jwt = true
 
 [functions.yoco-webhook]
-verify_jwt = false
+verify_jwt = true
 
 [functions.yoco-verify-payment]
-verify_jwt = false
+verify_jwt = true
 
 [functions.og-image]
 verify_jwt = false
@@ -28,10 +28,13 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.referral-capture]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-push]
-verify_jwt = false
+verify_jwt = true
+
+[functions.push-subscription]
+verify_jwt = true
 
 [functions.adminos-agent]
 verify_jwt = true
