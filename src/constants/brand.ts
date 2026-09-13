@@ -7,22 +7,22 @@ import appIcon from "@/assets/reskonnect-app-icon-1024.png";
 
 export const BRAND = {
   name: "ResKonnect",
-  descriptor: "LIVING • DIMPHO AI • RESMAP 3D • OPPORTUNITY",
+  descriptor: "LIVING • AI • OPPORTUNITY",
   tagline: "Connecting Residents. Advancing Futures.",
   journeyLine: "From search to placement, from study to opportunity.",
   positioning:
-    "An Africa-built student accommodation technology platform combining verified accommodation discovery, guaranteed accommodation placement for eligible placement clients, Dimpho AI, live ResMap navigation and photorealistic 3D exploration.",
+    "An integrated Living, AI and Opportunity platform connecting student accommodation, intelligent guidance, applications, education pathways, WIL, bursaries and verified opportunities through one ResKonnect journey.",
   hero: {
-    headline: "The next generation of student accommodation discovery — built in Africa.",
+    headline: "Everything students need to move forward. Connected.",
     subcopy:
-      "Find, explore and secure student accommodation through one intelligent platform with Dimpho AI, ResMap 3D, live navigation, verified listings and an accommodation placement guarantee for eligible placement clients.",
-    primaryCta: { label: "Find My Res", to: "/findmyres" },
+      "ResKonnect connects Living, intelligent guidance and real opportunities in one platform — helping students move from searching to taking action faster.",
+    primaryCta: { label: "Explore ResKonnect", to: "/get-started" },
     secondaryCtas: [
-      { label: "Explore ResMap 3D", to: "/findmyres?view=map&mode=3d" },
-      { label: "Partner With ResKonnect", to: "/partners" },
+      { label: "Ask ResKonnect AI", to: "/ai" },
+      { label: "Find Accommodation", to: "/findmyres" },
     ],
     searchPlaceholder:
-      "Search by campus, area, residence, institution, or ask Dimpho...",
+      "Search accommodation, courses, bursaries, opportunities or ResKonnect services...",
   },
   logos: {
     full: fullLogo,
