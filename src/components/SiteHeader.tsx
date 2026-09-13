@@ -1,5 +1,5 @@
 import { Fragment, ReactNode, useState } from "react";
-import { Building2, CalendarDays, ChevronDown, LogIn, Menu } from "lucide-react";
+import { Building2, CalendarDays, ChevronDown, LayoutDashboard, LogIn, Menu } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { BRAND } from "@/constants/brand";
 import SiteAnnouncementPopup from "@/components/SiteAnnouncementPopup";
 import HomeJourneyBar from "@/components/HomeJourneyBar";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const PUBLIC_NAV = [
   {
@@ -49,6 +50,7 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const { user, isLoading: authLoading } = useAuth();
   const isActive = (to: string) => {
     const pathname = to.split("?")[0];
     return location.pathname === pathname || location.pathname.startsWith(`${pathname}/`);
@@ -99,8 +101,16 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
           <div className="ml-auto hidden items-center gap-2 md:flex">
             <ThemeToggle />
             {!search && <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/residence/login")}><Building2 className="h-4 w-4" /> Landlord Portal</Button>}
-            <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}><LogIn className="mr-1.5 h-4 w-4" /> Sign In</Button>
-            <Button size="sm" onClick={() => navigate("/auth?mode=signup")} className="bg-cta font-semibold text-cta-foreground hover:bg-cta/90">Create Account</Button>
+            {authLoading ? (
+              <Button variant="ghost" size="sm" disabled className="min-w-28">Checking account…</Button>
+            ) : user ? (
+              <Button size="sm" onClick={() => navigate("/dashboard")} className="gap-1.5 font-semibold"><LayoutDashboard className="h-4 w-4" /> My ResKonnect</Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}><LogIn className="mr-1.5 h-4 w-4" /> Sign In</Button>
+                <Button size="sm" onClick={() => navigate("/auth?mode=signup")} className="bg-cta font-semibold text-cta-foreground hover:bg-cta/90">Create Account</Button>
+              </>
+            )}
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-1 md:hidden">
@@ -130,8 +140,16 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
                         <SheetClose asChild><Button variant="outline" className="h-auto w-full whitespace-normal py-2.5" onClick={() => navigate("/accommodation-request")}>Tell us what accommodation you need</Button></SheetClose>
                         <SheetClose asChild><Button variant="outline" className="w-full" onClick={() => navigate("/creator-partners")}>Creator Partner Programme</Button></SheetClose>
                         <SheetClose asChild><Button variant="outline" className="w-full gap-2" onClick={() => navigate("/residence/login")}><Building2 className="h-4 w-4" /> Landlord Portal</Button></SheetClose>
-                        <SheetClose asChild><Button variant="outline" className="w-full" onClick={() => navigate("/auth")}>Sign In</Button></SheetClose>
-                        <SheetClose asChild><Button className="w-full bg-cta font-semibold text-cta-foreground hover:bg-cta/90" onClick={() => navigate("/auth?mode=signup")}>Create Account</Button></SheetClose>
+                        {authLoading ? (
+                          <Button variant="outline" className="w-full" disabled>Checking account…</Button>
+                        ) : user ? (
+                          <SheetClose asChild><Button className="w-full gap-2" onClick={() => navigate("/dashboard")}><LayoutDashboard className="h-4 w-4" />My ResKonnect</Button></SheetClose>
+                        ) : (
+                          <>
+                            <SheetClose asChild><Button variant="outline" className="w-full" onClick={() => navigate("/auth")}>Sign In</Button></SheetClose>
+                            <SheetClose asChild><Button className="w-full bg-cta font-semibold text-cta-foreground hover:bg-cta/90" onClick={() => navigate("/auth?mode=signup")}>Create Account</Button></SheetClose>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
