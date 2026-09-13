@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,6 +25,7 @@ import PushPrompt from "@/components/PushPrompt";
 const GetStarted = lazy(() => import("./pages/GetStarted"));
 const PasswordReset = lazy(() => import("./pages/PasswordReset"));
 const Living = lazy(() => import("./pages/public/Living"));
+const ResKonnectAI = lazy(() => import("./pages/public/ResKonnectAI"));
 const HousingIntelligence = lazy(() => import("./pages/public/HousingIntelligence"));
 const StudentAccommodation = lazy(() => import("./pages/public/StudentAccommodation"));
 const PrivateRentals = lazy(() => import("./pages/public/PrivateRentals"));
@@ -146,10 +147,6 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  const [loading, setLoading] = useState(true);
-  useEffect(() => { const timer = setTimeout(() => setLoading(false), 2000); return () => clearTimeout(timer); }, []);
-  if (loading) return <Preloader />;
-
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -165,6 +162,7 @@ const App = () => {
                     <Route path="/" element={<Landing />} />
                     <Route path="/get-started" element={<GetStarted />} />
                     <Route path="/living" element={<Living />} />
+                    <Route path="/ai" element={<ResKonnectAI />} />
                     <Route path="/living/student-accommodation" element={<StudentAccommodation />} />
                     <Route path="/living/private-rentals" element={<PrivateRentals />} />
                     <Route path="/living/parents" element={<Parents />} />
