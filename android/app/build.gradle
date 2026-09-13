@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
-def versionCodeValue = (System.getenv("ANDROID_VERSION_CODE") ?: "1").toInteger()
-def versionNameValue = System.getenv("ANDROID_VERSION_NAME") ?: "1.0.0"
+def versionCodeValue = (System.getenv("ANDROID_VERSION_CODE") ?: "3").toInteger()
+def versionNameValue = System.getenv("ANDROID_VERSION_NAME") ?: "1.1.0"
 def keyStorePathValue = System.getenv("RK_ANDROID_KEYSTORE_PATH")
 def keyStorePasswordValue = System.getenv("RK_ANDROID_KEYSTORE_PASSWORD")
 def keyAliasValue = System.getenv("RK_ANDROID_KEY_ALIAS")
