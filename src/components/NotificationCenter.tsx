@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, Check, CheckCheck, FileText, Home, Info, AlertCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,7 @@ import { safeRelativeTime } from "@/lib/safeDates";
 
 const NotificationCenter = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useRealtimeNotifications();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
   const getTypeIcon = (type: string) => {
@@ -142,7 +144,7 @@ const NotificationCenter = () => {
               className="w-full text-xs h-8"
               onClick={() => {
                 setIsOpen(false);
-                window.location.href = "/dashboard/updates";
+                navigate("/dashboard/updates");
               }}
             >
               View all notifications

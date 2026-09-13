@@ -1,6 +1,7 @@
-import { BrainCircuit, BriefcaseBusiness, Building2, Home, Sparkles, UserRoundPlus } from "lucide-react";
+import { BrainCircuit, BriefcaseBusiness, Building2, Home, LayoutDashboard, Sparkles, UserRoundPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const journeys = [
   { icon: Home, label: "Living", path: "/living", primary: true },
@@ -11,6 +12,7 @@ const journeys = [
 
 const HomeJourneyBar = () => {
   const navigate = useNavigate();
+  const { user, isLoading: authLoading } = useAuth();
   return (
     <section className="border-b bg-background">
       <div className="container mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
@@ -26,7 +28,13 @@ const HomeJourneyBar = () => {
           ))}
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-          <button type="button" onClick={() => navigate("/auth")} className="inline-flex items-center gap-1.5 font-semibold hover:text-primary"><UserRoundPlus className="h-3.5 w-3.5" />Sign in / Create Account</button>
+          {authLoading ? (
+            <span className="inline-flex items-center gap-1.5 font-semibold text-muted-foreground">Checking account…</span>
+          ) : user ? (
+            <button type="button" onClick={() => navigate("/dashboard")} className="inline-flex items-center gap-1.5 font-semibold text-primary hover:text-primary/80"><LayoutDashboard className="h-3.5 w-3.5" />My ResKonnect</button>
+          ) : (
+            <button type="button" onClick={() => navigate("/auth")} className="inline-flex items-center gap-1.5 font-semibold hover:text-primary"><UserRoundPlus className="h-3.5 w-3.5" />Sign in / Create Account</button>
+          )}
           <button type="button" onClick={() => navigate("/residence/login")} className="inline-flex items-center gap-1.5 font-semibold hover:text-primary"><Building2 className="h-3.5 w-3.5" />Landlord Portal</button>
           <button type="button" onClick={() => navigate("/creator-partners")} className="font-semibold hover:text-primary">Creator Partner Programme</button>
         </div>

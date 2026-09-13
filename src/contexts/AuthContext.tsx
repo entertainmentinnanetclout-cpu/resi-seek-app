@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -25,6 +25,16 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
 }
 
+type AccessContext = {
+  staff_role?: string | null;
+  admin_departments?: string[] | null;
+  is_recruiter?: boolean | null;
+  is_pending_recruiter?: boolean | null;
+  is_student?: boolean | null;
+  is_tumelo_partner?: boolean | null;
+  tumelo_partner_role?: TumeloPartnerRole;
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -46,23 +56,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const currentUserIdRef = useRef<string | null>(null);
   const identitySyncUserRef = useRef<string | null>(null);
 
+  const clearAccessState = useCallback(() => {
+    setIsAdmin(false);
+    setIsGodMode(false);
+    setStaffRole(null);
+    setAdminDepartments([]);
+    setIsRecruiter(false);
+    setIsPendingRecruiter(false);
+    setIsStudent(false);
+    setIsTumeloPartner(false);
+    setTumeloPartnerRole(null);
+  }, []);
+
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
-
     let mounted = true;
+
+    const applySession = (nextSession: Session | null) => {
+      if (!mounted) return;
+      currentUserIdRef.current = nextSession?.user?.id ?? null;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setSessionChecked(true);
+    };
 
     const initAuth = async () => {
       try {
         const { data: { session: existingSession } } = await supabase.auth.getSession();
-        if (!mounted) return;
-        if (existingSession) {
-          currentUserIdRef.current = existingSession.user.id;
-          setSession(existingSession);
-          setUser(existingSession.user);
-        }
+        applySession(existingSession);
       } catch (error) {
-        console.error("Auth init error:", error);
+        console.error("[AuthContext] Initial session restore failed safely:", error);
+        applySession(null);
       } finally {
         if (mounted) setSessionChecked(true);
       }
@@ -70,32 +95,83 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
-
       const nextUserId = nextSession?.user?.id ?? null;
       const identityChanged = currentUserIdRef.current !== nextUserId;
       currentUserIdRef.current = nextUserId;
 
-      // TOKEN_REFRESHED is a normal background security event. It must update the
-      // tokens without tearing down the authenticated UI or remounting MFA gates.
-      // Only an actual identity/session boundary blocks the app for role resolution.
+      // Token refreshes keep the UI mounted. Only an identity boundary re-runs
+      // access resolution and temporarily blocks protected routing.
       if (identityChanged && nextSession) setIsLoading(true);
-
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setSessionChecked(true);
 
       if (!nextSession && event === "SIGNED_OUT") {
+        clearAccessState();
         setIsLoading(false);
       }
     });
 
-    initAuth();
+    void initAuth();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [clearAccessState]);
+
+  // Android/WebView can suspend JavaScript for long periods. Reconcile the
+  // persisted Supabase session when the app becomes visible and proactively
+  // refresh tokens that are close to expiry.
+  useEffect(() => {
+    let active = true;
+    const reconcile = async () => {
+      if (document.visibilityState === "hidden") return;
+      try {
+        const { data: { session: current } } = await supabase.auth.getSession();
+        if (!active) return;
+        if (!current) {
+          currentUserIdRef.current = null;
+          setSession(null);
+          setUser(null);
+          setSessionChecked(true);
+          clearAccessState();
+          setIsLoading(false);
+          return;
+        }
+
+        const expiresAtMs = Number(current.expires_at || 0) * 1000;
+        if (expiresAtMs && expiresAtMs - Date.now() < 120_000) {
+          const { data, error } = await supabase.auth.refreshSession(current);
+          if (error) throw error;
+          if (active && data.session) {
+            currentUserIdRef.current = data.session.user.id;
+            setSession(data.session);
+            setUser(data.session.user);
+          }
+          return;
+        }
+
+        currentUserIdRef.current = current.user.id;
+        setSession(current);
+        setUser(current.user);
+        setSessionChecked(true);
+      } catch (error) {
+        // A transient network failure must never log a user out. Persisted
+        // session state remains authoritative until Supabase reports SIGNED_OUT.
+        console.warn("[AuthContext] Session resume check unavailable:", error);
+      }
+    };
+
+    const onVisibility = () => { if (document.visibilityState === "visible") void reconcile(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", reconcile);
+    return () => {
+      active = false;
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", reconcile);
+    };
+  }, [clearAccessState]);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -107,85 +183,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       body: {},
       headers: { Authorization: `Bearer ${accessToken}` },
     }).then(({ error }) => {
-      if (error) console.warn("[AuthContext] Identity sync failed safely:", error.message);
+      if (error) {
+        identitySyncUserRef.current = null;
+        console.warn("[AuthContext] Identity sync failed safely:", error.message);
+      }
     }).catch((error) => {
+      identitySyncUserRef.current = null;
       console.warn("[AuthContext] Identity sync unavailable:", error);
     });
   }, [session?.user?.id, session?.access_token]);
 
-  const checkStatus = async () => {
+  const checkStatus = useCallback(async () => {
     if (!sessionChecked) return;
     if (!user) {
-      setIsAdmin(false);
-      setIsGodMode(false);
-      setStaffRole(null);
-      setAdminDepartments([]);
-      setIsRecruiter(false);
-      setIsPendingRecruiter(false);
-      setIsStudent(false);
-      setIsTumeloPartner(false);
-      setTumeloPartnerRole(null);
-      setAdminDepartments([]);
+      clearAccessState();
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
-
     try {
-      const [roleRes, departmentRes, recruiterRes, pendingRes, profileRes, tumeloRoleRes] = await Promise.all([
-        supabase.rpc("get_user_staff_role", { _user_id: user.id }),
-        (supabase as any).rpc("get_my_admin_departments"),
-        supabase.from("referral_agents" as any).select("status").eq("user_id", user.id).eq("program_key", "student_recruitment").maybeSingle(),
-        supabase.from("recruiter_applications" as any).select("status").eq("user_id", user.id).eq("program_key", "student_recruitment").order("created_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("profiles").select("student_number").eq("id", user.id).maybeSingle(),
-        (supabase as any).rpc("get_my_partnership_role", { p_slug: "tumelo-career-education" }),
-      ]);
+      const { data, error } = await (supabase as any).rpc("get_my_access_context");
+      if (error) throw error;
+      const access = (data || {}) as AccessContext;
 
-      if (roleRes.error) throw roleRes.error;
-      if (tumeloRoleRes.error && String(tumeloRoleRes.error?.code || "") !== "PGRST202") throw tumeloRoleRes.error;
+      const role = (access.staff_role || null) as StaffRole;
+      const departments = Array.isArray(access.admin_departments) ? access.admin_departments as AdminDepartmentKey[] : [];
+      const resolvedTumeloRole = access.tumelo_partner_role || null;
+      const partnershipOnly = Boolean(access.is_tumelo_partner || resolvedTumeloRole);
+      const isGod = Boolean(role && (GOD_MODE_ROLES as readonly string[]).includes(role));
 
-      const role = (roleRes.data as string | null) as StaffRole;
       setStaffRole(role);
-      setAdminDepartments((Array.isArray(departmentRes.data) ? departmentRes.data : []) as AdminDepartmentKey[]);
-
-      const isGod = !!role && (GOD_MODE_ROLES as readonly string[]).includes(role);
+      setAdminDepartments(departments);
       setIsGodMode(isGod);
       setIsAdmin(isGod);
-
-      const resolvedTumeloRole = (tumeloRoleRes.data as TumeloPartnerRole) || null;
-      const partnershipOnly = !!resolvedTumeloRole;
       setTumeloPartnerRole(resolvedTumeloRole);
       setIsTumeloPartner(partnershipOnly);
-
-      setIsRecruiter((recruiterRes.data as any)?.status === "approved");
-      setIsPendingRecruiter((pendingRes.data as any)?.status === "pending");
-      // Partnership ownership is authoritative. Even if an old profile value is
-      // accidentally reintroduced, the account never becomes a student in-app.
-      const resolvedStudent = !partnershipOnly && !!profileRes.data?.student_number;
-      setIsStudent(resolvedStudent);
-
-      console.log("[AuthContext] Status check:", {
-        email: user.email,
-        resolvedRole: role,
-        adminDepartments: departmentRes.data || [],
-        tumeloPartnerRole: resolvedTumeloRole,
-        isRecruiter: (recruiterRes.data as any)?.status === "approved",
-        isPendingRecruiter: (pendingRes.data as any)?.status === "pending",
-        isStudent: resolvedStudent,
-      });
-    } catch (e) {
-      console.error("[AuthContext] Status check failed:", e);
-      setIsTumeloPartner(false);
-      setTumeloPartnerRole(null);
+      setIsRecruiter(Boolean(access.is_recruiter));
+      setIsPendingRecruiter(Boolean(access.is_pending_recruiter));
+      setIsStudent(!partnershipOnly && Boolean(access.is_student));
+    } catch (error) {
+      // Preserve the authenticated session but fail closed on privileged roles.
+      console.error("[AuthContext] Access context failed safely:", error);
+      clearAccessState();
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [clearAccessState, sessionChecked, user]);
 
   useEffect(() => {
-    checkStatus();
-  }, [user?.id, sessionChecked]);
+    void checkStatus();
+  }, [checkStatus]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -193,15 +241,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     identitySyncUserRef.current = null;
     setUser(null);
     setSession(null);
-    setIsAdmin(false);
-    setIsGodMode(false);
-    setStaffRole(null);
-    setAdminDepartments([]);
-    setIsRecruiter(false);
-    setIsPendingRecruiter(false);
-    setIsStudent(false);
-    setIsTumeloPartner(false);
-    setTumeloPartnerRole(null);
+    clearAccessState();
     navigate("/auth");
   };
 
@@ -229,8 +269,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (context === undefined) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };

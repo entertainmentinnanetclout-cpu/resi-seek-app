@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,12 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Preloader from "@/components/Preloader";
-import ResBot from "@/components/ResBot";
 import GrowthTracker from "@/components/GrowthTracker";
-import Landing from "./pages/Landing";
-import Auth from "./pages/Auth";
-import MarketplaceComingSoon from "./pages/MarketplaceComingSoon";
-import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { StudentRoute } from "@/components/StudentRoute";
 import { AdminRoute } from "@/components/AdminRoute";
@@ -20,8 +15,17 @@ import { UserIntentProvider } from "@/contexts/UserIntentContext";
 import { ResidenceRoute } from "./components/ResidenceRoute";
 import { SpecialistRoute } from "@/components/SpecialistRoute";
 import DepartmentRoute from "@/components/DepartmentRoute";
-import PushPrompt from "@/components/PushPrompt";
 
+const Landing = lazy(() => import("./pages/Landing"));
+const Auth = lazy(() => import("./pages/Auth"));
+const MarketplaceComingSoon = lazy(() => import("./pages/MarketplaceComingSoon"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const ResBot = lazy(() => import("@/components/ResBot"));
+const PushPrompt = lazy(() => import("@/components/PushPrompt"));
+const About = lazy(() => import("./pages/public/About"));
+const ManagedSeoPage = lazy(() => import("./pages/seo/ManagedSeoPage"));
+const PropertyOpportunityDetail = lazy(() => import("./pages/public/PropertyOpportunityDetail"));
+const AdminCareerEducation = lazy(() => import("./pages/admin/AdminCareerEducation"));
 const GetStarted = lazy(() => import("./pages/GetStarted"));
 const PasswordReset = lazy(() => import("./pages/PasswordReset"));
 const Living = lazy(() => import("./pages/public/Living"));
@@ -145,6 +149,21 @@ const RecruitLanding = lazy(() => import("./pages/recruit/RecruitLanding"));
 const RecruiterAuth = lazy(() => import("./pages/recruit/RecruiterAuth"));
 const RecruiterApply = lazy(() => import("./pages/recruit/RecruiterApply"));
 
+const DeferredGlobalEnhancements = () => {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const win = window as any;
+    if (typeof win.requestIdleCallback === "function") {
+      const id = win.requestIdleCallback(() => setReady(true), { timeout: 1800 });
+      return () => win.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(() => setReady(true), 1200);
+    return () => window.clearTimeout(id);
+  }, []);
+  if (!ready) return null;
+  return <Suspense fallback={null}><ResBot /><PushPrompt /></Suspense>;
+};
+
 const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, refetchOnReconnect: false, staleTime: 60_000, retry: 1 } },
 });
@@ -163,6 +182,16 @@ const App = () => {
                 <Suspense fallback={<Preloader />}>
                   <Routes>
                     <Route path="/" element={<Landing />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/contact" element={<About />} />
+                    <Route path="/properties" element={<ManagedSeoPage pagePath="/properties" />} />
+                    <Route path="/property-auctions" element={<ManagedSeoPage pagePath="/property-auctions" />} />
+                    <Route path="/student-accommodation-for-sale" element={<ManagedSeoPage pagePath="/student-accommodation-for-sale" />} />
+                    <Route path="/development-opportunities" element={<ManagedSeoPage pagePath="/development-opportunities" />} />
+                    <Route path="/student-accommodation/pretoria" element={<ManagedSeoPage pagePath="/student-accommodation/pretoria" />} />
+                    <Route path="/opportunities/internships" element={<ManagedSeoPage pagePath="/opportunities/internships" />} />
+                    <Route path="/opportunities/seta" element={<ManagedSeoPage pagePath="/opportunities/seta" />} />
+                    <Route path="/properties/:slug" element={<PropertyOpportunityDetail />} />
                     <Route path="/get-started" element={<GetStarted />} />
                     <Route path="/living" element={<Living />} />
                     <Route path="/ai" element={<ResKonnectAI />} />
@@ -235,6 +264,7 @@ const App = () => {
                     <Route path="/dashboard/updates" element={<StudentRoute><Updates /></StudentRoute>} />
                     <Route path="/dashboard/services" element={<StudentRoute><ServiceCentre /></StudentRoute>} />
                     <Route path="/my-discount-codes" element={<StudentRoute><MyDiscountCodes /></StudentRoute>} />
+                    <Route path="/admin/career-education" element={<ProtectedRoute><AdminRoute><AdminCareerEducation /></AdminRoute></ProtectedRoute>} />
                     <Route path="/admin" element={<ProtectedRoute><DepartmentRoute department="executive"><AdminExecutiveOffice /></DepartmentRoute></ProtectedRoute>} />
                     <Route path="/admin/executive" element={<ProtectedRoute><DepartmentRoute department="executive"><AdminExecutiveOffice /></DepartmentRoute></ProtectedRoute>} />
                     <Route path="/admin/accommodation" element={<ProtectedRoute><DepartmentRoute department="accommodation"><AdminOperationsHub /></DepartmentRoute></ProtectedRoute>} />
@@ -322,8 +352,7 @@ const App = () => {
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
-                <ResBot />
-                <PushPrompt />
+                <DeferredGlobalEnhancements />
               </UserIntentProvider>
             </AuthProvider>
           </BrowserRouter>

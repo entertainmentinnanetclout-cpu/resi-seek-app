@@ -10,7 +10,7 @@ const robots = read("public/robots.txt");
 const vercel = read("vercel.json");
 const seo = read("src/components/SEO.tsx");
 const config = read("src/lib/seo/seoConfig.ts");
-const fallback = read("src/pages/NotFound.tsx");
+const app = read("src/App.tsx");
 const sitemap = read("api/sitemap.js");
 const managed = read("src/pages/seo/ManagedSeoPage.tsx");
 
@@ -23,10 +23,10 @@ expect(!robots.includes("Disallow: /opportunities/"), "public opportunity discov
 expect(!fs.existsSync("public/sitemap.xml"), "legacy static sitemap cannot override the dynamic sitemap index");
 expect(fs.existsSync("api/sitemap.xml.js"), "canonical sitemap index has a native Vercel function route");
 for (const type of ["pages", "residences", "properties", "opportunities"]) {
-  expect(fs.existsSync(`api/sitemaps/${type}.xml.js`) && sitemap.includes(`type === \"${type}\"`), `${type} child sitemap is configured`);
+  expect(fs.existsSync(`api/sitemaps/${type}.xml.js`) && sitemap.includes(`type === "${type}"`), `${type} child sitemap is configured`);
 }
 for (const path of ["/", "/find", "/living", "/applications", "/opportunities", "/partners", "/bursaries", "/student-accommodation/pretoria-west"]) {
-  expect(sitemap.includes(`\"${path}\"`), `pages sitemap preserves curated route ${path}`);
+  expect(sitemap.includes(`"${path}"`), `pages sitemap preserves curated route ${path}`);
 }
 expect(sitemap.includes("seo_public_pages_v"), "managed SEO pages are added through the database quality-gated public view");
 expect(sitemap.includes("is_published=eq.true") && sitemap.includes("is_visible=eq.true"), "data sitemaps publish only public records");
@@ -35,21 +35,21 @@ expect(!vercel.includes('"source": "/sitemap.xml", "destination": "/api/sitemap"
 expect(fs.existsSync("public/9b698dd216df7a00d2f9a598a4372726.txt"), "IndexNow verification file exists");
 expect(read("public/9b698dd216df7a00d2f9a598a4372726.txt").trim() === "9b698dd216df7a00d2f9a598a4372726", "IndexNow verification key is exact");
 
-expect(config.includes('https://www.reskonnect.org'), "canonical domain is www.reskonnect.org");
+expect(config.includes("https://www.reskonnect.org"), "canonical domain is www.reskonnect.org");
 expect(seo.includes('rel="canonical"') && seo.includes('name="robots"') && seo.includes('application/ld+json'), "global SEO component emits canonical, robots and JSON-LD");
 expect(seo.includes("organizationSchema()") && seo.includes("webSiteSchema()"), "homepage emits canonical Organization and WebSite entities");
 expect(managed.includes('data-ai-answer="true"'), "managed search pages expose direct AI-readable answer content");
 
-const managedPaths = [
+const searchPaths = [
   "/ai", "/properties", "/property-auctions", "/student-accommodation-for-sale", "/development-opportunities",
   "/student-accommodation/pretoria", "/opportunities/internships", "/opportunities/seta",
 ];
-for (const path of managedPaths) expect(fallback.includes(`\"${path}\"`), `managed search gateway contains ${path}`);
-expect(fallback.includes("/^\\/properties\\/[^/]+$/"), "published property detail URLs are routed through the search gateway");
+for (const path of searchPaths) expect(app.includes(`path="${path}"`), `explicit search route contains ${path}`);
+expect(app.includes('path="/properties/:slug"'), "published property detail URLs are routed explicitly");
 
 const forbiddenNoIndex = ["/student-accommodation", "/opportunities", "/properties", "/applications"];
 for (const path of forbiddenNoIndex) {
-  const exactLiteral = `\"${path}\",`;
+  const exactLiteral = `"${path}",`;
   const noindexSection = config.match(/NOINDEX_PREFIXES[\s\S]*?\];/)?.[0] || "";
   expect(!noindexSection.includes(exactLiteral), `${path} is not accidentally in the noindex prefix list`);
 }
