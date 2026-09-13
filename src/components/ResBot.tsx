@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { EXTERNAL_SUPABASE_ANON_KEY, externalFunctionUrl, supabase } from "@/integrations/supabase/client";
@@ -18,7 +19,7 @@ interface Message {
 const getFallbackResponse = (input: string): string => {
   const lower = input.toLowerCase();
   if (/^(hi|hello|hey|howzit|molo|sawubona|dumelang)/i.test(lower)) {
-    return "Hi, I’m Luna — ResKonnect’s website intelligence assistant. I can help with accommodation, applications, opportunities and ResKonnect services.";
+    return "Hi, I’m Luna, the website assistant powered by ResKonnect AI. I can help across Living, applications, opportunities and ResKonnect services.";
   }
   if (/nsfas/i.test(lower)) {
     return "NSFAS eligibility and accommodation rules can change. Check the current residence listing and your live application details in ResKonnect; if something is unclear, I won’t guess.";
@@ -29,7 +30,7 @@ const getFallbackResponse = (input: string): string => {
   if (/apply|application/i.test(lower)) {
     return "Sign in and open your Applications page for your live status. I can explain verified status information, but I won’t invent or change an application decision.";
   }
-  return "I can help with ResKonnect, accommodation, applications and opportunities. Sign in for account-specific answers.";
+  return "I can help across ResKonnect Living, applications and opportunities. Sign in for account-specific answers, or open ResKonnect AI for the full experience.";
 };
 
 const quickQuestions = ["How do I apply?", "My application status", "NSFAS accommodation", "Find a residence"];
@@ -40,7 +41,7 @@ const ResBot = () => {
     {
       id: "welcome",
       role: "bot",
-      content: "Hi, I’m Luna — ResKonnect’s website intelligence assistant. Sign in for secure account-specific support, or ask a general question.",
+      content: "Hi, I’m Luna, the website assistant powered by ResKonnect AI. Sign in for secure account-specific support, or ask a general question.",
       timestamp: new Date(),
     },
   ]);
@@ -50,6 +51,7 @@ const ResBot = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -105,9 +107,11 @@ const ResBot = () => {
   };
   const formatMessage = (content: string) => content.split(/(\*\*[^*]+\*\*)/g).map((part, i) => part.startsWith("**") && part.endsWith("**") ? <strong key={i}>{part.slice(2, -2)}</strong> : part);
 
+  if (location.pathname === "/ai") return null;
+
   return (
     <>
-      <button onClick={() => setIsOpen(!isOpen)} className={cn("fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-premium flex items-center justify-center transition-all duration-300 hover:scale-110", isOpen ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground")} aria-label={isOpen ? "Close Luna" : "Open Luna"}>
+      <button onClick={() => setIsOpen(!isOpen)} className={cn("fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-premium flex items-center justify-center transition-all duration-300 hover:scale-110", isOpen ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground")} aria-label={isOpen ? "Close ResKonnect AI assistant" : "Open ResKonnect AI assistant"}>
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
       {isOpen && (
@@ -115,8 +119,8 @@ const ResBot = () => {
           <div className="bg-gradient-primary p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center"><Bot className="w-6 h-6 text-primary-foreground" /></div>
             <div className="flex-1">
-              <h3 className="font-semibold text-primary-foreground flex items-center gap-2">Luna <Sparkles className="w-4 h-4 text-yellow-300" /></h3>
-              <p className="text-xs text-primary-foreground/80 flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />ResKonnect Intelligence • Live data</p>
+              <h3 className="font-semibold text-primary-foreground flex items-center gap-2">ResKonnect AI <Sparkles className="w-4 h-4 text-yellow-300" /></h3>
+              <p className="text-xs text-primary-foreground/80 flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />Luna · Website agent · Live ResKonnect data</p>
             </div>
           </div>
           <ScrollArea className="h-80 p-4" ref={scrollRef}>
@@ -134,7 +138,7 @@ const ResBot = () => {
           <div className="px-4 pb-2 flex gap-2 flex-wrap">{quickQuestions.map((q) => <button key={q} onClick={() => void handleSend(q)} disabled={isTyping} className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground transition-colors disabled:opacity-50">{q}</button>)}</div>
           <div className="p-4 pt-2 border-t border-border">
             <div className="flex gap-2">
-              <Input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={user ? "Ask Luna about your ResKonnect account..." : "Ask Luna about ResKonnect..."} disabled={isTyping} className="flex-1" />
+              <Input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={user ? "Ask ResKonnect AI about your account..." : "Ask ResKonnect AI..."} disabled={isTyping} className="flex-1" />
               <Button onClick={() => void handleSend()} disabled={!input.trim() || isTyping} size="icon" className="shrink-0">{isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}</Button>
             </div>
           </div>
