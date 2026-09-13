@@ -1,30 +1,38 @@
 import { useEffect, useState } from "react";
 import { Bell, X } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { isPushSupported, pushPermission, subscribePush, ensureServiceWorker } from "@/lib/push";
+import { isNativeShell, isPushSupported, pushPermission, subscribePush } from "@/lib/push";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-const DISMISS_KEY = "rk_push_dismissed_at";
+const DISMISS_PREFIX = "rk_push_dismissed_at:";
+const ELIGIBLE_PATHS = ["/dashboard", "/profile", "/my-applications", "/applications", "/opportunities", "/wil"];
 
 export default function PushPrompt() {
   const [show, setShow] = useState(false);
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
-    ensureServiceWorker();
-    if (!isPushSupported()) return;
+    setShow(false);
+    if (isLoading || !user?.id || isNativeShell() || !isPushSupported()) return;
     if (pushPermission() !== "default") return;
-    const dismissed = Number(localStorage.getItem(DISMISS_KEY) || 0);
-    // re-show after 7 days
-    if (dismissed && Date.now() - dismissed < 7 * 86400 * 1000) return;
-    const t = setTimeout(() => setShow(true), 4000);
-    return () => clearTimeout(t);
-  }, []);
+    if (!ELIGIBLE_PATHS.some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`))) return;
 
-  if (!show) return null;
+    const key = `${DISMISS_PREFIX}${user.id}`;
+    const dismissed = Number(localStorage.getItem(key) || 0);
+    if (dismissed && Date.now() - dismissed < 7 * 86_400_000) return;
+
+    const timer = window.setTimeout(() => setShow(true), 6_000);
+    return () => window.clearTimeout(timer);
+  }, [isLoading, location.pathname, user?.id]);
+
+  if (!show || !user?.id) return null;
 
   const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    try { localStorage.setItem(`${DISMISS_PREFIX}${user.id}`, String(Date.now())); } catch {}
     setShow(false);
   };
 
@@ -33,27 +41,25 @@ export default function PushPrompt() {
     if (ok) {
       toast.success("Notifications enabled");
       setShow(false);
-    } else {
-      toast.error("Could not enable notifications");
-      dismiss();
+      return;
     }
+    toast.error("Notifications could not be enabled right now. Your account and app remain available.");
+    dismiss();
   };
 
   return (
-    <Card className="fixed bottom-4 right-4 z-50 p-4 max-w-sm shadow-lg border-primary/30 bg-card">
+    <Card className="fixed bottom-4 right-4 z-50 max-w-sm border-primary/30 bg-card p-4 shadow-lg">
       <div className="flex items-start gap-3">
-        <div className="rounded-full bg-primary/10 p-2"><Bell className="w-5 h-5 text-primary" /></div>
+        <div className="rounded-full bg-primary/10 p-2"><Bell className="h-5 w-5 text-primary" /></div>
         <div className="flex-1">
-          <h4 className="font-semibold text-sm">Get notified</h4>
-          <p className="text-xs text-muted-foreground mt-1">
-            Allow notifications for application updates, order status, deals and bursaries.
-          </p>
-          <div className="flex gap-2 mt-3">
-            <Button size="sm" onClick={enable}>Enable</Button>
+          <h4 className="text-sm font-semibold">Get account updates</h4>
+          <p className="mt-1 text-xs text-muted-foreground">Allow browser notifications for important application and ResKonnect account updates.</p>
+          <div className="mt-3 flex gap-2">
+            <Button size="sm" onClick={() => void enable()}>Enable</Button>
             <Button size="sm" variant="ghost" onClick={dismiss}>Not now</Button>
           </div>
         </div>
-        <button onClick={dismiss} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+        <button onClick={dismiss} className="text-muted-foreground hover:text-foreground" aria-label="Dismiss notification prompt"><X className="h-4 w-4" /></button>
       </div>
     </Card>
   );
