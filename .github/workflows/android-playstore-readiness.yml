@@ -15,6 +15,18 @@ on:
       - "src/components/DashboardLayout.tsx"
       - "src/components/MyResKonnectCommandCentre.tsx"
       - "src/components/StudentRoute.tsx"
+      - "src/contexts/AuthContext.tsx"
+      - "src/components/SiteHeader.tsx"
+      - "src/components/HomeJourneyBar.tsx"
+      - "src/components/PushPrompt.tsx"
+      - "src/lib/push.ts"
+      - "src/main.tsx"
+      - "vite.config.ts"
+      - "index.html"
+      - "supabase/config.toml"
+      - "supabase/functions/push-subscription/**"
+      - "supabase/functions/send-push/**"
+      - "scripts/android-v110-reliability-qa.mjs"
       - "src/App.tsx"
       - "scripts/android-playstore-readiness.mjs"
       - ".github/workflows/android-playstore-*.yml"
@@ -59,6 +71,9 @@ jobs:
       - name: Strict Android / Play audit
         run: node scripts/android-playstore-readiness.mjs --strict
 
+      - name: Android / web reliability audit
+        run: node scripts/android-v110-reliability-qa.mjs
+
       - name: Install pinned Capacitor toolchain without changing lockfile
         run: npm install --no-save --package-lock=false @capacitor/core@8.5.0 @capacitor/android@8.5.0 @capacitor/cli@8.5.0
 
@@ -70,8 +85,8 @@ jobs:
 
       - name: Compile API 36 release AAB
         env:
-          ANDROID_VERSION_CODE: "2"
-          ANDROID_VERSION_NAME: "1.0.1"
+          ANDROID_VERSION_CODE: "3"
+          ANDROID_VERSION_NAME: "1.1.0"
         run: gradle -p android bundleRelease --stacktrace
 
       - name: Verify release artifact exists
