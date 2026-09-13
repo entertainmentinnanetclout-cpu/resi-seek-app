@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import ContactDetailsGate from "@/components/ContactDetailsGate";
 import { DEPARTMENT_BY_KEY } from "@/lib/adminDepartments";
+import SafeRenderBoundary from "@/components/SafeRenderBoundary";
 
 export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading, staffRole, adminDepartments, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner } = useAuth();
@@ -22,7 +23,7 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
         system_operator: "/admin/system",
         support_agent: "/admin/operations",
       };
-      const departmentPath = adminDepartments[0] ? DEPARTMENT_BY_KEY[adminDepartments[0]].path : null;
+      const departmentPath = adminDepartments[0] ? DEPARTMENT_BY_KEY[adminDepartments[0]]?.path ?? null : null;
       navigate(departmentPath || hubMap[staffRole] || "/admin", { replace: true });
     } else if (!isLoading && !isStudent && (isRecruiter || isPendingRecruiter)) {
       if (isRecruiter) navigate("/recruit/dashboard", { replace: true });
@@ -43,5 +44,5 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!user || isTumeloPartner || staffRole || (!isStudent && (isRecruiter || isPendingRecruiter))) return null;
 
-  return <ContactDetailsGate>{children}</ContactDetailsGate>;
+  return <SafeRenderBoundary name="student-contact-gate" fallback={<>{children}</>}><ContactDetailsGate>{children}</ContactDetailsGate></SafeRenderBoundary>;
 };

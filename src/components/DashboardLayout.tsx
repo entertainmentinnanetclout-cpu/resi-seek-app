@@ -14,6 +14,7 @@ import CommandPalette from "@/components/CommandPalette";
 import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import DashboardUserManual from "@/components/manuals/DashboardUserManual";
 import WeakPasswordBanner from "@/components/security/WeakPasswordBanner";
+import SafeRenderBoundary from "@/components/SafeRenderBoundary";
 
 interface DashboardLayoutProps { children: ReactNode; }
 
@@ -102,7 +103,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <header className="hidden shrink-0 items-center justify-between border-b border-border bg-card p-4 md:flex">
           <CommandPalette />
           <div className="flex items-center gap-2">
-            {user && <NotificationCenter />}
+            {user && <SafeRenderBoundary name="dashboard-notifications"><NotificationCenter /></SafeRenderBoundary>}
             <ThemeToggle />
             {user ? <button onClick={() => navigate("/profile")} className="ml-1"><Avatar className="h-8 w-8 cursor-pointer transition-all hover:ring-2 hover:ring-primary"><AvatarImage src={profile?.profile_picture_url || undefined} /><AvatarFallback className="bg-primary text-xs text-primary-foreground">{profileInitials}</AvatarFallback></Avatar></button> : <Button size="sm" onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`)}>Sign In</Button>}
           </div>
@@ -114,7 +115,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {isAdmin && <Badge variant="destructive" className="shrink-0 gap-1"><Shield className="h-3 w-3" />Admin</Badge>}
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            {user && <NotificationCenter />}
+            {user && <SafeRenderBoundary name="dashboard-notifications-mobile"><NotificationCenter /></SafeRenderBoundary>}
             {user ? <button onClick={() => navigate("/profile")}><Avatar className="h-7 w-7"><AvatarImage src={profile?.profile_picture_url || undefined} /><AvatarFallback className="bg-primary text-xs text-primary-foreground">{profileInitials}</AvatarFallback></Avatar></button> : <Button size="sm" variant="default" onClick={() => navigate(`/auth?returnTo=${encodeURIComponent(location.pathname)}`)}>Sign In</Button>}
             <Sheet>
               <SheetTrigger asChild><Button variant="ghost" size="icon" aria-label="Open navigation"><Menu className="h-5 w-5" /></Button></SheetTrigger>
@@ -125,9 +126,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
         </header>
 
-        <main className="min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">{user && <WeakPasswordBanner returnTo={location.pathname} />}{children}</main>
+        <main className="min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto">{user && <SafeRenderBoundary name="weak-password-banner"><WeakPasswordBanner returnTo={location.pathname} /></SafeRenderBoundary>}{children}</main>
       </div>
-      {user && <DashboardUserManual />}
+      {user && <SafeRenderBoundary name="dashboard-user-manual"><DashboardUserManual /></SafeRenderBoundary>}
     </div>
   );
 };

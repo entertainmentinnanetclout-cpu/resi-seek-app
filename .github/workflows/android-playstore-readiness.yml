@@ -11,6 +11,10 @@ on:
       - "src/pages/Privacy.tsx"
       - "src/pages/AccountDeletion.tsx"
       - "src/pages/Profile.tsx"
+      - "src/pages/Dashboard.tsx"
+      - "src/components/DashboardLayout.tsx"
+      - "src/components/MyResKonnectCommandCentre.tsx"
+      - "src/components/StudentRoute.tsx"
       - "src/App.tsx"
       - "scripts/android-playstore-readiness.mjs"
       - ".github/workflows/android-playstore-*.yml"
@@ -66,8 +70,8 @@ jobs:
 
       - name: Compile API 36 release AAB
         env:
-          ANDROID_VERSION_CODE: "1"
-          ANDROID_VERSION_NAME: "1.0.0"
+          ANDROID_VERSION_CODE: "2"
+          ANDROID_VERSION_NAME: "1.0.1"
         run: gradle -p android bundleRelease --stacktrace
 
       - name: Verify release artifact exists

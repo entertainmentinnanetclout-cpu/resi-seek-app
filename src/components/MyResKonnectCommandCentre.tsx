@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
+import { safeRelativeTime, safeShortDate } from "@/lib/safeDates";
 import { ArrowRight, Bell, BrainCircuit, BriefcaseBusiness, Building2, CheckCircle2, Clock3, FileCheck2, Headphones, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,15 +8,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 
-const safePath = (value?: string | null, fallback = "/dashboard") => {
-  if (!value) return fallback;
+const safePath = (value?: unknown, fallback = "/dashboard") => {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) return fallback;
+  if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
   try {
-    const url = new URL(value, window.location.origin);
-    if (url.origin === window.location.origin || url.hostname === "www.reskonnect.org" || url.hostname === "reskonnect.org") {
+    const baseOrigin = typeof window !== "undefined" && /^https?:/i.test(window.location.origin)
+      ? window.location.origin
+      : "https://www.reskonnect.org";
+    const url = new URL(raw, baseOrigin);
+    if (url.hostname === "www.reskonnect.org" || url.hostname === "reskonnect.org") {
       return `${url.pathname}${url.search}${url.hash}`;
     }
   } catch {
-    if (value.startsWith("/") && !value.startsWith("//")) return value;
+    return fallback;
   }
   return fallback;
 };
@@ -28,20 +33,29 @@ const MyResKonnectCommandCentre = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [command, service, opportunity] = await Promise.all([
-      (supabase as any).rpc("my_reskonnect_command_centre"),
-      (supabase as any).rpc("my_reskonnect_service_centre"),
-      (supabase as any).rpc("reskonnect_opportunity_feed", { p_query: null, p_type: null, p_limit: 6 }),
-    ]);
-    if (command.error) console.error("Could not load My ResKonnect command centre", command.error);
-    if (service.error) console.error("Could not load My ResKonnect Service Centre summary", service.error);
-    if (opportunity.error) console.error("Could not load RG3 opportunity feed", opportunity.error);
-    setData({
-      ...(command.data || {}),
-      service_centre: service.data || { open_count: 0, requests: [] },
-      opportunity_engine: opportunity.data || { items: [] },
-    });
-    setLoading(false);
+    try {
+      const [command, service, opportunity] = await Promise.allSettled([
+        (supabase as any).rpc("my_reskonnect_command_centre"),
+        (supabase as any).rpc("my_reskonnect_service_centre"),
+        (supabase as any).rpc("reskonnect_opportunity_feed", { p_query: null, p_type: null, p_limit: 6 }),
+      ]);
+      const commandResult = command.status === "fulfilled" ? command.value : { data: null, error: command.reason };
+      const serviceResult = service.status === "fulfilled" ? service.value : { data: null, error: service.reason };
+      const opportunityResult = opportunity.status === "fulfilled" ? opportunity.value : { data: null, error: opportunity.reason };
+      if (commandResult.error) console.error("Could not load My ResKonnect command centre", commandResult.error);
+      if (serviceResult.error) console.error("Could not load My ResKonnect Service Centre summary", serviceResult.error);
+      if (opportunityResult.error) console.error("Could not load RG3 opportunity feed", opportunityResult.error);
+      setData({
+        ...(commandResult.data || {}),
+        service_centre: serviceResult.data || { open_count: 0, requests: [] },
+        opportunity_engine: opportunityResult.data || { items: [] },
+      });
+    } catch (error) {
+      console.error("My ResKonnect dashboard load failed safely", error);
+      setData({ service_centre: { open_count: 0, requests: [] }, opportunity_engine: { items: [] } });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { void load(); }, [load]);
@@ -171,7 +185,7 @@ const MyResKonnectCommandCentre = () => {
           <CardContent className="p-5 sm:p-6">
             <div className="flex items-center justify-between"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-primary">Opportunity feed</p><h2 className="mt-1 text-xl font-black">Relevant things to explore</h2></div><BriefcaseBusiness className="h-5 w-5 text-muted-foreground" /></div>
             <div className="mt-4 space-y-2">
-              {opportunities.length ? opportunities.slice(0, 5).map((item: any) => <Link key={`${item.source_type || item.kind}-${item.id}`} to={safePath(item.to_path, "/opportunities")} className="block rounded-2xl border p-4 transition hover:border-primary/35 hover:bg-primary/[0.025]"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-bold">{item.title}</p><p className="mt-1 text-xs text-muted-foreground">{item.organisation || item.opportunity_type || item.kind}</p></div>{(item.closing_date || item.closes_at) && <Badge variant="secondary">{new Date(item.closing_date || item.closes_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}</Badge>}</div><p className="mt-2 text-xs leading-5 text-muted-foreground">{item.match_reason || "Current verified opportunity on ResKonnect"}</p></Link>) : <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">No current verified opportunities match this snapshot yet. Open the Opportunity Engine to search the live catalog.</div>}
+              {opportunities.length ? opportunities.slice(0, 5).map((item: any) => <Link key={`${item.source_type || item.kind}-${item.id}`} to={safePath(item.to_path, "/opportunities")} className="block rounded-2xl border p-4 transition hover:border-primary/35 hover:bg-primary/[0.025]"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-bold">{item.title}</p><p className="mt-1 text-xs text-muted-foreground">{item.organisation || item.opportunity_type || item.kind}</p></div>{(item.closing_date || item.closes_at) && <Badge variant="secondary">{safeShortDate(item.closing_date || item.closes_at)}</Badge>}</div><p className="mt-2 text-xs leading-5 text-muted-foreground">{item.match_reason || "Current verified opportunity on ResKonnect"}</p></Link>) : <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">No current verified opportunities match this snapshot yet. Open the Opportunity Engine to search the live catalog.</div>}
             </div>
           </CardContent>
         </Card>
@@ -180,7 +194,7 @@ const MyResKonnectCommandCentre = () => {
           <CardContent className="p-5 sm:p-6">
             <div className="flex items-center justify-between"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-primary">Your journey</p><h2 className="mt-1 text-xl font-black">Recent verified activity</h2></div><Clock3 className="h-5 w-5 text-muted-foreground" /></div>
             <div className="mt-4 space-y-3">
-              {timeline.length ? timeline.slice(0, 7).map((item: any) => <div key={item.id} className="flex gap-3"><div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" /><div className="min-w-0"><p className="text-sm font-semibold">{item.title}</p>{item.summary && <p className="truncate text-xs text-muted-foreground">{item.summary}</p>}<p className="mt-1 text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(item.occurred_at), { addSuffix: true })}</p></div></div>) : <p className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">Your verified ResKonnect activity will appear here as you use services.</p>}
+              {timeline.length ? timeline.slice(0, 7).map((item: any) => <div key={item.id} className="flex gap-3"><div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" /><div className="min-w-0"><p className="text-sm font-semibold">{item.title}</p>{item.summary && <p className="truncate text-xs text-muted-foreground">{item.summary}</p>}<p className="mt-1 text-[10px] text-muted-foreground">{safeRelativeTime(item.occurred_at)}</p></div></div>) : <p className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">Your verified ResKonnect activity will appear here as you use services.</p>}
             </div>
           </CardContent>
         </Card>

@@ -10,7 +10,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
+import { safeRelativeTime } from "@/lib/safeDates";
 
 const NotificationCenter = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useRealtimeNotifications();
@@ -120,7 +120,7 @@ const NotificationCenter = () => {
                         {notification.message}
                       </p>
                       <p className="text-[10px] text-muted-foreground/70 mt-1">
-                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                        {safeRelativeTime(notification.created_at)}
                       </p>
                     </div>
                     {!notification.is_read && (
