@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,31 +44,8 @@ const Updates = () => {
     }
   };
 
-  // Fallback mock data when no notifications exist
-  const mockUpdates = [
-    {
-      id: "mock-1",
-      type: "news",
-      title: "Welcome to ResKonnect!",
-      message: "Start your accommodation search by visiting Find My Res. Complete your profile to get started with applications.",
-      created_at: new Date().toISOString(),
-      is_read: true,
-      user_id: "",
-      metadata: {},
-    },
-    {
-      id: "mock-2",
-      type: "alert",
-      title: "Complete Your Profile",
-      message: "Upload your documents and fill in your details to start applying for residences.",
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      is_read: true,
-      user_id: "",
-      metadata: {},
-    },
-  ];
+  const displayNotifications = notifications;
 
-  const displayNotifications = notifications.length > 0 ? notifications : mockUpdates;
 
   return (
     <DashboardLayout>
@@ -80,7 +56,7 @@ const Updates = () => {
             <div>
               <h1 className="text-3xl font-bold mb-2">Updates & Notifications</h1>
               <p className="text-muted-foreground">
-                Stay informed about your applications, roommate matches, and more
+                Verified updates from your ResKonnect journey
               </p>
             </div>
             {unreadCount > 0 && (
@@ -145,7 +121,7 @@ const Updates = () => {
                     <Bell className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                     <p className="text-muted-foreground">No notifications yet</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      You'll receive updates about your applications and matches here
+                      Important ResKonnect actions and account updates will appear here
                     </p>
                   </CardContent>
                 </Card>
