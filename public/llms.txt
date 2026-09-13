@@ -36,6 +36,11 @@ ResKonnect Opportunity covers study applications, APS and Course Match, bursarie
 - Bursaries: https://www.reskonnect.org/bursaries
 - Career & Education: https://www.reskonnect.org/career-education
 
+The ResKonnect Opportunity Engine should show only current published/active records. A signed-in relevance score is contextual guidance based on saved ResKonnect profile data and is never a claim of eligibility, admission, funding, shortlisting or placement. Official providers control those decisions.
+
+### My ResKonnect service delivery
+Signed-in students can create and track ResKonnect service requests in the My ResKonnect Service Centre. Requests are routed internally to a responsible department and expose customer-visible status history. Internal review targets are operational targets, not guaranteed resolution times.
+
 ## Partners
 - Partners: https://www.reskonnect.org/partners
 - Landlords: https://www.reskonnect.org/partners/landlords
