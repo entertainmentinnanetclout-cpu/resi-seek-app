@@ -37,6 +37,8 @@ const PrivateCollegeApplication = lazy(() => import("./pages/public/PrivateColle
 const ApplicationsChecker = lazy(() => import("./pages/public/ApplicationsChecker"));
 const OpportunitiesPillar = lazy(() => import("./pages/public/Opportunities"));
 const OpportunitiesWil = lazy(() => import("./pages/public/OpportunitiesWil"));
+const PublicOpportunityDetail = lazy(() => import("./pages/public/PublicOpportunityDetail"));
+const ServiceCentre = lazy(() => import("./pages/ServiceCentre"));
 const PartnersPillar = lazy(() => import("./pages/public/Partners"));
 const PartnersLandlords = lazy(() => import("./pages/public/PartnersLandlords"));
 const PartnersInstitutions = lazy(() => import("./pages/public/PartnersInstitutions"));
@@ -177,6 +179,7 @@ const App = () => {
                     <Route path="/career-education/tumelo" element={<TumeloCareerEducation />} />
                     <Route path="/opportunities" element={<OpportunitiesPillar />} />
                     <Route path="/opportunities/wil" element={<OpportunitiesWil />} />
+                    <Route path="/opportunity/:slug" element={<PublicOpportunityDetail />} />
                     <Route path="/partners" element={<PartnersPillar />} />
                     <Route path="/partners/landlords" element={<PartnersLandlords />} />
                     <Route path="/partners/institutions" element={<PartnersInstitutions />} />
@@ -228,6 +231,7 @@ const App = () => {
                     <Route path="/wil" element={<StudentRoute><MyWIL /></StudentRoute>} />
                     <Route path="/setup-profile" element={<StudentRoute><ProfileSetup /></StudentRoute>} />
                     <Route path="/dashboard/updates" element={<StudentRoute><Updates /></StudentRoute>} />
+                    <Route path="/dashboard/services" element={<StudentRoute><ServiceCentre /></StudentRoute>} />
                     <Route path="/my-discount-codes" element={<StudentRoute><MyDiscountCodes /></StudentRoute>} />
                     <Route path="/admin" element={<ProtectedRoute><DepartmentRoute department="executive"><AdminExecutiveOffice /></DepartmentRoute></ProtectedRoute>} />
                     <Route path="/admin/executive" element={<ProtectedRoute><DepartmentRoute department="executive"><AdminExecutiveOffice /></DepartmentRoute></ProtectedRoute>} />

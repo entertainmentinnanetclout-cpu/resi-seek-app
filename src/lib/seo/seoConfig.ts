@@ -91,10 +91,10 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     keywords: "university applications South Africa, TVET applications, APS checker, Course Match, application readiness",
   },
   "/opportunities": {
-    title: "Student WIL, Internships & Opportunities | ResKonnect",
+    title: "Student Opportunities, Bursaries & WIL | ResKonnect Opportunity",
     description:
-      "Discover WIL placements, internships, SETA-linked programmes, bursaries and graduate opportunities through ResKonnect.",
-    keywords: "WIL opportunities, internships South Africa, SETA opportunities, graduate opportunities, bursaries",
+      "Explore verified current bursaries, graduate programmes, WIL and student opportunities through the ResKonnect Opportunity Engine, with signed-in relevance guidance and official application routes.",
+    keywords: "student opportunities South Africa, bursaries 2027, WIL opportunities, graduate programmes, internships, ResKonnect Opportunity",
   },
   "/opportunities/internships": {
     title: "Student Internships & Graduate Opportunities | ResKonnect",

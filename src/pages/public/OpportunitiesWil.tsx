@@ -23,7 +23,7 @@ export const OpportunitiesWil: React.FC = () => {
               Workplace Integrated Learning (WIL) Support
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Unlock your graduation. We connect N6 engineering, business management, hospitality, and vocational students with vetted industry partners to complete required logbooks.
+              Prepare for the practical experience component of your qualification. ResKonnect supports WIL readiness, partner engagement and available placement pathways; actual placement depends on current host capacity and confirmed programme requirements.
             </p>
           </div>
 
@@ -31,17 +31,17 @@ export const OpportunitiesWil: React.FC = () => {
             <div className="space-y-6">
               <h2 className="text-3xl font-bold tracking-tight">Bridge the Practical Experience Gap</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Many TVET students complete their theory modules (N4, N5, N6) but struggle to find the 18 months of practical training needed to obtain their National N-Diploma. ResKonnect matches eligible applicants with corporate partners looking for motivated interns.
+                Many TVET and University of Technology students need workplace experience as part of their qualification journey. ResKonnect helps organise readiness information, documents and verified host opportunities when they are available, without promising a placement that depends on a third party.
               </p>
 
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 mt-0.5 text-primary shrink-0" />
-                  <span className="text-sm font-semibold">Vetted corporate hosts with verified SETA compliance</span>
+                  <span className="text-sm font-semibold">Current host and programme requirements are confirmed before a placement is presented as available</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 mt-0.5 text-primary shrink-0" />
-                  <span className="text-sm font-semibold">Mentor assistance to align and track logbook progress</span>
+                  <span className="text-sm font-semibold">Readiness and logbook support where the programme or host requires it</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 mt-0.5 text-primary shrink-0" />
@@ -65,7 +65,7 @@ export const OpportunitiesWil: React.FC = () => {
                   <UserCheck className="h-10 w-10 text-primary shrink-0" />
                   <div>
                     <h3 className="font-bold text-sm">Graduation Readiness</h3>
-                    <p className="text-xs text-muted-foreground mt-1">Get verified support to submit your N6 logs on schedule and secure your official DHET diploma.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Keep your WIL readiness information and required records organised while following the official institution and host process.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -75,7 +75,7 @@ export const OpportunitiesWil: React.FC = () => {
                   <Shield className="h-10 w-10 text-primary shrink-0" />
                   <div>
                     <h3 className="font-bold text-sm">Safe Working Environments</h3>
-                    <p className="text-xs text-muted-foreground mt-1">We inspect workplaces to ensure COIDA compliance, safe transport availability, and standard stipends.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Safety, compliance, transport and stipend terms must be confirmed with the host and relevant programme before placement.</p>
                   </div>
                 </CardContent>
               </Card>

@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, ClipboardList, Home, Workflow } from "lucide-react";
+import { Activity, ClipboardList, Headphones, Home, Workflow } from "lucide-react";
 import { AdminOnboardingHub } from "@/components/admin/onboarding/AdminOnboardingHubContent";
 import AutomationQueueContent from "@/components/admin/AutomationQueueContent";
 import AdminOSResidenceReadiness from "@/components/admin/AdminOSResidenceReadiness";
+import AdminServiceRequestQueue from "@/components/admin/AdminServiceRequestQueue";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -24,11 +25,13 @@ export default function AdminOperationsOffice(){
       <Tabs defaultValue="tasks">
         <TabsList className="flex h-auto flex-wrap gap-1">
           <TabsTrigger value="tasks" className="gap-2"><ClipboardList className="h-4 w-4"/>Execution Queue</TabsTrigger>
+          <TabsTrigger value="service" className="gap-2"><Headphones className="h-4 w-4"/>Service Centre</TabsTrigger>
           <TabsTrigger value="onboarding" className="gap-2"><Activity className="h-4 w-4"/>Onboarding & Enquiries</TabsTrigger>
           <TabsTrigger value="automation" className="gap-2"><Workflow className="h-4 w-4"/>Automation Queue</TabsTrigger>
           <TabsTrigger value="readiness" className="gap-2"><Home className="h-4 w-4"/>Residence Readiness</TabsTrigger>
         </TabsList>
         <TabsContent value="tasks"><OperationsTaskQueue/></TabsContent>
+        <TabsContent value="service"><AdminServiceRequestQueue title="Cross-company My ResKonnect service queue"/></TabsContent>
         <TabsContent value="onboarding"><AdminOnboardingHub/></TabsContent>
         <TabsContent value="automation"><AutomationQueueContent/></TabsContent>
         <TabsContent value="readiness"><AdminOSResidenceReadiness/></TabsContent>

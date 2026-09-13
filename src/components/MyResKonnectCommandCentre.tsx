@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowRight, Bell, BrainCircuit, BriefcaseBusiness, Building2, CheckCircle2, Clock3, FileCheck2, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowRight, Bell, BrainCircuit, BriefcaseBusiness, Building2, CheckCircle2, Clock3, FileCheck2, Headphones, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,9 +28,19 @@ const MyResKonnectCommandCentre = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data: payload, error } = await (supabase as any).rpc("my_reskonnect_command_centre");
-    if (!error) setData(payload || null);
-    else console.error("Could not load My ResKonnect command centre", error);
+    const [command, service, opportunity] = await Promise.all([
+      (supabase as any).rpc("my_reskonnect_command_centre"),
+      (supabase as any).rpc("my_reskonnect_service_centre"),
+      (supabase as any).rpc("reskonnect_opportunity_feed", { p_query: null, p_type: null, p_limit: 6 }),
+    ]);
+    if (command.error) console.error("Could not load My ResKonnect command centre", command.error);
+    if (service.error) console.error("Could not load My ResKonnect Service Centre summary", service.error);
+    if (opportunity.error) console.error("Could not load RG3 opportunity feed", opportunity.error);
+    setData({
+      ...(command.data || {}),
+      service_centre: service.data || { open_count: 0, requests: [] },
+      opportunity_engine: opportunity.data || { items: [] },
+    });
     setLoading(false);
   }, []);
 
@@ -39,7 +49,9 @@ const MyResKonnectCommandCentre = () => {
   const profile = data?.profile || {};
   const living = data?.living || {};
   const nextAction = data?.next_action || null;
-  const opportunities = Array.isArray(data?.opportunities) ? data.opportunities : [];
+  const opportunities = Array.isArray(data?.opportunity_engine?.items) ? data.opportunity_engine.items : (Array.isArray(data?.opportunities) ? data.opportunities : []);
+  const serviceCentre = data?.service_centre || { open_count: 0, requests: [] };
+  const openServiceRequests = Number(serviceCentre.open_count || 0);
   const timeline = Array.isArray(data?.timeline) ? data.timeline : [];
   const notifications = Array.isArray(data?.notifications) ? data.notifications : [];
   const recentApplications = Array.isArray(living?.recent) ? living.recent : [];
@@ -96,6 +108,22 @@ const MyResKonnectCommandCentre = () => {
         </Card>
       </section>
 
+      <section className="overflow-hidden rounded-[26px] border bg-card shadow-sm">
+        <div className="grid gap-0 lg:grid-cols-[1fr_auto]">
+          <div className="flex items-start gap-4 p-5 sm:p-6">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-sky-500/10 text-sky-700 dark:text-sky-300"><Headphones className="h-5 w-5" /></div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-primary">Service delivery</p>
+              <h2 className="mt-1 text-xl font-black">{openServiceRequests ? `${openServiceRequests} open service request${openServiceRequests === 1 ? "" : "s"}` : "Need ResKonnect help?"}</h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">{openServiceRequests ? "Track verified request status, department routing and customer-visible activity from one place." : "Create one tracked request and follow it from submission to resolution instead of repeating the issue across channels."}</p>
+            </div>
+          </div>
+          <div className="flex items-center border-t bg-muted/25 p-5 lg:border-l lg:border-t-0">
+            <Button asChild variant="outline" className="w-full rounded-full lg:w-auto"><Link to="/dashboard/services">{openServiceRequests ? "Track requests" : "Open Service Centre"}<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+          </div>
+        </div>
+      </section>
+
       <section className="grid gap-4 lg:grid-cols-3">
         <Card className="group overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg">
           <CardContent className="p-5 sm:p-6">
@@ -121,7 +149,7 @@ const MyResKonnectCommandCentre = () => {
           <CardContent className="p-5 sm:p-6">
             <div className="flex items-start justify-between"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-amber-500/10 text-amber-700 dark:text-amber-300"><BriefcaseBusiness className="h-5 w-5" /></div><Badge variant="outline">Opportunity</Badge></div>
             <h2 className="mt-5 text-xl font-black">What comes next</h2>
-            <p className="mt-2 min-h-12 text-sm leading-6 text-muted-foreground">{opportunities.length ? `${opportunities.length} current opportunities are ready to explore.` : "Explore bursaries, WIL and verified opportunity pathways."}</p>
+            <p className="mt-2 min-h-12 text-sm leading-6 text-muted-foreground">{opportunities.length ? `${opportunities.length} verified current opportunities are ready to explore.` : "Explore bursaries, WIL and verified opportunity pathways."}</p>
             <div className="mt-4 rounded-2xl bg-muted/50 p-3 text-xs leading-5 text-muted-foreground">{profile.course ? `Your course context: ${profile.course}` : "Add your course to improve opportunity relevance."}</div>
             <Button asChild variant="outline" className="mt-5 w-full rounded-full"><Link to="/opportunities">Explore opportunities<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
           </CardContent>
@@ -143,7 +171,7 @@ const MyResKonnectCommandCentre = () => {
           <CardContent className="p-5 sm:p-6">
             <div className="flex items-center justify-between"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-primary">Opportunity feed</p><h2 className="mt-1 text-xl font-black">Relevant things to explore</h2></div><BriefcaseBusiness className="h-5 w-5 text-muted-foreground" /></div>
             <div className="mt-4 space-y-2">
-              {opportunities.length ? opportunities.slice(0, 5).map((item: any) => <Link key={`${item.kind}-${item.id}`} to={safePath(item.to_path, "/opportunities")} className="block rounded-2xl border p-4 transition hover:border-primary/35 hover:bg-primary/[0.025]"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-bold">{item.title}</p><p className="mt-1 text-xs text-muted-foreground">{item.organisation || item.kind}</p></div>{item.closes_at && <Badge variant="secondary">{new Date(item.closes_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}</Badge>}</div><p className="mt-2 text-xs leading-5 text-muted-foreground">{item.match_reason || "Available through ResKonnect"}</p></Link>) : <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">No personalised opportunity records are published for your profile yet. Bursaries and WIL pathways remain available from the Opportunities hub.</div>}
+              {opportunities.length ? opportunities.slice(0, 5).map((item: any) => <Link key={`${item.source_type || item.kind}-${item.id}`} to={safePath(item.to_path, "/opportunities")} className="block rounded-2xl border p-4 transition hover:border-primary/35 hover:bg-primary/[0.025]"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-bold">{item.title}</p><p className="mt-1 text-xs text-muted-foreground">{item.organisation || item.opportunity_type || item.kind}</p></div>{(item.closing_date || item.closes_at) && <Badge variant="secondary">{new Date(item.closing_date || item.closes_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}</Badge>}</div><p className="mt-2 text-xs leading-5 text-muted-foreground">{item.match_reason || "Current verified opportunity on ResKonnect"}</p></Link>) : <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">No current verified opportunities match this snapshot yet. Open the Opportunity Engine to search the live catalog.</div>}
             </div>
           </CardContent>
         </Card>
