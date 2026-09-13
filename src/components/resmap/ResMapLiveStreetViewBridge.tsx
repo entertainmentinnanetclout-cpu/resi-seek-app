@@ -149,18 +149,36 @@ export default function ResMapLiveStreetViewBridge() {
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
   const [message, setMessage] = useState<string | null>(null);
 
+  const coords = useMemo(() => snapshot?.route?.geometry?.coordinates || [], [snapshot]);
+  const routeIsActive = Boolean(snapshot && coords.length >= 2);
+  const googleConfigured = Boolean(config?.google_maps_enabled && config?.google_maps_browser_key);
+
   useEffect(() => {
-    const update = () => setSnapshot(readSnapshot());
+    let timer: number | undefined;
+    let cancelled = false;
+    const update = () => {
+      if (cancelled) return;
+      const next = readSnapshot();
+      setSnapshot(next);
+      timer = window.setTimeout(update, next ? 1_000 : 3_500);
+    };
     update();
-    const timer = window.setInterval(update, 750);
-    window.addEventListener("storage", update);
+    const onStorage = () => {
+      if (timer) window.clearTimeout(timer);
+      update();
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("rk:resmap-navigation", onStorage as EventListener);
     return () => {
-      window.clearInterval(timer);
-      window.removeEventListener("storage", update);
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("rk:resmap-navigation", onStorage as EventListener);
     };
   }, []);
 
   useEffect(() => {
+    if (!routeIsActive || config) return;
     let active = true;
     void (supabase as any).from("resmap_map_config")
       .select("google_maps_enabled,google_maps_browser_key")
@@ -168,11 +186,7 @@ export default function ResMapLiveStreetViewBridge() {
       .maybeSingle()
       .then(({ data }: any) => { if (active) setConfig(data || null); });
     return () => { active = false; };
-  }, []);
-
-  const coords = useMemo(() => snapshot?.route?.geometry?.coordinates || [], [snapshot]);
-  const routeIsActive = Boolean(snapshot && coords.length >= 2);
-  const googleConfigured = Boolean(config?.google_maps_enabled && config?.google_maps_browser_key);
+  }, [routeIsActive, config]);
 
   const resolvePanorama = useCallback(async (force = false) => {
     if (!open || !panoramaNodeRef.current || !config?.google_maps_browser_key || coords.length < 2) return;
