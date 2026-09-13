@@ -330,6 +330,19 @@ const Profile = () => {
                   </div>
                 </AccordionItem>
 
+                <AccordionItem title="Account & Data Controls" description="Manage privacy rights and your ResKonnect account." id="account_data_controls">
+                  <div className="space-y-3">
+                    <div className="rounded-xl border bg-muted/30 p-4">
+                      <p className="text-sm font-semibold">Privacy and account deletion</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">Review how ResKonnect handles your information or request deletion of your account and associated data, subject to lawful retention requirements.</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button type="button" variant="outline" size="sm" asChild><Link to="/privacy">Privacy Policy</Link></Button>
+                        <Button type="button" variant="destructive" size="sm" asChild><Link to="/delete-account">Request account deletion</Link></Button>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionItem>
+
                 <AccordionItem title="Academic Classification" description="Keep your academic year and intake context accurate for accommodation services." id="academic_context">
                   <div className="space-y-4">
                     <div className="rounded-xl border bg-muted/30 p-3 text-xs text-muted-foreground">
