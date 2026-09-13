@@ -10,28 +10,27 @@ import HomeJourneyBar from "@/components/HomeJourneyBar";
 
 export const PUBLIC_NAV = [
   {
-    label: "Accommodation",
-    to: "/find",
+    label: "Living",
+    to: "/living",
     children: [
       { label: "Find My Res", to: "/find" },
       { label: "2027 Reservations", to: "/find?reserve=2027" },
-      { label: "Demand Network", to: "/accommodation-request" },
+      { label: "Private Rentals", to: "/living/private-rentals" },
+      { label: "Roommates", to: "/roommates" },
+      { label: "Housing Intelligence", to: "/housing-intelligence" },
     ],
   },
+  { label: "AI", to: "/ai" },
   {
-    label: "Applications",
-    to: "/apply",
+    label: "Opportunity",
+    to: "/opportunities",
     children: [
-      { label: "Application Journey", to: "/apply" },
-      { label: "APS & Programme Checker", to: "/applications/checker" },
+      { label: "Applications & Course Match", to: "/apply" },
+      { label: "WIL & Opportunities", to: "/opportunities/wil" },
+      { label: "Bursaries", to: "/bursaries" },
+      { label: "Career & Education", to: "/career-education" },
     ],
   },
-  {
-    label: "Career & Education",
-    to: "/career-education",
-    children: [{ label: "Tumelo | Career & Education", to: "/career-education/tumelo" }],
-  },
-  { label: "Opportunities", to: "/opportunities" },
   {
     label: "Partners",
     to: "/partners",
@@ -118,11 +117,12 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
                   <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 [-webkit-overflow-scrolling:touch]">
                     <div className="flex flex-col gap-2">
                       <SheetClose asChild><Link to="/find?reserve=2027" className="mb-1 flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-3 font-bold text-primary"><CalendarDays className="h-4 w-4 shrink-0" /> 2027 Accommodation Reservations</Link></SheetClose>
-                      <div className="grid grid-cols-2 gap-2 pb-3">
-                        <SheetClose asChild><Button onClick={() => navigate("/find")}>Accommodation</Button></SheetClose>
-                        <SheetClose asChild><Button variant="outline" onClick={() => navigate("/apply")}>Applications</Button></SheetClose>
+                      <div className="grid grid-cols-3 gap-2 pb-3">
+                        <SheetClose asChild><Button onClick={() => navigate("/living")}>Living</Button></SheetClose>
+                        <SheetClose asChild><Button variant="outline" onClick={() => navigate("/ai")}>AI</Button></SheetClose>
+                        <SheetClose asChild><Button variant="outline" onClick={() => navigate("/opportunities")}>Opportunity</Button></SheetClose>
                       </div>
-                      {PUBLIC_NAV.filter((item) => !["/find", "/apply"].includes(item.to)).map((item) => {
+                      {PUBLIC_NAV.filter((item) => !["/living", "/ai", "/opportunities"].includes(item.to)).map((item) => {
                         const children = "children" in item ? item.children : undefined;
                         return <div key={item.to} className="rounded-xl border-b border-border/60 pb-1 last:border-0"><SheetClose asChild><Link to={item.to} className="block rounded-lg px-3 py-3 text-base font-medium transition-colors hover:bg-muted">{item.label}</Link></SheetClose>{children?.map((child) => <SheetClose key={child.to} asChild><Link to={child.to} className="ml-3 block rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-primary">{child.label}</Link></SheetClose>)}</div>;
                       })}
