@@ -68,7 +68,11 @@ export default defineConfig(({ mode }) => {
             ],
           },
           workbox: {
-            maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+            // Keep install fast: precache only the shell. Route JS, maps and
+            // large media are cached on demand instead of blocking first use.
+            globPatterns: ["**/*.{html,css,woff,woff2,ico}"],
+            importScripts: ["/push-sw.js"],
+            maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
             cleanupOutdatedCaches: true,
             clientsClaim: true,
             skipWaiting: true,
@@ -91,8 +95,8 @@ export default defineConfig(({ mode }) => {
                 urlPattern: ({ request }) => request.mode === "navigate",
                 handler: "NetworkFirst",
                 options: {
-                  cacheName: "navigation-pages-v2",
-                  networkTimeoutSeconds: 4,
+                  cacheName: "navigation-pages-v3",
+                  networkTimeoutSeconds: 2,
                   expiration: {
                     maxEntries: 40,
                     maxAgeSeconds: 60 * 60 * 24,
@@ -106,7 +110,7 @@ export default defineConfig(({ mode }) => {
                 urlPattern: /\.(js|css|png|jpg|jpeg|svg|webp|woff|woff2|ttf)$/,
                 handler: "CacheFirst",
                 options: {
-                  cacheName: "static-assets-v2",
+                  cacheName: "static-assets-v3",
                   expiration: {
                     maxEntries: 160,
                     maxAgeSeconds: 60 * 60 * 24 * 30,
