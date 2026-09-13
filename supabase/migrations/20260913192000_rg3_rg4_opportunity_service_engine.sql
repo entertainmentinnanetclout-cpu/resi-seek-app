@@ -454,7 +454,7 @@ with check (
   or public.has_admin_department_access('executive')
 );
 
-revoke all on public.student_requests from anon;
+revoke all on public.student_requests from public,anon;
 revoke insert,delete on public.student_requests from authenticated;
 grant select,update on public.student_requests to authenticated;
 
@@ -475,6 +475,9 @@ begin
   return new;
 end;
 $$;
+
+revoke all on function public.rg4_student_request_before_update() from public,anon,authenticated;
+grant execute on function public.rg4_student_request_before_update() to service_role;
 
 drop trigger if exists rg4_student_request_before_update_trg on public.student_requests;
 create trigger rg4_student_request_before_update_trg
@@ -529,6 +532,9 @@ begin
   return new;
 end;
 $$;
+
+revoke all on function public.rg4_student_request_after_update() from public,anon,authenticated;
+grant execute on function public.rg4_student_request_after_update() to service_role;
 
 drop trigger if exists rg4_student_request_after_update_trg on public.student_requests;
 create trigger rg4_student_request_after_update_trg
