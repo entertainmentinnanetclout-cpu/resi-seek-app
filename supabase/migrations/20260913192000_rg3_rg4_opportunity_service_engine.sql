@@ -513,6 +513,24 @@ begin
     );
 
     if new.status is distinct from old.status then
+      update public.staff_tasks
+      set
+        status=case
+          when lower(coalesce(new.status,'')) in ('resolved','closed','completed') then 'completed'
+          when lower(coalesce(new.status,''))='waiting_customer' then 'waiting'
+          else 'in_progress'
+        end,
+        next_action=case
+          when lower(coalesce(new.status,'')) in ('resolved','closed','completed') then coalesce(new.resolution_summary,'Customer request resolved')
+          when lower(coalesce(new.status,''))='waiting_customer' then 'Waiting for customer response'
+          else 'Continue service request'
+        end,
+        updated_at=now(),
+        metadata=coalesce(metadata,'{}'::jsonb)||jsonb_build_object('rg4_request_status',new.status,'rg4_synced_at',now())
+      where source_table='student_requests'
+        and source_id=new.id
+        and status not in ('cancelled','completed');
+
       insert into public.notifications(user_id,title,message,is_read,type,metadata,created_at)
       values(
         new.user_id,
