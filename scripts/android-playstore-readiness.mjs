@@ -1,91 +1,90 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const root = process.cwd();
-const strict = process.argv.includes("--strict");
-const findings = [];
+const root=process.cwd();
+const strict=process.argv.includes("--strict");
+const findings=[];
+const exists=(p)=>fs.existsSync(path.join(root,p));
+const read=(p)=>exists(p)?fs.readFileSync(path.join(root,p),"utf8"):"";
+const json=(p)=>{try{return JSON.parse(read(p)||"{}");}catch{return {};}};
+const add=(level,check,message)=>findings.push({level,check,message});
+const pass=(check,message)=>add("PASS",check,message);
+const block=(check,message)=>add("BLOCKER",check,message);
+const warn=(check,message)=>add("WARN",check,message);
 
-const exists = (relative) => fs.existsSync(path.join(root, relative));
-const read = (relative) => exists(relative) ? fs.readFileSync(path.join(root, relative), "utf8") : "";
-const add = (level, check, message) => findings.push({ level, check, message });
+const config=json("capacitor.config.json");
+const release=json("native/android-release.json");
+const vars=read("android/variables.gradle");
+const gradle=read("android/app/build.gradle");
+const manifest=read("android/app/src/main/AndroidManifest.xml");
+const app=read("src/App.tsx");
+const profile=read("src/pages/Profile.tsx");
+const privacy=read("src/pages/Privacy.tsx");
+const auth=read("src/pages/Auth.tsx");
+const workflow=read(".github/workflows/android-playstore-readiness.yml");
+const signedWorkflow=read(".github/workflows/android-playstore-release.yml");
 
-const capacitorConfig = ["capacitor.config.ts", "capacitor.config.js", "capacitor.config.json"].find(exists);
-if (!capacitorConfig) add("BLOCKER", "Capacitor config", "No capacitor.config.* file is committed.");
-else add("PASS", "Capacitor config", capacitorConfig);
+if(config.appId==="org.reskonnect.app"&&release.packageId===config.appId&&gradle.includes('applicationId "org.reskonnect.app"')) pass("Package identity","org.reskonnect.app is consistent across Capacitor, release manifest and Gradle.");
+else block("Package identity","Capacitor, release manifest and Gradle applicationId must all equal org.reskonnect.app.");
 
-if (!exists("android")) add("BLOCKER", "Android project", "No android/ native project is committed.");
-else add("PASS", "Android project", "android/ exists");
+if(config.appName==="ResKonnect"&&config.webDir==="dist") pass("Capacitor config","ResKonnect + dist configured.");
+else block("Capacitor config","appName/webDir are not release-ready.");
 
-const gradleCandidates = ["android/app/build.gradle", "android/app/build.gradle.kts"];
-const appGradle = gradleCandidates.find(exists);
-if (!appGradle) {
-  add("BLOCKER", "App Gradle", "No Android app build.gradle/build.gradle.kts was found.");
-} else {
-  const gradle = read(appGradle);
-  const targetMatch = gradle.match(/targetSdk(?:Version)?\s*[= ]\s*(\d+)/) || gradle.match(/targetSdk\s*=\s*(\d+)/);
-  const compileMatch = gradle.match(/compileSdk(?:Version)?\s*[= ]\s*(\d+)/) || gradle.match(/compileSdk\s*=\s*(\d+)/);
-  const target = targetMatch ? Number(targetMatch[1]) : null;
-  const compile = compileMatch ? Number(compileMatch[1]) : null;
-
-  if (target == null) add("WARN", "targetSdk", "Could not statically resolve targetSdk. It may be inherited from variables.gradle.");
-  else if (target < 36) add("BLOCKER", "targetSdk", `targetSdk ${target} is below Google Play's current new-app requirement of API 36.`);
-  else add("PASS", "targetSdk", `API ${target}`);
-
-  if (compile == null) add("WARN", "compileSdk", "Could not statically resolve compileSdk. It may be inherited from variables.gradle.");
-  else if (compile < 36) add("BLOCKER", "compileSdk", `compileSdk ${compile} should be upgraded to at least API 36.`);
-  else add("PASS", "compileSdk", `API ${compile}`);
+const sdk=(name)=>Number(vars.match(new RegExp(name+"\\s*=\\s*(\\d+)"))?.[1]||0);
+for(const [label,value,min] of [["minSdk",sdk("minSdkVersion"),24],["compileSdk",sdk("compileSdkVersion"),36],["targetSdk",sdk("targetSdkVersion"),36]]){
+  if(value>=min) pass(label,String(value)); else block(label,`${value||"missing"}; requires at least ${min}.`);
 }
 
-const manifest = "android/app/src/main/AndroidManifest.xml";
-if (!exists(manifest)) add("BLOCKER", "AndroidManifest", "android/app/src/main/AndroidManifest.xml is missing.");
-else {
-  const xml = read(manifest);
-  add("PASS", "AndroidManifest", manifest);
-  if (!/android\.permission\.INTERNET/.test(xml)) add("WARN", "Internet permission", "INTERNET permission is not explicit in the manifest.");
-  if (/ACCESS_FINE_LOCATION/.test(xml)) add("PASS", "Location permission", "Fine location declared.");
-  else add("WARN", "Location permission", "Find My Res live navigation needs a deliberate Android location permission strategy.");
+if(release.versionCode===1&&release.versionName==="1.0.0") pass("First release version","versionCode 1 · versionName 1.0.0");
+else warn("First release version",`Configured ${release.versionCode} / ${release.versionName}`);
+
+if(!manifest) block("AndroidManifest","Missing.");
+else{
+  const required=["INTERNET","CAMERA","ACCESS_COARSE_LOCATION","ACCESS_FINE_LOCATION"];
+  for(const p of required) manifest.includes("android.permission."+p)?pass("Permission "+p,"Declared."):block("Permission "+p,"Required by current Android feature set.");
+  const prohibited=["ACCESS_BACKGROUND_LOCATION","READ_CONTACTS","WRITE_CONTACTS","READ_SMS","SEND_SMS","READ_CALL_LOG","WRITE_CALL_LOG","MANAGE_EXTERNAL_STORAGE","REQUEST_INSTALL_PACKAGES","POST_NOTIFICATIONS"];
+  for(const p of prohibited) if(manifest.includes("android.permission."+p)) block("High-risk permission "+p,"Not approved for Android v1.");
+  if(manifest.includes('android:usesCleartextTraffic="false"')) pass("Cleartext traffic","Disabled.");
+  else block("Cleartext traffic","Must be disabled for release.");
+  if(manifest.includes('android:allowBackup="false"')) pass("Android backup","Disabled for account/document security.");
+  else warn("Android backup","Expected allowBackup=false.");
 }
 
-const pkg = JSON.parse(read("package.json") || "{}");
-const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
-for (const dependency of ["@capacitor/core", "@capacitor/android", "@capacitor/cli"]) {
-  if (deps[dependency]) add("PASS", dependency, deps[dependency]);
-  else add("BLOCKER", dependency, "Not declared in package.json.");
-}
+for(const p of [
+  "android/app/src/main/java/org/reskonnect/app/MainActivity.java",
+  "android/app/src/main/res/drawable-nodpi/app_icon.png",
+  "android/app/src/main/res/drawable-nodpi/app_icon_foreground.png",
+  "android/app/src/main/res/values/styles.xml"
+]) exists(p)?pass("Native asset "+p,"Present."):block("Native asset "+p,"Missing.");
 
-if (exists("android/app/google-services.json")) add("PASS", "Firebase config", "google-services.json present (ensure it is the production project and safe to commit).");
-else add("WARN", "Firebase config", "No google-services.json committed; required only if the Android build uses Firebase/FCM.");
+if(gradle.includes("RK_ANDROID_KEYSTORE_PATH")&&gradle.includes("signingConfigs")) pass("Release signing hooks","Keystore is external to git.");
+else block("Release signing hooks","Gradle signing hook missing.");
 
-const privacyCandidates = ["src/pages/Privacy.tsx", "public/privacy.html"];
-if (privacyCandidates.some(exists)) add("PASS", "Privacy policy UI", privacyCandidates.find(exists));
-else add("BLOCKER", "Privacy policy UI", "Google Play requires an in-app and public privacy policy.");
+if(release.capacitorVersion==="8.5.0"&&workflow.includes("@capacitor/core@8.5.0")&&workflow.includes("@capacitor/android@8.5.0")&&workflow.includes("@capacitor/cli@8.5.0")) pass("Capacitor pin","8.5.0 pinned in release metadata and CI.");
+else block("Capacitor pin","CI must install exact Capacitor 8.5.0 packages.");
 
-const deletionEvidence = ["account deletion", "delete account", "account_deletion"].some((needle) => {
-  const candidates = ["src", "supabase", "docs"];
-  return candidates.some((dir) => {
-    if (!exists(dir)) return false;
-    const stack = [path.join(root, dir)];
-    while (stack.length) {
-      const current = stack.pop();
-      for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-        const full = path.join(current, entry.name);
-        if (entry.isDirectory()) stack.push(full);
-        else if (/\.(tsx?|sql|md)$/i.test(entry.name)) {
-          try { if (fs.readFileSync(full, "utf8").toLowerCase().includes(needle)) return true; } catch { /* ignore */ }
-        }
-      }
-    }
-    return false;
-  });
-});
-if (deletionEvidence) add("PASS", "Account deletion evidence", "Deletion-related implementation text exists; verify the user-facing path end-to-end.");
-else add("BLOCKER", "Account deletion", "Apps that create accounts need an in-app deletion request path and an external web deletion resource.");
+if(workflow.includes("bundleRelease")&&workflow.includes("android-36")&&workflow.includes("--strict")) pass("AAB readiness CI","Strict audit + API 36 release bundle build configured.");
+else block("AAB readiness CI","Workflow does not prove API-36 AAB compilation.");
 
-const blockers = findings.filter((row) => row.level === "BLOCKER");
-const warnings = findings.filter((row) => row.level === "WARN");
+if(signedWorkflow.includes("bundleRelease")&&signedWorkflow.includes("jarsigner")&&signedWorkflow.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64")) pass("Signed release CI","Signed AAB workflow configured.");
+else block("Signed release CI","Signed Play release workflow missing.");
 
+if(app.includes('path="/delete-account"')&&app.includes("<AccountDeletion")) pass("Public deletion URL","/delete-account is routable.");
+else block("Public deletion URL","Google Play requires a working external deletion resource.");
+if(profile.includes('to="/delete-account"')) pass("In-app deletion path","Profile links to account deletion.");
+else block("In-app deletion path","Deletion request must be discoverable in-app.");
+if(privacy.includes("13 September 2026")&&privacy.includes("OpenAI")&&privacy.includes("foreground location")&&privacy.includes("/delete-account")) pass("Privacy disclosure","Android, AI, location and deletion disclosures present.");
+else block("Privacy disclosure","Privacy policy is missing current Play/Data Safety disclosures.");
+
+if(auth.includes('publicAuthOrigin = isNativeShell ? "https://www.reskonnect.org"')&&auth.includes("!isNativeShell &&")) pass("Native auth safety","Native callbacks use public origin and embedded Google OAuth is hidden.");
+else block("Native auth safety","Native auth callback/OAuth handling is unsafe.");
+
+if(release.nativePushNotifications===false&&!manifest.includes("POST_NOTIFICATIONS")) pass("Notification policy","No native notification permission requested in v1.");
+else warn("Notification policy","Native push state and Android permission are inconsistent.");
+
+const blockers=findings.filter(x=>x.level==="BLOCKER");
+const warnings=findings.filter(x=>x.level==="WARN");
 console.log("\nResKonnect Android / Google Play readiness audit\n");
-for (const row of findings) console.log(`${row.level.padEnd(7)} ${row.check}: ${row.message}`);
-console.log(`\nSummary: ${blockers.length} blocker(s), ${warnings.length} warning(s), ${findings.filter((row) => row.level === "PASS").length} pass(es).`);
-
-if (strict && blockers.length) process.exit(1);
+for(const row of findings) console.log(`${row.level.padEnd(7)} ${row.check}: ${row.message}`);
+console.log(`\nSummary: ${blockers.length} blocker(s), ${warnings.length} warning(s), ${findings.filter(x=>x.level==="PASS").length} pass(es).`);
+if(strict&&blockers.length) process.exit(1);
