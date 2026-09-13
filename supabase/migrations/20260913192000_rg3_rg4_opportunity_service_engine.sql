@@ -202,7 +202,11 @@ begin
       o.date_posted,
       o.employment_type,
       o.last_verified_at,
-      coalesce(o.metadata,'{}'::jsonb) as metadata,
+      jsonb_build_object(
+        'source_url',o.metadata->>'source_url',
+        'source_class',o.metadata->>'source_class',
+        'official_confirmation_required',coalesce((o.metadata->>'official_confirmation_required')::boolean,true)
+      ) as metadata,
       concat_ws(' ',o.title,o.opportunity_type,o.organisation,o.location,o.province,o.description,o.requirements,o.employment_type) as search_text
     from public.public_opportunities o
     where o.is_published=true
@@ -227,7 +231,14 @@ begin
       b.created_at,
       'bursary'::text,
       b.last_verified_at,
-      coalesce(b.metadata,'{}'::jsonb)||jsonb_build_object('amount',b.amount,'fields_of_study',b.fields_of_study,'verification_status',b.verification_status),
+      jsonb_build_object(
+        'amount',b.amount,
+        'fields_of_study',b.fields_of_study,
+        'verification_status',b.verification_status,
+        'source_url',b.source_url,
+        'source_class',b.metadata->>'source_class',
+        'official_confirmation_required',coalesce((b.metadata->>'official_confirmation_required')::boolean,true)
+      ),
       concat_ws(' ',b.name,b.provider,b.description,array_to_string(b.fields_of_study,' '),array_to_string(b.requirements,' '),b.type)
     from public.bursaries b
     where b.is_active=true
@@ -585,6 +596,8 @@ declare
   v_type text:=lower(trim(coalesce(p_request_type,'')));
   v_subject text:=left(trim(coalesce(p_subject,'')),160);
   v_description text:=left(trim(coalesce(p_description,'')),4000);
+  v_recent_count integer:=0;
+  v_open_count integer:=0;
 begin
   if v_uid is null then
     raise exception 'Authentication required' using errcode='28000';
@@ -594,6 +607,20 @@ begin
   end if;
   if length(v_subject)<4 or length(v_description)<8 then
     raise exception 'Add a clear subject and description';
+  end if;
+
+  select
+    count(*) filter (where created_at>=now()-interval '10 minutes')::int,
+    count(*) filter (where lower(coalesce(status,'')) not in ('resolved','closed','completed','cancelled'))::int
+  into v_recent_count,v_open_count
+  from public.student_requests
+  where user_id=v_uid;
+
+  if v_recent_count>=3 then
+    raise exception 'Too many service requests submitted recently. Track your existing requests before creating another.';
+  end if;
+  if v_open_count>=10 then
+    raise exception 'You already have several open service requests. Track or resolve those requests before creating another.';
   end if;
 
   v_department:=case v_type
