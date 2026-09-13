@@ -1,0 +1,22 @@
+{
+  "appName": "ResKonnect",
+  "packageId": "org.reskonnect.app",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "capacitorVersion": "8.5.0",
+  "minSdk": 24,
+  "compileSdk": 36,
+  "targetSdk": 36,
+  "playArtifact": "AAB",
+  "playAppSigning": true,
+  "privacyUrl": "https://www.reskonnect.org/privacy",
+  "accountDeletionUrl": "https://www.reskonnect.org/delete-account",
+  "permissions": [
+    "android.permission.INTERNET",
+    "android.permission.CAMERA",
+    "android.permission.ACCESS_COARSE_LOCATION",
+    "android.permission.ACCESS_FINE_LOCATION"
+  ],
+  "nativePushNotifications": false,
+  "googleOauthInNativeWebView": false
+}

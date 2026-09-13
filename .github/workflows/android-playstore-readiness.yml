@@ -5,21 +5,78 @@ on:
   pull_request:
     paths:
       - "android/**"
+      - "native/**"
       - "capacitor.config.*"
-      - "package.json"
-      - "package-lock.json"
+      - "src/pages/Auth.tsx"
+      - "src/pages/Privacy.tsx"
+      - "src/pages/AccountDeletion.tsx"
+      - "src/pages/Profile.tsx"
+      - "src/App.tsx"
       - "scripts/android-playstore-readiness.mjs"
-      - ".github/workflows/android-playstore-readiness.yml"
+      - ".github/workflows/android-playstore-*.yml"
+
+permissions:
+  contents: read
 
 jobs:
-  audit:
+  build-aab:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Node
+
+      - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Android / Play Store audit
-        run: node scripts/android-playstore-readiness.mjs
+          cache: npm
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android 16 SDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Setup Gradle 8.14.3
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      - name: Install locked web dependencies
+        run: npm ci
+
+      - name: Strict Android / Play audit
+        run: node scripts/android-playstore-readiness.mjs --strict
+
+      - name: Install pinned Capacitor toolchain without changing lockfile
+        run: npm install --no-save --package-lock=false @capacitor/core@8.5.0 @capacitor/android@8.5.0 @capacitor/cli@8.5.0
+
+      - name: Build production web bundle
+        run: npm run build
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Compile API 36 release AAB
+        env:
+          ANDROID_VERSION_CODE: "1"
+          ANDROID_VERSION_NAME: "1.0.0"
+        run: gradle -p android bundleRelease --stacktrace
+
+      - name: Verify release artifact exists
+        run: test -s android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload unsigned readiness AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: reskonnect-android-readiness-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 7

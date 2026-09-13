@@ -100,6 +100,7 @@ const BursaryDetail = lazy(() => import("./pages/BursaryDetail"));
 const MyDiscountOrders = lazy(() => import("./pages/MyDiscountOrders"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const AccountDeletion = lazy(() => import("./pages/AccountDeletion"));
 const ResidenceLogin = lazy(() => import("./pages/residence/ResidenceLogin"));
 const ResidenceLayout = lazy(() => import("./pages/residence/ResidenceLayout"));
 const ResidenceDashboard = lazy(() => import("./pages/residence/ResidenceDashboard"));
@@ -192,6 +193,7 @@ const App = () => {
                     <Route path="/reset-password" element={<PasswordReset />} />
                     <Route path="/terms" element={<Terms />} />
                     <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/delete-account" element={<AccountDeletion />} />
                     <Route path="/find" element={<FindMyRes />} />
                     <Route path="/findmyres" element={<FindMyRes />} />
                     <Route path="/accommodation-request" element={<AccommodationDemand />} />
