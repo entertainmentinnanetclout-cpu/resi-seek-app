@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  BrainCircuit,
   Building2,
   CalendarDays,
   FileText,
   GraduationCap,
+  BriefcaseBusiness,
   HandCoins,
   Home,
   Landmark,
@@ -59,6 +61,15 @@ const STATIC_RESULTS: SearchResult[] = [
     path: "/",
     icon: Home,
     keywords: ["landing", "reskonnect"],
+  },
+  {
+    id: "ai",
+    label: "ResKonnect AI",
+    description: "Ask grounded questions across Living, applications and opportunities",
+    category: "AI",
+    path: "/ai",
+    icon: BrainCircuit,
+    keywords: ["ai", "assistant", "guidance", "next step", "luna", "dimpho"],
   },
   {
     id: "applications",
@@ -226,7 +237,7 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
       setLoading(true);
       const pattern = `%${normalized}%`;
 
-      const [institutionsResult, residences, programmes, bursaries, news, events] = await Promise.all([
+      const [institutionsResult, residences, programmes, bursaries, opportunities, news, events] = await Promise.all([
         (supabase as any)
           .from("application_hub_institutions")
           .select("id,institution_id,slug,category,short_name,display_name,description,matcher_key")
@@ -250,6 +261,12 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
           .eq("is_active", true)
           .or(`name.ilike.${pattern},provider.ilike.${pattern},description.ilike.${pattern}`)
           .limit(5),
+        (supabase as any)
+          .from("public_opportunities")
+          .select("id,slug,title,opportunity_type,organisation,location,description,closing_date")
+          .eq("is_published", true)
+          .or(`title.ilike.${pattern},organisation.ilike.${pattern},location.ilike.${pattern},description.ilike.${pattern},opportunity_type.ilike.${pattern}`)
+          .limit(6),
         (supabase as any)
           .from("campus_news")
           .select("id,title,excerpt,category")
@@ -343,6 +360,17 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
         });
       }
 
+      for (const row of opportunities.data ?? []) {
+        rows.push({
+          id: `opportunity-${row.id}`,
+          label: row.title,
+          description: [row.organisation, row.opportunity_type, row.location].filter(Boolean).join(" • ") || row.description || "Student opportunity",
+          category: "Opportunity",
+          path: row.slug ? `/opportunity/${row.slug}` : "/opportunities",
+          icon: BriefcaseBusiness,
+        });
+      }
+
       for (const row of news.data ?? []) {
         rows.push({
           id: `news-${row.id}`,
@@ -410,7 +438,7 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
         <CommandInput
           value={query}
           onValueChange={setQuery}
-          placeholder="Search accommodation, universities, TVET courses, bursaries, news, events..."
+          placeholder="Search accommodation, courses, bursaries, opportunities, services or ResKonnect AI..."
         />
         <CommandList className="max-h-[65vh]">
           {loading && (
