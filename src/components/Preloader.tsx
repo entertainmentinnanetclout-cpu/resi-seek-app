@@ -32,7 +32,7 @@ const Preloader = () => {
         <div className="h-[2px] w-40 overflow-hidden rounded-full bg-white/10">
           <div className="rk-loader-line h-full w-1/3 rounded-full bg-gradient-to-r from-brand-blue via-brand-gold to-brand-blue" />
         </div>
-        <p className="text-xs text-white/60">Preparing your ResKonnect path...</p>
+        <p className="text-xs text-white/60">Connecting your ResKonnect services...</p>
       </div>
     </div>
   );
