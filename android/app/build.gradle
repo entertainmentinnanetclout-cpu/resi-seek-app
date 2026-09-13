@@ -1,0 +1,80 @@
+apply plugin: 'com.android.application'
+
+def versionCodeValue = (System.getenv("ANDROID_VERSION_CODE") ?: "1").toInteger()
+def versionNameValue = System.getenv("ANDROID_VERSION_NAME") ?: "1.0.0"
+def keyStorePathValue = System.getenv("RK_ANDROID_KEYSTORE_PATH")
+def keyStorePasswordValue = System.getenv("RK_ANDROID_KEYSTORE_PASSWORD")
+def keyAliasValue = System.getenv("RK_ANDROID_KEY_ALIAS")
+def keyPasswordValue = System.getenv("RK_ANDROID_KEY_PASSWORD")
+def signingReady = keyStorePathValue && keyStorePasswordValue && keyAliasValue && keyPasswordValue
+
+android {
+    namespace = "org.reskonnect.app"
+    compileSdk = rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        applicationId "org.reskonnect.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode versionCodeValue
+        versionName versionNameValue
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+
+    signingConfigs {
+        release {
+            if (signingReady) {
+                storeFile file(keyStorePathValue)
+                storePassword keyStorePasswordValue
+                keyAlias keyAliasValue
+                keyPassword keyPasswordValue
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            if (signingReady) { signingConfig signingConfigs.release }
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+        }
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+    }
+}
+
+repositories {
+    flatDir { dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs' }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    implementation project(':capacitor-cordova-android-plugins')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) { apply plugin: 'com.google.gms.google-services' }
+} catch(Exception e) {
+    logger.info("google-services.json not found; native push is intentionally disabled for Android v1")
+}
