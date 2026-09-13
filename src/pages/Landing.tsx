@@ -9,17 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useRef } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
 import FloatingShapes from "@/components/FloatingShapes";
-import TrustedResidencesGrid from "@/components/TrustedResidencesGrid";
-import { CategoryHeroSelector } from "@/components/findmyres/CategoryHeroSelector";
-import { AccreditationCTA } from "@/components/findmyres/AccreditationCTA";
 import { AudienceSelector } from "@/components/findmyres/AudienceSelector";
-import LandlordApplicationTabs from "@/components/LandlordApplicationTabs";
 import InteractiveNeedSection from "@/components/onboarding/InteractiveNeedSection";
-import AutomationAdvantageSection from "@/components/AutomationAdvantageSection";
-import LandingResMap3DPreview from "@/components/resmap/LandingResMap3DPreview";
 import { BRAND } from "@/constants/brand";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -27,6 +21,41 @@ const footerLogo = BRAND.logos.full;
 const iconLogo = BRAND.logos.icon;
 import inclusivePathwaysHero from "@/assets/hero-inclusive-pathways.jpg";
 import applicationsFundingHero from "@/assets/hero-applications-funding.jpg";
+
+const TrustedResidencesGrid = lazy(() => import("@/components/TrustedResidencesGrid"));
+const LandlordApplicationTabs = lazy(() => import("@/components/LandlordApplicationTabs"));
+const AutomationAdvantageSection = lazy(() => import("@/components/AutomationAdvantageSection"));
+const LandingResMap3DPreview = lazy(() => import("@/components/resmap/LandingResMap3DPreview"));
+const CategoryHeroSelector = lazy(() => import("@/components/findmyres/CategoryHeroSelector").then((module) => ({ default: module.CategoryHeroSelector })));
+const AccreditationCTA = lazy(() => import("@/components/findmyres/AccreditationCTA").then((module) => ({ default: module.AccreditationCTA })));
+
+function DeferredSection({ children, minHeight = 220 }: { children: React.ReactNode; minHeight?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    if (mounted) return;
+    const node = ref.current;
+    if (!node || !("IntersectionObserver" in window)) {
+      setMounted(true);
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setMounted(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: "700px 0px" });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [mounted]);
+
+  return (
+    <div ref={ref} style={!mounted ? { minHeight } : undefined}>
+      {mounted ? <Suspense fallback={<div style={{ minHeight }} aria-hidden="true" />}>{children}</Suspense> : null}
+    </div>
+  );
+}
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -182,9 +211,9 @@ const Landing = () => {
 
         <InteractiveNeedSection />
 
-        <AutomationAdvantageSection />
+        <DeferredSection minHeight={420}><AutomationAdvantageSection /></DeferredSection>
 
-        <LandingResMap3DPreview />
+        <DeferredSection minHeight={520}><LandingResMap3DPreview /></DeferredSection>
 
         <section className="py-8 md:py-10 bg-gradient-to-b from-primary/5 to-background">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -208,13 +237,13 @@ const Landing = () => {
 
         <section className="py-12 md:py-20 bg-card/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <TrustedResidencesGrid />
+            <DeferredSection minHeight={520}><TrustedResidencesGrid /></DeferredSection>
           </div>
         </section>
 
-        <CategoryHeroSelector />
+        <DeferredSection minHeight={280}><CategoryHeroSelector /></DeferredSection>
 
-        <AccreditationCTA />
+        <DeferredSection minHeight={220}><AccreditationCTA /></DeferredSection>
 
         <section className="py-12 md:py-20 bg-card/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
@@ -254,7 +283,7 @@ const Landing = () => {
                 Join an AI-enabled student accommodation platform. Apply to list your property, get NSFAS accreditation support, or both — while ResKonnect connects discovery, student demand and placement operations.
               </p>
             </div>
-            <LandlordApplicationTabs />
+            <DeferredSection minHeight={420}><LandlordApplicationTabs /></DeferredSection>
           </div>
         </section>
 
