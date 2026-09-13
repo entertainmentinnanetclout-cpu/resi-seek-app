@@ -1,0 +1,7 @@
+{
+  "appId": "org.reskonnect.app",
+  "appName": "ResKonnect",
+  "webDir": "dist",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}
