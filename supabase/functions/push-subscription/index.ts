@@ -3,7 +3,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.79.0";
 const env = (name: string) => Deno.env.get(name) || "";
 const supabaseUrl = env("SUPABASE_URL") || env("EXTERNAL_SUPABASE_URL");
 const anonKey = env("SUPABASE_ANON_KEY") || env("EXTERNAL_SUPABASE_ANON_KEY");
-const serviceKey = env("SUPABASE_SERVICE_ROLE_KEY") || env("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
 
 const allowedOrigins = new Set([
   "https://www.reskonnect.org",
@@ -31,22 +30,19 @@ const json = (req: Request, body: unknown, status = 200) =>
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors(req) });
   if (req.method !== "POST") return json(req, { error: "Method not allowed" }, 405);
-  if (!supabaseUrl || !anonKey || !serviceKey) return json(req, { error: "Push service unavailable" }, 503);
+  if (!supabaseUrl || !anonKey) return json(req, { error: "Push service unavailable" }, 503);
 
   const authorization = req.headers.get("Authorization") || "";
   if (!authorization.startsWith("Bearer ")) return json(req, { error: "Authentication required" }, 401);
 
-  const auth = createClient(supabaseUrl, anonKey, {
+  const client = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authorization } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: authData, error: authError } = await auth.auth.getUser();
+
+  const { data: authData, error: authError } = await client.auth.getUser();
   const user = authData?.user;
   if (authError || !user) return json(req, { error: "Authentication required" }, 401);
-
-  const service = createClient(supabaseUrl, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 
   const body = await req.json().catch(() => ({}));
   const action = String(body?.action || "upsert");
@@ -54,7 +50,7 @@ Deno.serve(async (req) => {
   if (action === "remove") {
     const endpoint = String(body?.endpoint || "").trim();
     if (!endpoint) return json(req, { error: "Endpoint required" }, 400);
-    const { error } = await service
+    const { error } = await client
       .from("push_subscriptions")
       .delete()
       .eq("endpoint", endpoint)
@@ -75,7 +71,7 @@ Deno.serve(async (req) => {
     return json(req, { error: "Invalid push keys" }, 400);
   }
 
-  const { error } = await service.from("push_subscriptions").upsert({
+  const { error } = await client.from("push_subscriptions").upsert({
     user_id: user.id,
     endpoint,
     p256dh,
