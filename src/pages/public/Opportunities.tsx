@@ -64,7 +64,7 @@ export const Opportunities: React.FC = () => {
       <div className="bg-gradient-to-b from-primary/5 via-background to-background py-16 md:py-24">
         <div className="container mx-auto space-y-16 px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl space-y-4 text-center">
-            <Badge variant="outline" className="rounded-full px-4 py-1">Living · Applications · Opportunities</Badge>
+            <Badge variant="outline" className="rounded-full px-4 py-1">RESKONNECT OPPORTUNITY</Badge>
             <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl">Opportunities & Placements Hub</h1>
             <p className="text-lg leading-relaxed text-muted-foreground md:text-xl">Step from study into industry with clear pathways for WIL readiness, internships, career guidance and published student campaigns.</p>
           </div>

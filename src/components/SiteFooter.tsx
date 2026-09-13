@@ -7,32 +7,30 @@ const columns = [
     links: [
       { label: "ResKonnect Living", to: "/living" },
       { label: "Find My Res", to: "/find" },
-      { label: "2027 Pretoria Reservations", to: "/find?reserve=2027" },
-      { label: "ResKonnect Student Accommodation", to: "/student-accommodation" },
-      { label: "Pretoria West Accommodation", to: "/student-accommodation/pretoria-west" },
-      { label: "Accommodation Near TUT", to: "/student-accommodation/near-tut" },
-      { label: "NSFAS Accredited Accommodation", to: "/student-accommodation/nsfas-accredited" },
-      { label: "ResKonnect Private Rentals", to: "/private-rentals" },
+      { label: "2027 Reservations", to: "/find?reserve=2027" },
+      { label: "Student Accommodation", to: "/student-accommodation" },
+      { label: "Private Rentals", to: "/living/private-rentals" },
+      { label: "Roommates", to: "/roommates" },
       { label: "For Parents", to: "/living/parents" },
     ],
   },
   {
-    title: "Applications",
+    title: "AI",
     links: [
-      { label: "ResKonnect Applications", to: "/applications" },
-      { label: "Application Readiness", to: "/applications/application-readiness" },
-      { label: "ResKonnect APS Checker", to: "/applications/aps-checker" },
-      { label: "TVET Readiness", to: "/applications/tvet-application-readiness" },
-      { label: "University Readiness", to: "/applications/university-application-readiness" },
+      { label: "ResKonnect AI", to: "/ai" },
+      { label: "Ask ResKonnect", to: "/ai" },
+      { label: "Course & APS Guidance", to: "/applications/checker" },
+      { label: "Housing Intelligence", to: "/housing-intelligence" },
     ],
   },
   {
-    title: "Opportunities",
+    title: "Opportunity",
     links: [
-      { label: "ResKonnect Opportunities", to: "/opportunities" },
+      { label: "Applications & Course Match", to: "/apply" },
+      { label: "WIL & Opportunities", to: "/opportunities" },
       { label: "WIL Placement Support", to: "/opportunities/wil-placement-support" },
       { label: "Bursaries", to: "/bursaries" },
-      { label: "Campus News", to: "/campus-news" },
+      { label: "Career & Education", to: "/career-education" },
     ],
   },
   {
@@ -60,7 +58,7 @@ const columns = [
 const SiteFooter = () => (
   <footer className="mt-auto border-t border-border bg-muted/40 text-muted-foreground">
     <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="grid grid-cols-2 gap-8 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-8 md:grid-cols-3 xl:grid-cols-6">
         <div className="col-span-2 md:col-span-3 lg:col-span-1">
           <img src={BRAND.logos.full} alt={BRAND.name} className="h-12 w-auto object-contain" />
           <p className="mt-3 text-[10px] tracking-[0.3em] text-muted-foreground">{BRAND.descriptor}</p>

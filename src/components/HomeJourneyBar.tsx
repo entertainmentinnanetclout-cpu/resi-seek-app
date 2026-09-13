@@ -1,12 +1,12 @@
-import { Building2, CalendarDays, FileCheck2, Search, Target, UserRoundPlus } from "lucide-react";
+import { BrainCircuit, BriefcaseBusiness, Building2, Home, Sparkles, UserRoundPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const journeys = [
-  { icon: Search, label: "Find Accommodation", path: "/find", primary: true },
-  { icon: CalendarDays, label: "Reserve for 2027", path: "/find?reserve=2027" },
-  { icon: FileCheck2, label: "Start an Application", path: "/apply" },
-  { icon: Target, label: "Tell Us What You Need", path: "/accommodation-request" },
+  { icon: Home, label: "Living", path: "/living", primary: true },
+  { icon: BrainCircuit, label: "Ask ResKonnect AI", path: "/ai" },
+  { icon: BriefcaseBusiness, label: "Opportunity", path: "/opportunities" },
+  { icon: Sparkles, label: "Get Started", path: "/get-started" },
 ];
 
 const HomeJourneyBar = () => {
@@ -16,7 +16,7 @@ const HomeJourneyBar = () => {
       <div className="container mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
         <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">Start here</p><h2 className="text-lg font-black sm:text-xl">What do you need today?</h2></div>
-          <p className="text-xs text-muted-foreground">New or returning — choose a task and ResKonnect takes you to the right flow.</p>
+          <p className="text-xs text-muted-foreground">Choose a pillar or tell ResKonnect what you need — one account connects the journey.</p>
         </div>
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           {journeys.map((item) => (

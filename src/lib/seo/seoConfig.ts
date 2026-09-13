@@ -60,17 +60,17 @@ export function canonicalUrl(pathname: string): string {
 /** Per-route metadata for the main public pillars and utility pages. */
 export const ROUTE_META: Record<string, RouteMeta> = {
   "/": {
-    title: "ResKonnect | Dimpho AI Student Accommodation & ResMap 3D",
+    title: "ResKonnect | Living • AI • Opportunity",
     description:
-      "Africa-built student accommodation technology combining Dimpho AI, verified accommodation discovery, ResMap 3D, live navigation and guaranteed accommodation placement for eligible placement clients.",
+      "ResKonnect connects Living, AI and Opportunity in one integrated student platform for accommodation, intelligent guidance, applications, bursaries, WIL and verified opportunities.",
     keywords:
-      "ResKonnect, Res Konnect, student accommodation Africa, AI student accommodation, Dimpho AI, ResMap 3D, guaranteed student accommodation placement, student housing technology Africa, photorealistic student accommodation map",
+      "ResKonnect, Living AI Opportunity, student platform South Africa, student accommodation, student AI, student applications, bursaries, WIL, student opportunities",
   },
   "/living": {
-    title: "ResKonnect Living | Intelligent Student Accommodation Discovery",
+    title: "ResKonnect Living | Student Accommodation & Connected Living",
     description:
-      "Discover student accommodation through ResKonnect Living with verified listings, Dimpho AI guidance, ResMap 3D exploration, live navigation and accommodation placement support.",
-    keywords: "student accommodation Africa, student housing, private rentals, Dimpho AI accommodation, ResMap 3D, NSFAS accommodation",
+      "Find verified student accommodation, private-rental support, roommates and connected Living services through ResKonnect.",
+    keywords: "ResKonnect Living, student accommodation South Africa, student housing, private rentals, roommates, student living",
   },
   "/student-accommodation": {
     title: "Student Accommodation | AI Discovery, 3D Maps & Placement | ResKonnect",
@@ -133,10 +133,10 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     keywords: "student housing development, student accommodation conversion, development sites",
   },
   "/ai": {
-    title: "Dimpho AI by ResKonnect | Student Accommodation Intelligence",
+    title: "ResKonnect AI | Grounded Student Guidance & Service Intelligence",
     description:
-      "Meet Dimpho, ResKonnect's AI layer for accommodation discovery, ResMap intelligence, application readiness and student journey guidance using structured ResKonnect data.",
-    keywords: "Dimpho AI, ResKonnect AI, student accommodation AI Africa, student AI, AI Course Match, ResMap AI, property intelligence AI",
+      "Use ResKonnect AI across Living, applications and opportunities with verified platform context and account-aware next-step guidance when signed in.",
+    keywords: "ResKonnect AI, student AI South Africa, student guidance AI, application guidance, opportunity matching, Luna ResKonnect, Dimpho ResKonnect",
   },
   "/partners": {
     title: "ResKonnect Partners | Landlords, Institutions & Businesses",
@@ -150,10 +150,10 @@ export const ROUTE_META: Record<string, RouteMeta> = {
       "Search student residences, flats, communes and private rentals by campus, budget, room type and availability with ResKonnect.",
   },
   "/findmyres": {
-    title: "Find My Res | Dimpho AI + Live ResMap 3D | ResKonnect",
+    title: "Find My Res | Verified Student Accommodation | ResKonnect",
     description:
-      "Use ResKonnect Find My Res to discover verified accommodation, ask Dimpho, explore photorealistic 3D areas, use live navigation and enter the accommodation placement process.",
-    keywords: "Find My Res, ResMap 3D, Dimpho AI, student accommodation map, student accommodation near me, guaranteed accommodation placement",
+      "Find verified student accommodation by campus, area, budget, funding, room type and availability. Smart matching, maps, 3D exploration and navigation are optional ResKonnect Living capabilities.",
+    keywords: "Find My Res, verified student accommodation, student accommodation near campus, NSFAS accommodation, student rooms South Africa",
   },
   "/bursaries": {
     title: "Student Bursaries & Funding Opportunities | ResKonnect",

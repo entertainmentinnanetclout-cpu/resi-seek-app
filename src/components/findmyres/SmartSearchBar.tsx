@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapPinned, Search, Sparkles, WandSparkles } from "lucide-react";
+import { Building2, MapPinned, Search, Sparkles, WandSparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -80,16 +80,17 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
         <div className="mb-6 text-center">
           <div className="mb-3 flex flex-wrap justify-center gap-2">
-            <button onClick={openMap} className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-500/15 dark:text-blue-300"><MapPinned className="h-3.5 w-3.5" />Live ResMap · 2D/3D</button>
-            <button onClick={openDiscovery} className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1.5 text-xs font-black text-violet-700 transition hover:bg-violet-500/15 dark:text-violet-300"><WandSparkles className="h-3.5 w-3.5" />NEW · Discovery Engine</button>
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-black text-emerald-700 dark:text-emerald-300"><Building2 className="h-3.5 w-3.5" />ResKonnect Living</span>
+            <button onClick={openDiscovery} className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1.5 text-xs font-black text-violet-700 transition hover:bg-violet-500/15 dark:text-violet-300"><WandSparkles className="h-3.5 w-3.5" />Smart matching</button>
+            <button onClick={openMap} className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-500/15 dark:text-blue-300"><MapPinned className="h-3.5 w-3.5" />Map & 3D tools</button>
           </div>
-          <h1 className="mb-2 text-3xl font-bold sm:text-4xl">Find Your Perfect Accommodation</h1>
-          <p className="text-sm text-muted-foreground sm:text-base">Search traditionally, explore accommodation around your live position in 2D or photorealistic 3D, or let Dimpho reshape the map around your Res DNA.</p>
+          <h1 className="mb-2 text-3xl font-bold sm:text-4xl">Find the right place to live. Faster.</h1>
+          <p className="mx-auto max-w-3xl text-sm text-muted-foreground sm:text-base">Search verified accommodation by campus, area, budget, funding, room type and availability. Smart matching, maps and 3D exploration are available when they help you decide.</p>
         </div>
 
         <div className="space-y-4 rounded-xl border bg-card/80 p-4 shadow-lg backdrop-blur-lg sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Search by name, location, description..." className="h-12 pl-10 text-base" value={filters.searchQuery} onChange={(e) => updateFilter("searchQuery", e.target.value)} /></div>
+            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Search residence, area, campus or address..." className="h-12 pl-10 text-base" value={filters.searchQuery} onChange={(e) => updateFilter("searchQuery", e.target.value)} /></div>
             <Select value={filters.campus} onValueChange={(v) => updateFilter("campus", v)}><SelectTrigger className="h-12 sm:w-56"><SelectValue placeholder="Area / campus" /></SelectTrigger><SelectContent><SelectItem value="all">All Areas</SelectItem>{getCampusOptions(filters.institutionType ?? (filters.audience === "tvet" ? "tvet" : filters.audience === "university" ? "university" : undefined)).map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select>
           </div>
 
@@ -101,7 +102,7 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
 
           <div className="flex flex-col gap-3 border-t border-border/50 pt-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">{resultCount}</span> of {totalCount} residences</p>
-            <div className="grid grid-cols-2 gap-2 sm:flex"><Button onClick={openDiscovery} variant="outline" className="h-10 rounded-full px-4"><Sparkles className="mr-2 h-4 w-4 text-violet-500" />Discover</Button><Button onClick={openMap} className="h-10 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 px-5 text-white shadow-lg"><MapPinned className="mr-2 h-4 w-4" />Open Live ResMap</Button></div>
+            <div className="grid grid-cols-2 gap-2 sm:flex"><Button onClick={openDiscovery} variant="outline" className="h-10 rounded-full px-4"><Sparkles className="mr-2 h-4 w-4 text-violet-500" />Smart Match</Button><Button onClick={openMap} className="h-10 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 px-5 text-white shadow-lg"><MapPinned className="mr-2 h-4 w-4" />Map & 3D</Button></div>
           </div>
         </div>
       </div>

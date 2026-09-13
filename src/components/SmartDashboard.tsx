@@ -54,7 +54,7 @@ const SmartDashboard = ({ profile, applications, profileCompletion }: SmartDashb
               variant: "default" as const,
             },
           ],
-          tip: "Students with complete profiles get 3x more responses from residences!",
+          tip: "Complete your profile so ResKonnect can route applications and guidance using the details you have verified.",
         };
       case "incomplete":
         return {
@@ -124,7 +124,7 @@ const SmartDashboard = ({ profile, applications, profileCompletion }: SmartDashb
               variant: "outline" as const,
             },
           ],
-          tip: "Most residences respond within 3-5 business days. Check your notifications!",
+          tip: "Check your verified application status and notifications for the latest next step.",
         };
       case "approved":
         return {
@@ -147,7 +147,7 @@ const SmartDashboard = ({ profile, applications, profileCompletion }: SmartDashb
               variant: "outline" as const,
             },
           ],
-          tip: "Remember to confirm your spot and pay the deposit within the deadline!",
+          tip: "Follow the verified approval details and deadlines shown on your application before taking the next step.",
         };
     }
   };
