@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>ResKonnect | Student Accommodation, Applications &amp; Opportunities</title>
-    <meta name="description" content="Find student accommodation, prepare applications, discover WIL and student opportunities, and explore student-housing property intelligence with ResKonnect." />
+    <title>ResKonnect | Living • AI • Opportunity</title>
+    <meta name="description" content="ResKonnect connects Living, AI and Opportunity: student accommodation, intelligent guidance, applications, bursaries, WIL and verified student opportunities." />
     <meta name="author" content="ResKonnect" />
     <meta name="application-name" content="ResKonnect" />
     <meta name="theme-color" content="#071326" />
@@ -101,17 +101,5 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // Cleanup legacy service worker registered at /sw.js (avoids stale cached source files)
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then((regs) => {
-          regs.forEach((reg) => {
-            if (reg.active?.scriptURL?.includes('/sw.js')) {
-              reg.unregister().then(() => console.log('Legacy SW unregistered'));
-            }
-          });
-        });
-      }
-    </script>
   </body>
 </html>
