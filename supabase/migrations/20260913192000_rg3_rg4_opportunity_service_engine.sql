@@ -353,12 +353,15 @@ begin
     set action=excluded.action,updated_at=now();
 
   insert into public.adminos_customer_events(
-    user_id,event_category,event_type,source_table,source_id,title,summary,status,metadata,occurred_at
+    user_id,event_category,event_type,source_table,source_id,title,summary,status,metadata,occurred_at,idempotency_key
   ) values(
     v_uid,'opportunity','opportunity_'||p_action,'student_opportunity_actions',p_source_id,
     'Opportunity '||p_action,v_title,p_action,
-    jsonb_build_object('source_type',p_source_type,'source_id',p_source_id),now()
-  );
+    jsonb_build_object('source_type',p_source_type,'source_id',p_source_id),now(),
+    'rg3:opportunity_action:'||v_uid::text||':'||p_source_type||':'||p_source_id::text||':'||p_action
+  )
+  on conflict(idempotency_key) do update set
+    status=excluded.status,summary=excluded.summary,metadata=excluded.metadata,occurred_at=excluded.occurred_at;
 
   return jsonb_build_object('ok',true,'source_type',p_source_type,'source_id',p_source_id,'action',p_action,'title',v_title);
 end;
@@ -521,12 +524,14 @@ begin
       );
 
       insert into public.adminos_customer_events(
-        user_id,event_category,event_type,source_table,source_id,title,summary,status,metadata,occurred_at
+        user_id,event_category,event_type,source_table,source_id,title,summary,status,metadata,occurred_at,idempotency_key
       ) values(
         new.user_id,'service','service_request_status_changed','student_requests',new.id,
         'Service request updated',coalesce(new.subject,new.request_type),new.status,
-        jsonb_build_object('old_status',old.status,'new_status',new.status,'department_key',new.department_key),now()
-      );
+        jsonb_build_object('old_status',old.status,'new_status',new.status,'department_key',new.department_key),now(),
+        'rg4:service_status:'||new.id::text||':'||coalesce(old.status,'')||':'||coalesce(new.status,'')||':'||extract(epoch from new.updated_at)::bigint::text
+      )
+      on conflict(idempotency_key) do nothing;
     end if;
   end if;
   return new;
@@ -620,12 +625,14 @@ begin
   );
 
   insert into public.adminos_customer_events(
-    user_id,event_category,event_type,source_table,source_id,title,summary,status,metadata,occurred_at
+    user_id,event_category,event_type,source_table,source_id,title,summary,status,metadata,occurred_at,idempotency_key
   ) values(
     v_uid,'service','service_request_submitted','student_requests',v_id,
     'Service request submitted',v_subject,'submitted',
-    jsonb_build_object('request_type',v_type,'department_key',v_department),now()
-  );
+    jsonb_build_object('request_type',v_type,'department_key',v_department),now(),
+    'rg4:service_submitted:'||v_id::text
+  )
+  on conflict(idempotency_key) do nothing;
 
   return jsonb_build_object(
     'ok',true,'request_id',v_id,'status','submitted','department_key',v_department,
