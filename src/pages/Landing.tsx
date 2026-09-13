@@ -45,23 +45,23 @@ const Landing = () => {
   const fallbackSlides = [
     {
       image: inclusivePathwaysHero,
-      title: "Student accommodation discovery, rebuilt for the AI era.",
-      description: "Ask Dimpho. Explore the real area in ResMap 3D. Navigate live. Move from search into the ResKonnect accommodation placement process — all in one connected platform built in Africa.",
-      cta: { text: "Find My Res", action: () => navigate("/findmyres") }
+      title: "Everything students need to move forward. Connected.",
+      description: "Living, intelligent guidance and real opportunities through one ResKonnect journey — from finding a place to understanding your next step and accessing what comes next.",
+      cta: { text: "Explore ResKonnect", action: () => navigate("/get-started") }
     },
     {
       image: applicationsFundingHero,
-      title: "From search to placement — with intelligence at every step.",
-      description: "Verified accommodation discovery, photorealistic 3D exploration, live route guidance, application readiness and student opportunity intelligence through one ResKonnect journey.",
-      cta: { text: "Explore ResMap 3D", action: () => navigate("/findmyres?view=map&mode=3d") }
+      title: "One account. One journey. Smarter next steps.",
+      description: "Find accommodation, prepare applications, ask ResKonnect AI and discover verified bursaries, WIL and student opportunities without stitching together unrelated services.",
+      cta: { text: "Ask ResKonnect AI", action: () => navigate("/ai") }
     }
   ];
 
   const features = [
-    { icon: Shield, title: "Verified Discovery", description: "Browse mapped student accommodation with verification and live listing context.", cta: { label: "Browse Residences", to: "/findmyres" } },
-    { icon: Rotate3D, title: "ResMap 3D", description: "Explore photorealistic 3D areas and switch into live route and immersive Street View navigation.", cta: { label: "Explore in 3D", to: "/findmyres?view=map&mode=3d" } },
-    { icon: BrainCircuit, title: "Dimpho AI", description: "Use ResKonnect intelligence to reshape accommodation discovery around what you actually need.", cta: { label: "Find My Res", to: "/findmyres" } },
-    { icon: BadgeCheck, title: "Placement Guarantee", description: "Eligible placement clients who complete the required process and accept an available suitable match are covered by ResKonnect's accommodation placement guarantee.", cta: { label: "Start Placement", to: "/get-started" } },
+    { icon: Building2, title: "Living", description: "Find verified student accommodation, private-rental support and connected Living services in one place.", cta: { label: "Explore Living", to: "/living" } },
+    { icon: BrainCircuit, title: "ResKonnect AI", description: "Ask grounded questions, understand your next action and use account-aware guidance when signed in.", cta: { label: "Ask ResKonnect AI", to: "/ai" } },
+    { icon: Award, title: "Opportunity", description: "Move from study into applications, bursaries, WIL, career pathways and verified student opportunities.", cta: { label: "Explore Opportunity", to: "/opportunities" } },
+    { icon: FileCheck, title: "Connected Service", description: "One profile, one journey and clear next actions across ResKonnect services instead of disconnected forms and channels.", cta: { label: "Get Started", to: "/get-started" } },
   ];
 
   const organizationSchema = {
@@ -73,12 +73,12 @@ const Landing = () => {
     "url": "https://www.reskonnect.org",
     "logo": "https://www.reskonnect.org/icon-512.png",
     "slogan": "Connecting Residents. Advancing Futures.",
-    "description": "ResKonnect is an Africa-built student accommodation technology platform combining verified accommodation discovery, Dimpho AI, photorealistic ResMap 3D, live navigation, accommodation placement workflows, application readiness and student opportunity intelligence.",
+    "description": "ResKonnect is an integrated Living, AI and Opportunity platform connecting student accommodation, intelligent guidance, applications, education pathways, bursaries, WIL and verified opportunities through one connected journey.",
     "parentOrganization": { "@type": "Organization", "name": "Start To Up", "url": "https://www.start-to-up.co.za/" },
     "email": "reskonnect@gmail.com",
     "telephone": "+27637323192",
     "areaServed": { "@type": "Country", "name": "South Africa" },
-    "knowsAbout": ["student accommodation", "AI accommodation discovery", "3D student accommodation maps", "student accommodation placement", "student applications", "WIL opportunities"],
+    "knowsAbout": ["student accommodation", "student living", "student artificial intelligence", "student applications", "course guidance", "bursaries", "WIL opportunities", "student opportunities"],
     "contactPoint": { "@type": "ContactPoint", "telephone": "+27-63-732-3192", "contactType": "customer service", "email": "reskonnect@gmail.com" },
   };
   const websiteSchema = {
@@ -88,17 +88,17 @@ const Landing = () => {
     "name": "ResKonnect",
     "url": "https://www.reskonnect.org",
     "publisher": { "@id": "https://www.reskonnect.org/#organization" },
-    "potentialAction": { "@type": "SearchAction", "target": "https://www.reskonnect.org/findmyres?q={search_term_string}", "query-input": "required name=search_term_string" },
+    "potentialAction": { "@type": "SearchAction", "target": "https://www.reskonnect.org/ai?q={search_term_string}", "query-input": "required name=search_term_string" },
   };
   const applicationSchema = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "ResKonnect Find My Res",
-    "url": "https://www.reskonnect.org/findmyres",
+    "name": "ResKonnect",
+    "url": "https://www.reskonnect.org",
     "applicationCategory": "LifestyleApplication",
     "operatingSystem": "Web",
-    "description": "AI-assisted student accommodation discovery with Dimpho, ResMap 3D, live location navigation, immersive Street View and accommodation placement workflows.",
-    "featureList": ["Dimpho AI accommodation discovery", "ResMap photorealistic 3D", "live route navigation", "immersive Street View", "verified residence discovery", "accommodation placement workflow"],
+    "description": "Integrated student platform for Living, grounded AI guidance, applications and opportunity discovery through one ResKonnect account.",
+    "featureList": ["verified accommodation discovery", "ResKonnect AI", "application readiness", "course and APS guidance", "bursaries", "WIL and opportunity discovery", "student journey next actions"],
     "publisher": { "@id": "https://www.reskonnect.org/#organization" },
   };
   const faqSchema = {
@@ -123,10 +123,10 @@ const Landing = () => {
       },
       {
         "@type": "Question",
-        "name": "Who is Dimpho?",
+        "name": "What is ResKonnect AI?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Dimpho is ResKonnect's AI service and intelligence layer for accommodation discovery and student journey guidance. In ResMap, Dimpho can interpret a student's needs and reshape map discovery around relevant accommodation criteria."
+          "text": "ResKonnect AI is the intelligence layer across Living, applications and opportunities. Luna is the website-facing agent and Dimpho is the WhatsApp-facing agent; both operate underneath ResKonnect AI and use verified ResKonnect context where available."
         }
       }
     ]
@@ -135,9 +135,9 @@ const Landing = () => {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <SEO
-        title="ResKonnect | Dimpho AI Student Accommodation & ResMap 3D"
-        description="Africa-built student accommodation technology combining Dimpho AI, verified accommodation discovery, ResMap 3D, live navigation and guaranteed accommodation placement for eligible placement clients."
-        keywords="ResKonnect, student accommodation Africa, Dimpho AI, ResMap 3D, AI student accommodation, photorealistic accommodation map, guaranteed student accommodation placement, student housing technology Africa"
+        title="ResKonnect | Living • AI • Opportunity"
+        description="ResKonnect connects Living, AI and Opportunity in one integrated student platform for accommodation, intelligent guidance, applications, bursaries, WIL and verified opportunities."
+        keywords="ResKonnect, Living AI Opportunity, student platform South Africa, student accommodation, student AI, applications, bursaries, WIL, student opportunities"
         canonicalPath="/"
       />
       <SEOJsonLd schema={[organizationSchema, websiteSchema, applicationSchema, faqSchema]} />
@@ -149,38 +149,42 @@ const Landing = () => {
           <HeroCarousel slides={fallbackSlides} autoPlay interval={6000} useDatabase={true} location="landing" />
         </section>
 
-        <section className="border-b bg-background py-7 md:py-10">
+        <section className="border-b bg-background py-9 md:py-14">
           <div className="container mx-auto px-4 text-center">
-            <p className="mb-2 text-xs font-black uppercase tracking-[0.24em] text-primary">Africa-built student accommodation technology</p>
-            <h1 className="mx-auto max-w-5xl text-2xl font-black leading-tight md:text-4xl lg:text-5xl">
-              ResKonnect is building a new category of <span className="text-primary">AI-powered student accommodation discovery and placement.</span>
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.24em] text-primary">LIVING • AI • OPPORTUNITY</p>
+            <h1 className="mx-auto max-w-5xl text-3xl font-black leading-tight md:text-5xl lg:text-6xl">
+              Everything students need to <span className="text-primary">move forward. Connected.</span>
             </h1>
-            <p className="mx-auto mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
-              Dimpho AI, ResMap 3D, immersive navigation, verified accommodation and a defined accommodation placement guarantee now operate as one connected student journey — built in Africa with the ambition to transform how accommodation is found across the continent.
+            <p className="mx-auto mt-4 max-w-3xl text-sm leading-7 text-muted-foreground md:text-lg">
+              ResKonnect connects where students live, the intelligence they need to make decisions and the opportunities that move them forward — through one account, one profile and one connected journey.
             </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Button size="lg" onClick={() => navigate("/get-started")}>Explore ResKonnect</Button>
+              <Button size="lg" variant="outline" onClick={() => navigate("/ai")}>Ask ResKonnect AI</Button>
+            </div>
           </div>
         </section>
-
-        <AutomationAdvantageSection />
-
-        <LandingResMap3DPreview />
 
         <section className="border-b bg-gradient-to-b from-primary/5 to-background py-10 md:py-14">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-5xl text-center">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">The ResKonnect difference</p>
-              <h2 className="mt-2 text-3xl font-black md:text-4xl">More than a listing marketplace.</h2>
-              <p className="mx-auto mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">ResKonnect connects discovery, intelligence, exploration, navigation and placement into a single accommodation operating layer for students and partners.</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">One ResKonnect journey</p>
+              <h2 className="mt-2 text-3xl font-black md:text-4xl">Three pillars. One platform.</h2>
+              <p className="mx-auto mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">Specialised capabilities such as ResMap, Luna and Dimpho strengthen the journey underneath these three master ResKonnect pillars.</p>
             </div>
             <div className="mx-auto mt-7 grid max-w-6xl gap-4 md:grid-cols-3">
-              <Card className="border-primary/15 bg-card shadow-sm"><CardContent className="p-6"><BrainCircuit className="h-8 w-8 text-primary" /><h3 className="mt-4 text-xl font-black">Ask Dimpho</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Move beyond static filters. Dimpho interprets accommodation needs and helps students navigate ResKonnect's connected data and services.</p></CardContent></Card>
-              <Card className="border-primary/15 bg-card shadow-sm"><CardContent className="p-6"><Rotate3D className="h-8 w-8 text-primary" /><h3 className="mt-4 text-xl font-black">Explore in ResMap 3D</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">See mapped areas in photorealistic 3D where imagery exists, then switch into live routes and immersive real-world Street View navigation.</p></CardContent></Card>
-              <Card className="border-primary/15 bg-card shadow-sm"><CardContent className="p-6"><BadgeCheck className="h-8 w-8 text-primary" /><h3 className="mt-4 text-xl font-black">Accommodation placement guarantee</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Eligible placement clients who complete the required process, submit required documents and accept an available suitable match are covered by the ResKonnect accommodation placement guarantee.</p></CardContent></Card>
+              <Card className="border-emerald-500/15 bg-card shadow-sm"><CardContent className="p-6"><Building2 className="h-8 w-8 text-emerald-600" /><h3 className="mt-4 text-xl font-black">Living</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Find verified student accommodation, private-rental support, roommates and connected housing services.</p><Button variant="link" className="mt-3 p-0" onClick={() => navigate("/living")}>Explore Living →</Button></CardContent></Card>
+              <Card className="border-violet-500/15 bg-card shadow-sm"><CardContent className="p-6"><BrainCircuit className="h-8 w-8 text-violet-600" /><h3 className="mt-4 text-xl font-black">AI</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Ask grounded questions, understand your next action and use account-aware ResKonnect guidance.</p><Button variant="link" className="mt-3 p-0" onClick={() => navigate("/ai")}>Ask ResKonnect AI →</Button></CardContent></Card>
+              <Card className="border-amber-500/15 bg-card shadow-sm"><CardContent className="p-6"><Award className="h-8 w-8 text-amber-600" /><h3 className="mt-4 text-xl font-black">Opportunity</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Move into applications, education pathways, bursaries, WIL, careers and verified student opportunities.</p><Button variant="link" className="mt-3 p-0" onClick={() => navigate("/opportunities")}>Explore Opportunity →</Button></CardContent></Card>
             </div>
           </div>
         </section>
 
         <InteractiveNeedSection />
+
+        <AutomationAdvantageSection />
+
+        <LandingResMap3DPreview />
 
         <section className="py-8 md:py-10 bg-gradient-to-b from-primary/5 to-background">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -218,9 +222,9 @@ const Landing = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center max-w-6xl mx-auto">
               <div className="order-2 md:order-1">
                 <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-primary">About ResKonnect</p>
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">An African technology company rethinking the student accommodation journey.</h2>
-                <p className="text-muted-foreground mb-4 leading-relaxed">ResKonnect combines accommodation discovery with AI intelligence, spatial exploration and real placement operations. Students can move from finding options to understanding the surrounding area, navigating to a property and entering a supported placement journey without stitching together unrelated tools.</p>
-                <p className="text-muted-foreground mb-6 leading-relaxed">South Africa is the current live operating base for accommodation inventory. The product and technology are being built for a broader African student-housing future rather than being positioned as a Pretoria-only directory.</p>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">An African technology company connecting student life, intelligence and opportunity.</h2>
+                <p className="text-muted-foreground mb-4 leading-relaxed">ResKonnect connects Living, AI and Opportunity so students can move from finding a place to live, to understanding applications and next steps, to discovering bursaries, WIL and other opportunities without stitching together unrelated tools.</p>
+                <p className="text-muted-foreground mb-6 leading-relaxed">South Africa is the current live operating base. The platform is being built as connected student infrastructure that can expand across institutions and African markets while keeping verified local service delivery at the centre.</p>
                 <div className="flex flex-wrap gap-3">
                   <Button onClick={() => navigate("/findmyres")} className="gap-2">
                     <Users className="w-4 h-4" /> Find My Res
@@ -231,7 +235,7 @@ const Landing = () => {
                 </div>
               </div>
               <div className="order-1 md:order-2 bg-primary/10 rounded-2xl p-8 h-64 md:h-80 flex items-center justify-center relative group">
-                <img src={iconLogo} alt="ResKonnect African student accommodation technology platform" className="w-32 md:w-48 h-auto opacity-70 group-hover:scale-110 transition-transform duration-500" />
+                <img src={iconLogo} alt="ResKonnect Living AI Opportunity platform" className="w-32 md:w-48 h-auto opacity-70 group-hover:scale-110 transition-transform duration-500" />
                 <div className="absolute inset-0 rounded-2xl border border-primary/20 group-hover:border-primary/40 transition-colors" />
               </div>
             </div>
