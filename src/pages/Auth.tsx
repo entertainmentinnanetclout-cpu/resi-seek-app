@@ -82,6 +82,8 @@ const Auth = () => {
   const returnTo = safeLocalReturnPath(searchParams.get("returnTo"));
   const refCode = searchParams.get("ref");
   const isPasswordRecovery = searchParams.get("mode") === "password-reset";
+  const isNativeShell = typeof window !== "undefined" && Boolean((window as any).Capacitor?.isNativePlatform?.());
+  const publicAuthOrigin = isNativeShell ? "https://www.reskonnect.org" : window.location.origin;
 
   useEffect(() => {
     if (["tvet_student", "matriculant"].includes(applicantStage)) setIdentifierType("identity_number");
@@ -181,7 +183,7 @@ const Auth = () => {
         const { data, error: signupError } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/auth`, data: metadata },
+          options: { emailRedirectTo: `${publicAuthOrigin}/auth`, data: metadata },
         });
         if (signupError) throw signupError;
 
@@ -218,7 +220,7 @@ const Auth = () => {
     setResetSending(true);
     setError(null);
     try {
-      const redirectTo = `${window.location.origin}/auth?mode=password-reset&returnTo=${encodeURIComponent(returnTo || "/dashboard")}`;
+      const redirectTo = `${publicAuthOrigin}/auth?mode=password-reset&returnTo=${encodeURIComponent(returnTo || "/dashboard")}`;
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo });
       if (resetError) throw resetError;
       toast.success("If this email is registered, a secure reset link has been sent.");
@@ -234,7 +236,12 @@ const Auth = () => {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
-    const redirectTo = `${window.location.origin}/auth${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
+    if (isNativeShell) {
+      toast.info("Google sign-in is available on the ResKonnect website for this Android release. Use email/password in the app.");
+      setIsLoading(false);
+      return;
+    }
+    const redirectTo = `${publicAuthOrigin}/auth${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -292,7 +299,7 @@ const Auth = () => {
             <Button type="submit" className="w-full" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{isLogin ? "Sign In" : "Create Account"}</Button>
           </form>
 
-          <>
+          {!isNativeShell && <>
             <div className="relative my-5">
               <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
               <div className="relative flex justify-center text-xs font-semibold uppercase tracking-[0.14em]">
@@ -317,7 +324,7 @@ const Auth = () => {
             <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
               Google verifies your email identity. ResKonnect then collects only the contact and student details needed for your services.
             </p>
-          </>
+          </>}
           <button type="button" onClick={() => { setIsLogin((v) => !v); setError(null); }} className="mt-5 w-full text-center text-sm font-semibold text-primary hover:underline">{isLogin ? "New here? Create an account" : "Already have an account? Sign in"}</button>
         </CardContent></Card>
         <p className="mt-6 text-center text-xs text-muted-foreground">{BRAND.tagline}</p>
