@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Search, FileText, Menu, LogOut, GraduationCap, Shield, RefreshCw, Briefcase, LogIn, UserPlus, Sparkles, Rotate3D } from "lucide-react";
+import { Home, Search, FileText, Menu, LogOut, Shield, RefreshCw, Briefcase, BriefcaseBusiness, Headphones, LogIn, UserPlus, Sparkles, Rotate3D } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -26,11 +26,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const publicNavItems = [
     { icon: Search, label: "Find My Res", path: "/findmyres" },
     { icon: FileText, label: "Apply", path: "/apply" },
-    { icon: GraduationCap, label: "Bursaries", path: "/bursaries" },
+    { icon: BriefcaseBusiness, label: "Opportunities", path: "/opportunities" },
   ];
   const authNavItems = [
-    { icon: Home, label: "Home", path: "/dashboard" },
-    { icon: Rotate3D, label: "360 Studio", path: "/360-studio" },
+    { icon: Home, label: "My ResKonnect", path: "/dashboard" },
+    { icon: Headphones, label: "Service Centre", path: "/dashboard/services" },
     { icon: Briefcase, label: "My WIL", path: "/wil" },
     { icon: FileText, label: "Applications", path: "/applications" },
   ];
@@ -54,7 +54,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         {isAdmin ? (
           <Badge variant="destructive" className="w-full justify-center gap-1.5 py-1"><Shield className="h-3.5 w-3.5" />Admin Mode</Badge>
         ) : user ? (
-          <p className="text-center text-sm text-muted-foreground">Student Portal</p>
+          <p className="text-center text-sm text-muted-foreground">My ResKonnect · Living • AI • Opportunity</p>
         ) : (
           <p className="text-center text-sm text-muted-foreground">Browse Residences</p>
         )}
