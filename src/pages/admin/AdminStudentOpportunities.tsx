@@ -6,10 +6,12 @@ import { AdminApplicationHubContent } from "./AdminApplicationHub";
 import { AdminWILContent } from "./AdminWIL";
 import { AdminBursariesContent } from "./AdminBursaries";
 import { AdminOnboardingHub } from "@/components/admin/onboarding/AdminOnboardingHubContent";
-import { BriefcaseBusiness, GraduationCap, HandCoins, Inbox, School, Sparkles } from "lucide-react";
+import { BriefcaseBusiness, GraduationCap, HandCoins, Inbox, LibraryBig, School, Sparkles } from "lucide-react";
 import { AdminTvetHubContent } from "./AdminTvetHub";
 import AdminStudentOpportunityAutomation from "@/components/admin/AdminStudentOpportunityAutomation";
 import AdminDepartmentTaskQueue from "@/components/admin/AdminDepartmentTaskQueue";
+import AdminOpportunityRegistry from "@/components/admin/AdminOpportunityRegistry";
+import AdminServiceRequestQueue from "@/components/admin/AdminServiceRequestQueue";
 
 export default function AdminStudentOpportunities(){
   return <AdminLayout>
@@ -26,6 +28,7 @@ export default function AdminStudentOpportunities(){
           <TabsTrigger value="tvet" className="gap-2"><School className="h-4 w-4"/>TVET Operations</TabsTrigger>
           <TabsTrigger value="wil" className="gap-2"><BriefcaseBusiness className="h-4 w-4"/>WIL & Placement</TabsTrigger>
           <TabsTrigger value="bursaries" className="gap-2"><HandCoins className="h-4 w-4"/>Bursaries & Funding</TabsTrigger>
+          <TabsTrigger value="registry" className="gap-2"><LibraryBig className="h-4 w-4"/>Opportunity Registry</TabsTrigger>
           <TabsTrigger value="automation" className="gap-2"><Sparkles className="h-4 w-4"/>RG9 Automation</TabsTrigger>
           <TabsTrigger value="enquiries" className="gap-2"><Inbox className="h-4 w-4"/>Service Enquiries</TabsTrigger>
         </TabsList>
@@ -33,8 +36,10 @@ export default function AdminStudentOpportunities(){
         <TabsContent value="tvet"><AdminTvetHubContent/></TabsContent>
         <TabsContent value="wil"><AdminWILContent/></TabsContent>
         <TabsContent value="bursaries"><AdminBursariesContent/></TabsContent>
+        <TabsContent value="registry"><AdminOpportunityRegistry/></TabsContent>
         <TabsContent value="automation" className="space-y-4"><AdminStudentOpportunityAutomation/><AdminDepartmentTaskQueue departmentKey="student_opportunities" title="Student Services automation queue"/></TabsContent>
         <TabsContent value="enquiries" className="space-y-4">
+          <AdminServiceRequestQueue title="Student Opportunity service requests"/>
           <div className="rounded-2xl border bg-muted/25 p-4"><p className="font-black">Student service intake</p><p className="mt-1 text-xs text-muted-foreground">Allocate and resolve cross-service requests including application support, parents/guardian guidance, WIL, private rentals and other student journeys.</p></div>
           <AdminOnboardingHub/>
         </TabsContent>
