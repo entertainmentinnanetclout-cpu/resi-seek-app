@@ -65,7 +65,7 @@ insert into public.public_opportunities(
   'Use the official National Treasury 2027 CAA advert and e-Recruitment route for the complete eligibility and document requirements.',
   'https://erecruitment.treasury.gov.za/',
   '2026-10-02 12:00:00+02',
-  null,
+  now(),
   'training programme',
   true,
   now(),
@@ -73,6 +73,7 @@ insert into public.public_opportunities(
     'source_url','https://www.treasury.gov.za/graduate/',
     'source_class','official_government',
     'verification_note','Official National Treasury graduate recruitment page verified 2026-09-13',
+    'date_posted_basis','ResKonnect verification/ingestion date because the official page does not expose a publication date',
     'official_confirmation_required',true
   )
 )
