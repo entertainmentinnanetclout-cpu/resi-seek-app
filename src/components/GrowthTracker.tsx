@@ -64,7 +64,7 @@ const GrowthTracker = () => {
           // Durable partnership attribution stays in localStorage until retried.
         }
       }
-    }, 400);
+    }, 1200);
     return () => window.clearTimeout(timer);
   }, [location.pathname, location.search, user?.id]);
 
