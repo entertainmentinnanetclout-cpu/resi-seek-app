@@ -75,7 +75,7 @@ const SiteFooter = () => (
             <h4 className="mb-4 text-sm font-semibold text-foreground">{col.title}</h4>
             <ul className="space-y-2 text-sm">
               {col.links.map((l) => (
-                <li key={l.to}>
+                <li key={`${l.to}-${l.label}`}>
                   <Link to={l.to} className="text-muted-foreground transition-colors hover:text-primary">
                     {l.label}
                   </Link>

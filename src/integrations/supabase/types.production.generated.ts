@@ -15,6 +15,10 @@ type LegacyViews = LegacyPublic["Views"];
 type LegacyFunctions = LegacyPublic["Functions"];
 
 type ResidenceRow = LegacyTables["residences"]["Row"] & {
+  private_price: number | null;
+  nsfas_price: number | null;
+  promo_price: number | null;
+  reservations_2027_open: boolean;
   cover_image_url: string | null;
   studio_image_url: string | null;
   brand_badge: string | null;
@@ -71,17 +75,39 @@ type ResidenceUpdate = LegacyTables["residences"]["Update"] & {
   public_brand_card_enabled?: boolean;
 };
 
-type ResidenceRoomTypesRow = LegacyTables["residence_room_types"]["Row"] & {
+// Verified against information_schema on production, 2026-09-14.
+type ResidenceRoomTypesRow = {
+  id: string;
+  residence_id: string;
+  name: string;
+  slug: string | null;
+  description: string | null;
+  academic_year: number;
+  capacity: number;
+  available_beds: number;
+  private_price: number | null;
+  nsfas_price: number | null;
+  deposit: number | null;
+  admin_fee: number | null;
+  reservation_fee: number | null;
+  promo_price: number | null;
+  promo_starts_at: string | null;
+  promo_ends_at: string | null;
+  is_active: boolean;
+  price_verified_at: string | null;
+  price_verified_by: string | null;
+  created_at: string;
+  updated_at: string;
   landlord_confirmed_at: string | null;
   landlord_confirmed_by: string | null;
 };
 
-type ResidenceRoomTypesInsert = LegacyTables["residence_room_types"]["Insert"] & {
+type ResidenceRoomTypesInsert = Partial<ResidenceRoomTypesRow> & Pick<ResidenceRoomTypesRow, "residence_id" | "name"> & {
   landlord_confirmed_at?: string | null;
   landlord_confirmed_by?: string | null;
 };
 
-type ResidenceRoomTypesUpdate = LegacyTables["residence_room_types"]["Update"] & {
+type ResidenceRoomTypesUpdate = Partial<ResidenceRoomTypesRow> & {
   landlord_confirmed_at?: string | null;
   landlord_confirmed_by?: string | null;
 };
@@ -359,7 +385,7 @@ export type Database = Omit<LegacyDatabase, "__InternalSupabase" | "public"> & {
         Row: ResidenceRoomTypesRow;
         Insert: ResidenceRoomTypesInsert;
         Update: ResidenceRoomTypesUpdate;
-        Relationships: LegacyTables["residence_room_types"]["Relationships"];
+        Relationships: [];
       };
       residence_profile_change_log: ResidenceProfileChangeLog;
       partnerships: Partnerships;

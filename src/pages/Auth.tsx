@@ -20,6 +20,8 @@ import { clearPendingApplication, clearPendingRecruiter, readPendingApplication,
 import GoogleLogo from "@/components/auth/GoogleLogo";
 import { clearWeakPassword, rememberWeakPassword } from "@/lib/passwordSecurity";
 import PasswordReset from "@/pages/PasswordReset";
+import AccountPortals from "@/components/AccountPortals";
+import { accountHome } from "@/lib/accountRouting";
 
 const passwordSchema = z.string().min(8, "Password must be at least 8 characters").regex(/[A-Z]/, "Must contain an uppercase letter").regex(/[a-z]/, "Must contain a lowercase letter").regex(/[0-9]/, "Must contain a number");
 const phoneSchema = z.string().regex(/^(\+27|0)[6-8][0-9]{8}$/, "Enter a valid South African mobile number");
@@ -71,7 +73,8 @@ const HEARD_ABOUT_US_OPTIONS = [
 const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, isLoading: authLoading, isGodMode, staffRole, isRecruiter, isPendingRecruiter } = useAuth();
+  const access = useAuth();
+  const { user, isLoading: authLoading, isGodMode, staffRole, isRecruiter, isPendingRecruiter, isTumeloPartner, adminDepartments } = access;
   const [isLogin, setIsLogin] = useState(searchParams.get("mode") !== "signup");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +96,10 @@ const Auth = () => {
 
   useEffect(() => {
     if (isPasswordRecovery || authLoading || !user) return;
+    if (staffRole || isTumeloPartner) {
+      navigate(accountHome(access), { replace: true });
+      return;
+    }
     const timer = setTimeout(async () => {
       const ref = readReferral();
       if (ref?.sessionId) { try { await attachReferralToUser(ref.sessionId); } catch {} }
@@ -151,10 +158,11 @@ const Auth = () => {
         } catch (e) { console.warn("auto-submit application failed", e); }
         return navigate(pendingApp.current_route || `/res/${pendingApp.residence_id}`, { replace: true });
       }
-      navigate(returnTo || "/dashboard", { replace: true });
+      const savedHome = isNativeShell && localStorage.getItem(`rk_native_home_${user.id}`) === "/residence" ? "/residence" : "/dashboard";
+      navigate(returnTo || savedHome, { replace: true });
     }, 150);
     return () => clearTimeout(timer);
-  }, [user, authLoading, isGodMode, staffRole, isRecruiter, isPendingRecruiter, navigate, returnTo, isPasswordRecovery]);
+  }, [user?.id, authLoading, isGodMode, staffRole, isRecruiter, isPendingRecruiter, isTumeloPartner, adminDepartments, navigate, returnTo, isPasswordRecovery]);
 
   const identifierLabel = identifierType === "identity_number" ? "South African ID number" : "Student number";
   const campusOptions = useMemo(() => [
@@ -301,6 +309,7 @@ const Auth = () => {
       <SEO title="Sign In or Create Account | ResKonnect" description="Access accommodation, applications, reservations and opportunities through your ResKonnect account." />
       <div className="mx-auto w-full max-w-md">
         <div className="text-center"><img src={BRAND.logos.full} alt={BRAND.name} className="mx-auto h-16 w-auto object-contain" /><h1 className="mt-6 text-3xl font-black">{isLogin ? "Sign in to ResKonnect" : "Create your ResKonnect account"}</h1><p className="mt-2 text-sm text-muted-foreground">Accommodation, applications and opportunity — connected.</p></div>
+        <AccountPortals />
         <Card className="mt-7 shadow-xl"><CardContent className="p-6 sm:p-8">
           {error && <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-5">

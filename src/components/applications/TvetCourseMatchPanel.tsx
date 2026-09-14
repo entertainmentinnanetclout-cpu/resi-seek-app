@@ -54,7 +54,7 @@ const TvetCourseMatchPanel=({selectedCollege="all",onSelectedCollegeChange,onSav
       const {data:institutions,error:institutionError}=await institutionQuery.order("sort_order",{ascending:true});
       if(institutionError)throw institutionError;
       const institutionRows=(institutions??[]).filter((row:any)=>row.institution_id);
-      const byId=new Map(institutionRows.map((row:any)=>[row.institution_id,row]));
+      const byId=new Map<string, Parameters<typeof compareTvetPublishedRequirements>[1]>(institutionRows.map((row:any)=>[row.institution_id,row]));
       const {data:programmes,error:programmeError}=await (supabase as any).from("programmes")
         .select("id,institution_id,name,qualification_type,campus,official_url,metadata")
         .eq("is_active",true).in("institution_id",institutionRows.map((row:any)=>row.institution_id));

@@ -34,7 +34,7 @@ expect(config.includes("[functions.send-push]\nverify_jwt = true"),"push fan-out
 expect(!notFound.includes("CareerEducation")&&!notFound.includes("ManagedSeoPage"),"404 no longer defeats route splitting");
 expect(app.includes('const Landing = lazy(')&&app.includes("DeferredGlobalEnhancements"),"landing/global enhancements are split from boot bundle");
 expect(dashboard.includes("!isMobile")&&dashboard.includes("dashboard-notifications-mobile"),"dashboard mounts one notification realtime client");
-expect(native.versionName==="1.1.0"&&native.versionCode===3,"Android release is 1.1.0 / versionCode 3");
+expect(native.versionName==="1.1.1"&&native.versionCode===4,"Android release is 1.1.1 / versionCode 4");
 
 if(process.exitCode) process.exit(process.exitCode);
 console.log("Android/web reliability gate passed.");

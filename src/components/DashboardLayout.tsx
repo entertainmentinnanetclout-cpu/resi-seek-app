@@ -42,10 +42,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navItems = isAdmin ? adminNavItems : user ? [authNavItems[0], ...publicNavItems, ...authNavItems.slice(1), ...recruiterNavItems] : publicNavItems;
 
   const isActive = (path: string) => location.pathname === path;
-  const handleLogout = async () => { await signOut(); };
+  const handleLogout = async () => { try { await signOut(); } catch { toast.error("Could not sign out. Please retry when connected."); } };
   const handleRefresh = () => { toast.info("Refreshing data..."); window.location.reload(); };
   const profileInitials = profile?.full_name
-    ? profile.full_name.split(" ").map((name: string) => name[0]).join("").toUpperCase().slice(0, 2)
+    ? String(profile.full_name).split(" ").map((name: string) => name[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
   const SidebarContent = () => (

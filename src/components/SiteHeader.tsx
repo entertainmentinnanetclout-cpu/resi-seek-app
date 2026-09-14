@@ -8,6 +8,8 @@ import { BRAND } from "@/constants/brand";
 import SiteAnnouncementPopup from "@/components/SiteAnnouncementPopup";
 import HomeJourneyBar from "@/components/HomeJourneyBar";
 import { useAuth } from "@/contexts/AuthContext";
+import { accountHome } from "@/lib/accountRouting";
+import { toast } from "sonner";
 
 export const PUBLIC_NAV = [
   {
@@ -50,7 +52,9 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
-  const { user, isLoading: authLoading } = useAuth();
+  const access = useAuth();
+  const { user, isLoading: authLoading } = access;
+  const logout = () => void access.signOut().catch(() => toast.error("Could not sign out. Please retry."));
   const isActive = (to: string) => {
     const pathname = to.split("?")[0];
     return location.pathname === pathname || location.pathname.startsWith(`${pathname}/`);
@@ -104,7 +108,7 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
             {authLoading ? (
               <Button variant="ghost" size="sm" disabled className="min-w-28">Checking account…</Button>
             ) : user ? (
-              <Button size="sm" onClick={() => navigate("/dashboard")} className="gap-1.5 font-semibold"><LayoutDashboard className="h-4 w-4" /> My ResKonnect</Button>
+              <><Button size="sm" onClick={() => navigate(accountHome(access))} className="gap-1.5 font-semibold"><LayoutDashboard className="h-4 w-4" /> My ResKonnect</Button><Button size="sm" variant="ghost" onClick={logout}>Sign out</Button></>
             ) : (
               <>
                 <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}><LogIn className="mr-1.5 h-4 w-4" /> Sign In</Button>
@@ -143,7 +147,7 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
                         {authLoading ? (
                           <Button variant="outline" className="w-full" disabled>Checking account…</Button>
                         ) : user ? (
-                          <SheetClose asChild><Button className="w-full gap-2" onClick={() => navigate("/dashboard")}><LayoutDashboard className="h-4 w-4" />My ResKonnect</Button></SheetClose>
+                          <><SheetClose asChild><Button className="w-full gap-2" onClick={() => navigate(accountHome(access))}><LayoutDashboard className="h-4 w-4" />My ResKonnect</Button></SheetClose><SheetClose asChild><Button variant="outline" className="w-full" onClick={logout}>Sign out</Button></SheetClose></>
                         ) : (
                           <>
                             <SheetClose asChild><Button variant="outline" className="w-full" onClick={() => navigate("/auth")}>Sign In</Button></SheetClose>

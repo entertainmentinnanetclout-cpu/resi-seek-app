@@ -20,7 +20,6 @@ import WhatsAppPhoneVerification from "@/components/security/WhatsAppPhoneVerifi
 
 const Profile = () => {
   const shouldBlock = useAdminRedirect();
-  if (shouldBlock) return null;
   const [isEditing, setIsEditing] = useState(false);
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>({});
@@ -163,6 +162,7 @@ const Profile = () => {
     </Card>
   )
 
+  if (shouldBlock) return null;
   return (
     <DashboardLayout>
         <SEO

@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
 import GodModeMfaGate from '@/components/admin/GodModeMfaGate';
+import { accountHome } from '@/lib/accountRouting';
 
 export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading: authLoading, staffRole, isGodMode } = useAuth();
+  const access = useAuth();
+  const { user, isLoading: authLoading, staffRole, isGodMode, adminDepartments } = access;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,22 +18,9 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (!isGodMode) {
-      console.warn(`[AdminRoute] Access denied for role: ${staffRole}. Redirecting to specific dashboard.`);
-
-      if (staffRole === 'tvet_lead') {
-        navigate('/tvet-dashboard', { replace: true });
-      } else if (staffRole === 'operations_lead' || staffRole === 'system_operator') {
-        navigate('/dashboard', { replace: true });
-      } else if (staffRole === 'commerce_lead') {
-        navigate('/commerce', { replace: true });
-      } else if (staffRole === 'growth_lead') {
-        navigate('/media', { replace: true });
-      } else {
-        toast.error('Access denied: God Mode privileges required');
-        navigate('/dashboard', { replace: true });
-      }
+      navigate(accountHome(access), { replace: true });
     }
-  }, [user, authLoading, staffRole, isGodMode, navigate]);
+  }, [user, authLoading, staffRole, isGodMode, adminDepartments, navigate]);
 
   if (authLoading) {
     return (

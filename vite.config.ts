@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
-      mode === "production" &&
+      mode === "production" && process.env.RK_NATIVE_BUILD !== "1" &&
         VitePWA({
           registerType: "autoUpdate",
           devOptions: { enabled: false },
