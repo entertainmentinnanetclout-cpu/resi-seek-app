@@ -40,12 +40,12 @@ export default function ContactDetailsGate({ children }: { children: React.React
         return;
       }
       const next = {
-        full_name: data?.full_name || (user.user_metadata?.full_name as string) || "",
-        phone: data?.phone || (user.user_metadata?.phone as string) || "",
-        student_number: data?.student_number || (user.user_metadata?.student_number as string) || "",
-        identity_number: data?.identity_number || (user.user_metadata?.identity_number as string) || "",
-        campus: data?.campus || (user.user_metadata?.campus as string) || "",
-        applicant_stage: data?.applicant_stage || (user.user_metadata?.applicant_stage as string) || "university_student",
+        full_name: String(data?.full_name || user.user_metadata?.full_name || ""),
+        phone: String(data?.phone || user.user_metadata?.phone || ""),
+        student_number: String(data?.student_number || user.user_metadata?.student_number || ""),
+        identity_number: String(data?.identity_number || user.user_metadata?.identity_number || ""),
+        campus: String(data?.campus || user.user_metadata?.campus || ""),
+        applicant_stage: String(data?.applicant_stage || user.user_metadata?.applicant_stage || "university_student"),
       };
       const useId = Boolean(next.identity_number && !next.student_number) || ["tvet_student", "matriculant"].includes(next.applicant_stage);
       setIdentifierType(useId ? "identity_number" : "student_number");
@@ -53,8 +53,8 @@ export default function ContactDetailsGate({ children }: { children: React.React
       setComplete(Boolean(next.full_name.trim() && phonePattern.test(next.phone.trim()) && next.campus.trim() && (next.student_number.trim() || idPattern.test(next.identity_number.trim()))));
       setLoading(false);
     };
-    void load();
-  }, [user]);
+    void load().catch(() => setLoading(false));
+  }, [user?.id]);
 
   const validIdentifier = identifierType === "student_number" ? form.student_number.trim().length >= 5 : idPattern.test(form.identity_number.trim());
   const valid = useMemo(() => Boolean(form.full_name.trim().length >= 2 && phonePattern.test(form.phone.trim()) && validIdentifier && form.campus && form.applicant_stage), [form, validIdentifier]);

@@ -6,11 +6,11 @@ on:
       version_code:
         description: "Play versionCode (must increase every upload)"
         required: true
-        default: "1"
+        default: "4"
       version_name:
         description: "Public versionName"
         required: true
-        default: "1.0.0"
+        default: "1.1.1"
 
 permissions:
   contents: read
@@ -77,6 +77,8 @@ jobs:
         run: npm install --no-save --package-lock=false @capacitor/core@8.5.0 @capacitor/android@8.5.0 @capacitor/cli@8.5.0
 
       - name: Build production web bundle
+        env:
+          RK_NATIVE_BUILD: "1"
         run: npm run build
 
       - name: Sync Capacitor Android

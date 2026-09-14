@@ -24,7 +24,7 @@ export const SpecialistRoute = ({ children, allowedRoles }: Props) => {
     setReady(true);
   }, [user, isLoading, staffRole, navigate, allowedRoles]);
 
-  if (isLoading || !ready) {
+  if (isLoading || !ready || !user || !staffRole || !allowedRoles.includes(staffRole)) {
     return <div className="flex items-center justify-center min-h-screen text-muted-foreground">Verifying access...</div>;
   }
   return <>{children}</>;

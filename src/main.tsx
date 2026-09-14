@@ -6,6 +6,7 @@ import App from "./App.tsx";
 import { initLunaAttribution } from "@/lib/lunaGrowth";
 import "./index.css";
 import "./styles/mobile-foundation.css";
+import { isNativeApp } from "@/lib/accountRouting";
 
 const ResMapLiveStreetViewBridge = lazy(() => import("@/components/resmap/ResMapLiveStreetViewBridge"));
 
@@ -43,6 +44,13 @@ if (shouldCanonicalize) {
   const target = `${CANONICAL_ORIGIN}${window.location.pathname}${window.location.search}${window.location.hash}`;
   window.location.replace(target);
 } else {
+  // Packaged native assets are versioned by Google Play, not a website worker.
+  // Remove only native-origin worker registrations; never clear auth storage.
+  if (isNativeApp() && "serviceWorker" in navigator) {
+    void navigator.serviceWorker.getRegistrations()
+      .then(registrations => Promise.all(registrations.map(registration => registration.unregister())))
+      .catch(() => undefined);
+  }
   // Purge only the historical API runtime cache from pre-zero-trust PWA builds.
   // Static route assets remain cacheable and authenticated API responses stay NetworkOnly.
   if ("caches" in window) {

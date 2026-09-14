@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { AppStaffRole, GOD_MODE_ROLES } from "@/lib/constants/roles";
 import { AdminDepartmentKey } from "@/lib/adminDepartments";
+import { useQueryClient } from "@tanstack/react-query";
 
 export type StaffRole = AppStaffRole | null;
 export type TumeloPartnerRole = "owner" | "strategist" | "viewer" | null;
@@ -52,7 +53,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [adminDepartments, setAdminDepartments] = useState<AdminDepartmentKey[]>([]);
   const [sessionChecked, setSessionChecked] = useState(false);
   const navigate = useNavigate();
-  const initRef = useRef(false);
+  const queryClient = useQueryClient();
+  const accessRequestRef = useRef(0);
   const currentUserIdRef = useRef<string | null>(null);
   const identitySyncUserRef = useRef<string | null>(null);
 
@@ -69,9 +71,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
     let mounted = true;
+    let authEventReceived = false;
 
     const applySession = (nextSession: Session | null) => {
       if (!mounted) return;
@@ -84,10 +85,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const initAuth = async () => {
       try {
         const { data: { session: existingSession } } = await supabase.auth.getSession();
-        applySession(existingSession);
+        if (!authEventReceived) applySession(existingSession);
       } catch (error) {
         console.error("[AuthContext] Initial session restore failed safely:", error);
-        applySession(null);
+        if (!authEventReceived) applySession(null);
       } finally {
         if (mounted) setSessionChecked(true);
       }
@@ -95,8 +96,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
+      authEventReceived = true;
       const nextUserId = nextSession?.user?.id ?? null;
       const identityChanged = currentUserIdRef.current !== nextUserId;
+      if (identityChanged) {
+        accessRequestRef.current += 1;
+        queryClient.clear();
+        clearAccessState();
+      }
       currentUserIdRef.current = nextUserId;
 
       // Token refreshes keep the UI mounted. Only an identity boundary re-runs
@@ -107,6 +114,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSessionChecked(true);
 
       if (!nextSession && event === "SIGNED_OUT") {
+        accessRequestRef.current += 1;
+        identitySyncUserRef.current = null;
         clearAccessState();
         setIsLoading(false);
       }
@@ -118,15 +127,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [clearAccessState]);
+  }, [clearAccessState, queryClient]);
 
   // Android/WebView can suspend JavaScript for long periods. Reconcile the
   // persisted Supabase session when the app becomes visible and proactively
   // refresh tokens that are close to expiry.
   useEffect(() => {
     let active = true;
+    let reconciling = false;
     const reconcile = async () => {
-      if (document.visibilityState === "hidden") return;
+      if (document.visibilityState === "hidden" || reconciling) return;
+      reconciling = true;
       try {
         const { data: { session: current } } = await supabase.auth.getSession();
         if (!active) return;
@@ -160,6 +171,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // A transient network failure must never log a user out. Persisted
         // session state remains authoritative until Supabase reports SIGNED_OUT.
         console.warn("[AuthContext] Session resume check unavailable:", error);
+      } finally {
+        reconciling = false;
       }
     };
 
@@ -193,17 +206,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, [session?.user?.id, session?.access_token]);
 
+  const userId = user?.id;
   const checkStatus = useCallback(async () => {
+    const requestId = ++accessRequestRef.current;
     if (!sessionChecked) return;
-    if (!user) {
+    if (!userId) {
       clearAccessState();
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
     try {
-      const { data, error } = await (supabase as any).rpc("get_my_access_context");
+      const { data, error } = await (supabase as any).rpc("get_my_access_context").abortSignal(controller.signal);
+      if (requestId !== accessRequestRef.current || currentUserIdRef.current !== userId) return;
       if (error) throw error;
       const access = (data || {}) as AccessContext;
 
@@ -223,26 +241,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsPendingRecruiter(Boolean(access.is_pending_recruiter));
       setIsStudent(!partnershipOnly && Boolean(access.is_student));
     } catch (error) {
+      if (requestId !== accessRequestRef.current || currentUserIdRef.current !== userId) return;
       // Preserve the authenticated session but fail closed on privileged roles.
       console.error("[AuthContext] Access context failed safely:", error);
       clearAccessState();
     } finally {
-      setIsLoading(false);
+      window.clearTimeout(timeout);
+      if (requestId === accessRequestRef.current) setIsLoading(false);
     }
-  }, [clearAccessState, sessionChecked, user]);
+  }, [clearAccessState, sessionChecked, userId]);
 
   useEffect(() => {
     void checkStatus();
   }, [checkStatus]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    if (error) throw error;
+    accessRequestRef.current += 1;
     currentUserIdRef.current = null;
     identitySyncUserRef.current = null;
     setUser(null);
     setSession(null);
     clearAccessState();
-    navigate("/auth");
+    setIsLoading(false);
+    navigate("/auth", { replace: true });
   };
 
   return (

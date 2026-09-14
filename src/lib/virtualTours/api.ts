@@ -120,7 +120,7 @@ export async function tourApi<T = any>(action: string, payload: Record<string, a
     const rows=events.data||[]; const count=(type:string)=>rows.filter((row:any)=>row.event_type===type).length;
     const conversionTypes=new Set(["listing_click","apply_click","contact_click","whatsapp_click","guided_complete","hotspot_cta"]);
     const sceneViews=new Map<string,number>(); rows.filter((row:any)=>row.event_type==="scene_view"&&row.scene_id).forEach((row:any)=>sceneViews.set(row.scene_id,(sceneViews.get(row.scene_id)||0)+1));
-    const sceneMap=new Map((sceneRows.data||[]).map((scene:any)=>[scene.id,scene]));
+    const sceneMap=new Map<string, { id: string; name: string; area_type: string }>((sceneRows.data||[]).map((scene:any)=>[scene.id,scene]));
     const topScenes=[...sceneViews.entries()].map(([sceneId,views])=>({...sceneMap.get(sceneId),scene_id:sceneId,views})).sort((a:any,b:any)=>b.views-a.views).slice(0,10);
     return {ok:true,locked:false,days,metrics:{tour_opens:count("tour_open"),unique_viewers:new Set(rows.map((row:any)=>row.viewer_session).filter(Boolean)).size,scene_views:count("scene_view"),conversion_actions:rows.filter((row:any)=>conversionTypes.has(row.event_type)).length,guided_starts:count("guided_start"),guided_completions:count("guided_complete"),fullscreen:count("fullscreen"),apply_clicks:count("apply_click"),listing_clicks:count("listing_click"),contact_clicks:count("contact_click")},top_scenes:topScenes} as T;
   }

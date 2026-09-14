@@ -70,7 +70,7 @@ const ResidenceReservations2027 = () => {
       p_note: patch.residence_notes ?? row.residence_notes ?? null,
     });
     setSavingId(null);
-    if (error) return toast.error(error.message || "Could not update reservation");
+    if (error) { toast.error(error.message || "Could not update reservation"); return; }
     toast.success("Reservation updated");
     await load();
   };

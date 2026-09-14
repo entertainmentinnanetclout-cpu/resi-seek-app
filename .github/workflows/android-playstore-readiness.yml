@@ -74,10 +74,21 @@ jobs:
       - name: Android / web reliability audit
         run: node scripts/android-v110-reliability-qa.mjs
 
+      - name: Check complete application types
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Install browser regression runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify native login and session lifecycle
+        run: node scripts/android-session-regression.mjs
+
       - name: Install pinned Capacitor toolchain without changing lockfile
         run: npm install --no-save --package-lock=false @capacitor/core@8.5.0 @capacitor/android@8.5.0 @capacitor/cli@8.5.0
 
       - name: Build production web bundle
+        env:
+          RK_NATIVE_BUILD: "1"
         run: npm run build
 
       - name: Sync Capacitor Android
@@ -85,8 +96,8 @@ jobs:
 
       - name: Compile API 36 release AAB
         env:
-          ANDROID_VERSION_CODE: "3"
-          ANDROID_VERSION_NAME: "1.1.0"
+          ANDROID_VERSION_CODE: "4"
+          ANDROID_VERSION_NAME: "1.1.1"
         run: gradle -p android bundleRelease --stacktrace
 
       - name: Verify release artifact exists

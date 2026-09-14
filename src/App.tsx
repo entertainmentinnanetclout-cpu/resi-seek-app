@@ -3,7 +3,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { isNativeApp } from "@/lib/accountRouting";
+import AccountPortals from "@/components/AccountPortals";
+import NativeAccountNavigation from "@/components/NativeAccountNavigation";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Preloader from "@/components/Preloader";
 import GrowthTracker from "@/components/GrowthTracker";
@@ -177,11 +180,13 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
+              <NativeAccountNavigation />
               <UserIntentProvider>
                 <GrowthTracker />
                 <Suspense fallback={<Preloader />}>
                   <Routes>
-                    <Route path="/" element={<Landing />} />
+                    <Route path="/" element={isNativeApp() ? <Navigate to="/auth" replace /> : <Landing />} />
+                    <Route path="/portals" element={<div className="mx-auto max-w-md p-5"><h1 className="text-2xl font-bold">ResKonnect portals</h1><AccountPortals /></div>} />
                     <Route path="/about" element={<About />} />
                     <Route path="/contact" element={<About />} />
                     <Route path="/properties" element={<ManagedSeoPage pagePath="/properties" />} />

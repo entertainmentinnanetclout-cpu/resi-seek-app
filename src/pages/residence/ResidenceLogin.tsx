@@ -13,6 +13,7 @@ import { resolveResidencePortalAccount } from "@/lib/residencePortal";
 import SEO from "@/components/SEO";
 import { BRAND } from "@/constants/brand";
 import { clearWeakPassword, rememberWeakPassword } from "@/lib/passwordSecurity";
+import { isNativeApp } from "@/lib/accountRouting";
 
 const ResidenceLogin = () => {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ const ResidenceLogin = () => {
     }
     setIsLoading(true);
     try {
-      const redirectTo = `${window.location.origin}/auth?mode=password-reset&returnTo=${encodeURIComponent("/residence")}`;
+      const redirectTo = `${isNativeApp() ? "https://www.reskonnect.org" : window.location.origin}/auth?mode=password-reset&returnTo=${encodeURIComponent("/residence")}`;
       const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo });
       if (error) throw error;
       toast.success("If this email is registered, a secure reset link has been sent.");

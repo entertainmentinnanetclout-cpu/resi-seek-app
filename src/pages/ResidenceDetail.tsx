@@ -144,8 +144,9 @@ const ResidenceDetail = () => {
 
         const [pricingResult, relatedResult, reviewResult] = await Promise.all([
           (supabase as any).from("residence_room_pricing_public_v").select("*").eq("residence_id", row.id).order("academic_year", { ascending: false }).order("name"),
-          supabase.from("residences").select("*").eq("campus", row.campus).neq("id", row.id).eq("is_visible", true).limit(4),
-          supabase.from("reviews").select("*, user:profiles(full_name)").eq("residence_id", row.id).order("created_at", { ascending: false }),
+          // Avoid recursive legacy/delta type expansion for the full branding row.
+          (supabase as any).from("residences").select("*").eq("campus", String(row.campus || "")).neq("id", String(row.id)).eq("is_visible", true).limit(4),
+          supabase.from("reviews").select("*, user:profiles(full_name)").eq("residence_id", String(row.id)).order("created_at", { ascending: false }),
         ]);
         setRoomPrices(pricingResult.data || []);
         setRelated(relatedResult.data || []);
@@ -342,7 +343,7 @@ const ResidenceDetail = () => {
 
               <Card><CardContent className="p-5 sm:p-6"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Location</p><h2 className="mt-1 text-2xl font-black">Find the residence</h2></div><div className="mt-4"><ResidenceMapPreview name={residence.name} address={residence.address} latitude={residence.latitude} longitude={residence.longitude} compact={false} /></div></CardContent></Card>
 
-              <Card><CardContent className="p-5 sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Student experience</p><h2 className="mt-1 text-2xl font-black">Reviews</h2></div>{user && <Button variant="outline" onClick={() => setShowReview(!showReview)}>Write a review</Button>}</div>{showReview && user && <div className="mt-5"><ReviewForm residenceId={residence.id} onReviewSubmitted={() => { setShowReview(false); window.location.reload(); }} /></div>}<div className="mt-5 space-y-3">{reviews.length ? reviews.map((review) => <ReviewCard key={review.id} review={review} onHelpful={async (reviewId) => { const current = reviews.find((r) => r.id === reviewId); await supabase.from("reviews").update({ helpful_count: Number(current?.helpful_count || 0) + 1 }).eq("id", reviewId); setReviews((prev) => prev.map((r) => r.id === reviewId ? { ...r, helpful_count: Number(r.helpful_count || 0) + 1 } : r)); }} />) : <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">No reviews yet.</div>}</div></CardContent></Card>
+              <Card><CardContent className="p-5 sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Student experience</p><h2 className="mt-1 text-2xl font-black">Reviews</h2></div>{user && <Button variant="outline" onClick={() => setShowReview(!showReview)}>Write a review</Button>}</div>{showReview && user && <div className="mt-5"><ReviewForm residenceId={residence.id} onSuccess={() => { setShowReview(false); window.location.reload(); }} onCancel={() => setShowReview(false)} /></div>}<div className="mt-5 space-y-3">{reviews.length ? reviews.map((review) => <ReviewCard key={review.id} review={review} onHelpful={async (reviewId) => { const current = reviews.find((r) => r.id === reviewId); await supabase.from("reviews").update({ helpful_count: Number(current?.helpful_count || 0) + 1 }).eq("id", reviewId); setReviews((prev) => prev.map((r) => r.id === reviewId ? { ...r, helpful_count: Number(r.helpful_count || 0) + 1 } : r)); }} />) : <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">No reviews yet.</div>}</div></CardContent></Card>
             </div>
 
             <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
