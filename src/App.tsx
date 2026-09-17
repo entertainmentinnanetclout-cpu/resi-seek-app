@@ -19,6 +19,9 @@ import { ResidenceRoute } from "./components/ResidenceRoute";
 import { SpecialistRoute } from "@/components/SpecialistRoute";
 import DepartmentRoute from "@/components/DepartmentRoute";
 
+const StudentCare = lazy(() => import("./pages/StudentCare"));
+const ApplicationPartners = lazy(() => import("./pages/ApplicationPartners"));
+const AdminStudentCare = lazy(() => import("./pages/admin/AdminStudentCare"));
 const Landing = lazy(() => import("./pages/Landing"));
 const Auth = lazy(() => import("./pages/Auth"));
 const MarketplaceComingSoon = lazy(() => import("./pages/MarketplaceComingSoon"));
@@ -218,6 +221,12 @@ const App = () => {
                     <Route path="/partners" element={<PartnersPillar />} />
                     <Route path="/partners/landlords" element={<PartnersLandlords />} />
                     <Route path="/partners/institutions" element={<PartnersInstitutions />} />
+                    <Route path="/student-care" element={<StudentCare />} />
+                    <Route path="/single-room-waiting-list" element={<StudentCare />} />
+                    <Route path="/application-assistance" element={<ApplicationPartners />} />
+                    <Route path="/application-partners" element={<ApplicationPartners />} />
+                    <Route path="/application-assistance/case/:caseId" element={<ProtectedRoute><CreatorAssistanceCase /></ProtectedRoute>} />
+                    <Route path="/admin/student-care" element={<ProtectedRoute><AdminRoute><AdminStudentCare /></AdminRoute></ProtectedRoute>} />
                     <Route path="/creator-partners" element={<CreatorPartnerPortal />} />
                     <Route path="/creator/:slug" element={<CreatorLanding />} />
                     <Route path="/creator-assist/:slug" element={<CreatorAssistanceIntake />} />

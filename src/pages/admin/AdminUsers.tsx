@@ -1,3 +1,4 @@
+import ContactExportButtons from "@/components/admin/ContactExportButtons";
 import { useEffect, useState } from "react";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -159,16 +160,7 @@ export const AdminUsersContent = () => {
             <h1 className="text-3xl font-bold">Users</h1>
             <p className="text-muted-foreground">Manage user accounts and permissions ({users.length} total)</p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handleExportVCard} variant="outline" size="sm">
-              <Phone className="w-4 h-4 mr-2" />
-              Export vCard
-            </Button>
-            <Button onClick={handleExportCSV} variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
-          </div>
+          <ContactExportButtons />
         </div>
 
         <Card>

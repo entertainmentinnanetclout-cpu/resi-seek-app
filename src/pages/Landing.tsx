@@ -1,3 +1,4 @@
+import StudentCareLinks from "@/components/landing/StudentCareLinks";
 import SEO from "@/components/SEO";
 import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
 import SEOJsonLd from "@/components/SEOJsonLd";
@@ -209,6 +210,7 @@ const Landing = () => {
           </div>
         </section>
 
+        <StudentCareLinks />
         <InteractiveNeedSection />
 
         <DeferredSection minHeight={420}><AutomationAdvantageSection /></DeferredSection>

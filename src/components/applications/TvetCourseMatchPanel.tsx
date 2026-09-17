@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { estimateAcademicAps, type CourseMatchSubject } from "@/lib/courseMatch";
+import { type CourseMatchSubject } from "@/lib/courseMatch";
 import { saveProgrammeCheckHistory } from "@/lib/courseMatchHistory";
 import { compareTvetPublishedRequirements, type TvetHighestLevel, type TvetRequirementResult } from "@/lib/tvetRequirementCheck";
 
@@ -35,7 +35,6 @@ const TvetCourseMatchPanel=({selectedCollege="all",onSelectedCollegeChange,onSav
   const [filter,setFilter]=useState("all");
   const [query,setQuery]=useState("");
   const usable=useMemo(()=>subjects.filter((s)=>s.name.trim()&&s.mark>0),[subjects]);
-  const aps=useMemo(()=>estimateAcademicAps(usable),[usable]);
 
   const updateSubject=(index:number,patch:Partial<CourseMatchSubject>)=>setSubjects((rows)=>rows.map((row,i)=>i===index?{...row,...patch}:row));
   const signIn=()=>{
@@ -45,7 +44,7 @@ const TvetCourseMatchPanel=({selectedCollege="all",onSelectedCollegeChange,onSav
   };
 
   const runCheck=async()=>{
-    if(!user){toast.info("Sign in to calculate your saved APS profile and view personalised programme results.");signIn();return;}
+    if(!user){toast.info("Sign in to compare your school level and subjects with programme requirements.");signIn();return;}
     setChecking(true);
     try{
       let institutionQuery=(supabase as any).from("application_hub_institutions")
@@ -64,7 +63,7 @@ const TvetCourseMatchPanel=({selectedCollege="all",onSelectedCollegeChange,onSav
         .sort((a:TvetRequirementResult,b:TvetRequirementResult)=>rank(a.requirement_status)-rank(b.requirement_status)||a.institution_name.localeCompare(b.institution_name)||a.programme_name.localeCompare(b.programme_name));
       setResults(checked);setHasChecked(true);setFilter("all");setQuery("");
       try{
-        await saveProgrammeCheckHistory({userId:user.id,institutionType:"tvet",scope:selectedCollege==="all"?["TSC","TNC"]:[selectedCollege],highestGrade:labelForLevel(highest),aps:highest==="grade12"?aps:null,subjects:usable,results:checked.map((row:TvetRequirementResult)=>({programme_id:row.programme_id,status:row.requirement_status,summary:row.check_summary,missing:row.missing_requirements,matched:row.matched_requirements,context:{institution_slug:row.institution_slug,institution_name:row.institution_name,programme_name:row.programme_name,qualification_type:row.qualification_type,campus:row.campus,official_url:row.official_url,application_url:row.application_url}}))});
+        await saveProgrammeCheckHistory({userId:user.id,institutionType:"tvet",scope:selectedCollege==="all"?["TSC","TNC"]:[selectedCollege],highestGrade:labelForLevel(highest),aps:null,subjects:usable,results:checked.map((row:TvetRequirementResult)=>({programme_id:row.programme_id,status:row.requirement_status,summary:row.check_summary,missing:row.missing_requirements,matched:row.matched_requirements,context:{institution_slug:row.institution_slug,institution_name:row.institution_name,programme_name:row.programme_name,qualification_type:row.qualification_type,campus:row.campus,official_url:row.official_url,application_url:row.application_url}}))});
         onSaved?.();
       }catch(logError){console.warn("Programme check history could not be saved",logError);toast.warning("Results are shown, but this check could not be added to your history.");}
       toast.success(`Compared your information with ${checked.length} published TVET programme routes.`);
@@ -84,13 +83,13 @@ const TvetCourseMatchPanel=({selectedCollege="all",onSelectedCollegeChange,onSav
       <div className="border-b bg-muted/40 px-5 py-4 sm:px-6">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">TVET Course Match</p>
         <h2 className="mt-1 text-xl font-black">Compare your level and subjects with published TSC & TNC requirements</h2>
-        <p className="mt-2 text-xs leading-5 text-muted-foreground">TVET matching is not APS-only. It uses the college&apos;s published grade/previous-level and subject requirements. College placement, capacity and the official decision still apply.</p>
+        <p className="mt-2 text-xs leading-5 text-muted-foreground">TVET matching uses programme-specific entry requirements. It uses the college&apos;s published grade/previous-level and subject requirements. College placement, capacity and the official decision still apply.</p>
       </div>
       <CardContent className="space-y-5 p-5 sm:p-6">
         <div className="grid gap-4 md:grid-cols-3">
           <div><label className="text-xs font-semibold">College</label><select value={selectedCollege} onChange={(e)=>onSelectedCollegeChange?.(e.target.value)} className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="all">Compare TSC + TNC</option><option value="tshwane-south-tvet-college">Tshwane South TVET College</option><option value="tshwane-north-tvet-college">Tshwane North TVET College</option></select></div>
           <div><label className="text-xs font-semibold">Highest completed level</label><select value={highest} onChange={(e)=>setHighest(e.target.value as TvetHighestLevel)} className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm">{LEVELS.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></div>
-          <div className="rounded-xl border bg-muted/30 p-3"><p className="text-[11px] text-muted-foreground">Grade 12 APS estimate</p><p className="mt-1 text-2xl font-black">{user&&highest==="grade12"?aps:"—"}</p><p className="text-[10px] text-muted-foreground">{user?highest==="grade12"?"Saved with this check":"APS not used for this level":"Sign in to calculate & save"}</p></div>
+          <div className="rounded-xl border bg-muted/30 p-3"><p className="text-xs font-semibold">Programme-specific requirements</p><p className="mt-2 text-xs text-muted-foreground">Your school level, subjects and previous qualifications guide the check. Confirm selection and placement requirements with the college.</p></div>
         </div>
 
         <div><div className="flex items-center justify-between gap-3"><div><p className="font-bold">Subjects and marks</p><p className="text-xs text-muted-foreground">Enter only subjects you have taken. Add or rename rows where needed.</p></div><Badge variant="outline">{usable.length} entered</Badge></div>
@@ -98,8 +97,8 @@ const TvetCourseMatchPanel=({selectedCollege="all",onSelectedCollegeChange,onSav
           <Button variant="outline" size="sm" className="mt-3" onClick={()=>setSubjects((rows)=>[...rows,{name:"",mark:0}])}><Plus className="mr-2 h-4 w-4"/>Add subject</Button>
         </div>
 
-        {!user&&<div className="rounded-2xl border border-primary/30 bg-primary/5 p-4"><div className="flex gap-3"><LockKeyhole className="mt-0.5 h-5 w-5 text-primary"/><div><p className="font-bold">Sign in to unlock personalised results</p><p className="mt-1 text-xs leading-5 text-muted-foreground">You can prepare your marks here, but APS output and programme-by-programme results are account features so your checks can be saved privately to your profile.</p></div></div></div>}
-        <Button size="lg" className="w-full" onClick={runCheck} disabled={checking}>{checking?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:user?<Search className="mr-2 h-4 w-4"/>:<LockKeyhole className="mr-2 h-4 w-4"/>}{checking?"Comparing published requirements…":user?"Check published programme requirements":"Sign in to calculate APS & view results"}</Button>
+        {!user&&<div className="rounded-2xl border border-primary/30 bg-primary/5 p-4"><div className="flex gap-3"><LockKeyhole className="mt-0.5 h-5 w-5 text-primary"/><div><p className="font-bold">Sign in to unlock personalised results</p><p className="mt-1 text-xs leading-5 text-muted-foreground">You can prepare your marks here, but Programme-by-programme results are account features so your checks can be saved privately to your profile.</p></div></div></div>}
+        <Button size="lg" className="w-full" onClick={runCheck} disabled={checking}>{checking?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:user?<Search className="mr-2 h-4 w-4"/>:<LockKeyhole className="mr-2 h-4 w-4"/>}{checking?"Comparing published requirements…":user?"Check published programme requirements":"Sign in to check programme requirements"}</Button>
       </CardContent>
     </Card>
 

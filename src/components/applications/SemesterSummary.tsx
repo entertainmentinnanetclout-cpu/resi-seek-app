@@ -1,0 +1,6 @@
+import { Button } from '@/components/ui/button';
+import { applicationSemester } from '@/lib/studentCare';
+export default function SemesterSummary({rows,value,onChange}:{rows:any[];value:string;onChange:(v:string)=>void}) {
+  const sent=rows.filter(r=>!['draft','started'].includes(r.application_status||r.status));
+  return <section className="space-y-3 rounded-2xl border bg-card p-4" aria-label="Applications sent by semester"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-3xl font-black">{sent.length}</p><p className="text-sm text-muted-foreground">Applications sent</p></div><div className="flex flex-wrap gap-2">{[['all','Both semesters'],['1','First semester'],['2','Second semester']].map(([key,label])=><Button key={key} variant={value===key?'default':'outline'} aria-pressed={value===key} onClick={()=>onChange(key)}>{label} ({key==='all'?sent.length:sent.filter(r=>applicationSemester(r)===Number(key)).length})</Button>)}</div></div><p className="text-xs text-muted-foreground">Recorded semester takes priority. Older records without a semester use the submission date; advance applications for a future year appear in first semester.</p></section>;
+}

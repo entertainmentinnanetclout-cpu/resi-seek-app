@@ -600,7 +600,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
     h1: "Application Readiness",
     intro: [
       "Most applications that fail do not fail on marks — they fail on missing documents, wrong document formats, late submissions or applying to the wrong programme. Application readiness is about fixing that before you submit.",
-      "ResKonnect helps you get ready. You still apply on the institution's own official system.",
+      "ResKonnect helps you prepare and offers consented submission assistance through approved partners. Applications are submitted through the institution's official system.",
     ],
     audience: "Matriculants, gap-year students and anyone re-applying to a TVET college, university or private college.",
     benefits: [
@@ -611,17 +611,17 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
     ],
     helps: [
       "Building your document checklist",
-      "Estimating your APS before you choose programmes",
+      "Checking institution-specific entry requirements, including APS where applicable",
       "Understanding entry requirements in plain language",
       "Directing you to the correct official application portal",
     ],
     notDoing: [
       NOT_ADMISSIONS,
-      "We do not submit applications for you, and we cannot influence admission decisions.",
+      "Admission and selection decisions remain with the institution; application assistance does not guarantee an offer.",
       NOT_NSFAS,
     ],
     faqs: [
-      { question: "Do you apply on my behalf?", answer: "No. ResKonnect prepares you and points you to the official portal. The application is submitted by you on the institution's system." },
+      { question: "Do you apply on my behalf?", answer: "Yes. With your consent, an approved ResKonnect partner can help prepare and submit your institution applications. Partner service fees are capped at R100 per annual assistance case. Official institution decisions still apply." },
       { question: "What documents do I usually need?", answer: "Typically a certified ID, your latest results or matric certificate, proof of residence and a passport photo. Requirements differ per institution." },
       { question: "How do I know if I qualify?", answer: "Check the programme's minimum requirements against your APS and subject-specific requirements." },
       { question: "When should I start?", answer: "As early as applications open. Late applications compete for fewer spaces." },
@@ -664,7 +664,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
     ],
     notDoing: [
       NOT_ADMISSIONS,
-      "We do not submit college applications or influence selection.",
+      "Admission and selection decisions remain with the institution; application assistance does not guarantee an offer.",
       NOT_NSFAS,
     ],
     faqs: [
@@ -711,7 +711,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
     ],
     notDoing: [
       NOT_ADMISSIONS,
-      "We do not submit university applications or influence admission outcomes.",
+      "Admission and selection decisions remain with the institution; application assistance does not guarantee an offer.",
       NOT_NSFAS,
     ],
     faqs: [
@@ -1011,7 +1011,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
       "Planning around the college intake",
       "Finding accommodation that accepts TVET students",
     ],
-    notDoing: [NOT_ADMISSIONS, "We do not submit college applications.", NOT_NSFAS],
+    notDoing: [NOT_ADMISSIONS, "Admission and selection decisions remain with the institution; application assistance does not guarantee an offer.", NOT_NSFAS],
     body: [
       {
         heading: "Step 1 — Get your documents together",
@@ -1083,7 +1083,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
       "Preparing certified documents",
       "Planning realistic first, second and third choices",
     ],
-    notDoing: [NOT_ADMISSIONS, "We do not submit university applications or influence outcomes.", NOT_NSFAS],
+    notDoing: [NOT_ADMISSIONS, "Admission and selection decisions remain with the institution; application assistance does not guarantee an offer.", NOT_NSFAS],
     body: [
       {
         heading: "Step 1 — Work out your APS",

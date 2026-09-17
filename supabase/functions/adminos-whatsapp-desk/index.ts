@@ -1,3 +1,4 @@
+import { claimFollowup } from "../_shared/studentFollowups.ts";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.79.0";
 
@@ -127,6 +128,9 @@ async function sendMessage(service: any, userId: string, thread: any, input: any
   }
   if (statusCallback) form.set("StatusCallback", statusCallback);
 
+  if (!windowOpen || input.followup === true || template?.message_kind === "marketing") {
+    await claimFollowup(service, { phone: thread.channel_address, contactId: thread.contact_id, key: `desk:${thread.id}:${crypto.randomUUID()}`, care: input.purpose === "student_care" });
+  }
   const sent = await twilioSend(form);
   const displayBody = template ? (bodyText || template.preview_text || null) : (bodyText || null);
   const message = await service.from("adminos_whatsapp_messages").upsert({

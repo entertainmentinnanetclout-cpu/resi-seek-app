@@ -1,3 +1,5 @@
+import SemesterSummary from "@/components/applications/SemesterSummary";
+import { applicationSemester } from "@/lib/studentCare";
 import SEO from "@/components/SEO";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -29,6 +31,7 @@ const Applications = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [semesterFilter, setSemesterFilter] = useState("all");
   const [roomTypeFilter, setRoomTypeFilter] = useState("all");
   const [userDocuments, setUserDocuments] = useState<UserDocument[]>([]);
 
@@ -88,8 +91,8 @@ const Applications = () => {
       const matchesSearch = searchTerm ? app.residence?.name.toLowerCase().includes(searchTermLower) : true;
       const matchesStatus = statusFilter !== "all" ? app.status === statusFilter : true;
       const matchesRoomType = roomTypeFilter !== "all" ? app.residence?.room_type === roomTypeFilter : true;
-      return matchesSearch && matchesStatus && matchesRoomType;
-  }), [detailedApplications, searchTerm, statusFilter, roomTypeFilter]);
+      return matchesSearch && matchesStatus && matchesRoomType && (semesterFilter === "all" || applicationSemester(app) === Number(semesterFilter));
+  }), [detailedApplications, searchTerm, statusFilter, roomTypeFilter, semesterFilter]);
 
   // Early return AFTER all hooks are called (React rules of hooks)
   if (shouldBlock) return null;
@@ -284,6 +287,7 @@ const Applications = () => {
         </Breadcrumb>
             <h1 className="text-3xl font-bold mb-2 text-foreground">My Applications</h1>
             <p className="text-muted-foreground">Track your residence applications and their status.</p>
+            <div className="mt-5"><SemesterSummary rows={applications} value={semesterFilter} onChange={setSemesterFilter}/></div>
           </div>
 
           <Card className="p-4 sm:p-6 sticky top-2 z-10 bg-card/80 backdrop-blur-sm">

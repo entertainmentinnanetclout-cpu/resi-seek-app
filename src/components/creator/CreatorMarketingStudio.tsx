@@ -14,7 +14,7 @@ const FORMATS = {
 const CAMPAIGNS = {
   reservations: { badge: "2027 RESERVATIONS OPEN", title: "Find your 2027 student accommodation", body: "Browse accommodation, compare private and NSFAS-funded rates, then reserve your interest on ResKonnect.", cta: "FIND ACCOMMODATION" },
   nearCampus: { badge: "FIND MY RES", title: "Looking for accommodation near campus?", body: "Search residences by campus, room type, budget, availability and 2027 reservation status.", cta: "SEARCH ON RESKONNECT" },
-  applications: { badge: "APPLICATION SUPPORT", title: "Not sure what you qualify for?", body: "Use ResKonnect for APS, course guidance and document readiness, with assisted applications supported by Tech-Up.", cta: "START YOUR APPLICATION JOURNEY" },
+  applications: { badge: "APPLICATION SUPPORT", title: "Not sure what you qualify for?", body: "Use ResKonnect for APS, course guidance and document readiness, with secure assistance from ResKonnect partners at a maximum service fee of R100.", cta: "START YOUR APPLICATION JOURNEY" },
   funding: { badge: "PRIVATE + NSFAS", title: "Accommodation for different funding journeys", body: "Private tenant rates and NSFAS-funded rates can differ. ResKonnect makes the distinction visible before you reserve.", cta: "EXPLORE 2027 OPTIONS" },
 } as const;
 
