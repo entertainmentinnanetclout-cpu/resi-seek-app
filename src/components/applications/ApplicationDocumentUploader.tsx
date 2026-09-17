@@ -16,7 +16,7 @@ const BASE_DOCS = [
   { key: "other", label: "Other supporting document", description: "Any additional application document", required: false },
 ] as const;
 
-export default function ApplicationDocumentUploader({ caseId, applicantStage, onReadinessChange }: { caseId: string; applicantStage?: string; onReadinessChange?: (ready: boolean) => void }) {
+export default function ApplicationDocumentUploader({ caseId, applicantStage, onReadinessChange, ownerUserId }: { caseId: string; applicantStage?: string; ownerUserId?: string; onReadinessChange?: (ready: boolean) => void }) {
   const [documents, setDocuments] = useState<any[]>([]);
   const [uploading, setUploading] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -51,19 +51,15 @@ export default function ApplicationDocumentUploader({ caseId, applicantStage, on
 
     setUploading(type); setProgress(10);
     try {
-      const existing = byType(type);
-      if (existing) {
-        await supabase.storage.from("application-documents").remove([existing.file_path]);
-        await (supabase as any).from("application_assistance_documents").delete().eq("id", existing.id);
-      }
+      const studentId = ownerUserId || user.id; // Retain previous versions until the new upload is safely stored.
       const ext = file.name.split(".").pop() || "pdf";
-      const path = `${user.id}/${caseId}/${type}_${Date.now()}.${ext}`;
+      const path = `${studentId}/${caseId}/${type}_${crypto.randomUUID()}.${ext}`;
       setProgress(30);
       const { error: storageError } = await supabase.storage.from("application-documents").upload(path, file, { cacheControl: "3600", upsert: false });
       if (storageError) throw storageError;
       setProgress(70);
-      const { error: rowError } = await (supabase as any).from("application_assistance_documents").insert({ case_id: caseId, user_id: user.id, document_type: type, file_name: file.name, file_path: path, file_size: file.size });
-      if (rowError) throw rowError;
+      const { error: rowError } = await (supabase as any).from("application_assistance_documents").insert({ case_id: caseId, user_id: studentId, document_type: type, file_name: file.name, file_path: path, file_size: file.size });
+      if (rowError) { await supabase.storage.from("application-documents").remove([path]); throw rowError; }
       setProgress(100);
       toast.success("Application document saved");
       await load();
@@ -88,7 +84,7 @@ export default function ApplicationDocumentUploader({ caseId, applicantStage, on
           <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${doc ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"}`}>{doc ? <CheckCircle2 className="h-5 w-5" /> : <FileText className="h-5 w-5" />}</div>
           <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><p className="font-bold">{type.label}</p>{type.required && <span className="text-xs font-bold text-amber-600">Required</span>}</div><p className="mt-1 text-xs text-muted-foreground">{type.description}</p>{doc && <p className="mt-1 truncate text-xs font-medium">{doc.file_name}</p>}{busy && <div className="mt-2"><Progress value={progress} className="h-1.5" /></div>}</div>
           <input ref={(el) => { inputs.current[type.key] = el; }} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => { const file=e.target.files?.[0]; if (file) void upload(type.key,file); e.currentTarget.value=""; }} />
-          <div className="flex shrink-0 gap-1">{doc && <Button type="button" variant="outline" size="icon" onClick={() => void openDocument(doc)}><Eye className="h-4 w-4" /></Button>}<Button type="button" variant={doc ? "outline" : "default"} size="icon" disabled={busy} onClick={() => inputs.current[type.key]?.click()}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : doc ? <RefreshCw className="h-4 w-4" /> : <Upload className="h-4 w-4" />}</Button></div>
+          <div className="flex shrink-0 gap-1">{doc && <Button type="button" variant="outline" size="icon" onClick={() => void openDocument(doc)}><Eye className="h-4 w-4" /></Button>}<Button type="button" variant={doc ? "outline" : "default"} size="icon" disabled={uploading !== null} aria-label={"Upload " + type.label} onClick={() => inputs.current[type.key]?.click()}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : doc ? <RefreshCw className="h-4 w-4" /> : <Upload className="h-4 w-4" />}</Button></div>
         </div>
       </CardContent></Card>;
     })}

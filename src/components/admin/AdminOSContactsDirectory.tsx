@@ -1,3 +1,4 @@
+import ContactExportButtons from "@/components/admin/ContactExportButtons";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -94,6 +95,7 @@ export default function AdminOSContactsDirectory() {
           <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, phone, student no..." className="rounded-full pl-9" />
         </div>
       </div>
+      <div className="border-b p-4"><ContactExportButtons /></div>
       <ScrollArea className="h-[430px]">
         <div className="divide-y">
           {loading ? <div className="p-8 text-center text-sm text-muted-foreground">Loading contacts…</div> : visible.length === 0 ? <div className="p-8 text-center text-sm text-muted-foreground">No matching contacts.</div> : visible.map((contact) => (

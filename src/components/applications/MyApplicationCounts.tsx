@@ -1,0 +1,11 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { db, readAllPages, applicationSemester } from '@/lib/studentCare';
+import { Button } from '@/components/ui/button';
+export default function MyApplicationCounts() {
+  const {user}=useAuth();const [rows,setRows]=useState<any[]>([]),[submitted,setSubmitted]=useState(0),[error,setError]=useState('');
+  useEffect(()=>{if(!user)return;let active=true;const load=async()=>{try{const [applications,cases]=await Promise.all([readAllPages(()=>db.from('applications').select('id,status,academic_year,academic_cycle,academic_period,application_date,created_at').eq('user_id',user.id).order('id')),readAllPages(()=>db.from('creator_assistance_cases').select('id').eq('student_user_id',user.id).order('id'))]);const ids=new Set(cases.map(c=>c.id));const s=ids.size?await readAllPages(()=>db.from('assistance_submissions').select('id,case_id,submitted_at').not('submitted_at','is',null).order('id')):[];if(active){setRows(applications);setSubmitted(s.filter(x=>ids.has(x.case_id)).length);}}catch(e:any){if(active)setError(e.message);}};void load();return()=>{active=false;};},[user?.id]);
+  if(!user)return null;
+  return <section className="mx-auto my-6 max-w-6xl rounded-2xl border bg-card p-5" aria-label="My application counts"><h2 className="font-black">My applications sent</h2>{error?<p role="alert" className="mt-2 text-sm text-destructive">Could not load application counts. Refresh to try again.</p>:<div className="mt-4 grid gap-3 sm:grid-cols-3">{[['Residence applications',rows.length],['First / second semester',rows.filter(r=>applicationSemester(r)===1).length+' / '+rows.filter(r=>applicationSemester(r)===2).length],['Institution applications sent',submitted]].map(([label,count])=><div key={label} className="rounded-xl bg-muted/40 p-4"><p className="text-2xl font-black">{count}</p><p className="text-sm text-muted-foreground">{label}</p></div>)}</div>}<div className="mt-4 flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/my-applications">Residence applications by semester</Link></Button><Button asChild variant="outline"><Link to="/application-assistance">My assisted applications</Link></Button></div></section>;
+}

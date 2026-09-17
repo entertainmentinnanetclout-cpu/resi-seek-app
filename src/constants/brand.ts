@@ -40,7 +40,7 @@ export const BRAND = {
   },
   compliance: {
     admissions:
-      "ResKonnect is not an admissions office and does not replace official institution application systems. We assist with guidance, readiness checks, document preparation, accommodation placement, WIL support, and partner solutions.",
+      "ResKonnect is not an admissions office and does not replace official institution application systems. We assist with guidance, readiness checks, document preparation, consented application submission assistance through approved partners (maximum R100 per annual case), accommodation placement, WIL support, and partner solutions.",
     accommodationPlacement:
       "ResKonnect guarantees accommodation placement for eligible placement clients who complete the required placement process, provide the required documents and accept an available suitable accommodation match. The guarantee is for accommodation placement; it does not guarantee a particular building, room, rent amount, institution admission, NSFAS funding, WIL placement or employment outcome where those decisions depend on third parties or live inventory.",
     nsfas:

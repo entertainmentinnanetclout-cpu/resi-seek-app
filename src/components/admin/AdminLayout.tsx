@@ -92,6 +92,7 @@ const AdminSidebar=({
 
     <SidebarFooter className="shrink-0 space-y-1 border-t bg-sidebar p-2">
       <SidebarMenu>
+        <SidebarMenuItem><SidebarMenuButton asChild tooltip="Student Care & Applications"><Link to="/admin/student-care"><UsersRound className="h-4 w-4"/><span>Student Care & Applications</span></Link></SidebarMenuButton></SidebarMenuItem>
         <SidebarMenuItem><SidebarMenuButton onClick={handleRefresh} tooltip="Refresh Data"><RefreshCw className="h-4 w-4"/><span>Refresh Data</span></SidebarMenuButton></SidebarMenuItem>
         <SidebarMenuItem><SidebarMenuButton onClick={()=>navigate("/")} tooltip="Public Site"><Home className="h-4 w-4"/><span>View Public Site</span></SidebarMenuButton></SidebarMenuItem>
         <SidebarMenuItem><SidebarMenuButton onClick={handleLogout} tooltip="Logout" className="text-destructive hover:text-destructive"><LogOut className="h-4 w-4"/><span>Logout</span></SidebarMenuButton></SidebarMenuItem>

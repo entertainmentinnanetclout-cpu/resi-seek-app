@@ -37,7 +37,7 @@ const CourseMatchHistory = ({ userId, refreshKey = 0 }: { userId:string; refresh
                 <span className="text-[11px] text-muted-foreground">{new Date(row.created_at).toLocaleString()}</span>
               </div>
               <p className="mt-3 text-sm font-semibold">{scope.length ? scope.join(" • ") : "Programme comparison"}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{row.highest_grade || "Grade 12 / NSC"}{row.estimated_aps != null ? ` • APS ${row.estimated_aps}` : ""}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{row.highest_grade || "Grade 12 / NSC"}{row.institution_type !== "tvet" && row.estimated_aps != null ? ` • APS ${row.estimated_aps}` : ""}</p>
               {row.summary && <p className="mt-3 text-xs leading-5 text-muted-foreground">{row.summary}</p>}
             </div>;
           })}

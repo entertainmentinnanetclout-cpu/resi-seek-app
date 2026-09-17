@@ -1,3 +1,4 @@
+import MyApplicationCounts from "@/components/applications/MyApplicationCounts";
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, ArrowRight, CheckCircle2, Loader2, ShieldCheck, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -91,6 +92,7 @@ const MyApplicationsSummary = () => {
     <DashboardLayout>
       <SEO title="My Applications & Course Matches | ResKonnect" description="Review your saved APS profiles and Course Match history in your ResKonnect account." />
       <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+        <MyApplicationCounts/>
         <section className="rounded-3xl border bg-card p-6 shadow-sm sm:p-8">
           <Badge className="rounded-full">Phase 6C • My Applications</Badge>
           <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -106,7 +108,7 @@ const MyApplicationsSummary = () => {
         </section>
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Card><CardContent className="p-5"><p className="text-xs text-muted-foreground">Latest saved APS</p><p className="mt-1 text-3xl font-black">{currentRun?.estimated_aps ?? "—"}</p><p className="mt-1 text-[11px] text-muted-foreground">{currentRun?.highest_grade ?? "No saved check yet"}</p></CardContent></Card>
+          <Card><CardContent className="p-5"><p className="text-xs text-muted-foreground">Latest requirement check</p><p className="mt-1 text-3xl font-black">{currentRun?.institution_type === "tvet" ? currentRun?.highest_grade || "TVET" : currentRun?.estimated_aps ?? "—"}</p><p className="mt-1 text-[11px] text-muted-foreground">{currentRun?.highest_grade ?? "No saved check yet"}</p></CardContent></Card>
           <Card><CardContent className="p-5"><p className="text-xs text-muted-foreground">Minimums met</p><p className="mt-1 text-3xl font-black text-emerald-700">{counts.matched}</p></CardContent></Card>
           <Card><CardContent className="p-5"><p className="text-xs text-muted-foreground">Selection / confirmation</p><p className="mt-1 text-3xl font-black text-amber-700">{counts.review}</p></CardContent></Card>
           <Card><CardContent className="p-5"><p className="text-xs text-muted-foreground">Residence applications</p><p className="mt-1 text-3xl font-black">{residenceCount}</p></CardContent></Card>
@@ -121,7 +123,7 @@ const MyApplicationsSummary = () => {
                   <button key={run.id} type="button" onClick={() => setRunId(run.id)} className={`w-full rounded-xl border p-3 text-left ${runId === run.id ? "border-primary bg-primary/5" : "hover:border-primary/40"}`}>
                     <div className="flex items-center justify-between gap-2"><Badge variant="outline" className="text-[10px]">{String(run.institution_type).toUpperCase()}</Badge><span className="text-[10px] text-muted-foreground">{new Date(run.created_at).toLocaleDateString()}</span></div>
                     <p className="mt-2 text-sm font-bold">{Array.isArray(run.metadata?.institution_scope) ? run.metadata.institution_scope.join(" + ") : "Programme comparison"}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">APS {run.estimated_aps ?? "—"}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{run.institution_type === "tvet" ? run.highest_grade || "TVET level / subjects" : "APS " + (run.estimated_aps ?? "—")}</p>
                   </button>
                 )) : <div className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">No saved Course Match yet.</div>}
               </div>
@@ -140,7 +142,7 @@ const MyApplicationsSummary = () => {
                   <CardContent className="p-5">
                     <div className="flex flex-wrap items-center gap-2"><Badge variant="outline">{ctx.institution_name ?? String(ctx.institution ?? "Institution").toUpperCase()}</Badge><span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${view.cls}`}><StatusIcon className="h-3.5 w-3.5" />{view.label}</span></div>
                     <h3 className="mt-3 font-bold">{ctx.programme_name ?? "Programme"}</h3>
-                    {(row.student_aps != null || row.aps_required != null) && <p className="mt-1 text-xs text-muted-foreground">Your APS {row.student_aps ?? "—"}{row.aps_required != null ? ` • published minimum ${row.aps_required}` : ""}</p>}
+                    {currentRun?.institution_type !== "tvet" && (row.student_aps != null || row.aps_required != null) && <p className="mt-1 text-xs text-muted-foreground">Your APS {row.student_aps ?? "—"}{row.aps_required != null ? ` • published minimum ${row.aps_required}` : ""}</p>}
                     {missing.length > 0 && <p className="mt-2 text-xs text-muted-foreground">{missing.length} requirement check{missing.length === 1 ? "" : "s"} still outstanding.</p>}
                   </CardContent>
                 </Card>

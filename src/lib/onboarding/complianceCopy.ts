@@ -1,6 +1,6 @@
 // Centralised compliance copy for application-family pages.
 export const COMPLIANCE_ADMISSIONS =
-  "ResKonnect is not an admissions office and does not replace official institution application systems. We assist with guidance, readiness checks, document preparation, accommodation matching, WIL support, and partner solutions.";
+  "ResKonnect is not an admissions office and does not replace official institution application systems. We assist with guidance, readiness checks, document preparation, consented application submission assistance through approved partners (maximum R100 per annual case), accommodation matching, WIL support, and partner solutions.";
 
 export const COMPLIANCE_OFFICIAL_PORTAL =
   "Official academic applications must still be completed through the relevant institution's official application portal.";

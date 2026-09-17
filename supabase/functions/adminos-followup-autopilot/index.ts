@@ -261,9 +261,9 @@ async function executeStep(service: any, enrollment: any, step: any, contact: an
       return { status: "sent", outbox_id: outbox.data.id };
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
-      await service.from("adminos_whatsapp_outbox").update({ status: error === "twilio_not_configured" ? "queued" : "failed", last_error: error }).eq("id", outbox.data.id);
-      await service.from("adminos_followup_attempts").insert({ ...attemptBase, status: error === "twilio_not_configured" ? "queued" : "failed", executed_at: new Date().toISOString(), output: { outbox_id: outbox.data.id }, error_message: error });
-      return { status: error === "twilio_not_configured" ? "queued" : "failed", reason: error };
+      await service.from("adminos_whatsapp_outbox").update({ status: e instanceof FollowupBlocked ? "blocked" : error === "twilio_not_configured" ? "queued" : "failed", last_error: error }).eq("id", outbox.data.id);
+      await service.from("adminos_followup_attempts").insert({ ...attemptBase, status: e instanceof FollowupBlocked ? "blocked" : error === "twilio_not_configured" ? "queued" : "failed", executed_at: new Date().toISOString(), output: { outbox_id: outbox.data.id }, error_message: error });
+      return { status: e instanceof FollowupBlocked ? "blocked" : error === "twilio_not_configured" ? "queued" : "failed", reason: error };
     }
   }
 

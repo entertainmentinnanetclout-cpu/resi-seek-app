@@ -1,3 +1,5 @@
+import SemesterSummary from "@/components/applications/SemesterSummary";
+import { applicationSemester, readAllPages } from "@/lib/studentCare";
 import { useEffect, useMemo, useState } from "react";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -71,6 +73,7 @@ export const AdminApplicationsContent = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [semesterFilter, setSemesterFilter] = useState("all");
   const [institutionFilter, setInstitutionFilter] = useState<"all" | "university" | "tvet" | "private" | "other">("all");
   const [academicYearFilter, setAcademicYearFilter] = useState("all");
   const [academicCycleFilter, setAcademicCycleFilter] = useState("all");
@@ -87,11 +90,7 @@ export const AdminApplicationsContent = () => {
     try {
       setLoading(true);
       setError(null);
-      const { data, error: appsError } = await supabase
-        .from("admin_applications_safe" as any)
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (appsError) throw appsError;
+      const data = await readAllPages(() => supabase.from("admin_applications_safe" as any).select("*").order("created_at", { ascending: false }).order("application_id"));
       setApplications((data as any) || []);
     } catch (err) {
       console.error("[AdminApplications] load failed", err);
@@ -194,8 +193,8 @@ export const AdminApplicationsContent = () => {
     const matchesCycle = academicCycleFilter === "all" || app.academic_cycle === academicCycleFilter;
     const matchesStudyLevel = studyLevelFilter === "all" || app.study_level === studyLevelFilter;
     const matchesResidence = residenceFilter === "all" || app.residence_id === residenceFilter;
-    return matchesSearch && matchesStatus && matchesInstitution && matchesYear && matchesCycle && matchesStudyLevel && matchesResidence;
-  }), [applications, searchQuery, statusFilter, institutionFilter, academicYearFilter, academicCycleFilter, studyLevelFilter, residenceFilter]);
+    return matchesSearch && matchesStatus && matchesInstitution && matchesYear && matchesCycle && matchesStudyLevel && matchesResidence && (semesterFilter === "all" || applicationSemester(app) === Number(semesterFilter));
+  }), [applications, searchQuery, statusFilter, institutionFilter, academicYearFilter, academicCycleFilter, studyLevelFilter, residenceFilter, semesterFilter]);
 
   const pendingIds = useMemo(() => filteredApplications.filter((app) => app.application_status === "submitted" || app.application_status === "pending").map((app) => app.application_id), [filteredApplications]);
   const pendingCount = pendingIds.length;
@@ -226,6 +225,8 @@ export const AdminApplicationsContent = () => {
           <div><h1 className="text-3xl font-black">Applications & Academic Cohorts</h1><p className="text-muted-foreground">Review applications by academic year, annual/semester/trimester cycle, study level and institutional context. Handover exports are available only through GOD MODE OS above.</p></div>
           <Badge variant="outline" className="w-fit gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Legacy handover export disabled</Badge>
         </div>
+
+        <SemesterSummary rows={applications.filter(app => academicYearFilter === "all" || app.academic_year === Number(academicYearFilter))} value={semesterFilter} onChange={setSemesterFilter}/>
 
         <ResidenceFillVisualTabs
           mode="applications"

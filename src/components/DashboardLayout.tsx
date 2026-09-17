@@ -36,6 +36,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: Headphones, label: "Service Centre", path: "/dashboard/services" },
     { icon: Briefcase, label: "My WIL", path: "/wil" },
     { icon: FileText, label: "Applications", path: "/applications" },
+    { icon: FileText, label: "Application assistance", path: "/application-assistance" },
+    { icon: FileText, label: "Student care / Single rooms", path: "/student-care" },
   ];
   const adminNavItems = [{ icon: Shield, label: "Admin Portal", path: "/admin" }, { icon: Rotate3D, label: "360 Studio", path: "/360-studio" }];
   const recruiterNavItems = isRecruiter ? [{ icon: Sparkles, label: "Recruitments", path: "/recruit/dashboard" }] : [];
