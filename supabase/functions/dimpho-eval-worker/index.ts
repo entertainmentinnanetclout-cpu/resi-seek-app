@@ -44,7 +44,7 @@ function evaluate(caseRow:any,response:any){
 
 async function invokeAgent(caseRow:any){
   const started=Date.now();
-  const r=await fetch(`${url}/functions/v1/adminos-agent`,{method:"POST",headers:{Authorization:`Bearer ${sk}`,apikey:sk,"Content-Type":"application/json"},body:JSON.stringify({action:caseRow.action||"public_enquiry",message:caseRow.prompt,context:{...(caseRow.context||{}),channel:"eval",eval_case_key:caseRow.case_key},evaluation:true})});
+  const r=await fetch(`${url}/functions/v1/reskonnect-brain`,{method:"POST",headers:{Authorization:`Bearer ${sk}`,apikey:sk,"Content-Type":"application/json"},body:JSON.stringify({action:"chat",agent_key:"dimpho",channel:"eval",thread_ref:"eval:"+caseRow.case_key,message:caseRow.prompt,context:{...(caseRow.context||{}),channel:"eval",eval_case_key:caseRow.case_key},evaluation:true})});
   const data=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(data?.detail||data?.error||`agent HTTP ${r.status}`);
   return{data,latency:Date.now()-started};
