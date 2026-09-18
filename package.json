@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run link:check && npm run luna:check && npm run platform:check && npm run seo:check && npm run 360:check && vite build && node scripts/prerender-seo.mjs && node scripts/emit-private-spa-entries.mjs",
+    "build": "npm run link:check && npm run brain:check && npm run luna:check && npm run platform:check && npm run seo:check && npm run 360:check && vite build && node scripts/prerender-seo.mjs && node scripts/emit-private-spa-entries.mjs",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "link:check": "node scripts/link-routing-qa.mjs",
@@ -13,7 +13,8 @@
     "platform:check": "node scripts/platform-rg3-rg4-qa.mjs",
     "seo:check": "node scripts/seo-qa.mjs",
     "360:check": "node scripts/virtual-tour-qa.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "brain:check": "node scripts/reskonnect-brain-qa.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
