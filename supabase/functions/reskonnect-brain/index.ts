@@ -100,7 +100,7 @@ async function resolveIdentity(service:any,who:any,body:any){
 
 async function loadMemory(service:any,userId:string|null,contactId:string|null){
   if(!userId&&!contactId)return[];
-  let q=service.from("rk_brain_memory").select("memory_key,value,category,confidence,source_channel,last_confirmed_at,updated_at").eq("status","active").order("updated_at",{ascending:false}).limit(40);
+  let q=service.from("rk_brain_memory").select("memory_key,value,category,confidence,source_channel,last_confirmed_at,expires_at,updated_at").eq("status","active").order("updated_at",{ascending:false}).limit(40);
   q=userId?q.eq("user_id",userId):q.eq("contact_id",contactId).is("user_id",null);
   const data=(await q).data||[];
   return data.filter((x:any)=>!x.expires_at||new Date(x.expires_at).getTime()>Date.now());
@@ -111,6 +111,39 @@ async function loadHistory(service:any,userId:string|null,contactId:string|null,
   if(threadRef)q=q.eq("channel",channel).eq("thread_ref",threadRef);else if(userId)q=q.eq("user_id",userId);else if(contactId)q=q.eq("contact_id",contactId);else return[];
   return ((await q).data||[]).reverse();
 }
+async function loadHistoricalCustomerContext(service:any,userId:string|null,contactId:string|null){
+  if(!userId&&!contactId)return{customer_events:[],whatsapp:[],enquiries:[],applications:[]};
+  const out:any={customer_events:[],whatsapp:[],enquiries:[],applications:[]};
+  try{
+    let events=service.from("adminos_customer_events").select("event_category,event_type,title,summary,status,metadata,occurred_at").order("occurred_at",{ascending:false}).limit(24);
+    events=userId?events.eq("user_id",userId):events.eq("contact_id",contactId);
+    out.customer_events=(await events).data||[];
+  }catch{}
+  if(contactId){
+    try{
+      const threads=(await service.from("adminos_whatsapp_threads").select("id,status,intent,last_summary,conversation_state,last_inbound_at,last_outbound_at,last_message_at").eq("contact_id",contactId).order("last_message_at",{ascending:false}).limit(4)).data||[];
+      const ids=threads.map((x:any)=>x.id);
+      let messages:any[]=[];
+      if(ids.length)messages=(await service.from("adminos_whatsapp_messages").select("thread_id,direction,body_text,status,created_at").in("thread_id",ids).order("created_at",{ascending:false}).limit(28)).data||[];
+      out.whatsapp={threads,messages:messages.reverse()};
+    }catch{}
+  }
+  try{
+    let threads=service.from("adminos_enquiry_threads").select("id,subject,channel,status,priority,last_message_at,created_at").order("last_message_at",{ascending:false}).limit(4);
+    threads=userId?threads.eq("profile_user_id",userId):threads.eq("contact_id",contactId);
+    const rows=(await threads).data||[],ids=rows.map((x:any)=>x.id);
+    let messages:any[]=[];
+    if(ids.length)messages=(await service.from("adminos_enquiry_messages").select("thread_id,sender_type,direction,content,status,created_at").in("thread_id",ids).order("created_at",{ascending:false}).limit(28)).data||[];
+    out.enquiries={threads:rows,messages:messages.reverse()};
+  }catch{}
+  if(userId){
+    try{
+      out.applications=(await service.from("applications").select("id,status,funding_type,move_in_date,moved_in,institution_type,academic_year,academic_cycle,academic_period,study_level,student_stage,residence_id,created_at,updated_at").eq("user_id",userId).order("updated_at",{ascending:false}).limit(10)).data||[];
+    }catch{}
+  }
+  return out;
+}
+
 async function loadKnowledge(service:any,message:string){
   const results=await Promise.all([embed(message),service.from("adminos_knowledge_entries").select("knowledge_key,title,content,structured_data,confidence,requires_human_confirmation,valid_until").gte("confidence",.8).order("confidence",{ascending:false}).limit(18)]);
   let semantic:any[]=[];try{semantic=(await service.rpc("dimpho_search_knowledge",{p_query:message,p_embedding_text:results[0],p_limit:12,p_min_confidence:.55})).data||[];}catch{}
@@ -177,10 +210,10 @@ serve(async(req)=>{
   const channel=safe(body?.channel||body?.context?.channel||agent.channel||"unknown",80);const threadRef=safe(body?.thread_ref||body?.context?.thread_ref||body?.context?.thread_id,140)||null;const identity=await resolveIdentity(service,who,body);
   const run=await service.from("adminos_agent_runs").insert({agent_key:"rk_brain:"+agent.agent_key,trigger_type:action,status:"running",input:{channel,thread_ref:threadRef,authenticated:Boolean(who.user),contact_id:identity.contactId,shared_brain_release:RELEASE},created_by:who.user?.id||null}).select("id").single();const runId=run.data?.id||null;
   try{
-    const loadedContext=await Promise.all([loadMemory(service,identity.userId,identity.contactId),loadState(service,channel,threadRef),loadHistory(service,identity.userId,identity.contactId,channel,threadRef),loadKnowledge(service,message),loadLiveFacts(service,message),loadTools(service,agent.tool_allowlist||[])]);
-    const memory=loadedContext[0],state=loadedContext[1],history=loadedContext[2],knowledge=loadedContext[3],liveFacts=loadedContext[4],tools=loadedContext[5];const externalHistory=Array.isArray(body?.context?.conversation_history)?body.context.conversation_history.slice(-12):[];
+    const loadedContext=await Promise.all([loadMemory(service,identity.userId,identity.contactId),loadState(service,channel,threadRef),loadHistory(service,identity.userId,identity.contactId,channel,threadRef),loadHistoricalCustomerContext(service,identity.userId,identity.contactId),loadKnowledge(service,message),loadLiveFacts(service,message),loadTools(service,agent.tool_allowlist||[])]);
+    const memory=loadedContext[0],state=loadedContext[1],history=loadedContext[2],historicalCustomerContext=loadedContext[3],knowledge=loadedContext[4],liveFacts=loadedContext[5],tools=loadedContext[6];const externalHistory=Array.isArray(body?.context?.conversation_history)?body.context.conversation_history.slice(-12):[];
     const systemPrompt=core.master_instructions+"\n\nAGENT PROFILE\nName: "+agent.persona_name+"\nRole: "+(agent.role_title||agent.display_name)+"\nChannel: "+channel+"\nInstructions: "+agent.system_instructions+"\n\nOUTPUT CONTRACT\nReturn JSON only with keys answer, confidence, risk, escalate, reason, intent, goal, entities, memory_updates, tool_calls, next_best_action and outcome. risk must be green|amber|red. outcome must be answered|resolved|action_executed|awaiting_confirmation|escalated. memory_updates items must contain key,value,explicit,confidence. Only write a memory update when the customer explicitly stated the fact in the current message. Never place sensitive information in memory_updates. Use only listed tools.";
-    const requestContext={message,channel,agent_key:agent.agent_key,customer:{contact:identity.contact,profile:identity.profile},shared_memory:memory,shared_conversation_state:state,cross_channel_history:history,channel_history:externalHistory,verified_knowledge:knowledge,verified_live_facts:liveFacts,available_tools:tools,caller_context:body?.context||{}};
+    const requestContext={message,channel,agent_key:agent.agent_key,customer:{contact:identity.contact,profile:identity.profile},shared_memory:memory,shared_conversation_state:state,cross_channel_history:history,historical_customer_context:historicalCustomerContext,channel_history:externalHistory,verified_knowledge:knowledge,verified_live_facts:liveFacts,available_tools:tools,caller_context:body?.context||{}};
     const first=await callModel(agent.default_model||"gpt-5.6-luna",systemPrompt,requestContext,1300);let result=parseModel(first.raw);const allowed=new Set((agent.tool_allowlist||[]).map((x:string)=>String(x)));const requested=result.tool_calls.filter((x:any)=>allowed.has(x.name));const toolResults:any[]=[];
     for(const call of requested)toolResults.push(await invokeTool(call,identity,channel,threadRef,runId,message));
     let provider=first.provider,model=first.model,usage=first.usage;
