@@ -22,7 +22,7 @@ const costFor=(model:string,input=0,output=0)=>{const rates:Record<string,[numbe
 const cleanIntent=(v:any)=>safe(v,100).toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||null;
 
 function parseModel(raw:string){
-  const cleaned=raw.trim().replace(/^~~~json\s*/i,"").replace(/~~~$/i,"").trim();
+  const cleaned=raw.trim().replace(/^```json\s*/i,"").replace(/```$/i,"").trim();
   try{
     const p=JSON.parse(cleaned);
     const risk=["green","amber","red"].includes(p?.risk)?p.risk:"amber";
