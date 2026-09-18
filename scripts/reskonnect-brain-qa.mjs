@@ -21,7 +21,7 @@ expect(migration.includes("Never store passwords, OTPs, banking credentials, ide
 expect(brain.includes("SAFE_MEMORY")&&brain.includes("SENSITIVE_PATTERN"),"runtime must filter memory writes");
 expect(brain.includes("dimpho_search_knowledge")&&brain.includes("adminos_knowledge_entries"),"Brain must reuse verified RAG and AdminOS knowledge");
 expect(brain.includes("dimpho-tool-engine")&&brain.includes("tool_allowlist"),"Brain must use governed registered tools");
-expect(brain.includes("cross_channel_history")&&brain.includes("rk_brain_conversation_state"),"Brain must preserve cross-channel continuity");
+expect(brain.includes("cross_channel_history")&&brain.includes("historical_customer_context")&&brain.includes("adminos_whatsapp_messages")&&brain.includes("adminos_enquiry_messages")&&brain.includes("rk_brain_conversation_state"),"Brain must preserve cross-channel continuity and read existing customer history");
 expect(luna.includes("/functions/v1/reskonnect-brain")&&luna.includes('agent_key:"luna"'),"Luna must use shared Brain");
 expect(whatsapp.includes("/functions/v1/reskonnect-brain")&&whatsapp.includes('agent_key: "dimpho"'),"WhatsApp automation must use Dimpho through shared Brain");
 expect(desk.includes("/functions/v1/reskonnect-brain")&&desk.includes('agent_key: "dimpho"'),"WhatsApp desk assist must use shared Brain");
