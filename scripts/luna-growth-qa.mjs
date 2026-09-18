@@ -7,6 +7,7 @@ const expect=(condition,message)=>{if(!condition)fail(message);};
 const bot=read("src/components/ResBot.tsx");
 const enquiry=read("supabase/functions/adminos-enquiry/index.ts");
 const lunaAgent=read("supabase/functions/luna-agent/index.ts");
+const brain=read("supabase/functions/reskonnect-brain/index.ts");
 const orchestrator=read("supabase/functions/luna-orchestrator/index.ts");
 const growth=read("src/lib/lunaGrowth.ts");
 const filters=read("src/hooks/useResidenceFilters.ts");
@@ -38,9 +39,9 @@ expect(bot.includes('externalFunctionUrl(signedIn ? "adminos-enquiry" : "luna-ag
 expect(bot.includes("Luna")&&!bot.includes("Konnect Agent • Secure support"),"website assistant identity must be Luna");
 expect(enquiry.includes('/functions/v1/luna-agent'),"authenticated in-app enquiry must route to Luna");
 expect(!enquiry.includes('/functions/v1/adminos-agent'),"in-app website enquiry must not route through Dimpho/adminos-agent");
-expect(lunaAgent.includes('.eq("agent_key","luna_core")'),"Luna agent must load the luna_core policy");
-expect(!lunaAgent.includes("dimpho_personas")&&!lunaAgent.includes("dimpho_customer_memory")&&!lunaAgent.includes("dimpho-tool-engine"),"Luna runtime must not depend on Dimpho persona, memory or tool engine");
-expect(hardening.includes("Dimpho must not learn from Luna-routed conversations")&&hardening.includes("new.metadata->>'agent_route'"),"Dimpho learning must exclude Luna in-app conversations");
+expect(lunaAgent.includes("/functions/v1/reskonnect-brain")&&lunaAgent.includes('agent_key:"luna"'),"Luna must route through the shared ResKonnect Brain");
+expect(!lunaAgent.includes("dimpho_customer_memory")&&!lunaAgent.includes("dimpho-tool-engine"),"Luna compatibility runtime must not access legacy Dimpho stores directly");
+expect(brain.includes("rk_brain_memory")&&brain.includes("rk_brain_interactions")&&brain.includes("rk_brain_intent_catalog"),"Shared Brain must persist cross-channel memory, interactions and intent intelligence");
 expect(
   orchestrator.includes("luna_academic_supply_live")
     && orchestrator.includes("luna_academic_demand_heat")
@@ -55,7 +56,7 @@ expect(migration.includes("adminos_campaign_attributions")&&migration.includes("
 expect(hardening.includes("exists(")&&hardening.includes("adminos_growth_campaigns"),"public campaign codes must be validated against the private growth registry");
 expect(migration.includes("'luna-demand-cycle'")&&migration.includes("'*/15 * * * *'"),"Luna demand cycle must be scheduled every 15 minutes");
 expect(migration.includes("'campaign_creation',false")&&migration.includes("'publishing',false"),"RG2 must not silently enable campaign creation or publishing");
-expect(config.includes("[functions.luna-agent]")&&config.includes("[functions.luna-orchestrator]"),"Luna Edge Functions must be source-controlled in Supabase config");
+expect(config.includes("[functions.luna-agent]")&&config.includes("[functions.luna-orchestrator]")&&config.includes("[functions.reskonnect-brain]"),"Luna and shared Brain Edge Functions must be source-controlled in Supabase config");
 
 expect(rg6rg8.includes("lead_score")&&rg6rg8.includes("qualification_band")&&rg6rg8.includes("next_best_action"),"RG6 must keep deterministic lead scoring and next-best-action fields");
 expect(rg6rg8.includes("adminos_generate_conversion_followups")&&rg6rg8.includes("respect_consent")&&rg6rg8.includes("respect_do_not_contact"),"RG6 must retain consent-aware conversion follow-ups");

@@ -128,6 +128,14 @@ serve(async(req)=>{
   if(!user&&!internalService&&action!=="public_enquiry")return json({error:"Authentication required"},401);
   if(!["public_enquiry","enquiry_reply"].includes(action)&&!staffRole&&!internalService)return json({error:"Staff access required"},403);
 
+  if(["public_enquiry","enquiry_reply"].includes(action)&&body?.use_legacy_dimpho_runtime!==true){
+    const channel=safeShort(body.context?.channel||body.channel||"web",40)||"web";
+    const agentKey=safeShort(body.agent_key||(channel==="website"||channel==="in_app"?"luna":"dimpho"),80);
+    const brain=await fetch(`${supabaseUrl}/functions/v1/reskonnect-brain`,{method:"POST",headers:{Authorization:internalService?`Bearer ${serviceKey}`:authHeader,apikey:internalService?serviceKey:anonKey,"Content-Type":"application/json"},body:JSON.stringify({...body,action:"chat",agent_key:agentKey,channel,thread_ref:body.thread_id||body.context?.thread?.id||body.context?.thread_id||null,context:{...(body.context||{}),legacy_entrypoint:"adminos-agent"}})});
+    const brainText=await brain.text();
+    return new Response(brainText,{status:brain.status,headers:{...cors,"Content-Type":"application/json"}});
+  }
+
   const contactId=body.contact_id?safeShort(body.contact_id,64):null;
   let contact:any=null;
   if(contactId){const c=await service.from("adminos_contacts").select("*").eq("id",contactId).maybeSingle();contact=c.data;if(!staffRole&&!internalService&&action==="enquiry_reply"&&contact?.profile_user_id!==user?.id)return json({error:"Contact access denied"},403);}

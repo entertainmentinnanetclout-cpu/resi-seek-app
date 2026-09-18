@@ -39,6 +39,9 @@ verify_jwt = true
 [functions.adminos-agent]
 verify_jwt = true
 
+[functions.reskonnect-brain]
+verify_jwt = true
+
 [functions.luna-agent]
 verify_jwt = true
 
