@@ -245,7 +245,7 @@ serve(async (req) => {
       headers: { "Content-Type": "application/json", Authorization: authHeader, apikey: anonKey },
       body: JSON.stringify({
         action: "chat", agent_key: "email_service", channel: "email", thread_ref: thread.id,
-        action: "email_draft", contact_id: contactId, entity_type: "email_thread", entity_id: thread.id,
+        contact_id: contactId, entity_type: "email_thread", entity_id: thread.id,
         message: `Inbound email from ${fromEmail}\nSubject: ${subject}\n\n${text}`,
         context: { channel: "email", gmail_message_id: gm.id, gmail_thread_id: gm.threadId },
       }),
