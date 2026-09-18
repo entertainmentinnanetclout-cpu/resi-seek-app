@@ -5,7 +5,7 @@ const fail=(message)=>{console.error("ResKonnect Brain QA failed: "+message);pro
 const expect=(condition,message)=>{if(!condition)fail(message);};
 
 const brain=read("supabase/functions/reskonnect-brain/index.ts");
-const migration=read("supabase/migrations/20260918043000_reskonnect_brain_v1.sql");
+const migration=read("supabase/migrations/20260918042009_reskonnect_brain_v1.sql");
 const luna=read("supabase/functions/luna-agent/index.ts");
 const whatsapp=read("supabase/functions/adminos-whatsapp-webhook/index.ts");
 const desk=read("supabase/functions/adminos-whatsapp-desk/index.ts");
