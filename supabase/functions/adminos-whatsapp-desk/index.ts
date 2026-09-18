@@ -67,11 +67,14 @@ async function recentHistory(service: any, threadId: string, limit = 24) {
 }
 
 async function invokeAgent(authHeader: string, action: string, message: string, thread: any, contact: any, history: any[], extra: Record<string, unknown> = {}) {
-  const response = await fetch(`${supabaseUrl}/functions/v1/adminos-agent`, {
+  const response = await fetch(`${supabaseUrl}/functions/v1/reskonnect-brain`, {
     method: "POST",
     headers: { Authorization: authHeader, apikey: anonKey, "Content-Type": "application/json" },
     body: JSON.stringify({
-      action,
+      action: "chat",
+      agent_key: "dimpho",
+      channel: "whatsapp",
+      thread_ref: thread.id,
       contact_id: contact?.id || null,
       message,
       context: {
