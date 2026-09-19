@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { nativeForegroundAlert } from "@/lib/nativeNotifications";
+import { nativeForegroundAlert, listenForNativeNotificationAction } from "@/lib/nativeNotifications";
 
 export interface AccountNotification {
   id: string;
@@ -19,12 +19,12 @@ type Listener = (snapshot: Snapshot) => void;
 const EMPTY: Snapshot = { notifications: [], unreadCount: 0, loading: false };
 const stores = new Map<string, {
   snapshot: Snapshot; listeners: Set<Listener>; channel: ReturnType<typeof supabase.channel> | null;
-  request: Promise<void> | null; seen: Set<string>;
+  request: Promise<void> | null; seen: Set<string>; stopNativeAction: (() => void) | null;
 }>();
 function storeFor(userId: string) {
   let store = stores.get(userId);
   if (!store) {
-    store = { snapshot: { notifications: [], unreadCount: 0, loading: true }, listeners: new Set<Listener>(), channel: null, request: null, seen: new Set<string>() };
+    store = { snapshot: { notifications: [], unreadCount: 0, loading: true }, listeners: new Set<Listener>(), channel: null, request: null, seen: new Set<string>(), stopNativeAction: null };
     stores.set(userId, store);
   }
   return store;
@@ -53,6 +53,7 @@ async function load(userId: string, force = false) {
 function connect(userId: string) {
   const store = storeFor(userId);
   if (store.channel) return;
+  store.stopNativeAction = listenForNativeNotificationAction(userId);
   store.channel = supabase.channel(`rk-account-notices-${userId}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, payload => {
       if (payload.eventType === "DELETE") { void load(userId, true); return; }
@@ -94,6 +95,7 @@ export function useRealtimeNotifications() {
     return () => {
       store.listeners.delete(setSnapshot);
       if (store.listeners.size === 0) {
+        store.stopNativeAction?.(); store.stopNativeAction = null;
         const channel = store.channel;
         store.channel = null;
         if (channel) void supabase.removeChannel(channel);
