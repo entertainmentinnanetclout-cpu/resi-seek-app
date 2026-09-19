@@ -13,9 +13,9 @@ const Dashboard = () => {
   if (shouldBlock) return null;
 
   // Android is delivered as a separate WebView bundle. Never eagerly mount the
-  // desktop dashboard shell, realtime subscriptions, maps or notifications on
+  // full dashboard shell, realtime subscriptions, maps or notifications on
   // its first authenticated frame. All features remain reachable from here.
-  if (isNativeApp() && location.pathname !== "/dashboard/full") return <NativeSafeDashboard />;
+  if (isNativeApp() && new URLSearchParams(location.search).get("full") !== "1") return <NativeSafeDashboard />;
 
   return (
     <DashboardLayout>
