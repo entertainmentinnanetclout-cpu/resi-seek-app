@@ -15,6 +15,8 @@ const vite=read("vite.config.ts");
 const config=read("supabase/config.toml");
 const native=JSON.parse(read("native/android-release.json"));
 const dashboard=read("src/components/DashboardLayout.tsx");
+const nativeHome=read("src/components/NativeStudentHome.tsx");
+const mainActivity=read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
 
 expect(auth.includes('rpc("get_my_access_context")'),"auth bootstrap uses one access-context RPC");
 expect(auth.includes("refreshSession"),"auth reconciles near-expiry sessions after resume");
@@ -33,8 +35,11 @@ expect(config.includes("[functions.vapid-public-key]\nverify_jwt = false"),"VAPI
 expect(config.includes("[functions.send-push]\nverify_jwt = true"),"push fan-out requires JWT");
 expect(!notFound.includes("CareerEducation")&&!notFound.includes("ManagedSeoPage"),"404 no longer defeats route splitting");
 expect(app.includes('const Landing = lazy(')&&app.includes("DeferredGlobalEnhancements"),"landing/global enhancements are split from boot bundle");
-expect(dashboard.includes("!isMobile")&&dashboard.includes("dashboard-notifications-mobile"),"dashboard mounts one notification realtime client");
-expect(native.versionName==="1.1.1"&&native.versionCode===4,"Android release is 1.1.1 / versionCode 4");
+expect(dashboard.includes("!isMobile")&&dashboard.includes("dashboard-notifications-mobile"),"web dashboard mounts one notification realtime client");
+expect(app.includes("NativeDashboard")&&nativeHome.includes("post_login_stable"),"native post-login uses lightweight crash-safe home");
+expect(mainActivity.includes("onRenderProcessGone")&&mainActivity.includes("setRendererPriorityPolicy"),"Android renderer crash recovery is enabled");
+expect(app.includes("if (native) return;"),"native shell skips deferred website enhancements");
+expect(native.versionName==="1.1.2"&&native.versionCode===5,"Android release is 1.1.2 / versionCode 5");
 
 if(process.exitCode) process.exit(process.exitCode);
 console.log("Android/web reliability gate passed.");
