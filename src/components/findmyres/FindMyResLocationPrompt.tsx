@@ -3,20 +3,18 @@ import { Compass, LocateFixed, Navigation, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { requestLiveLocation, useLiveLocation } from "@/lib/resmap/liveLocation";
+import { isNativeApp } from "@/lib/accountRouting";
 
 export function FindMyResLocationPrompt() {
   const live = useLiveLocation();
   const [expanded, setExpanded] = useState(live.status !== "granted");
   const requesting = live.status === "requesting";
+  const native = isNativeApp();
 
   if (live.status === "granted" && !expanded) {
     return (
       <div className="mx-auto max-w-7xl px-4 pt-3 sm:px-6 lg:px-8">
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-100"
-        >
+        <button type="button" onClick={() => setExpanded(true)} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-100">
           <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" /></span>
           Live location on
           {live.effectiveHeading != null && <span className="text-emerald-700">· heading {Math.round(live.effectiveHeading)}°</span>}
@@ -40,28 +38,19 @@ export function FindMyResLocationPrompt() {
                 {live.status === "granted" && <Badge className="bg-emerald-600 text-white">LIVE</Badge>}
               </div>
               <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-600 sm:text-sm">
-                ResKonnect can rank nearby accommodation, start routes from where you actually are, and show the direction your phone is facing. Your browser still controls the permission.
+                ResKonnect can rank nearby accommodation, start routes from your current location, and show the direction your device is facing. {native ? "You control access through your device's app permissions." : "You control access through your browser's location permissions."}
               </p>
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-semibold text-slate-500">
                 <span className="inline-flex items-center gap-1"><LocateFixed className="h-3.5 w-3.5" />nearest residences</span>
                 <span className="inline-flex items-center gap-1"><Compass className="h-3.5 w-3.5" />heading & navigation</span>
                 <span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" />permission controlled by you</span>
               </div>
-              {live.error && live.status !== "granted" && <p className="mt-2 text-xs font-semibold text-amber-700">{live.error}. You can enable Location for this site in your browser settings.</p>}
+              {live.error && live.status !== "granted" && <p className="mt-2 text-xs font-semibold text-amber-700" role="status">{live.error}. {native ? "Check Settings → Apps → ResKonnect → Permissions → Location on your device, then try again." : "Check this site's Location permission in your browser settings, then try again."}</p>}
             </div>
           </div>
-
           <div className="flex shrink-0 gap-2">
             {live.status !== "granted" ? (
-              <Button
-                type="button"
-                disabled={requesting}
-                className="h-11 flex-1 rounded-xl bg-[#0b4a87] px-5 text-white sm:flex-none"
-                onClick={async () => {
-                  const ok = await requestLiveLocation();
-                  if (ok) setExpanded(false);
-                }}
-              >
+              <Button type="button" disabled={requesting} className="h-11 flex-1 rounded-xl bg-[#0b4a87] px-5 text-white sm:flex-none" onClick={async () => { const ok = await requestLiveLocation(); if (ok) setExpanded(false); }}>
                 <LocateFixed className="mr-2 h-4 w-4" />{requesting ? "Requesting…" : "Enable live location"}
               </Button>
             ) : (
