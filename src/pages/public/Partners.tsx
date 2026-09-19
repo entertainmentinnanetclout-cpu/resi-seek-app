@@ -6,116 +6,23 @@ import PartnerShowcase from "@/components/landing/PartnerShowcase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Building2, Building, Award, Landmark } from "lucide-react";
+import { Building2, Building, Award, Landmark, Users } from "lucide-react";
 
 export const Partners: React.FC = () => {
-  return (
-    <PublicLayout>
-      <SEO
-        title="ResKonnect Partners | Landlords, Institutions & Businesses"
-        description="ResKonnect is a Start To Up product connecting landlords, institutions, businesses and student-support collaborators through one digital ecosystem."
-        keywords="ResKonnect partners, Start To Up, list student accommodation, landlord leads, institution partnerships, student marketing"
-        canonicalPath="/partners"
-      />
-
-      <div className="py-16 md:py-24 bg-gradient-to-b from-primary/5 via-background to-background">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-          <div className="text-center max-w-3xl mx-auto space-y-4">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
-              ResKonnect Partners Network
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              ResKonnect is a Start To Up product, built to connect property owners, institutions, businesses and student-support collaborators through a coordinated tertiary ecosystem.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <PartnerShowcase />
-
-      <div className="py-16 md:py-20 bg-background">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            <Card className="hover:shadow-lg transition-all border-border/80">
-              <CardContent className="p-6 space-y-3">
-                <Building2 className="h-10 w-10 text-primary" />
-                <h2 className="text-lg font-bold">Landlords</h2>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  List student accommodations, fill beds, verify student credentials, and receive digital dashboard support.
-                </p>
-                <Button asChild variant="link" className="p-0 text-primary">
-                  <Link to="/partners/landlords">Landlord Portal &rarr;</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all border-border/80">
-              <CardContent className="p-6 space-y-3">
-                <Landmark className="h-10 w-10 text-primary" />
-                <h2 className="text-lg font-bold">Institutions</h2>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Partner with universities, TVET colleges, and private campuses to organize intake programs and portals.
-                </p>
-                <Button asChild variant="link" className="p-0 text-primary">
-                  <Link to="/partners/institutions">Institution Portal &rarr;</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all border-border/80">
-              <CardContent className="p-6 space-y-3">
-                <Award className="h-10 w-10 text-primary" />
-                <h2 className="text-lg font-bold">Recruiters</h2>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Become a registered student affiliate agent. Help students find housing or study tracks, and earn R200 per placement.
-                </p>
-                <Button asChild variant="link" className="p-0 text-primary">
-                  <Link to="/recruit">Recruiter Portal &rarr;</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all border-border/80">
-              <CardContent className="p-6 space-y-3">
-                <Building className="h-10 w-10 text-primary" />
-                <h2 className="text-lg font-bold">Property Portals</h2>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Deploy custom-branded, scalable multi-property portals to centralize large-scale property management operations.
-                </p>
-                <Button asChild variant="link" className="p-0 text-primary">
-                  <Link to="/get-started?persona=landlord&need=partner_solution">View Portals &rarr;</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="bg-muted/40 rounded-2xl p-8 border border-border max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold">Explore Tailored Solutions</h3>
-              <p className="text-sm text-muted-foreground max-w-xl">
-                Ready to coordinate integration systems or partner with ResKonnect? Connect with our enterprise digital operations team.
-              </p>
-            </div>
-            <Button asChild size="lg">
-              <Link to="/get-started?persona=institution_business&need=partner_solution">Get Started</Link>
-            </Button>
-          </div>
-
-          <div className="mx-auto max-w-5xl">
-            <SeoInternalLinks
-              heading="Partner with ResKonnect"
-              links={[
-                { label: "Landlord partners", to: "/partners/landlords", description: "List rooms and receive verified student leads." },
-                { label: "Institution partners", to: "/partners/institutions", description: "Support student intake and accommodation." },
-                { label: "List a property", to: "/get-started?persona=landlord&need=property_listing", description: "Start a listing in a few minutes." },
-                { label: "Partner solutions", to: "/partners", description: "Digital student journey solutions for business." },
-              ]}
-            />
-          </div>
-        </div>
-      </div>
-    </PublicLayout>
-  );
+  return <PublicLayout>
+    <SEO title="ResKonnect Partners | Landlords, Institutions & Businesses" description="ResKonnect connects landlords, institutions, businesses and student-support partners through its Living, AI and Opportunity ecosystem." keywords="ResKonnect partners, application assistance, approved residence recruiters, student accommodation partners, TVET application help" canonicalPath="/partners" />
+    <div className="py-16 md:py-24 bg-gradient-to-b from-primary/5 via-background to-background"><div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-10"><div className="text-center max-w-3xl mx-auto space-y-4"><h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">ResKonnect Partners Network</h1><p className="text-lg md:text-xl text-muted-foreground leading-relaxed">ResKonnect is a Start To Up product, built to connect property owners, institutions, businesses and student-support collaborators through a coordinated tertiary ecosystem.</p></div></div></div>
+    <PartnerShowcase />
+    <div className="py-16 md:py-20 bg-background"><div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-16"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+      <Card className="hover:shadow-lg transition-all border-border/80"><CardContent className="p-6 space-y-3"><Building2 className="h-10 w-10 text-primary"/><h2 className="text-lg font-bold">Landlords</h2><p className="text-xs text-muted-foreground leading-relaxed">List student accommodation, fill beds, verify student credentials and receive digital dashboard support.</p><Button asChild variant="link" className="p-0 text-primary"><Link to="/partners/landlords">Landlord Portal &rarr;</Link></Button></CardContent></Card>
+      <Card className="hover:shadow-lg transition-all border-border/80"><CardContent className="p-6 space-y-3"><Landmark className="h-10 w-10 text-primary"/><h2 className="text-lg font-bold">Institutions</h2><p className="text-xs text-muted-foreground leading-relaxed">Partner with universities, TVET colleges and private campuses to organise intake programs and portals.</p><Button asChild variant="link" className="p-0 text-primary"><Link to="/partners/institutions">Institution Portal &rarr;</Link></Button></CardContent></Card>
+      <Card className="hover:shadow-lg transition-all border-border/80"><CardContent className="p-6 space-y-3"><Award className="h-10 w-10 text-primary"/><h2 className="text-lg font-bold">Recruiters</h2><p className="text-xs text-muted-foreground leading-relaxed">Apply to recruit students for approved residences. Commission terms are defined per residence campaign and verified outcome.</p><Button asChild variant="link" className="p-0 text-primary"><Link to="/recruit">Recruiter Portal &rarr;</Link></Button></CardContent></Card>
+      <Card className="hover:shadow-lg transition-all border-border/80"><CardContent className="p-6 space-y-3"><Users className="h-10 w-10 text-primary"/><h2 className="text-lg font-bold">Student assistants</h2><p className="text-xs text-muted-foreground leading-relaxed">Find ResKonnect-approved application assistants and accommodation recruiters, even without a TikTok referral link.</p><Button asChild variant="link" className="p-0 text-primary"><Link to="/partners/directory">Browse public profiles &rarr;</Link></Button></CardContent></Card>
+      <Card className="hover:shadow-lg transition-all border-border/80"><CardContent className="p-6 space-y-3"><Building className="h-10 w-10 text-primary"/><h2 className="text-lg font-bold">Property Portals</h2><p className="text-xs text-muted-foreground leading-relaxed">Deploy multi-property portals to coordinate property management at scale.</p><Button asChild variant="link" className="p-0 text-primary"><Link to="/get-started?persona=landlord&need=partner_solution">View Portals &rarr;</Link></Button></CardContent></Card>
+    </div>
+    <div className="bg-muted/40 rounded-2xl p-8 border border-border max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6"><div className="space-y-2"><h3 className="text-xl font-bold">Explore Tailored Solutions</h3><p className="text-sm text-muted-foreground max-w-xl">Ready to coordinate integration systems or partner with ResKonnect? Connect with our enterprise digital operations team.</p></div><Button asChild size="lg"><Link to="/get-started?persona=institution_business&need=partner_solution">Get Started</Link></Button></div>
+    <div className="mx-auto max-w-5xl"><SeoInternalLinks heading="Partner with ResKonnect" links={[{label:"Landlord partners",to:"/partners/landlords",description:"List rooms and receive verified student leads."},{label:"Institution partners",to:"/partners/institutions",description:"Support student intake and accommodation."},{label:"Approved application and residence assistants",to:"/partners/directory",description:"Find an approved student support partner by name, service or campus."},{label:"List a property",to:"/get-started?persona=landlord&need=property_listing",description:"Start a listing in a few minutes."}]} /></div>
+   </div></div>
+  </PublicLayout>;
 };
-
 export default Partners;
