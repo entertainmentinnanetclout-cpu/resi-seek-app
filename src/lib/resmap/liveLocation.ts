@@ -2,23 +2,8 @@ import { useEffect, useState } from "react";
 import { isNativeApp } from "@/lib/accountRouting";
 
 export type LiveLocationStatus = "idle" | "requesting" | "granted" | "denied" | "unavailable";
-export interface LivePosition {
-  latitude: number;
-  longitude: number;
-  accuracy: number;
-  altitude: number | null;
-  heading: number | null;
-  speed: number | null;
-  timestamp: number;
-}
-export interface LiveLocationState {
-  status: LiveLocationStatus;
-  position: LivePosition | null;
-  deviceHeading: number | null;
-  orientationAvailable: boolean;
-  error: string | null;
-}
-
+export interface LivePosition { latitude: number; longitude: number; accuracy: number; altitude: number | null; heading: number | null; speed: number | null; timestamp: number; }
+export interface LiveLocationState { status: LiveLocationStatus; position: LivePosition | null; deviceHeading: number | null; orientationAvailable: boolean; error: string | null; }
 const OPT_IN_KEY = "reskonnect_resmap_live_location_opt_in";
 const LAST_POSITION_KEY = "reskonnect_resmap_last_position";
 const MAX_CACHED_AGE = 30 * 60 * 1000;
@@ -30,15 +15,8 @@ let watchStarting = false;
 let watchGeneration = 0;
 let orientationListening = false;
 const subscribers = new Set<(next: LiveLocationState) => void>();
-
-function emit(patch: Partial<LiveLocationState>) {
-  state = { ...state, ...patch };
-  subscribers.forEach(listener => listener(state));
-}
-function normalizeHeading(value: number | null | undefined) {
-  if (value == null || !Number.isFinite(Number(value))) return null;
-  return (Number(value) % 360 + 360) % 360;
-}
+function emit(patch: Partial<LiveLocationState>) { state = { ...state, ...patch }; subscribers.forEach(listener => listener(state)); }
+function normalizeHeading(value: number | null | undefined) { if (value == null || !Number.isFinite(Number(value))) return null; return (Number(value) % 360 + 360) % 360; }
 function readLastPosition(): LivePosition | null {
   try {
     const raw = localStorage.getItem(LAST_POSITION_KEY);
@@ -48,10 +26,7 @@ function readLastPosition(): LivePosition | null {
     return { latitude: Number(parsed.latitude), longitude: Number(parsed.longitude), accuracy: Number(parsed.accuracy || 0), altitude: parsed.altitude ?? null, heading: normalizeHeading(parsed.heading), speed: parsed.speed ?? null, timestamp: Number(parsed.timestamp) };
   } catch { return null; }
 }
-if (typeof window !== "undefined") {
-  const cached = readLastPosition();
-  if (cached) state = { ...state, position: cached };
-}
+if (typeof window !== "undefined") { const cached = readLastPosition(); if (cached) state = { ...state, position: cached }; }
 function onPosition(position: { coords: { latitude: number; longitude: number; accuracy: number; altitude?: number | null; heading?: number | null; speed?: number | null }; timestamp?: number }) {
   const live: LivePosition = { latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy, altitude: position.coords.altitude ?? null, heading: normalizeHeading(position.coords.heading), speed: position.coords.speed ?? null, timestamp: position.timestamp || Date.now() };
   if (!Number.isFinite(live.latitude) || !Number.isFinite(live.longitude)) return;
@@ -77,21 +52,26 @@ function attachOrientationListener() {
 async function requestOrientationPermission() {
   const OrientationCtor = (window as any).DeviceOrientationEvent;
   if (!OrientationCtor) return;
-  try {
-    if (typeof OrientationCtor.requestPermission === "function" && await OrientationCtor.requestPermission() !== "granted") return;
-    attachOrientationListener();
-  } catch { /* heading is optional */ }
+  try { if (typeof OrientationCtor.requestPermission === "function" && await OrientationCtor.requestPermission() !== "granted") return; attachOrientationListener(); } catch { /* optional heading */ }
 }
-
 type NativeGeo = {
   requestPermissions: () => Promise<{ location?: string; coarseLocation?: string }>;
   getCurrentPosition: (options: typeof LOCATION_OPTIONS) => Promise<any>;
-  watchPosition: (options: typeof LOCATION_OPTIONS, callback: (position: any, error?: any) => void) => Promise<string>;
-  clearWatch: (options: { id: string }) => Promise<void>;
+  watchPosition?: (options: typeof LOCATION_OPTIONS, callback: (position: any, error?: any) => void) => Promise<string>;
+  clearWatch?: (options: { id: string }) => Promise<void>;
 };
 function nativeGeo(): NativeGeo | null {
   if (!isNativeApp()) return null;
-  return (window as any).Capacitor?.Plugins?.Geolocation ?? null;
+  const cap = (window as any).Capacitor;
+  if (cap?.Plugins?.Geolocation) return cap.Plugins.Geolocation;
+  // Capacitor 8 may expose the registered Android plugin through its native
+  // bridge before the optional JavaScript proxy is loaded. Foreground position
+  // and permission requests use the native bridge; ongoing watch is optional.
+  if (typeof cap?.nativePromise === "function") return {
+    requestPermissions: () => cap.nativePromise("Geolocation", "requestPermissions", {}),
+    getCurrentPosition: options => cap.nativePromise("Geolocation", "getCurrentPosition", options),
+  };
+  return null;
 }
 function browserPosition(options: PositionOptions) {
   return new Promise<GeolocationPosition>((resolve, reject) => {
@@ -104,15 +84,14 @@ async function obtainPosition() {
   if (native) {
     const permissions = await native.requestPermissions();
     if (permissions.location === "denied" && permissions.coarseLocation === "denied") throw { code: 1, message: "Location permission denied" };
-    return await native.getCurrentPosition(LOCATION_OPTIONS);
+    try { return await native.getCurrentPosition(LOCATION_OPTIONS); }
+    catch (error: any) {
+      if (error?.code === 1 || /denied|permission/i.test(error?.message || "")) throw error;
+      return await native.getCurrentPosition({ ...LOCATION_OPTIONS, enableHighAccuracy: true, timeout: 18_000 });
+    }
   }
-  // Low-power network location is usually available before a first GPS satellite fix.
-  // Retry with GPS only if the fast fix fails; neither attempt can hang indefinitely.
   try { return await browserPosition({ enableHighAccuracy: false, maximumAge: 10_000, timeout: 9_000 }); }
-  catch (error: any) {
-    if (error?.code === 1) throw error;
-    return await browserPosition({ enableHighAccuracy: true, maximumAge: 0, timeout: 14_000 });
-  }
+  catch (error: any) { if (error?.code === 1) throw error; return await browserPosition({ enableHighAccuracy: true, maximumAge: 0, timeout: 14_000 }); }
 }
 async function startWatch() {
   if (watchId != null || watchStarting || state.status === "denied") return;
@@ -120,15 +99,14 @@ async function startWatch() {
   const generation = ++watchGeneration;
   try {
     const native = nativeGeo();
-    if (native) {
+    if (native?.watchPosition) {
       const id = await native.watchPosition({ ...LOCATION_OPTIONS, maximumAge: 10_000 }, (position, error) => {
         if (generation !== watchGeneration) return;
-        if (position) onPosition(position);
-        else if (error) onPositionError(error);
+        if (position) onPosition(position); else if (error) onPositionError(error);
       });
-      if (generation !== watchGeneration) { await native.clearWatch({ id }); return; }
+      if (generation !== watchGeneration) { await native.clearWatch?.({ id }); return; }
       watchId = id; watchPlatform = "native";
-    } else if (navigator.geolocation) {
+    } else if (!native && navigator.geolocation) {
       const id = navigator.geolocation.watchPosition(onPosition, onPositionError, { enableHighAccuracy: false, maximumAge: 10_000, timeout: 16_000 });
       if (generation !== watchGeneration) { navigator.geolocation.clearWatch(id); return; }
       watchId = id; watchPlatform = "web";
@@ -138,10 +116,7 @@ async function startWatch() {
 }
 export async function requestLiveLocation() {
   if (typeof window === "undefined") return false;
-  if (!nativeGeo() && !navigator.geolocation) {
-    emit({ status: "unavailable", error: isNativeApp() ? "Location is unavailable on this device. Choose your campus manually." : "This browser cannot provide location. Choose your campus manually." });
-    return false;
-  }
+  if (!nativeGeo() && !navigator.geolocation) { emit({ status: "unavailable", error: isNativeApp() ? "Location is unavailable on this device. Choose your campus manually." : "This browser cannot provide location. Choose your campus manually." }); return false; }
   if (state.status === "requesting") return false;
   emit({ status: "requesting", error: null });
   void requestOrientationPermission();
@@ -151,23 +126,14 @@ export async function requestLiveLocation() {
     try { localStorage.setItem(OPT_IN_KEY, "1"); } catch { /* optional */ }
     void startWatch();
     return true;
-  } catch (error: any) {
-    onPositionError(error);
-    return false;
-  }
+  } catch (error: any) { onPositionError(error); return false; }
 }
-export function resumeLiveLocationIfOptedIn() {
-  try { if (localStorage.getItem(OPT_IN_KEY) !== "1") return; } catch { return; }
-  attachOrientationListener();
-  void startWatch();
-}
-export function hasLiveLocationOptIn() {
-  try { return localStorage.getItem(OPT_IN_KEY) === "1"; } catch { return false; }
-}
+export function resumeLiveLocationIfOptedIn() { try { if (localStorage.getItem(OPT_IN_KEY) !== "1") return; } catch { return; } attachOrientationListener(); void startWatch(); }
+export function hasLiveLocationOptIn() { try { return localStorage.getItem(OPT_IN_KEY) === "1"; } catch { return false; } }
 export function stopLiveLocation() {
   ++watchGeneration;
   if (watchId != null) {
-    if (watchPlatform === "native") { const native = nativeGeo(); if (native) void native.clearWatch({ id: String(watchId) }).catch(() => undefined); }
+    if (watchPlatform === "native") { const native = nativeGeo(); if (native?.clearWatch) void native.clearWatch({ id: String(watchId) }).catch(() => undefined); }
     else if (navigator.geolocation) navigator.geolocation.clearWatch(Number(watchId));
   }
   watchId = null; watchPlatform = null;
@@ -177,10 +143,7 @@ export function stopLiveLocation() {
   try { localStorage.removeItem(OPT_IN_KEY); localStorage.removeItem(LAST_POSITION_KEY); } catch { /* optional */ }
   emit({ status: "idle", position: null, deviceHeading: null, orientationAvailable: false, error: null });
 }
-export function subscribeLiveLocation(listener: (next: LiveLocationState) => void) {
-  subscribers.add(listener); listener(state);
-  return () => { subscribers.delete(listener); };
-}
+export function subscribeLiveLocation(listener: (next: LiveLocationState) => void) { subscribers.add(listener); listener(state); return () => { subscribers.delete(listener); }; }
 export function getLiveLocationState() { return state; }
 export function useLiveLocation() {
   const [, setSnapshot] = useState<LiveLocationState>(state);
