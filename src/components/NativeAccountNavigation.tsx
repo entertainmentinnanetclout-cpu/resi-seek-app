@@ -2,9 +2,9 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isNativeApp } from "@/lib/accountRouting";
+import NativeStudentGuide from "@/components/NativeStudentGuide";
 
-// Account destinations are recorded without rendering a second navigation bar.
-// Each authenticated portal supplies its own header and sign-out control.
+// Keep native account context, but never mount the redundant top navigation strip.
 export default function NativeAccountNavigation() {
   const { user } = useAuth();
   const { pathname } = useLocation();
@@ -14,5 +14,5 @@ export default function NativeAccountNavigation() {
       try { localStorage.setItem(`rk_native_home_${user.id}`, "/residence"); } catch { /* optional storage */ }
     }
   }, [pathname, user?.id]);
-  return null;
+  return isNativeApp() && user ? <NativeStudentGuide /> : null;
 }
