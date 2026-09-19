@@ -54,13 +54,13 @@ try{
   console.log("PASS route shell "+path);
  }
  await page.goto(origin+"/dashboard");await page.getByText("Good to see you, Test.").waitFor({timeout:20000});
- // Dashboard side navigation owns sign-out; don't depend on the removed native top-strip button.
- const signOut=page.getByRole("button",{name:/sign out|logout/i}).first();
- if(await signOut.count())await signOut.click();
- else throw new Error("Dashboard sign-out control is missing");
+ // Mobile dashboard owns logout inside its slide-out sidebar, not the removed native top strip.
+ if (await page.getByRole("button",{name:"Skip guide"}).count()) await page.getByRole("button",{name:"Skip guide"}).click();
+ await page.getByRole("button",{name:"Open navigation"}).click();
+ await page.getByRole("button",{name:"Logout",exact:true}).filter({visible:true}).click();
  await page.waitForURL("**/auth");assert.equal(await page.evaluate(key=>localStorage.getItem(key),storageKey),null);
  await page.reload();await page.getByRole("button",{name:"Sign In",exact:true}).waitFor();
- console.log("PASS dashboard sign-out removes session");
+ console.log("PASS dashboard sidebar logout removes session");
  for(const [staffRole,path] of [["operations_lead","/portals"],["tvet_lead","/tvet-dashboard"],["residence_admin","/residence"],["commerce_lead","/commerce"]]){
   role=staffRole;await page.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{key:storageKey,value:session});
   await page.goto(origin);await page.waitForURL("**"+path);assert.equal(new URL(page.url()).pathname,path);console.log("PASS staff role "+staffRole);
