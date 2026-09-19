@@ -1,20 +1,15 @@
 import { lazy, Suspense } from "react";
-import { useLocation } from "react-router-dom";
-import NativeSafeDashboard from "@/components/NativeSafeDashboard";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
-import { isNativeApp } from "@/lib/accountRouting";
 
+// Keep the substantial dashboard in a separate chunk so the auth transition stays responsive.
 const FullDashboard = lazy(() => import("@/components/FullDashboard"));
 
 export default function Dashboard() {
   const shouldBlock = useAdminRedirect();
-  const location = useLocation();
   if (shouldBlock) return null;
-
-  // Do not even import the data-heavy dashboard chunk during native sign-in.
-  // The full experience remains opt-in and all other authenticated pages work.
-  if (isNativeApp() && new URLSearchParams(location.search).get("full") !== "1") {
-    return <NativeSafeDashboard />;
-  }
-  return <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Opening My ResKonnect…</div>}><FullDashboard /></Suspense>;
+  return (
+    <Suspense fallback={<div role="status" className="min-h-[70dvh] bg-background p-6 text-sm text-muted-foreground">Opening your ResKonnect dashboard…</div>}>
+      <FullDashboard />
+    </Suspense>
+  );
 }
