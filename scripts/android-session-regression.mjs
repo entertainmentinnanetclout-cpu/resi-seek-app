@@ -43,6 +43,11 @@ try {
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
   await page.waitForURL('**/dashboard');
   await page.getByText('Good to see you, Test.').waitFor();
+  await page.getByText('Android 1.1.2').waitFor();
+  const initialNativeResources = await page.evaluate(() => performance.getEntriesByType('resource').map((entry) => entry.name));
+  assert.equal(initialNativeResources.some((name) => /\/assets\/Dashboard-[^/]+\.js(?:\?|$)/.test(name)), false, 'native post-login must not load the full web Dashboard chunk');
+  assert.equal(initialNativeResources.some((name) => /ResMapLiveStreetViewBridge/.test(name)), false, 'native post-login must not load the deferred 3D bridge chunk');
+  assert.equal(await page.getByRole('button', { name: 'Open ResKonnect AI assistant' }).count(), 0, 'native shell must not mount website Luna widget');
   const callsBeforeResume = accessCalls;
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await page.waitForTimeout(500);
