@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import ContactDetailsGate from "@/components/ContactDetailsGate";
 import SafeRenderBoundary from "@/components/SafeRenderBoundary";
-import { accountHome } from "@/lib/accountRouting";
+import { accountHome, isNativeApp } from "@/lib/accountRouting";
 
 export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading, staffRole, adminDepartments, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner } = useAuth();
@@ -34,6 +34,10 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user || isTumeloPartner || staffRole || (!isStudent && (isRecruiter || isPendingRecruiter))) return null;
+
+  if (isNativeApp()) {
+    return <SafeRenderBoundary name="native-student-route" fallback={<div className="p-6 text-sm">Your ResKonnect session is active. Reopen this page from the app navigation.</div>}>{children}</SafeRenderBoundary>;
+  }
 
   return <SafeRenderBoundary name="student-contact-gate" fallback={<>{children}</>}><ContactDetailsGate>{children}</ContactDetailsGate></SafeRenderBoundary>;
 };
