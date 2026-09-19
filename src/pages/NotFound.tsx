@@ -1,8 +1,12 @@
 import SEO from "@/components/SEO";
 import { Link, useLocation } from "react-router-dom";
+import PublicPartnerProfile from "@/pages/partners/PublicPartnerProfile";
 
 export default function NotFound() {
   const location = useLocation();
+  // The current App router places its wildcard here. Resolve canonical partner profiles
+  // before rendering a genuine 404; this avoids widening protected admin routes.
+  if (/^\/partners\/[a-z0-9][a-z0-9-]{2,79}\/?$/.test(location.pathname)) return <PublicPartnerProfile />;
   return (
     <>
       <SEO noIndex title="404 - Page Not Found | ResKonnect" description="The page you are looking for does not exist." />
