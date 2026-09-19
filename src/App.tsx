@@ -157,7 +157,9 @@ const RecruiterApply = lazy(() => import("./pages/recruit/RecruiterApply"));
 
 const DeferredGlobalEnhancements = () => {
   const [ready, setReady] = useState(false);
+  const native = isNativeApp();
   useEffect(() => {
+    if (native) return;
     const win = window as any;
     if (typeof win.requestIdleCallback === "function") {
       const id = win.requestIdleCallback(() => setReady(true), { timeout: 1800 });
@@ -165,8 +167,8 @@ const DeferredGlobalEnhancements = () => {
     }
     const id = window.setTimeout(() => setReady(true), 1200);
     return () => window.clearTimeout(id);
-  }, []);
-  if (!ready) return null;
+  }, [native]);
+  if (native || !ready) return null;
   return <Suspense fallback={null}><ResBot /><PushPrompt /></Suspense>;
 };
 
