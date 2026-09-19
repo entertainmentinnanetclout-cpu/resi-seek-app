@@ -6,11 +6,11 @@ on:
       version_code:
         description: "Play versionCode (must increase every upload)"
         required: true
-        default: "5"
+        default: "6"
       version_name:
         description: "Public versionName"
         required: true
-        default: "1.1.2"
+        default: "1.1.3"
 
 permissions:
   contents: read
@@ -76,8 +76,8 @@ jobs:
       - name: Strict Play readiness audit
         run: node scripts/android-playstore-readiness.mjs --strict
 
-      - name: Install pinned Capacitor 8.5.0 toolchain
-        run: npm install --no-save --package-lock=false @capacitor/core@8.5.0 @capacitor/android@8.5.0 @capacitor/cli@8.5.0
+      - name: Install pinned Capacitor 8.5.0 and native geolocation toolchain
+        run: npm install --no-save --package-lock=false @capacitor/core@8.5.0 @capacitor/android@8.5.0 @capacitor/cli@8.5.0 @capacitor/geolocation@8.0.0
 
       - name: Build production web bundle
         env:
