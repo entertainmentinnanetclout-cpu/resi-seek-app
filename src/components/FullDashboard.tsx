@@ -1,12 +1,15 @@
 import SEO from "@/components/SEO";
 import DashboardLayout from "@/components/DashboardLayout";
 import MyResKonnectCommandCentre from "@/components/MyResKonnectCommandCentre";
+import NativeDashboardHighlights from "@/components/native/NativeDashboardHighlights";
 import SafeRenderBoundary from "@/components/SafeRenderBoundary";
+import { isNativeApp } from "@/lib/accountRouting";
 import { Link } from "react-router-dom";
 
 export default function FullDashboard() {
   return <DashboardLayout>
     <SEO title="My ResKonnect | Living • AI • Opportunity" description="Your connected ResKonnect command centre for Living, AI guidance, applications, opportunities, next-best actions and verified account updates." />
+    {isNativeApp() && <SafeRenderBoundary name="native-dashboard-highlights"><NativeDashboardHighlights /></SafeRenderBoundary>}
     <SafeRenderBoundary name="my-reskonnect-command-centre" fallback={
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <h1 className="text-3xl font-black">My ResKonnect is reconnecting</h1>
@@ -15,7 +18,7 @@ export default function FullDashboard() {
           <Link className="rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground" to="/findmyres">Find My Res</Link>
           <Link className="rounded-full border px-5 py-3 text-sm font-bold" to="/opportunities">Opportunities</Link>
           <Link className="rounded-full border px-5 py-3 text-sm font-bold" to="/profile">Profile</Link>
-          <Link className="rounded-full border px-5 py-3 text-sm font-bold" to="/dashboard">Safe app home</Link>
+          <Link className="rounded-full border px-5 py-3 text-sm font-bold" to="/dashboard">Dashboard home</Link>
         </div>
       </div>
     }>
