@@ -1,4 +1,4 @@
-// Build: 2026-09-13 - Android 1.1.0 speed/session reliability boot
+// Build: 2026-09-19 - Android 1.1.2 post-login crash hardening
 import { lazy, Suspense, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
@@ -17,7 +17,9 @@ const shouldCanonicalize = currentHost.endsWith(".vercel.app") || alternatePubli
 
 function DeferredResMapBridge() {
   const [ready, setReady] = useState(false);
+  const native = isNativeApp();
   useEffect(() => {
+    if (native) return;
     const win = window as any;
     if (typeof win.requestIdleCallback === "function") {
       const id = win.requestIdleCallback(() => setReady(true), { timeout: 2200 });
@@ -25,12 +27,13 @@ function DeferredResMapBridge() {
     }
     const id = window.setTimeout(() => setReady(true), 1500);
     return () => window.clearTimeout(id);
-  }, []);
-  if (!ready) return null;
+  }, [native]);
+  if (native || !ready) return null;
   return <Suspense fallback={null}><ResMapLiveStreetViewBridge /></Suspense>;
 }
 
 function scheduleNonCriticalBoot() {
+  if (isNativeApp()) return;
   const run = () => { void initLunaAttribution(); };
   const win = window as any;
   if (typeof win.requestIdleCallback === "function") {
