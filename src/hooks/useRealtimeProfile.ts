@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { type User } from '@supabase/supabase-js';
+import { isNativeApp } from '@/lib/accountRouting';
 
 export function useRealtimeProfile(user: User | null) {
   const [profile, setProfile] = useState<any>(null);
@@ -33,6 +34,10 @@ export function useRealtimeProfile(user: User | null) {
     };
 
     fetchProfile();
+
+    if (isNativeApp()) {
+      return;
+    }
 
     const channel = supabase
       .channel(`realtime-profile-${user.id}`)
