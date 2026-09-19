@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import ContactDetailsGate from "@/components/ContactDetailsGate";
+const ContactDetailsGate = lazy(() => import("@/components/ContactDetailsGate"));
 import SafeRenderBoundary from "@/components/SafeRenderBoundary";
 import { accountHome, isNativeApp } from "@/lib/accountRouting";
 
@@ -39,5 +39,5 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
     return <SafeRenderBoundary name="native-student-route" fallback={<div className="p-6 text-sm">Your ResKonnect session is active. Reopen this page from the app navigation.</div>}>{children}</SafeRenderBoundary>;
   }
 
-  return <SafeRenderBoundary name="student-contact-gate" fallback={<>{children}</>}><ContactDetailsGate>{children}</ContactDetailsGate></SafeRenderBoundary>;
+  return <SafeRenderBoundary name="student-contact-gate" fallback={<>{children}</>}><Suspense fallback={<>{children}</>}><ContactDetailsGate>{children}</ContactDetailsGate></Suspense></SafeRenderBoundary>;
 };
