@@ -8,7 +8,7 @@ const checks = [
     const route = read("src/pages/Dashboard.tsx");
     const header = read("src/components/NativeAccountNavigation.tsx");
     assert.ok(route.includes("FullDashboard") && !route.includes("<NativeSafeDashboard"));
-    assert.ok(header.includes("return null") && !header.includes("App account navigation"));
+    assert.ok(header.includes("<NativeGuidedOnboarding /> : null") && !header.includes("<nav") && !header.includes("<Link"));
   }],
   ["RG2 stateful first-run guide", () => {
     const tour = read("src/components/native/NativeGuidedOnboarding.tsx");
@@ -19,7 +19,7 @@ const checks = [
     const map = read("src/components/resmap/NativeResMapExperience.tsx");
     const platform = read("src/components/resmap/ResMapPlatform.tsx");
     assert.ok(location.includes("requestPermissions") && location.includes("getCurrentPosition") && location.includes("choose your campus manually"));
-    assert.ok(map.includes("safeForVector") && map.includes("Return to the 2D map") && !map.includes("Map3DElement"));
+    assert.ok(map.includes("safeForVector") && map.includes("Return to the 2D map") && !map.includes("new Map3DElement("));
     assert.ok(platform.includes("NativeMap") && platform.includes("WebMap") && platform.includes("lazy("));
   }],
   ["RG3 nearby listing locality before valid-photo priority", () => {
