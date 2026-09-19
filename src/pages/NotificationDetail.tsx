@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Bell, CalendarClock, FileText, ShieldCheck } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,13 @@ function actionPath(metadata: unknown): string | null {
   if (m.kind === "profile" || m.action === "complete_profile") return "/profile";
   if (m.kind === "accommodation") return "/findmyres";
   if (m.kind === "service") return "/dashboard/services";
-  // Never navigate to an untrusted external URL or an admin page from notification metadata.
   const path = m.action_url ?? m.url;
   const allow = new Set(["/dashboard", "/profile", "/findmyres", "/my-applications", "/dashboard/services", "/documents", "/wil", "/opportunities"]);
   return typeof path === "string" && allow.has(path) ? path : null;
 }
 export default function NotificationDetail() {
-  const { id } = useParams();
+  const [params] = useSearchParams();
+  const id = params.get("id");
   const { user } = useAuth();
   const navigate = useNavigate();
   const [notice, setNotice] = useState<Notice | null>(null);
