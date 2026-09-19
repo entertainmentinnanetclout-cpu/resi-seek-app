@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { isNativeApp } from "@/lib/accountRouting";
-import { disableForegroundAlerts, enableForegroundAlerts, foregroundAlertsEnabled, listenForNativeNotificationAction } from "@/lib/nativeNotifications";
+import { disableForegroundAlerts, enableForegroundAlerts, foregroundAlertsEnabled } from "@/lib/nativeNotifications";
 
 /** Foreground local device alerts are opt-in; background push needs a configured FCM transport. */
 export default function NativeAlertSettings() {
@@ -13,7 +13,6 @@ export default function NativeAlertSettings() {
   const [enabled, setEnabled] = useState(() => Boolean(id && foregroundAlertsEnabled(id)));
   const [busy, setBusy] = useState(false);
   useEffect(() => { setEnabled(Boolean(id && foregroundAlertsEnabled(id))); }, [id]);
-  useEffect(() => id ? listenForNativeNotificationAction(id) : undefined, [id]);
   if (!isNativeApp() || !id) return null;
   const toggle = async () => {
     if (enabled) { disableForegroundAlerts(id); setEnabled(false); toast.success("On-device alerts paused"); return; }
