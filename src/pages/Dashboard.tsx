@@ -4,13 +4,10 @@ import MyResKonnectCommandCentre from "@/components/MyResKonnectCommandCentre";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import SafeRenderBoundary from "@/components/SafeRenderBoundary";
 import { Link } from "react-router-dom";
-import { isNativeApp } from "@/lib/accountRouting";
-import NativeStudentHome from "@/components/NativeStudentHome";
 
 const Dashboard = () => {
   const shouldBlock = useAdminRedirect();
   if (shouldBlock) return null;
-  if (isNativeApp()) return <NativeStudentHome />;
 
   return (
     <DashboardLayout>
