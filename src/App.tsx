@@ -56,6 +56,7 @@ const CareerEducation = lazy(() => import("./pages/public/CareerEducation"));
 const TumeloCareerEducation = lazy(() => import("./pages/public/TumeloCareerEducation"));
 const ProfileSetup = lazy(() => import("./pages/ProfileSetup"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const NativeDashboard = lazy(() => import("./pages/NativeDashboard"));
 const Updates = lazy(() => import("./pages/Updates"));
 const CampusNews = lazy(() => import("./pages/CampusNews"));
 const FindMyRes = lazy(() => import("./pages/FindMyRes"));
@@ -267,7 +268,7 @@ const App = () => {
                     <Route path="/recruit/dashboard" element={<ProtectedRoute><RecruiterDashboard /></ProtectedRoute>} />
                     <Route path="/referrals" element={<Referrals />} />
                     <Route path="/recruiter-dashboard" element={<ProtectedRoute><RecruiterDashboard /></ProtectedRoute>} />
-                    <Route path="/dashboard" element={<StudentRoute><Dashboard /></StudentRoute>} />
+                    <Route path="/dashboard" element={<StudentRoute>{isNativeApp() ? <NativeDashboard /> : <Dashboard />}</StudentRoute>} />
                     <Route path="/profile" element={<StudentRoute><Profile /></StudentRoute>} />
                     <Route path="/my-applications" element={<StudentRoute><Applications /></StudentRoute>} />
                     <Route path="/dashboard/applications" element={<StudentRoute><Applications /></StudentRoute>} />
