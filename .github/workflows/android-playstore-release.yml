@@ -6,11 +6,11 @@ on:
       version_code:
         description: "Play versionCode (must increase every upload)"
         required: true
-        default: "4"
+        default: "5"
       version_name:
         description: "Public versionName"
         required: true
-        default: "1.1.1"
+        default: "1.1.2"
 
 permissions:
   contents: read
@@ -37,10 +37,13 @@ jobs:
           java-version: "21"
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          cmdline-tools-version: "14742923"
+          packages: ""
 
       - name: Install Android 16 SDK
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Setup Gradle 8.14.3
         uses: gradle/actions/setup-gradle@v4
