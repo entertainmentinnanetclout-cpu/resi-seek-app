@@ -35,9 +35,13 @@ export function ResidenceSpotlightSlider({ residences, loading }: ResidenceSpotl
   useEffect(() => {
     if (!native || !user) { setCampus(""); return; }
     let active = true;
-    void supabase.from("profiles").select("campus").eq("id", user.id).maybeSingle().then(({ data }) => {
-      if (active) setCampus(String(data?.campus || user.user_metadata?.campus || ""));
-    }).catch(() => { if (active) setCampus(String(user.user_metadata?.campus || "")); });
+    void (async () => {
+      try {
+        const { data, error } = await supabase.from("profiles").select("campus").eq("id", user.id).maybeSingle();
+        if (error) throw error;
+        if (active) setCampus(String(data?.campus || user.user_metadata?.campus || ""));
+      } catch { if (active) setCampus(String(user.user_metadata?.campus || "")); }
+    })();
     return () => { active = false; };
   }, [native, user?.id]);
 
