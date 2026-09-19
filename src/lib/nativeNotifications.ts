@@ -2,7 +2,7 @@ import { isNativeApp } from "@/lib/accountRouting";
 
 const keyFor = (userId: string) => `rk_native_alerts_v1_${userId}`;
 const nativePlugin = (name: string): any => isNativeApp() ? (window as any).Capacitor?.Plugins?.[name] : null;
-const validId = (id: string) => /^[0-9a-f-]{36}$/i.test(id);
+const validId = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 function numericId(uuid: string) {
   let hash = 2166136261;
   for (let i = 0; i < uuid.length; i++) hash = Math.imul(hash ^ uuid.charCodeAt(i), 16777619);
@@ -24,7 +24,7 @@ export async function enableForegroundAlerts(userId: string): Promise<boolean> {
 export function disableForegroundAlerts(userId: string) {
   try { localStorage.removeItem(keyFor(userId)); } catch { /* storage optional */ }
 }
-/** Foreground-only Android OS alert. Background delivery requires the FCM transport and credentials. */
+/** Foreground-only OS alert. Background delivery requires an authenticated FCM sender. */
 export async function nativeForegroundAlert(userId: string, noticeId: string) {
   if (!foregroundAlertsEnabled(userId) || !validId(noticeId) || document.visibilityState !== "visible") return;
   const local = nativePlugin("LocalNotifications");
@@ -32,7 +32,7 @@ export async function nativeForegroundAlert(userId: string, noticeId: string) {
   try {
     const allowed = await local.checkPermissions();
     if (allowed.display !== "granted") return;
-    await local.schedule({ notifications: [{ id: numericId(noticeId), title: "ResKonnect update", body: "Tap to read your new account message.", extra: { notificationId: noticeId, userId }, smallIcon: "ic_stat_icon_config_sample" }] });
+    await local.schedule({ notifications: [{ id: numericId(noticeId), title: "ResKonnect update", body: "Tap to read your new account message.", extra: { notificationId: noticeId, userId } }] });
   } catch (error) { console.warn("Foreground device alert could not display", error); }
 }
 export function listenForNativeNotificationAction(userId: string) {
