@@ -1,46 +1,20 @@
-import SEO from "@/components/SEO";
-import DashboardLayout from "@/components/DashboardLayout";
-import MyResKonnectCommandCentre from "@/components/MyResKonnectCommandCentre";
+import { lazy, Suspense } from "react";
+import { useLocation } from "react-router-dom";
 import NativeSafeDashboard from "@/components/NativeSafeDashboard";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
-import SafeRenderBoundary from "@/components/SafeRenderBoundary";
 import { isNativeApp } from "@/lib/accountRouting";
-import { Link, useLocation } from "react-router-dom";
 
-const Dashboard = () => {
+const FullDashboard = lazy(() => import("@/components/FullDashboard"));
+
+export default function Dashboard() {
   const shouldBlock = useAdminRedirect();
   const location = useLocation();
   if (shouldBlock) return null;
 
-  // Android is delivered as a separate WebView bundle. Never eagerly mount the
-  // full dashboard shell, realtime subscriptions, maps or notifications on
-  // its first authenticated frame. All features remain reachable from here.
-  if (isNativeApp() && new URLSearchParams(location.search).get("full") !== "1") return <NativeSafeDashboard />;
-
-  return (
-    <DashboardLayout>
-      <SEO
-        title="My ResKonnect | Living • AI • Opportunity"
-        description="Your connected ResKonnect command centre for Living, AI guidance, applications, opportunities, next-best actions and verified account updates."
-      />
-      <SafeRenderBoundary
-        name="my-reskonnect-command-centre"
-        fallback={
-          <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-            <h1 className="text-3xl font-black">My ResKonnect is reconnecting</h1>
-            <p className="mt-3 text-sm text-muted-foreground">Your account is signed in. A dashboard module could not render, but you can continue using ResKonnect while it recovers.</p>
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Link className="rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground" to="/findmyres">Find My Res</Link>
-              <Link className="rounded-full border px-5 py-3 text-sm font-bold" to="/opportunities">Opportunities</Link>
-              <Link className="rounded-full border px-5 py-3 text-sm font-bold" to="/profile">Profile</Link>
-            </div>
-          </div>
-        }
-      >
-        <MyResKonnectCommandCentre />
-      </SafeRenderBoundary>
-    </DashboardLayout>
-  );
-};
-
-export default Dashboard;
+  // Do not even import the data-heavy dashboard chunk during native sign-in.
+  // The full experience remains opt-in and all other authenticated pages work.
+  if (isNativeApp() && new URLSearchParams(location.search).get("full") !== "1") {
+    return <NativeSafeDashboard />;
+  }
+  return <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Opening My ResKonnect…</div>}><FullDashboard /></Suspense>;
+}
