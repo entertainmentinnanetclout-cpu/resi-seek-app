@@ -2,9 +2,12 @@ package org.reskonnect.app;
 
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebView;
 
+import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
 
@@ -15,12 +18,13 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        final WebView webView = bridge.getWebView();
+        final Bridge capacitorBridge = getBridge();
+        final WebView webView = capacitorBridge.getWebView();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true);
         }
 
-        webView.setWebViewClient(new BridgeWebViewClient(bridge) {
+        webView.setWebViewClient(new BridgeWebViewClient(capacitorBridge) {
             @Override
             public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
                 getSharedPreferences("reskonnect_runtime", MODE_PRIVATE)
@@ -31,7 +35,7 @@ public class MainActivity extends BridgeActivity {
 
                 if (!rendererRecoveryScheduled && !isFinishing()) {
                     rendererRecoveryScheduled = true;
-                    runOnUiThread(() -> recreate());
+                    new Handler(Looper.getMainLooper()).post(() -> recreate());
                 }
                 return true;
             }
