@@ -24,6 +24,15 @@ export default function NativeStudentHome() {
       try {
         localStorage.setItem(BOOT_KEY, JSON.stringify({ user_id: user.id, release: RELEASE, status: "stable", at: Date.now() }));
       } catch {}
+      void supabase.functions.invoke("mobile-runtime-report", {
+        body: {
+          release: RELEASE,
+          version_code: 5,
+          event_type: "post_login_stable",
+          stage: "native_dashboard",
+          metadata: { route: "/dashboard", shell: "native_safe_home" },
+        },
+      }).catch(() => undefined);
     }, 1800);
 
     const loadTimer = window.setTimeout(async () => {
