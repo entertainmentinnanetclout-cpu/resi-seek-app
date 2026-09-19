@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const destinations = [
   { path: "/findmyres", title: "Find My Res", description: "Search student accommodation and available rooms" },
-  { path: "/applications", title: "My applications", description: "Track residence applications and next steps" },
+  { path: "/my-applications", title: "My applications", description: "Track residence applications and next steps" },
   { path: "/student-care", title: "Student care", description: "Residence feedback and single-room waiting list" },
   { path: "/application-assistance", title: "Application assistance", description: "Get help with university and TVET applications" },
   { path: "/opportunities", title: "Opportunities", description: "Discover WIL, internships and other opportunities" },
@@ -28,7 +28,7 @@ export default function NativeSafeDashboard() {
           ))}
         </div>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link to="/dashboard/full" className="rounded-xl border px-4 py-3 text-sm font-semibold">Open full dashboard</Link>
+          <Link to="/dashboard?full=1" className="rounded-xl border px-4 py-3 text-sm font-semibold">Open full dashboard</Link>
           <button type="button" onClick={() => void signOut().catch(error => console.warn("[NativeSafeDashboard] Sign-out unavailable", error))} className="rounded-xl border px-4 py-3 text-sm font-semibold">Sign out</button>
         </div>
         <p className="mt-5 text-xs text-muted-foreground">The app opens a lightweight home after sign-in. Your full dashboard and all existing pages remain available.</p>
