@@ -77,6 +77,9 @@ jobs:
       - name: Android / web reliability audit
         run: node scripts/android-v110-reliability-qa.mjs
 
+      - name: Android post-login crash hardening audit
+        run: node scripts/android-post-login-crash-qa.mjs
+
       - name: Check complete application types
         run: npx tsc --noEmit -p tsconfig.app.json
 
