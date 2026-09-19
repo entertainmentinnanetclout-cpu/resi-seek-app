@@ -85,6 +85,12 @@ jobs:
       - name: Check complete application types
         run: npx tsc --noEmit -p tsconfig.app.json
 
+      - name: Install browser regression runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify native login and session lifecycle
+        run: node scripts/android-session-regression.mjs
+
       - name: Install pinned Capacitor 8.5.0 toolchain
         run: npm install --no-save --package-lock=false @capacitor/core@8.5.0 @capacitor/android@8.5.0 @capacitor/cli@8.5.0
 
