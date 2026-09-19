@@ -1,6 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { isNativeApp } from '@/lib/accountRouting';
 
 interface Props {
   children: ReactNode;
@@ -23,6 +25,18 @@ class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    if (isNativeApp()) {
+      void supabase.functions.invoke("mobile-runtime-report", {
+        body: {
+          release: "1.1.2",
+          version_code: 5,
+          event_type: "ui_error",
+          stage: window.location.pathname,
+          message: String(error?.message || "Unknown UI error").slice(0, 500),
+          metadata: { component_stack_present: Boolean(errorInfo?.componentStack) },
+        },
+      }).catch(() => undefined);
+    }
   }
 
   private handleReload = () => {
