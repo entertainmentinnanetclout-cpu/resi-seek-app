@@ -15,5 +15,6 @@ export default function NativeAccountNavigation() {
       try { localStorage.setItem(`rk_native_home_${user.id}`, "/residence"); } catch { /* optional storage */ }
     }
   }, [native, pathname, user?.id]);
-  return native && user && isStudent ? <NativeGuidedOnboarding /> : null;
+  const guideRoute = pathname === "/dashboard" || pathname === "/profile" || pathname === "/findmyres" || pathname === "/my-applications";
+  return native && user && isStudent && guideRoute ? <NativeGuidedOnboarding /> : null;
 }
