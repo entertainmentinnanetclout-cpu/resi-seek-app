@@ -1,0 +1,11 @@
+# ResKonnect partner and staff operating model
+
+Staff roles and external partner identities remain separate. God Mode AAL2 manages staff role and department assignments through the existing AdminAccessControl UI. Application administrators with student_opportunities and residence administrators with accommodation operate scoped partner assignments and approvals, without automatically receiving God Mode. TikTok verification never grants case or student-document access.
+
+Applications: existing creator_partners and consented creator_assistance_cases remain the case source of truth. A prospective partner requests institution assignments during onboarding. An Applications Admin approves each institution. Partners may assist only with approved institutions, subject to a student's independent case-specific consent; students may choose any institution for themselves. The current assistance fee remains R0–R100 per annual case, with institutional fees separate.
+
+Accommodation: existing approved referral_agents, recruiter applications, referral links, residence programme rates, applications and placement verification remain authoritative. Residence Admin allocates named residences and campus territory; campaigns operate only for assigned residences. Residence fees are admin-configured and earned only against verified milestones. Full academic-year stays are not duplicate semester placements.
+
+Public identity: partner profile directory is discoverable without arriving from TikTok. A partner can submit a TikTok URL and canonical ResKonnect profile link for manual verification; only staff can activate verified-link badge and additional aggregate performance reporting. Profiles may be ranked verified-first within relevant campus/service results, never by exposing private leads. Verification expires and can be revoked.
+
+Release acceptance: validate a non-staff partner cannot self-approve scopes/verification; an Applications Admin cannot grant God Mode; a residence recruiter cannot activate an unassigned residence; revoked student consent blocks partner case access; a stranger cannot read student details; approved partner public pages are accessible without sign-in; compensation is never calculated from unverified leads. All grants and verification decisions are audited. Android packaging and a signed Play build are separate from the web release.
