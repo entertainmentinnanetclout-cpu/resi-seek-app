@@ -99,8 +99,8 @@ jobs:
 
       - name: Compile API 36 release AAB
         env:
-          ANDROID_VERSION_CODE: "4"
-          ANDROID_VERSION_NAME: "1.1.1"
+          ANDROID_VERSION_CODE: "5"
+          ANDROID_VERSION_NAME: "1.1.2"
         run: gradle -p android bundleRelease --stacktrace
 
       - name: Verify release artifact exists
