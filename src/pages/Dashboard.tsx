@@ -1,13 +1,21 @@
 import SEO from "@/components/SEO";
 import DashboardLayout from "@/components/DashboardLayout";
 import MyResKonnectCommandCentre from "@/components/MyResKonnectCommandCentre";
+import NativeSafeDashboard from "@/components/NativeSafeDashboard";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import SafeRenderBoundary from "@/components/SafeRenderBoundary";
-import { Link } from "react-router-dom";
+import { isNativeApp } from "@/lib/accountRouting";
+import { Link, useLocation } from "react-router-dom";
 
 const Dashboard = () => {
   const shouldBlock = useAdminRedirect();
+  const location = useLocation();
   if (shouldBlock) return null;
+
+  // Android is delivered as a separate WebView bundle. Never eagerly mount the
+  // desktop dashboard shell, realtime subscriptions, maps or notifications on
+  // its first authenticated frame. All features remain reachable from here.
+  if (isNativeApp() && location.pathname !== "/dashboard/full") return <NativeSafeDashboard />;
 
   return (
     <DashboardLayout>
