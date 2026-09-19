@@ -76,6 +76,15 @@ jobs:
       - name: Strict Play readiness audit
         run: node scripts/android-playstore-readiness.mjs --strict
 
+      - name: Android reliability audit
+        run: node scripts/android-v110-reliability-qa.mjs
+
+      - name: Android post-login crash hardening audit
+        run: node scripts/android-post-login-crash-qa.mjs
+
+      - name: Check complete application types
+        run: npx tsc --noEmit -p tsconfig.app.json
+
       - name: Install pinned Capacitor 8.5.0 toolchain
         run: npm install --no-save --package-lock=false @capacitor/core@8.5.0 @capacitor/android@8.5.0 @capacitor/cli@8.5.0
 
