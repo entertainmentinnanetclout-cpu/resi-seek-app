@@ -12,6 +12,11 @@ on:
       - "src/pages/AccountDeletion.tsx"
       - "src/pages/Profile.tsx"
       - "src/pages/Dashboard.tsx"
+      - "src/components/native/**"
+      - "src/lib/resmap/**"
+      - "src/components/findmyres/**"
+      - "src/components/resmap/**"
+      - "src/components/NativeAccountNavigation.tsx"
       - "src/components/NativeSafeDashboard.tsx"
       - "src/components/FullDashboard.tsx"
       - "src/components/DashboardLayout.tsx"
@@ -29,6 +34,7 @@ on:
       - "supabase/functions/push-subscription/**"
       - "supabase/functions/send-push/**"
       - "scripts/android-v110-reliability-qa.mjs"
+      - "scripts/android-session-regression.mjs"
       - "src/App.tsx"
       - "scripts/android-playstore-readiness.mjs"
       - ".github/workflows/android-playstore-*.yml"
@@ -88,8 +94,8 @@ jobs:
       - name: Verify native login and session lifecycle
         run: node scripts/android-session-regression.mjs
 
-      - name: Install pinned Capacitor toolchain without changing lockfile
-        run: npm install --no-save --package-lock=false @capacitor/core@8.5.0 @capacitor/android@8.5.0 @capacitor/cli@8.5.0
+      - name: Install pinned Capacitor and native geolocation without changing lockfile
+        run: npm install --no-save --package-lock=false @capacitor/core@8.5.0 @capacitor/android@8.5.0 @capacitor/cli@8.5.0 @capacitor/geolocation@8.0.0
 
       - name: Build production web bundle
         env:
@@ -101,8 +107,8 @@ jobs:
 
       - name: Compile API 36 release AAB
         env:
-          ANDROID_VERSION_CODE: "5"
-          ANDROID_VERSION_NAME: "1.1.2"
+          ANDROID_VERSION_CODE: "6"
+          ANDROID_VERSION_NAME: "1.1.3"
         run: gradle -p android bundleRelease --stacktrace
 
       - name: Verify release artifact exists
