@@ -13,7 +13,7 @@ export const useRealtimeResidences = () => {
   useEffect(() => {
     let active = true;
     let revision = 0;
-    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    let refreshTimer: number | undefined;
     let currentController: AbortController | undefined;
 
     const fetchResidences = async () => {
