@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive foreground has a 108dp viewport. Keep the brand mark clear of
+     circular/squircle masks on Huawei and other Android launchers. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/app_icon_foreground"
+    android:insetLeft="13dp"
+    android:insetTop="13dp"
+    android:insetRight="13dp"
+    android:insetBottom="13dp" />
