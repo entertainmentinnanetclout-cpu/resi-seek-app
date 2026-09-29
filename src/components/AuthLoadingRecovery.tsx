@@ -5,17 +5,23 @@ import { useNavigate } from "react-router-dom";
 export default function AuthLoadingRecovery({
   message = "Loading your ResKonnect account…",
   onRetry,
+  showRecoveryImmediately = false,
 }: {
   message?: string;
   onRetry?: () => void | Promise<void>;
+  showRecoveryImmediately?: boolean;
 }) {
   const navigate = useNavigate();
-  const [slow, setSlow] = useState(false);
+  const [slow, setSlow] = useState(showRecoveryImmediately);
 
   useEffect(() => {
+    if (showRecoveryImmediately) {
+      setSlow(true);
+      return;
+    }
     const timer = window.setTimeout(() => setSlow(true), 10_000);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [showRecoveryImmediately]);
 
   const offline = typeof navigator !== "undefined" && !navigator.onLine;
 
