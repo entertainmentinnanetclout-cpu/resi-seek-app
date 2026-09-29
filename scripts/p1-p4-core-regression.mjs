@@ -151,7 +151,11 @@ async function api(route) {
     return json(route,[]);
   }
   if (path.includes("/rest/v1/profiles")) {
-    if (failure.profileOnce) { failure.profileOnce=false; return json(route,{message:"fixture profile outage"},503); }
+    const selected = url.searchParams.get("select") || "";
+    if (failure.profileOnce && selected === "*") {
+      failure.profileOnce=false;
+      return json(route,{message:"fixture profile outage"},503);
+    }
     return json(route,accept.includes("object") ? profile : [profile]);
   }
   if (path.includes("/rest/v1/residences")) {
