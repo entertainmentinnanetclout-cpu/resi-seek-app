@@ -14,6 +14,7 @@ type InstallPromptEvent = Event & {
 
 const DISMISS_KEY = "rk_pwa_install_dismissed_at_v1";
 const DISMISS_MS = 14 * 24 * 60 * 60 * 1000;
+const PUBLIC_INSTALL_PATHS = ["/", "/find", "/findmyres", "/living", "/ai", "/partners", "/about", "/get-started", "/student-accommodation", "/private-rentals", "/bursaries", "/career-education"];
 
 function isStandalone() {
   const nav = navigator as Navigator & { standalone?: boolean };
@@ -60,6 +61,7 @@ export default function InstallAppPrompt() {
   };
 
   useEffect(() => {
+    if (!PUBLIC_INSTALL_PATHS.some((path) => location.pathname === path || (path !== "/" && location.pathname.startsWith(`${path}/`)))) return;
     if (isNativeApp() || isStandalone()) {
       setInstalled(true);
       return;
