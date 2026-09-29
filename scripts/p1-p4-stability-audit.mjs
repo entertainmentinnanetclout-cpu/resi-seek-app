@@ -15,6 +15,7 @@ const adminRoute = read("src/components/AdminRoute.tsx");
 const departmentRoute = read("src/components/DepartmentRoute.tsx");
 const specialistRoute = read("src/components/SpecialistRoute.tsx");
 const contactGate = read("src/components/ContactDetailsGate.tsx");
+const authPage = read("src/pages/Auth.tsx");
 const find = read("src/pages/FindMyRes.tsx");
 const applications = read("src/pages/Applications.tsx");
 const opportunities = read("src/components/opportunities/OpportunityEngine.tsx");
@@ -40,6 +41,7 @@ expect(auth.includes("refreshSession") && auth.includes("visibilitychange") && a
 expect(auth.includes("accessError") && auth.includes("setAccessError(true)") && auth.includes("window.addEventListener(\"online\", retry)"), "access resolution failures fail closed and automatically retry after reconnect");
 expect(protectedRoute.includes("accessError") && protectedRoute.includes("showRecoveryImmediately") && studentRoute.includes("accessError") && studentRoute.includes("showRecoveryImmediately"), "protected/student routing cannot render an unverified account surface");
 expect(adminRoute.includes("accessError") && departmentRoute.includes("accessError") && specialistRoute.includes("accessError"), "staff and department route guards remain fail-closed during access outages");
+expect(authPage.includes("accessError") && authPage.includes("AuthLoadingRecovery") && authPage.includes("authLoading || accessError || !user"), "post-login auth routing waits for verified access context");
 expect(contactGate.includes("finally") && contactGate.includes("setSaving(false)"), "contact profile gate always releases its saving state");
 expect(find.includes("residenceError") && find.includes("refreshResidences") && find.includes("Retry live data"), "Find My Res surfaces query/cache errors and can retry");
 expect(applications.includes("detailsError") && applications.includes("retryApplications") && applications.includes("AbortController"), "Applications handles base and residence-detail failures with retry and timeout");
