@@ -7,6 +7,7 @@ import { initLunaAttribution } from "@/lib/lunaGrowth";
 import "./index.css";
 import "./styles/mobile-foundation.css";
 import { isNativeApp } from "@/lib/accountRouting";
+import { supabase } from "@/integrations/supabase/client";
 
 const ResMapLiveStreetViewBridge = lazy(() => import("@/components/resmap/ResMapLiveStreetViewBridge"));
 const native = isNativeApp();
@@ -37,8 +38,24 @@ function scheduleNonCriticalBoot() {
   else window.setTimeout(run, 900);
 }
 
-// No email, passwords or conversation content are captured. The last error
-// marker can help distinguish a JS failure from an Android renderer/process kill.
+// Runtime telemetry is intentionally privacy-safe: no email, passwords, chat text,
+ // search queries or document names are captured.
+async function recordMobileRuntime(eventType: string, stage: string, metadata: Record<string, unknown> = {}) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    await (supabase as any).from("mobile_runtime_events").insert({
+      user_id: session?.user?.id || null,
+      platform: native ? "android" : (/iPad|iPhone|iPod/i.test(navigator.userAgent) ? "ios" : /Mac/i.test(navigator.userAgent) ? "macos" : /Windows/i.test(navigator.userAgent) ? "windows" : "web"),
+      release: "1.1.4",
+      version_code: native ? 7 : null,
+      event_type: eventType,
+      stage,
+      message: null,
+      metadata: { route: window.location.pathname, ...metadata },
+    });
+  } catch { /* Diagnostics must never block app boot. */ }
+}
+
 if (native) {
   const record = (kind: string, detail: unknown) => {
     try {
@@ -50,8 +67,28 @@ if (native) {
       }));
     } catch { /* Storage failure must not crash app boot. */ }
   };
-  window.addEventListener("error", event => record("error", event.message));
-  window.addEventListener("unhandledrejection", event => record("promise", event.reason instanceof Error ? event.reason.message : "Unhandled promise rejection"));
+  window.addEventListener("error", event => {
+    record("error", event.message);
+    void recordMobileRuntime("js_error", "window.error", { error_name: event.error?.name || "Error" });
+  });
+  window.addEventListener("unhandledrejection", event => {
+    record("promise", event.reason instanceof Error ? event.reason.message : "Unhandled promise rejection");
+    void recordMobileRuntime("promise_rejection", "window.unhandledrejection", { error_name: event.reason instanceof Error ? event.reason.name : "Unknown" });
+  });
+
+  try {
+    const raw = localStorage.getItem("rk_native_renderer_recovery_v1");
+    if (raw) {
+      localStorage.removeItem("rk_native_renderer_recovery_v1");
+      const detail = JSON.parse(raw);
+      void recordMobileRuntime("webview_renderer_recovered", "android.webview", {
+        did_crash: Boolean(detail?.didCrash),
+        renderer_priority: Number(detail?.priority ?? -1),
+        recent_count: Number(detail?.recentCount ?? 1),
+        previous_route: typeof detail?.route === "string" ? detail.route.slice(0, 120) : "/",
+      });
+    }
+  } catch {}
 }
 
 if (shouldCanonicalize) {
