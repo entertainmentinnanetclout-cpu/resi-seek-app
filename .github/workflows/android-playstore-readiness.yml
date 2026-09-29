@@ -99,11 +99,41 @@ jobs:
         run: npm run build
       - name: Sync Capacitor Android
         run: npx cap sync android
+      - name: Android release lint
+        run: gradle -p android lintRelease --stacktrace
       - name: Compile API 36 release AAB
         env:
-          ANDROID_VERSION_CODE: "6"
-          ANDROID_VERSION_NAME: "1.1.3"
+          ANDROID_VERSION_CODE: "7"
+          ANDROID_VERSION_NAME: "1.1.4"
         run: gradle -p android bundleRelease --stacktrace
+      - name: Native ELF / 16 KB guard
+        shell: bash
+        run: |
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          if unzip -Z1 "$AAB" | grep -Eq '\\.so
+        run: test -s android/app/build/outputs/bundle/release/app-release.aab
+      - name: Upload unsigned readiness AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: reskonnect-android-readiness-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 7
+; then
+            echo "::error::Native ELF libraries were packaged. Audit every .so for 16 KB page-size compatibility before Play release."
+            unzip -Z1 "$AAB" | grep -E '\\.so
+        run: test -s android/app/build/outputs/bundle/release/app-release.aab
+      - name: Upload unsigned readiness AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: reskonnect-android-readiness-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 7
+ || true
+            exit 1
+          fi
+          echo "No packaged native ELF libraries; this Java/Kotlin/WebView bundle has no app-owned .so page-alignment risk."
       - name: Verify release artifact exists
         run: test -s android/app/build/outputs/bundle/release/app-release.aab
       - name: Upload unsigned readiness AAB
