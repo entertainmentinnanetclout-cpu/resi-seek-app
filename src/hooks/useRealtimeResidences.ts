@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 // A WebView can resume with a stale network connection. A request must never
 // leave Find My Res on a permanent skeleton, even if the network never replies.
 const RESIDENCE_REQUEST_TIMEOUT_MS = 12_000;
+const RESIDENCE_CACHE_KEY = 'rk_public_residences_cache_v1';
+const RESIDENCE_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 export const useRealtimeResidences = () => {
   const [residences, setResidences] = useState<any[]>([]);
@@ -48,13 +50,27 @@ export const useRealtimeResidences = () => {
           ...residence,
           room_pricing: pricingByResidence.get(residence.id) || [],
         }));
-        if (active && requestRevision === revision) setResidences(merged);
+        if (active && requestRevision === revision) {
+          setResidences(merged);
+          try {
+            localStorage.setItem(RESIDENCE_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), rows: merged.slice(0, 500) }));
+          } catch {}
+        }
       } catch (err: unknown) {
         if (active && requestRevision === revision) {
           const message = controller.signal.aborted
             ? 'Accommodation search took too long. Check your connection and retry.'
             : err instanceof Error ? err.message : 'Accommodation listings are temporarily unavailable.';
-          setError(message);
+          let recovered = false;
+          try {
+            const cached = JSON.parse(localStorage.getItem(RESIDENCE_CACHE_KEY) || "null");
+            if (cached && Array.isArray(cached.rows) && Date.now() - Number(cached.savedAt || 0) <= RESIDENCE_CACHE_MAX_AGE_MS) {
+              setResidences(cached.rows);
+              setError('Showing recently cached accommodation while live data reconnects.');
+              recovered = true;
+            }
+          } catch {}
+          if (!recovered) setError(message);
           console.error('[useRealtimeResidences] Could not load residences:', message);
         }
       } finally {
@@ -71,6 +87,8 @@ export const useRealtimeResidences = () => {
       if (refreshTimer) window.clearTimeout(refreshTimer);
       refreshTimer = window.setTimeout(() => { void fetchResidences(); }, 750);
     };
+    const onReconnect = () => scheduleRefresh();
+    window.addEventListener("rk-reconnected", onReconnect);
     const channel = supabase.channel('realtime-residences-v3')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'residences' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'residence_room_types' }, scheduleRefresh)
@@ -81,6 +99,7 @@ export const useRealtimeResidences = () => {
       revision += 1;
       currentController?.abort();
       if (refreshTimer) window.clearTimeout(refreshTimer);
+      window.removeEventListener("rk-reconnected", onReconnect);
       void supabase.removeChannel(channel);
     };
   }, []);
