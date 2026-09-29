@@ -59,6 +59,8 @@ else {
   else block("Android backup","Expected allowBackup=false.");
   if(!manifest.includes("android:screenOrientation")&&!manifest.includes('android:resizeableActivity="false"')&&!manifest.includes("android:maxAspectRatio")) pass("Large-screen adaptability","No orientation, non-resizable or max-aspect restriction blocks tablets/foldables.");
   else block("Large-screen adaptability","Remove fixed orientation/resizability/aspect-ratio restrictions for Android 16 large screens.");
+  if(manifest.includes('android:windowSoftInputMode="adjustResize"')) pass("Keyboard resize","WebView resizes around the software keyboard instead of hiding focused fields.");
+  else block("Keyboard resize","Main activity should use adjustResize for login/forms across phone and tablet keyboards.");
 }
 for(const name of ["android/app/src/main/java/org/reskonnect/app/MainActivity.java","android/app/src/main/res/drawable-nodpi/app_icon.png","android/app/src/main/res/drawable-nodpi/app_icon_foreground.png","android/app/src/main/res/values/styles.xml"]) {
   exists(name)?pass("Native asset "+name,"Present."):block("Native asset "+name,"Missing.");
