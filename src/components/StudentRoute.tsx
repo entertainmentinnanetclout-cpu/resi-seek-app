@@ -7,7 +7,7 @@ import SafeRenderBoundary from "@/components/SafeRenderBoundary";
 import { accountHome } from "@/lib/accountRouting";
 
 export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading, staffRole, adminDepartments, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner, refreshProfile } = useAuth();
+  const { user, isLoading, accessError, staffRole, adminDepartments, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,6 +24,7 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
   }, [user, isLoading, staffRole, adminDepartments, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner, navigate]);
 
   if (isLoading) return <AuthLoadingRecovery message="Loading your ResKonnect dashboard…" onRetry={refreshProfile} />;
+  if (user && accessError) return <AuthLoadingRecovery message="We couldn't verify your ResKonnect account access." onRetry={refreshProfile} showRecoveryImmediately />;
 
   if (!user || isTumeloPartner || staffRole || (!isStudent && (isRecruiter || isPendingRecruiter))) return null;
 
