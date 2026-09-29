@@ -11,16 +11,13 @@ export const EXTERNAL_SUPABASE_ANON_KEY =
 
 export const externalFunctionUrl = (name: string) => `${EXTERNAL_SUPABASE_URL}/functions/v1/${name}`;
 
-// Android can resume with an HTTP request stranded after WebView process
-// suspension. Time-limit *database reads* without changing the user's stored
-// session or applying a network-error-driven sign-out. Other endpoints retain
-// their original fetch behavior; the caller can still abort a query sooner.
-const nativeDatabaseFetch: typeof fetch = (input, init) => {
-  const native = typeof window !== 'undefined' && Boolean(
-    (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.(),
-  );
+// Mobile WebViews and installed browser apps can resume with an HTTP request
+// stranded after process suspension or connectivity changes. Bound database
+// requests on every platform without clearing the persisted auth session.
+// Individual callers may still abort sooner.
+const resilientDatabaseFetch: typeof fetch = (input, init) => {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-  if (!native || !url.startsWith(`${EXTERNAL_SUPABASE_URL}/rest/v1/`)) {
+  if (!url.startsWith(`${EXTERNAL_SUPABASE_URL}/rest/v1/`)) {
     return fetch(input, init);
   }
 
@@ -43,7 +40,7 @@ export const supabase = createClient<Database>(EXTERNAL_SUPABASE_URL, EXTERNAL_S
     persistSession: true,
     autoRefreshToken: true,
   },
-  global: { fetch: nativeDatabaseFetch },
+  global: { fetch: resilientDatabaseFetch },
 });
 
 console.log('Supabase client initialized (External):', EXTERNAL_SUPABASE_URL);
