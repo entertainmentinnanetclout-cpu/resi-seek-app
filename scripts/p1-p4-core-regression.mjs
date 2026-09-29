@@ -89,7 +89,7 @@ const failure = {
   wilOnce:false,
   serviceOnce:false,
   bursariesOnce:false,
-  profileOnce:false,
+  profileOutage:false,
   documentsOnce:false,
   aiOnce:false,
 };
@@ -151,9 +151,10 @@ async function api(route) {
     return json(route,[]);
   }
   if (path.includes("/rest/v1/profiles")) {
-    const selected = url.searchParams.get("select") || "";
-    if (failure.profileOnce && selected === "*") {
-      failure.profileOnce=false;
+    const framePath = (() => {
+      try { return new URL(req.frame().url()).pathname; } catch { return ""; }
+    })();
+    if (failure.profileOutage && framePath === "/profile") {
       return json(route,{message:"fixture profile outage"},503);
     }
     return json(route,accept.includes("object") ? profile : [profile]);
@@ -323,9 +324,10 @@ try {
   await page.getByText("No service requests yet").waitFor({timeout:15000});
   console.log("PASS Service Centre failure/retry");
 
-  failure.profileOnce=true;
+  failure.profileOutage=true;
   await page.goto(origin+"/profile");
   await page.getByText("Profile needs a connection refresh").waitFor({timeout:15000});
+  failure.profileOutage=false;
   await page.getByRole("button",{name:"Try again"}).click();
   await page.getByText("My Profile").waitFor({timeout:15000});
   await page.getByRole("button",{name:"Edit Profile"}).waitFor({state:"visible",timeout:15000});
