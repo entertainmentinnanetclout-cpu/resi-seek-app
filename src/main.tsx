@@ -39,6 +39,44 @@ function scheduleNonCriticalBoot() {
 }
 
 if (native) {
+  const restoreRecoveredRoute = (detail: any) => {
+    try {
+      const previousRoute = typeof detail?.route === "string" ? detail.route : "/";
+      const safeRoute =
+        previousRoute.startsWith("/") &&
+        !previousRoute.startsWith("//") &&
+        !previousRoute.startsWith("/_capacitor_") &&
+        previousRoute !== "/auth"
+          ? previousRoute.slice(0, 180)
+          : null;
+      if (!safeRoute || safeRoute === window.location.pathname) return;
+      // A recreated Capacitor activity normally starts from its packaged root.
+      // Restore only an internal route; BrowserRouter receives popstate and
+      // resolves the page against the already-persisted Supabase session.
+      window.history.replaceState(window.history.state, "", safeRoute);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    } catch {
+      // Route restoration is best effort; auth/session recovery still proceeds.
+    }
+  };
+
+  const reportRendererRecovery = (detail: any) => {
+    restoreRecoveredRoute(detail);
+    void recordMobileRuntime("webview_renderer_recovered", "android.webview", {
+      did_crash: Boolean(detail?.didCrash),
+      renderer_priority: Number(detail?.priority ?? -1),
+      recent_count: Number(detail?.recentCount ?? 1),
+      previous_route: typeof detail?.route === "string" ? detail.route.slice(0, 120) : "/",
+    });
+  };
+
+  const onRendererRecovered = (event: Event) => {
+    const detail = (event as CustomEvent).detail || {};
+    try { localStorage.removeItem("rk_native_renderer_recovery_v1"); } catch {}
+    reportRendererRecovery(detail);
+  };
+  window.addEventListener("rk-native-renderer-recovered", onRendererRecovered as EventListener);
+
   const record = (kind: string, detail: unknown) => {
     try {
       window.localStorage.setItem("rk_native_last_js_failure_v1", JSON.stringify({
@@ -63,12 +101,7 @@ if (native) {
     if (raw) {
       localStorage.removeItem("rk_native_renderer_recovery_v1");
       const detail = JSON.parse(raw);
-      void recordMobileRuntime("webview_renderer_recovered", "android.webview", {
-        did_crash: Boolean(detail?.didCrash),
-        renderer_priority: Number(detail?.priority ?? -1),
-        recent_count: Number(detail?.recentCount ?? 1),
-        previous_route: typeof detail?.route === "string" ? detail.route.slice(0, 120) : "/",
-      });
+      reportRendererRecovery(detail);
     }
   } catch {}
 }
