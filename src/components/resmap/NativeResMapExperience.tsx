@@ -72,9 +72,13 @@ function NativeVector3D({ onBack, onClose }: { onBack: () => void; onClose: () =
       setState("unsupported");
       void reportRuntimeEvent("memory_pressure", "Closed native 3D under memory pressure", { surface: "resmap_3d" });
     };
-    window.addEventListener("rk-native-memory-pressure" as any, onMemoryPressure as EventListener);
     if (!host) return;
-    if (!safeForVector()) { setDetail(isNativeGraphicsSafeMode() ? "3D is temporarily disabled after a previous graphics renderer failure." : "This device does not expose a stable low-risk WebGL2 context."); setState("unsupported"); return; }
+    window.addEventListener("rk-native-memory-pressure" as any, onMemoryPressure as EventListener);
+    if (!safeForVector()) {
+      setDetail(isNativeGraphicsSafeMode() ? "3D is temporarily disabled after a previous graphics renderer failure." : "This device does not expose a stable low-risk WebGL2 context.");
+      setState("unsupported");
+      return () => window.removeEventListener("rk-native-memory-pressure" as any, onMemoryPressure as EventListener);
+    }
     setState("loading");
     (async () => {
       const [configResult, pointsResult] = await Promise.all([
@@ -123,7 +127,7 @@ function NativeVector3D({ onBack, onClose }: { onBack: () => void; onClose: () =
       <button type="button" onClick={onClose} aria-label="Close map" className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-slate-950/90 shadow-lg"><X className="h-5 w-5" /></button>
     </div>
     {state === "loading" && <div role="status" className="absolute inset-0 grid place-items-center"><div className="flex items-center gap-2 rounded-full bg-slate-950/90 px-5 py-3"><Loader2 className="h-5 w-5 animate-spin" />Preparing the map…</div></div>}
-    {(state === "unsupported" || state === "error") && <div role="alert" className="absolute inset-0 grid place-items-center bg-slate-950/95 p-5"><div className="max-w-sm rounded-3xl border border-white/20 bg-slate-900 p-6 text-center"><Box className="mx-auto h-9 w-9 text-cyan-300" /><h2 className="mt-3 text-xl font-black">3D is unavailable on this device</h2><p className="mt-2 text-sm text-white/70">{state === "unsupported" ? "This device does not have enough graphics capacity for a stable 3D map." : detail} Your regular accommodation map and campus search are still available.</p><Button type="button" onClick={onBack} className="mt-5">Return to the 2D map</Button></div></div>}
+    {(state === "unsupported" || state === "error") && <div role="alert" className="absolute inset-0 grid place-items-center bg-slate-950/95 p-5"><div className="max-w-sm rounded-3xl border border-white/20 bg-slate-900 p-6 text-center"><Box className="mx-auto h-9 w-9 text-cyan-300" /><h2 className="mt-3 text-xl font-black">3D is unavailable on this device</h2><p className="mt-2 text-sm text-white/70">{detail || (state === "unsupported" ? "This device does not have enough graphics capacity for a stable 3D map." : "Map unavailable.")} Your regular accommodation map and campus search are still available.</p><Button type="button" onClick={onBack} className="mt-5">Return to the 2D map</Button></div></div>}
   </div>;
 }
 
