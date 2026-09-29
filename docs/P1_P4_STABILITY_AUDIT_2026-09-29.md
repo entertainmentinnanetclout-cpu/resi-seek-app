@@ -44,3 +44,26 @@ Release-gated routes include Dashboard, Find My Res, residence detail, My Applic
 ## Boundary
 
 Automated code, schema, Chromium/WebKit and Android build gates can prove deterministic software behaviour. They cannot reproduce every Huawei/Samsung OEM WebView/GPU kill, thermal condition or memory-pressure event. Physical OEM and Play pre-launch testing therefore remains a release acceptance requirement in later device-validation phases; this does not leave an unimplemented P1–P4 code defect.
+
+
+## P1–P4 closure pass
+
+The final P1–P4 pass also closed secondary infinite/loading-state risks on the rest of the student core:
+
+- **Messages:** realtime INSERT events now coalesce into an actual bounded refresh instead of setting `loading=true` without fetching.
+- **Favourites:** explicit error/retry/reconnect path and request cancellation.
+- **WIL:** profile/application/document loading now has a bounded deadline, explicit failure state and retry.
+- **Service Centre:** both initial RPC loading and request submission release busy state in `finally`, with retry after reconnect.
+- **Profile:** failed profile reads no longer leave an editable blank form; recovery is explicit.
+- **Documents:** backend failure is distinguished from a true empty document list.
+- **Bursaries:** stale requests are cancelled and all load paths release the spinner.
+- **ResKonnect AI:** direct Edge Function calls now have a 30-second client deadline, so the chat cannot remain indefinitely in "checking" state.
+- **Renderer recovery:** the old Capacitor bridge/plugin lifecycle is explicitly torn down before activity recreation, and the last safe internal route is restored after the replacement WebView becomes usable.
+
+Production Supabase verification on 2026-09-29 confirmed that the core P1–P4 tables `profiles`, `applications`, `application_messages`, `favorites`, `wil_applications`, `wil_documents`, `bursaries` and `mobile_runtime_events` exist, and that the required RPCs `get_my_access_context`, `my_reskonnect_command_centre`, `my_reskonnect_service_centre`, `create_my_reskonnect_request`, `reskonnect_opportunity_feed` and `virtual_tour_public_snapshot` are present.
+
+### Research basis
+
+The native recovery design follows Android's current WebView termination guidance: a WebView whose renderer has exited must not be reused; it must be removed/destroyed, references cleared, and the callback must return `true` when the host handles recovery. Android's current WebView memory guidance also emphasizes explicit lifecycle cleanup because WebView retains native/process memory outside the normal Java heap. Capacitor 8.5.2's `BridgeActivity` includes null-safe lifecycle forwarding, which allows the ResKonnect activity to drop the dead bridge reference before `recreate()` without later lifecycle null dereferences.
+
+Android 16 / API 36 guidance also treats resizability and multi-window support as the baseline on large screens. ResKonnect therefore keeps the activity free of fixed orientation, fixed aspect-ratio and non-resizable declarations.
