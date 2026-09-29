@@ -23,6 +23,10 @@ const privacy=read("src/pages/Privacy.tsx");
 const auth=read("src/pages/Auth.tsx");
 const workflow=read(".github/workflows/android-playstore-readiness.yml");
 const signedWorkflow=read(".github/workflows/android-playstore-release.yml");
+const mainActivity=read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
+const runtimeDiagnostics=read("src/lib/runtimeDiagnostics.ts");
+const panorama=read("src/components/virtualTours/VirtualTourPanorama.tsx");
+const safeIcon=read("android/app/src/main/res/drawable/app_icon_foreground_safe.xml");
 
 if(config.appId==="org.reskonnect.app" && release.packageId===config.appId && gradle.includes('applicationId "org.reskonnect.app"')) pass("Package identity","org.reskonnect.app consistent across project files.");
 else block("Package identity","Android package identity mismatch.");
@@ -33,8 +37,8 @@ for(const [label,min] of [["minSdk",24],["compileSdk",36],["targetSdk",36]]) {
   const value=sdk(label+"Version");
   if(value>=min) pass(label,String(value)); else block(label,`${value||"missing"}; minimum ${min}.`);
 }
-if(release.versionName==="1.1.3"&&release.versionCode===6) pass("Release identity","1.1.3 / versionCode 6 (greater than previous upload code 5).");
-else block("Release identity","Expected release 1.1.3 / versionCode 6. Never reuse Play versionCode 5.");
+if(release.versionName==="1.1.4"&&release.versionCode===7) pass("Release identity","1.1.4 / versionCode 7 (greater than the consumed code 6).");
+else block("Release identity","Expected release 1.1.4 / versionCode 7. Never reuse Play versionCode 6.");
 if(!manifest) block("AndroidManifest","Missing.");
 else {
   for(const name of ["INTERNET","CAMERA","ACCESS_COARSE_LOCATION","ACCESS_FINE_LOCATION"]) {
@@ -50,6 +54,8 @@ else {
   if(release.nativePushNotifications===false) warn("Background push","FCM transport is not configured; do not represent closed-app push as operational.");
   if(manifest.includes('android:usesCleartextTraffic="false"')) pass("Cleartext traffic","Disabled.");
   else block("Cleartext traffic","Cleartext traffic must be disabled.");
+  if(manifest.includes('android:resizeableActivity="true"')&&!manifest.includes('android:screenOrientation=')) pass("Adaptive displays","Activity supports resizing, tablets, foldables and desktop windows.");
+  else block("Adaptive displays","Do not lock orientation; explicitly keep the activity resizable.");
   if(manifest.includes('android:allowBackup="false"')) pass("Android backup","Account/document backup disabled.");
   else block("Android backup","Expected allowBackup=false.");
 }
@@ -72,6 +78,18 @@ if(privacy.includes("foreground location")&&privacy.includes("/delete-account"))
 else block("Privacy policy","Missing required disclosure.");
 if(auth.includes('publicAuthOrigin = isNativeShell ? "https://www.reskonnect.org"')&&auth.includes("!isNativeShell &&")) pass("Native authentication","Native OAuth callback/embedded Google OAuth restrictions preserved.");
 else block("Native authentication","Native auth flow changed unsafely.");
+if(mainActivity.includes("onRenderProcessGone")&&mainActivity.includes("webView.destroy()")&&mainActivity.includes("recreate()")&&mainActivity.includes("return true")) pass("WebView renderer recovery","Dead renderer is handled, destroyed and replaced with a fresh Activity/WebView.");
+else block("WebView renderer recovery","Unrecoverable WebView renderer death can terminate the app.");
+if(runtimeDiagnostics.includes('rpc("record_mobile_runtime_event"')&&runtimeDiagnostics.includes("isNativeGraphicsSafeMode")) pass("Runtime diagnostics","Privacy-safe native failure telemetry and graphics safe mode are wired.");
+else block("Runtime diagnostics","Native failures need a backend breadcrumb and graphics safe mode.");
+if(panorama.includes("webglcontextlost")&&panorama.includes("generateMipmaps = false")&&panorama.includes('powerPreference: lowMemory ? "low-power"')) pass("360 memory guard","WebGL loss, 4K texture memory and low-memory GPU behavior are guarded.");
+else block("360 memory guard","360 renderer is missing GPU-memory/context-loss hardening.");
+if(safeIcon.includes('18dp')) pass("Adaptive icon safe zone","Launcher foreground is inset for OEM masks.");
+else block("Adaptive icon safe zone","Launcher foreground may be clipped by OEM icon masks.");
+if(workflow.includes("lintRelease")&&signedWorkflow.includes("lintRelease")) pass("Android lint","Readiness and signed release both run release lint.");
+else block("Android lint","Release lint must gate both AAB pipelines.");
+if(workflow.includes("Native ELF / 16 KB guard")&&signedWorkflow.includes("Native ELF / 16 KB guard")) pass("16 KB page-size guard","AAB pipeline blocks unaudited packaged native ELF libraries.");
+else block("16 KB page-size guard","Release must detect native ELF before claiming 16 KB compatibility.");
 if(!exists("android/app/google-services.json")) warn("Firebase configuration","No bundled Firebase Android settings. Closed-app push cannot be enabled by this build alone.");
 
 const blockers=findings.filter(x=>x.level==="BLOCKER");

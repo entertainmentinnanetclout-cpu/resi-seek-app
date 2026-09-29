@@ -7,6 +7,7 @@ import { initLunaAttribution } from "@/lib/lunaGrowth";
 import "./index.css";
 import "./styles/mobile-foundation.css";
 import { isNativeApp } from "@/lib/accountRouting";
+import { initRuntimeDiagnostics } from "@/lib/runtimeDiagnostics";
 
 const ResMapLiveStreetViewBridge = lazy(() => import("@/components/resmap/ResMapLiveStreetViewBridge"));
 const native = isNativeApp();
@@ -14,6 +15,10 @@ const CANONICAL_ORIGIN = "https://www.reskonnect.org";
 const currentHost = window.location.hostname.toLowerCase();
 const alternatePublicHosts = new Set(["reskonnect.org", "reskonnect.co.za", "www.reskonnect.co.za"]);
 const shouldCanonicalize = !native && (currentHost.endsWith(".vercel.app") || alternatePublicHosts.has(currentHost));
+
+// Install privacy-safe stability listeners before React mounts so boot failures,
+// connectivity transitions and native renderer recovery breadcrumbs are captured.
+initRuntimeDiagnostics();
 
 function DeferredResMapBridge() {
   const [ready, setReady] = useState(false);

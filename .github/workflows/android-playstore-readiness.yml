@@ -12,33 +12,32 @@ on:
       - "src/pages/AccountDeletion.tsx"
       - "src/pages/Profile.tsx"
       - "src/pages/Dashboard.tsx"
+      - "src/pages/FindMyRes.tsx"
       - "src/pages/Updates.tsx"
       - "src/pages/NotificationDetail.tsx"
+      - "src/pages/VirtualTourViewerPage.tsx"
       - "src/components/native/**"
+      - "src/components/virtualTours/**"
       - "src/hooks/useRealtimeNotifications.ts"
+      - "src/hooks/useRealtimeResidences.ts"
       - "src/lib/nativeNotifications.ts"
+      - "src/lib/runtimeDiagnostics.ts"
       - "src/lib/resmap/**"
       - "src/components/findmyres/**"
       - "src/components/resmap/**"
       - "src/components/NotificationCenter.tsx"
       - "src/components/NativeAccountNavigation.tsx"
-      - "src/components/NativeSafeDashboard.tsx"
       - "src/components/FullDashboard.tsx"
       - "src/components/DashboardLayout.tsx"
       - "src/components/MyResKonnectCommandCentre.tsx"
       - "src/components/StudentRoute.tsx"
       - "src/contexts/AuthContext.tsx"
-      - "src/components/SiteHeader.tsx"
-      - "src/components/HomeJourneyBar.tsx"
-      - "src/components/PushPrompt.tsx"
-      - "src/lib/push.ts"
+      - "src/integrations/supabase/client.ts"
       - "src/main.tsx"
       - "vite.config.ts"
       - "index.html"
       - "supabase/config.toml"
-      - "supabase/migrations/*android_rg4*"
-      - "supabase/functions/push-subscription/**"
-      - "supabase/functions/send-push/**"
+      - "supabase/migrations/**"
       - "scripts/android-v110-reliability-qa.mjs"
       - "scripts/android-rg3-rg6-qa.mjs"
       - "scripts/android-session-regression.mjs"
@@ -99,11 +98,23 @@ jobs:
         run: npm run build
       - name: Sync Capacitor Android
         run: npx cap sync android
+      - name: Android release lint
+        run: gradle -p android lintRelease --stacktrace
       - name: Compile API 36 release AAB
         env:
-          ANDROID_VERSION_CODE: "6"
-          ANDROID_VERSION_NAME: "1.1.3"
+          ANDROID_VERSION_CODE: "7"
+          ANDROID_VERSION_NAME: "1.1.4"
         run: gradle -p android bundleRelease --stacktrace
+      - name: Native ELF / 16 KB guard
+        shell: bash
+        run: |
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          if unzip -Z1 "$AAB" | grep -Eq '\.so$'; then
+            echo "::error::Native ELF libraries were packaged. Audit every .so for 16 KB page-size compatibility before Play release."
+            unzip -Z1 "$AAB" | grep -E '\.so$' || true
+            exit 1
+          fi
+          echo "No packaged native ELF libraries; no app-owned .so page-alignment risk was detected."
       - name: Verify release artifact exists
         run: test -s android/app/build/outputs/bundle/release/app-release.aab
       - name: Upload unsigned readiness AAB
