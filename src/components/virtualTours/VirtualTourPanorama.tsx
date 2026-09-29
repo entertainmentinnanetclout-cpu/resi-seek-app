@@ -1,16 +1,41 @@
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { Html, OrbitControls } from "@react-three/drei";
-import { BackSide, MathUtils, SRGBColorSpace, TextureLoader } from "three";
-import { ArrowRight, Info, MapPin } from "lucide-react";
+import { BackSide, LinearFilter, MathUtils, SRGBColorSpace, TextureLoader } from "three";
+import { ArrowRight, Info, MapPin, ShieldAlert } from "lucide-react";
+import { isNativeApp } from "@/lib/accountRouting";
+import { isNativeGraphicsSafeMode, reportRuntimeEvent } from "@/lib/runtimeDiagnostics";
 
 export type ViewerHotspot = { id: string; hotspot_type: string; label: string; body?: string | null; target_scene_id?: string | null; yaw: number; pitch: number; cta_url?: string | null };
 export type ViewerConnection = { id: string; from_scene_id: string; to_scene_id: string; label?: string | null; yaw: number; pitch: number };
 
-function Sphere({ url }: { url: string }) {
+function Sphere({ url, lowMemory }: { url: string; lowMemory: boolean }) {
   const texture = useLoader(TextureLoader, url);
-  useEffect(() => { texture.colorSpace = SRGBColorSpace; texture.needsUpdate = true; }, [texture]);
-  return <mesh scale={[-1, 1, 1]}><sphereGeometry args={[8, 96, 64]} /><meshBasicMaterial map={texture} side={BackSide} /></mesh>;
+  useEffect(() => {
+    texture.colorSpace = SRGBColorSpace;
+    // 4K panorama mipmaps materially increase GPU memory. Linear filtering keeps
+    // the immersive view while avoiding the extra mipmap allocation.
+    texture.generateMipmaps = false;
+    texture.minFilter = LinearFilter;
+    texture.magFilter = LinearFilter;
+    texture.needsUpdate = true;
+    return () => { texture.dispose(); };
+  }, [texture]);
+  return <mesh scale={[-1, 1, 1]}><sphereGeometry args={lowMemory ? [8, 40, 24] : [8, 64, 40]} /><meshBasicMaterial map={texture} side={BackSide} /></mesh>;
+}
+
+function WebGLGuard({ onLost }: { onLost: () => void }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const lost = (event: Event) => {
+      event.preventDefault();
+      onLost();
+    };
+    canvas.addEventListener("webglcontextlost", lost, false);
+    return () => canvas.removeEventListener("webglcontextlost", lost, false);
+  }, [gl, onLost]);
+  return null;
 }
 
 function DeviceOrientationCamera({ enabled }: { enabled: boolean }) {
@@ -63,16 +88,48 @@ export default function VirtualTourPanorama({
     ...connections.map((c) => ({ id: `c-${c.id}`, rawId: c.id, kind: "connection" as const, label: c.label || "Continue", body: null, target_scene_id: c.to_scene_id, cta_url: null, yaw: Number(c.yaw || 0), pitch: Number(c.pitch || 0) })),
     ...hotspots.map((h) => ({ id: `h-${h.id}`, rawId: h.id, kind: "hotspot" as const, label: h.label, body: h.body || null, target_scene_id: h.target_scene_id || null, cta_url: h.cta_url || null, yaw: Number(h.yaw || 0), pitch: Number(h.pitch || 0), hotspot_type: h.hotspot_type })),
   ], [connections, hotspots]);
+  const native = useMemo(() => isNativeApp(), []);
   const lowMemory = useMemo(() => {
     if (typeof navigator === "undefined") return false;
     const memory = Number((navigator as any).deviceMemory || 0);
-    return (memory > 0 && memory <= 4) || /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    return native || (memory > 0 && memory <= 4) || /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }, [native]);
+  const [paused, setPaused] = useState(() => document.visibilityState === "hidden");
+  const [graphicsFailed, setGraphicsFailed] = useState(() => isNativeGraphicsSafeMode());
+
+  useEffect(() => {
+    const visibility = () => setPaused(document.visibilityState === "hidden");
+    const memoryPressure = () => {
+      if (!native) return;
+      setGraphicsFailed(true);
+      void reportRuntimeEvent("memory_pressure", "360 viewer released under Android memory pressure", { surface: "virtual_360" });
+    };
+    document.addEventListener("visibilitychange", visibility);
+    window.addEventListener("rk-native-memory-pressure" as any, memoryPressure as EventListener);
+    return () => {
+      document.removeEventListener("visibilitychange", visibility);
+      window.removeEventListener("rk-native-memory-pressure" as any, memoryPressure as EventListener);
+    };
+  }, [native]);
+
+  const onContextLost = useCallback(() => {
+    setGraphicsFailed(true);
+    void reportRuntimeEvent("webgl_context_lost", "360 viewer WebGL context was lost", { surface: "virtual_360" });
   }, []);
 
+  if (graphicsFailed) {
+    return <div className="grid h-full min-h-[420px] w-full place-items-center bg-slate-950 p-6 text-white"><div className="max-w-md text-center"><ShieldAlert className="mx-auto h-9 w-9 text-amber-300" /><h3 className="mt-3 text-xl font-black">360 view paused for stability</h3><p className="mt-2 text-sm text-white/70">This device recently reported graphics or memory pressure. ResKonnect has disabled the heavy interactive renderer so the rest of the app stays usable.</p></div></div>;
+  }
+
+  if (paused) {
+    return <div className="grid h-full min-h-[420px] w-full place-items-center bg-black text-sm text-white/60">360 view paused while ResKonnect is in the background.</div>;
+  }
+
   return <div className="relative h-full min-h-[420px] w-full touch-none overflow-hidden bg-black">
-    <Canvas camera={{ position: [0, 0, .1], fov: 74 }} dpr={lowMemory ? [1, 1.4] : [1, 2]} gl={{ antialias: !lowMemory, powerPreference: "high-performance" }}>
+    <Canvas camera={{ position: [0, 0, .1], fov: 74 }} dpr={lowMemory ? 1 : [1, 1.6]} frameloop={motionEnabled ? "always" : "demand"} gl={{ antialias: !lowMemory, powerPreference: lowMemory ? "low-power" : "high-performance" }}>
       <Suspense fallback={<Html center><div className="rounded-full bg-black/70 px-4 py-2 text-sm font-bold text-white">Loading 4K scene…</div></Html>}>
-        <Sphere url={panoramaUrl} />
+        <WebGLGuard onLost={onContextLost} />
+        <Sphere url={panoramaUrl} lowMemory={lowMemory} />
         <DeviceOrientationCamera enabled={motionEnabled} />
         {all.map((item) => <Html key={item.id} position={point(item.yaw, item.pitch)} center distanceFactor={8} transform={false}>
           <button
