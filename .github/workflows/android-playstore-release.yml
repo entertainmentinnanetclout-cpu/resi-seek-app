@@ -6,11 +6,11 @@ on:
       version_code:
         description: "Play versionCode (must increase every upload)"
         required: true
-        default: "6"
+        default: "7"
       version_name:
         description: "Public versionName"
         required: true
-        default: "1.1.3"
+        default: "1.1.4"
 
 permissions:
   contents: read
@@ -78,6 +78,8 @@ jobs:
         run: npm run build
       - name: Sync Capacitor Android
         run: npx cap sync android
+      - name: Android release lint
+        run: gradle -p android lintRelease --stacktrace
       - name: Build signed Play AAB
         env:
           ANDROID_VERSION_CODE: ${{ inputs.version_code }}
@@ -86,6 +88,42 @@ jobs:
           RK_ANDROID_KEY_ALIAS: ${{ secrets.RK_ANDROID_UPLOAD_KEY_ALIAS }}
           RK_ANDROID_KEY_PASSWORD: ${{ secrets.RK_ANDROID_UPLOAD_KEY_PASSWORD }}
         run: gradle -p android bundleRelease --stacktrace
+      - name: Native ELF / 16 KB guard
+        shell: bash
+        run: |
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          if unzip -Z1 "$AAB" | grep -Eq '\\.so
+        run: jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab
+      - name: Generate release checksum
+        run: sha256sum android/app/build/outputs/bundle/release/app-release.aab | tee android/app/build/outputs/bundle/release/app-release.aab.sha256
+      - name: Upload signed Play artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reskonnect-play-${{ inputs.version_name }}-${{ inputs.version_code }}
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/bundle/release/app-release.aab.sha256
+          if-no-files-found: error
+          retention-days: 30
+; then
+            echo "::error::Native ELF libraries were packaged. Audit every .so for 16 KB page-size compatibility before Play release."
+            unzip -Z1 "$AAB" | grep -E '\\.so
+        run: jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab
+      - name: Generate release checksum
+        run: sha256sum android/app/build/outputs/bundle/release/app-release.aab | tee android/app/build/outputs/bundle/release/app-release.aab.sha256
+      - name: Upload signed Play artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reskonnect-play-${{ inputs.version_name }}-${{ inputs.version_code }}
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/bundle/release/app-release.aab.sha256
+          if-no-files-found: error
+          retention-days: 30
+ || true
+            exit 1
+          fi
+          echo "No packaged native ELF libraries; this Java/Kotlin/WebView bundle has no app-owned .so page-alignment risk."
       - name: Verify AAB signature
         run: jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab
       - name: Generate release checksum
