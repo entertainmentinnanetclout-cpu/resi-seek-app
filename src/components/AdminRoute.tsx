@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import GodModeMfaGate from '@/components/admin/GodModeMfaGate';
 import { accountHome } from '@/lib/accountRouting';
+import AuthLoadingRecovery from '@/components/AuthLoadingRecovery';
 
 export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const access = useAuth();
-  const { user, isLoading: authLoading, staffRole, isGodMode, adminDepartments } = access;
+  const { user, isLoading: authLoading, accessError, staffRole, isGodMode, adminDepartments, refreshProfile } = access;
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || accessError) return;
 
     if (!user) {
       navigate('/auth', { replace: true });
@@ -20,15 +21,10 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     if (!isGodMode) {
       navigate(accountHome(access), { replace: true });
     }
-  }, [user, authLoading, staffRole, isGodMode, adminDepartments, navigate]);
+  }, [user, authLoading, accessError, staffRole, isGodMode, adminDepartments, navigate]);
 
-  if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Verifying access...</div>
-      </div>
-    );
-  }
+  if (authLoading) return <AuthLoadingRecovery message="Verifying administrator access…" onRetry={refreshProfile} />;
+  if (user && accessError) return <AuthLoadingRecovery message="We couldn't verify administrator access." onRetry={refreshProfile} showRecoveryImmediately />;
 
   // Fail closed while redirects settle. No sticky `ready` state is retained
   // across identity/role changes.
