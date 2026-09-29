@@ -29,9 +29,15 @@ const nativeDatabaseFetch: typeof fetch = (input, init) => {
   const relayAbort = () => controller.abort();
   if (originalSignal?.aborted) controller.abort();
   else originalSignal?.addEventListener('abort', relayAbort, { once: true });
-  const timer = window.setTimeout(() => controller.abort(), 15_000);
+  let timedOut = false;
+  const timer = window.setTimeout(() => { timedOut = true; controller.abort(); }, 15_000);
 
-  return fetch(input, { ...init, signal: controller.signal }).finally(() => {
+  return fetch(input, { ...init, signal: controller.signal }).catch(error => {
+    if (timedOut) {
+      window.dispatchEvent(new CustomEvent("rk-request-timeout", { detail: { resource: "/rest/v1" } }));
+    }
+    throw error;
+  }).finally(() => {
     window.clearTimeout(timer);
     originalSignal?.removeEventListener('abort', relayAbort);
   });
