@@ -79,6 +79,7 @@ const tourSnapshot = {
 };
 
 const failure = {
+  accessOnce:false,
   dashboardOnce:false,
   residencesOnce:false,
   applicationDetailsOnce:false,
@@ -97,7 +98,10 @@ async function api(route) {
 
   if (path.includes("/auth/v1/token")) return json(route,session);
   if (path.includes("/auth/v1/user")) return json(route,user);
-  if (path.includes("/rest/v1/rpc/get_my_access_context")) return json(route,{staff_role:null,admin_departments:[],is_student:true,is_recruiter:false,is_pending_recruiter:false,is_tumelo_partner:false});
+  if (path.includes("/rest/v1/rpc/get_my_access_context")) {
+    if (failure.accessOnce) { failure.accessOnce=false; return json(route,{message:"fixture access outage"},503); }
+    return json(route,{staff_role:null,admin_departments:[],is_student:true,is_recruiter:false,is_pending_recruiter:false,is_tumelo_partner:false});
+  }
   if (path.includes("/rest/v1/rpc/my_reskonnect_command_centre")) {
     if (failure.dashboardOnce) { failure.dashboardOnce=false; return json(route,{message:"fixture dashboard outage"},503); }
     return json(route,{profile,living:{application_count:1,approved_count:0,recent:[{...application,residence_name:residence.name}]},timeline:[],notifications:[]});
@@ -164,6 +168,16 @@ try {
   await page.getByText("Good to see you, Core.").waitFor({timeout:15000});
   assert.ok(await page.evaluate(key=>Boolean(localStorage.getItem(key)),storageKey));
   console.log("PASS persisted session reload and close/reopen");
+
+  // A transient access-context failure must fail closed with an immediate retry,
+  // not expose the wrong account surface or leave a permanent loader.
+  failure.accessOnce=true;
+  await page.goto(origin+"/dashboard",{waitUntil:"domcontentloaded"});
+  await page.getByText("We couldn't verify your ResKonnect account access.",{exact:true}).waitFor({timeout:15000});
+  assert.equal(await page.getByText("Good to see you, Core.",{exact:true}).count(),0,"dashboard rendered before access was verified");
+  await page.getByRole("button",{name:"Retry account check"}).click();
+  await page.getByText("Good to see you, Core.").waitFor({timeout:15000});
+  console.log("PASS access-context outage fail-closed and retry");
 
   const routes=[
     ["/dashboard","Good to see you, Core."],
