@@ -107,17 +107,10 @@ jobs:
       - name: Verify release artifact exists
         run: test -s android/app/build/outputs/bundle/release/app-release.aab
       - name: Verify no unreviewed native ELF libraries
+        shell: bash
         run: |
           set -e
-          libs="$(unzip -Z1 android/app/build/outputs/bundle/release/app-release.aab | grep -E '^base/lib/.+\.so
-      - name: Upload unsigned readiness AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: reskonnect-android-readiness-aab
-          path: android/app/build/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
-          retention-days: 7
- || true)"
+          libs=$(unzip -Z1 android/app/build/outputs/bundle/release/app-release.aab | grep -E '^base/lib/.+[.]so$' || true)
           if [ -n "$libs" ]; then
             echo "Native ELF libraries detected. 16 KB page-size compatibility requires explicit ELF alignment verification:"
             echo "$libs"
