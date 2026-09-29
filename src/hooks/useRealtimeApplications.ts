@@ -7,6 +7,7 @@ export function useRealtimeApplications(user: User | null) {
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const previousStatuses = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
@@ -134,7 +135,8 @@ export function useRealtimeApplications(user: User | null) {
       window.removeEventListener("rk-reconnected", onReconnect);
       void supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, refreshKey]);
 
-  return { applications, loading, error };
+  const refresh = () => setRefreshKey((value) => value + 1);
+  return { applications, loading, error, refresh };
 }
