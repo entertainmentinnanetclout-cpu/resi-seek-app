@@ -135,5 +135,9 @@ export function initRuntimeDiagnostics() {
     void reportRuntimeEvent("memory_pressure", "Android memory pressure", { level: event.detail?.level });
   }) as EventListener);
 
+  window.addEventListener("rk-request-timeout" as any, ((event: CustomEvent) => {
+    void reportRuntimeEvent("request_timeout", "A bounded data request timed out", { resource: event.detail?.resource || "request" });
+  }) as EventListener);
+
   void flushStoredNativeEvent();
 }
