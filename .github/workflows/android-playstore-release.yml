@@ -88,6 +88,28 @@ jobs:
         run: gradle -p android bundleRelease --stacktrace
       - name: Verify AAB signature
         run: jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab
+      - name: Verify no unreviewed native ELF libraries
+        run: |
+          set -e
+          libs="$(unzip -Z1 android/app/build/outputs/bundle/release/app-release.aab | grep -E '^base/lib/.+\.so
+      - name: Generate release checksum
+        run: sha256sum android/app/build/outputs/bundle/release/app-release.aab | tee android/app/build/outputs/bundle/release/app-release.aab.sha256
+      - name: Upload signed Play artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reskonnect-play-${{ inputs.version_name }}-${{ inputs.version_code }}
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/bundle/release/app-release.aab.sha256
+          if-no-files-found: error
+          retention-days: 30
+ || true)"
+          if [ -n "$libs" ]; then
+            echo "Native ELF libraries detected. Stop release until 16 KB alignment is explicitly verified:"
+            echo "$libs"
+            exit 1
+          fi
+          echo "No packaged native ELF libraries; 16 KB native ELF alignment is not applicable to this bundle."
       - name: Generate release checksum
         run: sha256sum android/app/build/outputs/bundle/release/app-release.aab | tee android/app/build/outputs/bundle/release/app-release.aab.sha256
       - name: Upload signed Play artifact
