@@ -37,6 +37,16 @@ const profiles = [
 async function fulfillSupabase(route) {
   const url = new URL(route.request().url());
   const path = url.pathname;
+  const origin = route.request().headers().origin || "http://127.0.0.1:8092";
+  const corsHeaders = {
+      "access-control-allow-origin": origin,
+      "access-control-allow-headers": "apikey,authorization,x-client-info,content-type,prefer,accept-profile,content-profile,range",
+      "access-control-allow-methods": "GET,POST,PATCH,PUT,DELETE,OPTIONS",
+      "access-control-expose-headers": "content-range,range-unit"
+  };
+  if (route.request().method() === "OPTIONS") {
+    return route.fulfill({ status: 204, headers: corsHeaders, body: "" });
+  }
   let body = {};
 
   if (path.includes("/auth/v1/user")) {
@@ -68,7 +78,12 @@ async function fulfillSupabase(route) {
     body = path.includes("/rpc/") ? {} : [];
   }
 
-  return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  return route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    headers: corsHeaders,
+    body: JSON.stringify(body),
+  });
 }
 
 async function mockNetwork(context) {
@@ -84,12 +99,19 @@ async function mockNetwork(context) {
       url.hostname.includes("openstreetmap.fr") ||
       ["image", "font", "media"].includes(req.resourceType())
     ) {
-      return route.fulfill({ status: 204, body: "" });
+      return route.fulfill({ status: 204, headers: { "access-control-allow-origin": "*" }, body: "" });
     }
 
-    // Public smoke is deliberately isolated from third-party analytics/CDNs.
-    // Block them without turning optional remote integrations into test failures.
-    return route.abort("blockedbyclient");
+    // Optional third-party scripts/styles are neutralized rather than networked.
+    // Supplying valid MIME prevents WebKit from surfacing a module-load exception
+    // that is unrelated to ResKonnect route rendering.
+    if (req.resourceType() === "script") {
+      return route.fulfill({ status: 200, contentType: "application/javascript", headers: { "access-control-allow-origin": "*" }, body: "export {};" });
+    }
+    if (req.resourceType() === "stylesheet") {
+      return route.fulfill({ status: 200, contentType: "text/css", headers: { "access-control-allow-origin": "*" }, body: "" });
+    }
+    return route.fulfill({ status: 204, headers: { "access-control-allow-origin": "*" }, body: "" });
   });
 }
 

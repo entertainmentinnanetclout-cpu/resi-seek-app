@@ -90,6 +90,16 @@ const profiles = [
 async function fulfillApi(route) {
   const url = new URL(route.request().url());
   const path = url.pathname;
+  const originHeader = route.request().headers().origin || origin;
+  const corsHeaders = {
+    "access-control-allow-origin": originHeader,
+    "access-control-allow-headers": "apikey,authorization,x-client-info,content-type,prefer,accept-profile,content-profile,range",
+    "access-control-allow-methods": "GET,POST,PATCH,PUT,DELETE,OPTIONS",
+    "access-control-expose-headers": "content-range,range-unit",
+  };
+  if (route.request().method() === "OPTIONS") {
+    return route.fulfill({status:204,headers:corsHeaders,body:""});
+  }
   let body = {};
   if (path.includes("/auth/v1/token")) body = session;
   else if (path.includes("/auth/v1/user")) body = user;
@@ -107,7 +117,12 @@ async function fulfillApi(route) {
   else if (path.includes("/rest/v1/resmap_campuses")) body = [{id:"c1",campus_key:"pretoria-west",name:"Pretoria West (Main Campus)",latitude:-25.754,longitude:28.188,is_active:true}];
   else if (path.includes("/rest/v1/resmap_map_config")) body = { google_maps_enabled:false, raster_primary_url:"https://tile.openstreetmap.org/{z}/{x}/{y}.png", raster_fallback_url:"https://tile.openstreetmap.org/{z}/{x}/{y}.png" };
   else if (path.includes("/rest/v1/")) body = path.includes("/rpc/") ? {} : [];
-  return route.fulfill({ status:200, contentType:"application/json", body:JSON.stringify(body) });
+  return route.fulfill({
+    status:200,
+    contentType:"application/json",
+    headers:corsHeaders,
+    body:JSON.stringify(body)
+  });
 }
 
 async function assertNoOverflow(page, label) {
@@ -138,9 +153,11 @@ try {
         const url = new URL(route.request().url());
         if (url.origin === origin) return route.continue();
         if (url.hostname.endsWith(".supabase.co")) return fulfillApi(route);
-        if (url.hostname.includes("tile.openstreetmap.org")) return route.fulfill({status:204,body:""});
-        if (["image","font","media"].includes(route.request().resourceType())) return route.fulfill({status:204,body:""});
-        return route.abort();
+        if (url.hostname.includes("tile.openstreetmap.org") || url.hostname.includes("openstreetmap.fr")) return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
+        if (["image","font","media"].includes(route.request().resourceType())) return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
+        if (route.request().resourceType()==="script") return route.fulfill({status:200,contentType:"application/javascript",headers:{"access-control-allow-origin":"*"},body:"export {};"});
+        if (route.request().resourceType()==="stylesheet") return route.fulfill({status:200,contentType:"text/css",headers:{"access-control-allow-origin":"*"},body:""});
+        return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
       });
 
       let page = await context.newPage();
@@ -224,7 +241,9 @@ try {
       await pwaContext.route("**/*", async route => {
         const url=new URL(route.request().url());
         if(url.origin===origin) return route.continue();
-        return route.abort();
+        if (route.request().resourceType()==="script") return route.fulfill({status:200,contentType:"application/javascript",headers:{"access-control-allow-origin":"*"},body:"export {};"});
+        if (route.request().resourceType()==="stylesheet") return route.fulfill({status:200,contentType:"text/css",headers:{"access-control-allow-origin":"*"},body:""});
+        return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
       });
       const pwaPage=await pwaContext.newPage();
       await pwaPage.goto(origin+"/install",{waitUntil:"domcontentloaded"});
