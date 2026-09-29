@@ -48,6 +48,16 @@ const safeLocalReturnPath = (value: string | null) => {
 
 const DIRECT_REF_KEY = "rk_pending_direct_ref";
 
+const fetchWithTimeout = async (input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = 8_000) => {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timer);
+  }
+};
+
 const HEARD_ABOUT_US_OPTIONS = [
   ["instagram", "Instagram"],
   ["tiktok", "TikTok"],
@@ -112,7 +122,7 @@ const Auth = () => {
         if (pendingDirectRef) {
           const { data: { session: currentSession } } = await supabase.auth.getSession();
           if (currentSession?.access_token) {
-            const response = await fetch(externalFunctionUrl("referral-capture"), {
+            const response = await fetchWithTimeout(externalFunctionUrl("referral-capture"), {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -225,7 +235,7 @@ const Auth = () => {
           try { localStorage.setItem(DIRECT_REF_KEY, refCode.trim().toUpperCase()); } catch {}
           if (data.session?.access_token) {
             try {
-              const response = await fetch(externalFunctionUrl("referral-capture"), {
+              const response = await fetchWithTimeout(externalFunctionUrl("referral-capture"), {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -280,24 +290,28 @@ const Auth = () => {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
-    if (isNativeShell) {
-      toast.info("Google sign-in is available on the ResKonnect website for this Android release. Use email/password in the app.");
-      setIsLoading(false);
-      return;
-    }
-    const redirectTo = `${publicAuthOrigin}/auth${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo,
-        scopes: "openid email profile",
-        queryParams: { prompt: "select_account" },
-      },
-    });
-    if (oauthError) {
-      const message = getAuthErrorMessage(oauthError);
+    try {
+      if (isNativeShell) {
+        toast.info("Google sign-in is available on the ResKonnect website for this Android release. Use email/password in the app.");
+        return;
+      }
+      const redirectTo = `${publicAuthOrigin}/auth${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          scopes: "openid email profile",
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (oauthError) throw oauthError;
+    } catch (oauthFailure) {
+      const message = getAuthErrorMessage(oauthFailure);
       setError(message);
       toast.error(message);
+    } finally {
+      // OAuth redirects the browser on success. If it does not, always release
+      // the button so Safari/desktop users are never left in a permanent loader.
       setIsLoading(false);
     }
   };
