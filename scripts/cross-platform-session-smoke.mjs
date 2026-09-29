@@ -186,44 +186,65 @@ try {
       await page.getByText("Good to see you, Cross.").waitFor({timeout:15000});
       console.log("PASS",p.name,"session persistence");
 
+      // Use isolated pages for route-shell checks. WebKit can report an
+      // aborted dynamic import from the route being left as a page error on the
+      // next SPA navigation. A new page preserves the same authenticated
+      // localStorage/session while making each route assertion deterministic.
       for (const routePath of ["/dashboard","/findmyres","/my-applications","/opportunities","/profile"]) {
-        errors.length=0;
-        await page.goto(origin+routePath,{waitUntil:"domcontentloaded"});
-        await page.waitForTimeout(600);
-        assert.equal(await page.getByText("Something went wrong",{exact:true}).count(),0,`${p.name} ${routePath}: error boundary`);
-        assert.equal(errors.length,0,`${p.name} ${routePath}: ${errors.join("; ")}`);
-        await assertNoOverflow(page,`${p.name} ${routePath}`);
-        console.log("PASS",p.name,routePath);
+        const routePage=await context.newPage();
+        const routeErrors=[];
+        routePage.on("pageerror",e=>routeErrors.push(e.message));
+        try {
+          await routePage.goto(origin+routePath,{waitUntil:"domcontentloaded"});
+          await routePage.waitForTimeout(600);
+          assert.equal(await routePage.getByText("Something went wrong",{exact:true}).count(),0,`${p.name} ${routePath}: error boundary`);
+          assert.equal(routeErrors.length,0,`${p.name} ${routePath}: ${routeErrors.join("; ")}`);
+          await assertNoOverflow(routePage,`${p.name} ${routePath}`);
+          console.log("PASS",p.name,routePath);
+        } finally {
+          await routePage.close();
+        }
       }
+
+      await page.close();
 
       // Open the full map overlay. Google 3D is disabled by fixture config so the
       // deterministic raster/fallback path must remain functional.
-      errors.length=0;
-      await page.goto(origin+"/findmyres?view=map",{waitUntil:"domcontentloaded"});
-      await page.getByText("ResMap",{exact:true}).first().waitFor({timeout:15000});
-      assert.equal(await page.getByText("Something went wrong",{exact:true}).count(),0,`${p.name} map: error boundary`);
-      assert.equal(errors.length,0,`${p.name} map: ${errors.join("; ")}`);
+      const mapPage=await context.newPage();
+      const mapErrors=[];
+      mapPage.on("pageerror",e=>mapErrors.push(e.message));
+      await mapPage.goto(origin+"/findmyres?view=map",{waitUntil:"domcontentloaded"});
+      await mapPage.getByText("ResMap",{exact:true}).first().waitFor({timeout:15000});
+      assert.equal(await mapPage.getByText("Something went wrong",{exact:true}).count(),0,`${p.name} map: error boundary`);
+      assert.equal(mapErrors.length,0,`${p.name} map: ${mapErrors.join("; ")}`);
+      await mapPage.close();
       console.log("PASS",p.name,"ResMap");
 
       // Exercise the actual 360 viewer/WebGL path on browser engines.
-      errors.length=0;
-      await page.goto(origin+"/tour/fixture-token",{waitUntil:"domcontentloaded"});
-      await page.getByText("Fixture 360",{exact:false}).first().waitFor({timeout:15000});
-      await page.waitForTimeout(700);
-      assert.equal(await page.getByText("Virtual view unavailable",{exact:true}).count(),0,`${p.name}: 360 snapshot unavailable`);
-      assert.equal(await page.getByText("Something went wrong",{exact:true}).count(),0,`${p.name}: 360 error boundary`);
-      assert.equal(errors.length,0,`${p.name} 360: ${errors.join("; ")}`);
+      const tourPage=await context.newPage();
+      const tourErrors=[];
+      tourPage.on("pageerror",e=>tourErrors.push(e.message));
+      await tourPage.goto(origin+"/tour/fixture-token",{waitUntil:"domcontentloaded"});
+      await tourPage.getByText("Fixture 360",{exact:false}).first().waitFor({timeout:15000});
+      await tourPage.waitForTimeout(700);
+      assert.equal(await tourPage.getByText("Virtual view unavailable",{exact:true}).count(),0,`${p.name}: 360 snapshot unavailable`);
+      assert.equal(await tourPage.getByText("Something went wrong",{exact:true}).count(),0,`${p.name}: 360 error boundary`);
+      assert.equal(tourErrors.length,0,`${p.name} 360: ${tourErrors.join("; ")}`);
+      await tourPage.close();
       console.log("PASS",p.name,"360 viewer");
 
       // Offline in the already-loaded installed app retains the session and surfaces status.
-      await page.goto(origin+"/dashboard",{waitUntil:"domcontentloaded"});
+      const offlinePage=await context.newPage();
+      await offlinePage.goto(origin+"/dashboard",{waitUntil:"domcontentloaded"});
+      await offlinePage.getByText("Good to see you, Cross.").waitFor({timeout:15000});
       await context.setOffline(true);
-      await page.waitForTimeout(250);
-      await page.getByText("You're offline.",{exact:false}).waitFor({timeout:5000});
-      assert.ok(await page.evaluate(key=>Boolean(localStorage.getItem(key)),storageKey),`${p.name}: session disappeared offline`);
+      await offlinePage.waitForTimeout(250);
+      await offlinePage.getByText("You're offline.",{exact:false}).waitFor({timeout:5000});
+      assert.ok(await offlinePage.evaluate(key=>Boolean(localStorage.getItem(key)),storageKey),`${p.name}: session disappeared offline`);
       await context.setOffline(false);
-      await page.waitForTimeout(500);
-      assert.equal(await page.getByText("You're offline.",{exact:false}).count(),0,`${p.name}: offline banner remained after reconnect`);
+      await offlinePage.waitForTimeout(500);
+      assert.equal(await offlinePage.getByText("You're offline.",{exact:false}).count(),0,`${p.name}: offline banner remained after reconnect`);
+      await offlinePage.close();
       console.log("PASS",p.name,"offline/reconnect");
 
       await context.close();
