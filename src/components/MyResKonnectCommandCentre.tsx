@@ -33,11 +33,13 @@ const MyResKonnectCommandCentre = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 12000);
     try {
       const [command, service, opportunity] = await Promise.allSettled([
-        (supabase as any).rpc("my_reskonnect_command_centre"),
-        (supabase as any).rpc("my_reskonnect_service_centre"),
-        (supabase as any).rpc("reskonnect_opportunity_feed", { p_query: null, p_type: null, p_limit: 6 }),
+        (supabase as any).rpc("my_reskonnect_command_centre").abortSignal(controller.signal),
+        (supabase as any).rpc("my_reskonnect_service_centre").abortSignal(controller.signal),
+        (supabase as any).rpc("reskonnect_opportunity_feed", { p_query: null, p_type: null, p_limit: 6 }).abortSignal(controller.signal),
       ]);
       const commandResult = command.status === "fulfilled" ? command.value : { data: null, error: command.reason };
       const serviceResult = service.status === "fulfilled" ? service.value : { data: null, error: service.reason };
@@ -54,11 +56,17 @@ const MyResKonnectCommandCentre = () => {
       console.error("My ResKonnect dashboard load failed safely", error);
       setData({ service_centre: { open_count: 0, requests: [] }, opportunity_engine: { items: [] } });
     } finally {
+      window.clearTimeout(timeout);
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+    const onReconnect = () => void load();
+    window.addEventListener("rk-reconnected", onReconnect);
+    return () => window.removeEventListener("rk-reconnected", onReconnect);
+  }, [load]);
 
   const profile = data?.profile || {};
   const living = data?.living || {};
