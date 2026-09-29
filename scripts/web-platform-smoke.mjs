@@ -68,7 +68,16 @@ async function fulfillSupabase(route) {
     body = path.includes("/rpc/") ? {} : [];
   }
 
-  return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  return route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    headers: {
+      "access-control-allow-origin": "*",
+      "access-control-allow-headers": "*",
+      "access-control-allow-methods": "GET,POST,PATCH,PUT,DELETE,OPTIONS",
+    },
+    body: JSON.stringify(body),
+  });
 }
 
 async function mockNetwork(context) {
@@ -84,12 +93,19 @@ async function mockNetwork(context) {
       url.hostname.includes("openstreetmap.fr") ||
       ["image", "font", "media"].includes(req.resourceType())
     ) {
-      return route.fulfill({ status: 204, body: "" });
+      return route.fulfill({ status: 204, headers: { "access-control-allow-origin": "*" }, body: "" });
     }
 
-    // Public smoke is deliberately isolated from third-party analytics/CDNs.
-    // Block them without turning optional remote integrations into test failures.
-    return route.abort("blockedbyclient");
+    // Optional third-party scripts/styles are neutralized rather than networked.
+    // Supplying valid MIME prevents WebKit from surfacing a module-load exception
+    // that is unrelated to ResKonnect route rendering.
+    if (req.resourceType() === "script") {
+      return route.fulfill({ status: 200, contentType: "application/javascript", body: "export {};" });
+    }
+    if (req.resourceType() === "stylesheet") {
+      return route.fulfill({ status: 200, contentType: "text/css", body: "" });
+    }
+    return route.fulfill({ status: 204, headers: { "access-control-allow-origin": "*" }, body: "" });
   });
 }
 
