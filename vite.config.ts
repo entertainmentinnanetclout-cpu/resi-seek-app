@@ -31,9 +31,16 @@ export default defineConfig(({ mode }) => {
             theme_color: "#071326",
             background_color: "#FFFFFF",
             display: "standalone",
-            orientation: "portrait-primary",
+            orientation: "any",
             start_url: "/",
             scope: "/",
+            id: "/",
+            categories: ["education", "lifestyle", "productivity"],
+            shortcuts: [
+              { name: "Find My Res", short_name: "Find a Res", url: "/find", icons: [{ src: "/icon-192.png", sizes: "192x192", type: "image/png" }] },
+              { name: "My ResKonnect", short_name: "Dashboard", url: "/dashboard", icons: [{ src: "/icon-192.png", sizes: "192x192", type: "image/png" }] },
+              { name: "Opportunities", short_name: "Opportunities", url: "/opportunities", icons: [{ src: "/icon-192.png", sizes: "192x192", type: "image/png" }] },
+            ],
             icons: [
               {
                 src: "/icon-192.png",
