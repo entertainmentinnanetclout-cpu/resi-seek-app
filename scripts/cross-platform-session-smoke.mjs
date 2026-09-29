@@ -96,6 +96,8 @@ async function fulfillApi(route) {
     "access-control-allow-headers": "apikey,authorization,x-client-info,content-type,prefer,accept-profile,content-profile,range",
     "access-control-allow-methods": "GET,POST,PATCH,PUT,DELETE,OPTIONS",
     "access-control-expose-headers": "content-range,range-unit",
+    "access-control-allow-credentials": "true",
+    "vary": "Origin",
   };
   if (route.request().method() === "OPTIONS") {
     return route.fulfill({status:204,headers:corsHeaders,body:""});
@@ -226,45 +228,52 @@ try {
 
       await context.close();
 
-      // Separate clean context: exercise the actual production service worker and
-      // cold offline reload without mixing it with mocked authenticated requests.
-      const pwaContext = await browser.newContext({
-        viewport:p.viewport,
-        isMobile:p.mobile,
-        userAgent:p.ua,
-        locale:"en-ZA",
-        serviceWorkers:"allow",
-      });
-      await pwaContext.addInitScript(({standalone}) => {
-        try { Object.defineProperty(navigator, "standalone", { configurable:true, get:()=>standalone }); } catch {}
-      }, { standalone:p.standalone });
-      await pwaContext.route("**/*", async route => {
-        const url=new URL(route.request().url());
-        if(url.origin===origin) return route.continue();
-        if (route.request().resourceType()==="script") return route.fulfill({status:200,contentType:"application/javascript",headers:{"access-control-allow-origin":"*"},body:"export {};"});
-        if (route.request().resourceType()==="stylesheet") return route.fulfill({status:200,contentType:"text/css",headers:{"access-control-allow-origin":"*"},body:""});
-        return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
-      });
-      const pwaPage=await pwaContext.newPage();
-      await pwaPage.goto(origin+"/install",{waitUntil:"domcontentloaded"});
-      await pwaPage.getByRole("heading",{name:"Install ResKonnect"}).waitFor();
-      const sw = await pwaPage.evaluate(async () => {
-        if (!("serviceWorker" in navigator)) return {supported:false, registrations:0};
-        await navigator.serviceWorker.ready;
-        const regs=await navigator.serviceWorker.getRegistrations();
-        return {supported:true, registrations:regs.length};
-      });
-      assert.equal(sw.supported,true,`${p.name}: service worker unsupported in test engine`);
-      assert.ok(sw.registrations>=1,`${p.name}: production PWA service worker did not register`);
-      // One online reload gives the activated worker control of the page.
-      await pwaPage.reload({waitUntil:"domcontentloaded"});
-      await pwaPage.getByRole("heading",{name:"Install ResKonnect"}).waitFor();
-      await pwaContext.setOffline(true);
-      await pwaPage.reload({waitUntil:"domcontentloaded",timeout:15000});
-      await pwaPage.getByRole("heading",{name:"Install ResKonnect"}).waitFor({timeout:10000});
-      await pwaContext.setOffline(false);
-      console.log("PASS",p.name,"production PWA cold offline reload");
-      await pwaContext.close();
+      // Playwright only exposes/automates service workers on Chromium-based
+      // browsers. WebKit profiles still cover Safari layout, auth, session
+      // persistence, map/360 and online/offline transitions above. The actual
+      // iOS/macOS service-worker lifecycle remains a physical Safari acceptance
+      // check instead of a false automated assertion.
+      if (p.engine === chromium) {
+        const pwaContext = await browser.newContext({
+          viewport:p.viewport,
+          isMobile:p.mobile,
+          userAgent:p.ua,
+          locale:"en-ZA",
+          serviceWorkers:"allow",
+        });
+        await pwaContext.addInitScript(({standalone}) => {
+          try { Object.defineProperty(navigator, "standalone", { configurable:true, get:()=>standalone }); } catch {}
+        }, { standalone:p.standalone });
+        await pwaContext.route("**/*", async route => {
+          const url=new URL(route.request().url());
+          if(url.origin===origin) return route.continue();
+          if (route.request().resourceType()==="script") return route.fulfill({status:200,contentType:"application/javascript",headers:{"access-control-allow-origin":"*"},body:"export {};"});
+          if (route.request().resourceType()==="stylesheet") return route.fulfill({status:200,contentType:"text/css",headers:{"access-control-allow-origin":"*"},body:""});
+          return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
+        });
+        const pwaPage=await pwaContext.newPage();
+        await pwaPage.goto(origin+"/install",{waitUntil:"domcontentloaded"});
+        await pwaPage.getByRole("heading",{name:"Install ResKonnect"}).waitFor();
+        const sw = await pwaPage.evaluate(async () => {
+          if (!("serviceWorker" in navigator)) return {supported:false, registrations:0};
+          await navigator.serviceWorker.ready;
+          const regs=await navigator.serviceWorker.getRegistrations();
+          return {supported:true, registrations:regs.length};
+        });
+        assert.equal(sw.supported,true,`${p.name}: service worker unsupported in Chromium test engine`);
+        assert.ok(sw.registrations>=1,`${p.name}: production PWA service worker did not register`);
+        // One online reload gives the activated worker control of the page.
+        await pwaPage.reload({waitUntil:"domcontentloaded"});
+        await pwaPage.getByRole("heading",{name:"Install ResKonnect"}).waitFor();
+        await pwaContext.setOffline(true);
+        await pwaPage.reload({waitUntil:"domcontentloaded",timeout:15000});
+        await pwaPage.getByRole("heading",{name:"Install ResKonnect"}).waitFor({timeout:10000});
+        await pwaContext.setOffline(false);
+        console.log("PASS",p.name,"production PWA cold offline reload");
+        await pwaContext.close();
+      } else {
+        console.log("SKIP",p.name,"service-worker cold reload: Playwright supports service-worker automation on Chromium only");
+      }
     } finally {
       await browser.close();
     }
