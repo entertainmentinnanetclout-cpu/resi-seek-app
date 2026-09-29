@@ -57,6 +57,8 @@ else {
   else block("Cleartext traffic","Cleartext traffic must be disabled.");
   if(manifest.includes('android:allowBackup="false"')) pass("Android backup","Account/document backup disabled.");
   else block("Android backup","Expected allowBackup=false.");
+  if(!manifest.includes("android:screenOrientation")&&!manifest.includes('android:resizeableActivity="false"')&&!manifest.includes("android:maxAspectRatio")) pass("Large-screen adaptability","No orientation, non-resizable or max-aspect restriction blocks tablets/foldables.");
+  else block("Large-screen adaptability","Remove fixed orientation/resizability/aspect-ratio restrictions for Android 16 large screens.");
 }
 for(const name of ["android/app/src/main/java/org/reskonnect/app/MainActivity.java","android/app/src/main/res/drawable-nodpi/app_icon.png","android/app/src/main/res/drawable-nodpi/app_icon_foreground.png","android/app/src/main/res/values/styles.xml"]) {
   exists(name)?pass("Native asset "+name,"Present."):block("Native asset "+name,"Missing.");
