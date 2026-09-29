@@ -17,6 +17,11 @@ const release=json("native/android-release.json");
 const vars=read("android/variables.gradle");
 const gradle=read("android/app/build.gradle");
 const manifest=read("android/app/src/main/AndroidManifest.xml");
+const mainActivity=read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
+const androidBuild=read("android/build.gradle");
+const nativeMap=read("src/components/resmap/NativeResMapExperience.tsx");
+const stableMap=read("src/components/resmap/ResMapExperienceStable.tsx");
+const launcher=read("android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml");
 const app=read("src/App.tsx");
 const profile=read("src/pages/Profile.tsx");
 const privacy=read("src/pages/Privacy.tsx");
@@ -33,8 +38,8 @@ for(const [label,min] of [["minSdk",24],["compileSdk",36],["targetSdk",36]]) {
   const value=sdk(label+"Version");
   if(value>=min) pass(label,String(value)); else block(label,`${value||"missing"}; minimum ${min}.`);
 }
-if(release.versionName==="1.1.3"&&release.versionCode===6) pass("Release identity","1.1.3 / versionCode 6 (greater than previous upload code 5).");
-else block("Release identity","Expected release 1.1.3 / versionCode 6. Never reuse Play versionCode 5.");
+if(release.versionName==="1.1.4"&&release.versionCode===7) pass("Release identity","1.1.4 / versionCode 7 (greater than Play upload code 6).");
+else block("Release identity","Expected release 1.1.4 / versionCode 7. Never reuse Play versionCode 6.");
 if(!manifest) block("AndroidManifest","Missing.");
 else {
   for(const name of ["INTERNET","CAMERA","ACCESS_COARSE_LOCATION","ACCESS_FINE_LOCATION"]) {
@@ -58,8 +63,18 @@ for(const name of ["android/app/src/main/java/org/reskonnect/app/MainActivity.ja
 }
 if(gradle.includes("RK_ANDROID_KEYSTORE_PATH")&&gradle.includes("signingConfigs")) pass("Release signing","Upload key sourced outside GitHub source tree.");
 else block("Release signing","Protected keystore integration missing.");
-if(release.capacitorVersion==="8.5.0"&&workflow.includes("@capacitor/core@8.5.0")&&workflow.includes("@capacitor/android@8.5.0")&&workflow.includes("@capacitor/geolocation@8.0.0")&&workflow.includes("@capacitor/local-notifications@8")) pass("Capacitor toolchain","Exact core and geolocation pins; native notifications included in CI.");
+if(release.capacitorVersion==="8.5.2"&&workflow.includes("@capacitor/core@8.5.2")&&workflow.includes("@capacitor/android@8.5.2")&&workflow.includes("@capacitor/geolocation@8.0.0")&&workflow.includes("@capacitor/local-notifications@8")) pass("Capacitor toolchain","Capacitor 8.5.2 core/Android/CLI and required native plugins are pinned in CI.");
 else block("Capacitor toolchain","Android CI does not install required native toolchain/plugins.");
+const agp = androidBuild.match(/com\.android\.tools\.build:gradle:(\d+)\.(\d+)\.(\d+)/);
+const agpMajor=Number(agp?.[1]||0),agpMinor=Number(agp?.[2]||0);
+if(agpMajor>8||(agpMajor===8&&agpMinor>=5)) pass("16 KB page-size toolchain",`AGP ${agp?.slice(1).join(".")} is >= 8.5.1; compatible packaging/alignment toolchain in place.`);
+else block("16 KB page-size toolchain","AGP 8.5.1+ is required for current 16 KB page-size packaging.");
+if(mainActivity.includes("onRenderProcessGone")&&mainActivity.includes("view.destroy()")&&mainActivity.includes("recreate")&&mainActivity.includes("return true")) pass("WebView renderer recovery","Renderer death is handled instead of terminating the whole host app.");
+else block("WebView renderer recovery","MainActivity must destroy the dead WebView, recreate the activity and return true.");
+if(nativeMap.includes("ResMapExperienceStable")&&nativeMap.includes("allow3d={false}")&&nativeMap.includes("rk_native_safe_graphics_v1")&&stableMap.includes("allow3d")) pass("Native graphics safety","Android defaults to raster ResMap and gates GPU 3D behind device capability/safe mode.");
+else block("Native graphics safety","Native map can still mount an unsafe GPU-heavy path.");
+if(launcher.includes("@drawable/app_icon_foreground_safe")) pass("Adaptive icon safe zone","Launcher uses the inset adaptive foreground.");
+else block("Adaptive icon safe zone","Launcher foreground is not using the safe inset.");
 if(workflow.includes("bundleRelease")&&workflow.includes("android-36")&&workflow.includes("--strict")) pass("AAB readiness","Strict audit and API-36 AAB compile enabled.");
 else block("AAB readiness","Workflow missing strict audit or bundle build.");
 if(signedWorkflow.includes("bundleRelease")&&signedWorkflow.includes("jarsigner")&&signedWorkflow.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64")&&signedWorkflow.includes("@capacitor/local-notifications@8")) pass("Signed Play build","Protected signing and native plugin install configured.");
