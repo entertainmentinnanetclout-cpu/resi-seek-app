@@ -69,8 +69,10 @@ public class MainActivity extends BridgeActivity {
                 try {
                     final ViewParent parent = view.getParent();
                     if (parent instanceof ViewGroup) ((ViewGroup) parent).removeView(view);
-                    view.stopLoading();
                     view.destroy();
+                    // The Bridge retains the old WebView; drop that reference so
+                    // lifecycle callbacks cannot touch a dead renderer before recreate().
+                    bridge = null;
                 } catch (Exception cleanupError) {
                     Log.w(TAG, "Renderer cleanup was incomplete", cleanupError);
                 }
