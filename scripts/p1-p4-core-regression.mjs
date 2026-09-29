@@ -91,7 +91,7 @@ const failure = {
   bursariesOnce:false,
   profileOutage:false,
   documentsOutage:false,
-  aiOnce:false,
+  aiOutage:false,
 };
 
 function json(route, body, status=200) {
@@ -172,7 +172,9 @@ async function api(route) {
   if (path.includes("/rest/v1/mobile_runtime_events")) return json(route,[]);
   if (path.includes("/rest/v1/")) return json(route,path.includes("/rpc/") ? {} : []);
   if (path.includes("/functions/v1/")) {
-    if (failure.aiOnce) { failure.aiOnce=false; return json(route,{error:"fixture AI outage"},503); }
+    if (failure.aiOutage && path.includes("/functions/v1/adminos-enquiry")) {
+      return json(route,{error:"fixture AI outage"},503);
+    }
     return json(route,{ok:false,error:"fixture function unavailable"});
   }
   return json(route,{});
@@ -353,12 +355,13 @@ try {
   await page.getByText("No bursaries found").waitFor({timeout:15000});
   console.log("PASS Bursaries failure/retry");
 
-  failure.aiOnce=true;
+  failure.aiOutage=true;
   await page.goto(origin+"/ai");
   const aiInput=page.getByPlaceholder("Ask about living, applications, opportunities or your next step…");
   await aiInput.fill("What should I do next?");
   await page.getByRole("button",{name:"Send question"}).click();
   await page.getByText("fixture AI outage",{exact:false}).waitFor({timeout:15000});
+  failure.aiOutage=false;
   await page.getByRole("button",{name:"Send question"}).waitFor({state:"visible",timeout:15000});
   console.log("PASS ResKonnect AI failure releases sending state");
 
