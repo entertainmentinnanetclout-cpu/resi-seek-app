@@ -27,6 +27,20 @@ on:
       - "src/components/DashboardLayout.tsx"
       - "src/components/MyResKonnectCommandCentre.tsx"
       - "src/components/StudentRoute.tsx"
+      - "src/components/ProtectedRoute.tsx"
+      - "src/components/AuthLoadingRecovery.tsx"
+      - "src/components/ContactDetailsGate.tsx"
+      - "src/components/ErrorBoundary.tsx"
+      - "src/components/ConnectivityStatus.tsx"
+      - "src/components/opportunities/OpportunityEngine.tsx"
+      - "src/components/virtualTours/**"
+      - "src/pages/FindMyRes.tsx"
+      - "src/pages/Applications.tsx"
+      - "src/pages/ResidenceDetail.tsx"
+      - "src/integrations/supabase/client.ts"
+      - "src/lib/runtimeTelemetry.ts"
+      - "scripts/p1-p4-stability-audit.mjs"
+      - "scripts/p1-p4-core-regression.mjs"
       - "src/contexts/AuthContext.tsx"
       - "src/components/SiteHeader.tsx"
       - "src/components/HomeJourneyBar.tsx"
@@ -83,6 +97,8 @@ jobs:
         run: node scripts/android-playstore-readiness.mjs --strict
       - name: Android / web reliability audit
         run: node scripts/android-v110-reliability-qa.mjs
+      - name: P1-P4 architecture and crash-risk audit
+        run: node scripts/p1-p4-stability-audit.mjs
       - name: RG3–RG6 native feature and security audit
         run: node scripts/android-rg3-rg6-qa.mjs
       - name: Check complete application types
@@ -91,6 +107,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Verify native login and session lifecycle
         run: node scripts/android-session-regression.mjs
+      - name: Verify P1-P4 core journeys and failure recovery
+        run: node scripts/p1-p4-core-regression.mjs
       - name: Install pinned Capacitor, geolocation and local notifications
         run: npm install --no-save --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0
       - name: Build production web bundle

@@ -2,11 +2,12 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import ContactDetailsGate from "@/components/ContactDetailsGate";
+import AuthLoadingRecovery from "@/components/AuthLoadingRecovery";
 import SafeRenderBoundary from "@/components/SafeRenderBoundary";
 import { accountHome } from "@/lib/accountRouting";
 
 export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading, staffRole, adminDepartments, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner } = useAuth();
+  const { user, isLoading, staffRole, adminDepartments, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,16 +23,7 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user, isLoading, staffRole, adminDepartments, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner, navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <AuthLoadingRecovery message="Loading your ResKonnect dashboard…" onRetry={refreshProfile} />;
 
   if (!user || isTumeloPartner || staffRole || (!isStudent && (isRecruiter || isPendingRecruiter))) return null;
 

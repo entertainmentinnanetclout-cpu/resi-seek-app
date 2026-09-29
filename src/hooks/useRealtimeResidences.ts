@@ -11,6 +11,7 @@ export const useRealtimeResidences = () => {
   const [residences, setResidences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -102,7 +103,8 @@ export const useRealtimeResidences = () => {
       window.removeEventListener("rk-reconnected", onReconnect);
       void supabase.removeChannel(channel);
     };
-  }, []);
+  }, [refreshKey]);
 
-  return { residences, loading, error };
+  const refresh = () => setRefreshKey((value) => value + 1);
+  return { residences, loading, error, refresh };
 };

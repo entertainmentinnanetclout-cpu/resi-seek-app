@@ -65,23 +65,26 @@ export default function ContactDetailsGate({ children }: { children: React.React
       return;
     }
     setSaving(true);
-    const { data, error } = await (supabase as any).from("profiles").update({
-      full_name: form.full_name.trim(),
-      phone: form.phone.trim(),
-      student_number: identifierType === "student_number" ? form.student_number.trim() : null,
-      identity_number: identifierType === "identity_number" ? form.identity_number.trim() : null,
-      campus: form.campus,
-      applicant_stage: form.applicant_stage,
-      updated_at: new Date().toISOString(),
-    }).eq("id", user.id).select("id").maybeSingle();
-    setSaving(false);
-    if (error || !data?.id) {
-      toast.error(error?.message || "Could not save your contact details.");
-      return;
+    try {
+      const { data, error } = await (supabase as any).from("profiles").update({
+        full_name: form.full_name.trim(),
+        phone: form.phone.trim(),
+        student_number: identifierType === "student_number" ? form.student_number.trim() : null,
+        identity_number: identifierType === "identity_number" ? form.identity_number.trim() : null,
+        campus: form.campus,
+        applicant_stage: form.applicant_stage,
+        updated_at: new Date().toISOString(),
+      }).eq("id", user.id).select("id").maybeSingle();
+      if (error || !data?.id) throw error || new Error("Profile update was not confirmed");
+      setComplete(true);
+      setVerificationStep(true);
+      toast.success("Contact details saved. You can now verify your WhatsApp number.");
+    } catch (saveError: any) {
+      console.error("Contact gate save failed safely", saveError);
+      toast.error(saveError?.message || "Could not save your contact details. Check your connection and retry.");
+    } finally {
+      setSaving(false);
     }
-    setComplete(true);
-    setVerificationStep(true);
-    toast.success("Contact details saved. You can now verify your WhatsApp number.");
   };
 
   if (loading) return <>{children}</>;

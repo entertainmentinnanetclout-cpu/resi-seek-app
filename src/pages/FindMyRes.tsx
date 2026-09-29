@@ -1,7 +1,7 @@
 import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Building2, ArrowUpDown } from "lucide-react";
+import { AlertTriangle, Building2, ArrowUpDown, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ const FindMyRes = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { residences, loading } = useRealtimeResidences();
+  const { residences, loading, error: residenceError, refresh: refreshResidences } = useRealtimeResidences();
   const { sections } = useResidenceSections("findmyres");
   const { intent } = useUserIntent();
   const {
@@ -233,6 +233,24 @@ const FindMyRes = () => {
         {/* Marketing Spotlight Slider */}
         <ResidenceSpotlightSlider residences={residences} loading={loading} />
         <ReferralBanner />
+        {residenceError && (
+          <div className="mx-auto mt-4 flex max-w-7xl flex-col gap-3 px-4 sm:px-6 lg:px-8">
+            <Card className="border-amber-500/30 bg-amber-500/5">
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                  <div>
+                    <p className="font-bold">Accommodation connection needs attention</p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{residenceError}</p>
+                  </div>
+                </div>
+                <Button type="button" variant="outline" className="shrink-0" onClick={refreshResidences} disabled={loading}>
+                  <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />Retry live data
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Intent-aware explanation */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">

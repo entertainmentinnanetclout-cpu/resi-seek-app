@@ -205,13 +205,21 @@ export default function ResMapExperienceStable({ filters, updateFilter, resetFil
   useEffect(() => {
     let active = true;
     (async () => {
-      const [campusRes, configRes] = await Promise.all([
-        (supabase as any).from("resmap_campuses").select("id,campus_key,name,short_name,aliases,latitude,longitude").eq("is_active", true).order("name"),
-        (supabase as any).from("resmap_map_config").select("google_maps_enabled,google_maps_browser_key,google_maps_map_id,google_maps_mode,raster_primary_url,raster_fallback_url").eq("id", 1).maybeSingle(),
-      ]);
-      if (!active) return;
-      setCampuses((campusRes.data || []).filter((campus: Campus) => Number.isFinite(Number(campus.latitude)) && Number.isFinite(Number(campus.longitude))));
-      if (configRes.data) setConfig(configRes.data as MapConfig);
+      try {
+        const [campusRes, configRes] = await Promise.all([
+          (supabase as any).from("resmap_campuses").select("id,campus_key,name,short_name,aliases,latitude,longitude").eq("is_active", true).order("name"),
+          (supabase as any).from("resmap_map_config").select("google_maps_enabled,google_maps_browser_key,google_maps_map_id,google_maps_mode,raster_primary_url,raster_fallback_url").eq("id", 1).maybeSingle(),
+        ]);
+        if (!active) return;
+        if (campusRes.error) throw campusRes.error;
+        setCampuses((campusRes.data || []).filter((campus: Campus) => Number.isFinite(Number(campus.latitude)) && Number.isFinite(Number(campus.longitude))));
+        if (configRes.data) setConfig(configRes.data as MapConfig);
+        if (configRes.error) console.warn("ResMap configuration unavailable; using safe raster defaults", configRes.error);
+      } catch (error) {
+        if (!active) return;
+        console.warn("ResMap startup data unavailable; using safe raster defaults", error);
+        setHealth("degraded");
+      }
     })();
     return () => { active = false; };
   }, []);
@@ -460,16 +468,20 @@ export default function ResMapExperienceStable({ filters, updateFilter, resetFil
     if (!origin) { toast.info("Choose a campus or tap Locate me first so ResMap knows where the journey starts."); return; }
     toast.loading("Building your live route…", { id: "resmap-route" });
     const destination = { lat: Number(selectedResidence.latitude), lng: Number(selectedResidence.longitude) };
-    const { data, error } = await supabase.functions.invoke("resmap-spatial", { body: { action: "route", origin, destination, profile: travelMode } });
-    if (error || !data?.ok) { toast.error(data?.error || error?.message || "Could not build route", { id: "resmap-route" }); return; }
-    const info: RouteInfo = { distance_m: Number(data.distance_m), duration_s: Number(data.duration_s), provider: String(data.provider), profile: travelMode, geometry: data.geometry };
-    setRouteInfo(info);
-    if (engine === "reskonnect" && Array.isArray(data.geometry?.coordinates) && data.geometry.coordinates.length) {
-      const rows = data.geometry.coordinates.map((coord: number[]) => ({ latitude: Number(coord[1]), longitude: Number(coord[0]) }));
-      const fit = fitRows(rows);
-      if (fit) { setCenter(fit.center); setZoom(Math.min(15, Math.max(11, fit.zoom))); }
+    try {
+      const { data, error } = await supabase.functions.invoke("resmap-spatial", { body: { action: "route", origin, destination, profile: travelMode } });
+      if (error || !data?.ok) throw new Error(data?.error || error?.message || "Could not build route");
+      const info: RouteInfo = { distance_m: Number(data.distance_m), duration_s: Number(data.duration_s), provider: String(data.provider), profile: travelMode, geometry: data.geometry };
+      setRouteInfo(info);
+      if (engine === "reskonnect" && Array.isArray(data.geometry?.coordinates) && data.geometry.coordinates.length) {
+        const rows = data.geometry.coordinates.map((coord: number[]) => ({ latitude: Number(coord[1]), longitude: Number(coord[0]) }));
+        const fit = fitRows(rows);
+        if (fit) { setCenter(fit.center); setZoom(Math.min(15, Math.max(11, fit.zoom))); }
+      }
+      toast.success(`${Math.max(1, Math.round(info.duration_s / 60))} min · ${(info.distance_m / 1000).toFixed(1)} km`, { id: "resmap-route" });
+    } catch (error: any) {
+      toast.error(error?.message || "Could not build route", { id: "resmap-route" });
     }
-    toast.success(`${Math.max(1, Math.round(info.duration_s / 60))} min · ${(info.distance_m / 1000).toFixed(1)} km`, { id: "resmap-route" });
   };
 
   const applyCampusHint = (hint?: string | null) => {
