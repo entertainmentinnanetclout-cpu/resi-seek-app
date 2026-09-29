@@ -37,7 +37,7 @@ expect(!notFound.includes("CareerEducation")&&!notFound.includes("ManagedSeoPage
 expect(app.includes('const Landing = lazy(')&&app.includes("DeferredGlobalEnhancements"),"landing/global enhancements are split from boot bundle");
 expect(dashboard.includes("!isMobile")&&dashboard.includes("dashboard-notifications-mobile"),"dashboard mounts one notification centre per viewport");
 expect(notifications.includes("stores = new Map")&&fullMessage.includes('.eq("user_id", user.id)'),"notifications share one realtime feed and full details are owner-scoped");
-expect(native.versionName==="1.1.3"&&native.versionCode===6,"Android release metadata is 1.1.3 / versionCode 6");
+expect(native.versionName==="1.1.4"&&native.versionCode===7,"Android release metadata is 1.1.3 / versionCode 7");
 expect(native.foregroundLocalNotifications===true&&native.nativePushNotifications===false,"foreground notification support is distinct from unconfigured FCM background push");
 
 if(process.exitCode) process.exit(process.exitCode);
