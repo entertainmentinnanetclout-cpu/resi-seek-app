@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getLiveLocationState } from "@/lib/resmap/liveLocation";
 import type { ResidenceFilters } from "@/hooks/useResidenceFilters";
 import ResMapExperiencePremiumV2 from "./ResMapExperiencePremiumV2";
+import { isNativeGraphicsSafeMode, reportRuntimeEvent } from "@/lib/runtimeDiagnostics";
 
 type Props = {
   filters: ResidenceFilters;
@@ -42,6 +43,7 @@ function loadMaps(key: string) {
 }
 
 function safeForVector() {
+  if (isNativeGraphicsSafeMode()) return false;
   // Native WebViews on low-memory / GPU-limited devices can have their renderer
   // killed by the photorealistic Map3DElement. Do not instantiate it on Android.
   const memory = Number((navigator as any).deviceMemory || 0);
@@ -63,8 +65,16 @@ function NativeVector3D({ onBack, onClose }: { onBack: () => void; onClose: () =
   useEffect(() => {
     let disposed = false;
     const host = hostRef.current;
+    const onMemoryPressure = () => {
+      disposed = true;
+      try { host?.replaceChildren(); } catch {}
+      setDetail("Android reported memory pressure. Heavy 3D was closed to keep ResKonnect stable.");
+      setState("unsupported");
+      void reportRuntimeEvent("memory_pressure", "Closed native 3D under memory pressure", { surface: "resmap_3d" });
+    };
+    window.addEventListener("rk-native-memory-pressure" as any, onMemoryPressure as EventListener);
     if (!host) return;
-    if (!safeForVector()) { setState("unsupported"); return; }
+    if (!safeForVector()) { setDetail(isNativeGraphicsSafeMode() ? "3D is temporarily disabled after a previous graphics renderer failure." : "This device does not expose a stable low-risk WebGL2 context."); setState("unsupported"); return; }
     setState("loading");
     (async () => {
       const [configResult, pointsResult] = await Promise.all([
@@ -80,7 +90,7 @@ function NativeVector3D({ onBack, onClose }: { onBack: () => void; onClose: () =
       const rows = ((pointsResult.data || []) as Point[]).filter(row => {
         const lat = Number(row.latitude), lng = Number(row.longitude);
         return Number.isFinite(lat) && Number.isFinite(lng) && lat >= -35.5 && lat <= -21 && lng >= 15 && lng <= 34;
-      }).slice(0, 16);
+      }).slice(0, 8);
       const gps = getLiveLocationState();
       const first = rows[0];
       const center = gps.status === "granted" && gps.position
@@ -100,9 +110,10 @@ function NativeVector3D({ onBack, onClose }: { onBack: () => void; onClose: () =
     })().catch(error => {
       if (disposed) return;
       setDetail(error instanceof Error ? error.message : "Map unavailable");
+      void reportRuntimeEvent("ui_render_error", error instanceof Error ? error.message : "Native map unavailable", { surface: "resmap_3d" });
       setState("error");
     });
-    return () => { disposed = true; host.replaceChildren(); };
+    return () => { disposed = true; window.removeEventListener("rk-native-memory-pressure" as any, onMemoryPressure as EventListener); try { host.replaceChildren(); } catch {} };
   }, []);
   return <div className="fixed inset-0 z-[280] overflow-hidden bg-slate-950 text-white">
     <div ref={hostRef} className="absolute inset-0" aria-label="Interactive native 3D vector map" />
