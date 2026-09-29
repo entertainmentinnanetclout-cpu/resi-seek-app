@@ -154,11 +154,18 @@ try {
   await page.goto(origin+"/auth");
   await page.getByLabel("Email address *").fill(user.email);
   await page.getByLabel("Password *",{exact:true}).fill("FixturePassword123");
+
+  // First authenticated access lookup fails: Auth must remain fail-closed and
+  // expose recovery before any account-specific redirect occurs.
+  failure.accessOnce=true;
   await page.getByRole("button",{name:"Sign In",exact:true}).click();
+  await page.getByText("We couldn't verify your ResKonnect account access.",{exact:true}).waitFor({timeout:15000});
+  assert.ok(page.url().endsWith("/auth"),"auth page redirected before access verification");
+  await page.getByRole("button",{name:"Retry account check"}).click();
   await page.waitForURL("**/dashboard");
   await page.getByText("Good to see you, Core.").waitFor({timeout:15000});
   assert.deepEqual(pageErrors,[]);
-  console.log("PASS login and dashboard");
+  console.log("PASS login access outage recovery and dashboard");
 
   await page.reload();
   await page.getByText("Good to see you, Core.").waitFor({timeout:15000});
