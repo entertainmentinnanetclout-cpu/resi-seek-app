@@ -42,7 +42,9 @@ async function fulfillSupabase(route) {
       "access-control-allow-origin": origin,
       "access-control-allow-headers": "apikey,authorization,x-client-info,content-type,prefer,accept-profile,content-profile,range",
       "access-control-allow-methods": "GET,POST,PATCH,PUT,DELETE,OPTIONS",
-      "access-control-expose-headers": "content-range,range-unit"
+      "access-control-expose-headers": "content-range,range-unit",
+      "access-control-allow-credentials": "true",
+      "vary": "Origin"
   };
   if (route.request().method() === "OPTIONS") {
     return route.fulfill({ status: 204, headers: corsHeaders, body: "" });
@@ -126,13 +128,16 @@ try {
         locale: "en-ZA",
       });
       await mockNetwork(context);
-      const page = await context.newPage();
-      const errors = [];
-      page.on("pageerror", error => errors.push(error.message));
 
+      // Use an isolated page per route. WebKit can report aborted dynamic imports
+      // from a previous SPA navigation as page errors when the next route begins,
+      // even though the destination route itself is healthy. Fresh pages make this
+      // a deterministic route-render test instead of a navigation-race test.
       for (const routePath of routes) {
+        const page = await context.newPage();
+        const errors = [];
+        page.on("pageerror", error => errors.push(error.message));
         try {
-          errors.length = 0;
           await page.goto(origin + routePath, { waitUntil: "domcontentloaded", timeout: 30_000 });
           await page.waitForTimeout(700);
 
@@ -156,11 +161,15 @@ try {
           const message = error instanceof Error ? error.stack || error.message : String(error);
           failures.push({ profile: profile.name, route: routePath, message, pageErrors: [...errors], url: page.url() });
           console.error("FAIL", profile.name, routePath, message);
+        } finally {
+          await page.close();
         }
       }
 
-      await page.goto(origin + "/install", { waitUntil: "domcontentloaded" });
-      await page.getByRole("heading", { name: "Install ResKonnect" }).waitFor({ timeout: 10_000 });
+      const installPage = await context.newPage();
+      await installPage.goto(origin + "/install", { waitUntil: "domcontentloaded" });
+      await installPage.getByRole("heading", { name: "Install ResKonnect" }).waitFor({ timeout: 10_000 });
+      await installPage.close();
       await context.close();
     } finally {
       await browser.close();
