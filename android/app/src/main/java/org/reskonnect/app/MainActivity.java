@@ -67,11 +67,20 @@ public class MainActivity extends BridgeActivity {
                     + " route=" + route + " recentCount=" + recentCount);
 
                 try {
+                    // Android explicitly requires a renderer-lost WebView to be
+                    // detached, destroyed and never reused. Tear down Capacitor's
+                    // bridge/plugin lifecycle before dropping the reference so the
+                    // old Activity cannot leak plugin or handler-thread state.
+                    if (bridge != null) {
+                        try {
+                            bridge.onDestroy();
+                        } catch (Exception bridgeCleanupError) {
+                            Log.w(TAG, "Capacitor bridge cleanup was incomplete", bridgeCleanupError);
+                        }
+                    }
                     final ViewParent parent = view.getParent();
                     if (parent instanceof ViewGroup) ((ViewGroup) parent).removeView(view);
                     view.destroy();
-                    // The Bridge retains the old WebView; drop that reference so
-                    // lifecycle callbacks cannot touch a dead renderer before recreate().
                     bridge = null;
                 } catch (Exception cleanupError) {
                     Log.w(TAG, "Renderer cleanup was incomplete", cleanupError);
