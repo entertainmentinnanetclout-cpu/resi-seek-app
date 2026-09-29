@@ -8,14 +8,14 @@ import { accountHome } from "@/lib/accountRouting";
  */
 export const useAdminRedirect = () => {
   const access = useAuth();
-  const { staffRole, isGodMode, isLoading, adminDepartments } = access;
+  const { staffRole, isGodMode, isLoading, accessError, adminDepartments } = access;
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && staffRole) {
+    if (!isLoading && !accessError && staffRole) {
       navigate(accountHome(access), { replace: true });
     }
-  }, [staffRole, isGodMode, isLoading, adminDepartments, navigate]);
+  }, [staffRole, isGodMode, isLoading, accessError, adminDepartments, navigate]);
 
-  return !isLoading && !!staffRole;
+  return !isLoading && !accessError && !!staffRole;
 };
