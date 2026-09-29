@@ -128,7 +128,7 @@ export function initRuntimeDiagnostics() {
 
   window.addEventListener("rk-native-runtime-event" as any, ((event: CustomEvent) => {
     if (!event.detail) return;
-    void reportRuntimeEvent("renderer_gone", "Recovered Android WebView renderer", event.detail);
+    void reportRuntimeEvent("renderer_gone", "Recovered Android WebView renderer", event.detail).then(ok => {\n      if (ok) { try { localStorage.removeItem(PENDING_NATIVE_EVENT); } catch {} }\n    });
   }) as EventListener);
 
   window.addEventListener("rk-native-memory-pressure" as any, ((event: CustomEvent) => {
