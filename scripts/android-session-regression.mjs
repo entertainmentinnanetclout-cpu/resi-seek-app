@@ -70,6 +70,15 @@ try {
     console.log('PASS route shell ' + path);
   }
   await page.goto(origin + '/dashboard');
+  await page.getByText('Good to see you, Test.').waitFor();
+  await context.setOffline(true);
+  await page.getByText("You're offline.", { exact: false }).waitFor({ timeout: 5000 });
+  assert.notEqual(await page.evaluate(key => localStorage.getItem(key), storageKey), null, 'offline must not clear persisted session');
+  await context.setOffline(false);
+  await page.waitForTimeout(500);
+  assert.equal(await page.getByText("You're offline.", { exact: false }).count(), 0, 'reconnect banner must clear');
+  console.log('PASS native offline/reconnect keeps authenticated session');
+  await page.goto(origin + '/dashboard');
   await page.getByRole('button', { name: 'Open navigation' }).click();
   await page.getByRole('button', { name: 'Logout', exact: true }).click();
   await page.waitForURL('**/auth');
