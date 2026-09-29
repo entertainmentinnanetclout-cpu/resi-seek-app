@@ -21,6 +21,7 @@ import GoogleLogo from "@/components/auth/GoogleLogo";
 import { clearWeakPassword, rememberWeakPassword } from "@/lib/passwordSecurity";
 import PasswordReset from "@/pages/PasswordReset";
 import AccountPortals from "@/components/AccountPortals";
+import AuthLoadingRecovery from "@/components/AuthLoadingRecovery";
 import { accountHome } from "@/lib/accountRouting";
 
 const passwordSchema = z.string().min(8, "Password must be at least 8 characters").regex(/[A-Z]/, "Must contain an uppercase letter").regex(/[a-z]/, "Must contain a lowercase letter").regex(/[0-9]/, "Must contain a number");
@@ -84,7 +85,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const access = useAuth();
-  const { user, isLoading: authLoading, isGodMode, staffRole, isRecruiter, isPendingRecruiter, isTumeloPartner, adminDepartments } = access;
+  const { user, isLoading: authLoading, accessError, isGodMode, staffRole, isRecruiter, isPendingRecruiter, isTumeloPartner, adminDepartments, refreshProfile } = access;
   const [isLogin, setIsLogin] = useState(searchParams.get("mode") !== "signup");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +106,7 @@ const Auth = () => {
   }, [applicantStage]);
 
   useEffect(() => {
-    if (isPasswordRecovery || authLoading || !user) return;
+    if (isPasswordRecovery || authLoading || accessError || !user) return;
     if (staffRole || isTumeloPartner) {
       navigate(accountHome(access), { replace: true });
       return;
@@ -172,7 +173,7 @@ const Auth = () => {
       navigate(returnTo || savedHome, { replace: true });
     }, 150);
     return () => clearTimeout(timer);
-  }, [user?.id, authLoading, isGodMode, staffRole, isRecruiter, isPendingRecruiter, isTumeloPartner, adminDepartments, navigate, returnTo, isPasswordRecovery]);
+  }, [user?.id, authLoading, accessError, isGodMode, staffRole, isRecruiter, isPendingRecruiter, isTumeloPartner, adminDepartments, navigate, returnTo, isPasswordRecovery]);
 
   const identifierLabel = identifierType === "identity_number" ? "South African ID number" : "Student number";
   const campusOptions = useMemo(() => [
@@ -317,6 +318,7 @@ const Auth = () => {
   };
 
   if (isPasswordRecovery) return <PasswordReset />;
+  if (user && accessError) return <AuthLoadingRecovery message="We couldn't verify your ResKonnect account access." onRetry={refreshProfile} showRecoveryImmediately />;
 
   return (
     <div className="flex min-h-screen flex-col justify-center bg-background px-4 py-10 sm:px-6">
