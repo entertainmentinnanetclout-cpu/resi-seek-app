@@ -90,6 +90,16 @@ const profiles = [
 async function fulfillApi(route) {
   const url = new URL(route.request().url());
   const path = url.pathname;
+  const originHeader = route.request().headers().origin || origin;
+  const corsHeaders = {
+    "access-control-allow-origin": originHeader,
+    "access-control-allow-headers": "apikey,authorization,x-client-info,content-type,prefer,accept-profile,content-profile,range",
+    "access-control-allow-methods": "GET,POST,PATCH,PUT,DELETE,OPTIONS",
+    "access-control-expose-headers": "content-range,range-unit",
+  };
+  if (route.request().method() === "OPTIONS") {
+    return route.fulfill({status:204,headers:corsHeaders,body:""});
+  }
   let body = {};
   if (path.includes("/auth/v1/token")) body = session;
   else if (path.includes("/auth/v1/user")) body = user;
@@ -110,11 +120,7 @@ async function fulfillApi(route) {
   return route.fulfill({
     status:200,
     contentType:"application/json",
-    headers:{
-      "access-control-allow-origin":"*",
-      "access-control-allow-headers":"*",
-      "access-control-allow-methods":"GET,POST,PATCH,PUT,DELETE,OPTIONS",
-    },
+    headers:corsHeaders,
     body:JSON.stringify(body)
   });
 }
@@ -149,8 +155,8 @@ try {
         if (url.hostname.endsWith(".supabase.co")) return fulfillApi(route);
         if (url.hostname.includes("tile.openstreetmap.org") || url.hostname.includes("openstreetmap.fr")) return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
         if (["image","font","media"].includes(route.request().resourceType())) return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
-        if (route.request().resourceType()==="script") return route.fulfill({status:200,contentType:"application/javascript",body:"export {};"});
-        if (route.request().resourceType()==="stylesheet") return route.fulfill({status:200,contentType:"text/css",body:""});
+        if (route.request().resourceType()==="script") return route.fulfill({status:200,contentType:"application/javascript",headers:{"access-control-allow-origin":"*"},body:"export {};"});
+        if (route.request().resourceType()==="stylesheet") return route.fulfill({status:200,contentType:"text/css",headers:{"access-control-allow-origin":"*"},body:""});
         return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
       });
 
@@ -235,8 +241,8 @@ try {
       await pwaContext.route("**/*", async route => {
         const url=new URL(route.request().url());
         if(url.origin===origin) return route.continue();
-        if (route.request().resourceType()==="script") return route.fulfill({status:200,contentType:"application/javascript",body:"export {};"});
-        if (route.request().resourceType()==="stylesheet") return route.fulfill({status:200,contentType:"text/css",body:""});
+        if (route.request().resourceType()==="script") return route.fulfill({status:200,contentType:"application/javascript",headers:{"access-control-allow-origin":"*"},body:"export {};"});
+        if (route.request().resourceType()==="stylesheet") return route.fulfill({status:200,contentType:"text/css",headers:{"access-control-allow-origin":"*"},body:""});
         return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
       });
       const pwaPage=await pwaContext.newPage();
