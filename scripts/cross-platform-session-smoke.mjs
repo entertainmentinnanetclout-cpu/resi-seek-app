@@ -129,7 +129,7 @@ try {
         isMobile:p.mobile,
         userAgent:p.ua,
         locale:"en-ZA",
-        serviceWorkers:"allow",
+        serviceWorkers:"block",
       });
       await context.addInitScript(({standalone}) => {
         try { Object.defineProperty(navigator, "standalone", { configurable:true, get:()=>standalone }); } catch {}
@@ -207,19 +207,45 @@ try {
       assert.equal(await page.getByText("You're offline.",{exact:false}).count(),0,`${p.name}: offline banner remained after reconnect`);
       console.log("PASS",p.name,"offline/reconnect");
 
-      // Production service worker must control or be installable after a navigation/reload.
-      await page.goto(origin+"/",{waitUntil:"networkidle"}).catch(()=>{});
-      await page.waitForTimeout(900);
-      const sw = await page.evaluate(async () => {
-        if (!("serviceWorker" in navigator)) return {supported:false, controlled:false, registrations:0};
+      await context.close();
+
+      // Separate clean context: exercise the actual production service worker and
+      // cold offline reload without mixing it with mocked authenticated requests.
+      const pwaContext = await browser.newContext({
+        viewport:p.viewport,
+        isMobile:p.mobile,
+        userAgent:p.ua,
+        locale:"en-ZA",
+        serviceWorkers:"allow",
+      });
+      await pwaContext.addInitScript(({standalone}) => {
+        try { Object.defineProperty(navigator, "standalone", { configurable:true, get:()=>standalone }); } catch {}
+      }, { standalone:p.standalone });
+      await pwaContext.route("**/*", async route => {
+        const url=new URL(route.request().url());
+        if(url.origin===origin) return route.continue();
+        return route.abort();
+      });
+      const pwaPage=await pwaContext.newPage();
+      await pwaPage.goto(origin+"/install",{waitUntil:"domcontentloaded"});
+      await pwaPage.getByRole("heading",{name:"Install ResKonnect"}).waitFor();
+      const sw = await pwaPage.evaluate(async () => {
+        if (!("serviceWorker" in navigator)) return {supported:false, registrations:0};
+        await navigator.serviceWorker.ready;
         const regs=await navigator.serviceWorker.getRegistrations();
-        return {supported:true, controlled:Boolean(navigator.serviceWorker.controller), registrations:regs.length};
+        return {supported:true, registrations:regs.length};
       });
       assert.equal(sw.supported,true,`${p.name}: service worker unsupported in test engine`);
       assert.ok(sw.registrations>=1,`${p.name}: production PWA service worker did not register`);
-      console.log("PASS",p.name,"PWA service worker");
-
-      await context.close();
+      // One online reload gives the activated worker control of the page.
+      await pwaPage.reload({waitUntil:"domcontentloaded"});
+      await pwaPage.getByRole("heading",{name:"Install ResKonnect"}).waitFor();
+      await pwaContext.setOffline(true);
+      await pwaPage.reload({waitUntil:"domcontentloaded",timeout:15000});
+      await pwaPage.getByRole("heading",{name:"Install ResKonnect"}).waitFor({timeout:10000});
+      await pwaContext.setOffline(false);
+      console.log("PASS",p.name,"production PWA cold offline reload");
+      await pwaContext.close();
     } finally {
       await browser.close();
     }
