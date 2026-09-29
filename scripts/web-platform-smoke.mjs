@@ -1,5 +1,6 @@
 import { chromium, webkit } from "playwright";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { createServer } from "vite";
 
 const origin = "http://127.0.0.1:8092";
@@ -22,6 +23,9 @@ const residence = {
 };
 
 const routes = ["/", "/find", "/opportunities", "/ai", "/partners", "/install", "/about"];
+const failures = [];
+fs.mkdirSync("artifacts", { recursive: true });
+
 const profiles = [
   { name: "chromium-desktop", engine: chromium, viewport: { width: 1440, height: 900 }, isMobile: false },
   { name: "chromium-tablet", engine: chromium, viewport: { width: 820, height: 1180 }, isMobile: true },
@@ -105,25 +109,32 @@ try {
       page.on("pageerror", error => errors.push(error.message));
 
       for (const routePath of routes) {
-        errors.length = 0;
-        await page.goto(origin + routePath, { waitUntil: "domcontentloaded", timeout: 30_000 });
-        await page.waitForTimeout(700);
+        try {
+          errors.length = 0;
+          await page.goto(origin + routePath, { waitUntil: "domcontentloaded", timeout: 30_000 });
+          await page.waitForTimeout(700);
 
-        assert.equal(
-          await page.getByText("Something went wrong", { exact: true }).count(),
-          0,
-          `${profile.name} ${routePath}: error boundary rendered`,
-        );
-        assert.deepEqual(errors, [], `${profile.name} ${routePath}: ${errors.join("; ")}`);
+          assert.equal(
+            await page.getByText("Something went wrong", { exact: true }).count(),
+            0,
+            `${profile.name} ${routePath}: error boundary rendered`,
+          );
+          assert.deepEqual(errors, [], `${profile.name} ${routePath}: ${errors.join("; ")}`);
 
-        const overflow = await page.evaluate(() => ({
-          viewport: document.documentElement.clientWidth,
-          html: document.documentElement.scrollWidth,
-          body: document.body.scrollWidth,
-        }));
-        assert.ok(overflow.html <= overflow.viewport + 4, `${profile.name} ${routePath}: html horizontal overflow ${JSON.stringify(overflow)}`);
-        assert.ok(overflow.body <= overflow.viewport + 4, `${profile.name} ${routePath}: body horizontal overflow ${JSON.stringify(overflow)}`);
-        console.log("PASS", profile.name, routePath);
+          const overflow = await page.evaluate(() => ({
+            viewport: document.documentElement.clientWidth,
+            html: document.documentElement.scrollWidth,
+            body: document.body.scrollWidth,
+            path: location.pathname,
+          }));
+          assert.ok(overflow.html <= overflow.viewport + 4, `${profile.name} ${routePath}: html horizontal overflow ${JSON.stringify(overflow)}`);
+          assert.ok(overflow.body <= overflow.viewport + 4, `${profile.name} ${routePath}: body horizontal overflow ${JSON.stringify(overflow)}`);
+          console.log("PASS", profile.name, routePath);
+        } catch (error) {
+          const message = error instanceof Error ? error.stack || error.message : String(error);
+          failures.push({ profile: profile.name, route: routePath, message, pageErrors: [...errors], url: page.url() });
+          console.error("FAIL", profile.name, routePath, message);
+        }
       }
 
       await page.goto(origin + "/install", { waitUntil: "domcontentloaded" });
@@ -134,7 +145,14 @@ try {
     }
   }
 
+  fs.writeFileSync("artifacts/web-platform-smoke.json", JSON.stringify({ failures }, null, 2));
+  if (failures.length) {
+    throw new Error(`Cross-browser public smoke failed with ${failures.length} failure(s). See artifacts/web-platform-smoke.json.`);
+  }
   console.log(`Cross-browser responsive public smoke passed (${profiles.length} profiles × ${routes.length} routes).`);
 } finally {
+  if (!fs.existsSync("artifacts/web-platform-smoke.json")) {
+    fs.writeFileSync("artifacts/web-platform-smoke.json", JSON.stringify({ failures }, null, 2));
+  }
   await server.close();
 }
