@@ -92,38 +92,12 @@ jobs:
         shell: bash
         run: |
           AAB="android/app/build/outputs/bundle/release/app-release.aab"
-          if unzip -Z1 "$AAB" | grep -Eq '\\.so
-        run: jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab
-      - name: Generate release checksum
-        run: sha256sum android/app/build/outputs/bundle/release/app-release.aab | tee android/app/build/outputs/bundle/release/app-release.aab.sha256
-      - name: Upload signed Play artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: reskonnect-play-${{ inputs.version_name }}-${{ inputs.version_code }}
-          path: |
-            android/app/build/outputs/bundle/release/app-release.aab
-            android/app/build/outputs/bundle/release/app-release.aab.sha256
-          if-no-files-found: error
-          retention-days: 30
-; then
+          if unzip -Z1 "$AAB" | grep -Eq '\.so$'; then
             echo "::error::Native ELF libraries were packaged. Audit every .so for 16 KB page-size compatibility before Play release."
-            unzip -Z1 "$AAB" | grep -E '\\.so
-        run: jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab
-      - name: Generate release checksum
-        run: sha256sum android/app/build/outputs/bundle/release/app-release.aab | tee android/app/build/outputs/bundle/release/app-release.aab.sha256
-      - name: Upload signed Play artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: reskonnect-play-${{ inputs.version_name }}-${{ inputs.version_code }}
-          path: |
-            android/app/build/outputs/bundle/release/app-release.aab
-            android/app/build/outputs/bundle/release/app-release.aab.sha256
-          if-no-files-found: error
-          retention-days: 30
- || true
+            unzip -Z1 "$AAB" | grep -E '\.so$' || true
             exit 1
           fi
-          echo "No packaged native ELF libraries; this Java/Kotlin/WebView bundle has no app-owned .so page-alignment risk."
+          echo "No packaged native ELF libraries; no app-owned .so page-alignment risk was detected."
       - name: Verify AAB signature
         run: jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab
       - name: Generate release checksum
