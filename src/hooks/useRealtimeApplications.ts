@@ -15,13 +15,21 @@ export function useRealtimeApplications(user: User | null) {
       return;
     }
 
+    let active = true;
+    let controller: AbortController | null = null;
+
     const fetchApplications = async () => {
+      controller?.abort();
+      controller = new AbortController();
+      const timeout = window.setTimeout(() => controller?.abort(), 12000);
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        setError(null);
+        const { data, error } = await (supabase as any)
           .from('applications')
           .select('*')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .abortSignal(controller.signal);
 
         if (error) throw error;
         
@@ -32,16 +40,21 @@ export function useRealtimeApplications(user: User | null) {
           });
         }
         
-        setApplications(data || []);
+        if (active) setApplications(data || []);
       } catch (err: any) {
-        setError(err.message);
-        console.error("Error fetching initial applications:", err);
+        if (!active) return;
+        const message = controller?.signal.aborted
+          ? 'Applications are taking too long to load. Check your connection and retry.'
+          : (err?.message || 'Applications are temporarily unavailable.');
+        setError(message);
+        console.error("Error fetching initial applications:", message);
       } finally {
-        setLoading(false);
+        window.clearTimeout(timeout);
+        if (active) setLoading(false);
       }
     };
 
-    fetchApplications();
+    void fetchApplications();
 
     const channel = supabase
       .channel(`realtime-applications-${user.id}`)
@@ -113,8 +126,13 @@ export function useRealtimeApplications(user: User | null) {
         }
       });
 
+    const onReconnect = () => void fetchApplications();
+    window.addEventListener("rk-reconnected", onReconnect);
     return () => {
-      supabase.removeChannel(channel);
+      active = false;
+      controller?.abort();
+      window.removeEventListener("rk-reconnected", onReconnect);
+      void supabase.removeChannel(channel);
     };
   }, [user]);
 
