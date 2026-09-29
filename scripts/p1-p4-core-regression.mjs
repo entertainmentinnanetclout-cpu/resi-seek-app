@@ -90,7 +90,7 @@ const failure = {
   serviceOnce:false,
   bursariesOnce:false,
   profileOutage:false,
-  documentsOnce:false,
+  documentsOutage:false,
   aiOnce:false,
 };
 
@@ -147,7 +147,12 @@ async function api(route) {
     return json(route,[]);
   }
   if (path.includes("/rest/v1/documents")) {
-    if (failure.documentsOnce) { failure.documentsOnce=false; return json(route,{message:"fixture documents outage"},503); }
+    const framePath = (() => {
+      try { return new URL(req.frame().url()).pathname; } catch { return ""; }
+    })();
+    if (failure.documentsOutage && framePath === "/documents") {
+      return json(route,{message:"fixture documents outage"},503);
+    }
     return json(route,[]);
   }
   if (path.includes("/rest/v1/profiles")) {
@@ -333,9 +338,10 @@ try {
   await page.getByRole("button",{name:"Edit Profile"}).waitFor({state:"visible",timeout:15000});
   console.log("PASS Profile outage/reload recovery; static audit verifies in-page retry wiring");
 
-  failure.documentsOnce=true;
+  failure.documentsOutage=true;
   await page.goto(origin+"/documents");
   await page.getByText("Documents need a connection refresh").waitFor({timeout:15000});
+  failure.documentsOutage=false;
   await page.getByRole("button",{name:"Try again"}).click();
   await page.getByText("Supporting Documents").first().waitFor({timeout:15000});
   console.log("PASS Documents failure/retry");
