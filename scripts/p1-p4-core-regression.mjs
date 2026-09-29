@@ -243,7 +243,11 @@ try {
   for (const [routePath,textNeedle] of routes) {
     pageErrors=[];
     await page.goto(origin+routePath,{waitUntil:"domcontentloaded"});
-    await page.waitForTimeout(500);
+    await page.waitForFunction(
+      (needle) => document.body.innerText.toLowerCase().includes(String(needle).toLowerCase()),
+      textNeedle,
+      { timeout: 15000 },
+    );
     assert.equal(await page.getByText("Something went wrong",{exact:true}).count(),0,`${routePath}: error boundary`);
     assert.equal(pageErrors.length,0,`${routePath}: ${pageErrors.join("; ")}`);
     const body=(await page.locator("body").innerText()).toLowerCase();
