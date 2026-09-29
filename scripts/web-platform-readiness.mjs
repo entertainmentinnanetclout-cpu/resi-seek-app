@@ -20,6 +20,7 @@ const checks = [
   [install.includes("Add to Dock"), "macOS Safari installation guidance is present"],
   [install.includes("display-mode: standalone"), "installed-mode detection is present"],
   [app.includes("InstallAppPrompt"), "install UX is mounted in the web application"],
+  [app.includes('path="/install"'), "permanent install guide is routable"],
   [manifest.includes('"orientation": "any"'), "static manifest stays compatible with desktop installs"],
 ];
 
