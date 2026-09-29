@@ -18,6 +18,7 @@ import { UserIntentProvider } from "@/contexts/UserIntentContext";
 import { ResidenceRoute } from "./components/ResidenceRoute";
 import { SpecialistRoute } from "@/components/SpecialistRoute";
 import DepartmentRoute from "@/components/DepartmentRoute";
+import ConnectivityStatus from "@/components/ConnectivityStatus";
 
 const StudentCare = lazy(() => import("./pages/StudentCare"));
 const ApplicationPartners = lazy(() => import("./pages/ApplicationPartners"));
@@ -183,6 +184,7 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <ConnectivityStatus />
           <BrowserRouter>
             <AuthProvider>
               <NativeAccountNavigation />
