@@ -1,4 +1,5 @@
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
+import { reportRuntimeEvent } from "@/lib/runtimeDiagnostics";
 
 type Props = {
   children: ReactNode;
@@ -17,6 +18,7 @@ export default class SafeRenderBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(`[SafeRenderBoundary:${this.props.name}]`, error, info);
+    void reportRuntimeEvent("ui_render_error", error?.message, { surface: this.props.name });
     try {
       sessionStorage.setItem("rk:last-ui-error", JSON.stringify({
         surface: this.props.name,
