@@ -9,6 +9,7 @@ export const useRealtimeResidences = () => {
   const [residences, setResidences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -83,7 +84,8 @@ export const useRealtimeResidences = () => {
       if (refreshTimer) window.clearTimeout(refreshTimer);
       void supabase.removeChannel(channel);
     };
-  }, []);
+  }, [retryNonce]);
 
-  return { residences, loading, error };
+  const retry = () => setRetryNonce(value => value + 1);
+  return { residences, loading, error, retry };
 };
