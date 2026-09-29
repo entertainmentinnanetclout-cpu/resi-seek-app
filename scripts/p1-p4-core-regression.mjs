@@ -84,6 +84,14 @@ const failure = {
   residencesOnce:false,
   applicationDetailsOnce:false,
   opportunitiesOnce:false,
+  messagesOnce:false,
+  favoritesOnce:false,
+  wilOnce:false,
+  serviceOnce:false,
+  bursariesOnce:false,
+  profileOnce:false,
+  documentsOnce:false,
+  aiOnce:false,
 };
 
 function json(route, body, status=200) {
@@ -106,7 +114,10 @@ async function api(route) {
     if (failure.dashboardOnce) { failure.dashboardOnce=false; return json(route,{message:"fixture dashboard outage"},503); }
     return json(route,{profile,living:{application_count:1,approved_count:0,recent:[{...application,residence_name:residence.name}]},timeline:[],notifications:[]});
   }
-  if (path.includes("/rest/v1/rpc/my_reskonnect_service_centre")) return json(route,{open_count:0,requests:[]});
+  if (path.includes("/rest/v1/rpc/my_reskonnect_service_centre")) {
+    if (failure.serviceOnce) { failure.serviceOnce=false; return json(route,{message:"fixture service centre outage"},503); }
+    return json(route,{open_count:0,requests:[]});
+  }
   if (path.includes("/rest/v1/rpc/reskonnect_opportunity_feed")) {
     if (failure.opportunitiesOnce) { failure.opportunitiesOnce=false; return json(route,{message:"fixture opportunity outage"},503); }
     return json(route,{items:[opportunity],profile_context:{course:profile.course,campus:profile.campus}});
@@ -118,9 +129,31 @@ async function api(route) {
   if (path.includes("/rest/v1/reviews")) return json(route,[]);
   if (path.includes("/rest/v1/resmap_campuses")) return json(route,[{id:"c1",campus_key:"pretoria-west",name:"Pretoria West (Main Campus)",short_name:"Pretoria West",aliases:[],latitude:-25.754,longitude:28.188,is_active:true}]);
   if (path.includes("/rest/v1/resmap_map_config")) return json(route,{google_maps_enabled:false,raster_primary_url:"https://tile.openstreetmap.org/{z}/{x}/{y}.png",raster_fallback_url:"https://tile.openstreetmap.org/{z}/{x}/{y}.png"});
-  if (path.includes("/rest/v1/applications")) return json(route,[application]);
-  if (path.includes("/rest/v1/documents")) return json(route,[]);
-  if (path.includes("/rest/v1/profiles")) return json(route,accept.includes("object") ? profile : [profile]);
+  if (path.includes("/rest/v1/applications")) {
+    if (failure.messagesOnce) { failure.messagesOnce=false; return json(route,{message:"fixture messages application outage"},503); }
+    return json(route,[application]);
+  }
+  if (path.includes("/rest/v1/favorites")) {
+    if (failure.favoritesOnce) { failure.favoritesOnce=false; return json(route,{message:"fixture favorites outage"},503); }
+    return json(route,[]);
+  }
+  if (path.includes("/rest/v1/wil_applications")) {
+    if (failure.wilOnce) { failure.wilOnce=false; return json(route,{message:"fixture WIL outage"},503); }
+    return json(route,accept.includes("object") ? null : []);
+  }
+  if (path.includes("/rest/v1/wil_documents")) return json(route,[]);
+  if (path.includes("/rest/v1/bursaries")) {
+    if (failure.bursariesOnce) { failure.bursariesOnce=false; return json(route,{message:"fixture bursary outage"},503); }
+    return json(route,[]);
+  }
+  if (path.includes("/rest/v1/documents")) {
+    if (failure.documentsOnce) { failure.documentsOnce=false; return json(route,{message:"fixture documents outage"},503); }
+    return json(route,[]);
+  }
+  if (path.includes("/rest/v1/profiles")) {
+    if (failure.profileOnce) { failure.profileOnce=false; return json(route,{message:"fixture profile outage"},503); }
+    return json(route,accept.includes("object") ? profile : [profile]);
+  }
   if (path.includes("/rest/v1/residences")) {
     if (failure.residencesOnce) { failure.residencesOnce=false; return json(route,{message:"fixture residence outage"},503); }
     if (failure.applicationDetailsOnce) { failure.applicationDetailsOnce=false; return json(route,{message:"fixture application residence outage"},503); }
@@ -128,7 +161,10 @@ async function api(route) {
   }
   if (path.includes("/rest/v1/mobile_runtime_events")) return json(route,[]);
   if (path.includes("/rest/v1/")) return json(route,path.includes("/rpc/") ? {} : []);
-  if (path.includes("/functions/v1/")) return json(route,{ok:false,error:"fixture function unavailable"});
+  if (path.includes("/functions/v1/")) {
+    if (failure.aiOnce) { failure.aiOnce=false; return json(route,{error:"fixture AI outage"},503); }
+    return json(route,{ok:false,error:"fixture function unavailable"});
+  }
   return json(route,{});
 }
 
@@ -247,6 +283,68 @@ try {
   await page.getByRole("button",{name:"Try again"}).click();
   await page.getByText(opportunity.title,{exact:false}).first().waitFor({timeout:15000});
   console.log("PASS Opportunities failure/retry");
+
+
+  // Remaining core student surfaces must also fail visibly and recover instead of
+  // looking empty or staying busy forever.
+  failure.messagesOnce=true;
+  await page.goto(origin+"/messages");
+  await page.getByText("Messages need a connection refresh").waitFor({timeout:15000});
+  await page.getByRole("button",{name:"Try again"}).click();
+  await page.getByText("No Messages Yet").waitFor({timeout:15000});
+  console.log("PASS Messages failure/retry");
+
+  failure.favoritesOnce=true;
+  await page.goto(origin+"/favorites");
+  await page.getByText("Favorites need a connection refresh").waitFor({timeout:15000});
+  await page.getByRole("button",{name:"Try again"}).click();
+  await page.getByText("No Favorites Yet").waitFor({timeout:15000});
+  console.log("PASS Favorites failure/retry");
+
+  failure.wilOnce=true;
+  await page.goto(origin+"/wil");
+  await page.getByText("WIL data needs a connection refresh").waitFor({timeout:15000});
+  await page.getByRole("button",{name:"Try again"}).click();
+  await page.getByText("My WIL Placement Assistance").waitFor({timeout:15000});
+  console.log("PASS WIL failure/retry");
+
+  failure.serviceOnce=true;
+  await page.goto(origin+"/dashboard/services");
+  await page.getByText("Service Centre needs a connection refresh").waitFor({timeout:15000});
+  await page.getByRole("button",{name:"Try again"}).click();
+  await page.getByText("No service requests yet").waitFor({timeout:15000});
+  console.log("PASS Service Centre failure/retry");
+
+  failure.profileOnce=true;
+  await page.goto(origin+"/profile");
+  await page.getByText("Profile needs a connection refresh").waitFor({timeout:15000});
+  await page.getByRole("button",{name:"Try again"}).click();
+  await page.getByText("My Profile").waitFor({timeout:15000});
+  await page.getByRole("button",{name:"Edit Profile"}).waitFor({state:"visible",timeout:15000});
+  console.log("PASS Profile failure/retry");
+
+  failure.documentsOnce=true;
+  await page.goto(origin+"/documents");
+  await page.getByText("Documents need a connection refresh").waitFor({timeout:15000});
+  await page.getByRole("button",{name:"Try again"}).click();
+  await page.getByText("Supporting Documents").first().waitFor({timeout:15000});
+  console.log("PASS Documents failure/retry");
+
+  failure.bursariesOnce=true;
+  await page.goto(origin+"/bursaries");
+  await page.getByText("Failed to load bursaries:",{exact:false}).waitFor({timeout:15000});
+  await page.getByRole("button",{name:"Retry"}).click();
+  await page.getByText("No bursaries found").waitFor({timeout:15000});
+  console.log("PASS Bursaries failure/retry");
+
+  failure.aiOnce=true;
+  await page.goto(origin+"/ai");
+  const aiInput=page.getByPlaceholder("Ask about living, applications, opportunities or your next step…");
+  await aiInput.fill("What should I do next?");
+  await page.getByRole("button",{name:"Send question"}).click();
+  await page.getByText("fixture AI outage",{exact:false}).waitFor({timeout:15000});
+  await page.getByRole("button",{name:"Send question"}).waitFor({state:"visible",timeout:15000});
+  console.log("PASS ResKonnect AI failure releases sending state");
 
   // Native map opens the safe 2D path; 3D remains optional.
   pageErrors=[];
