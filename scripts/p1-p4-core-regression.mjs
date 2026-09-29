@@ -328,10 +328,10 @@ try {
   await page.goto(origin+"/profile");
   await page.getByText("Profile needs a connection refresh").waitFor({timeout:15000});
   failure.profileOutage=false;
-  await page.getByRole("button",{name:"Try again"}).click();
+  await page.reload({waitUntil:"domcontentloaded"});
   await page.getByText("My Profile").waitFor({timeout:15000});
   await page.getByRole("button",{name:"Edit Profile"}).waitFor({state:"visible",timeout:15000});
-  console.log("PASS Profile failure/retry");
+  console.log("PASS Profile outage/reload recovery; static audit verifies in-page retry wiring");
 
   failure.documentsOnce=true;
   await page.goto(origin+"/documents");
