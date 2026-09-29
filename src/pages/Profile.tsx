@@ -239,8 +239,8 @@ const Profile = () => {
                     <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
                     <div><p className="font-bold">Profile needs a connection refresh</p><p className="mt-1 text-sm text-muted-foreground">{profileError}</p></div>
                   </div>
-                  <Button type="button" variant="outline" onClick={() => setProfileRefreshKey((value) => value + 1)} disabled={profileLoading}>
-                    <RefreshCw className={`mr-2 h-4 w-4 ${profileLoading ? "animate-spin" : ""}`} />Try again
+                  <Button type="button" variant="outline" onClick={() => setProfileRefreshKey((value) => value + 1)}>
+                    <RefreshCw className="mr-2 h-4 w-4" />Try again
                   </Button>
                 </CardContent>
               </Card>
