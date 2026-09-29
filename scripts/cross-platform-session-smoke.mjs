@@ -177,6 +177,25 @@ try {
         console.log("PASS",p.name,routePath);
       }
 
+      // Open the full map overlay. Google 3D is disabled by fixture config so the
+      // deterministic raster/fallback path must remain functional.
+      errors.length=0;
+      await page.goto(origin+"/findmyres?view=map",{waitUntil:"domcontentloaded"});
+      await page.getByText("ResMap",{exact:true}).first().waitFor({timeout:15000});
+      assert.equal(await page.getByText("Something went wrong",{exact:true}).count(),0,`${p.name} map: error boundary`);
+      assert.equal(errors.length,0,`${p.name} map: ${errors.join("; ")}`);
+      console.log("PASS",p.name,"ResMap");
+
+      // Exercise the actual 360 viewer/WebGL path on browser engines.
+      errors.length=0;
+      await page.goto(origin+"/tour/fixture-token",{waitUntil:"domcontentloaded"});
+      await page.getByText("Fixture 360",{exact:false}).first().waitFor({timeout:15000});
+      await page.waitForTimeout(700);
+      assert.equal(await page.getByText("Virtual view unavailable",{exact:true}).count(),0,`${p.name}: 360 snapshot unavailable`);
+      assert.equal(await page.getByText("Something went wrong",{exact:true}).count(),0,`${p.name}: 360 error boundary`);
+      assert.equal(errors.length,0,`${p.name} 360: ${errors.join("; ")}`);
+      console.log("PASS",p.name,"360 viewer");
+
       // Offline in the already-loaded installed app retains the session and surfaces status.
       await page.goto(origin+"/dashboard",{waitUntil:"domcontentloaded"});
       await context.setOffline(true);
