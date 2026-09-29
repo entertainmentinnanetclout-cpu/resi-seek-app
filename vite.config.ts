@@ -75,11 +75,12 @@ export default defineConfig(({ mode }) => {
             ],
           },
           workbox: {
-            // Keep install fast: precache only the shell. Route JS, maps and
-            // large media are cached on demand instead of blocking first use.
-            globPatterns: ["**/*.{html,css,woff,woff2,ico}"],
+            // Precache the app shell and emitted JS route chunks so an installed PWA can
+            // reopen previously authenticated core routes without network. Maps, API data and
+            // media stay runtime/network driven and never persist private Supabase responses.
+            globPatterns: ["**/*.{html,css,js,woff,woff2,ico}"],
             importScripts: ["/push-sw.js"],
-            maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
+            maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
             cleanupOutdatedCaches: true,
             clientsClaim: true,
             skipWaiting: true,
