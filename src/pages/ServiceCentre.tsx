@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { CheckCircle2, Clock3, Headphones, Loader2, Plus, RefreshCw, Send } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock3, Headphones, Loader2, Plus, RefreshCw, Send } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
@@ -26,24 +26,57 @@ export default function ServiceCentre(){
   const[data,setData]=useState<any>({open_count:0,requests:[]});
   const[loading,setLoading]=useState(true);
   const[submitting,setSubmitting]=useState(false);
+  const[loadError,setLoadError]=useState<string|null>(null);
   const[type,setType]=useState("living");
   const[subject,setSubject]=useState("");
   const[description,setDescription]=useState("");
 
-  const load=useCallback(async()=>{setLoading(true);const{data:payload,error}=await(supabase as any).rpc("my_reskonnect_service_centre");if(error)toast.error(error.message||"Could not load Service Centre");else setData(payload||{open_count:0,requests:[]});setLoading(false);},[]);
-  useEffect(()=>{void load();},[load]);
+  const load=useCallback(async()=>{
+    setLoading(true);
+    setLoadError(null);
+    const controller=new AbortController();
+    const timeout=window.setTimeout(()=>controller.abort(),15000);
+    try{
+      const{data:payload,error}=await(supabase as any).rpc("my_reskonnect_service_centre").abortSignal(controller.signal);
+      if(error)throw error;
+      setData(payload||{open_count:0,requests:[]});
+    }catch(error:any){
+      const message=controller.signal.aborted
+        ?"Service Centre took too long to load. Check your connection and retry."
+        :(error?.message||"Could not load Service Centre");
+      setLoadError(message);
+    }finally{
+      window.clearTimeout(timeout);
+      setLoading(false);
+    }
+  },[]);
+  useEffect(()=>{
+    void load();
+    const reconnect=()=>void load();
+    window.addEventListener("rk-reconnected",reconnect);
+    return()=>window.removeEventListener("rk-reconnected",reconnect);
+  },[load]);
 
   const submit=async()=>{
     if(subject.trim().length<4||description.trim().length<8)return toast.error("Add a clear subject and description.");
     setSubmitting(true);
-    const{error}=await(supabase as any).rpc("create_my_reskonnect_request",{
-      p_request_type:type,p_subject:subject.trim(),p_description:description.trim(),
-      p_related_entity_type:null,p_related_entity_id:null,p_source_surface:"service_centre",
-    });
-    setSubmitting(false);
-    if(error)return toast.error(error.message||"Could not submit request");
-    toast.success("Request submitted. You can track every status change here.");
-    setSubject("");setDescription("");await load();
+    const controller=new AbortController();
+    const timeout=window.setTimeout(()=>controller.abort(),15000);
+    try{
+      const{error}=await(supabase as any).rpc("create_my_reskonnect_request",{
+        p_request_type:type,p_subject:subject.trim(),p_description:description.trim(),
+        p_related_entity_type:null,p_related_entity_id:null,p_source_surface:"service_centre",
+      }).abortSignal(controller.signal);
+      if(error)throw error;
+      toast.success("Request submitted. You can track every status change here.");
+      setSubject("");setDescription("");
+      await load();
+    }catch(error:any){
+      toast.error(controller.signal.aborted?"Request timed out. Check your connection and try again.":(error?.message||"Could not submit request"));
+    }finally{
+      window.clearTimeout(timeout);
+      setSubmitting(false);
+    }
   };
 
   const rows=Array.isArray(data?.requests)?data.requests:[];
@@ -65,6 +98,7 @@ export default function ServiceCentre(){
         </CardContent></Card>
 
         <Card><CardHeader><div className="flex items-center justify-between gap-3"><CardTitle>Your requests</CardTitle><Button size="sm" variant="outline" onClick={()=>void load()} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading?"animate-spin":""}`}/>Refresh</Button></div></CardHeader><CardContent>
+          {loadError&&<div className="mb-4 flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-start gap-2"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600"/><div><p className="text-sm font-bold">Service Centre needs a connection refresh</p><p className="mt-1 text-xs text-muted-foreground">{loadError}</p></div></div><Button size="sm" variant="outline" onClick={()=>void load()} disabled={loading}>Try again</Button></div>}
           {loading?<div className="grid min-h-52 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary"/></div>:rows.length===0?<div className="rounded-2xl border border-dashed p-8 text-center"><CheckCircle2 className="mx-auto h-7 w-7 text-emerald-500"/><p className="mt-2 font-bold">No service requests yet</p><p className="mt-1 text-sm text-muted-foreground">When you need help, create one request here and track it from submission to resolution.</p></div>:<div className="space-y-3">{rows.map((row:any)=><div key={row.id} className="rounded-2xl border p-4">
             <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="flex flex-wrap gap-2"><Badge>{label(row.request_type)}</Badge><Badge variant={["resolved","closed","completed"].includes(String(row.status).toLowerCase())?"secondary":"outline"}>{label(row.status)}</Badge></div><h3 className="mt-2 font-black">{row.subject||"ResKonnect service request"}</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">{row.description}</p></div><p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(row.updated_at),{addSuffix:true})}</p></div>
             <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-muted-foreground"><span>Department: {label(row.department_key)}</span>{row.resolution_summary&&<span className="font-semibold text-foreground">Resolution: {row.resolution_summary}</span>}</div>
