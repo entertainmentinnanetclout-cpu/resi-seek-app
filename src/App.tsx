@@ -28,6 +28,7 @@ const MarketplaceComingSoon = lazy(() => import("./pages/MarketplaceComingSoon")
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResBot = lazy(() => import("@/components/ResBot"));
 const PushPrompt = lazy(() => import("@/components/PushPrompt"));
+const InstallAppPrompt = lazy(() => import("@/components/InstallAppPrompt"));
 const About = lazy(() => import("./pages/public/About"));
 const ManagedSeoPage = lazy(() => import("./pages/seo/ManagedSeoPage"));
 const PropertyOpportunityDetail = lazy(() => import("./pages/public/PropertyOpportunityDetail"));
@@ -167,7 +168,7 @@ const DeferredGlobalEnhancements = () => {
     return () => window.clearTimeout(id);
   }, []);
   if (!ready) return null;
-  return <Suspense fallback={null}><ResBot /><PushPrompt /></Suspense>;
+  return <Suspense fallback={null}><ResBot /><PushPrompt /><InstallAppPrompt /></Suspense>;
 };
 
 const queryClient = new QueryClient({
