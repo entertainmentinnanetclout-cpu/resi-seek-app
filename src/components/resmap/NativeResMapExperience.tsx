@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getLiveLocationState } from "@/lib/resmap/liveLocation";
 import type { ResidenceFilters } from "@/hooks/useResidenceFilters";
-import ResMapExperiencePremiumV2 from "./ResMapExperiencePremiumV2";
+import ResMapExperienceStable from "./ResMapExperienceStable";
 
 type Props = {
   filters: ResidenceFilters;
@@ -43,9 +43,12 @@ function loadMaps(key: string) {
 
 function safeForVector() {
   // Native WebViews on low-memory / GPU-limited devices can have their renderer
-  // killed by the photorealistic Map3DElement. Do not instantiate it on Android.
+  // killed by GPU-heavy maps. After repeated renderer recovery, remain in safe mode.
+  try { if (localStorage.getItem("rk_native_safe_graphics_v1") === "1") return false; } catch {}
   const memory = Number((navigator as any).deviceMemory || 0);
-  if (memory > 0 && memory < 3) return false;
+  // deviceMemory is not guaranteed in Android WebView. Unknown capacity defaults
+  // to the stable raster map instead of gambling the whole renderer process.
+  if (!memory || memory < 4) return false;
   try {
     const canvas = document.createElement("canvas");
     const gl = canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: true, powerPreference: "low-power" });
@@ -122,7 +125,7 @@ export default function NativeResMapExperience(props: Props) {
   const onClose = () => { setThreeD(false); props.onClose(); };
   if (threeD) return <NativeVector3D onBack={() => setThreeD(false)} onClose={onClose} />;
   return <>
-    <ResMapExperiencePremiumV2 {...props} />
+    <ResMapExperienceStable {...props} allow3d={false} />
     <button type="button" onClick={() => setThreeD(true)} className="fixed bottom-[calc(82px+env(safe-area-inset-bottom))] right-3 z-[230] inline-flex min-h-12 items-center gap-2 rounded-full border border-white/80 bg-slate-950 px-4 text-sm font-black text-white shadow-2xl" aria-label="Open native 3D map"><Rotate3D className="h-5 w-5 text-cyan-300" />3D</button>
   </>;
 }
