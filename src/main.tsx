@@ -7,7 +7,7 @@ import { initLunaAttribution } from "@/lib/lunaGrowth";
 import "./index.css";
 import "./styles/mobile-foundation.css";
 import { isNativeApp } from "@/lib/accountRouting";
-import { supabase } from "@/integrations/supabase/client";
+import { recordMobileRuntime } from "@/lib/runtimeTelemetry";
 
 const ResMapLiveStreetViewBridge = lazy(() => import("@/components/resmap/ResMapLiveStreetViewBridge"));
 const native = isNativeApp();
@@ -36,24 +36,6 @@ function scheduleNonCriticalBoot() {
   const win = window as any;
   if (typeof win.requestIdleCallback === "function") win.requestIdleCallback(run, { timeout: 1600 });
   else window.setTimeout(run, 900);
-}
-
-// Runtime telemetry is intentionally privacy-safe: no email, passwords, chat text,
- // search queries or document names are captured.
-async function recordMobileRuntime(eventType: string, stage: string, metadata: Record<string, unknown> = {}) {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    await (supabase as any).from("mobile_runtime_events").insert({
-      user_id: session?.user?.id || null,
-      platform: native ? "android" : (/iPad|iPhone|iPod/i.test(navigator.userAgent) ? "ios" : /Mac/i.test(navigator.userAgent) ? "macos" : /Windows/i.test(navigator.userAgent) ? "windows" : "web"),
-      release: "1.1.4",
-      version_code: native ? 7 : null,
-      event_type: eventType,
-      stage,
-      message: null,
-      metadata: { route: window.location.pathname, ...metadata },
-    });
-  } catch { /* Diagnostics must never block app boot. */ }
 }
 
 if (native) {
