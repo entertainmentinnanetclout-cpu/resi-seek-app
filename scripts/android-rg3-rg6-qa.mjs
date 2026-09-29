@@ -20,6 +20,7 @@ const checks = [
     const platform = read("src/components/resmap/ResMapPlatform.tsx");
     assert.ok(location.includes("requestPermissions") && location.includes("getCurrentPosition") && location.includes("choose your campus manually"));
     assert.ok(map.includes("safeForVector") && map.includes("Return to the 2D map") && !map.includes("new Map3DElement("));
+    assert.ok(map.includes("ResMapExperienceStable") && map.includes("allow3d={false}") && map.includes("rk_native_safe_graphics_v1"));
     assert.ok(platform.includes("NativeMap") && platform.includes("WebMap") && platform.includes("lazy("));
   }],
   ["RG3 nearby listing locality before valid-photo priority", () => {
@@ -59,10 +60,14 @@ const checks = [
     assert.ok(full.includes("<NativeDashboardHighlights") && quick.includes("Find My Res") && quick.includes("Notifications"));
     assert.ok(!quick.includes("Promise.all") && !quick.includes("from(\"residences\")"));
   }],
+  ["RG6 WebView renderer survival", () => {
+    const activity = read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
+    assert.ok(activity.includes("onRenderProcessGone") && activity.includes("view.destroy()") && activity.includes("recreate") && activity.includes("return true"));
+  }],
   ["RG6 version and protected signing parity", () => {
     const readiness = read(".github/workflows/android-playstore-readiness.yml");
     const signed = read(".github/workflows/android-playstore-release.yml");
-    assert.equal(release.versionName, "1.1.3"); assert.equal(release.versionCode, 6);
+    assert.equal(release.versionName, "1.1.4"); assert.equal(release.versionCode, 7);
     assert.ok(readiness.includes("@capacitor/local-notifications@8.0.0") && signed.includes("@capacitor/local-notifications@8.0.0"));
     assert.ok(signed.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64") && signed.includes("jarsigner"));
     assert.equal(release.nativePushNotifications, false, "Never represent FCM background delivery as working without provider configuration");
