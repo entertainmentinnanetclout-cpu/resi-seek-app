@@ -95,6 +95,13 @@ public class MainActivity extends BridgeActivity {
                 final String script =
                     "(function(){try{" +
                     (safeGraphics ? "localStorage.setItem('rk_native_safe_graphics_v1','1');" : "") +
+                    "localStorage.setItem('rk_native_renderer_recovery_v1',JSON.stringify({" +
+                    "didCrash:" + didCrash + "," +
+                    "priority:" + priority + "," +
+                    "recentCount:" + recentCount + "," +
+                    "time:" + time + "," +
+                    "route:'" + safeRoute + "'" +
+                    "}));" +
                     "window.dispatchEvent(new CustomEvent('rk-native-renderer-recovered',{detail:{" +
                     "didCrash:" + didCrash + "," +
                     "priority:" + priority + "," +
