@@ -18,6 +18,7 @@ import { UserIntentProvider } from "@/contexts/UserIntentContext";
 import { ResidenceRoute } from "./components/ResidenceRoute";
 import { SpecialistRoute } from "@/components/SpecialistRoute";
 import DepartmentRoute from "@/components/DepartmentRoute";
+import ConnectivityBanner from "@/components/ConnectivityBanner";
 
 const StudentCare = lazy(() => import("./pages/StudentCare"));
 const ApplicationPartners = lazy(() => import("./pages/ApplicationPartners"));
@@ -173,7 +174,7 @@ const DeferredGlobalEnhancements = () => {
 };
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { refetchOnWindowFocus: false, refetchOnReconnect: false, staleTime: 60_000, retry: 1 } },
+  defaultOptions: { queries: { refetchOnWindowFocus: false, refetchOnReconnect: true, staleTime: 60_000, retry: 1 } },
 });
 
 const App = () => {
@@ -181,6 +182,7 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
+          <ConnectivityBanner />
           <Toaster />
           <Sonner />
           <BrowserRouter>
