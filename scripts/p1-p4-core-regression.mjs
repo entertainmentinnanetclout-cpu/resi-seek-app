@@ -228,19 +228,28 @@ try {
   console.log("PASS Opportunities failure/retry");
 
   // Native map opens the safe 2D path; 3D remains optional.
+  pageErrors=[];
   await page.goto(origin+"/findmyres?view=map");
   await page.getByText("ResMap",{exact:true}).first().waitFor({timeout:15000});
   assert.equal(await page.getByText("Something went wrong",{exact:true}).count(),0);
+  assert.deepEqual(pageErrors,[],"native ResMap emitted a page error");
   console.log("PASS native ResMap safe surface");
 
   // Safe-graphics mode proves a renderer-recovery path can still show 360 content without WebGL.
   await page.evaluate(()=>localStorage.setItem("rk_native_safe_graphics_v1","1"));
+  pageErrors=[];
   await page.goto(origin+"/tour/core-fixture");
   await page.getByText("Immersive 360 is paused on this device",{exact:false}).waitFor({timeout:15000});
+  assert.deepEqual(pageErrors,[],"native safe 360 emitted a page error");
   console.log("PASS native 360 safe-graphics fallback");
 
-  // Offline/reconnect preserves the authenticated local session.
+  // Offline/reconnect preserves the authenticated local session. Wait for the
+  // dev-server lazy Dashboard module before cutting network; production native
+  // chunks are packaged locally and are not fetched from the network.
+  pageErrors=[];
   await page.goto(origin+"/dashboard");
+  await page.getByText("Good to see you, Core.").waitFor({timeout:15000});
+  assert.deepEqual(pageErrors,[],"dashboard did not finish loading before offline simulation");
   await context.setOffline(true);
   await page.getByText("You're offline.",{exact:false}).waitFor({timeout:5000});
   assert.ok(await page.evaluate(key=>Boolean(localStorage.getItem(key)),storageKey));
@@ -249,7 +258,7 @@ try {
   assert.equal(await page.getByText("You're offline.",{exact:false}).count(),0);
   console.log("PASS offline/reconnect session preservation");
 
-  assert.deepEqual(pageErrors,[]);
+  assert.deepEqual(pageErrors,[],"offline/reconnect produced an unexpected runtime error");
   await context.close();
   console.log("P1-P4 native core regression passed.");
 } finally {
