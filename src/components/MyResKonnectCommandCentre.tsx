@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import { reportRuntimeEvent } from "@/lib/runtimeDiagnostics";
 
 const safePath = (value?: unknown, fallback = "/dashboard") => {
   const raw = typeof value === "string" ? value.trim() : "";
@@ -30,21 +31,29 @@ const MyResKonnectCommandCentre = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [degraded, setDegraded] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setDegraded(false);
+    const controller = new AbortController();
+    let timedOut = false;
+    const timeout = window.setTimeout(() => { timedOut = true; controller.abort(); }, 12_000);
     try {
       const [command, service, opportunity] = await Promise.allSettled([
-        (supabase as any).rpc("my_reskonnect_command_centre"),
-        (supabase as any).rpc("my_reskonnect_service_centre"),
-        (supabase as any).rpc("reskonnect_opportunity_feed", { p_query: null, p_type: null, p_limit: 6 }),
+        (supabase as any).rpc("my_reskonnect_command_centre").abortSignal(controller.signal),
+        (supabase as any).rpc("my_reskonnect_service_centre").abortSignal(controller.signal),
+        (supabase as any).rpc("reskonnect_opportunity_feed", { p_query: null, p_type: null, p_limit: 6 }).abortSignal(controller.signal),
       ]);
       const commandResult = command.status === "fulfilled" ? command.value : { data: null, error: command.reason };
       const serviceResult = service.status === "fulfilled" ? service.value : { data: null, error: service.reason };
       const opportunityResult = opportunity.status === "fulfilled" ? opportunity.value : { data: null, error: opportunity.reason };
+      const failed = Boolean(commandResult.error || serviceResult.error || opportunityResult.error);
+      setDegraded(failed);
       if (commandResult.error) console.error("Could not load My ResKonnect command centre", commandResult.error);
       if (serviceResult.error) console.error("Could not load My ResKonnect Service Centre summary", serviceResult.error);
       if (opportunityResult.error) console.error("Could not load RG3 opportunity feed", opportunityResult.error);
+      if (timedOut) void reportRuntimeEvent("request_timeout", "Dashboard data timed out", { resource: "dashboard_rpc" });
       setData({
         ...(commandResult.data || {}),
         service_centre: serviceResult.data || { open_count: 0, requests: [] },
@@ -52,13 +61,21 @@ const MyResKonnectCommandCentre = () => {
       });
     } catch (error) {
       console.error("My ResKonnect dashboard load failed safely", error);
+      setDegraded(true);
+      if (timedOut) void reportRuntimeEvent("request_timeout", "Dashboard data timed out", { resource: "dashboard_rpc" });
       setData({ service_centre: { open_count: 0, requests: [] }, opportunity_engine: { items: [] } });
     } finally {
+      window.clearTimeout(timeout);
       setLoading(false);
     }
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const reconnect = () => { void load(); };
+    window.addEventListener("online", reconnect);
+    return () => window.removeEventListener("online", reconnect);
+  }, [load]);
 
   const profile = data?.profile || {};
   const living = data?.living || {};
@@ -87,6 +104,12 @@ const MyResKonnectCommandCentre = () => {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 md:py-8 lg:px-8">
+      {degraded && (
+        <div role="status" className="flex flex-col gap-3 rounded-2xl border border-amber-500/35 bg-amber-500/[0.06] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div><p className="font-bold">Some live dashboard data is unavailable</p><p className="mt-1 text-sm text-muted-foreground">You can keep using ResKonnect. Live account data will retry when your connection recovers.</p></div>
+          <Button variant="outline" className="shrink-0" onClick={() => void load()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button>
+        </div>
+      )}
       <section className="overflow-hidden rounded-[30px] border bg-[radial-gradient(circle_at_85%_15%,hsl(var(--primary)/0.2),transparent_28%),linear-gradient(135deg,hsl(var(--card)),hsl(var(--muted)/0.45))] p-5 shadow-sm sm:p-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
