@@ -11,25 +11,27 @@ export const EXTERNAL_SUPABASE_ANON_KEY =
 
 export const externalFunctionUrl = (name: string) => `${EXTERNAL_SUPABASE_URL}/functions/v1/${name}`;
 
-// Mobile WebViews and installed browser apps can resume with an HTTP request
-// stranded after process suspension or connectivity changes. Bound database
-// requests on every platform without clearing the persisted auth session.
-// Individual callers may still abort sooner.
-const resilientDatabaseFetch: typeof fetch = (input, init) => {
+// Mobile WebViews and installed browser apps can resume with HTTP requests
+// stranded after process suspension or connectivity changes. Bound all
+// latency-sensitive Supabase control-plane requests without clearing the
+// persisted auth session. Storage uploads keep their own transfer lifecycle.
+const resilientSupabaseFetch: typeof fetch = (input, init) => {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-  if (!url.startsWith(`${EXTERNAL_SUPABASE_URL}/rest/v1/`)) {
-    return fetch(input, init);
-  }
+  let timeoutMs = 0;
+  if (url.startsWith(`${EXTERNAL_SUPABASE_URL}/rest/v1/`)) timeoutMs = 15_000;
+  else if (url.startsWith(`${EXTERNAL_SUPABASE_URL}/auth/v1/`)) timeoutMs = 15_000;
+  else if (url.startsWith(`${EXTERNAL_SUPABASE_URL}/functions/v1/`)) timeoutMs = 30_000;
+  if (!timeoutMs) return fetch(input, init);
 
   const controller = new AbortController();
   const originalSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
   const relayAbort = () => controller.abort();
   if (originalSignal?.aborted) controller.abort();
   else originalSignal?.addEventListener('abort', relayAbort, { once: true });
-  const timer = window.setTimeout(() => controller.abort(), 15_000);
+  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
 
   return fetch(input, { ...init, signal: controller.signal }).finally(() => {
-    window.clearTimeout(timer);
+    globalThis.clearTimeout(timer);
     originalSignal?.removeEventListener('abort', relayAbort);
   });
 };
@@ -40,7 +42,7 @@ export const supabase = createClient<Database>(EXTERNAL_SUPABASE_URL, EXTERNAL_S
     persistSession: true,
     autoRefreshToken: true,
   },
-  global: { fetch: resilientDatabaseFetch },
+  global: { fetch: resilientSupabaseFetch },
 });
 
 console.log('Supabase client initialized (External):', EXTERNAL_SUPABASE_URL);
