@@ -12,6 +12,7 @@ import ResMapResidenceCard from "./ResMapResidenceCard";
 
 interface Props {
   filters: ResidenceFilters;
+  allow3d?: boolean;
   updateFilter: <K extends keyof ResidenceFilters>(key: K, value: ResidenceFilters[K]) => void;
   resetFilters: () => void;
   onClose: () => void;
@@ -153,7 +154,7 @@ function loadGoogleMaps(apiKey: string) {
   return googleLoader;
 }
 
-export default function ResMapExperienceStable({ filters, updateFilter, resetFilters, onClose }: Props) {
+export default function ResMapExperienceStable({ filters, updateFilter, resetFilters, onClose, allow3d = true }: Props) {
   const { residences, loading } = useRealtimeResidences();
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const googleNode = useRef<HTMLDivElement | null>(null);
@@ -217,7 +218,7 @@ export default function ResMapExperienceStable({ filters, updateFilter, resetFil
 
   const primaryTiles = sanitizeTileTemplate(config.raster_primary_url, OSM_PRIMARY);
   const fallbackTiles = sanitizeTileTemplate(config.raster_fallback_url, OSM_FALLBACK);
-  const google3dReady = Boolean(config.google_maps_enabled && config.google_maps_browser_key);
+  const google3dReady = allow3d && Boolean(config.google_maps_enabled && config.google_maps_browser_key);
   const selectedCampus = useMemo(() => campuses.find((campus) => campus.campus_key === selectedCampusKey) || null, [campuses, selectedCampusKey]);
 
   useEffect(() => {
