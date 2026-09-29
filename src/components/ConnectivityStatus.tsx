@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
 import { WifiOff } from "lucide-react";
 import { toast } from "sonner";
+import { recordMobileRuntime } from "@/lib/runtimeTelemetry";
 
 export default function ConnectivityStatus() {
   const [online, setOnline] = useState(() => navigator.onLine);
 
   useEffect(() => {
+    if (!navigator.onLine) void recordMobileRuntime("offline_boot", "connectivity.initial");
     const onOnline = () => {
       setOnline(true);
       toast.success("ResKonnect is back online");
       window.dispatchEvent(new Event("rk-reconnected"));
+      void recordMobileRuntime("reconnected", "connectivity.online");
     };
     const onOffline = () => setOnline(false);
     window.addEventListener("online", onOnline);
