@@ -26,6 +26,14 @@ try {
     else if (url.pathname.includes('/auth/v1/user')) body = user;
     else if (url.pathname.includes('/rest/v1/rpc/get_my_access_context')) { accessCalls++; body = { staff_role: role, admin_departments: [], is_student: !role }; }
     else if (url.pathname.includes('/rest/v1/rpc/my_reskonnect_command_centre')) body = { profile };
+    else if (url.pathname.includes('/rest/v1/rpc/virtual_tour_public_snapshot')) body = {
+      tour: { id: '30000000-0000-4000-8000-000000000001', title: 'Native Fixture 360', workspace_type: 'standalone' },
+      workspace: { type: 'standalone', label: 'Native Fixture 360' },
+      residence: null,
+      scenes: [{ id: '40000000-0000-4000-8000-000000000001', name: 'Room', area_type: 'room', is_start: true, panorama_url: 'data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%228%22%3E%3Crect width=%2216%22 height=%228%22 fill=%22%23111%22/%3E%3C/svg%3E', quality_score: 90 }],
+      hotspots: [], connections: []
+    };
+    else if (url.pathname.includes('/rest/v1/rpc/record_virtual_tour_event')) body = true;
     else if (url.pathname.includes('/rest/v1/profiles')) body = route.request().headers().accept?.includes('object') ? profile : [profile];
     else if (url.pathname.includes('/rest/v1/')) body = url.pathname.includes('/rpc/') ? {} : [];
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
@@ -78,6 +86,12 @@ try {
   await page.waitForTimeout(500);
   assert.equal(await page.getByText("You're offline.", { exact: false }).count(), 0, 'reconnect banner must clear');
   console.log('PASS native offline/reconnect keeps authenticated session');
+  await page.evaluate(() => localStorage.setItem('rk_native_safe_graphics_v1','1'));
+  errors.length = 0;
+  await page.goto(origin + '/tour/native-fixture');
+  await page.getByText('Immersive 360 is paused on this device', { exact: false }).waitFor({ timeout: 10000 });
+  assert.equal(errors.length, 0, `native safe 360: ${errors.join('; ')}`);
+  console.log('PASS native repeated-renderer safe mode degrades 360 without WebGL');
   await page.goto(origin + '/dashboard');
   await page.getByRole('button', { name: 'Open navigation' }).click();
   await page.getByRole('button', { name: 'Logout', exact: true }).click();
