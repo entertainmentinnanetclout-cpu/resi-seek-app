@@ -62,7 +62,7 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
 
   return (
     <Fragment>
-      <header className="sticky top-0 z-[1000] isolate max-w-full overflow-visible border-b border-border bg-background/95 shadow-sm backdrop-blur-md">
+      <header className="sticky top-0 z-[1000] isolate max-w-full overflow-visible border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] shadow-sm backdrop-blur-md">
         <div className="border-b border-primary/10 bg-primary/[0.035]">
           <div className="container mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-1.5 text-center text-[11px] font-semibold sm:text-xs">
             <CalendarDays className="h-3.5 w-3.5 shrink-0 text-primary" />
