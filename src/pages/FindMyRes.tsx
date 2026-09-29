@@ -1,7 +1,7 @@
 import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Building2, ArrowUpDown } from "lucide-react";
+import { Building2, ArrowUpDown, AlertTriangle, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ const FindMyRes = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { residences, loading } = useRealtimeResidences();
+  const { residences, loading, error: residencesError, retry: retryResidences } = useRealtimeResidences();
   const { sections } = useResidenceSections("findmyres");
   const { intent } = useUserIntent();
   const {
@@ -233,6 +233,24 @@ const FindMyRes = () => {
         {/* Marketing Spotlight Slider */}
         <ResidenceSpotlightSlider residences={residences} loading={loading} />
         <ReferralBanner />
+        {residencesError && (
+          <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+            <Card className="border-amber-500/35 bg-amber-500/[0.06]">
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                  <div>
+                    <p className="font-bold">Accommodation listings could not refresh</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{residencesError} Your account remains signed in.</p>
+                  </div>
+                </div>
+                <Button variant="outline" className="shrink-0" onClick={retryResidences}>
+                  <RefreshCw className="mr-2 h-4 w-4" />Retry listings
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Intent-aware explanation */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
