@@ -151,6 +151,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(null);
           setSessionChecked(true);
           clearAccessState();
+          setAccessError(false);
           setIsLoading(false);
           return;
         }
@@ -264,6 +265,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     void checkStatus();
   }, [checkStatus]);
+
+  // If access resolution failed because the device was offline or a WebView
+  // request stalled, automatically retry when the app is usable again. This
+  // avoids requiring a force-close while still keeping role-gated UI closed.
+  useEffect(() => {
+    if (!accessError || !userId) return;
+    const retry = () => {
+      if (document.visibilityState !== "hidden" && navigator.onLine) void checkStatus();
+    };
+    window.addEventListener("online", retry);
+    document.addEventListener("visibilitychange", retry);
+    return () => {
+      window.removeEventListener("online", retry);
+      document.removeEventListener("visibilitychange", retry);
+    };
+  }, [accessError, checkStatus, userId]);
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut({ scope: "local" });
