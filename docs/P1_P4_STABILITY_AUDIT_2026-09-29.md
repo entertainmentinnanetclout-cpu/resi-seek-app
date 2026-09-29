@@ -13,7 +13,7 @@ Production Supabase was checked separately against project `mefjzkhobkltlbmhusdh
 | Risk | Severity | P1–P4 treatment |
 | --- | --- | --- |
 | Android WebView renderer death / GPU process loss | Critical | Native `onRenderProcessGone` destroys the dead WebView, recreates the activity, records recovery metadata and enables safe-graphics mode after repeated exits. |
-| Session/dashboard loader never resolves after resume | Critical | Auth, REST and function calls are bounded; persisted session is reconciled on visibility/online; both student and protected route loaders expose retry/reload recovery. |
+| Session/dashboard loader never resolves after resume | Critical | Auth, REST and function calls are bounded; persisted session is reconciled on visibility/online; student/protected/staff route loaders expose retry/reload recovery. Access-context RPC failure now fails closed instead of clearing roles or routing an unverified account, and retries automatically on reconnect/foreground. |
 | 3D/360 causes renderer/OOM instability | Critical | Normal native map is stable raster; optional 3D is capability-gated; repeated renderer loss disables heavy graphics; 360 constrains DPR/geometry, disposes textures and falls back after WebGL loss. |
 | Find My Res network request hangs | High | 12-second abort, request supersession, realtime coalescing, 24-hour public listing cache, visible retry state. |
 | Application list/details request hangs | High | Application fetch and residence enrichment have independent abort paths, visible failure state and retry. |
@@ -34,6 +34,8 @@ Native graphics are fail-soft: accommodation discovery does not depend on 3D. Re
 ## P3 — authentication and session recovery
 
 The authenticated lifecycle now has bounded outcomes for first login, persisted session restoration, foreground resume, reconnect, token refresh, role resolution, profile gate updates and post-login attribution. A temporary backend/network problem must resolve to usable cached/signed-in UI, an error/retry state or sign-in options rather than an indefinite loader.
+
+Role resolution is explicitly fail-closed. A failed `get_my_access_context` request preserves the authenticated session and last verified access state, marks access as unresolved, blocks student/admin/department/specialist surfaces, exposes immediate retry controls, and retries automatically on network return or foreground visibility. The auth page also waits for verified access before post-login routing.
 
 ## P4 — core student routes
 
