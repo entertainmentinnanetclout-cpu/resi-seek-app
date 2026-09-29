@@ -28,7 +28,9 @@ jobs:
         run: npx tsc --noEmit -p tsconfig.app.json
       - name: Install Chromium and WebKit
         run: npx playwright install --with-deps chromium webkit
-      - name: Responsive browser smoke
+      - name: Responsive public browser smoke
         run: node scripts/web-platform-smoke.mjs
       - name: Production build
         run: npm run build
+      - name: Authenticated production-PWA matrix
+        run: node scripts/cross-platform-session-smoke.mjs
