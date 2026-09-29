@@ -13,6 +13,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  accessError: boolean;
   isAdmin: boolean;
   isGodMode: boolean;
   isRecruiter: boolean;
@@ -42,6 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [accessError, setAccessError] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGodMode, setIsGodMode] = useState(false);
   const [isRecruiter, setIsRecruiter] = useState(false);
@@ -103,6 +105,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         accessRequestRef.current += 1;
         queryClient.clear();
         clearAccessState();
+        setAccessError(false);
       }
       currentUserIdRef.current = nextUserId;
 
@@ -117,6 +120,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         accessRequestRef.current += 1;
         identitySyncUserRef.current = null;
         clearAccessState();
+        setAccessError(false);
         setIsLoading(false);
       }
     });
@@ -212,11 +216,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!sessionChecked) return;
     if (!userId) {
       clearAccessState();
+      setAccessError(false);
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
+    setAccessError(false);
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 15000);
     try {
@@ -240,11 +246,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsRecruiter(Boolean(access.is_recruiter));
       setIsPendingRecruiter(Boolean(access.is_pending_recruiter));
       setIsStudent(!partnershipOnly && Boolean(access.is_student));
+      setAccessError(false);
     } catch (error) {
       if (requestId !== accessRequestRef.current || currentUserIdRef.current !== userId) return;
-      // Preserve the authenticated session but fail closed on privileged roles.
+      // Preserve both the authenticated session and the last successfully
+      // resolved access context. Clearing roles on a transient network failure
+      // can misroute staff/partners into student surfaces. Route guards fail
+      // closed while accessError is true and expose an explicit retry instead.
       console.error("[AuthContext] Access context failed safely:", error);
-      clearAccessState();
+      setAccessError(true);
     } finally {
       window.clearTimeout(timeout);
       if (requestId === accessRequestRef.current) setIsLoading(false);
@@ -264,6 +274,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setSession(null);
     clearAccessState();
+    setAccessError(false);
     setIsLoading(false);
     navigate("/auth", { replace: true });
   };
@@ -273,6 +284,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       user,
       session,
       isLoading,
+      accessError,
       isAdmin,
       isGodMode,
       isRecruiter,
