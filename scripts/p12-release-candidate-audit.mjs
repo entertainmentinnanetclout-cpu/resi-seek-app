@@ -21,7 +21,7 @@ expect(gradle.includes('ANDROID_VERSION_CODE") ?: "8"')&&gradle.includes('ANDROI
 expect(readiness.includes('ANDROID_VERSION_CODE: "8"')&&readiness.includes('ANDROID_VERSION_NAME: "1.1.5"'),"unsigned readiness AAB uses final candidate identity");
 expect(signed.includes('default: "8"')&&signed.includes('default: "1.1.5"'),"protected signed workflow defaults to final candidate");
 expect(telemetry.includes('"1.1.5"')&&telemetry.includes("? 8 : null"),"runtime telemetry labels the final candidate correctly");
-expect(signed.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64")&&signed.includes("RK_ANDROID_UPLOAD_KEYSTORE_PASSWORD")&&signed.includes("RK_ANDROID_UPLOAD_KEY_ALIAS"),"signing material remains protected outside source");
+expect(signed.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64")&&signed.includes("RK_ANDROID_UPLOAD_STORE_PASSWORD")&&signed.includes("RK_ANDROID_UPLOAD_KEY_ALIAS"),"signing material remains protected outside source");
 expect(signed.includes("p5-p8-stability-audit.mjs")&&signed.includes("p10-android-device-matrix.mjs")&&signed.includes("p11-release-gate.mjs")&&signed.includes("npm run platform:p9"),"signed candidate reruns P5-P11");
 expect(signed.includes("jarsigner -verify -verbose -certs")&&signed.includes("sha256sum")&&signed.includes("app-release.aab.sha256"),"signed artifact gets signature and SHA-256 verification");
 expect(pkg.scripts["release:p12"]==="node scripts/p12-release-candidate-audit.mjs","P12 audit is exposed through package scripts");
