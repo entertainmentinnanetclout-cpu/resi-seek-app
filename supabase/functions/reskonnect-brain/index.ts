@@ -190,19 +190,27 @@ async function loadDialogueExamples(service:any,message:string,channel:string){
   }).sort((a:any,b:any)=>b._score-a._score).slice(0,10).map(({_score,...row}:any)=>row);
 }
 async function loadConversationWisdom(service:any,message:string,channel:string){
-  const rows=(await service.from("dimpho_lesson_candidates")
+  const tokens=[...new Set(message.toLowerCase().split(/[^a-z0-9]+/).filter((x:string)=>x.length>3))].slice(0,8);
+  let query=service.from("dimpho_lesson_candidates")
     .select("lesson_type,category,user_excerpt_redacted,assistant_excerpt_redacted,candidate_text,ideal_response,quality_score,confidence,safety_score,source_channel,occurrence_count,status,auto_promoted")
-    .eq("pii_detected",false).eq("sensitive_topic",false).gte("quality_score",.78).gte("safety_score",.9)
-    .neq("status","rejected").order("quality_score",{ascending:false}).limit(120)).data||[];
-  const tokens=new Set(message.toLowerCase().split(/[^a-z0-9]+/).filter((x:string)=>x.length>3));
+    .eq("pii_detected",false).eq("sensitive_topic",false).gte("quality_score",.72).gte("safety_score",.9).neq("status","rejected");
+  if(tokens.length){
+    const filters:string[]=[];
+    for(const token of tokens){
+      filters.push(`candidate_text.ilike.%${token}%`,`user_excerpt_redacted.ilike.%${token}%`,`category.ilike.%${token}%`);
+    }
+    query=query.or(filters.join(","));
+  }
+  const rows=(await query.order("quality_score",{ascending:false}).limit(180)).data||[];
   const normalizedChannel=channel==="whatsapp_meta"?"whatsapp":channel;
   return rows.map((row:any)=>{
     const text=[row.lesson_type,row.category,row.user_excerpt_redacted,row.candidate_text].filter(Boolean).join(" ").toLowerCase();
-    const overlap=[...tokens].filter((token:string)=>text.includes(token)).length;
+    const overlap=tokens.filter((token:string)=>text.includes(token)).length;
     const score=Number(row.quality_score||0)+Math.min(.35,overlap*.06)+(row.source_channel===normalizedChannel?0.12:0)+Math.min(.12,Math.max(0,Number(row.occurrence_count||1)-1)*.02);
     return{...row,_score:score};
   }).sort((a:any,b:any)=>b._score-a._score).slice(0,14).map(({_score,...row}:any)=>row);
 }
+
 async function loadTools(service:any,allowlist:string[]){if(!allowlist.length)return[];return (await service.from("dimpho_tools").select("tool_key,name,description,category,risk_level,requires_auth,requires_confirmation,user_scoped,input_schema").eq("enabled",true).in("tool_key",allowlist).order("tool_key")).data||[];}
 
 async function invokeTool(toolCall:any,identity:any,channel:string,threadRef:string|null,runId:string|null,message:string){
