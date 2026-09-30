@@ -43,7 +43,15 @@ export const PUBLIC_NAV = [
       { label: "Creator Partner Programme", to: "/creator-partners" },
     ],
   },
-  { label: "About", to: "/about" },
+  {
+    label: "About",
+    to: "/about",
+    children: [
+      { label: "About ResKonnect", to: "/about" },
+      { label: "Strategy & Commitments", to: "/about/strategy-commitments" },
+      { label: "Student Care", to: "/student-care" },
+    ],
+  },
 ] as const;
 
 interface SiteHeaderProps { search?: ReactNode; }
