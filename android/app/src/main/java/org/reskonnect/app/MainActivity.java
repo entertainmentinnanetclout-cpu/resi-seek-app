@@ -100,7 +100,18 @@ public class MainActivity extends BridgeActivity {
                 final int recentCount = prefs.getInt(KEY_COUNT, 1);
                 final long time = prefs.getLong(KEY_TIME, 0L);
                 final String route = prefs.getString(KEY_ROUTE, "/");
-                final boolean safeGraphics = recentCount >= 2;
+                // Android warns that recreating the same content after a renderer
+                // crash can crash the replacement WebView again. Degrade graphics on
+                // the first true renderer crash, and on the first renderer exit from
+                // known GPU-heavy routes. Repeated exits also force safe mode globally.
+                final boolean graphicsHeavyRoute =
+                    route != null && (
+                        route.startsWith("/tour/") ||
+                        route.contains("/immersive") ||
+                        route.startsWith("/findmyres") ||
+                        route.startsWith("/find")
+                    );
+                final boolean safeGraphics = didCrash || graphicsHeavyRoute || recentCount >= 2;
 
                 final String safeRoute = route == null ? "/" : route.replace("\\", "\\\\").replace("'", "\\'");
                 final String script =
