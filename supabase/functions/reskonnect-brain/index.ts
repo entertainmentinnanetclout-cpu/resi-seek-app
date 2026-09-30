@@ -153,7 +153,7 @@ async function loadKnowledge(service:any,message:string){
 async function loadLiveFacts(service:any,message:string){
   const lower=message.toLowerCase();const facts:any={};
   if(/res|accommodation|room|rent|nsfas|campus|living|available|price|single|sharing/i.test(lower)){
-    facts.available_residences=(await service.from("residences").select("id,name,slug,campus,address,city,price,private_price,nsfas_price,available_spots,accepts_nsfas,accepts_private,is_tut_accredited,distance_from_campus,room_type,room_types,verification_level").eq("is_visible",true).gt("available_spots",0).order("available_spots",{ascending:false}).limit(24)).data||[];
+    facts.accommodation_search_requires_tool=true;
   }
   if(/wil|intern|opportunit|bursar|seta|job|graduate|learnership/i.test(lower)){
     const p=await Promise.all([service.from("public_opportunities").select("id,slug,title,opportunity_type,organisation,location,province,closing_date,application_url,last_verified_at").eq("is_published",true).order("closing_date",{ascending:true}).limit(18),service.from("bursaries").select("id,name,provider,amount,deadline,link,type").eq("is_active",true).order("deadline",{ascending:true}).limit(12)]);
