@@ -38,8 +38,8 @@ for(const [label,min] of [["minSdk",24],["compileSdk",36],["targetSdk",36]]) {
   const value=sdk(label+"Version");
   if(value>=min) pass(label,String(value)); else block(label,`${value||"missing"}; minimum ${min}.`);
 }
-if(release.versionName==="1.1.4"&&release.versionCode===7) pass("Release identity","1.1.4 / versionCode 7 (greater than Play upload code 6).");
-else block("Release identity","Expected release 1.1.4 / versionCode 7. Never reuse Play versionCode 6.");
+if(release.versionName==="1.1.5"&&release.versionCode===8) pass("Release identity","1.1.5 / versionCode 8 (new final P9-P12 candidate).");
+else block("Release identity","Expected release 1.1.5 / versionCode 8. Do not reuse code 7 after P9-P12 changes.");
 if(!manifest) block("AndroidManifest","Missing.");
 else {
   for(const name of ["INTERNET","CAMERA","ACCESS_COARSE_LOCATION","ACCESS_FINE_LOCATION"]) {
