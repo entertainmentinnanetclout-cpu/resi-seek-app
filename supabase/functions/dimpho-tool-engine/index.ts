@@ -11,6 +11,26 @@ const PUBLIC_BASE="https://www.reskonnect.org";
 const service=supabaseUrl&&serviceKey?createClient(supabaseUrl,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}}):null;
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 const safeText=(v:any,max=160)=>String(v??"").trim().slice(0,max);
+const norm=(v:any)=>String(v??"").toLowerCase().replace(/[()]/g," ").replace(/\s+/g," ").trim();
+const campusProvince=(v:any)=>{const x=norm(v);if(/polokwane|giyani/.test(x))return"Limpopo";if(/mbombela|nelspruit|emalahleni|witbank/.test(x))return"Mpumalanga";if(/pretoria|arcadia|arts campus|soshanguve|ga-rankuwa|garankuwa/.test(x))return"Gauteng";return null;};
+const campusList=(v:any)=>String(v||"").replace(/\s+and\s+/gi,",").split(/[,;|/]+/).map((x)=>x.trim()).filter(Boolean);
+const isTosha=(r:any)=>Array.isArray(r?.institution_tags)&&r.institution_tags.some((x:any)=>norm(x).includes("tosha"));
+const isEkhaya=(r:any)=>norm(r?.name).includes("ekhaya junction");
+function eligibleCampuses(r:any){
+  const province=norm(r?.province),list=campusList(r?.campus);
+  const same=list.filter((campus)=>{const p=campusProvince(campus);return !province||!p||norm(p)===province;});
+  const pretoriaWest=same.some((x)=>norm(x).includes("pretoria west"))||norm([r?.address,r?.city].filter(Boolean).join(" ")).includes("pretoria west");
+  return same.filter((campus)=>!(pretoriaWest&&norm(campus).includes("soshanguve")&&!isEkhaya(r)&&!isTosha(r)));
+}
+function matchesRequestedCampus(r:any,requested:string){
+  if(!requested)return true;
+  const requestedProvince=campusProvince(requested);
+  if(requestedProvince&&r?.province&&norm(requestedProvince)!==norm(r.province))return false;
+  const needles=[norm(requested)];
+  if(norm(requested).includes("soshanguve"))needles.push("soshanguve");
+  if(norm(requested).includes("pretoria west"))needles.push("pretoria west");
+  return eligibleCampuses(r).some((campus)=>needles.some((needle)=>norm(campus).includes(needle)||needle.includes(norm(campus))));
+}
 
 async function caller(req:Request,body:any){
   const internal=(req.headers.get("x-dimpho-internal")===serviceKey||req.headers.get("x-rk-brain-internal")===serviceKey)&&Boolean(serviceKey);
@@ -55,12 +75,12 @@ async function executeTool(toolKey:string,args:any,contextUserId:string|null,con
     let documents:any[]=[];const appId=safeText(a.application_id,64); if(appId){const own=await service!.from("applications").select("id").eq("id",appId).eq("user_id",contextUserId).maybeSingle();if(own.data){const docs=await service!.from("application_documents").select("doc_type,status,rejection_reason,uploaded_at,verified_at").eq("application_id",appId);documents=docs.data||[];}} return{flow_key:flow,requirements:requirements||[],submitted_documents:documents};
   }
   if(toolKey==="find_residences"){
-    const limit=clamp(Number(a.limit||8)||8,1,20); let q=service!.from("residences").select("id,name,slug,campus,city,province,price,private_price,nsfas_price,available_spots,room_type,room_types,accepts_nsfas,is_tut_accredited,has_wifi,is_furnished,distance_from_campus,verification_level,cover_image_url,image_url").eq("is_visible",true).eq("map_hidden",false).order("available_spots",{ascending:false}).limit(limit);
-    const campus=safeText(a.campus,120);if(campus)q=q.ilike("campus",`%${campus}%`); if(a.max_price!==undefined&&Number.isFinite(Number(a.max_price)))q=q.lte("price",Number(a.max_price)); if(a.nsfas===true)q=q.eq("accepts_nsfas",true); const room=safeText(a.room_type,80);if(room)q=q.ilike("room_type",`%${room}%`); const {data,error}=await q;if(error)throw error;
-    const rows=data||[]; const tours=await Promise.all(rows.map((r:any)=>publishedTourForResidence(r.id).catch(()=>null))); return{residences:rows.map((r:any,index:number)=>({...r,url:r.slug?`${PUBLIC_BASE}/find-my-res/${encodeURIComponent(r.slug)}`:PUBLIC_BASE+"/find",virtual_tour:tours[index]?{available:true,url:tours[index].url,scene_count:tours[index].scene_count,published_at:tours[index].published_at}:null}))};
+    const limit=clamp(Number(a.limit||8)||8,1,20); let q=service!.from("residences").select("id,name,slug,campus,address,city,province,institution_tags,price,private_price,nsfas_price,available_spots,room_type,room_types,accepts_nsfas,is_tut_accredited,has_wifi,is_furnished,distance_from_campus,verification_level,cover_image_url,image_url").eq("is_visible",true).eq("map_hidden",false).order("available_spots",{ascending:false}).limit(Math.min(80,Math.max(limit*5,30)));
+    const campus=safeText(a.campus,120);if(a.max_price!==undefined&&Number.isFinite(Number(a.max_price)))q=q.lte("price",Number(a.max_price)); if(a.nsfas===true)q=q.eq("accepts_nsfas",true); const room=safeText(a.room_type,80);if(room)q=q.ilike("room_type",`%${room}%`); const {data,error}=await q;if(error)throw error;
+    const rows=(data||[]).filter((r:any)=>matchesRequestedCampus(r,campus)).slice(0,limit); const tours=await Promise.all(rows.map((r:any)=>publishedTourForResidence(r.id).catch(()=>null))); return{residences:rows.map((r:any,index:number)=>({...r,served_campuses:eligibleCampuses(r),url:r.slug?`${PUBLIC_BASE}/find-my-res/${encodeURIComponent(r.slug)}`:PUBLIC_BASE+"/find",virtual_tour:tours[index]?{available:true,url:tours[index].url,scene_count:tours[index].scene_count,published_at:tours[index].published_at}:null}))};
   }
   if(toolKey==="get_residence_details"){
-    const id=safeText(a.residence_id,64),slug=safeText(a.slug,180);if(!id&&!slug)throw new Error("residence_id or slug required"); let q=service!.from("residences").select("id,name,slug,address,canonical_address,campus,city,province,description,price,private_price,nsfas_price,available_spots,capacity,room_type,room_types,amenities,accepts_nsfas,is_tut_accredited,has_wifi,is_furnished,has_parking,utilities_included,distance_from_campus,verification_level,location_verification_status,cover_image_url,image_url,images,whatsapp_phone").eq("is_visible",true).eq("map_hidden",false); q=id?q.eq("id",id):q.eq("slug",slug); const {data,error}=await q.maybeSingle();if(error)throw error; const vt=data?await publishedTourForResidence(data.id).catch(()=>null):null; return{residence:data?{...data,url:data.slug?`${PUBLIC_BASE}/find-my-res/${encodeURIComponent(data.slug)}`:PUBLIC_BASE+"/find",virtual_tour:vt?{available:true,url:vt.url,scene_count:vt.scene_count,published_at:vt.published_at}:null}:null};
+    const id=safeText(a.residence_id,64),slug=safeText(a.slug,180);if(!id&&!slug)throw new Error("residence_id or slug required"); let q=service!.from("residences").select("id,name,slug,address,canonical_address,campus,city,province,institution_tags,description,price,private_price,nsfas_price,available_spots,capacity,room_type,room_types,amenities,accepts_nsfas,is_tut_accredited,has_wifi,is_furnished,has_parking,utilities_included,distance_from_campus,verification_level,location_verification_status,cover_image_url,image_url,images,whatsapp_phone").eq("is_visible",true).eq("map_hidden",false); q=id?q.eq("id",id):q.eq("slug",slug); const {data,error}=await q.maybeSingle();if(error)throw error; const vt=data?await publishedTourForResidence(data.id).catch(()=>null):null; return{residence:data?{...data,served_campuses:eligibleCampuses(data),url:data.slug?`${PUBLIC_BASE}/find-my-res/${encodeURIComponent(data.slug)}`:PUBLIC_BASE+"/find",virtual_tour:vt?{available:true,url:vt.url,scene_count:vt.scene_count,published_at:vt.published_at}:null}:null};
   }
   if(toolKey==="get_virtual_tour"){
     const token=safeText(a.public_token,64);
