@@ -31,6 +31,7 @@ const ResBot = lazy(() => import("@/components/ResBot"));
 const PushPrompt = lazy(() => import("@/components/PushPrompt"));
 const InstallAppPrompt = lazy(() => import("@/components/InstallAppPrompt"));
 const About = lazy(() => import("./pages/public/About"));
+const StrategyCommitments = lazy(() => import("./pages/public/StrategyCommitments"));
 const ManagedSeoPage = lazy(() => import("./pages/seo/ManagedSeoPage"));
 const PropertyOpportunityDetail = lazy(() => import("./pages/public/PropertyOpportunityDetail"));
 const AdminCareerEducation = lazy(() => import("./pages/admin/AdminCareerEducation"));
@@ -203,6 +204,7 @@ const App = () => {
                     <Route path="/" element={isNativeApp() ? <Navigate to="/auth" replace /> : <Landing />} />
                     <Route path="/portals" element={<div className="mx-auto max-w-md p-5"><h1 className="text-2xl font-bold">ResKonnect portals</h1><AccountPortals /></div>} />
                     <Route path="/about" element={<About />} />
+                    <Route path="/about/strategy-commitments" element={<StrategyCommitments />} />
                     <Route path="/contact" element={<About />} />
                     <Route path="/properties" element={<ManagedSeoPage pagePath="/properties" />} />
                     <Route path="/property-auctions" element={<ManagedSeoPage pagePath="/property-auctions" />} />
