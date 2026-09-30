@@ -74,6 +74,8 @@ jobs:
         run: node scripts/p5-p8-stability-audit.mjs
       - name: P11 automated release gate
         run: node scripts/p11-release-gate.mjs
+      - name: P12 release candidate audit
+        run: node scripts/p12-release-candidate-audit.mjs
       - name: Verify production TypeScript
         run: npx tsc --noEmit -p tsconfig.app.json
       - name: Install core regression browser
