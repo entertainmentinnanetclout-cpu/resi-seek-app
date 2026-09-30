@@ -1,9 +1,6 @@
 name: Android Play Store Signed Release
 
 on:
-  push:
-    branches:
-      - "release-sign-1.1.5-code8"
   workflow_dispatch:
     inputs:
       version_code:
@@ -101,8 +98,8 @@ jobs:
         run: npx cap sync android
       - name: Build signed Play AAB
         env:
-          ANDROID_VERSION_CODE: ${{ inputs.version_code || '8' }}
-          ANDROID_VERSION_NAME: ${{ inputs.version_name || '1.1.5' }}
+          ANDROID_VERSION_CODE: ${{ inputs.version_code }}
+          ANDROID_VERSION_NAME: ${{ inputs.version_name }}
           RK_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.RK_ANDROID_UPLOAD_STORE_PASSWORD }}
           RK_ANDROID_KEY_ALIAS: ${{ secrets.RK_ANDROID_UPLOAD_KEY_ALIAS }}
           RK_ANDROID_KEY_PASSWORD: ${{ secrets.RK_ANDROID_UPLOAD_KEY_PASSWORD }}
@@ -125,7 +122,7 @@ jobs:
       - name: Upload signed Play artifact
         uses: actions/upload-artifact@v4
         with:
-          name: reskonnect-play-${{ inputs.version_name || '1.1.5' }}-${{ inputs.version_code || '8' }}
+          name: reskonnect-play-${{ inputs.version_name }}-${{ inputs.version_code }}
           path: |
             android/app/build/outputs/bundle/release/app-release.aab
             android/app/build/outputs/bundle/release/app-release.aab.sha256
