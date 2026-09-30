@@ -12,7 +12,7 @@ Production Supabase was checked separately against project `mefjzkhobkltlbmhusdh
 
 | Risk | Severity | P1–P4 treatment |
 | --- | --- | --- |
-| Android WebView renderer death / GPU process loss | Critical | Native `onRenderProcessGone` destroys the dead WebView, recreates the activity, records recovery metadata and enables safe-graphics mode after repeated exits. |
+| Android WebView renderer death / GPU process loss | Critical | Native `onRenderProcessGone` destroys the dead WebView, recreates the activity, records recovery metadata and enables safe-graphics mode after repeated exits. Recovery telemetry also fingerprints manufacturer/model, Android SDK and WebView package/version without collecting student identifiers or message content, so Huawei/OEM-specific clusters can be separated from low-memory kills. |
 | Session/dashboard loader never resolves after resume | Critical | Auth, REST and function calls are bounded; persisted session is reconciled on visibility/online; student/protected/staff route loaders expose retry/reload recovery. Access-context RPC failure now fails closed instead of clearing roles or routing an unverified account, and retries automatically on reconnect/foreground. |
 | 3D/360 causes renderer/OOM instability | Critical | Normal native map is stable raster; optional 3D is capability-gated; repeated renderer loss disables heavy graphics; 360 constrains DPR/geometry, disposes textures and falls back after WebGL loss. |
 | Find My Res network request hangs | High | 12-second abort, request supersession, realtime coalescing, 24-hour public listing cache, visible retry state. |
@@ -67,3 +67,13 @@ Production Supabase verification on 2026-09-29 confirmed that the core P1–P4 t
 The native recovery design follows Android's current WebView termination guidance: a WebView whose renderer has exited must not be reused; it must be removed/destroyed, references cleared, and the callback must return `true` when the host handles recovery. Android's current WebView memory guidance also emphasizes explicit lifecycle cleanup because WebView retains native/process memory outside the normal Java heap. Capacitor 8.5.2's `BridgeActivity` includes null-safe lifecycle forwarding, which allows the ResKonnect activity to drop the dead bridge reference before `recreate()` without later lifecycle null dereferences.
 
 Android 16 / API 36 guidance also treats resizability and multi-window support as the baseline on large screens. ResKonnect therefore keeps the activity free of fixed orientation, fixed aspect-ratio and non-resizable declarations.
+
+
+## 2026-09-30 final closure
+
+The last two engineering closure gaps were addressed after the P1–P4 merge:
+
+1. **OEM-specific crash diagnosis:** renderer-recovery telemetry now carries privacy-safe device/WebView fingerprint fields (`manufacturer`, `model`, Android SDK, WebView package and WebView version) alongside `didCrash` and renderer priority. This allows a future Huawei/tablet recurrence to be classified without storing email, phone, student number, chat text or documents.
+2. **Post-merge verification:** Android Play readiness and Web Platform readiness now run on every push to `main`, not only pull requests/manual dispatches. Dependency or configuration changes made after merge can therefore no longer bypass the P1–P4 release gates.
+
+This closes the P1–P4 engineering scope. Physical OEM execution and Play pre-launch/Android Vitals review remain release acceptance evidence rather than missing implementation.
