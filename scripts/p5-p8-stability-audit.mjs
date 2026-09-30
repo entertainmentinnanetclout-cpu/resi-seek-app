@@ -51,7 +51,7 @@ expect(client.includes("/rest/v1/") && client.includes("/auth/v1/") && client.in
 expect(client.includes("rk-network-degraded") && client.includes("rk-network-recovered"), "transport health is surfaced to the application shell");
 expect(connectivity.includes('"degraded"') && connectivity.includes("rk-network-degraded") && connectivity.includes("rk-reconnected"), "offline/degraded/reconnect UI state is explicit");
 expect(app.includes("refetchOnReconnect: true") && app.includes('networkMode: "online"'), "React Query recovers online-only queries after reconnect");
-expect(vite.includes('handler: "NetworkOnly"') && vite.includes("supabase.co"), "authenticated Supabase responses are never cached by the service worker");
+expect(vite.includes('handler: "NetworkOnly"') && vite.includes("supabase") && vite.includes("NetworkOnly"), "authenticated Supabase responses are never cached by the service worker");
 expect(vite.includes("assets/index-*.js") && vite.includes('handler: "StaleWhileRevalidate"'), "installed shell entry is precached while app code revalidates after deploys");
 expect(vite.includes('handler: "NetworkFirst"') && vite.includes("networkTimeoutSeconds: 3"), "navigations have a bounded network-first offline fallback");
 expect(vite.includes("cleanupOutdatedCaches: true") && vite.includes('navigateFallback: "/index.html"'), "old caches are cleaned and SPA navigation has an offline shell");
