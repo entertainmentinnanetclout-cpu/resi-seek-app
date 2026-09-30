@@ -128,3 +128,40 @@ canvas {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* P6/P7 standalone and keyboard hardening */
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (min-width: 1024px) and (pointer: fine) {
+  html {
+    scrollbar-gutter: stable;
+  }
+}
+
+@media (display-mode: standalone) {
+  html,
+  body,
+  #root {
+    min-height: 100dvh;
+  }
+
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@supports (padding: max(0px)) {
+  .safe-area-inline {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .safe-area-block {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
