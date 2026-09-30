@@ -1,10 +1,12 @@
 package org.reskonnect.app;
 
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Build;
 import android.util.Log;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -27,6 +29,16 @@ public class MainActivity extends BridgeActivity {
     private static final long REPEAT_WINDOW_MS = 120_000L;
 
     private boolean recoveringRenderer = false;
+
+    private static String jsEscape(String value) {
+        if (value == null) return "";
+        return value
+            .replace("\\", "\\\\")
+            .replace("'", "\\'")
+            .replace("\n", " ")
+            .replace("\r", " ");
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,8 +113,24 @@ public class MainActivity extends BridgeActivity {
                 final long time = prefs.getLong(KEY_TIME, 0L);
                 final String route = prefs.getString(KEY_ROUTE, "/");
                 final boolean safeGraphics = recentCount >= 2;
+                final String manufacturer = jsEscape(Build.MANUFACTURER);
+                final String model = jsEscape(Build.MODEL);
+                final int androidSdk = Build.VERSION.SDK_INT;
+                String webViewPackage = "";
+                String webViewVersion = "";
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    try {
+                        final PackageInfo webViewInfo = WebView.getCurrentWebViewPackage();
+                        if (webViewInfo != null) {
+                            webViewPackage = jsEscape(webViewInfo.packageName);
+                            webViewVersion = jsEscape(webViewInfo.versionName);
+                        }
+                    } catch (Exception webViewInfoError) {
+                        Log.w(TAG, "Could not read WebView package metadata", webViewInfoError);
+                    }
+                }
 
-                final String safeRoute = route == null ? "/" : route.replace("\\", "\\\\").replace("'", "\\'");
+                final String safeRoute = jsEscape(route == null ? "/" : route);
                 final String script =
                     "(function(){try{" +
                     (safeGraphics ? "localStorage.setItem('rk_native_safe_graphics_v1','1');" : "") +
@@ -111,14 +139,24 @@ public class MainActivity extends BridgeActivity {
                     "priority:" + priority + "," +
                     "recentCount:" + recentCount + "," +
                     "time:" + time + "," +
-                    "route:'" + safeRoute + "'" +
+                    "route:'" + safeRoute + "'," +
+                    "manufacturer:'" + manufacturer + "'," +
+                    "model:'" + model + "'," +
+                    "androidSdk:" + androidSdk + "," +
+                    "webViewPackage:'" + webViewPackage + "'," +
+                    "webViewVersion:'" + webViewVersion + "'" +
                     "}));" +
                     "window.dispatchEvent(new CustomEvent('rk-native-renderer-recovered',{detail:{" +
                     "didCrash:" + didCrash + "," +
                     "priority:" + priority + "," +
                     "recentCount:" + recentCount + "," +
                     "time:" + time + "," +
-                    "route:'" + safeRoute + "'" +
+                    "route:'" + safeRoute + "'," +
+                    "manufacturer:'" + manufacturer + "'," +
+                    "model:'" + model + "'," +
+                    "androidSdk:" + androidSdk + "," +
+                    "webViewPackage:'" + webViewPackage + "'," +
+                    "webViewVersion:'" + webViewVersion + "'" +
                     "}}));}catch(e){}})();";
 
                 try {

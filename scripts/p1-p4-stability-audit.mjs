@@ -43,6 +43,8 @@ expect(release.compileSdk === 36 && release.targetSdk === 36, "Android compile/t
 expect(release.minSdk <= 24, "supported Android floor remains broad enough for existing minSdk 24 clients");
 expect(mainActivity.includes("onRenderProcessGone") && mainActivity.includes("view.destroy()") && mainActivity.includes("recreate") && mainActivity.includes("return true"), "dead WebView renderer is destroyed and activity recovery is handled");
 expect(mainActivity.includes("bridge.onDestroy()") && mainActivity.includes("bridge = null"), "renderer recovery tears down Capacitor bridge/plugin state before recreation");
+expect(mainActivity.includes("Build.MANUFACTURER") && mainActivity.includes("Build.MODEL") && mainActivity.includes("getCurrentWebViewPackage"), "renderer recovery captures privacy-safe OEM, Android and WebView fingerprint");
+expect(main.includes("android_manufacturer") && main.includes("android_model") && main.includes("webview_package") && main.includes("webview_version"), "renderer recovery fingerprint is forwarded to runtime telemetry");
 expect(main.includes("rk-native-renderer-recovered") && main.includes("restoreRecoveredRoute") && main.includes("replaceState"), "renderer recovery restores the last safe internal route after activity recreation");
 expect(mainActivity.includes("rk_native_safe_graphics_v1") && mainActivity.includes("recentCount >= 2"), "repeated renderer exits activate safe graphics mode");
 expect(!manifest.includes("screenOrientation=") && !manifest.includes("resizeableActivity=\"false\"") && !manifest.includes("maxAspectRatio"), "Android manifest does not block rotation, tablets, foldables or multi-window");

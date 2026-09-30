@@ -67,6 +67,11 @@ if (native) {
       renderer_priority: Number(detail?.priority ?? -1),
       recent_count: Number(detail?.recentCount ?? 1),
       previous_route: typeof detail?.route === "string" ? detail.route.slice(0, 120) : "/",
+      android_manufacturer: typeof detail?.manufacturer === "string" ? detail.manufacturer.slice(0, 80) : "unknown",
+      android_model: typeof detail?.model === "string" ? detail.model.slice(0, 80) : "unknown",
+      android_sdk: Number(detail?.androidSdk ?? 0),
+      webview_package: typeof detail?.webViewPackage === "string" ? detail.webViewPackage.slice(0, 120) : "unknown",
+      webview_version: typeof detail?.webViewVersion === "string" ? detail.webViewVersion.slice(0, 120) : "unknown",
     });
   };
 
