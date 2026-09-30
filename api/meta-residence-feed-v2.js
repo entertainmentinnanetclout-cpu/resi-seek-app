@@ -1,7 +1,7 @@
 const SITE_URL = "https://www.reskonnect.org";
 const COLUMNS = [
   "Residence ID","Residence Name","Slug","Served Campuses","Province","Area / City","Address","Student Segment",
-  "Accreditation / Verification","TOSHA Exception","NSFAS Accepted","Private Accepted","TVET Accepted","University Accepted",
+  "Accreditation / Verification","SOSHA Exception","NSFAS Accepted","Private Accepted","TVET Accepted","University Accepted",
   "Room Type","Single Rooms Available","Sharing Rooms Available","Monthly Price (R)","NSFAS Price (R)","Private Price (R)",
   "Available Spots","2027 Reservations Open","Application URL","Residence Page URL","Image URL","Virtual Tour URL",
   "Current Status","Published to Meta","Last Updated","Source of Truth"
@@ -19,7 +19,7 @@ function getSupabaseConfig(){
 const asText=(value)=>value==null?"":String(value).trim();
 const yesNo=(value)=>value===true?"Yes":value===false?"No":"";
 const norm=(value)=>String(value??"").toLowerCase().replace(/[()]/g," ").replace(/\s+/g," ").trim();
-const isTosha=(row)=>Array.isArray(row.institution_tags)&&row.institution_tags.some((tag)=>norm(tag).includes("tosha"));
+const isSosha=(row)=>Array.isArray(row.institution_tags)&&row.institution_tags.some((tag)=>{const v=norm(tag);return v.includes("sosha")||v.includes("tosha");});
 const isEkhaya=(row)=>norm(row.name).includes("ekhaya junction");
 
 function campusProvince(value){
@@ -41,7 +41,7 @@ function campusPolicy(row){
     return !province||!cp||norm(cp)===norm(province);
   });
   const pretoriaWest=served.some((x)=>norm(x).includes("pretoria west"))||norm([row.address,row.city].filter(Boolean).join(" ")).includes("pretoria west");
-  const exception=isEkhaya(row)||isTosha(row);
+  const exception=isEkhaya(row)||isSosha(row);
   const finalCampuses=served.filter((campus)=>!(pretoriaWest&&norm(campus).includes("soshanguve")&&!exception));
   return{province,served:finalCampuses,exception,publishable:Boolean(province&&finalCampuses.length)};
 }
@@ -87,7 +87,7 @@ function toFeedRow(row){
   const page=publicUrl(row),policy=campusPolicy(row);
   return[
     asText(row.id),asText(row.name),asText(row.slug),policy.served.join(", "),policy.province,asText(row.city),asText(row.address),
-    audience(row),accreditation(row),yesNo(isTosha(row)),yesNo(row.accepts_nsfas),yesNo(row.accepts_private),yesNo(row.accepts_tvet),
+    audience(row),accreditation(row),yesNo(isSosha(row)),yesNo(row.accepts_nsfas),yesNo(row.accepts_private),yesNo(row.accepts_tvet),
     yesNo(row.accepts_university),roomType(row),singleAvailability(row),sharingAvailability(row),row.price??"",row.nsfas_price??"",
     row.private_price??"",row.available_spots??"",yesNo(row.reservations_2027_open),page,page,imageUrl(row),"",status(row),
     policy.publishable?"Yes":"No",asText(row.updated_at),"Supabase residences table"
