@@ -47,6 +47,8 @@ on:
       - "scripts/p9-performance-budget.mjs"
       - "scripts/p10-android-device-matrix.mjs"
       - "scripts/p11-release-gate.mjs"
+      - "scripts/p12-release-candidate-audit.mjs"
+      - "docs/P9_P12_RELEASE_CANDIDATE_2026-09-30.md"
       - "src/lib/devicePerformance.ts"
       - "src/contexts/AuthContext.tsx"
       - "src/components/SiteHeader.tsx"
@@ -110,6 +112,8 @@ jobs:
         run: node scripts/p5-p8-stability-audit.mjs
       - name: P11 automated release gate
         run: node scripts/p11-release-gate.mjs
+      - name: P12 release candidate audit
+        run: node scripts/p12-release-candidate-audit.mjs
       - name: RG3–RG6 native feature and security audit
         run: node scripts/android-rg3-rg6-qa.mjs
       - name: Check complete application types
