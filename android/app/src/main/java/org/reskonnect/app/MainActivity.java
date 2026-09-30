@@ -111,7 +111,7 @@ public class MainActivity extends BridgeActivity {
                         route.startsWith("/findmyres") ||
                         route.startsWith("/find")
                     );
-                final boolean safeGraphics = detail.didCrash() || graphicsHeavyRoute || recentCount >= 2;
+                final boolean safeGraphics = didCrash || graphicsHeavyRoute || recentCount >= 2;
 
                 final String safeRoute = route == null ? "/" : route.replace("\\", "\\\\").replace("'", "\\'");
                 final String script =
