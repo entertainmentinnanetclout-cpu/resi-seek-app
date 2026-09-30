@@ -6,11 +6,11 @@ on:
       version_code:
         description: "Play versionCode (must increase every upload)"
         required: true
-        default: "7"
+        default: "8"
       version_name:
         description: "Public versionName"
         required: true
-        default: "1.1.4"
+        default: "1.1.5"
 
 permissions:
   contents: read
@@ -70,6 +70,10 @@ jobs:
         run: node scripts/android-rg3-rg6-qa.mjs
       - name: P1-P4 architecture and crash-risk audit
         run: node scripts/p1-p4-stability-audit.mjs
+      - name: P5-P8 graphics, PWA and network audit
+        run: node scripts/p5-p8-stability-audit.mjs
+      - name: P11 automated release gate
+        run: node scripts/p11-release-gate.mjs
       - name: Verify production TypeScript
         run: npx tsc --noEmit -p tsconfig.app.json
       - name: Install core regression browser
@@ -78,12 +82,16 @@ jobs:
         run: node scripts/android-session-regression.mjs
       - name: Verify P1-P4 core journeys and failure recovery
         run: node scripts/p1-p4-core-regression.mjs
+      - name: P10 Android OEM and device compatibility
+        run: node scripts/p10-android-device-matrix.mjs
       - name: Install pinned Capacitor, geolocation and local notification toolchain
         run: npm install --no-save --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0
       - name: Build production web bundle
         env:
           RK_NATIVE_BUILD: "1"
         run: npm run build
+      - name: P9 production performance budget
+        run: npm run platform:p9
       - name: Sync Capacitor Android
         run: npx cap sync android
       - name: Build signed Play AAB
