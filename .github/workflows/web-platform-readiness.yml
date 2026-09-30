@@ -26,6 +26,8 @@ jobs:
         run: npm ci
       - name: Static cross-platform checks
         run: npm run web:check
+      - name: P5-P8 platform stability audit
+        run: npm run platform:p5-p8
       - name: TypeScript
         run: npx tsc --noEmit -p tsconfig.app.json
       - name: Install Chromium and WebKit

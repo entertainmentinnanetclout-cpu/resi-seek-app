@@ -174,7 +174,15 @@ const DeferredGlobalEnhancements = () => {
 };
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { refetchOnWindowFocus: false, refetchOnReconnect: false, staleTime: 60_000, retry: 1 } },
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      staleTime: 60_000,
+      retry: 1,
+      networkMode: "online",
+    },
+  },
 });
 
 const App = () => {

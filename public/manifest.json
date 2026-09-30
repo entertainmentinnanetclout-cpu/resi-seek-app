@@ -83,5 +83,9 @@
         }
       ]
     }
+  ],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
   ]
 }

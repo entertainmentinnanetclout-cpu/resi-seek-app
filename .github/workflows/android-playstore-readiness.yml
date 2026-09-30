@@ -43,6 +43,7 @@ on:
       - "src/lib/runtimeTelemetry.ts"
       - "scripts/p1-p4-stability-audit.mjs"
       - "scripts/p1-p4-core-regression.mjs"
+      - "scripts/p5-p8-stability-audit.mjs"
       - "src/contexts/AuthContext.tsx"
       - "src/components/SiteHeader.tsx"
       - "src/components/HomeJourneyBar.tsx"
@@ -101,6 +102,8 @@ jobs:
         run: node scripts/android-v110-reliability-qa.mjs
       - name: P1-P4 architecture and crash-risk audit
         run: node scripts/p1-p4-stability-audit.mjs
+      - name: P5-P8 graphics, PWA and network audit
+        run: node scripts/p5-p8-stability-audit.mjs
       - name: RG3–RG6 native feature and security audit
         run: node scripts/android-rg3-rg6-qa.mjs
       - name: Check complete application types

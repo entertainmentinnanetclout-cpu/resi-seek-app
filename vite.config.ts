@@ -31,8 +31,9 @@ export default defineConfig(({ mode }) => {
             theme_color: "#071326",
             background_color: "#FFFFFF",
             display: "standalone",
+            display_override: ["standalone", "minimal-ui"],
             orientation: "any",
-            start_url: "/",
+            start_url: "/?source=pwa",
             scope: "/",
             id: "/",
             categories: ["education", "lifestyle", "productivity"],
@@ -77,7 +78,10 @@ export default defineConfig(({ mode }) => {
           workbox: {
             // Keep install fast: precache only the shell. Route JS, maps and
             // large media are cached on demand instead of blocking first use.
-            globPatterns: ["**/*.{html,css,woff,woff2,ico}"],
+            globPatterns: [
+              "**/*.{html,css,woff,woff2,ico}",
+              "assets/index-*.js",
+            ],
             importScripts: ["/push-sw.js"],
             maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
             cleanupOutdatedCaches: true,
@@ -102,8 +106,8 @@ export default defineConfig(({ mode }) => {
                 urlPattern: ({ request }) => request.mode === "navigate",
                 handler: "NetworkFirst",
                 options: {
-                  cacheName: "navigation-pages-v3",
-                  networkTimeoutSeconds: 2,
+                  cacheName: "navigation-pages-v4",
+                  networkTimeoutSeconds: 3,
                   expiration: {
                     maxEntries: 40,
                     maxAgeSeconds: 60 * 60 * 24,
@@ -114,12 +118,28 @@ export default defineConfig(({ mode }) => {
                 },
               },
               {
-                urlPattern: /\.(js|css|png|jpg|jpeg|svg|webp|woff|woff2|ttf)$/,
+                // Application code is refreshed in the background so installed
+                // PWAs do not get stuck on stale lazy chunks after a deployment.
+                urlPattern: /\.(js|css)$/,
+                handler: "StaleWhileRevalidate",
+                options: {
+                  cacheName: "static-code-v4",
+                  expiration: {
+                    maxEntries: 120,
+                    maxAgeSeconds: 60 * 60 * 24 * 14,
+                  },
+                  cacheableResponse: {
+                    statuses: [0, 200],
+                  },
+                },
+              },
+              {
+                urlPattern: /\.(png|jpg|jpeg|svg|webp|woff|woff2|ttf)$/,
                 handler: "CacheFirst",
                 options: {
-                  cacheName: "static-assets-v3",
+                  cacheName: "static-media-v4",
                   expiration: {
-                    maxEntries: 160,
+                    maxEntries: 180,
                     maxAgeSeconds: 60 * 60 * 24 * 30,
                   },
                   cacheableResponse: {

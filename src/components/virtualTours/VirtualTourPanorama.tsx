@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ErrorInfo, type ReactNode } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { Html, OrbitControls } from "@react-three/drei";
 import { BackSide, LinearFilter, MathUtils, SRGBColorSpace, TextureLoader } from "three";
@@ -7,6 +7,15 @@ import { ArrowRight, Info, MapPin } from "lucide-react";
 
 export type ViewerHotspot = { id: string; hotspot_type: string; label: string; body?: string | null; target_scene_id?: string | null; yaw: number; pitch: number; cta_url?: string | null };
 export type ViewerConnection = { id: string; from_scene_id: string; to_scene_id: string; label?: string | null; yaw: number; pitch: number };
+
+class GraphicsBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.warn("[360 Viewer] graphics subtree failed safely", error.message, info.componentStack);
+  }
+  render() { return this.state.failed ? this.props.fallback : this.props.children; }
+}
 
 function Sphere({ url, constrained }: { url: string; constrained: boolean }) {
   const texture = useLoader(TextureLoader, url);
@@ -24,6 +33,20 @@ function Sphere({ url, constrained }: { url: string; constrained: boolean }) {
     };
   }, [constrained, texture, url]);
   return <mesh scale={[-1, 1, 1]}><sphereGeometry args={constrained ? [8, 64, 40] : [8, 96, 64]} /><meshBasicMaterial map={texture} side={BackSide} /></mesh>;
+}
+
+function RendererGuard({ onLost }: { onLost: () => void }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const handleLost = (event: Event) => {
+      event.preventDefault();
+      onLost();
+    };
+    canvas.addEventListener("webglcontextlost", handleLost, false);
+    return () => canvas.removeEventListener("webglcontextlost", handleLost, false);
+  }, [gl, onLost]);
+  return null;
 }
 
 function DeviceOrientationCamera({ enabled }: { enabled: boolean }) {
@@ -57,6 +80,15 @@ function point(yaw: number, pitch: number, r = 7.1) {
   return [r * Math.sin(yr) * Math.cos(pr), r * Math.sin(pr), -r * Math.cos(yr) * Math.cos(pr)] as [number, number, number];
 }
 
+function StaticPanoramaPreview({ panoramaUrl, reason }: { panoramaUrl: string; reason: string }) {
+  return <div className="relative grid h-full min-h-[420px] w-full place-items-center overflow-hidden bg-black p-4">
+    <img src={panoramaUrl} alt="360 residence scene preview" className="max-h-full max-w-full object-contain" loading="lazy" decoding="async" />
+    <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/20 bg-black/80 p-3 text-center text-xs font-semibold text-white">
+      {reason} The scene preview remains available without risking an app or browser exit.
+    </div>
+  </div>;
+}
+
 export default function VirtualTourPanorama({
   panoramaUrl,
   hotspots = [],
@@ -78,6 +110,7 @@ export default function VirtualTourPanorama({
   ], [connections, hotspots]);
   const native = useMemo(() => isNativeApp(), []);
   const [graphicsLost, setGraphicsLost] = useState(false);
+  const handleGraphicsLost = useCallback(() => setGraphicsLost(true), []);
   const webglAvailable = useMemo(() => {
     if (typeof document === "undefined") return false;
     try {
@@ -103,26 +136,19 @@ export default function VirtualTourPanorama({
       : graphicsLost
         ? "The device graphics context was interrupted, so immersive 360 was safely paused."
         : "Immersive 360 is not available with the current device graphics configuration.";
-    return <div className="relative grid h-full min-h-[420px] w-full place-items-center overflow-hidden bg-black p-4">
-      <img src={panoramaUrl} alt="360 residence scene preview" className="max-h-full max-w-full object-contain" />
-      <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/20 bg-black/80 p-3 text-center text-xs font-semibold text-white">
-        {reason} The scene preview remains available without risking an app or browser exit.
-      </div>
-    </div>;
+    return <StaticPanoramaPreview panoramaUrl={panoramaUrl} reason={reason} />;
   }
 
+  const localFallback = <StaticPanoramaPreview panoramaUrl={panoramaUrl} reason="Immersive 360 hit a graphics error and was safely downgraded." />;
+
   return <div className="relative h-full min-h-[420px] w-full touch-none overflow-hidden bg-black">
+    <GraphicsBoundary fallback={localFallback}>
     <Canvas
       camera={{ position: [0, 0, .1], fov: 74 }}
       dpr={lowMemory ? [1, 1.15] : [1, 2]}
       gl={{ antialias: !lowMemory, powerPreference: lowMemory ? "low-power" : "high-performance", preserveDrawingBuffer: false }}
-      onCreated={({ gl }) => {
-        gl.domElement.addEventListener("webglcontextlost", (event) => {
-          event.preventDefault();
-          setGraphicsLost(true);
-        }, { once: true });
-      }}
     >
+      <RendererGuard onLost={handleGraphicsLost} />
       <Suspense fallback={<Html center><div className="rounded-full bg-black/70 px-4 py-2 text-sm font-bold text-white">Loading scene…</div></Html>}>
         <Sphere url={panoramaUrl} constrained={lowMemory} />
         <DeviceOrientationCamera enabled={motionEnabled} />
@@ -145,6 +171,7 @@ export default function VirtualTourPanorama({
       </Suspense>
       <OrbitControls enabled={!motionEnabled} enablePan={false} enableDamping dampingFactor={.08} rotateSpeed={-.28} minDistance={.1} maxDistance={.1} />
     </Canvas>
+    </GraphicsBoundary>
     <div className="pointer-events-none absolute left-3 top-3 rounded-full border border-white/20 bg-black/55 px-3 py-1.5 text-[11px] font-bold text-white backdrop-blur">{motionEnabled ? "Move your phone to look around" : "Drag to look around · pinch/scroll to explore"}</div>
   </div>;
 }
