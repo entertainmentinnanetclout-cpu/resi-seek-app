@@ -70,7 +70,7 @@ expect(residence.includes("loadError") && residence.includes("Residence could no
 expect(dashboard.includes("Promise.allSettled") && dashboard.includes("abortSignal") && dashboard.includes("Refresh journey"), "dashboard command centre isolates partial backend failures and supports recovery");
 expect(map.includes("safeForVector") && map.includes("rk_native_safe_graphics_v1") && map.includes("ResMapExperienceStable"), "native map defaults to stable 2D and gates optional GPU-heavy vector mode");
 expect(stableMap.includes("using safe raster defaults") && stableMap.includes("Could not build route"), "stable ResMap contains startup and routing failures");
-expect(panorama.includes("webglcontextlost") && panorama.includes("texture.dispose") && panorama.includes("rk_native_safe_graphics_v1"), "360 viewer detects context loss, disposes textures and has safe graphics fallback");
+expect(panorama.includes("webglcontextlost") && panorama.includes("texture.dispose") && panorama.includes("localStorage.setItem(\"rk_native_safe_graphics_v1\"") && panorama.includes("rk_native_safe_graphics_v1"), "360 viewer detects context loss, persists native safe graphics, disposes textures and has safe graphics fallback");
 expect(boundary.includes("recordMobileRuntime") && boundary.includes("ChunkLoadError") && boundary.includes("caches.delete"), "React/stale-chunk failures are contained without deleting auth storage");
 expect(telemetry.includes("mobile_runtime_events") && telemetry.includes("safeMetadata"), "runtime diagnostics are centralized and privacy-filtered");
 expect(connectivity.includes("offline_boot") && connectivity.includes("reconnected"), "offline boot and reconnect lifecycle are observable");
