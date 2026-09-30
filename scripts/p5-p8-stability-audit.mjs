@@ -37,13 +37,13 @@ expect(css.includes("100svh") && css.includes("100dvh") && css.includes("safe-ar
 expect(css.includes("font-size: 16px !important"), "iPhone form focus zoom is prevented");
 expect(install.includes('navigator.platform === "MacIntel"') && install.includes("navigator.maxTouchPoints > 1"), "iPad desktop-mode detection is present");
 expect(install.includes("Add to Home Screen") && install.includes("Add to Dock"), "Apple install guidance covers iPhone/iPad and macOS Safari");
-expect(smoke.includes("webkit-iphone") && smoke.includes("webkit-ipad"), "WebKit phone/tablet profiles are in automated smoke coverage");
+expect(smoke.includes("webkit-iphone") && smoke.includes("webkit-ipad-portrait") && smoke.includes("webkit-ipad-landscape") && smoke.includes("webkit-ipad-split"), "WebKit iPhone/iPad portrait, landscape and split profiles are in automated smoke coverage");
 
 console.log("\nP7 — Mac and Windows PWA");
 expect(vite.includes('display: "standalone"') && vite.includes("display_override"), "generated manifest supports installed desktop display modes");
 expect(manifest.includes('"display": "standalone"') && manifest.includes('"display_override"'), "static manifest mirrors installed desktop display modes");
 expect(install.includes("beforeinstallprompt") && install.includes("/Windows/i"), "Chromium/Windows installation flow is supported");
-expect(smoke.includes("chromium-desktop") && smoke.includes("webkit-mac"), "desktop Chromium and WebKit profiles are in smoke coverage");
+expect(smoke.includes("chromium-windows-desktop") && smoke.includes("chromium-windows-compact") && smoke.includes("webkit-mac"), "Windows Chromium and macOS WebKit profiles are in smoke coverage");
 expect(css.includes(":focus-visible") && css.includes("scrollbar-gutter: stable"), "keyboard focus and desktop resize stability are hardened");
 
 console.log("\nP8 — Offline and weak network");
