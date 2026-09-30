@@ -7,52 +7,66 @@ const env=(n:string)=>Deno.env.get(n)||"";
 const supabaseUrl=env("SUPABASE_URL")||env("EXTERNAL_SUPABASE_URL");
 const serviceKey=env("SUPABASE_SERVICE_ROLE_KEY")||env("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
 const anonKey=env("SUPABASE_ANON_KEY")||env("EXTERNAL_SUPABASE_ANON_KEY");
-const twilioAccountSid=env("TWILIO_ACCOUNT_SID");
-const twilioAuthToken=env("TWILIO_AUTH_TOKEN");
-const twilioWhatsappFrom=env("TWILIO_WHATSAPP_FROM");
 const PUBLIC_BASE="https://www.reskonnect.org";
 const service=supabaseUrl&&serviceKey?createClient(supabaseUrl,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}}):null;
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 const safeText=(v:any,max=160)=>String(v??"").trim().slice(0,max);
 const norm=(v:any)=>String(v??"").toLowerCase().replace(/[()]/g," ").replace(/\s+/g," ").trim();
-const phoneDigits=(v:any)=>String(v??"").replace(/^whatsapp:/i,"").replace(/\D/g,"");
-const e164=(v:any)=>{let d=phoneDigits(v);if(d.startsWith("0")&&d.length===10)d="27"+d.slice(1);if(!d.startsWith("27")&&d.length===9)d="27"+d;return d?"+"+d:"";};
-const wa=(v:any)=>{const n=e164(v);return n?"whatsapp:"+n:"";};
-const twilioBasic=()=>`Basic ${btoa(`${twilioAccountSid}:${twilioAuthToken}`)}`;
-
-async function notifyOwnerEscalation(threadId:string,reason:string,contactId:string|null=null,fallbackPhone:string|null=null){
+async function queueOwnerEscalation(threadId:string,reason:string,contactId:string|null=null){
   try{
-    if(!threadId||!service)return{sent:false,reason:"missing_thread"};
-    const prior=await service.from("adminos_automation_events").select("id").eq("event_type","whatsapp.owner_escalation_notified").eq("entity_type","whatsapp_thread").eq("entity_id",threadId).limit(1).maybeSingle();
-    if(prior.data)return{sent:false,deduplicated:true};
+    if(!threadId||!service)return{queued:false,reason:"missing_thread"};
+    const prior=await service.from("adminos_automation_events").select("id")
+      .eq("event_type","whatsapp.owner_escalation_requested")
+      .eq("entity_type","whatsapp_thread")
+      .eq("entity_id",threadId).limit(1).maybeSingle();
+    if(prior.data)return{queued:false,deduplicated:true};
+
     const cfg=(await service.from("rk_brain_config").select("config").eq("config_key","core").maybeSingle()).data?.config||{};
-    if(cfg.escalation_alert_enabled!==true)return{sent:false,reason:"disabled"};
-    const alertTo=e164(cfg.escalation_alert_to||"");
-    if(!alertTo||!twilioAccountSid||!twilioAuthToken||!twilioWhatsappFrom)return{sent:false,reason:"notification_transport_not_configured"};
-    const thread=(await service.from("adminos_whatsapp_threads").select("id,contact_id,channel_address,intent,priority").eq("id",threadId).maybeSingle()).data||null;
+    if(cfg.escalation_alert_enabled!==true)return{queued:false,reason:"disabled"};
+
+    const thread=(await service.from("adminos_whatsapp_threads")
+      .select("id,contact_id,channel_address,intent,priority")
+      .eq("id",threadId).maybeSingle()).data||null;
     const resolvedContactId=contactId||thread?.contact_id||null;
-    const contact=resolvedContactId?(await service.from("adminos_contacts").select("full_name,phone,campus").eq("id",resolvedContactId).maybeSingle()).data:null;
-    const customerPhone=e164(contact?.phone||thread?.channel_address||fallbackPhone||"");
+    const contact=resolvedContactId
+      ?(await service.from("adminos_contacts").select("full_name,phone,campus").eq("id",resolvedContactId).maybeSingle()).data
+      :null;
+
+    const recipient=safeText(cfg.escalation_alert_to,40);
     const lines=[
       "🚨 DIMPHO ESCALATION",
       contact?.full_name?`Customer: ${safeText(contact.full_name,120)}`:null,
-      customerPhone?`WhatsApp: ${customerPhone}`:null,
+      contact?.phone?`WhatsApp: ${safeText(contact.phone,40)}`:null,
       contact?.campus?`Campus: ${safeText(contact.campus,120)}`:null,
       thread?.intent?`Intent: ${safeText(thread.intent,80)}`:null,
       `Reason: ${safeText(reason,500)}`,
       `Thread: ${threadId}`,
       "Action: Open AdminOS → WhatsApp Desk"
     ].filter(Boolean).join("\n");
-    const form=new URLSearchParams({From:wa(twilioWhatsappFrom),To:wa(alertTo),Body:lines.slice(0,3000)});
-    const response=await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`,{method:"POST",headers:{Authorization:twilioBasic(),"Content-Type":"application/x-www-form-urlencoded"},body:form});
-    const data=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(data?.message||`Twilio HTTP ${response.status}`);
-    await service.from("adminos_automation_events").insert({event_type:"whatsapp.owner_escalation_notified",entity_type:"whatsapp_thread",entity_id:threadId,contact_id:resolvedContactId,payload:{reason,twilio_message_sid:data.sid||null,channel:"whatsapp_twilio",persona:"Dimpho"}});
-    return{sent:true,sid:data.sid||null};
+
+    const event=await service.from("adminos_automation_events").insert({
+      event_type:"whatsapp.owner_escalation_requested",
+      entity_type:"whatsapp_thread",
+      entity_id:threadId,
+      contact_id:resolvedContactId,
+      payload:{
+        reason,
+        channel:cfg.escalation_alert_channel||"agent_native",
+        recipient:recipient||null,
+        suggested_message:lines.slice(0,3000),
+        persona:"Dimpho",
+        dispatch_status:"pending_agent_capability"
+      }
+    }).select("id").single();
+
+    return{
+      queued:true,
+      event_id:event.data?.id||null,
+      channel:cfg.escalation_alert_channel||"agent_native",
+      recipient_configured:Boolean(recipient)
+    };
   }catch(error){
-    const message=error instanceof Error?error.message:String(error);
-    try{await service?.from("adminos_automation_events").insert({event_type:"whatsapp.owner_escalation_notification_failed",entity_type:"whatsapp_thread",entity_id:threadId,contact_id:contactId,payload:{reason,error:message,persona:"Dimpho"}});}catch{}
-    return{sent:false,error:message};
+    return{queued:false,error:error instanceof Error?error.message:String(error)};
   }
 }
 const campusProvince=(v:any)=>{const x=norm(v);if(/polokwane|giyani/.test(x))return"Limpopo";if(/mbombela|nelspruit|emalahleni|witbank/.test(x))return"Mpumalanga";if(/pretoria|arcadia|arts campus|soshanguve|ga-rankuwa|garankuwa/.test(x))return"Gauteng";return null;};
@@ -144,7 +158,39 @@ async function executeTool(toolKey:string,args:any,contextUserId:string|null,con
     if(!contextUserId)throw new Error("Authenticated customer context required"); const [codes,earnings]=await Promise.all([service!.from("referral_codes").select("code,is_active,signup_count,sale_count,total_earned,total_paid,program_key,created_at").eq("user_id",contextUserId).order("created_at",{ascending:false}).limit(10),service!.from("referral_earnings").select("amount,status,source_type,paid_at,created_at").eq("referrer_user_id",contextUserId).order("created_at",{ascending:false}).limit(100)]); if(codes.error)throw codes.error;if(earnings.error)throw earnings.error; const rows=earnings.data||[]; return{codes:codes.data||[],earnings:{total:rows.reduce((s:number,x:any)=>s+Number(x.amount||0),0),paid:rows.filter((x:any)=>x.status==="paid").reduce((s:number,x:any)=>s+Number(x.amount||0),0),items:rows.slice(0,20)}};
   }
   if(toolKey==="request_human_support"){
-    if(!contextUserId&&!contactId)throw new Error("Customer context required"); const reason=safeText(a.reason,500)||"Customer requested human support";let updated=false; const candidate=safeText(a.thread_id,64)||threadRef||""; if(candidate){const t=await service!.from("adminos_whatsapp_threads").select("id,contact_id,channel_address").eq("id",candidate).maybeSingle();if(t.data&&(!contactId||t.data.contact_id===contactId)){await service!.from("adminos_whatsapp_threads").update({status:"escalated",mode:"human",priority:"high",updated_at:new Date().toISOString(),conversation_state:{human_requested:true,reason}}).eq("id",candidate);await service!.from("adminos_automation_events").insert({event_type:"whatsapp.escalated",entity_type:"whatsapp_thread",entity_id:candidate,contact_id:t.data.contact_id||contactId,payload:{reason,risk:"amber",persona:"Dimpho",source:"request_human_support"}}).catch(()=>null);await notifyOwnerEscalation(candidate,reason,t.data.contact_id||contactId,t.data.channel_address||null);updated=true;}} return{escalated:true,human_support_requested:true,thread_updated:updated,owner_alert_requested:Boolean(candidate),reason};
+    if(!contextUserId&&!contactId)throw new Error("Customer context required");
+    const reason=safeText(a.reason,500)||"Customer requested human support";
+    let updated=false;
+    let ownerNotification:any={queued:false,reason:"no_thread"};
+    const candidate=safeText(a.thread_id,64)||threadRef||"";
+    if(candidate){
+      const t=await service!.from("adminos_whatsapp_threads").select("id,contact_id").eq("id",candidate).maybeSingle();
+      if(t.data&&(!contactId||t.data.contact_id===contactId)){
+        await service!.from("adminos_whatsapp_threads").update({
+          status:"escalated",
+          mode:"human",
+          priority:"high",
+          updated_at:new Date().toISOString(),
+          conversation_state:{human_requested:true,reason}
+        }).eq("id",candidate);
+        await service!.from("adminos_automation_events").insert({
+          event_type:"whatsapp.escalated",
+          entity_type:"whatsapp_thread",
+          entity_id:candidate,
+          contact_id:t.data.contact_id||contactId,
+          payload:{reason,risk:"amber",persona:"Dimpho",source:"request_human_support"}
+        }).catch(()=>null);
+        ownerNotification=await queueOwnerEscalation(candidate,reason,t.data.contact_id||contactId);
+        updated=true;
+      }
+    }
+    return{
+      escalated:true,
+      human_support_requested:true,
+      thread_updated:updated,
+      owner_notification:ownerNotification,
+      reason
+    };
   }
   throw new Error("Unsupported tool");
 }
