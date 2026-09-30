@@ -78,37 +78,6 @@ async function twilioSend(form: URLSearchParams) {
 }
 async function activity(s: any, threadId: string, type: string, metadata: any = {}) { await s.from("adminos_whatsapp_activity").insert({ thread_id: threadId, actor_id: null, event_type: type, metadata }); }
 
-async function notifyOwnerEscalation(s:any,thread:any,contactId:string|null,from:string,reason:string,profile:any=null){
-  try{
-    if(!thread?.id)return{sent:false,reason:"missing_thread"};
-    const prior=await s.from("adminos_automation_events").select("id").eq("event_type","whatsapp.owner_escalation_notified").eq("entity_type","whatsapp_thread").eq("entity_id",thread.id).limit(1).maybeSingle();
-    if(prior.data)return{sent:false,deduplicated:true};
-    const cfg=(await s.from("rk_brain_config").select("config").eq("config_key","core").maybeSingle()).data?.config||{};
-    if(cfg.escalation_alert_enabled!==true)return{sent:false,reason:"disabled"};
-    const alertTo=e164(cfg.escalation_alert_to||"");
-    if(!alertTo||!accountSid||!authToken||!fromNumber)return{sent:false,reason:"notification_transport_not_configured"};
-    const contact=contactId?(await s.from("adminos_contacts").select("full_name,phone,campus").eq("id",contactId).maybeSingle()).data:null;
-    const customerPhone=e164(contact?.phone||profile?.phone||profile?.phone_number||from||thread?.channel_address||"");
-    const lines=[
-      "🚨 DIMPHO ESCALATION",
-      (contact?.full_name||profile?.full_name)?`Customer: ${text(contact?.full_name||profile?.full_name).slice(0,120)}`:null,
-      customerPhone?`WhatsApp: ${customerPhone}`:null,
-      (contact?.campus||profile?.campus)?`Campus: ${text(contact?.campus||profile?.campus).slice(0,120)}`:null,
-      thread?.intent?`Intent: ${text(thread.intent).slice(0,80)}`:null,
-      `Reason: ${text(reason).slice(0,500)}`,
-      `Thread: ${thread.id}`,
-      "Action: Open AdminOS → WhatsApp Desk"
-    ].filter(Boolean).join("\n");
-    const sent=await twilioSend(new URLSearchParams({From:wa(fromNumber),To:wa(alertTo),Body:lines.slice(0,3000)}));
-    await s.from("adminos_automation_events").insert({event_type:"whatsapp.owner_escalation_notified",entity_type:"whatsapp_thread",entity_id:thread.id,contact_id:contactId,payload:{reason,twilio_message_sid:sent.sid||null,channel:"whatsapp_twilio",persona:"Dimpho"}});
-    await activity(s,thread.id,"owner.escalation_notified",{twilio_message_sid:sent.sid||null});
-    return{sent:true,sid:sent.sid||null};
-  }catch(error){
-    const message=error instanceof Error?error.message:String(error);
-    await s.from("adminos_automation_events").insert({event_type:"whatsapp.owner_escalation_notification_failed",entity_type:"whatsapp_thread",entity_id:thread?.id||null,contact_id:contactId,payload:{reason,error:message,persona:"Dimpho"}}).catch(()=>null);
-    return{sent:false,error:message};
-  }
-}
 async function persistSent(s: any, thread: any, contactId: string | null, to: string, sent: any, body: string | null, metadata: any = {}, touchThread = true) {
   const now = new Date().toISOString();
   const row = await s.from("adminos_whatsapp_messages").upsert({ thread_id: thread.id, contact_id: contactId, twilio_message_sid: sent.sid, direction: "outbound", from_address: wa(fromNumber), to_address: wa(to), body_text: body, message_kind: "service", status: sent.status === "queued" ? "queued" : "sent", risk_level: "green", sent_at: now, metadata: { source: "dimpho_whatsapp", author_type: "ai", persona: "Dimpho", ...metadata } }, { onConflict: "twilio_message_sid" }).select("id").maybeSingle();
@@ -308,7 +277,6 @@ async function handoff(s: any, thread: any, contactId: string | null, from: stri
   if (acknowledgement) await sendText(s, thread, contactId, from, "This needs a ResKonnect team member. I’ve passed the conversation context across, so you won’t need to repeat yourself. I’ll stop here while a person takes over.", { intent: "human", escalation: true, reason });
   await s.from("adminos_whatsapp_threads").update({ status: "escalated", mode: "escalated", priority: "high", intent: "human", updated_at: new Date().toISOString() }).eq("id", thread.id); thread.mode = "escalated"; thread.status = "escalated";
   await touchConversion(s, thread, contactId, profile, thread.intent || "service", "human_handoff", { reason }); await s.from("adminos_automation_events").insert({ event_type: "whatsapp.escalated", entity_type: "whatsapp_thread", entity_id: thread.id, contact_id: contactId, payload: { reason, risk: "amber", persona: "Dimpho" } }); await activity(s, thread.id, "whatsapp.escalated", { reason });
-  await notifyOwnerEscalation(s,thread,contactId,from,reason,profile);
 }
 async function routeDeterministic(s: any, input: any) {
   const { thread, contactId, from, body, messageId } = input, selection = text(input.selection || body), lower = selection.toLowerCase(), who = await identity(s, contactId, from), name = first(who.profile?.full_name || who.contact?.full_name || "there"), language = await detectLanguage(s, thread, contactId, body); let current = thread.conversation_state || {};
@@ -381,7 +349,7 @@ async function processInbound(s: any, input: any) {
     const asksClarification = /\?$/.test(answer.trim()) || /\b(tell me|which |what |where |when |please confirm|could you confirm)\b/i.test(answer);
     if (asksClarification) await sendText(s, thread, contactId, from, answer, { risk: agent.risk || "green", confidence, agent_run_id: agent.run_id || null }); else await resolvedReply(s, thread, contactId, from, answer, thread.intent || "general_service", { risk: agent.risk || "green", confidence, agent_run_id: agent.run_id || null });
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error); await learningGap(s, thread, contactId, body, reason, "automation_error", { message_id: messageId }).catch(() => null); await sendText(s, thread, contactId, from, "I couldn’t complete this safely through automation. I’ve passed the conversation to a ResKonnect team member and I’ll stop here so you don’t have to repeat yourself.", { escalation: true, system_error: true }).catch(() => null); await s.from("adminos_whatsapp_threads").update({ status: "escalated", mode: "escalated", priority: "high", updated_at: new Date().toISOString() }).eq("id", thread.id); await s.from("adminos_automation_events").insert({ event_type: "whatsapp.escalated", entity_type: "whatsapp_thread", entity_id: thread.id, contact_id: contactId, payload: { reason: "automation_error", error: reason, persona: "Dimpho" } }).catch(() => null); await activity(s, thread.id, "system.error", { reason, message_id: messageId }); await notifyOwnerEscalation(s,thread,contactId,from,"automation_error: "+reason,null);
+    const reason = error instanceof Error ? error.message : String(error); await learningGap(s, thread, contactId, body, reason, "automation_error", { message_id: messageId }).catch(() => null); await sendText(s, thread, contactId, from, "I couldn’t complete this safely through automation. I’ve passed the conversation to a ResKonnect team member and I’ll stop here so you don’t have to repeat yourself.", { escalation: true, system_error: true }).catch(() => null); await s.from("adminos_whatsapp_threads").update({ status: "escalated", mode: "escalated", priority: "high", updated_at: new Date().toISOString() }).eq("id", thread.id); await s.from("adminos_automation_events").insert({ event_type: "whatsapp.escalated", entity_type: "whatsapp_thread", entity_id: thread.id, contact_id: contactId, payload: { reason: "automation_error", error: reason, persona: "Dimpho" } }).catch(() => null); await activity(s, thread.id, "system.error", { reason, message_id: messageId });
   }
 }
 serve(async (req) => {
