@@ -67,7 +67,7 @@ const checks = [
   ["RG6 version and protected signing parity", () => {
     const readiness = read(".github/workflows/android-playstore-readiness.yml");
     const signed = read(".github/workflows/android-playstore-release.yml");
-    assert.equal(release.versionName, "1.1.4"); assert.equal(release.versionCode, 7);
+    assert.equal(release.versionName, "1.1.5"); assert.equal(release.versionCode, 8);
     assert.ok(readiness.includes("@capacitor/local-notifications@8.0.0") && signed.includes("@capacitor/local-notifications@8.0.0"));
     assert.ok(signed.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64") && signed.includes("jarsigner"));
     assert.equal(release.nativePushNotifications, false, "Never represent FCM background delivery as working without provider configuration");
