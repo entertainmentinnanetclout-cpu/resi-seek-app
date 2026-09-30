@@ -8,6 +8,7 @@ const app = read("src/App.tsx");
 const api = read("src/lib/virtualTours/api.ts");
 const viewer = read("src/pages/VirtualTourViewerPage.tsx");
 const panorama = read("src/components/virtualTours/VirtualTourPanorama.tsx");
+const performance = read("src/lib/devicePerformance.ts");
 const card = read("src/components/findmyres/ResidenceBrandStudioCard.tsx");
 const portal = read("src/pages/residence/ResidenceVirtualTour.tsx");
 const toolEngine = read("supabase/functions/dimpho-tool-engine/index.ts");
@@ -20,7 +21,7 @@ expect(api.includes('publicTourForResidence'), "Marketplace virtual-tour discove
 expect(card.includes("VirtualTourMarketBadge"), "Find My Res branded cards expose Gold 360 discovery");
 expect(portal.includes("VirtualTourGoldAnalytics"), "Property OS exposes Gold analytics/upgrade UX");
 expect(viewer.includes("motion_enabled") && viewer.includes("scene_dwell") && viewer.includes("apply_click"), "Gold viewer records motion, dwell and conversion events");
-expect(panorama.includes("DeviceOrientationCamera") && panorama.includes("deviceMemory"), "Viewer contains mobile motion and low-memory optimization");
+expect(panorama.includes("DeviceOrientationCamera") && panorama.includes("graphicsBudget") && performance.includes("deviceMemory") && performance.includes("hardwareConcurrency"), "Viewer contains mobile motion and shared low-memory optimization");
 expect(toolEngine.includes('get_virtual_tour') && toolEngine.includes('get_virtual_tour_scene'), "Dimpho tool runtime understands published 360 tours and scenes");
 expect(migration.includes("virtual_tour_marketplace_index") && migration.includes("virtual_tour_enforce_scene_entitlement"), "RG3/RG4 migration contains safe marketplace index and server-side quota enforcement");
 expect(migration.includes("virtual_tour_rg3") && migration.includes("virtual_tour_rg4"), "RG3/RG4 release state is source-controlled");

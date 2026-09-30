@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ResidenceImageSlideshowProps {
@@ -17,10 +17,10 @@ const ResidenceImageSlideshow = ({
   interval = 4000 
 }: ResidenceImageSlideshowProps) => {
   // Combine main image with gallery images
-  const allImages = [
+  const allImages = useMemo(() => [
     mainImage || '/placeholder.svg',
     ...(images || [])
-  ].filter(Boolean);
+  ].filter(Boolean).slice(0, 20), [mainImage, images]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -57,18 +57,24 @@ const ResidenceImageSlideshow = ({
         className="flex transition-transform duration-500 ease-out h-full"
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
       >
-        {allImages.map((src, idx) => (
-          <img
-            key={idx}
-            src={src}
-            alt={`${alt} ${idx + 1}`}
-            className="w-full h-full object-cover flex-shrink-0"
-            loading="lazy"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/placeholder.svg';
-            }}
-          />
-        ))}
+        {allImages.map((src, idx) => {
+          const previous = (currentIndex - 1 + allImages.length) % allImages.length;
+          const next = (currentIndex + 1) % allImages.length;
+          const activeWindow = idx === currentIndex || idx === previous || idx === next;
+          return activeWindow ? (
+            <img
+              key={idx}
+              src={src}
+              alt={`${alt} ${idx + 1}`}
+              className="w-full h-full object-cover flex-shrink-0"
+              loading={idx === currentIndex ? "eager" : "lazy"}
+              decoding="async"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/placeholder.svg';
+              }}
+            />
+          ) : <div key={idx} aria-hidden="true" className="w-full h-full flex-shrink-0 bg-muted" />;
+        })}
       </div>
 
       {/* Navigation arrows (only show on hover when there are multiple images) */}

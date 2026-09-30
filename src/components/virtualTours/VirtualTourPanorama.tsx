@@ -3,6 +3,7 @@ import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { Html, OrbitControls } from "@react-three/drei";
 import { BackSide, LinearFilter, MathUtils, SRGBColorSpace, TextureLoader } from "three";
 import { isNativeApp } from "@/lib/accountRouting";
+import { graphicsBudget } from "@/lib/devicePerformance";
 import { ArrowRight, Info, MapPin } from "lucide-react";
 
 export type ViewerHotspot = { id: string; hotspot_type: string; label: string; body?: string | null; target_scene_id?: string | null; yaw: number; pitch: number; cta_url?: string | null };
@@ -17,7 +18,7 @@ class GraphicsBoundary extends Component<{ fallback: ReactNode; children: ReactN
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 
-function Sphere({ url, constrained }: { url: string; constrained: boolean }) {
+function Sphere({ url, constrained, segments }: { url: string; constrained: boolean; segments: [number, number] }) {
   const texture = useLoader(TextureLoader, url);
   useEffect(() => {
     texture.colorSpace = SRGBColorSpace;
@@ -32,7 +33,7 @@ function Sphere({ url, constrained }: { url: string; constrained: boolean }) {
       } catch {}
     };
   }, [constrained, texture, url]);
-  return <mesh scale={[-1, 1, 1]}><sphereGeometry args={constrained ? [8, 64, 40] : [8, 96, 64]} /><meshBasicMaterial map={texture} side={BackSide} /></mesh>;
+  return <mesh scale={[-1, 1, 1]}><sphereGeometry args={[8, segments[0], segments[1]]} /><meshBasicMaterial map={texture} side={BackSide} /></mesh>;
 }
 
 function RendererGuard({ onLost }: { onLost: () => void }) {
@@ -124,11 +125,8 @@ export default function VirtualTourPanorama({
   const safeGraphics = useMemo(() => {
     try { return native && localStorage.getItem("rk_native_safe_graphics_v1") === "1"; } catch { return false; }
   }, [native]);
-  const lowMemory = useMemo(() => {
-    if (typeof navigator === "undefined") return false;
-    const memory = Number((navigator as any).deviceMemory || 0);
-    return native || (memory > 0 && memory <= 4) || /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  }, [native]);
+  const budget = useMemo(() => graphicsBudget(), []);
+  const lowMemory = native || budget.tier === "constrained";
 
   if (safeGraphics || !webglAvailable || graphicsLost) {
     const reason = safeGraphics
@@ -145,12 +143,12 @@ export default function VirtualTourPanorama({
     <GraphicsBoundary fallback={localFallback}>
     <Canvas
       camera={{ position: [0, 0, .1], fov: 74 }}
-      dpr={lowMemory ? [1, 1.15] : [1, 2]}
-      gl={{ antialias: !lowMemory, powerPreference: lowMemory ? "low-power" : "high-performance", preserveDrawingBuffer: false }}
+      dpr={budget.dpr}
+      gl={{ antialias: budget.antialias, powerPreference: lowMemory ? "low-power" : "high-performance", preserveDrawingBuffer: false }}
     >
       <RendererGuard onLost={handleGraphicsLost} />
       <Suspense fallback={<Html center><div className="rounded-full bg-black/70 px-4 py-2 text-sm font-bold text-white">Loading scene…</div></Html>}>
-        <Sphere url={panoramaUrl} constrained={lowMemory} />
+        <Sphere url={panoramaUrl} constrained={lowMemory} segments={budget.sphereSegments} />
         <DeviceOrientationCamera enabled={motionEnabled} />
         {all.map((item) => <Html key={item.id} position={point(item.yaw, item.pitch)} center distanceFactor={8} transform={false}>
           <button

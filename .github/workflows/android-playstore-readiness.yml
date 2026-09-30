@@ -44,6 +44,12 @@ on:
       - "scripts/p1-p4-stability-audit.mjs"
       - "scripts/p1-p4-core-regression.mjs"
       - "scripts/p5-p8-stability-audit.mjs"
+      - "scripts/p9-performance-budget.mjs"
+      - "scripts/p10-android-device-matrix.mjs"
+      - "scripts/p11-release-gate.mjs"
+      - "scripts/p12-release-candidate-audit.mjs"
+      - "docs/P9_P12_RELEASE_CANDIDATE_2026-09-30.md"
+      - "src/lib/devicePerformance.ts"
       - "src/contexts/AuthContext.tsx"
       - "src/components/SiteHeader.tsx"
       - "src/components/HomeJourneyBar.tsx"
@@ -104,6 +110,10 @@ jobs:
         run: node scripts/p1-p4-stability-audit.mjs
       - name: P5-P8 graphics, PWA and network audit
         run: node scripts/p5-p8-stability-audit.mjs
+      - name: P11 automated release gate
+        run: node scripts/p11-release-gate.mjs
+      - name: P12 release candidate audit
+        run: node scripts/p12-release-candidate-audit.mjs
       - name: RG3–RG6 native feature and security audit
         run: node scripts/android-rg3-rg6-qa.mjs
       - name: Check complete application types
@@ -114,18 +124,22 @@ jobs:
         run: node scripts/android-session-regression.mjs
       - name: Verify P1-P4 core journeys and failure recovery
         run: node scripts/p1-p4-core-regression.mjs
+      - name: P10 Android OEM and device compatibility
+        run: node scripts/p10-android-device-matrix.mjs
       - name: Install pinned Capacitor, geolocation and local notifications
         run: npm install --no-save --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0
       - name: Build production web bundle
         env:
           RK_NATIVE_BUILD: "1"
         run: npm run build
+      - name: P9 production performance budget
+        run: npm run platform:p9
       - name: Sync Capacitor Android
         run: npx cap sync android
       - name: Compile API 36 release AAB
         env:
-          ANDROID_VERSION_CODE: "7"
-          ANDROID_VERSION_NAME: "1.1.4"
+          ANDROID_VERSION_CODE: "8"
+          ANDROID_VERSION_NAME: "1.1.5"
         run: gradle -p android bundleRelease --stacktrace
       - name: Verify release artifact exists
         run: test -s android/app/build/outputs/bundle/release/app-release.aab

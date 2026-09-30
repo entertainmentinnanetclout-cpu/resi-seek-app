@@ -78,7 +78,7 @@ const ResidenceLayout = () => {
       if (!reservations.error) setReservationCount((reservations.data || []).filter((row: any) => row.status !== "cancelled").length);
     };
     void loadCounts();
-    const interval = window.setInterval(() => void loadCounts(), 30_000);
+    const interval = window.setInterval(() => { if (document.visibilityState === "visible") void loadCounts(); }, 120_000);
     const channel = supabase.channel(`residence-portal-app-counts-${residence.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "applications", filter: `residence_id=eq.${residence.id}` }, loadCounts)
       .subscribe();

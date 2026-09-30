@@ -28,6 +28,8 @@ jobs:
         run: npm run web:check
       - name: P5-P8 platform stability audit
         run: npm run platform:p5-p8
+      - name: P11 release gate matrix
+        run: npm run release:p11
       - name: TypeScript
         run: npx tsc --noEmit -p tsconfig.app.json
       - name: Install Chromium and WebKit
@@ -44,5 +46,7 @@ jobs:
           retention-days: 7
       - name: Production build
         run: npm run build
+      - name: P9 production performance budget
+        run: npm run platform:p9
       - name: Authenticated production-PWA matrix
         run: node scripts/cross-platform-session-smoke.mjs
