@@ -43,7 +43,7 @@ const ResidenceReservations2027 = () => {
   useEffect(() => {
     if (!residence?.id) return;
     void load();
-    const interval = window.setInterval(() => void load(), 30_000);
+    const interval = window.setInterval(() => { if (document.visibilityState === "visible") void load(); }, 120_000);
     const onFocus = () => void load();
     window.addEventListener("focus", onFocus);
     return () => { window.clearInterval(interval); window.removeEventListener("focus", onFocus); };
