@@ -15,6 +15,8 @@ import {
   Sparkles,
   Users,
   WalletCards,
+  AlertTriangle,
+  RefreshCw,
   X,
 } from "lucide-react";
 import SEO from "@/components/SEO";
@@ -96,6 +98,8 @@ const ResidenceDetail = () => {
   const [related, setRelated] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [hasApplied, setHasApplied] = useState(false);
   const [showApply, setShowApply] = useState(false);
   const [showReserve, setShowReserve] = useState(false);
@@ -127,6 +131,7 @@ const ResidenceDetail = () => {
     const load = async () => {
       if (!routeKey) return setLoading(false);
       setLoading(true);
+      setLoadError(null);
       try {
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(routeKey);
         const primary = isUuid
@@ -151,22 +156,30 @@ const ResidenceDetail = () => {
         setRoomPrices(pricingResult.data || []);
         setRelated(relatedResult.data || []);
         setReviews(reviewResult.data || []);
-      } catch (error) {
+      } catch (error: any) {
         console.error(error);
+        const message = error?.message || "Could not load this residence. Check your connection and retry.";
+        setLoadError(message);
         toast.error("Could not load this residence.");
       } finally {
         setLoading(false);
       }
     };
     void load();
-  }, [routeKey]);
+  }, [routeKey, loadAttempt]);
 
   useEffect(() => {
     if (!user || !residenceId) return setHasApplied(false);
+    let active = true;
     void (async () => {
-      const { data } = await supabase.from("applications").select("id").eq("user_id", user.id).eq("residence_id", residenceId).maybeSingle();
-      setHasApplied(Boolean(data));
+      try {
+        const { data } = await supabase.from("applications").select("id").eq("user_id", user.id).eq("residence_id", residenceId).maybeSingle();
+        if (active) setHasApplied(Boolean(data));
+      } catch (error) {
+        console.warn("Could not refresh residence application state", error);
+      }
     })();
+    return () => { active = false; };
   }, [user, residenceId]);
 
   const ensureProfileReady = async () => {
@@ -183,15 +196,21 @@ const ResidenceDetail = () => {
       navigate(`/auth?returnTo=${encodeURIComponent(window.location.pathname)}`);
       return false;
     }
-    const { data: profile } = await supabase.from("profiles").select("full_name,phone,phone_number,student_number,identity_number,campus").eq("id", user.id).maybeSingle();
-    const phone = (profile as any)?.phone || (profile as any)?.phone_number;
-    const identity = (profile as any)?.student_number || (profile as any)?.identity_number;
-    if (!(profile as any)?.full_name || !phone || !identity || !(profile as any)?.campus) {
-      toast.info("Complete your contact and identity details before continuing.");
-      navigate(`/setup-profile?returnTo=${encodeURIComponent(window.location.pathname)}`);
+    try {
+      const { data: profile, error: profileError } = await supabase.from("profiles").select("full_name,phone,phone_number,student_number,identity_number,campus").eq("id", user.id).maybeSingle();
+      if (profileError) throw profileError;
+      const phone = (profile as any)?.phone || (profile as any)?.phone_number;
+      const identity = (profile as any)?.student_number || (profile as any)?.identity_number;
+      if (!(profile as any)?.full_name || !phone || !identity || !(profile as any)?.campus) {
+        toast.info("Complete your contact and identity details before continuing.");
+        navigate(`/setup-profile?returnTo=${encodeURIComponent(window.location.pathname)}`);
+        return false;
+      }
+      return true;
+    } catch (error: any) {
+      toast.error(error?.message || "Could not verify your profile. Check your connection and retry.");
       return false;
     }
-    return true;
   };
 
   const openApply = async () => {
@@ -260,6 +279,7 @@ const ResidenceDetail = () => {
   };
 
   if (loading) return <DashboardLayout><div className="mx-auto max-w-7xl p-6"><div className="h-80 animate-pulse rounded-3xl bg-muted" /></div></DashboardLayout>;
+  if (loadError && !residence) return <DashboardLayout><div className="mx-auto max-w-xl px-6 py-24 text-center"><AlertTriangle className="mx-auto h-10 w-10 text-amber-600" /><h1 className="mt-4 text-2xl font-black">Residence could not be refreshed</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">{loadError}</p><div className="mt-5 flex flex-wrap justify-center gap-2"><Button onClick={() => setLoadAttempt((value) => value + 1)}><RefreshCw className="mr-2 h-4 w-4" />Try again</Button><Button asChild variant="outline"><Link to="/find">Back to accommodation</Link></Button></div></div></DashboardLayout>;
   if (!residence) return <DashboardLayout><div className="mx-auto max-w-xl px-6 py-24 text-center"><Building2 className="mx-auto h-10 w-10 text-muted-foreground" /><h1 className="mt-4 text-2xl font-black">Residence not found</h1><Button asChild className="mt-5"><Link to="/find">Back to accommodation</Link></Button></div></DashboardLayout>;
 
   const averageRating = reviews.length ? reviews.reduce((sum, row) => sum + Number(row.rating || 0), 0) / reviews.length : 0;

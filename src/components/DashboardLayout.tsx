@@ -52,7 +52,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const SidebarContent = () => (
     <div className="flex h-[100dvh] min-h-0 w-full min-w-0 flex-col overflow-hidden bg-card text-foreground">
-      <div className="shrink-0 border-b border-border p-5 sm:p-6">
+      <div className="shrink-0 border-b border-border px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6 sm:pb-6 sm:pt-[max(1.5rem,env(safe-area-inset-top))]">
         <div className="mb-1 flex flex-col items-center">
           <img src={BRAND.logos.full} alt={BRAND.name} className="mb-2 h-14 max-w-full object-contain sm:h-16" />
         </div>
@@ -113,7 +113,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
         </header>
 
-        <header className="flex min-w-0 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-border bg-card px-3 py-3 md:hidden">
+        <header className="flex min-w-0 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-border bg-card px-3 pb-3 pt-[max(.75rem,env(safe-area-inset-top))] md:hidden">
           <div className="flex min-w-0 items-center gap-2">
             <img src={BRAND.logos.full} alt={BRAND.name} className="h-8 min-w-0 max-w-[145px] object-contain object-left" />
             {isAdmin && <Badge variant="destructive" className="shrink-0 gap-1"><Shield className="h-3 w-3" />Admin</Badge>}

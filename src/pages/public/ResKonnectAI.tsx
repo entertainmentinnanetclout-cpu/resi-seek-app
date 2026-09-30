@@ -67,6 +67,8 @@ const ResKonnectAI = () => {
     setInput("");
     setSending(true);
 
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 30_000);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -83,6 +85,7 @@ const ResKonnectAI = () => {
             ? { message: text, thread_id: threadId, metadata: { surface: "reskonnect_ai" } }
             : { action: "public_enquiry", message: text, context: { surface: "reskonnect_ai" } },
         ),
+        signal: controller.signal,
       });
       const data = await response.json().catch(() => ({}));
       const answer = String(data.response || data.answer || "").trim();
@@ -92,13 +95,16 @@ const ResKonnectAI = () => {
       if (data.thread_id) setThreadId(String(data.thread_id));
       setMessages((prev) => [...prev, { id: `a-${Date.now()}`, role: "assistant", content: answer }]);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "ResKonnect AI is temporarily unavailable.";
+      const message = controller.signal.aborted
+        ? "ResKonnect AI took too long to respond. Check your connection and try again."
+        : error instanceof Error ? error.message : "ResKonnect AI is temporarily unavailable.";
       setMessages((prev) => [...prev, {
         id: `a-${Date.now()}`,
         role: "assistant",
         content: `${message} You can still use Search ResKonnect or open the relevant Living, Applications or Opportunities service below.`,
       }]);
     } finally {
+      window.clearTimeout(timeout);
       setSending(false);
     }
   };

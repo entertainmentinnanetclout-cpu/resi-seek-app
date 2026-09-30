@@ -18,6 +18,7 @@ import { UserIntentProvider } from "@/contexts/UserIntentContext";
 import { ResidenceRoute } from "./components/ResidenceRoute";
 import { SpecialistRoute } from "@/components/SpecialistRoute";
 import DepartmentRoute from "@/components/DepartmentRoute";
+import ConnectivityStatus from "@/components/ConnectivityStatus";
 
 const StudentCare = lazy(() => import("./pages/StudentCare"));
 const ApplicationPartners = lazy(() => import("./pages/ApplicationPartners"));
@@ -28,6 +29,7 @@ const MarketplaceComingSoon = lazy(() => import("./pages/MarketplaceComingSoon")
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResBot = lazy(() => import("@/components/ResBot"));
 const PushPrompt = lazy(() => import("@/components/PushPrompt"));
+const InstallAppPrompt = lazy(() => import("@/components/InstallAppPrompt"));
 const About = lazy(() => import("./pages/public/About"));
 const ManagedSeoPage = lazy(() => import("./pages/seo/ManagedSeoPage"));
 const PropertyOpportunityDetail = lazy(() => import("./pages/public/PropertyOpportunityDetail"));
@@ -111,6 +113,7 @@ const MyDiscountOrders = lazy(() => import("./pages/MyDiscountOrders"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const AccountDeletion = lazy(() => import("./pages/AccountDeletion"));
+const InstallResKonnect = lazy(() => import("./pages/InstallResKonnect"));
 const ResidenceLogin = lazy(() => import("./pages/residence/ResidenceLogin"));
 const ResidenceLayout = lazy(() => import("./pages/residence/ResidenceLayout"));
 const ResidenceDashboard = lazy(() => import("./pages/residence/ResidenceDashboard"));
@@ -167,7 +170,7 @@ const DeferredGlobalEnhancements = () => {
     return () => window.clearTimeout(id);
   }, []);
   if (!ready) return null;
-  return <Suspense fallback={null}><ResBot /><PushPrompt /></Suspense>;
+  return <Suspense fallback={null}><ResBot /><PushPrompt /><InstallAppPrompt /></Suspense>;
 };
 
 const queryClient = new QueryClient({
@@ -181,6 +184,7 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <ConnectivityStatus />
           <BrowserRouter>
             <AuthProvider>
               <NativeAccountNavigation />
@@ -237,6 +241,7 @@ const App = () => {
                     <Route path="/terms" element={<Terms />} />
                     <Route path="/privacy" element={<Privacy />} />
                     <Route path="/delete-account" element={<AccountDeletion />} />
+                    <Route path="/install" element={<InstallResKonnect />} />
                     <Route path="/find" element={<FindMyRes />} />
                     <Route path="/findmyres" element={<FindMyRes />} />
                     <Route path="/accommodation-request" element={<AccommodationDemand />} />

@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import GodModeMfaGate from "@/components/admin/GodModeMfaGate";
 import { AdminDepartmentKey, DEPARTMENT_BY_KEY } from "@/lib/adminDepartments";
 import { toast } from "sonner";
+import AuthLoadingRecovery from "@/components/AuthLoadingRecovery";
 
 export default function DepartmentRoute({
   department,
@@ -12,12 +13,12 @@ export default function DepartmentRoute({
   department: AdminDepartmentKey;
   children: React.ReactNode;
 }) {
-  const { user, isLoading, isGodMode, adminDepartments } = useAuth();
+  const { user, isLoading, accessError, isGodMode, adminDepartments, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const allowed = isGodMode || adminDepartments.includes(department);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || accessError) return;
     if (!user) {
       navigate("/auth", { replace: true });
       return;
@@ -27,9 +28,11 @@ export default function DepartmentRoute({
       toast.error(`Access denied: ${DEPARTMENT_BY_KEY[department].label}`);
       navigate(fallback ? DEPARTMENT_BY_KEY[fallback].path : "/dashboard", { replace: true });
     }
-  }, [adminDepartments, allowed, department, isLoading, navigate, user]);
+  }, [adminDepartments, allowed, department, isLoading, accessError, navigate, user]);
 
-  if (isLoading || !user || !allowed) {
+  if (isLoading) return <AuthLoadingRecovery message="Verifying department access…" onRetry={refreshProfile} />;
+  if (user && accessError) return <AuthLoadingRecovery message="We couldn't verify department access." onRetry={refreshProfile} showRecoveryImmediately />;
+  if (!user || !allowed) {
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Verifying department access…</div>;
   }
 

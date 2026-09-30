@@ -1,16 +1,29 @@
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { Html, OrbitControls } from "@react-three/drei";
-import { BackSide, MathUtils, SRGBColorSpace, TextureLoader } from "three";
+import { BackSide, LinearFilter, MathUtils, SRGBColorSpace, TextureLoader } from "three";
+import { isNativeApp } from "@/lib/accountRouting";
 import { ArrowRight, Info, MapPin } from "lucide-react";
 
 export type ViewerHotspot = { id: string; hotspot_type: string; label: string; body?: string | null; target_scene_id?: string | null; yaw: number; pitch: number; cta_url?: string | null };
 export type ViewerConnection = { id: string; from_scene_id: string; to_scene_id: string; label?: string | null; yaw: number; pitch: number };
 
-function Sphere({ url }: { url: string }) {
+function Sphere({ url, constrained }: { url: string; constrained: boolean }) {
   const texture = useLoader(TextureLoader, url);
-  useEffect(() => { texture.colorSpace = SRGBColorSpace; texture.needsUpdate = true; }, [texture]);
-  return <mesh scale={[-1, 1, 1]}><sphereGeometry args={[8, 96, 64]} /><meshBasicMaterial map={texture} side={BackSide} /></mesh>;
+  useEffect(() => {
+    texture.colorSpace = SRGBColorSpace;
+    texture.generateMipmaps = !constrained;
+    if (constrained) texture.minFilter = LinearFilter;
+    texture.anisotropy = constrained ? 1 : texture.anisotropy;
+    texture.needsUpdate = true;
+    return () => {
+      try {
+        texture.dispose();
+        (useLoader as any).clear?.(TextureLoader, url);
+      } catch {}
+    };
+  }, [constrained, texture, url]);
+  return <mesh scale={[-1, 1, 1]}><sphereGeometry args={constrained ? [8, 64, 40] : [8, 96, 64]} /><meshBasicMaterial map={texture} side={BackSide} /></mesh>;
 }
 
 function DeviceOrientationCamera({ enabled }: { enabled: boolean }) {
@@ -63,16 +76,55 @@ export default function VirtualTourPanorama({
     ...connections.map((c) => ({ id: `c-${c.id}`, rawId: c.id, kind: "connection" as const, label: c.label || "Continue", body: null, target_scene_id: c.to_scene_id, cta_url: null, yaw: Number(c.yaw || 0), pitch: Number(c.pitch || 0) })),
     ...hotspots.map((h) => ({ id: `h-${h.id}`, rawId: h.id, kind: "hotspot" as const, label: h.label, body: h.body || null, target_scene_id: h.target_scene_id || null, cta_url: h.cta_url || null, yaw: Number(h.yaw || 0), pitch: Number(h.pitch || 0), hotspot_type: h.hotspot_type })),
   ], [connections, hotspots]);
+  const native = useMemo(() => isNativeApp(), []);
+  const [graphicsLost, setGraphicsLost] = useState(false);
+  const webglAvailable = useMemo(() => {
+    if (typeof document === "undefined") return false;
+    try {
+      const canvas = document.createElement("canvas");
+      const gl = canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: false }) || canvas.getContext("webgl", { failIfMajorPerformanceCaveat: false });
+      const ok = Boolean(gl);
+      try { (gl as WebGLRenderingContext | null)?.getExtension("WEBGL_lose_context")?.loseContext(); } catch {}
+      return ok;
+    } catch { return false; }
+  }, []);
+  const safeGraphics = useMemo(() => {
+    try { return native && localStorage.getItem("rk_native_safe_graphics_v1") === "1"; } catch { return false; }
+  }, [native]);
   const lowMemory = useMemo(() => {
     if (typeof navigator === "undefined") return false;
     const memory = Number((navigator as any).deviceMemory || 0);
-    return (memory > 0 && memory <= 4) || /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  }, []);
+    return native || (memory > 0 && memory <= 4) || /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }, [native]);
+
+  if (safeGraphics || !webglAvailable || graphicsLost) {
+    const reason = safeGraphics
+      ? "Immersive 360 is paused on this device after repeated graphics renderer recovery."
+      : graphicsLost
+        ? "The device graphics context was interrupted, so immersive 360 was safely paused."
+        : "Immersive 360 is not available with the current device graphics configuration.";
+    return <div className="relative grid h-full min-h-[420px] w-full place-items-center overflow-hidden bg-black p-4">
+      <img src={panoramaUrl} alt="360 residence scene preview" className="max-h-full max-w-full object-contain" />
+      <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/20 bg-black/80 p-3 text-center text-xs font-semibold text-white">
+        {reason} The scene preview remains available without risking an app or browser exit.
+      </div>
+    </div>;
+  }
 
   return <div className="relative h-full min-h-[420px] w-full touch-none overflow-hidden bg-black">
-    <Canvas camera={{ position: [0, 0, .1], fov: 74 }} dpr={lowMemory ? [1, 1.4] : [1, 2]} gl={{ antialias: !lowMemory, powerPreference: "high-performance" }}>
-      <Suspense fallback={<Html center><div className="rounded-full bg-black/70 px-4 py-2 text-sm font-bold text-white">Loading 4K scene…</div></Html>}>
-        <Sphere url={panoramaUrl} />
+    <Canvas
+      camera={{ position: [0, 0, .1], fov: 74 }}
+      dpr={lowMemory ? [1, 1.15] : [1, 2]}
+      gl={{ antialias: !lowMemory, powerPreference: lowMemory ? "low-power" : "high-performance", preserveDrawingBuffer: false }}
+      onCreated={({ gl }) => {
+        gl.domElement.addEventListener("webglcontextlost", (event) => {
+          event.preventDefault();
+          setGraphicsLost(true);
+        }, { once: true });
+      }}
+    >
+      <Suspense fallback={<Html center><div className="rounded-full bg-black/70 px-4 py-2 text-sm font-bold text-white">Loading scene…</div></Html>}>
+        <Sphere url={panoramaUrl} constrained={lowMemory} />
         <DeviceOrientationCamera enabled={motionEnabled} />
         {all.map((item) => <Html key={item.id} position={point(item.yaw, item.pitch)} center distanceFactor={8} transform={false}>
           <button

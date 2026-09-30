@@ -1,9 +1,9 @@
 {
   "appName": "ResKonnect",
   "packageId": "org.reskonnect.app",
-  "versionName": "1.1.3",
-  "versionCode": 6,
-  "capacitorVersion": "8.5.0",
+  "versionName": "1.1.4",
+  "versionCode": 7,
+  "capacitorVersion": "8.5.2",
   "minSdk": 24,
   "compileSdk": 36,
   "targetSdk": 36,
@@ -20,6 +20,10 @@
   ],
   "foregroundLocalNotifications": true,
   "nativePushNotifications": false,
-  "nativeBackgroundPushRequires": ["Firebase Android configuration", "FCM server credentials", "delivery and device testing"],
+  "nativeBackgroundPushRequires": [
+    "Firebase Android configuration",
+    "FCM server credentials",
+    "delivery and device testing"
+  ],
   "googleOauthInNativeWebView": false
 }

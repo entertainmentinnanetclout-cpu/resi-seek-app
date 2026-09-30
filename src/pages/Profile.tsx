@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, ExternalLink, Loader2 } from "lucide-react";
+import { AlertCircle, ChevronDown, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,34 +26,65 @@ const Profile = () => {
   const [formData, setFormData] = useState<any>({});
   const [errors, setErrors] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileRefreshKey, setProfileRefreshKey] = useState(0);
   const [openAccordion, setOpenAccordion] = useState<string | null>("personal_info");
   
   // Use refs to prevent keyboard closing on each keystroke
   const inputRefs = useRef<Record<string, string>>({});
 
   useEffect(() => {
+    if (!user?.id) {
+      setProfileLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    let active = true;
     const fetchProfile = async () => {
+      setProfileLoading(true);
+      setProfileError(null);
       try {
-        const { data, error } = await supabase.from("profiles").select("*").eq("id", user?.id).maybeSingle();
+        const { data, error } = await (supabase as any)
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle()
+          .abortSignal(controller.signal);
         if (error) throw error;
-        if (data) {
-          setProfile(data);
-          const draft = localStorage.getItem(`profileDraft_${user.id}`);
-          if (draft) {
+        if (!active) return;
+        if (!data) throw new Error("Your profile record could not be found.");
+        setProfile(data);
+        const draft = localStorage.getItem(`profileDraft_${user.id}`);
+        if (draft) {
+          try {
             setFormData(JSON.parse(draft));
             toast.info("Draft restored.");
-          } else {
+          } catch {
+            localStorage.removeItem(`profileDraft_${user.id}`);
             setFormData(data);
           }
+        } else {
+          setFormData(data);
         }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-        toast.error("Could not load your profile data.");
+      } catch (error: any) {
+        if (!active) return;
+        const message = controller.signal.aborted
+          ? "Your profile took too long to load. Check your connection and retry."
+          : (error?.message || "Could not load your profile data.");
+        console.error("Error fetching profile:", message);
+        setProfileError(message);
+      } finally {
+        if (active) setProfileLoading(false);
       }
     };
 
-    if (user?.id) fetchProfile();
-  }, [user?.id]);
+    void fetchProfile();
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [profileRefreshKey, user?.id]);
 
   useEffect(() => {
     if (isEditing && user?.id) {
@@ -197,9 +228,26 @@ const Profile = () => {
                 <p className="text-muted-foreground mt-1">Manage your personal information and documents.</p>
               </div>
               {!isEditing && (
-                <Button onClick={() => setIsEditing(true)} className="w-full sm:w-auto flex-shrink-0">Edit Profile</Button>
+                <Button onClick={() => setIsEditing(true)} disabled={profileLoading || Boolean(profileError)} className="w-full sm:w-auto flex-shrink-0">Edit Profile</Button>
               )}
             </div>
+
+            {profileError && (
+              <Card className="border-amber-500/30 bg-amber-500/5">
+                <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                    <div><p className="font-bold">Profile needs a connection refresh</p><p className="mt-1 text-sm text-muted-foreground">{profileError}</p></div>
+                  </div>
+                  <Button type="button" variant="outline" onClick={() => setProfileRefreshKey((value) => value + 1)}>
+                    <RefreshCw className="mr-2 h-4 w-4" />Try again
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            {profileLoading && !profileError && (
+              <Card><CardContent className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading your profile…</CardContent></Card>
+            )}
 
             <form onSubmit={handleSave} className="space-y-4 md:space-y-0 md:bg-card md:rounded-lg md:shadow-sm">
               <AccordionItem title="Profile Picture" description="Add a photo to help roommates and sellers recognize you." id="profile_picture">

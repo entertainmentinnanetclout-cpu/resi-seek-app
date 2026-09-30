@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -37,6 +37,7 @@ const BursaryFinder = () => {
   const [fieldFilter, setFieldFilter] = useState("all");
   const [deadlineFilter, setDeadlineFilter] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const bursaryRequestRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     fetchBursaries();
@@ -47,27 +48,36 @@ const BursaryFinder = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      bursaryRequestRef.current?.abort();
+      void supabase.removeChannel(channel);
     };
   }, []);
 
   const fetchBursaries = async () => {
+    bursaryRequestRef.current?.abort();
+    const controller = new AbortController();
+    bursaryRequestRef.current = controller;
     setIsLoading(true);
     setFetchError(null);
-    const { data, error } = await supabase
-      .from("bursaries")
-      .select("*")
-      .eq("is_active", true)
-      .order("deadline", { ascending: true });
-
-    if (error) {
-      console.error("Fetch error:", error);
-      setFetchError(error.message);
-      toast.error("Failed to load bursaries");
-    } else {
+    try {
+      const { data, error } = await (supabase as any)
+        .from("bursaries")
+        .select("*")
+        .eq("is_active", true)
+        .order("deadline", { ascending: true })
+        .abortSignal(controller.signal);
+      if (error) throw error;
       setBursaries(data || []);
+    } catch (error: any) {
+      const message = controller.signal.aborted
+        ? "Bursaries took too long to load. Check your connection and retry."
+        : (error?.message || "Failed to load bursaries");
+      console.error("Fetch error:", message);
+      setFetchError(message);
+    } finally {
+      if (bursaryRequestRef.current === controller) bursaryRequestRef.current = null;
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const fields = [...new Set(bursaries.flatMap(b => b.fields_of_study || []))].sort();

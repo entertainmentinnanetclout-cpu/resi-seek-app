@@ -1,0 +1,44 @@
+name: Web Platform Readiness
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-platform-web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Static cross-platform checks
+        run: npm run web:check
+      - name: TypeScript
+        run: npx tsc --noEmit -p tsconfig.app.json
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Responsive public browser smoke
+        run: node scripts/web-platform-smoke.mjs
+      - name: Upload public smoke diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-platform-smoke-diagnostics
+          path: artifacts/web-platform-smoke.json
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Production build
+        run: npm run build
+      - name: Authenticated production-PWA matrix
+        run: node scripts/cross-platform-session-smoke.mjs

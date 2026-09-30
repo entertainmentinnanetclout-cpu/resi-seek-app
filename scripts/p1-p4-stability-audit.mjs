@@ -1,0 +1,84 @@
+import fs from "node:fs";
+
+const read = (path) => fs.readFileSync(path, "utf8");
+const checks = [];
+const expect = (condition, label) => checks.push({ ok: Boolean(condition), label });
+
+const mainActivity = read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
+const main = read("src/main.tsx");
+const manifest = read("android/app/src/main/AndroidManifest.xml");
+const release = JSON.parse(read("native/android-release.json"));
+const client = read("src/integrations/supabase/client.ts");
+const auth = read("src/contexts/AuthContext.tsx");
+const protectedRoute = read("src/components/ProtectedRoute.tsx");
+const studentRoute = read("src/components/StudentRoute.tsx");
+const adminRoute = read("src/components/AdminRoute.tsx");
+const departmentRoute = read("src/components/DepartmentRoute.tsx");
+const specialistRoute = read("src/components/SpecialistRoute.tsx");
+const contactGate = read("src/components/ContactDetailsGate.tsx");
+const authPage = read("src/pages/Auth.tsx");
+const find = read("src/pages/FindMyRes.tsx");
+const applications = read("src/pages/Applications.tsx");
+const messages = read("src/pages/Messages.tsx");
+const favorites = read("src/pages/Favorites.tsx");
+const wil = read("src/pages/MyWIL.tsx");
+const serviceCentre = read("src/pages/ServiceCentre.tsx");
+const ai = read("src/pages/public/ResKonnectAI.tsx");
+const bursaries = read("src/pages/BursaryFinder.tsx");
+const profile = read("src/pages/Profile.tsx");
+const documents = read("src/components/DocumentUploader.tsx");
+const opportunities = read("src/components/opportunities/OpportunityEngine.tsx");
+const residence = read("src/pages/ResidenceDetail.tsx");
+const dashboard = read("src/components/MyResKonnectCommandCentre.tsx");
+const map = read("src/components/resmap/NativeResMapExperience.tsx");
+const stableMap = read("src/components/resmap/ResMapExperienceStable.tsx");
+const panorama = read("src/components/virtualTours/VirtualTourPanorama.tsx");
+const boundary = read("src/components/ErrorBoundary.tsx");
+const telemetry = read("src/lib/runtimeTelemetry.ts");
+const connectivity = read("src/components/ConnectivityStatus.tsx");
+const runtimeMigration = read("supabase/migrations/20260929121500_mobile_runtime_crash_telemetry.sql");
+
+expect(release.versionCode >= 7 && release.versionName === "1.1.4", "new Android release identity is v1.1.4 / code 7+");
+expect(release.compileSdk === 36 && release.targetSdk === 36, "Android compile/target SDK is API 36");
+expect(release.minSdk <= 24, "supported Android floor remains broad enough for existing minSdk 24 clients");
+expect(mainActivity.includes("onRenderProcessGone") && mainActivity.includes("view.destroy()") && mainActivity.includes("recreate") && mainActivity.includes("return true"), "dead WebView renderer is destroyed and activity recovery is handled");
+expect(mainActivity.includes("bridge.onDestroy()") && mainActivity.includes("bridge = null"), "renderer recovery tears down Capacitor bridge/plugin state before recreation");
+expect(main.includes("rk-native-renderer-recovered") && main.includes("restoreRecoveredRoute") && main.includes("replaceState"), "renderer recovery restores the last safe internal route after activity recreation");
+expect(mainActivity.includes("rk_native_safe_graphics_v1") && mainActivity.includes("recentCount >= 2"), "repeated renderer exits activate safe graphics mode");
+expect(!manifest.includes("screenOrientation=") && !manifest.includes("resizeableActivity=\"false\"") && !manifest.includes("maxAspectRatio"), "Android manifest does not block rotation, tablets, foldables or multi-window");
+expect(manifest.includes('android:windowSoftInputMode="adjustResize"'), "software keyboard uses adjustResize");
+expect(client.includes("/rest/v1/") && client.includes("/auth/v1/") && client.includes("/functions/v1/") && client.includes("15_000") && client.includes("30_000"), "Supabase REST/Auth/Functions requests have bounded deadlines");
+expect(auth.includes("refreshSession") && auth.includes("visibilitychange") && auth.includes("get_my_access_context"), "auth reconciles persisted sessions after resume and resolves access through one RPC");
+expect(auth.includes("accessError") && auth.includes("setAccessError(true)") && auth.includes("window.addEventListener(\"online\", retry)"), "access resolution failures fail closed and automatically retry after reconnect");
+expect(protectedRoute.includes("accessError") && protectedRoute.includes("showRecoveryImmediately") && studentRoute.includes("accessError") && studentRoute.includes("showRecoveryImmediately"), "protected/student routing cannot render an unverified account surface");
+expect(adminRoute.includes("accessError") && departmentRoute.includes("accessError") && specialistRoute.includes("accessError"), "staff and department route guards remain fail-closed during access outages");
+expect(authPage.includes("accessError") && authPage.includes("AuthLoadingRecovery") && authPage.includes("authLoading || accessError || !user"), "post-login auth routing waits for verified access context");
+expect(contactGate.includes("finally") && contactGate.includes("setSaving(false)"), "contact profile gate always releases its saving state");
+expect(find.includes("residenceError") && find.includes("refreshResidences") && find.includes("Retry live data"), "Find My Res surfaces query/cache errors and can retry");
+expect(applications.includes("detailsError") && applications.includes("retryApplications") && applications.includes("AbortController"), "Applications handles base and residence-detail failures with retry and timeout");
+expect(messages.includes("loadMessages") && messages.includes("AbortController") && messages.includes("Messages need a connection refresh"), "Messages cannot enter a permanent spinner after realtime/network failure");
+expect(favorites.includes("Favorites need a connection refresh") && favorites.includes("AbortController") && favorites.includes("rk-reconnected"), "Favorites has bounded loading and reconnect recovery");
+expect(wil.includes("WIL data needs a connection refresh") && wil.includes("AbortController") && wil.includes("finally"), "WIL initial data loading is bounded and retryable");
+expect(serviceCentre.includes("Service Centre needs a connection refresh") && serviceCentre.includes("AbortController") && serviceCentre.includes("finally"), "Service Centre load and submit states always resolve");
+expect(ai.includes("AbortController") && ai.includes("30_000") && ai.includes("took too long to respond"), "ResKonnect AI direct function call has a bounded request deadline");
+expect(bursaries.includes("bursaryRequestRef") && bursaries.includes("AbortController") && bursaries.includes("finally"), "Bursary loading cancels stale requests and releases loading state");
+expect(profile.includes("profileError") && profile.includes("profileRefreshKey") && profile.includes("abortSignal"), "Profile load failure is explicit and retryable without exposing blank editable data");
+expect(documents.includes("Documents need a connection refresh") && documents.includes("AbortController") && documents.includes("finally"), "Documents distinguish backend failure from an empty document list");
+expect(opportunities.includes("setError") && opportunities.includes("AbortController") && opportunities.includes("Opportunity feed needs a refresh"), "Opportunity feed has bounded loading, persistent error and retry states");
+expect(residence.includes("loadError") && residence.includes("Residence could not be refreshed"), "residence detail distinguishes connectivity failure from true not-found");
+expect(dashboard.includes("Promise.allSettled") && dashboard.includes("abortSignal") && dashboard.includes("Refresh journey"), "dashboard command centre isolates partial backend failures and supports recovery");
+expect(map.includes("safeForVector") && map.includes("rk_native_safe_graphics_v1") && map.includes("ResMapExperienceStable"), "native map defaults to stable 2D and gates optional GPU-heavy vector mode");
+expect(stableMap.includes("using safe raster defaults") && stableMap.includes("Could not build route"), "stable ResMap contains startup and routing failures");
+expect(panorama.includes("webglcontextlost") && panorama.includes("texture.dispose") && panorama.includes("rk_native_safe_graphics_v1"), "360 viewer detects context loss, disposes textures and has safe graphics fallback");
+expect(boundary.includes("recordMobileRuntime") && boundary.includes("ChunkLoadError") && boundary.includes("caches.delete"), "React/stale-chunk failures are contained without deleting auth storage");
+expect(telemetry.includes("mobile_runtime_events") && telemetry.includes("safeMetadata"), "runtime diagnostics are centralized and privacy-filtered");
+expect(connectivity.includes("offline_boot") && connectivity.includes("reconnected"), "offline boot and reconnect lifecycle are observable");
+expect(runtimeMigration.includes("webview_renderer_recovered") && runtimeMigration.includes("js_error") && runtimeMigration.includes("promise_rejection"), "runtime telemetry RLS permits only the approved diagnostic event classes");
+
+let failed = 0;
+for (const check of checks) {
+  if (check.ok) console.log("PASS", check.label);
+  else { console.error("FAIL", check.label); failed += 1; }
+}
+console.log(`P1-P4 static stability audit: ${checks.length - failed}/${checks.length} passed.`);
+if (failed) process.exit(1);

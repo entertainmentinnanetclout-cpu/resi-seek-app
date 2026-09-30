@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { recordMobileRuntime } from '@/lib/runtimeTelemetry';
 
 interface Props {
   children: ReactNode;
@@ -23,9 +24,28 @@ class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    void recordMobileRuntime("js_error", "react.error_boundary", {
+      error_name: error.name || "Error",
+      component_stack_present: Boolean(errorInfo.componentStack),
+    });
   }
 
-  private handleReload = () => {
+  private handleReload = async () => {
+    const message = String(this.state.error?.message || "");
+    const chunkFailure = /ChunkLoadError|Loading chunk|dynamically imported module|module script failed|Failed to fetch dynamically imported module/i.test(message);
+    if (chunkFailure && "caches" in window) {
+      const recoveryKey = "rk_chunk_recovery_v1";
+      const alreadyTried = sessionStorage.getItem(recoveryKey) === "1";
+      if (!alreadyTried) {
+        sessionStorage.setItem(recoveryKey, "1");
+        try {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((key) => caches.delete(key)));
+        } catch {
+          // A cache cleanup failure must not block the normal reload.
+        }
+      }
+    }
     window.location.reload();
   };
 
@@ -41,7 +61,7 @@ class ErrorBoundary extends Component<Props, State> {
             <p className="text-muted-foreground mb-6">
               We're sorry, but something unexpected happened. Please try refreshing the page.
             </p>
-            <Button onClick={this.handleReload} className="gap-2">
+            <Button onClick={() => void this.handleReload()} className="gap-2">
               <RefreshCw className="h-4 w-4" />
               Refresh Page
             </Button>

@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, XCircle, Eye, Search, Filter, X, AlertCircle, FileText, Upload, Download, Loader2 } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, Eye, Search, Filter, X, AlertCircle, FileText, Upload, Download, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,9 +26,11 @@ const Applications = () => {
   // ALL hooks must be called unconditionally before any early returns (fixed 2026-02-03)
   const shouldBlock = useAdminRedirect();
   const { user } = useAuth();
-  const { applications, loading: applicationsLoading, error } = useRealtimeApplications(user);
+  const { applications, loading: applicationsLoading, error, refresh: refreshApplications } = useRealtimeApplications(user);
   const [detailedApplications, setDetailedApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+  const [detailRefreshKey, setDetailRefreshKey] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [semesterFilter, setSemesterFilter] = useState("all");
@@ -37,15 +39,22 @@ const Applications = () => {
 
   // Fetch user's uploaded documents
   useEffect(() => {
+    let active = true;
     const fetchDocuments = async () => {
       if (!user) return;
-      const { data } = await supabase
-        .from("documents")
-        .select("id, document_type")
-        .eq("user_id", user.id);
-      setUserDocuments(data || []);
+      try {
+        const { data, error: documentError } = await supabase
+          .from("documents")
+          .select("id, document_type")
+          .eq("user_id", user.id);
+        if (documentError) throw documentError;
+        if (active) setUserDocuments(data || []);
+      } catch (documentError) {
+        console.warn("Could not refresh application document summary", documentError);
+      }
     };
-    fetchDocuments();
+    void fetchDocuments();
+    return () => { active = false; };
   }, [user]);
 
   const requiredDocTypes = ["student_card", "proof_of_registration"];
@@ -54,41 +63,72 @@ const Applications = () => {
   );
 
   useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 12_000);
+
     const fetchDetails = async () => {
-      if (applicationsLoading || !applications.length) {
-        setLoading(applicationsLoading);
-        if (!applications.length) setDetailedApplications([]);
+      if (applicationsLoading) {
+        if (active) setLoading(true);
+        return;
+      }
+      if (!applications.length) {
+        if (active) {
+          setDetailedApplications([]);
+          setDetailsError(null);
+          setLoading(false);
+        }
         return;
       }
 
-      setLoading(true);
-      const residenceIds = [...new Set(applications.map(app => app.residence_id))];
-      const { data: residences, error: resError } = await supabase
-        .from('residences')
-        .select('*')
-        .in('id', residenceIds);
-
-      if (resError) {
-        console.error("Error fetching residence details:", resError);
-        setLoading(false);
-        return;
+      if (active) {
+        setLoading(true);
+        setDetailsError(null);
       }
 
-      const detailed = applications.map(app => {
-        const residence = residences.find(res => res.id === app.residence_id);
-        return { ...app, residence };
-      }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      try {
+        const residenceIds = [...new Set(applications.map(app => app.residence_id).filter(Boolean))];
+        let residences: any[] = [];
+        if (residenceIds.length) {
+          const { data, error: resError } = await (supabase as any)
+            .from("residences")
+            .select("*")
+            .in("id", residenceIds)
+            .abortSignal(controller.signal);
+          if (resError) throw resError;
+          residences = data || [];
+        }
 
-      setDetailedApplications(detailed);
-      setLoading(false);
+        const detailed = applications.map(app => {
+          const residence = residences.find(res => res.id === app.residence_id);
+          return { ...app, residence };
+        }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        if (active) setDetailedApplications(detailed);
+      } catch (detailError: any) {
+        if (!active) return;
+        const message = controller.signal.aborted
+          ? "Application details took too long to load. Retry when your connection is stable."
+          : (detailError?.message || "Application details are temporarily unavailable.");
+        setDetailsError(message);
+        console.error("Error fetching residence details:", message);
+      } finally {
+        window.clearTimeout(timeout);
+        if (active) setLoading(false);
+      }
     };
 
-    fetchDetails();
-  }, [applications, applicationsLoading]);
+    void fetchDetails();
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [applications, applicationsLoading, detailRefreshKey]);
 
   const filteredApplications = useMemo(() => detailedApplications.filter(app => {
       const searchTermLower = searchTerm.toLowerCase();
-      const matchesSearch = searchTerm ? app.residence?.name.toLowerCase().includes(searchTermLower) : true;
+      const matchesSearch = searchTerm ? String(app.residence?.name || "").toLowerCase().includes(searchTermLower) : true;
       const matchesStatus = statusFilter !== "all" ? app.status === statusFilter : true;
       const matchesRoomType = roomTypeFilter !== "all" ? app.residence?.room_type === roomTypeFilter : true;
       return matchesSearch && matchesStatus && matchesRoomType && (semesterFilter === "all" || applicationSemester(app) === Number(semesterFilter));
@@ -96,6 +136,12 @@ const Applications = () => {
 
   // Early return AFTER all hooks are called (React rules of hooks)
   if (shouldBlock) return null;
+
+  const effectiveError = error || detailsError;
+  const retryApplications = () => {
+    refreshApplications();
+    setDetailRefreshKey((value) => value + 1);
+  };
   
   const resetFilter = (filter: 'status' | 'room' | 'search') => {
       if (filter === 'status') setStatusFilter('all');
@@ -308,12 +354,26 @@ const Applications = () => {
                 {roomTypeFilter !== "all" && <Badge variant="secondary" className="pl-2.5 capitalize">Room: {roomTypeFilter} <Button onClick={() => resetFilter('room')} variant="ghost" size="icon" className="h-5 w-5 ml-1"><X className="w-3 h-3"/></Button></Badge>}
             </div>
           </Card>
+
+          {effectiveError && (
+            <Card className="border-destructive/25 bg-destructive/5">
+              <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-semibold text-destructive">Applications need a connection refresh</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{effectiveError}</p>
+                </div>
+                <Button type="button" variant="outline" onClick={retryApplications} disabled={loading || applicationsLoading}>
+                  <RefreshCw className={`mr-2 h-4 w-4 ${loading || applicationsLoading ? "animate-spin" : ""}`} />Try again
+                </Button>
+              </CardContent>
+            </Card>
+          )}
           
           {loading ? <SkeletonLoader /> : filteredApplications.length === 0 ? (
             <Card className="bg-card shadow-sm text-center py-16 transition-all">
               <Eye className="w-12 h-12 mx-auto text-muted-foreground" />
               <h3 className="mt-4 text-lg font-semibold">No Applications Found</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Your search or filter returned no results. Try adjusting your filters.</p>
+              <p className="mt-2 text-sm text-muted-foreground">{applications.length ? "Your search or filter returned no results. Try adjusting your filters." : effectiveError ? "Your saved applications could not be refreshed yet. Retry above." : "You have not submitted any accommodation applications yet."}</p>
               <Button variant="link" onClick={() => { resetFilter('status'); resetFilter('room'); resetFilter('search');}}>Clear all filters</Button>
             </Card>
           ) : (

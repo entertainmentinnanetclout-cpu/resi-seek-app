@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Upload, FileText, Check, Eye, RefreshCw, Loader2, X } from "lucide-react";
+import { AlertCircle, Upload, FileText, Check, Eye, RefreshCw, Loader2, X } from "lucide-react";
 
 interface UploadedDocument {
   id: string;
@@ -46,6 +46,8 @@ const DOCUMENT_TYPES: DocumentType[] = [
 export const DocumentUploader = () => {
   const { user } = useAuth();
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [uploadingType, setUploadingType] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [replaceDialogOpen, setReplaceDialogOpen] = useState(false);
@@ -53,23 +55,38 @@ export const DocumentUploader = () => {
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
-    if (user) fetchDocuments();
-  }, [user]);
+    if (user?.id) void fetchDocuments();
+    else setLoadingDocuments(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const fetchDocuments = async () => {
-    if (!user) return;
-    
-    const { data, error } = await supabase
-      .from("documents")
-      .select("*")
-      .eq("user_id", user.id);
-
-    if (error) {
-      console.error("Error fetching documents:", error);
+    if (!user?.id) {
+      setLoadingDocuments(false);
       return;
     }
-
-    setDocuments(data || []);
+    setLoadingDocuments(true);
+    setLoadError(null);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("documents")
+        .select("*")
+        .eq("user_id", user.id)
+        .abortSignal(controller.signal);
+      if (error) throw error;
+      setDocuments(data || []);
+    } catch (error: any) {
+      const message = controller.signal.aborted
+        ? "Documents took too long to load. Check your connection and retry."
+        : (error?.message || "Could not load your documents.");
+      console.error("Error fetching documents:", message);
+      setLoadError(message);
+    } finally {
+      window.clearTimeout(timeout);
+      setLoadingDocuments(false);
+    }
   };
 
   const getDocumentByType = (type: string): UploadedDocument | undefined => {
@@ -211,6 +228,22 @@ export const DocumentUploader = () => {
 
   return (
     <div className="space-y-4">
+      {loadError && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+              <div><p className="font-bold">Documents need a connection refresh</p><p className="mt-1 text-sm text-muted-foreground">{loadError}</p></div>
+            </div>
+            <Button type="button" variant="outline" onClick={() => void fetchDocuments()} disabled={loadingDocuments}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loadingDocuments ? "animate-spin" : ""}`} />Try again
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+      {loadingDocuments && !loadError && (
+        <Card><CardContent className="flex items-center justify-center gap-2 p-5 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading your documents…</CardContent></Card>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {DOCUMENT_TYPES.map((docType) => {
           const uploadedDoc = getDocumentByType(docType.key);

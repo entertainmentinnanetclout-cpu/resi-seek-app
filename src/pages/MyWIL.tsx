@@ -17,7 +17,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Briefcase, Upload, FileText, Check, Eye, RefreshCw, Loader2, Clock, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import { AlertCircle, Briefcase, Upload, FileText, Check, Eye, RefreshCw, Loader2, Clock, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
 import { TUT_CAMPUSES } from "@/lib/campuses";
 
 const WIL_DURATIONS = [
@@ -63,6 +63,7 @@ const MyWIL = () => {
   const [application, setApplication] = useState<any>(null);
   const [documents, setDocuments] = useState<WilDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingType, setUploadingType] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -79,48 +80,73 @@ const MyWIL = () => {
   const [preferredArea, setPreferredArea] = useState("");
   const [notes, setNotes] = useState("");
 
-  useEffect(() => {
-    if (user) loadData();
-  }, [user]);
-
   const loadData = async () => {
-    if (!user) return;
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
+    setLoadError(null);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
 
-    const [profileRes, appRes] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", user.id).single(),
-      supabase.from("wil_applications" as any).select("*").eq("student_id", user.id).maybeSingle(),
-    ]);
+    try {
+      const [profileRes, appRes] = await Promise.all([
+        (supabase as any).from("profiles").select("*").eq("id", user.id).single().abortSignal(controller.signal),
+        (supabase as any).from("wil_applications").select("*").eq("student_id", user.id).maybeSingle().abortSignal(controller.signal),
+      ]);
+      if (profileRes.error) throw profileRes.error;
+      if (appRes.error) throw appRes.error;
 
-    if (profileRes.data) {
-      setProfile(profileRes.data);
-      if (!appRes.data) {
-        setCampus(profileRes.data.campus || "");
-        setCourse(profileRes.data.course || "");
+      if (profileRes.data) {
+        setProfile(profileRes.data);
+        if (!appRes.data) {
+          setCampus(profileRes.data.campus || "");
+          setCourse(profileRes.data.course || "");
+        }
       }
+
+      if (appRes.data) {
+        const app = appRes.data as any;
+        setApplication(app);
+        setCourse(app.course || "");
+        setYearLevel(String(app.year_level || ""));
+        setWilDuration(app.wil_duration || "");
+        setFundingStatus(app.funding_status || "");
+        setCampus(app.campus || "");
+        setPreferredArea(app.preferred_area || "");
+        setNotes(app.notes || "");
+
+        const { data: docs, error: docsError } = await (supabase as any)
+          .from("wil_documents")
+          .select("*")
+          .eq("application_id", app.id)
+          .abortSignal(controller.signal);
+        if (docsError) throw docsError;
+        setDocuments((docs as any[]) || []);
+      } else {
+        setApplication(null);
+        setDocuments([]);
+      }
+    } catch (err: any) {
+      setLoadError(controller.signal.aborted
+        ? "WIL data took too long to load. Check your connection and retry."
+        : (err?.message || "Your WIL information is temporarily unavailable."));
+    } finally {
+      window.clearTimeout(timeout);
+      setLoading(false);
     }
-
-    if (appRes.data) {
-      const app = appRes.data as any;
-      setApplication(app);
-      setCourse(app.course || "");
-      setYearLevel(String(app.year_level || ""));
-      setWilDuration(app.wil_duration || "");
-      setFundingStatus(app.funding_status || "");
-      setCampus(app.campus || "");
-      setPreferredArea(app.preferred_area || "");
-      setNotes(app.notes || "");
-
-      // Load documents
-      const { data: docs } = await supabase
-        .from("wil_documents" as any)
-        .select("*")
-        .eq("application_id", app.id);
-      setDocuments((docs as any[]) || []);
-    }
-
-    setLoading(false);
   };
+
+  useEffect(() => {
+    if (user?.id) void loadData();
+    else setLoading(false);
+    const reconnect = () => { if (user?.id) void loadData(); };
+    window.addEventListener("rk-reconnected", reconnect);
+    return () => window.removeEventListener("rk-reconnected", reconnect);
+    // user id is the account boundary; loadData intentionally reads the current user.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const isEditable = !application || application.status === "submitted";
 
@@ -269,8 +295,26 @@ const MyWIL = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 p-6">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading your WIL journey…</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <DashboardLayout>
+        <div className="mx-auto flex min-h-[60vh] max-w-xl items-center p-5">
+          <Card className="w-full border-amber-500/30 bg-amber-500/5">
+            <CardContent className="p-6 text-center">
+              <AlertCircle className="mx-auto h-8 w-8 text-amber-600" />
+              <h2 className="mt-3 text-lg font-black">WIL data needs a connection refresh</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{loadError}</p>
+              <Button className="mt-5" onClick={() => void loadData()}><RefreshCw className="mr-2 h-4 w-4" />Try again</Button>
+            </CardContent>
+          </Card>
         </div>
       </DashboardLayout>
     );

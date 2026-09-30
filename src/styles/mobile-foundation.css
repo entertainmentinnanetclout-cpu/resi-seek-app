@@ -18,9 +18,33 @@ body {
 body {
   margin: 0;
   touch-action: pan-y;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+pre,
+table {
+  max-width: 100%;
+}
+
+pre {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 #root {
+  min-height: 100vh;
+  min-height: 100svh;
   min-height: 100dvh;
   overflow-x: hidden;
 }
@@ -39,6 +63,8 @@ canvas {
 }
 
 .mobile-scroll-panel {
+  height: 100vh;
+  height: 100svh;
   height: 100dvh;
   min-height: 0;
   overflow-y: auto;
@@ -71,5 +97,34 @@ canvas {
 
   [role="dialog"] {
     max-width: calc(100vw - 1rem);
+  }
+}
+
+
+/* Keep Radix overlays inside the physical viewport on iPhone/iPad and compact desktop windows. */
+[data-radix-popper-content-wrapper] {
+  max-width: calc(100vw - 1rem);
+}
+
+/* Larger pointers keep normal desktop density; coarse pointers get comfortable touch targets. */
+@media (pointer: coarse) {
+  button,
+  a[role="button"],
+  [role="button"] {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

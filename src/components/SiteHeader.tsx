@@ -1,5 +1,5 @@
 import { Fragment, ReactNode, useState } from "react";
-import { Building2, CalendarDays, ChevronDown, LayoutDashboard, LogIn, Menu } from "lucide-react";
+import { Building2, CalendarDays, ChevronDown, Download, LayoutDashboard, LogIn, Menu } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -62,7 +62,7 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
 
   return (
     <Fragment>
-      <header className="sticky top-0 z-[1000] isolate max-w-full overflow-visible border-b border-border bg-background/95 shadow-sm backdrop-blur-md">
+      <header className="sticky top-0 z-[1000] isolate max-w-full overflow-visible border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] shadow-sm backdrop-blur-md">
         <div className="border-b border-primary/10 bg-primary/[0.035]">
           <div className="container mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-1.5 text-center text-[11px] font-semibold sm:text-xs">
             <CalendarDays className="h-3.5 w-3.5 shrink-0 text-primary" />
@@ -104,6 +104,7 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
 
           <div className="ml-auto hidden items-center gap-2 md:flex">
             <ThemeToggle />
+            <Button variant="ghost" size="icon" onClick={() => navigate("/install")} aria-label="Install ResKonnect"><Download className="h-4 w-4" /></Button>
             {!search && <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/residence/login")}><Building2 className="h-4 w-4" /> Landlord Portal</Button>}
             {authLoading ? (
               <Button variant="ghost" size="sm" disabled className="min-w-28">Checking account…</Button>
@@ -119,6 +120,7 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
 
           <div className="ml-auto flex shrink-0 items-center gap-1 md:hidden">
             <ThemeToggle />
+            <Button variant="ghost" size="icon" onClick={() => navigate("/install")} aria-label="Install ResKonnect"><Download className="h-4 w-4" /></Button>
             <Button size="sm" onClick={() => navigate("/find")} className="bg-cta px-2.5 font-semibold text-cta-foreground hover:bg-cta/90">Find a Res</Button>
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild><Button variant="outline" size="icon" aria-label="Open menu"><Menu className="h-5 w-5" /></Button></SheetTrigger>
@@ -141,6 +143,7 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
                         return <div key={item.to} className="rounded-xl border-b border-border/60 pb-1 last:border-0"><SheetClose asChild><Link to={item.to} className="block rounded-lg px-3 py-3 text-base font-medium transition-colors hover:bg-muted">{item.label}</Link></SheetClose>{children?.map((child) => <SheetClose key={child.to} asChild><Link to={child.to} className="ml-3 block rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-primary">{child.label}</Link></SheetClose>)}</div>;
                       })}
                       <div className="mt-3 space-y-2 border-t pt-3">
+                        <SheetClose asChild><Button variant="outline" className="w-full gap-2" onClick={() => navigate("/install")}><Download className="h-4 w-4" />Install ResKonnect</Button></SheetClose>
                         <SheetClose asChild><Button variant="outline" className="h-auto w-full whitespace-normal py-2.5" onClick={() => navigate("/accommodation-request")}>Tell us what accommodation you need</Button></SheetClose>
                         <SheetClose asChild><Button variant="outline" className="w-full" onClick={() => navigate("/creator-partners")}>Creator Partner Programme</Button></SheetClose>
                         <SheetClose asChild><Button variant="outline" className="w-full gap-2" onClick={() => navigate("/residence/login")}><Building2 className="h-4 w-4" /> Landlord Portal</Button></SheetClose>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bookmark, BriefcaseBusiness, CalendarDays, CheckCircle2, ExternalLink, GraduationCap, Loader2, MapPin, Search, Sparkles } from "lucide-react";
+import { AlertTriangle, Bookmark, BriefcaseBusiness, CalendarDays, CheckCircle2, ExternalLink, GraduationCap, Loader2, MapPin, RefreshCw, Search, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,25 +42,46 @@ export default function OpportunityEngine(){
   const[type,setType]=useState("all");
   const[items,setItems]=useState<OpportunityItem[]>([]);
   const[loading,setLoading]=useState(true);
+  const[error,setError]=useState<string|null>(null);
+  const[refreshKey,setRefreshKey]=useState(0);
   const[busy,setBusy]=useState<string|null>(null);
   const[profileContext,setProfileContext]=useState<any>(null);
 
   useEffect(()=>{
     let cancelled=false;
+    const controller=new AbortController();
     const timer=window.setTimeout(async()=>{
       setLoading(true);
-      const{data,error}=await(supabase as any).rpc("reskonnect_opportunity_feed",{
-        p_query:query.trim()||null,
-        p_type:type==="all"?null:type,
-        p_limit:60,
-      });
-      if(cancelled)return;
-      if(error){toast.error(error.message||"Could not load opportunities");setItems([]);}
-      else{setItems(Array.isArray(data?.items)?data.items:[]);setProfileContext(data?.profile_context||null);}
-      setLoading(false);
+      setError(null);
+      try{
+        const{data,error:feedError}=await(supabase as any)
+          .rpc("reskonnect_opportunity_feed",{
+            p_query:query.trim()||null,
+            p_type:type==="all"?null:type,
+            p_limit:60,
+          })
+          .abortSignal(controller.signal);
+        if(cancelled)return;
+        if(feedError)throw feedError;
+        setItems(Array.isArray(data?.items)?data.items:[]);
+        setProfileContext(data?.profile_context||null);
+      }catch(feedFailure:any){
+        if(cancelled)return;
+        const message=controller.signal.aborted
+          ?"Opportunity search took too long. Check your connection and retry."
+          :(feedFailure?.message||"Could not load opportunities right now.");
+        setError(message);
+        console.error("[OpportunityEngine] feed unavailable:",message);
+      }finally{
+        if(!cancelled)setLoading(false);
+      }
     },query?220:0);
-    return()=>{cancelled=true;window.clearTimeout(timer);};
-  },[query,type,user?.id]);
+    return()=>{
+      cancelled=true;
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  },[query,type,user?.id,refreshKey]);
 
   const grouped=useMemo(()=>({
     bursaries:items.filter((x)=>x.source_type==="bursary").length,
@@ -70,12 +91,18 @@ export default function OpportunityEngine(){
 
   const act=async(item:OpportunityItem,action:"saved"|"interested"|"applied")=>{
     if(!user){navigate(`/auth?returnTo=${encodeURIComponent("/opportunities")}`);return;}
-    const key=`${item.source_type}:${item.id}`;setBusy(key);
-    const{error}=await(supabase as any).rpc("set_student_opportunity_action",{p_source_type:item.source_type,p_source_id:item.id,p_action:action});
-    setBusy(null);
-    if(error)return toast.error(error.message||"Could not update opportunity");
-    setItems((rows)=>rows.map((row)=>row.id===item.id&&row.source_type===item.source_type?{...row,user_action:action}:row));
-    toast.success(action==="saved"?"Saved to My ResKonnect":action==="applied"?"Marked as applied":"Interest recorded");
+    const key=`${item.source_type}:${item.id}`;
+    setBusy(key);
+    try{
+      const{error:actionError}=await(supabase as any).rpc("set_student_opportunity_action",{p_source_type:item.source_type,p_source_id:item.id,p_action:action});
+      if(actionError)throw actionError;
+      setItems((rows)=>rows.map((row)=>row.id===item.id&&row.source_type===item.source_type?{...row,user_action:action}:row));
+      toast.success(action==="saved"?"Saved to My ResKonnect":action==="applied"?"Marked as applied":"Interest recorded");
+    }catch(actionFailure:any){
+      toast.error(actionFailure?.message||"Could not update opportunity");
+    }finally{
+      setBusy(null);
+    }
   };
 
   return <section className="space-y-6">
@@ -92,6 +119,8 @@ export default function OpportunityEngine(){
       </div>
       {user&&<p className="mt-3 text-xs text-muted-foreground"><Sparkles className="mr-1 inline h-3.5 w-3.5 text-primary"/>Signed-in relevance uses your saved course/campus context only. A match is guidance, not an eligibility or selection decision.{profileContext?.course?` Course: ${profileContext.course}.`:""}</p>}
     </CardContent></Card>
+
+    {error&&<Card className="border-destructive/25 bg-destructive/5"><CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive"/><div><p className="font-semibold text-destructive">Opportunity feed needs a refresh</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{error}</p></div></div><Button type="button" variant="outline" onClick={()=>setRefreshKey((value)=>value+1)} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading?"animate-spin":""}`}/>Try again</Button></CardContent></Card>}
 
     {loading?<div className="grid min-h-64 place-items-center"><Loader2 className="h-7 w-7 animate-spin text-primary"/></div>:items.length===0?<div className="rounded-3xl border border-dashed p-10 text-center"><BriefcaseBusiness className="mx-auto h-8 w-8 text-muted-foreground"/><h3 className="mt-3 font-black">No current matches for these filters</h3><p className="mt-1 text-sm text-muted-foreground">Clear the search or try another opportunity type. ResKonnect does not show expired items as current.</p><Button variant="outline" className="mt-4" onClick={()=>{setQuery("");setType("all");}}>Clear filters</Button></div>:(
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

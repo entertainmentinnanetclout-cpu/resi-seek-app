@@ -7,6 +7,7 @@ import { initLunaAttribution } from "@/lib/lunaGrowth";
 import "./index.css";
 import "./styles/mobile-foundation.css";
 import { isNativeApp } from "@/lib/accountRouting";
+import { recordMobileRuntime } from "@/lib/runtimeTelemetry";
 
 const ResMapLiveStreetViewBridge = lazy(() => import("@/components/resmap/ResMapLiveStreetViewBridge"));
 const native = isNativeApp();
@@ -37,9 +38,45 @@ function scheduleNonCriticalBoot() {
   else window.setTimeout(run, 900);
 }
 
-// No email, passwords or conversation content are captured. The last error
-// marker can help distinguish a JS failure from an Android renderer/process kill.
 if (native) {
+  const restoreRecoveredRoute = (detail: any) => {
+    try {
+      const previousRoute = typeof detail?.route === "string" ? detail.route : "/";
+      const safeRoute =
+        previousRoute.startsWith("/") &&
+        !previousRoute.startsWith("//") &&
+        !previousRoute.startsWith("/_capacitor_") &&
+        previousRoute !== "/auth"
+          ? previousRoute.slice(0, 180)
+          : null;
+      if (!safeRoute || safeRoute === window.location.pathname) return;
+      // A recreated Capacitor activity normally starts from its packaged root.
+      // Restore only an internal route; BrowserRouter receives popstate and
+      // resolves the page against the already-persisted Supabase session.
+      window.history.replaceState(window.history.state, "", safeRoute);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    } catch {
+      // Route restoration is best effort; auth/session recovery still proceeds.
+    }
+  };
+
+  const reportRendererRecovery = (detail: any) => {
+    restoreRecoveredRoute(detail);
+    void recordMobileRuntime("webview_renderer_recovered", "android.webview", {
+      did_crash: Boolean(detail?.didCrash),
+      renderer_priority: Number(detail?.priority ?? -1),
+      recent_count: Number(detail?.recentCount ?? 1),
+      previous_route: typeof detail?.route === "string" ? detail.route.slice(0, 120) : "/",
+    });
+  };
+
+  const onRendererRecovered = (event: Event) => {
+    const detail = (event as CustomEvent).detail || {};
+    try { localStorage.removeItem("rk_native_renderer_recovery_v1"); } catch {}
+    reportRendererRecovery(detail);
+  };
+  window.addEventListener("rk-native-renderer-recovered", onRendererRecovered as EventListener);
+
   const record = (kind: string, detail: unknown) => {
     try {
       window.localStorage.setItem("rk_native_last_js_failure_v1", JSON.stringify({
@@ -50,8 +87,23 @@ if (native) {
       }));
     } catch { /* Storage failure must not crash app boot. */ }
   };
-  window.addEventListener("error", event => record("error", event.message));
-  window.addEventListener("unhandledrejection", event => record("promise", event.reason instanceof Error ? event.reason.message : "Unhandled promise rejection"));
+  window.addEventListener("error", event => {
+    record("error", event.message);
+    void recordMobileRuntime("js_error", "window.error", { error_name: event.error?.name || "Error" });
+  });
+  window.addEventListener("unhandledrejection", event => {
+    record("promise", event.reason instanceof Error ? event.reason.message : "Unhandled promise rejection");
+    void recordMobileRuntime("promise_rejection", "window.unhandledrejection", { error_name: event.reason instanceof Error ? event.reason.name : "Unknown" });
+  });
+
+  try {
+    const raw = localStorage.getItem("rk_native_renderer_recovery_v1");
+    if (raw) {
+      localStorage.removeItem("rk_native_renderer_recovery_v1");
+      const detail = JSON.parse(raw);
+      reportRendererRecovery(detail);
+    }
+  } catch {}
 }
 
 if (shouldCanonicalize) {

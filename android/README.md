@@ -1,7 +1,7 @@
 # ResKonnect Android native project
 
 Package: `org.reskonnect.app`  
-Capacitor: 8.5.0  
+Capacitor: 8.5.2  
 minSdk: 24  
 compileSdk / targetSdk: 36  
 Java: 21
@@ -10,7 +10,7 @@ Refresh native web assets with:
 
 ```bash
 npm ci
-npm install --no-save --package-lock=false @capacitor/core@8.5.0 @capacitor/android@8.5.0 @capacitor/cli@8.5.0
+npm install --no-save --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2
 npm run build
 npx cap sync android
 ```
