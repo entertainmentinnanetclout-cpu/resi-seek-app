@@ -32,7 +32,7 @@ function campusProvince(value){
 function splitCampuses(value){
   const text=String(value||"").trim();
   if(!text)return[];
-  return [...new Set(text.replace(/\s+and\s+/gi,",").split(/[,;|/]+/).map((x)=>x.trim()).filter(Boolean))];
+  return [...new Set(text.replace(/\s+and\s+/gi,",").split(/[,;&|/]+/).map((x)=>x.trim()).filter(Boolean))];
 }
 function campusPolicy(row){
   const province=asText(row.province);
