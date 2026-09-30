@@ -82,7 +82,7 @@ const ResidenceDashboard = () => {
   useEffect(() => {
     if (!residence?.id) return;
     void load();
-    const interval = window.setInterval(() => void load(), 30_000);
+    const interval = window.setInterval(() => { if (document.visibilityState === "visible") void load(); }, 120_000);
     const channel = supabase.channel(`residence-dashboard-apps-${residence.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "applications", filter: `residence_id=eq.${residence.id}` }, () => void load())
       .subscribe();
