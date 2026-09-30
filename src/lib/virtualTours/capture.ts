@@ -44,10 +44,13 @@ export async function analyzeFrame(blob: Blob) {
     const i = y * canvas.width + x;
     contrast += Math.abs(gray[i] - gray[i - 1]) + Math.abs(gray[i] - gray[i - canvas.width]);
   }
+  const sourceWidth = bmp.width || 0;
+  const sourceHeight = bmp.height || 0;
   bmp.close();
+  canvas.width = 1; canvas.height = 1;
   const sharpness = Math.max(0, Math.min(100, (contrast / Math.max(1, count) / 26) * 100));
   const exposure = Math.max(0, Math.min(100, 100 - Math.abs(mean - 128) / 1.28));
-  return { width: bmp.width || 0, height: bmp.height || 0, sharpness: Math.round(sharpness), exposure: Math.round(exposure) };
+  return { width: sourceWidth, height: sourceHeight, sharpness: Math.round(sharpness), exposure: Math.round(exposure) };
 }
 
 const DB_NAME = "reskonnect-360-capture-v2";
@@ -103,6 +106,7 @@ export async function assemble4KPanorama(frames: CapturedFrame[], width = 4096, 
   const panorama = await canvasBlob(canvas, .94);
   const thumb = document.createElement("canvas"); thumb.width = 1024; thumb.height = 512; const tctx = thumb.getContext("2d")!; tctx.drawImage(canvas, 0, 0, thumb.width, thumb.height);
   const thumbnail = await canvasBlob(thumb, .86);
+  canvas.width = 1; canvas.height = 1; thumb.width = 1; thumb.height = 1;
   return { panorama, thumbnail, width, height };
 }
 
