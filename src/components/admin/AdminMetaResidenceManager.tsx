@@ -13,12 +13,12 @@ import { toast } from "sonner";
 import { CAMPUS_OPTIONS_BY_PROVINCE, extractServedCampuses, isToshaResidence, setToshaTag, toggleCampusInResidence, validateResidenceCampusPolicy } from "@/lib/residenceCampusPolicy";
 
 const SHEET="https://docs.google.com/spreadsheets/d/1x18MYICyLHL_1YvgpquZ4rbrdGovUmuWxjy45cHY1Ek/edit";
-const CSV="https://www.reskonnect.org/api/meta-residence-feed?format=csv";
+const CSV="https://www.reskonnect.org/api/meta-residence-feed-v2?format=csv";
 const PROVINCES=["Gauteng","Western Cape","KwaZulu-Natal","Eastern Cape","Free State","Limpopo","Mpumalanga","North West","Northern Cape"];
 
 export default function AdminMetaResidenceManager(){
   const[rows,setRows]=useState<any[]>([]),[q,setQ]=useState(""),[loading,setLoading]=useState(true),[editing,setEditing]=useState<any|null>(null),[saving,setSaving]=useState(false),[live,setLive]=useState<number|null>(null);
-  const load=useCallback(async()=>{setLoading(true);try{const r=await(supabase as any).from("residences").select("id,name,campus,province,address,city,institution_tags,is_visible").order("name").limit(5000);if(r.error)throw r.error;setRows(r.data||[]);const f=await fetch("/api/meta-residence-feed?format=json");const d=await f.json();if(f.ok)setLive(Number(d.row_count||0));}catch(e:any){toast.error(e?.message||"Could not load Meta feed");}finally{setLoading(false);}},[]);
+  const load=useCallback(async()=>{setLoading(true);try{const r=await(supabase as any).from("residences").select("id,name,campus,province,address,city,institution_tags,is_visible").order("name").limit(5000);if(r.error)throw r.error;setRows(r.data||[]);const f=await fetch("/api/meta-residence-feed-v2?format=json");const d=await f.json();if(f.ok)setLive(Number(d.row_count||0));}catch(e:any){toast.error(e?.message||"Could not load Meta feed");}finally{setLoading(false);}},[]);
   useEffect(()=>{void load();},[load]);
   const audited=useMemo(()=>rows.map(row=>({row,policy:validateResidenceCampusPolicy(row)})),[rows]);
   const bad=audited.filter(x=>!x.policy.valid),tosha=audited.filter(x=>x.policy.toshaException).length;
