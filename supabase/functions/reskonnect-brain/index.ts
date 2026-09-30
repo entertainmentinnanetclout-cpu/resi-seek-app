@@ -199,7 +199,6 @@ async function loadConversationWisdom(service:any,message:string,channel:string)
   return rows.map((row:any)=>{
     const text=[row.lesson_type,row.category,row.user_excerpt_redacted,row.candidate_text].filter(Boolean).join(" ").toLowerCase();
     const overlap=[...tokens].filter((token:string)=>text.includes(token)).length;
-    const channelBoost=row.source_channel===normalizedChannel?.replace("website","web")?.trim()?.toLowerCase()?.includes("whatsapp")?.toString()?0:0;
     const score=Number(row.quality_score||0)+Math.min(.35,overlap*.06)+(row.source_channel===normalizedChannel?0.12:0)+Math.min(.12,Math.max(0,Number(row.occurrence_count||1)-1)*.02);
     return{...row,_score:score};
   }).sort((a:any,b:any)=>b._score-a._score).slice(0,14).map(({_score,...row}:any)=>row);
