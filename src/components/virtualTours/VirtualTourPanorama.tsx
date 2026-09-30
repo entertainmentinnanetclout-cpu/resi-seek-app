@@ -99,7 +99,7 @@ export default function VirtualTourPanorama({
 
   if (safeGraphics || !webglAvailable || graphicsLost) {
     const reason = safeGraphics
-      ? "Immersive 360 is paused on this device after repeated graphics renderer recovery."
+      ? "Immersive 360 is paused on this device after graphics renderer recovery."
       : graphicsLost
         ? "The device graphics context was interrupted, so immersive 360 was safely paused."
         : "Immersive 360 is not available with the current device graphics configuration.";
@@ -119,6 +119,9 @@ export default function VirtualTourPanorama({
       onCreated={({ gl }) => {
         gl.domElement.addEventListener("webglcontextlost", (event) => {
           event.preventDefault();
+          if (native) {
+            try { localStorage.setItem("rk_native_safe_graphics_v1", "1"); } catch {}
+          }
           setGraphicsLost(true);
         }, { once: true });
       }}
