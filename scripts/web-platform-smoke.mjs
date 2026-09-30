@@ -27,11 +27,62 @@ const failures = [];
 fs.mkdirSync("artifacts", { recursive: true });
 
 const profiles = [
-  { name: "chromium-desktop", engine: chromium, viewport: { width: 1440, height: 900 }, isMobile: false },
-  { name: "chromium-tablet", engine: chromium, viewport: { width: 820, height: 1180 }, isMobile: true },
-  { name: "webkit-iphone", engine: webkit, viewport: { width: 390, height: 844 }, isMobile: true },
-  { name: "webkit-ipad", engine: webkit, viewport: { width: 1024, height: 1366 }, isMobile: true },
-  { name: "webkit-mac", engine: webkit, viewport: { width: 1512, height: 982 }, isMobile: false },
+  {
+    name: "chromium-windows-desktop",
+    engine: chromium,
+    viewport: { width: 1440, height: 900 },
+    isMobile: false,
+    hasTouch: false,
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+  },
+  {
+    name: "chromium-windows-compact",
+    engine: chromium,
+    viewport: { width: 960, height: 720 },
+    isMobile: false,
+    hasTouch: false,
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+  },
+  {
+    name: "webkit-iphone",
+    engine: webkit,
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1",
+  },
+  {
+    name: "webkit-ipad-portrait",
+    engine: webkit,
+    viewport: { width: 1024, height: 1366 },
+    isMobile: true,
+    hasTouch: true,
+    userAgent: "Mozilla/5.0 (iPad; CPU OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1",
+  },
+  {
+    name: "webkit-ipad-landscape",
+    engine: webkit,
+    viewport: { width: 1366, height: 1024 },
+    isMobile: true,
+    hasTouch: true,
+    userAgent: "Mozilla/5.0 (iPad; CPU OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1",
+  },
+  {
+    name: "webkit-ipad-split",
+    engine: webkit,
+    viewport: { width: 744, height: 1133 },
+    isMobile: true,
+    hasTouch: true,
+    userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15",
+  },
+  {
+    name: "webkit-mac",
+    engine: webkit,
+    viewport: { width: 1512, height: 982 },
+    isMobile: false,
+    hasTouch: false,
+    userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15",
+  },
 ];
 
 async function fulfillSupabase(route) {
@@ -124,6 +175,8 @@ try {
       const context = await browser.newContext({
         viewport: profile.viewport,
         isMobile: profile.isMobile,
+        hasTouch: profile.hasTouch,
+        userAgent: profile.userAgent,
         serviceWorkers: "block",
         locale: "en-ZA",
       });
@@ -169,7 +222,23 @@ try {
       const installPage = await context.newPage();
       await installPage.goto(origin + "/install", { waitUntil: "domcontentloaded" });
       await installPage.getByRole("heading", { name: "Install ResKonnect" }).waitFor({ timeout: 10_000 });
+      await installPage.keyboard.press("Tab");
+      const focusTag = await installPage.evaluate(() => document.activeElement?.tagName || "");
+      assert.notEqual(focusTag, "BODY", `${profile.name}: keyboard navigation did not move focus`);
       await installPage.close();
+
+      const connectivityPage = await context.newPage();
+      await connectivityPage.goto(origin + "/about", { waitUntil: "domcontentloaded" });
+      await connectivityPage.evaluate(() => window.dispatchEvent(new Event("offline")));
+      await connectivityPage.getByText(/You're offline/).waitFor({ timeout: 5_000 });
+      await connectivityPage.evaluate(() => window.dispatchEvent(new Event("online")));
+      await connectivityPage.getByText(/You're offline/).waitFor({ state: "detached", timeout: 5_000 });
+      await connectivityPage.evaluate(() => window.dispatchEvent(new CustomEvent("rk-network-degraded")));
+      await connectivityPage.getByText(/slow or unstable/).waitFor({ timeout: 5_000 });
+      await connectivityPage.evaluate(() => window.dispatchEvent(new CustomEvent("rk-network-recovered")));
+      await connectivityPage.getByText(/slow or unstable/).waitFor({ state: "detached", timeout: 5_000 });
+      await connectivityPage.close();
+
       await context.close();
     } finally {
       await browser.close();
