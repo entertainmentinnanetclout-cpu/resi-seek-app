@@ -11,6 +11,9 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // While account access is unresolved, render only the recovery surface.
+    // Never redirect using stale role flags from the last verified context.
+    if (accessError) return;
     if (!isLoading && !user) {
       navigate("/auth", { replace: true });
     } else if (!isLoading && isTumeloPartner) {
@@ -21,7 +24,7 @@ export const StudentRoute = ({ children }: { children: React.ReactNode }) => {
       if (isRecruiter) navigate("/recruit/dashboard", { replace: true });
       else navigate("/recruit/apply", { replace: true });
     }
-  }, [user, isLoading, staffRole, adminDepartments, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner, navigate]);
+  }, [user, isLoading, accessError, staffRole, adminDepartments, isStudent, isRecruiter, isPendingRecruiter, isTumeloPartner, navigate]);
 
   if (isLoading) return <AuthLoadingRecovery message="Loading your ResKonnect dashboard…" onRetry={refreshProfile} />;
   if (user && accessError) return <AuthLoadingRecovery message="We couldn't verify your ResKonnect account access." onRetry={refreshProfile} showRecoveryImmediately />;
