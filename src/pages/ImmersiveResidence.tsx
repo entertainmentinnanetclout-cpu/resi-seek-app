@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, BadgeCheck, BedDouble, Building2, CalendarDays, CheckCircle2, Crown, ExternalLink, Footprints, Layers3, MapPin, Sparkles, View, Wifi } from "lucide-react";
 import SEO from "@/components/SEO";
@@ -8,8 +8,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import ResidenceDigitalTwin from "@/components/resmap/ResidenceDigitalTwin";
-import Residence360Viewer from "@/components/resmap/Residence360Viewer";
+import { graphicsBudget } from "@/lib/devicePerformance";
+
+const ResidenceDigitalTwin = lazy(() => import("@/components/resmap/ResidenceDigitalTwin"));
+const Residence360Viewer = lazy(() => import("@/components/resmap/Residence360Viewer"));
 
 const money = (value: unknown) => Number(value) > 0 ? `R${Number(value).toLocaleString("en-ZA")}` : "Ask residence";
 type Mode = "twin" | "tour" | "rooms";
@@ -24,7 +26,8 @@ export default function ImmersiveResidence() {
   const [floors, setFloors] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
   const [v2Tour, setV2Tour] = useState<any>(null);
-  const [mode, setMode] = useState<Mode>("twin");
+  const budget = useMemo(() => graphicsBudget(), []);
+  const [mode, setMode] = useState<Mode>(() => budget.allowHeavy3d ? "twin" : "rooms");
   const [selectedFloorId, setSelectedFloorId] = useState<string>("all");
   const [holdingId, setHoldingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,8 +85,8 @@ export default function ImmersiveResidence() {
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-6">
       <section className="overflow-hidden rounded-[30px] border bg-card shadow-sm"><div className="grid gap-0 lg:grid-cols-[1.35fr_.65fr]">
         <div className="min-w-0 p-3 sm:p-5">
-          {mode === "twin" && <ResidenceDigitalTwin residence={{ ...residence, digitalTwinFloors: twin?.scene_json?.floors }} twin={twin} roomCount={rooms.length} />}
-          {mode === "tour" && <div className="space-y-3">{v2Tour?.public_token && <div className="flex flex-col gap-3 rounded-2xl border border-[#F5B32F]/35 bg-[#F5B32F]/5 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="flex items-center gap-2 font-black"><Crown className="h-4 w-4 text-[#C78A00]" />Gold 360 V2 tour available</p><p className="mt-1 text-xs text-muted-foreground">Explore the verified multi-scene 4K residence tour. The legacy tour remains available below where supplied.</p></div><Button asChild className="shrink-0 bg-[#071326] text-white"><Link to={`/tour/${v2Tour.public_token}`}><View className="mr-2 h-4 w-4" />Enter Gold 360 Tour</Link></Button></div>}<Residence360Viewer tourUrl={tour} title={`${residence.name} legacy 360 tour`} /></div>}
+          {mode === "twin" && <Suspense fallback={<div className="grid min-h-[46vh] place-items-center rounded-[28px] border bg-muted/20 text-sm text-muted-foreground">Preparing 3D view…</div>}><ResidenceDigitalTwin residence={{ ...residence, digitalTwinFloors: twin?.scene_json?.floors }} twin={twin} roomCount={rooms.length} /></Suspense>}
+          {mode === "tour" && <div className="space-y-3">{v2Tour?.public_token && <div className="flex flex-col gap-3 rounded-2xl border border-[#F5B32F]/35 bg-[#F5B32F]/5 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="flex items-center gap-2 font-black"><Crown className="h-4 w-4 text-[#C78A00]" />Gold 360 V2 tour available</p><p className="mt-1 text-xs text-muted-foreground">Explore the verified multi-scene 4K residence tour. The legacy tour remains available below where supplied.</p></div><Button asChild className="shrink-0 bg-[#071326] text-white"><Link to={`/tour/${v2Tour.public_token}`}><View className="mr-2 h-4 w-4" />Enter Gold 360 Tour</Link></Button></div>}<Suspense fallback={<div className="grid min-h-[46vh] place-items-center rounded-[28px] border bg-muted/20 text-sm text-muted-foreground">Preparing 360 view…</div>}><Residence360Viewer tourUrl={tour} title={`${residence.name} legacy 360 tour`} /></Suspense></div>}
           {mode === "rooms" && <div className="min-h-[46vh] rounded-[28px] border bg-muted/20 p-4 sm:p-6"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">Rooms & inventory</h2><p className="text-sm text-muted-foreground">Verified physical rooms can be held directly. Overview inventory is clearly labelled.</p></div><div className="flex max-w-full gap-2 overflow-x-auto pb-1"><button onClick={() => setSelectedFloorId("all")} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${selectedFloorId === "all" ? "bg-primary text-primary-foreground" : "bg-background"}`}>All</button>{floors.map((floor) => <button key={floor.id} onClick={() => setSelectedFloorId(floor.id)} className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${selectedFloorId === floor.id ? "bg-primary text-primary-foreground" : "bg-background"}`}>{floor.label}</button>)}</div></div><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{visibleRooms.map((room) => <Card key={room.id} className="overflow-hidden rounded-2xl"><CardContent className="space-y-3 p-4"><div className="flex items-start justify-between gap-2"><div><p className="font-black">{room.room_code && room.room_code !== "OVERVIEW" ? room.room_code : room.name}</p><p className="text-xs text-muted-foreground">{room.inventory_kind === "physical_room" ? "Physical room" : room.inventory_kind === "room_type" ? "Room type inventory" : "Residence inventory overview"}</p></div><Badge variant={room.status === "available" ? "default" : "outline"}>{room.status}</Badge></div><div className="grid grid-cols-2 gap-2 text-xs"><div className="rounded-xl bg-muted/50 p-2"><p className="text-muted-foreground">Available</p><p className="mt-1 font-black">{room.available_beds} beds</p></div><div className="rounded-xl bg-muted/50 p-2"><p className="text-muted-foreground">From</p><p className="mt-1 font-black">{money(room.private_price || room.nsfas_price)}</p></div></div>{room.is_verified ? <p className="flex items-center gap-1 text-xs font-semibold text-emerald-600"><BadgeCheck className="h-3.5 w-3.5" />Residence-confirmed inventory</p> : <p className="text-xs text-muted-foreground">Published inventory — exact room assignment is confirmed by the residence.</p>}<Button className="w-full" disabled={holdingId === room.id || room.available_beds <= 0} variant={room.reservable ? "default" : "outline"} onClick={() => holdRoom(room)}>{holdingId === room.id ? "Holding…" : room.reservable ? "Hold for 20 minutes" : "Continue to secure"}</Button></CardContent></Card>)}</div></div>}
         </div>
         <aside className="space-y-5 border-t p-5 lg:border-l lg:border-t-0">
@@ -94,7 +97,7 @@ export default function ImmersiveResidence() {
           <div className="space-y-2"><Button className="w-full" onClick={() => setMode("rooms")}><CheckCircle2 className="mr-2 h-4 w-4" />Choose room / secure</Button>{residence.google_maps_url && <Button variant="outline" className="w-full" asChild><a href={residence.google_maps_url} target="_blank" rel="noreferrer"><MapPin className="mr-2 h-4 w-4" />Check on Google Maps<ExternalLink className="ml-2 h-3.5 w-3.5" /></a></Button>}<Button variant="secondary" className="w-full" onClick={() => navigate(`/findmyres?view=map&residence=${residence.id}`)}><Footprints className="mr-2 h-4 w-4" />Open in ResMap</Button></div>
         </aside>
       </div></section>
-      {images.length > 0 && <section><div className="mb-3 flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /><h2 className="text-xl font-black">Residence gallery</h2></div><div className="flex snap-x gap-3 overflow-x-auto pb-2">{images.map((src, index) => <img key={`${src}-${index}`} src={src} alt={`${residence.name} ${index + 1}`} loading="lazy" className="h-56 min-w-[82vw] snap-center rounded-[24px] object-cover sm:min-w-[360px]" />)}</div></section>}
+      {images.length > 0 && <section><div className="mb-3 flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /><h2 className="text-xl font-black">Residence gallery</h2></div><div className="flex snap-x gap-3 overflow-x-auto pb-2">{images.map((src, index) => <img key={`${src}-${index}`} src={src} alt={`${residence.name} ${index + 1}`} loading="lazy" decoding="async" className="h-56 min-w-[82vw] snap-center rounded-[24px] object-cover sm:min-w-[360px]" />)}</div></section>}
     </div>
   </main>;
 }
