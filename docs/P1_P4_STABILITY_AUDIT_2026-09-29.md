@@ -67,3 +67,15 @@ Production Supabase verification on 2026-09-29 confirmed that the core P1–P4 t
 The native recovery design follows Android's current WebView termination guidance: a WebView whose renderer has exited must not be reused; it must be removed/destroyed, references cleared, and the callback must return `true` when the host handles recovery. Android's current WebView memory guidance also emphasizes explicit lifecycle cleanup because WebView retains native/process memory outside the normal Java heap. Capacitor 8.5.2's `BridgeActivity` includes null-safe lifecycle forwarding, which allows the ResKonnect activity to drop the dead bridge reference before `recreate()` without later lifecycle null dereferences.
 
 Android 16 / API 36 guidance also treats resizability and multi-window support as the baseline on large screens. ResKonnect therefore keeps the activity free of fixed orientation, fixed aspect-ratio and non-resizable declarations.
+
+
+## 2026-09-30 closure verification
+
+The merged P1–P4 implementation was re-audited against current Android guidance and production Supabase after integration into `main`.
+
+Two final closure hardenings were added:
+
+- **First renderer-loss degradation:** if Android reports an actual WebView renderer crash, or the renderer exits while a known graphics-heavy route is active, the replacement WebView enters safe-graphics mode immediately rather than retrying the same GPU path once. Repeated renderer exits still force safe mode globally.
+- **Strict student-route fail-closed redirecting:** while access-context verification is in an error state, the student route guard no longer redirects using stale role flags. Only the recovery surface is allowed until access is verified again.
+
+Production Supabase verification confirmed the required P1–P4 tables and RPCs remain present. The privacy-safe `mobile_runtime_events` table and insert RLS policies are deployed; it currently contains no runtime rows because the hardened 1.1.4 build has not yet been promoted to the physical-device test population.
