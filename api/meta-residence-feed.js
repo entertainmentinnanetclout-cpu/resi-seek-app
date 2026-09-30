@@ -119,7 +119,10 @@ function singleAvailability(row) {
 }
 
 function status(row) {
-  if (Number.isFinite(Number(row.available_spots)) && Number(row.available_spots) <= 0) return "Full";
+  if (row.available_spots !== null && row.available_spots !== undefined && row.available_spots !== "") {
+    const spots = Number(row.available_spots);
+    if (Number.isFinite(spots) && spots <= 0) return "Full";
+  }
   return "Active";
 }
 
