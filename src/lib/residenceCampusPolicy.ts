@@ -55,7 +55,7 @@ export function extractServedCampuses(raw: string | null | undefined): string[] 
   const detected = CAMPUS_RULES.filter((rule) =>
     [rule.label, ...rule.aliases].some((alias) => lower.includes(norm(alias))),
   ).map((rule) => rule.label);
-  const split = text.replace(/\s+and\s+/gi, ",").split(/[,;|/]+/).map((part) => part.trim()).filter(Boolean);
+  const split = text.replace(/\s+and\s+/gi, ",").split(/[,;&|/]+/).map((part) => part.trim()).filter(Boolean);
   const out: string[] = [];
   for (const value of [...detected, ...split]) {
     const matched = CAMPUS_RULES.find((rule) =>
