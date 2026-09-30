@@ -20,15 +20,16 @@ import AcademicInventoryManager from "@/components/admin/AcademicInventoryManage
 import AdminApplicationOperationsPanel from "@/components/admin/AdminApplicationOperationsPanel";
 import AdminOccupancyIntelligence from "@/components/admin/AdminOccupancyIntelligence";
 import AdminDepartmentTaskQueue from "@/components/admin/AdminDepartmentTaskQueue";
+import AdminMetaResidenceManager from "@/components/admin/AdminMetaResidenceManager";
 
 const normalize=(value:string|null)=>{
   const legacy:Record<string,string>={
     applications:"applications-reservations","2027-reservations":"applications-reservations","academic-inventory":"inventory-occupancy",
     residences:"residences",portals:"portals-documents",documents:"portals-documents","follow-up":"applications-reservations",
-    "pricing-promos":"commercial","landlord-apps":"commercial",recruitment:"commercial","360-gold":"360",
+    "pricing-promos":"commercial","landlord-apps":"commercial",recruitment:"commercial","360-gold":"360","meta-feed":"meta-feed",
     sections:"configuration",filters:"configuration",users:"configuration"
   };
-  const valid=["applications-reservations","inventory-occupancy","residences","commercial","portals-documents","360","configuration"];
+  const valid=["applications-reservations","inventory-occupancy","residences","meta-feed","commercial","portals-documents","360","configuration"];
   return value&&valid.includes(value)?value:legacy[value||""]||"applications-reservations";
 };
 
@@ -47,6 +48,7 @@ export default function AdminOperationsHub(){
           <TabsTrigger value="applications-reservations" className="gap-2"><FileText className="h-4 w-4"/>Applications & Reservations</TabsTrigger>
           <TabsTrigger value="inventory-occupancy" className="gap-2"><Layers className="h-4 w-4"/>Inventory & Occupancy</TabsTrigger>
           <TabsTrigger value="residences" className="gap-2"><Building2 className="h-4 w-4"/>Residences</TabsTrigger>
+          <TabsTrigger value="meta-feed" className="gap-2"><Building2 className="h-4 w-4"/>Meta Feed</TabsTrigger>
           <TabsTrigger value="commercial" className="gap-2"><BadgePercent className="h-4 w-4"/>Commercial & Recruitment</TabsTrigger>
           <TabsTrigger value="portals-documents" className="gap-2"><FolderOpen className="h-4 w-4"/>Portals & Records</TabsTrigger>
           <TabsTrigger value="360" className="gap-2"><Rotate3D className="h-4 w-4"/>360 Studio</TabsTrigger>
@@ -76,6 +78,7 @@ export default function AdminOperationsHub(){
           </Tabs>
         </TabsContent>
         <TabsContent value="residences"><AdminResidencesContent /></TabsContent>
+        <TabsContent value="meta-feed"><AdminMetaResidenceManager /></TabsContent>
 
         <TabsContent value="commercial" className="space-y-4">
           <Tabs defaultValue="pricing">
