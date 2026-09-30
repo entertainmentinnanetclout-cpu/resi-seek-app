@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run link:check && npm run brain:check && npm run luna:check && npm run platform:check && npm run stability:check && npm run platform:p5-p8 && npm run web:check && npm run seo:check && npm run 360:check && vite build && node scripts/prerender-seo.mjs && node scripts/emit-private-spa-entries.mjs",
+    "build": "npm run link:check && npm run brain:check && npm run luna:check && npm run platform:check && npm run stability:check && npm run platform:p5-p8 && npm run release:p11 && npm run web:check && npm run seo:check && npm run 360:check && vite build && npm run platform:p9 && node scripts/prerender-seo.mjs && node scripts/emit-private-spa-entries.mjs",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "link:check": "node scripts/link-routing-qa.mjs",
@@ -17,7 +17,11 @@
     "brain:check": "node scripts/reskonnect-brain-qa.mjs",
     "web:check": "node scripts/web-platform-readiness.mjs",
     "stability:check": "node scripts/p1-p4-stability-audit.mjs",
-    "platform:p5-p8": "node scripts/p5-p8-stability-audit.mjs"
+    "platform:p5-p8": "node scripts/p5-p8-stability-audit.mjs",
+    "platform:p9": "node scripts/p9-performance-budget.mjs",
+    "platform:p10": "node scripts/p10-android-device-matrix.mjs",
+    "release:p11": "node scripts/p11-release-gate.mjs",
+    "release:p12": "node scripts/p12-release-candidate-audit.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
