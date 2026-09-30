@@ -38,7 +38,7 @@ export default function AdminMetaResidenceFeed({ residences, onEdit, onRefresh, 
   const audited = useMemo(() => residences.map((row) => ({ row, policy: validateResidenceCampusPolicy(row) })), [residences]);
   const violations = audited.filter((item) => !item.policy.valid);
   const clean = audited.length - violations.length;
-  const tosha = audited.filter((item) => item.policy.toshaException).length;
+  const sosha = audited.filter((item) => item.policy.soshaException).length;
   const visible = audited.filter(({ row, policy }) => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
@@ -69,7 +69,7 @@ export default function AdminMetaResidenceFeed({ residences, onEdit, onRefresh, 
         <Metric label="Live feed rows" value={liveCount ?? "—"} good={!feedError}/>
         <Metric label="Policy clean" value={clean} good={violations.length === 0}/>
         <Metric label="Needs correction" value={violations.length} good={violations.length === 0}/>
-        <Metric label="TOSHA exceptions" value={tosha} good/>
+        <Metric label="SOSHA exceptions" value={sosha} good/>
       </div>
       {feedError && <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-800">Live feed check: {feedError}</div>}
     </section>
@@ -79,7 +79,7 @@ export default function AdminMetaResidenceFeed({ residences, onEdit, onRefresh, 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h4 className="font-black">Campus accreditation audit</h4>
-            <p className="text-xs text-muted-foreground">Pretoria/Gauteng cannot serve Polokwane/Limpopo. Pretoria West may serve Soshanguve only for Ekhaya Junction or an explicit TOSHA-tagged residence.</p>
+            <p className="text-xs text-muted-foreground">Pretoria/Gauteng cannot serve Polokwane/Limpopo. Pretoria West may serve Soshanguve only for Ekhaya Junction or an explicit SOSHA-tagged residence.</p>
           </div>
           <Input className="w-full lg:w-80" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search residence, campus or province"/>
         </div>
@@ -90,7 +90,7 @@ export default function AdminMetaResidenceFeed({ residences, onEdit, onRefresh, 
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-black">{row.name}</p>
               {policy.valid ? <Badge className="rounded-full bg-emerald-600"><CheckCircle2 className="mr-1 h-3 w-3"/>Policy clean</Badge> : <Badge variant="destructive" className="rounded-full"><AlertTriangle className="mr-1 h-3 w-3"/>Needs correction</Badge>}
-              {policy.toshaException && <Badge variant="outline" className="rounded-full">TOSHA</Badge>}
+              {policy.soshaException && <Badge variant="outline" className="rounded-full">SOSHA</Badge>}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">{row.province || "Province missing"} · {row.campus || "No served campuses"}</p>
             {!policy.valid && <div className="mt-2 space-y-1">{policy.violations.map((v) => <p key={v} className="text-xs font-medium text-destructive">{v}</p>)}</div>}

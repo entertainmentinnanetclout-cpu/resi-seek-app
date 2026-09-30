@@ -30,8 +30,11 @@ export const CAMPUS_OPTIONS_BY_PROVINCE = CAMPUS_RULES.reduce<Record<string, str
 const norm = (value: unknown) =>
   String(value ?? "").toLowerCase().replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
 
-export const isToshaResidence = (residence: ResidenceCampusPolicyInput) =>
-  (residence.institution_tags || []).some((tag) => norm(tag) === "tosha" || norm(tag).includes("tosha"));
+export const isSoshaResidence = (residence: ResidenceCampusPolicyInput) =>
+  (residence.institution_tags || []).some((tag) => {
+    const value = norm(tag);
+    return value === "sosha" || value.includes("sosha") || value === "tosha" || value.includes("tosha");
+  });
 
 export const isEkhayaJunction = (residence: ResidenceCampusPolicyInput) =>
   norm(residence.name).includes("ekhaya junction");
@@ -90,11 +93,11 @@ export function validateResidenceCampusPolicy(residence: ResidenceCampusPolicyIn
     filtered.push(campus);
   }
   const hasSoshanguve = filtered.some((campus) => norm(campus).includes("soshanguve"));
-  if (hasSoshanguve && isPretoriaWestResidence(residence, filtered) && !isEkhayaJunction(residence) && !isToshaResidence(residence)) {
-    violations.push("Pretoria West residences may not serve Soshanguve students unless the residence is Ekhaya Junction or is explicitly tagged TOSHA.");
+  if (hasSoshanguve && isPretoriaWestResidence(residence, filtered) && !isEkhayaJunction(residence) && !isSoshaResidence(residence)) {
+    violations.push("Pretoria West residences may not serve Soshanguve students unless the residence is Ekhaya Junction or is explicitly tagged SOSHA.");
   }
   if (!province) violations.push("Province is required before campus accreditation can be published to Meta.");
-  return { valid: violations.length === 0, violations, servedCampuses: filtered, province, toshaException: isToshaResidence(residence), ekhayaException: isEkhayaJunction(residence) };
+  return { valid: violations.length === 0, violations, servedCampuses: filtered, province, soshaException: isSoshaResidence(residence), ekhayaException: isEkhayaJunction(residence) };
 }
 
 export function toggleCampusInResidence(current: string | null | undefined, campus: string, checked: boolean) {
@@ -104,8 +107,8 @@ export function toggleCampusInResidence(current: string | null | undefined, camp
   return next.join(", ");
 }
 
-export function setToshaTag(tags: string[] | null | undefined, enabled: boolean) {
+export function setSoshaTag(tags: string[] | null | undefined, enabled: boolean) {
   const current = (tags || []).filter(Boolean);
-  const without = current.filter((tag) => norm(tag) !== "tosha");
-  return enabled ? [...without, "TOSHA"] : without;
+  const without = current.filter((tag) => !["sosha", "tosha"].includes(norm(tag)));
+  return enabled ? [...without, "SOSHA"] : without;
 }
