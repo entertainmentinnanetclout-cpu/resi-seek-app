@@ -138,26 +138,12 @@ export const DocumentUploader = () => {
     );
 
     try {
-      // If replacing, delete old file first
-      if (isReplacement) {
-        const existingDoc = getDocumentByType(type);
-        if (existingDoc) {
-          // Delete from storage
-          await supabase.storage
-            .from("documents")
-            .remove([existingDoc.file_path]);
-
-          // Delete from database
-          await supabase
-            .from("documents")
-            .delete()
-            .eq("id", existingDoc.id);
-        }
-      }
+      const existingDoc = isReplacement ? getDocumentByType(type) : undefined;
 
       setUploadProgress(30);
 
-      // Upload new file
+      // Upload the replacement first. Never delete the student's current
+      // document until the new object and database pointer are both durable.
       const fileExt = file.name.split(".").pop();
       const fileName = `${type}_${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
@@ -170,16 +156,46 @@ export const DocumentUploader = () => {
 
       setUploadProgress(70);
 
-      // Save to database
-      const { error: dbError } = await supabase.from("documents").insert({
-        user_id: user.id,
-        document_type: type,
-        file_name: file.name,
-        file_path: filePath,
-        file_size: file.size,
-      });
+      if (existingDoc) {
+        const { error: dbError } = await supabase
+          .from("documents")
+          .update({
+            file_name: file.name,
+            file_path: filePath,
+            file_size: file.size,
+          })
+          .eq("id", existingDoc.id)
+          .eq("user_id", user.id);
 
-      if (dbError) throw dbError;
+        if (dbError) {
+          // The old database pointer is still intact, so the newly uploaded
+          // orphan can be removed safely before surfacing the failure.
+          await supabase.storage.from("documents").remove([filePath]).catch(() => undefined);
+          throw dbError;
+        }
+
+        // Database now points at the replacement. Failure to clean the old
+        // object is non-destructive and can be repaired later.
+        if (existingDoc.file_path !== filePath) {
+          const { error: cleanupError } = await supabase.storage
+            .from("documents")
+            .remove([existingDoc.file_path]);
+          if (cleanupError) console.warn("Old document cleanup deferred:", cleanupError.message);
+        }
+      } else {
+        const { error: dbError } = await supabase.from("documents").insert({
+          user_id: user.id,
+          document_type: type,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+        });
+
+        if (dbError) {
+          await supabase.storage.from("documents").remove([filePath]).catch(() => undefined);
+          throw dbError;
+        }
+      }
 
       setUploadProgress(100);
 
