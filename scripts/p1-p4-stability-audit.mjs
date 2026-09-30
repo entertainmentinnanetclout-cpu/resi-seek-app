@@ -64,6 +64,7 @@ expect(ai.includes("AbortController") && ai.includes("30_000") && ai.includes("t
 expect(bursaries.includes("bursaryRequestRef") && bursaries.includes("AbortController") && bursaries.includes("finally"), "Bursary loading cancels stale requests and releases loading state");
 expect(profile.includes("profileError") && profile.includes("profileRefreshKey") && profile.includes("abortSignal"), "Profile load failure is explicit and retryable without exposing blank editable data");
 expect(documents.includes("Documents need a connection refresh") && documents.includes("AbortController") && documents.includes("finally"), "Documents distinguish backend failure from an empty document list");
+expect(documents.includes("Never delete the student's current") && documents.includes(".update({") && documents.includes("Old document cleanup deferred"), "document replacement uploads and commits the new pointer before cleaning the old file");
 expect(opportunities.includes("setError") && opportunities.includes("AbortController") && opportunities.includes("Opportunity feed needs a refresh"), "Opportunity feed has bounded loading, persistent error and retry states");
 expect(residence.includes("loadError") && residence.includes("Residence could not be refreshed"), "residence detail distinguishes connectivity failure from true not-found");
 expect(dashboard.includes("Promise.allSettled") && dashboard.includes("abortSignal") && dashboard.includes("Refresh journey"), "dashboard command centre isolates partial backend failures and supports recovery");
