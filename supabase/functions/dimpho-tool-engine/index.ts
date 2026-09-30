@@ -14,13 +14,13 @@ const safeText=(v:any,max=160)=>String(v??"").trim().slice(0,max);
 const norm=(v:any)=>String(v??"").toLowerCase().replace(/[()]/g," ").replace(/\s+/g," ").trim();
 const campusProvince=(v:any)=>{const x=norm(v);if(/polokwane|giyani/.test(x))return"Limpopo";if(/mbombela|nelspruit|emalahleni|witbank/.test(x))return"Mpumalanga";if(/pretoria|arcadia|arts campus|soshanguve|ga-rankuwa|garankuwa/.test(x))return"Gauteng";return null;};
 const campusList=(v:any)=>String(v||"").replace(/\s+and\s+/gi,",").split(/[,;|/]+/).map((x)=>x.trim()).filter(Boolean);
-const isTosha=(r:any)=>Array.isArray(r?.institution_tags)&&r.institution_tags.some((x:any)=>norm(x).includes("tosha"));
+const isSosha=(r:any)=>Array.isArray(r?.institution_tags)&&r.institution_tags.some((x:any)=>{const v=norm(x);return v.includes("sosha")||v.includes("tosha");});
 const isEkhaya=(r:any)=>norm(r?.name).includes("ekhaya junction");
 function eligibleCampuses(r:any){
   const province=norm(r?.province),list=campusList(r?.campus);
   const same=list.filter((campus)=>{const p=campusProvince(campus);return !province||!p||norm(p)===province;});
   const pretoriaWest=same.some((x)=>norm(x).includes("pretoria west"))||norm([r?.address,r?.city].filter(Boolean).join(" ")).includes("pretoria west");
-  return same.filter((campus)=>!(pretoriaWest&&norm(campus).includes("soshanguve")&&!isEkhaya(r)&&!isTosha(r)));
+  return same.filter((campus)=>!(pretoriaWest&&norm(campus).includes("soshanguve")&&!isEkhaya(r)&&!isSosha(r)));
 }
 function matchesRequestedCampus(r:any,requested:string){
   if(!requested)return true;
