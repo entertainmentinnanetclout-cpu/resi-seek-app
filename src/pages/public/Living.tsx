@@ -34,8 +34,8 @@ export const Living: React.FC = () => {
     <PublicLayout>
       <SEO
         title="ResKonnect Living | Student Accommodation & Private Rental Support"
-        description="Browse verified student accommodation, NSFAS accommodation context, private-paying student residences, and private rental support through ResKonnect."
-        keywords="student accommodation, private rentals Pretoria, NSFAS accredited accommodation, private paying student residence"
+        description="Browse verified student accommodation, evidence-controlled NSFAS status, private-paying student residences, and private rental support through ResKonnect."
+        keywords="student accommodation, private rentals Pretoria, NSFAS accommodation status, private paying student residence"
         canonicalPath="/living"
       />
 
@@ -43,44 +43,29 @@ export const Living: React.FC = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
 
           <div className="text-center max-w-3xl mx-auto space-y-4">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
-              Connected Living Solutions
-            </h1>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Connected Living Solutions</h1>
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-              Find safe, verified, and community-centric student accommodation and private rentals. ResKonnect is South Africa’s ultimate gateway to high-quality spaces.
+              Find student accommodation and private rentals with property facts, funding context and official accreditation status kept separate and clearly identified.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {isLoading &&
-              [0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-80 rounded-xl" />)}
+            {isLoading && [0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-80 rounded-xl" />)}
 
             {!isLoading && cards.map((card) => {
               const Icon = CARD_ICONS[card.card_key] ?? Building2;
               return (
-                <Card
-                  key={card.id}
-                  className="group overflow-hidden border-border/80 transition-all hover:-translate-y-1 hover:shadow-xl"
-                >
+                <Card key={card.id} className="group overflow-hidden border-border/80 transition-all hover:-translate-y-1 hover:shadow-xl">
                   <button type="button" onClick={() => choose(card)} className="block w-full text-left">
                     <div className="relative aspect-[16/10] overflow-hidden bg-muted">
                       {card.imageUrl ? (
-                        <img
-                          src={card.imageUrl}
-                          alt={card.imageAlt}
-                          loading="lazy"
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
+                        <img src={card.imageUrl} alt={card.imageAlt} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-                          <ImageOff className="h-8 w-8" />
-                        </div>
+                        <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground"><ImageOff className="h-8 w-8" /></div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/85 via-brand-navy/25 to-transparent" />
                       <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 p-4">
-                        <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/15 text-white backdrop-blur-sm">
-                          <Icon className="h-5 w-5" />
-                        </span>
+                        <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/15 text-white backdrop-blur-sm"><Icon className="h-5 w-5" /></span>
                         <h2 className="text-lg font-bold text-white">{card.title}</h2>
                       </div>
                     </div>
@@ -100,21 +85,20 @@ export const Living: React.FC = () => {
             <div className="space-y-2">
               <h3 className="text-2xl font-bold">Are you a property owner?</h3>
               <p className="text-sm text-muted-foreground max-w-xl">
-                Advertise your rooms, connect directly with verified students and tenants, and manage bookings effortlessly with ResKonnect’s landlord dashboard.
+                Advertise rooms, manage applications and use ResKonnect's new compliance-readiness workflow to organise property evidence before the applicable external accreditation process.
               </p>
             </div>
-            <Button asChild size="lg" className="shrink-0">
-              <Link to="/get-started?persona=landlord&need=property_listing">List Your Property</Link>
-            </Button>
+            <Button asChild size="lg" className="shrink-0"><Link to="/get-started?persona=landlord&need=property_listing">List Your Property</Link></Button>
           </div>
 
           <div className="mx-auto max-w-5xl">
             <SeoInternalLinks
               heading="Explore living options"
               links={[
-                { label: "Student accommodation", to: "/student-accommodation", description: "Verified residences across our coverage areas." },
+                { label: "Student accommodation", to: "/student-accommodation", description: "Verified listings across our coverage areas." },
                 { label: "Housing intelligence network", to: "/housing-intelligence", description: "Live supply, demand heat, institution pressure and development opportunity intelligence." },
-                { label: "NSFAS accredited accommodation", to: "/student-accommodation/nsfas-accredited", description: "Listings with NSFAS accreditation context." },
+                { label: "NSFAS accommodation status", to: "/student-accommodation/nsfas-accredited", description: "Funding acceptance and verified official accreditation shown as separate facts." },
+                { label: "Accreditation readiness for providers", to: "/accreditation-readiness", description: "Document-readiness, property pre-inspection, remediation and renewal support." },
                 { label: "Private-paying student accommodation", to: "/student-accommodation/university", description: "Off-campus residences for self-funded students." },
                 { label: "Private rentals", to: "/private-rentals", description: "Rooms and flats for private-paying tenants." },
                 { label: "Pretoria West accommodation", to: "/student-accommodation/pretoria-west", description: "Rooms close to Pretoria West campuses." },
