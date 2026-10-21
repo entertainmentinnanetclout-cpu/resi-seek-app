@@ -32,8 +32,8 @@ text = replace_once(
 )
 text = replace_once(
     text,
-    "                  <GrowthTracker />\n",
-    "                  <GrowthTracker />\n                  <MetaPixelTracker />\n",
+    "                <GrowthTracker />\n",
+    "                <GrowthTracker />\n                <MetaPixelTracker />\n",
     "MetaPixelTracker mount",
 )
 text = text.replace(
