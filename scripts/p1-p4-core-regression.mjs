@@ -200,6 +200,12 @@ try {
   observe(page);
 
   await page.goto(origin+"/auth");
+  const marketingPreferences=page.getByRole("dialog",{name:"Marketing privacy preferences"});
+  if (await marketingPreferences.isVisible().catch(()=>false)) {
+    await marketingPreferences.getByRole("button",{name:"Essential only",exact:true}).click();
+    await marketingPreferences.waitFor({state:"hidden"});
+    console.log("PASS marketing consent does not block P1-P4 authentication flow");
+  }
   await page.getByLabel("Email address *").fill(user.email);
   await page.getByLabel("Password *",{exact:true}).fill("FixturePassword123");
 
@@ -316,7 +322,6 @@ try {
   await page.getByRole("button",{name:"Try again"}).click();
   await page.getByText("No Favorites Yet").waitFor({timeout:15000});
   console.log("PASS Favorites failure/retry");
-
   failure.wilOnce=true;
   await page.goto(origin+"/wil");
   await page.getByText("WIL data needs a connection refresh").waitFor({timeout:15000});
