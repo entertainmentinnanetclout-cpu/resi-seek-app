@@ -25,5 +25,5 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: Require zero known vulnerabilities
-        run: npm audit --audit-level=low
+      - name: Governed dependency security audit
+        run: node scripts/dependency-security-audit.mjs
