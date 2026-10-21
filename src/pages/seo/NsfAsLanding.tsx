@@ -1,205 +1,192 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import SEO from '@/components/SEO';
-import SEOJsonLd from '@/components/SEOJsonLd';
-import SEOTextBlock from '@/components/SEOTextBlock';
-import PublicLayout from '@/components/PublicLayout';
-import { residences } from '@/data/residences';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Card, CardContent } from "@/components/ui/card";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import SEO from "@/components/SEO";
+import SEOJsonLd from "@/components/SEOJsonLd";
+import PublicLayout from "@/components/PublicLayout";
+import AccreditationStatusBadge, { type AccreditationStatus } from "@/components/accommodation/AccreditationStatusBadge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Bed, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { GOVERNANCE_NOTICES } from "@/lib/compliance/nsfasStandards";
+import { Bed, Building2, CheckCircle2, FileCheck2, MapPin, ShieldCheck, WalletCards } from "lucide-react";
 
-const NsfAsLanding: React.FC = () => {
-  const filteredResidences = residences.filter(r => r.nsfas_accredited);
-  const bedCount = filteredResidences.reduce((acc, r) => acc + r.bedCount, 0);
+interface PublicAccreditationResidence extends AccreditationStatus {
+  residence_id: string;
+  name: string;
+  slug: string | null;
+  address: string | null;
+  city: string | null;
+  province: string | null;
+  campus: string | null;
+  image_url: string | null;
+}
 
-  const title = "NSFAS Accredited Accommodation | Verified & Safe | ResKonnect";
-  const description = `Find NSFAS accredited student accommodation with ResKonnect. Browse ${filteredResidences.length} verified NSFAS approved residences with ${bedCount}+ beds. Apply online and secure your funded accommodation today!`;
+const NsfAsLanding = () => {
+  const [rows, setRows] = useState<PublicAccreditationResidence[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      const { data, error } = await (supabase as any).rpc("get_public_accreditation_residences", { p_residence_id: null });
+      if (!active) return;
+      if (!error) setRows((data || []) as PublicAccreditationResidence[]);
+      setLoading(false);
+    };
+    void load();
+    return () => { active = false; };
+  }, []);
+
+  const verified = useMemo(() => rows.filter((row) => row.accreditation_verified === true), [rows]);
+  const acceptsFunding = useMemo(() => rows.filter((row) => row.accepts_nsfas === true), [rows]);
 
   const itemListSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "name": "NSFAS Accredited Student Residences",
-    "numberOfItems": filteredResidences.length,
-    "itemListElement": filteredResidences.map((residence, index) => ({
+    name: "Student accommodation with verified current accreditation evidence",
+    numberOfItems: verified.length,
+    itemListElement: verified.map((residence, index) => ({
       "@type": "ListItem",
-      "position": index + 1,
-      "item": {
+      position: index + 1,
+      item: {
         "@type": "Accommodation",
-        "name": residence.name,
-        "address": residence.address,
-        "url": `https://www.reskonnect.org/res/${residence.id}`
-      }
-    }))
+        name: residence.name,
+        address: residence.address || undefined,
+        url: `https://www.reskonnect.org/res/${residence.residence_id}`,
+      },
+    })),
   };
 
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "mainEntity": [
+    mainEntity: [
       {
         "@type": "Question",
-        "name": "What is NSFAS accredited accommodation?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "NSFAS accredited accommodation refers to student residences that meet the National Student Financial Aid Scheme's standards for safety, quality, and proximity to educational institutions. These residences are approved for funding through NSFAS allowances."
-        }
+        name: "Does accepting NSFAS mean a residence is accredited?",
+        acceptedAnswer: { "@type": "Answer", text: "No. ResKonnect records funding acceptance separately from official accreditation status. An official accreditation badge is shown only when current authority evidence has been verified in the platform." },
       },
       {
         "@type": "Question",
-        "name": "How do I apply for NSFAS accommodation?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "To apply for NSFAS accommodation on ResKonnect, create an account, browse our NSFAS approved listings, and submit your application online. Once approved, your accommodation allowance can be used to pay for your residence."
-        }
+        name: "Who accredits and grades student accommodation?",
+        acceptedAnswer: { "@type": "Answer", text: "Official accreditation and grading are decisions of NSFAS or the relevant authorised institution or body. ResKonnect provides readiness, document organisation, pre-inspection and case-support services and does not issue official accreditation." },
       },
       {
         "@type": "Question",
-        "name": "How much does NSFAS accommodation cost?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "NSFAS provides accommodation allowances that vary by institution and location. The allowance typically covers the full cost of accredited accommodation, including rent and basic utilities."
-        }
-      }
-    ]
+        name: "How does ResKonnect verify an accommodation status?",
+        acceptedAnswer: { "@type": "Answer", text: "The platform separates provider funding acceptance from official status and records authority evidence, validity dates and grading evidence before displaying a verified accreditation claim." },
+      },
+    ],
   };
-
-  const nsfasBenefits = [
-    "Direct payment from NSFAS to landlord",
-    "Verified safety and quality standards",
-    "Proximity to your campus",
-    "No upfront payment required",
-    "All-inclusive pricing",
-    "24/7 security included"
-  ];
 
   return (
     <PublicLayout>
-      <SEO 
-        title={title} 
-        description={description}
-        keywords="NSFAS accommodation, NSFAS accredited residence, NSFAS approved housing, student funding accommodation, NSFAS housing allowance"
+      <SEO
+        title="NSFAS Student Accommodation Status | ResKonnect"
+        description="Browse student accommodation that accepts NSFAS-funded students and see verified official accreditation status separately where current authority evidence is available."
+        keywords="NSFAS accommodation, NSFAS accredited accommodation, NSFAS student housing, student accommodation funding, NSFAS residence verification"
       />
       <SEOJsonLd schema={[itemListSchema, faqSchema]} />
-      
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Breadcrumb className="mb-6">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/">Home</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink>NSFAS Accommodation</BreadcrumbLink>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
 
-        {/* Hero Section */}
-        <div className="max-w-4xl mx-auto text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full mb-4">
-            <ShieldCheck className="w-5 h-5" />
-            <span className="font-semibold">NSFAS Verified</span>
+      <section className="border-b bg-gradient-to-br from-[#071326] via-[#102844] to-[#0f5132] text-white">
+        <div className="container mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 md:py-20 lg:px-8">
+          <Badge className="mb-5 border-white/20 bg-white/10 text-white hover:bg-white/10"><ShieldCheck className="mr-1 h-3.5 w-3.5" /> Evidence-based status</Badge>
+          <h1 className="mx-auto max-w-4xl text-4xl font-black tracking-tight md:text-5xl">NSFAS accommodation, without mixing up funding and accreditation.</h1>
+          <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-white/75">ResKonnect now shows whether a property accepts NSFAS-funded students separately from whether current official accreditation evidence has been verified.</p>
+          <div className="mx-auto mt-8 grid max-w-2xl gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-5"><p className="text-3xl font-black">{loading ? "—" : acceptsFunding.length}</p><p className="mt-1 text-sm text-white/70">visible listings accepting NSFAS-funded students</p></div>
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-5"><p className="text-3xl font-black">{loading ? "—" : verified.length}</p><p className="mt-1 text-sm text-white/70">with current official accreditation evidence verified in ResKonnect</p></div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">NSFAS Accredited Accommodation</h1>
-          <p className="text-xl text-muted-foreground mb-6">
-            {filteredResidences.length} verified NSFAS approved residences with {bedCount}+ beds available
-          </p>
-          <Button size="lg" asChild>
-            <Link to="/auth">Find NSFAS Housing</Link>
-          </Button>
         </div>
+      </section>
 
-        {/* Benefits Section */}
-        <section className="mb-12">
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-8">
-              <h2 className="text-2xl font-bold mb-6 text-center">Why Choose NSFAS Accredited?</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {nsfasBenefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm">{benefit}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      <div className="container mx-auto max-w-7xl space-y-12 px-4 py-12 sm:px-6 lg:px-8">
+        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/20">
+          <WalletCards className="h-4 w-4" />
+          <AlertTitle>Two different statuses</AlertTitle>
+          <AlertDescription>{GOVERNANCE_NOTICES.funding} Always check the current status and funding pathway for your institution before committing.</AlertDescription>
+        </Alert>
+
+        <section>
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Current evidence</p>
+              <h2 className="mt-2 text-3xl font-black">Official accreditation verified</h2>
+              <p className="mt-2 max-w-3xl text-muted-foreground">These listings only appear here when ResKonnect has recorded an active official status, verified authority evidence and a current accreditation-validity date.</p>
+            </div>
+            <Button asChild variant="outline"><Link to="/find">Browse all accommodation</Link></Button>
+          </div>
+
+          {loading ? (
+            <div className="mt-6 rounded-2xl border p-10 text-center text-muted-foreground">Checking current accommodation status…</div>
+          ) : verified.length > 0 ? (
+            <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {verified.map((residence) => (
+                <Card key={residence.residence_id} className="overflow-hidden border-emerald-200 dark:border-emerald-900">
+                  {residence.image_url && <img src={residence.image_url} alt={residence.name} className="h-44 w-full object-cover" loading="lazy" />}
+                  <CardContent className="p-5">
+                    <AccreditationStatusBadge status={residence} />
+                    <h3 className="mt-4 text-lg font-black">{residence.name}</h3>
+                    <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                      {(residence.address || residence.city) && <p className="flex gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0" />{residence.address || residence.city}</p>}
+                      {residence.campus && <p className="flex gap-2"><Building2 className="mt-0.5 h-4 w-4 shrink-0" />{residence.campus}</p>}
+                      {residence.accreditation_valid_until && <p className="flex gap-2"><FileCheck2 className="mt-0.5 h-4 w-4 shrink-0" />Evidence valid to {residence.accreditation_valid_until}</p>}
+                    </div>
+                    <Button asChild className="mt-5 w-full"><Link to={`/res/${residence.residence_id}`}>View residence</Link></Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6 rounded-2xl border border-dashed p-8 text-center">
+              <ShieldCheck className="mx-auto h-8 w-8 text-muted-foreground" />
+              <h3 className="mt-3 font-black">No listing is being labelled “officially accredited” without verified current evidence.</h3>
+              <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Properties may still accept NSFAS-funded students. ResKonnect will only move them into this verified section after the authority status and validity evidence have been recorded and checked.</p>
+            </div>
+          )}
         </section>
 
-        {/* Residences Grid */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">NSFAS Approved Residences</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredResidences.map((residence) => (
-              <Card key={residence.id} className="hover:shadow-lg transition-shadow border-green-200">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-lg font-semibold">{residence.name}</h3>
-                    <span className="flex items-center text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                      <ShieldCheck className="w-3 h-3 mr-1" />
-                      NSFAS
-                    </span>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground mb-2">
-                    <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
-                    <span>{residence.address}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground mb-4">
-                    <Bed className="w-4 h-4 mr-2" />
-                    <span>{residence.bedCount} beds available</span>
-                  </div>
-                  <Button variant="outline" className="w-full border-green-300 hover:bg-green-50" asChild>
-                    <Link to="/auth">Apply Now</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+        <section>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Funding acceptance</p>
+            <h2 className="mt-2 text-3xl font-black">Listings that accept NSFAS-funded students</h2>
+          </div>
+          {acceptsFunding.length > 0 ? (
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {acceptsFunding.map((residence) => (
+                <Card key={residence.residence_id}>
+                  <CardContent className="p-5">
+                    <AccreditationStatusBadge status={residence} compact />
+                    <h3 className="mt-4 font-black">{residence.name}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">{residence.campus || residence.city || residence.address || "Location details available on listing"}</p>
+                    <Button asChild variant="outline" className="mt-4 w-full"><Link to={`/res/${residence.residence_id}`}>Check listing & apply</Link></Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6 rounded-2xl border p-8 text-center text-sm text-muted-foreground">No visible listing is currently flagged as accepting NSFAS funding.</div>
+          )}
+        </section>
+
+        <section className="grid gap-5 lg:grid-cols-3">
+          <Card><CardContent className="p-6"><CheckCircle2 className="h-6 w-6 text-emerald-600" /><h3 className="mt-4 font-black">Official status is evidence-controlled</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">Accreditation status, authority, reference, validity and grade are stored separately from marketing labels and funding acceptance.</p></CardContent></Card>
+          <Card><CardContent className="p-6"><Bed className="h-6 w-6 text-primary" /><h3 className="mt-4 font-black">Property quality still matters</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">A grade or accreditation record does not override serious safety, service, mistreatment or living-condition concerns in ResKonnect's quality process.</p></CardContent></Card>
+          <Card><CardContent className="p-6"><FileCheck2 className="h-6 w-6 text-primary" /><h3 className="mt-4 font-black">Providers can prepare with us</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">Landlords can use the ResKonnect compliance-readiness workflow to organise the required evidence and prepare for the external process.</p><Button asChild variant="link" className="mt-2 px-0"><Link to="/accreditation-readiness">View provider requirements</Link></Button></CardContent></Card>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-black">Frequently asked questions</h2>
+          <div className="mt-5 space-y-3">
+            {[
+              ["Does accepting NSFAS mean the property is officially accredited?", "No. ResKonnect records funding acceptance and official accreditation separately. Look for the evidence-controlled official accreditation badge and current validity date."],
+              ["Who makes the accreditation and grading decision?", "NSFAS or the relevant authorised institution/body. ResKonnect supports preparation, document readiness, pre-inspection, remediation and case control but does not issue the official decision."],
+              ["Can a status change?", "Yes. Official accreditation can have validity periods and may be suspended, revoked or expire. ResKonnect therefore stores status and validity separately and avoids treating a once-off claim as permanent."],
+            ].map(([question, answer]) => <Card key={question}><CardContent className="p-6"><h3 className="font-black">{question}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{answer}</p></CardContent></Card>)}
           </div>
         </section>
-
-        {/* FAQ Section */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
-          <div className="space-y-4">
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-2">What is NSFAS accredited accommodation?</h3>
-                <p className="text-muted-foreground">
-                  NSFAS accredited accommodation refers to student residences that meet the National Student Financial Aid Scheme's standards for safety, quality, and proximity to educational institutions.
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-2">How do I apply for NSFAS accommodation?</h3>
-                <p className="text-muted-foreground">
-                  Create an account on ResKonnect, browse our NSFAS approved listings, and submit your application online. Once approved, your accommodation allowance can be used to pay for your residence.
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-2">How much does NSFAS accommodation cost?</h3>
-                <p className="text-muted-foreground">
-                  NSFAS provides accommodation allowances that typically cover the full cost of accredited accommodation, including rent and basic utilities. No upfront payment is usually required.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        <SEOTextBlock
-          title="Your Guide to NSFAS Housing"
-          content={[
-            `Finding NSFAS accredited accommodation is simple with ResKonnect. We have a dedicated section for residences that meet the standards set by the National Student Financial Aid Scheme, ensuring you find a safe, comfortable, and approved place to live.`,
-            `All our NSFAS listings have been verified to meet the scheme's requirements for student housing. This includes safety certifications, proximity to campuses, and quality standards that protect funded students.`,
-            `Browse our listings of NSFAS accredited properties and apply with confidence, knowing that your chosen residence is recognized and supported by NSFAS. Start your search today and secure your funded accommodation.`
-          ]}
-        />
       </div>
     </PublicLayout>
   );

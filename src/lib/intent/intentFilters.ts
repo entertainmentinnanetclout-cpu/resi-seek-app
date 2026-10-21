@@ -65,7 +65,7 @@ export function deriveFiltersFromIntent(intent: UserIntent): IntentFilterResult 
   if (intent.nsfas_funded || intent.funding_type === "nsfas") {
     patch.nsfasOnly = true;
     notes.push(
-      "Showing NSFAS-accredited or NSFAS-relevant student accommodation based on your selection."
+      "Showing accommodation with NSFAS funding context based on your selection. Funding acceptance and verified official accreditation are displayed separately where evidence is available."
     );
   } else if (intent.funding_type === "private") {
     patch.privatePayingOnly = true;

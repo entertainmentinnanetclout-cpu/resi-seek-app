@@ -1,6 +1,7 @@
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { openMarketingPreferences } from "@/lib/metaPixel";
 import { ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -18,7 +19,7 @@ const Privacy = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl">Privacy Policy</CardTitle>
-            <p className="text-muted-foreground">Last updated: 13 September 2026</p>
+            <p className="text-muted-foreground">Last updated: 21 October 2026</p>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none space-y-6 dark:prose-invert">
             <section>
@@ -47,11 +48,12 @@ const Privacy = () => {
                 <li>Prevent fraud, secure accounts, investigate abuse and maintain audit records.</li>
                 <li>Communicate service updates and respond to support requests.</li>
                 <li>Measure product performance and improve ResKonnect services.</li>
+                <li>Where you permit optional marketing measurement, understand broad campaign performance and website conversion activity.</li>
               </ul>
             </section>
             <section>
               <h2 className="mb-3 text-xl font-semibold">4. Service providers and third parties</h2>
-              <p className="text-muted-foreground">ResKonnect uses service providers to operate the platform. Depending on the feature you use, these can include Supabase for authentication/database/storage, Vercel for web hosting and delivery, Google services for sign-in or mapping, Twilio for authorised WhatsApp/phone-verification communications, and AI providers such as OpenAI for governed AI functions. We remain responsible for configuring these integrations and limiting the information sent to what is needed for the relevant function.</p>
+              <p className="text-muted-foreground">ResKonnect uses service providers to operate the platform. Depending on the feature you use, these can include Supabase for authentication/database/storage, Vercel for web hosting and delivery, Google services for sign-in or mapping, Twilio for authorised WhatsApp/phone-verification communications, Meta for optional consent-based website marketing measurement, and AI providers such as OpenAI for governed AI functions. We remain responsible for configuring these integrations and limiting the information sent to what is needed for the relevant function.</p>
               <p className="mt-3 text-muted-foreground">We may share relevant application information with an accommodation provider, institution, employer/programme partner or other service party when you initiate or authorise a workflow that requires that party. Limited roommate profile information is shown only when you opt into roommate features. We may also disclose information where required by law or to protect users, ResKonnect or others.</p>
             </section>
             <section>
@@ -72,8 +74,10 @@ const Privacy = () => {
               <Button asChild variant="outline" className="mt-3"><Link to="/delete-account">Open account & data deletion</Link></Button>
             </section>
             <section>
-              <h2 className="mb-3 text-xl font-semibold">9. Cookies, local storage and app storage</h2>
+              <h2 className="mb-3 text-xl font-semibold">9. Cookies, local storage and Meta Pixel</h2>
               <p className="text-muted-foreground">The website and app may use cookies, local/session storage or equivalent application storage for authentication state, preferences, security, attribution and resilient product operation. Sensitive server API responses are not intentionally persisted in the service-worker cache.</p>
+              <p className="mt-3 text-muted-foreground">On the website, Meta Pixel is an optional marketing-measurement tool. It is not loaded by ResKonnect until you choose to allow marketing measurement. The implementation is restricted to broad website and conversion events and is designed not to intentionally send student numbers, identity documents, contact details, funding documents or other sensitive application records to Meta. You can change this preference at any time.</p>
+              <Button type="button" variant="outline" className="mt-3" onClick={openMarketingPreferences}>Marketing preferences</Button>
             </section>
             <section>
               <h2 className="mb-3 text-xl font-semibold">10. Children</h2>

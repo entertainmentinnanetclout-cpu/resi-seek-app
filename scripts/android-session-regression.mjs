@@ -4,118 +4,268 @@ import assert from "node:assert/strict";
 import { createServer } from "vite";
 
 const origin = process.env.TEST_ORIGIN || "http://127.0.0.1:8080";
-const server = process.env.TEST_ORIGIN ? null : await createServer({ server: { host: '127.0.0.1', port: 8080 } });
+const server = process.env.TEST_ORIGIN
+  ? null
+  : await createServer({ server: { host: "127.0.0.1", port: 8080 } });
 await server?.listen();
+
 const storageKey = "sb-mefjzkhobkltlbmhusdh-auth-token";
-const user = { id: "00000000-0000-4000-8000-000000000001", aud: "authenticated", role: "authenticated", email: "fixture@example.invalid", user_metadata: { full_name: "Test Student" }, app_metadata: {}, created_at: "2026-01-01T00:00:00Z" };
-const token = [Buffer.from('{}').toString('base64url'), Buffer.from(JSON.stringify({ sub: user.id, exp: Math.floor(Date.now()/1000)+3600 })).toString('base64url'), 'fixture'].join('.');
-const session = { access_token: token, refresh_token: "fixture-refresh", token_type: "bearer", expires_in: 3600, expires_at: Math.floor(Date.now()/1000)+3600, user };
-const profile = { id: user.id, full_name: "Test Student", phone: "0821234567", student_number: "123456789", campus: "Pretoria West (Main Campus)", course: "Marketing", year_of_study: "3", applicant_stage: "university_student" };
+const user = {
+  id: "00000000-0000-4000-8000-000000000001",
+  aud: "authenticated",
+  role: "authenticated",
+  email: "fixture@example.invalid",
+  user_metadata: { full_name: "Test Student" },
+  app_metadata: {},
+  created_at: "2026-01-01T00:00:00Z",
+};
+const token = [
+  Buffer.from("{}").toString("base64url"),
+  Buffer.from(
+    JSON.stringify({ sub: user.id, exp: Math.floor(Date.now() / 1000) + 3600 }),
+  ).toString("base64url"),
+  "fixture",
+].join(".");
+const session = {
+  access_token: token,
+  refresh_token: "fixture-refresh",
+  token_type: "bearer",
+  expires_in: 3600,
+  expires_at: Math.floor(Date.now() / 1000) + 3600,
+  user,
+};
+const profile = {
+  id: user.id,
+  full_name: "Test Student",
+  phone: "0821234567",
+  student_number: "123456789",
+  campus: "Pretoria West (Main Campus)",
+  course: "Marketing",
+  year_of_study: "3",
+  applicant_stage: "university_student",
+};
+
 const browser = await chromium.launch({ headless: true });
+
 try {
-  const context = await browser.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, serviceWorkers: "block" });
-  await context.routeWebSocket('**/*', socket => socket.close());
-  await context.addInitScript(() => { window.Capacitor = { isNativePlatform: () => true }; });
+  const context = await browser.newContext({
+    viewport: { width: 412, height: 915 },
+    isMobile: true,
+    serviceWorkers: "block",
+  });
+  await context.routeWebSocket("**/*", (socket) => socket.close());
+  await context.addInitScript(() => {
+    window.Capacitor = { isNativePlatform: () => true };
+  });
+
   let role = null;
   let accessCalls = 0;
-  await context.route('**/*', async route => {
+
+  await context.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     if (url.origin === origin) return route.continue();
+
     let body = {};
-    if (url.pathname.includes('/auth/v1/token')) body = session;
-    else if (url.pathname.includes('/auth/v1/user')) body = user;
-    else if (url.pathname.includes('/rest/v1/rpc/get_my_access_context')) { accessCalls++; body = { staff_role: role, admin_departments: [], is_student: !role }; }
-    else if (url.pathname.includes('/rest/v1/rpc/my_reskonnect_command_centre')) body = { profile };
-    else if (url.pathname.includes('/rest/v1/rpc/virtual_tour_public_snapshot')) body = {
-      tour: { id: '30000000-0000-4000-8000-000000000001', title: 'Native Fixture 360', workspace_type: 'standalone' },
-      workspace: { type: 'standalone', label: 'Native Fixture 360' },
-      residence: null,
-      scenes: [{ id: '40000000-0000-4000-8000-000000000001', name: 'Room', area_type: 'room', is_start: true, panorama_url: 'data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%228%22%3E%3Crect width=%2216%22 height=%228%22 fill=%22%23111%22/%3E%3C/svg%3E', quality_score: 90 }],
-      hotspots: [], connections: []
-    };
-    else if (url.pathname.includes('/rest/v1/rpc/record_virtual_tour_event')) body = true;
-    else if (url.pathname.includes('/rest/v1/profiles')) body = route.request().headers().accept?.includes('object') ? profile : [profile];
-    else if (url.pathname.includes('/rest/v1/')) body = url.pathname.includes('/rpc/') ? {} : [];
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    if (url.pathname.includes("/auth/v1/token")) body = session;
+    else if (url.pathname.includes("/auth/v1/user")) body = user;
+    else if (url.pathname.includes("/rest/v1/rpc/get_my_access_context")) {
+      accessCalls += 1;
+      body = { staff_role: role, admin_departments: [], is_student: !role };
+    } else if (url.pathname.includes("/rest/v1/rpc/my_reskonnect_command_centre")) {
+      body = { profile };
+    } else if (url.pathname.includes("/rest/v1/rpc/virtual_tour_public_snapshot")) {
+      body = {
+        tour: {
+          id: "30000000-0000-4000-8000-000000000001",
+          title: "Native Fixture 360",
+          workspace_type: "standalone",
+        },
+        workspace: { type: "standalone", label: "Native Fixture 360" },
+        residence: null,
+        scenes: [
+          {
+            id: "40000000-0000-4000-8000-000000000001",
+            name: "Room",
+            area_type: "room",
+            is_start: true,
+            panorama_url:
+              "data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%228%22%3E%3Crect width=%2216%22 height=%228%22 fill=%22%23111%22/%3E%3C/svg%3E",
+            quality_score: 90,
+          },
+        ],
+        hotspots: [],
+        connections: [],
+      };
+    } else if (url.pathname.includes("/rest/v1/rpc/record_virtual_tour_event")) {
+      body = true;
+    } else if (url.pathname.includes("/rest/v1/profiles")) {
+      body = route.request().headers().accept?.includes("object") ? profile : [profile];
+    } else if (url.pathname.includes("/rest/v1/")) {
+      body = url.pathname.includes("/rpc/") ? {} : [];
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(body),
+    });
   });
+
   let page = await context.newPage();
   const errors = [];
-  const observe = p => p.on('pageerror', e => errors.push(e.message));
+  const observe = (currentPage) =>
+    currentPage.on("pageerror", (error) => errors.push(error.message));
+  observe(page);
+
+  await page.goto(origin);
+  await page.waitForURL("**/auth");
+  await page.getByLabel("Account portals").waitFor();
+  console.log("PASS native signed-out entry and account portal choices");
+
+  const marketingPreferences = page.getByRole("dialog", {
+    name: "Marketing privacy preferences",
+  });
+  if (await marketingPreferences.isVisible().catch(() => false)) {
+    await marketingPreferences
+      .getByRole("button", { name: "Essential only", exact: true })
+      .click();
+    await marketingPreferences.waitFor({ state: "hidden" });
+    console.log("PASS marketing consent does not block authentication flow");
+  }
+
+  await page.getByLabel("Email address *").fill(user.email);
+  await page.getByLabel("Password *", { exact: true }).fill("FixturePassword123");
+  await page.getByRole("button", { name: "Sign In", exact: true }).click();
+  await page.waitForURL("**/dashboard");
+  await page.getByText("Good to see you, Test.").waitFor();
+  assert.equal(
+    await page.getByRole("navigation", { name: "App account navigation" }).count(),
+    0,
+    "duplicate native header must not render",
+  );
+  assert.equal(
+    await page.getByRole("link", { name: "Open full dashboard" }).count(),
+    0,
+    "native safe home must not replace full dashboard",
+  );
+
+  const tour = page.getByRole("dialog", { name: "ResKonnect app guide" });
+  if (await tour.isVisible().catch(() => false)) {
+    await tour.getByRole("button", { name: "Skip guide" }).click();
+  }
+  assert.equal(await page.getByText("Something went wrong", { exact: true }).count(), 0);
+  console.log("PASS direct full native dashboard, no duplicate header, optional onboarding");
+
+  const callsBeforeResume = accessCalls;
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await page.waitForTimeout(500);
+  assert.equal(
+    accessCalls,
+    callsBeforeResume,
+    "resume must not remount access resolution for unchanged identity",
+  );
+
+  await page.reload();
+  await page.getByText("Good to see you, Test.").waitFor();
+  await page.close();
+
+  page = await context.newPage();
   observe(page);
   await page.goto(origin);
-  await page.waitForURL('**/auth');
-  await page.getByLabel('Account portals').waitFor();
-  console.log('PASS native signed-out entry and account portal choices');
-  await page.getByLabel('Email address *').fill(user.email);
-  await page.getByLabel('Password *', { exact: true }).fill('FixturePassword123');
-  await page.getByRole('button', { name: 'Sign In', exact: true }).click();
-  await page.waitForURL('**/dashboard');
-  await page.getByText('Good to see you, Test.').waitFor();
-  assert.equal(await page.getByRole('navigation', { name: 'App account navigation' }).count(), 0, 'duplicate native header must not render');
-  assert.equal(await page.getByRole('link', { name: 'Open full dashboard' }).count(), 0, 'native safe home must not replace full dashboard');
-  const tour = page.getByRole('dialog', { name: 'ResKonnect app guide' });
-  if (await tour.isVisible().catch(() => false)) await tour.getByRole('button', { name: 'Skip guide' }).click();
-  assert.equal(await page.getByText('Something went wrong', { exact: true }).count(), 0);
-  console.log('PASS direct full native dashboard, no duplicate header, optional onboarding');
-  const callsBeforeResume = accessCalls;
-  await page.evaluate(() => window.dispatchEvent(new Event('online')));
-  await page.waitForTimeout(500);
-  assert.equal(accessCalls, callsBeforeResume, 'resume must not remount access resolution for unchanged identity');
-  await page.reload();
-  await page.getByText('Good to see you, Test.').waitFor();
-  await page.close();
-  page = await context.newPage(); observe(page);
-  await page.goto(origin);
-  await page.waitForURL('**/dashboard');
-  await page.getByText('Good to see you, Test.').waitFor();
-  console.log('PASS login, reload, close/reopen and unchanged-identity resume');
-  for (const path of ['/profile', '/my-applications', '/dashboard/services', '/documents', '/favorites', '/messages', '/wil', '/ai', '/opportunities', '/findmyres', '/portals']) {
+  await page.waitForURL("**/dashboard");
+  await page.getByText("Good to see you, Test.").waitFor();
+  console.log("PASS login, reload, close/reopen and unchanged-identity resume");
+
+  for (const path of [
+    "/profile",
+    "/my-applications",
+    "/dashboard/services",
+    "/documents",
+    "/favorites",
+    "/messages",
+    "/wil",
+    "/ai",
+    "/opportunities",
+    "/findmyres",
+    "/portals",
+  ]) {
     await page.goto(origin + path);
     await page.waitForTimeout(650);
-    assert.equal(await page.getByRole('navigation', { name: 'App account navigation' }).count(), 0, path);
-    assert.equal(await page.getByText('Something went wrong', { exact: true }).count(), 0, path);
-    assert.equal(errors.length, 0, `${path}: ${errors.join('; ')}`);
-    console.log('PASS route shell ' + path);
+    assert.equal(
+      await page.getByRole("navigation", { name: "App account navigation" }).count(),
+      0,
+      path,
+    );
+    assert.equal(await page.getByText("Something went wrong", { exact: true }).count(), 0, path);
+    assert.equal(errors.length, 0, `${path}: ${errors.join("; ")}`);
+    console.log(`PASS route shell ${path}`);
   }
-  await page.goto(origin + '/dashboard');
-  await page.getByText('Good to see you, Test.').waitFor();
+
+  await page.goto(`${origin}/dashboard`);
+  await page.getByText("Good to see you, Test.").waitFor();
   await context.setOffline(true);
   await page.getByText("You're offline.", { exact: false }).waitFor({ timeout: 5000 });
-  assert.notEqual(await page.evaluate(key => localStorage.getItem(key), storageKey), null, 'offline must not clear persisted session');
+  assert.notEqual(
+    await page.evaluate((key) => localStorage.getItem(key), storageKey),
+    null,
+    "offline must not clear persisted session",
+  );
   await context.setOffline(false);
   await page.waitForTimeout(500);
-  assert.equal(await page.getByText("You're offline.", { exact: false }).count(), 0, 'reconnect banner must clear');
-  console.log('PASS native offline/reconnect keeps authenticated session');
-  await page.evaluate(() => localStorage.setItem('rk_native_safe_graphics_v1','1'));
+  assert.equal(
+    await page.getByText("You're offline.", { exact: false }).count(),
+    0,
+    "reconnect banner must clear",
+  );
+  console.log("PASS native offline/reconnect keeps authenticated session");
+
+  await page.evaluate(() => localStorage.setItem("rk_native_safe_graphics_v1", "1"));
   errors.length = 0;
-  await page.goto(origin + '/tour/native-fixture');
-  await page.getByText('Immersive 360 is paused on this device', { exact: false }).waitFor({ timeout: 10000 });
-  assert.equal(errors.length, 0, `native safe 360: ${errors.join('; ')}`);
-  console.log('PASS native repeated-renderer safe mode degrades 360 without WebGL');
-  await page.goto(origin + '/dashboard');
-  await page.getByRole('button', { name: 'Open navigation' }).click();
-  await page.getByRole('button', { name: 'Logout', exact: true }).click();
-  await page.waitForURL('**/auth');
-  assert.equal(await page.evaluate(key => localStorage.getItem(key), storageKey), null);
+  await page.goto(`${origin}/tour/native-fixture`);
+  await page
+    .getByText("Immersive 360 is paused on this device", { exact: false })
+    .waitFor({ timeout: 10000 });
+  assert.equal(errors.length, 0, `native safe 360: ${errors.join("; ")}`);
+  console.log("PASS native repeated-renderer safe mode degrades 360 without WebGL");
+
+  await page.goto(`${origin}/dashboard`);
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  await page.getByRole("button", { name: "Logout", exact: true }).click();
+  await page.waitForURL("**/auth");
+  assert.equal(await page.evaluate((key) => localStorage.getItem(key), storageKey), null);
   await page.reload();
-  await page.getByRole('button', { name: 'Sign In', exact: true }).waitFor();
-  console.log('PASS sidebar logout removes persisted session');
-  for (const [staffRole, path] of [['operations_lead','/portals'], ['tvet_lead','/tvet-dashboard'], ['residence_admin','/residence'], ['commerce_lead','/commerce']]) {
+  await page.getByRole("button", { name: "Sign In", exact: true }).waitFor();
+  console.log("PASS sidebar logout removes persisted session");
+
+  for (const [staffRole, path] of [
+    ["operations_lead", "/portals"],
+    ["tvet_lead", "/tvet-dashboard"],
+    ["residence_admin", "/residence"],
+    ["commerce_lead", "/commerce"],
+  ]) {
     role = staffRole;
-    await page.evaluate(({key, value}) => localStorage.setItem(key, JSON.stringify(value)), {key: storageKey, value: session});
+    await page.evaluate(
+      ({ key, value }) => localStorage.setItem(key, JSON.stringify(value)),
+      { key: storageKey, value: session },
+    );
     await page.goto(origin);
-    await page.waitForURL('**' + path);
+    await page.waitForURL(`**${path}`);
     await page.waitForTimeout(500);
-    assert.equal(new URL(page.url()).pathname, path, 'stable staff route');
-    console.log('PASS role routing ' + staffRole);
+    assert.equal(new URL(page.url()).pathname, path, "stable staff route");
+    console.log(`PASS role routing ${staffRole}`);
   }
+
   assert.deepEqual(errors, []);
   await context.close();
-  const web = await browser.newContext({ serviceWorkers: 'block' });
+
+  const web = await browser.newContext({ serviceWorkers: "block" });
   const webPage = await web.newPage();
   await webPage.goto(origin);
   await webPage.waitForTimeout(1000);
-  assert.equal(new URL(webPage.url()).pathname, '/');
-  console.log('PASS website retains public landing');
+  assert.equal(new URL(webPage.url()).pathname, "/");
+  console.log("PASS website retains public landing");
   await web.close();
-} finally { await browser.close(); await server?.close(); }
+} finally {
+  await browser.close();
+  await server?.close();
+}

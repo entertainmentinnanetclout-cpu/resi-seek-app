@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,8 +12,24 @@ const PARTNER_KEY = "reskonnect_partner_slug";
 const GrowthTracker = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const metaRouteRef = useRef(`${location.pathname}${location.search}`);
 
   useEffect(() => {
+    const routeKey = `${location.pathname}${location.search}`;
+
+    // The base Meta Pixel in index.html records the initial document PageView.
+    // React Router navigations do not reload the document, so record subsequent
+    // route changes explicitly without double-counting the first page load.
+    if (metaRouteRef.current !== routeKey) {
+      metaRouteRef.current = routeKey;
+      try {
+        const fbq = (window as any).fbq;
+        if (typeof fbq === "function") fbq("track", "PageView");
+      } catch {
+        // Third-party analytics must never block navigation.
+      }
+    }
+
     const params = new URLSearchParams(location.search);
     const queryCreatorId = params.get("creator");
     const queryCode = params.get("ref");

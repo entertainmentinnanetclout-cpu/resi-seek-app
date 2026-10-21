@@ -40,7 +40,7 @@ export function ActiveFilterChips({ filters, updateFilter, resetFilters, hasActi
     });
   });
   if (filters.nsfasOnly) {
-    chips.push({ label: "NSFAS Accredited", onRemove: () => updateFilter("nsfasOnly", false) });
+    chips.push({ label: "NSFAS Funding Context", onRemove: () => updateFilter("nsfasOnly", false) });
   }
   if (filters.availability !== "all") {
     chips.push({
