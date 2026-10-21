@@ -10,6 +10,7 @@ import NativeAccountNavigation from "@/components/NativeAccountNavigation";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Preloader from "@/components/Preloader";
 import GrowthTracker from "@/components/GrowthTracker";
+import MetaPixelTracker from "@/components/MetaPixelTracker";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { StudentRoute } from "@/components/StudentRoute";
 import { AdminRoute } from "@/components/AdminRoute";
@@ -25,38 +26,67 @@ const ApplicationPartners = lazy(() => import("./pages/ApplicationPartners"));
 const AdminStudentCare = lazy(() => import("./pages/admin/AdminStudentCare"));
 const Landing = lazy(() => import("./pages/Landing"));
 const Auth = lazy(() => import("./pages/Auth"));
-const MarketplaceComingSoon = lazy(() => import("./pages/MarketplaceComingSoon"));
+const MarketplaceComingSoon = lazy(
+  () => import("./pages/MarketplaceComingSoon"),
+);
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResBot = lazy(() => import("@/components/ResBot"));
 const PushPrompt = lazy(() => import("@/components/PushPrompt"));
 const InstallAppPrompt = lazy(() => import("@/components/InstallAppPrompt"));
 const About = lazy(() => import("./pages/public/About"));
-const StrategyCommitments = lazy(() => import("./pages/public/StrategyCommitments"));
+const StrategyCommitments = lazy(
+  () => import("./pages/public/StrategyCommitments"),
+);
 const ManagedSeoPage = lazy(() => import("./pages/seo/ManagedSeoPage"));
-const PropertyOpportunityDetail = lazy(() => import("./pages/public/PropertyOpportunityDetail"));
-const AdminCareerEducation = lazy(() => import("./pages/admin/AdminCareerEducation"));
+const PropertyOpportunityDetail = lazy(
+  () => import("./pages/public/PropertyOpportunityDetail"),
+);
+const AdminCareerEducation = lazy(
+  () => import("./pages/admin/AdminCareerEducation"),
+);
 const GetStarted = lazy(() => import("./pages/GetStarted"));
 const PasswordReset = lazy(() => import("./pages/PasswordReset"));
 const Living = lazy(() => import("./pages/public/Living"));
 const ResKonnectAI = lazy(() => import("./pages/public/ResKonnectAI"));
-const HousingIntelligence = lazy(() => import("./pages/public/HousingIntelligence"));
-const StudentAccommodation = lazy(() => import("./pages/public/StudentAccommodation"));
+const HousingIntelligence = lazy(
+  () => import("./pages/public/HousingIntelligence"),
+);
+const StudentAccommodation = lazy(
+  () => import("./pages/public/StudentAccommodation"),
+);
 const PrivateRentals = lazy(() => import("./pages/public/PrivateRentals"));
 const Parents = lazy(() => import("./pages/public/Parents"));
 const ApplicationsPillar = lazy(() => import("./pages/public/Applications"));
 const TvetApplication = lazy(() => import("./pages/public/TvetApplication"));
-const UniversityApplication = lazy(() => import("./pages/public/UniversityApplication"));
-const PrivateCollegeApplication = lazy(() => import("./pages/public/PrivateCollegeApplication"));
-const ApplicationsChecker = lazy(() => import("./pages/public/ApplicationsChecker"));
+const UniversityApplication = lazy(
+  () => import("./pages/public/UniversityApplication"),
+);
+const PrivateCollegeApplication = lazy(
+  () => import("./pages/public/PrivateCollegeApplication"),
+);
+const ApplicationsChecker = lazy(
+  () => import("./pages/public/ApplicationsChecker"),
+);
 const OpportunitiesPillar = lazy(() => import("./pages/public/Opportunities"));
 const OpportunitiesWil = lazy(() => import("./pages/public/OpportunitiesWil"));
-const PublicOpportunityDetail = lazy(() => import("./pages/public/PublicOpportunityDetail"));
+const PublicOpportunityDetail = lazy(
+  () => import("./pages/public/PublicOpportunityDetail"),
+);
 const ServiceCentre = lazy(() => import("./pages/ServiceCentre"));
 const PartnersPillar = lazy(() => import("./pages/public/Partners"));
-const PartnersLandlords = lazy(() => import("./pages/public/PartnersLandlords"));
-const PartnersInstitutions = lazy(() => import("./pages/public/PartnersInstitutions"));
+const PartnersLandlords = lazy(
+  () => import("./pages/public/PartnersLandlords"),
+);
+const AccreditationReadiness = lazy(
+  () => import("./pages/public/AccreditationReadiness"),
+);
+const PartnersInstitutions = lazy(
+  () => import("./pages/public/PartnersInstitutions"),
+);
 const CareerEducation = lazy(() => import("./pages/public/CareerEducation"));
-const TumeloCareerEducation = lazy(() => import("./pages/public/TumeloCareerEducation"));
+const TumeloCareerEducation = lazy(
+  () => import("./pages/public/TumeloCareerEducation"),
+);
 const ProfileSetup = lazy(() => import("./pages/ProfileSetup"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Updates = lazy(() => import("./pages/Updates"));
@@ -69,14 +99,26 @@ const Favorites = lazy(() => import("./pages/Favorites"));
 const ApplicationsHub = lazy(() => import("./pages/ApplicationsHub"));
 const ResidenceDetail = lazy(() => import("./pages/ResidenceDetail"));
 const ImmersiveResidence = lazy(() => import("./pages/ImmersiveResidence"));
-const VirtualTourViewerPage = lazy(() => import("./pages/VirtualTourViewerPage"));
-const VirtualTourStudioPage = lazy(() => import("./pages/VirtualTourStudioPage"));
+const VirtualTourViewerPage = lazy(
+  () => import("./pages/VirtualTourViewerPage"),
+);
+const VirtualTourStudioPage = lazy(
+  () => import("./pages/VirtualTourStudioPage"),
+);
 const AccommodationDemand = lazy(() => import("./pages/AccommodationDemand"));
-const CreatorPartnerPortal = lazy(() => import("./pages/creator/CreatorPartnerPortal"));
+const CreatorPartnerPortal = lazy(
+  () => import("./pages/creator/CreatorPartnerPortal"),
+);
 const CreatorLanding = lazy(() => import("./pages/creator/CreatorLanding"));
-const CreatorAssistanceIntake = lazy(() => import("./pages/creator/CreatorAssistanceIntake"));
-const CreatorAssistanceCase = lazy(() => import("./pages/creator/CreatorAssistanceCase"));
-const TumeloIntelligenceOS = lazy(() => import("./pages/partner/TumeloIntelligenceOS"));
+const CreatorAssistanceIntake = lazy(
+  () => import("./pages/creator/CreatorAssistanceIntake"),
+);
+const CreatorAssistanceCase = lazy(
+  () => import("./pages/creator/CreatorAssistanceCase"),
+);
+const TumeloIntelligenceOS = lazy(
+  () => import("./pages/partner/TumeloIntelligenceOS"),
+);
 const BursaryFinder = lazy(() => import("./pages/BursaryFinder"));
 const StudentDeals = lazy(() => import("./pages/StudentDeals"));
 const RoommateFinder = lazy(() => import("./pages/RoommateFinder"));
@@ -100,15 +142,25 @@ const AdminNews = lazy(() => import("./pages/admin/AdminNews"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminSystemStatus = lazy(() => import("./pages/admin/AdminSystemStatus"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
-const AdminGrowthCommandCentre = lazy(() => import("./pages/admin/AdminGrowthCommandCentre"));
-const AdminPartnershipCommandCentre = lazy(() => import("./pages/admin/AdminPartnershipCommandCentre"));
+const AdminGrowthCommandCentre = lazy(
+  () => import("./pages/admin/AdminGrowthCommandCentre"),
+);
+const AdminPartnershipCommandCentre = lazy(
+  () => import("./pages/admin/AdminPartnershipCommandCentre"),
+);
 const AdminDocuments = lazy(() => import("./pages/admin/AdminDocuments"));
 const AdminStores = lazy(() => import("./pages/admin/AdminStores"));
 const AdminFollowUp = lazy(() => import("./pages/admin/AdminFollowUp"));
-const AdminWhatsAppTemplates = lazy(() => import("./pages/admin/AdminWhatsAppTemplates"));
-const AdminDiscountOrders = lazy(() => import("./pages/admin/AdminDiscountOrders"));
+const AdminWhatsAppTemplates = lazy(
+  () => import("./pages/admin/AdminWhatsAppTemplates"),
+);
+const AdminDiscountOrders = lazy(
+  () => import("./pages/admin/AdminDiscountOrders"),
+);
 const AdminHamperItems = lazy(() => import("./pages/admin/AdminHamperItems"));
-const AdminResidencePortals = lazy(() => import("./pages/admin/AdminResidencePortals"));
+const AdminResidencePortals = lazy(
+  () => import("./pages/admin/AdminResidencePortals"),
+);
 const BursaryDetail = lazy(() => import("./pages/BursaryDetail"));
 const MyDiscountOrders = lazy(() => import("./pages/MyDiscountOrders"));
 const Terms = lazy(() => import("./pages/Terms"));
@@ -117,25 +169,54 @@ const AccountDeletion = lazy(() => import("./pages/AccountDeletion"));
 const InstallResKonnect = lazy(() => import("./pages/InstallResKonnect"));
 const ResidenceLogin = lazy(() => import("./pages/residence/ResidenceLogin"));
 const ResidenceLayout = lazy(() => import("./pages/residence/ResidenceLayout"));
-const ResidenceDashboard = lazy(() => import("./pages/residence/ResidenceDashboard"));
-const ResidenceReservations2027 = lazy(() => import("./pages/residence/ResidenceReservations2027"));
+const ResidenceDashboard = lazy(
+  () => import("./pages/residence/ResidenceDashboard"),
+);
+const ResidenceReservations2027 = lazy(
+  () => import("./pages/residence/ResidenceReservations2027"),
+);
 const ResidenceInbox = lazy(() => import("./pages/residence/ResidenceInbox"));
-const ResidenceApplicationDetail = lazy(() => import("./pages/residence/ResidenceApplicationDetail"));
-const ResidenceAnalytics = lazy(() => import("./pages/residence/ResidenceAnalytics"));
+const ResidenceApplicationDetail = lazy(
+  () => import("./pages/residence/ResidenceApplicationDetail"),
+);
+const ResidenceAnalytics = lazy(
+  () => import("./pages/residence/ResidenceAnalytics"),
+);
 const ResidenceCRM = lazy(() => import("./pages/residence/ResidenceCRM"));
-const ResidenceInventory = lazy(() => import("./pages/residence/ResidenceInventory"));
-const ResidenceListingProfile = lazy(() => import("./pages/residence/ResidenceListingProfile"));
-const ResidenceRecruitment = lazy(() => import("./pages/residence/ResidenceRecruitment"));
-const ResidenceVirtualTour = lazy(() => import("./pages/residence/ResidenceVirtualTour"));
-const ResidenceRecruiterRedirect = lazy(() => import("./pages/ResidenceRecruiterRedirect"));
+const ResidenceInventory = lazy(
+  () => import("./pages/residence/ResidenceInventory"),
+);
+const ResidenceListingProfile = lazy(
+  () => import("./pages/residence/ResidenceListingProfile"),
+);
+const ResidenceComplianceReadiness = lazy(
+  () => import("./pages/residence/ResidenceComplianceReadiness"),
+);
+const ResidenceRecruitment = lazy(
+  () => import("./pages/residence/ResidenceRecruitment"),
+);
+const ResidenceVirtualTour = lazy(
+  () => import("./pages/residence/ResidenceVirtualTour"),
+);
+const ResidenceRecruiterRedirect = lazy(
+  () => import("./pages/ResidenceRecruiterRedirect"),
+);
 const Referrals = lazy(() => import("./pages/Referrals"));
 const MyDiscountCodes = lazy(() => import("./pages/MyDiscountCodes"));
-const AdminSellerApprovals = lazy(() => import("./pages/admin/AdminSellerApprovals"));
+const AdminSellerApprovals = lazy(
+  () => import("./pages/admin/AdminSellerApprovals"),
+);
 const MyWIL = lazy(() => import("./pages/MyWIL"));
 const AdminWIL = lazy(() => import("./pages/admin/AdminWIL"));
-const AdminOnboardingHub = lazy(() => import("./pages/admin/AdminOnboardingHub"));
-const AdminOperationsHub = lazy(() => import("./pages/admin/AdminOperationsHub"));
-const AdminApplicationHub = lazy(() => import("./pages/admin/AdminApplicationHub"));
+const AdminOnboardingHub = lazy(
+  () => import("./pages/admin/AdminOnboardingHub"),
+);
+const AdminOperationsHub = lazy(
+  () => import("./pages/admin/AdminOperationsHub"),
+);
+const AdminApplicationHub = lazy(
+  () => import("./pages/admin/AdminApplicationHub"),
+);
 const AdminCommerceHub = lazy(() => import("./pages/admin/AdminCommerceHub"));
 const AdminMediaHub = lazy(() => import("./pages/admin/AdminMediaHub"));
 const AdminSystemHub = lazy(() => import("./pages/admin/AdminSystemHub"));
@@ -144,16 +225,32 @@ const MediaDashboard = lazy(() => import("./pages/MediaDashboard"));
 const CommerceDashboard = lazy(() => import("./pages/CommerceDashboard"));
 const ReferralRedirect = lazy(() => import("./pages/ReferralRedirect"));
 const RecruiterDashboard = lazy(() => import("./pages/RecruiterDashboard"));
-const AdminRecruitmentProgramme = lazy(() => import("./pages/admin/AdminRecruitmentProgramme"));
+const AdminRecruitmentProgramme = lazy(
+  () => import("./pages/admin/AdminRecruitmentProgramme"),
+);
 const AdminTvetHub = lazy(() => import("./pages/admin/AdminTvetHub"));
-const AdminExecutiveOffice = lazy(() => import("./pages/admin/AdminExecutiveOffice"));
-const AdminStudentOpportunities = lazy(() => import("./pages/admin/AdminStudentOpportunities"));
-const AdminCorporateAffairs = lazy(() => import("./pages/admin/AdminCorporateAffairs"));
-const AdminCommunicationsDepartment = lazy(() => import("./pages/admin/AdminCommunicationsDepartment"));
-const AdminOperationsOffice = lazy(() => import("./pages/admin/AdminOperationsOffice"));
+const AdminExecutiveOffice = lazy(
+  () => import("./pages/admin/AdminExecutiveOffice"),
+);
+const AdminStudentOpportunities = lazy(
+  () => import("./pages/admin/AdminStudentOpportunities"),
+);
+const AdminCorporateAffairs = lazy(
+  () => import("./pages/admin/AdminCorporateAffairs"),
+);
+const AdminCommunicationsDepartment = lazy(
+  () => import("./pages/admin/AdminCommunicationsDepartment"),
+);
+const AdminOperationsOffice = lazy(
+  () => import("./pages/admin/AdminOperationsOffice"),
+);
 const AdminFinanceAdmin = lazy(() => import("./pages/admin/AdminFinanceAdmin"));
-const AdminIntelligenceAnalytics = lazy(() => import("./pages/admin/AdminIntelligenceAnalytics"));
-const AdminTechnologySystems = lazy(() => import("./pages/admin/AdminTechnologySystems"));
+const AdminIntelligenceAnalytics = lazy(
+  () => import("./pages/admin/AdminIntelligenceAnalytics"),
+);
+const AdminTechnologySystems = lazy(
+  () => import("./pages/admin/AdminTechnologySystems"),
+);
 const TvetDashboard = lazy(() => import("./pages/tvet/TvetDashboard"));
 const RecruitLanding = lazy(() => import("./pages/recruit/RecruitLanding"));
 const RecruiterAuth = lazy(() => import("./pages/recruit/RecruiterAuth"));
@@ -164,14 +261,22 @@ const DeferredGlobalEnhancements = () => {
   useEffect(() => {
     const win = window as any;
     if (typeof win.requestIdleCallback === "function") {
-      const id = win.requestIdleCallback(() => setReady(true), { timeout: 1800 });
+      const id = win.requestIdleCallback(() => setReady(true), {
+        timeout: 1800,
+      });
       return () => win.cancelIdleCallback?.(id);
     }
     const id = window.setTimeout(() => setReady(true), 1200);
     return () => window.clearTimeout(id);
   }, []);
   if (!ready) return null;
-  return <Suspense fallback={null}><ResBot /><PushPrompt /><InstallAppPrompt /></Suspense>;
+  return (
+    <Suspense fallback={null}>
+      <ResBot />
+      <PushPrompt />
+      <InstallAppPrompt />
+    </Suspense>
+  );
 };
 
 const queryClient = new QueryClient({
@@ -199,73 +304,262 @@ const App = () => {
               <NativeAccountNavigation />
               <UserIntentProvider>
                 <GrowthTracker />
+                <MetaPixelTracker />
                 <Suspense fallback={<Preloader />}>
                   <Routes>
-                    <Route path="/" element={isNativeApp() ? <Navigate to="/auth" replace /> : <Landing />} />
-                    <Route path="/portals" element={<div className="mx-auto max-w-md p-5"><h1 className="text-2xl font-bold">ResKonnect portals</h1><AccountPortals /></div>} />
+                    <Route
+                      path="/"
+                      element={
+                        isNativeApp() ? (
+                          <Navigate to="/auth" replace />
+                        ) : (
+                          <Landing />
+                        )
+                      }
+                    />
+                    <Route
+                      path="/portals"
+                      element={
+                        <div className="mx-auto max-w-md p-5">
+                          <h1 className="text-2xl font-bold">
+                            ResKonnect portals
+                          </h1>
+                          <AccountPortals />
+                        </div>
+                      }
+                    />
                     <Route path="/about" element={<About />} />
-                    <Route path="/about/strategy-commitments" element={<StrategyCommitments />} />
+                    <Route
+                      path="/about/strategy-commitments"
+                      element={<StrategyCommitments />}
+                    />
                     <Route path="/contact" element={<About />} />
-                    <Route path="/properties" element={<ManagedSeoPage pagePath="/properties" />} />
-                    <Route path="/property-auctions" element={<ManagedSeoPage pagePath="/property-auctions" />} />
-                    <Route path="/student-accommodation-for-sale" element={<ManagedSeoPage pagePath="/student-accommodation-for-sale" />} />
-                    <Route path="/development-opportunities" element={<ManagedSeoPage pagePath="/development-opportunities" />} />
-                    <Route path="/student-accommodation/pretoria" element={<ManagedSeoPage pagePath="/student-accommodation/pretoria" />} />
-                    <Route path="/opportunities/internships" element={<ManagedSeoPage pagePath="/opportunities/internships" />} />
-                    <Route path="/opportunities/seta" element={<ManagedSeoPage pagePath="/opportunities/seta" />} />
-                    <Route path="/properties/:slug" element={<PropertyOpportunityDetail />} />
+                    <Route
+                      path="/properties"
+                      element={<ManagedSeoPage pagePath="/properties" />}
+                    />
+                    <Route
+                      path="/property-auctions"
+                      element={<ManagedSeoPage pagePath="/property-auctions" />}
+                    />
+                    <Route
+                      path="/student-accommodation-for-sale"
+                      element={
+                        <ManagedSeoPage pagePath="/student-accommodation-for-sale" />
+                      }
+                    />
+                    <Route
+                      path="/development-opportunities"
+                      element={
+                        <ManagedSeoPage pagePath="/development-opportunities" />
+                      }
+                    />
+                    <Route
+                      path="/student-accommodation/pretoria"
+                      element={
+                        <ManagedSeoPage pagePath="/student-accommodation/pretoria" />
+                      }
+                    />
+                    <Route
+                      path="/opportunities/internships"
+                      element={
+                        <ManagedSeoPage pagePath="/opportunities/internships" />
+                      }
+                    />
+                    <Route
+                      path="/opportunities/seta"
+                      element={
+                        <ManagedSeoPage pagePath="/opportunities/seta" />
+                      }
+                    />
+                    <Route
+                      path="/properties/:slug"
+                      element={<PropertyOpportunityDetail />}
+                    />
                     <Route path="/get-started" element={<GetStarted />} />
                     <Route path="/living" element={<Living />} />
                     <Route path="/ai" element={<ResKonnectAI />} />
-                    <Route path="/living/student-accommodation" element={<StudentAccommodation />} />
-                    <Route path="/living/private-rentals" element={<PrivateRentals />} />
+                    <Route
+                      path="/living/student-accommodation"
+                      element={<StudentAccommodation />}
+                    />
+                    <Route
+                      path="/living/private-rentals"
+                      element={<PrivateRentals />}
+                    />
                     <Route path="/living/parents" element={<Parents />} />
-                    <Route path="/housing-intelligence" element={<HousingIntelligence />} />
-                    <Route path="/applications" element={<ApplicationsPillar />} />
-                    <Route path="/applications/tvet" element={<TvetApplication />} />
-                    <Route path="/applications/university" element={<UniversityApplication />} />
-                    <Route path="/applications/private-college" element={<PrivateCollegeApplication />} />
-                    <Route path="/applications/checker" element={<ApplicationsChecker />} />
+                    <Route
+                      path="/housing-intelligence"
+                      element={<HousingIntelligence />}
+                    />
+                    <Route
+                      path="/applications"
+                      element={<ApplicationsPillar />}
+                    />
+                    <Route
+                      path="/applications/tvet"
+                      element={<TvetApplication />}
+                    />
+                    <Route
+                      path="/applications/university"
+                      element={<UniversityApplication />}
+                    />
+                    <Route
+                      path="/applications/private-college"
+                      element={<PrivateCollegeApplication />}
+                    />
+                    <Route
+                      path="/applications/checker"
+                      element={<ApplicationsChecker />}
+                    />
                     <Route path="/apply" element={<ApplicationsHub />} />
-                    <Route path="/career-education" element={<CareerEducation />} />
-                    <Route path="/career-education/tumelo" element={<TumeloCareerEducation />} />
-                    <Route path="/opportunities" element={<OpportunitiesPillar />} />
-                    <Route path="/opportunities/wil" element={<OpportunitiesWil />} />
-                    <Route path="/opportunity/:slug" element={<PublicOpportunityDetail />} />
+                    <Route
+                      path="/career-education"
+                      element={<CareerEducation />}
+                    />
+                    <Route
+                      path="/career-education/tumelo"
+                      element={<TumeloCareerEducation />}
+                    />
+                    <Route
+                      path="/opportunities"
+                      element={<OpportunitiesPillar />}
+                    />
+                    <Route
+                      path="/opportunities/wil"
+                      element={<OpportunitiesWil />}
+                    />
+                    <Route
+                      path="/opportunity/:slug"
+                      element={<PublicOpportunityDetail />}
+                    />
                     <Route path="/partners" element={<PartnersPillar />} />
-                    <Route path="/partners/landlords" element={<PartnersLandlords />} />
-                    <Route path="/partners/institutions" element={<PartnersInstitutions />} />
+                    <Route
+                      path="/partners/landlords"
+                      element={<PartnersLandlords />}
+                    />
+                    <Route
+                      path="/accreditation-readiness"
+                      element={<AccreditationReadiness />}
+                    />
+                    <Route
+                      path="/partners/landlords/accreditation-readiness"
+                      element={<AccreditationReadiness />}
+                    />
+                    <Route
+                      path="/partners/institutions"
+                      element={<PartnersInstitutions />}
+                    />
                     <Route path="/student-care" element={<StudentCare />} />
-                    <Route path="/single-room-waiting-list" element={<StudentCare />} />
-                    <Route path="/application-assistance" element={<ApplicationPartners />} />
-                    <Route path="/application-partners" element={<ApplicationPartners />} />
-                    <Route path="/application-assistance/case/:caseId" element={<ProtectedRoute><CreatorAssistanceCase /></ProtectedRoute>} />
-                    <Route path="/admin/student-care" element={<ProtectedRoute><AdminRoute><AdminStudentCare /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/creator-partners" element={<CreatorPartnerPortal />} />
+                    <Route
+                      path="/single-room-waiting-list"
+                      element={<StudentCare />}
+                    />
+                    <Route
+                      path="/application-assistance"
+                      element={<ApplicationPartners />}
+                    />
+                    <Route
+                      path="/application-partners"
+                      element={<ApplicationPartners />}
+                    />
+                    <Route
+                      path="/application-assistance/case/:caseId"
+                      element={
+                        <ProtectedRoute>
+                          <CreatorAssistanceCase />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/student-care"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminStudentCare />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/creator-partners"
+                      element={<CreatorPartnerPortal />}
+                    />
                     <Route path="/creator/:slug" element={<CreatorLanding />} />
-                    <Route path="/creator-assist/:slug" element={<CreatorAssistanceIntake />} />
-                    <Route path="/creator-partners/assist/:caseId" element={<ProtectedRoute><CreatorAssistanceCase /></ProtectedRoute>} />
-                    <Route path="/partner/tumelo/os" element={<ProtectedRoute><TumeloIntelligenceOS /></ProtectedRoute>} />
+                    <Route
+                      path="/creator-assist/:slug"
+                      element={<CreatorAssistanceIntake />}
+                    />
+                    <Route
+                      path="/creator-partners/assist/:caseId"
+                      element={
+                        <ProtectedRoute>
+                          <CreatorAssistanceCase />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/partner/tumelo/os"
+                      element={
+                        <ProtectedRoute>
+                          <TumeloIntelligenceOS />
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/reset-password" element={<PasswordReset />} />
                     <Route path="/terms" element={<Terms />} />
                     <Route path="/privacy" element={<Privacy />} />
-                    <Route path="/delete-account" element={<AccountDeletion />} />
+                    <Route
+                      path="/delete-account"
+                      element={<AccountDeletion />}
+                    />
                     <Route path="/install" element={<InstallResKonnect />} />
                     <Route path="/find" element={<FindMyRes />} />
                     <Route path="/findmyres" element={<FindMyRes />} />
-                    <Route path="/accommodation-request" element={<AccommodationDemand />} />
+                    <Route
+                      path="/accommodation-request"
+                      element={<AccommodationDemand />}
+                    />
                     <Route path="/res/:id" element={<ResidenceDetail />} />
-                    <Route path="/find-my-res/:slug" element={<ResidenceDetail />} />
-                    <Route path="/find-my-res/:slug/immersive" element={<ImmersiveResidence />} />
-                    <Route path="/tour/:token" element={<VirtualTourViewerPage />} />
-                    <Route path="/360-studio" element={<ProtectedRoute><VirtualTourStudioPage /></ProtectedRoute>} />
+                    <Route
+                      path="/find-my-res/:slug"
+                      element={<ResidenceDetail />}
+                    />
+                    <Route
+                      path="/find-my-res/:slug/immersive"
+                      element={<ImmersiveResidence />}
+                    />
+                    <Route
+                      path="/tour/:token"
+                      element={<VirtualTourViewerPage />}
+                    />
+                    <Route
+                      path="/360-studio"
+                      element={
+                        <ProtectedRoute>
+                          <VirtualTourStudioPage />
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route path="/bursaries" element={<BursaryFinder />} />
                     <Route path="/bursary/:id" element={<BursaryDetail />} />
-                    <Route path="/marketplace" element={<MarketplaceComingSoon />} />
-                    <Route path="/marketplace/*" element={<MarketplaceComingSoon />} />
-                    <Route path="/product/:id" element={<MarketplaceComingSoon />} />
-                    <Route path="/store/:storeId" element={<MarketplaceComingSoon />} />
+                    <Route
+                      path="/marketplace"
+                      element={<MarketplaceComingSoon />}
+                    />
+                    <Route
+                      path="/marketplace/*"
+                      element={<MarketplaceComingSoon />}
+                    />
+                    <Route
+                      path="/product/:id"
+                      element={<MarketplaceComingSoon />}
+                    />
+                    <Route
+                      path="/store/:storeId"
+                      element={<MarketplaceComingSoon />}
+                    />
                     <Route path="/discounts" element={<StudentDeals />} />
                     <Route path="/hamper" element={<StudentDeals />} />
                     <Route path="/events" element={<Events />} />
@@ -273,111 +567,791 @@ const App = () => {
                     <Route path="/roommates" element={<RoommateFinder />} />
                     <Route path="/affiliates" element={<Affiliates />} />
                     <Route path="/r/:code" element={<ReferralRedirect />} />
-                    <Route path="/rr/:key" element={<ResidenceRecruiterRedirect />} />
+                    <Route
+                      path="/rr/:key"
+                      element={<ResidenceRecruiterRedirect />}
+                    />
                     <Route path="/recruit" element={<RecruitLanding />} />
                     <Route path="/recruit/auth" element={<RecruiterAuth />} />
-                    <Route path="/recruit/apply" element={<ProtectedRoute><RecruiterApply /></ProtectedRoute>} />
-                    <Route path="/recruit/dashboard" element={<ProtectedRoute><RecruiterDashboard /></ProtectedRoute>} />
+                    <Route
+                      path="/recruit/apply"
+                      element={
+                        <ProtectedRoute>
+                          <RecruiterApply />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/recruit/dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <RecruiterDashboard />
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route path="/referrals" element={<Referrals />} />
-                    <Route path="/recruiter-dashboard" element={<ProtectedRoute><RecruiterDashboard /></ProtectedRoute>} />
-                    <Route path="/dashboard" element={<StudentRoute><Dashboard /></StudentRoute>} />
-                    <Route path="/profile" element={<StudentRoute><Profile /></StudentRoute>} />
-                    <Route path="/my-applications" element={<StudentRoute><Applications /></StudentRoute>} />
-                    <Route path="/dashboard/applications" element={<StudentRoute><Applications /></StudentRoute>} />
-                    <Route path="/messages" element={<StudentRoute><Messages /></StudentRoute>} />
-                    <Route path="/favorites" element={<StudentRoute><Favorites /></StudentRoute>} />
-                    <Route path="/documents" element={<StudentRoute><Documents /></StudentRoute>} />
-                    <Route path="/my-discount-orders" element={<StudentRoute><MyDiscountOrders /></StudentRoute>} />
-                    <Route path="/wil" element={<StudentRoute><MyWIL /></StudentRoute>} />
-                    <Route path="/setup-profile" element={<StudentRoute><ProfileSetup /></StudentRoute>} />
-                    <Route path="/dashboard/updates" element={<StudentRoute><Updates /></StudentRoute>} />
-                    <Route path="/dashboard/services" element={<StudentRoute><ServiceCentre /></StudentRoute>} />
-                    <Route path="/my-discount-codes" element={<StudentRoute><MyDiscountCodes /></StudentRoute>} />
-                    <Route path="/admin/career-education" element={<ProtectedRoute><AdminRoute><AdminCareerEducation /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin" element={<ProtectedRoute><DepartmentRoute department="executive"><AdminExecutiveOffice /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/executive" element={<ProtectedRoute><DepartmentRoute department="executive"><AdminExecutiveOffice /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/accommodation" element={<ProtectedRoute><DepartmentRoute department="accommodation"><AdminOperationsHub /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/opportunities" element={<ProtectedRoute><DepartmentRoute department="student_opportunities"><AdminStudentOpportunities /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/corporate-affairs" element={<ProtectedRoute><DepartmentRoute department="marketing_corporate_affairs"><AdminCorporateAffairs /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/partnerships" element={<ProtectedRoute><DepartmentRoute department="partnerships_engagements"><AdminPartnershipCommandCentre /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/communications" element={<ProtectedRoute><DepartmentRoute department="communications_service"><AdminCommunicationsDepartment /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/operations-office" element={<ProtectedRoute><DepartmentRoute department="operations"><AdminOperationsOffice /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/finance-admin" element={<ProtectedRoute><DepartmentRoute department="finance_admin"><AdminFinanceAdmin /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/intelligence" element={<ProtectedRoute><DepartmentRoute department="intelligence_analytics"><AdminIntelligenceAnalytics /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/technology" element={<ProtectedRoute><DepartmentRoute department="technology_systems"><AdminTechnologySystems /></DepartmentRoute></ProtectedRoute>} />
+                    <Route
+                      path="/recruiter-dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <RecruiterDashboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <StudentRoute>
+                          <Dashboard />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        <StudentRoute>
+                          <Profile />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/my-applications"
+                      element={
+                        <StudentRoute>
+                          <Applications />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/applications"
+                      element={
+                        <StudentRoute>
+                          <Applications />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/messages"
+                      element={
+                        <StudentRoute>
+                          <Messages />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/favorites"
+                      element={
+                        <StudentRoute>
+                          <Favorites />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/documents"
+                      element={
+                        <StudentRoute>
+                          <Documents />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/my-discount-orders"
+                      element={
+                        <StudentRoute>
+                          <MyDiscountOrders />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/wil"
+                      element={
+                        <StudentRoute>
+                          <MyWIL />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/setup-profile"
+                      element={
+                        <StudentRoute>
+                          <ProfileSetup />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/updates"
+                      element={
+                        <StudentRoute>
+                          <Updates />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/services"
+                      element={
+                        <StudentRoute>
+                          <ServiceCentre />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/my-discount-codes"
+                      element={
+                        <StudentRoute>
+                          <MyDiscountCodes />
+                        </StudentRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/career-education"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminCareerEducation />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="executive">
+                            <AdminExecutiveOffice />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/executive"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="executive">
+                            <AdminExecutiveOffice />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/accommodation"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="accommodation">
+                            <AdminOperationsHub />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/opportunities"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="student_opportunities">
+                            <AdminStudentOpportunities />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/corporate-affairs"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="marketing_corporate_affairs">
+                            <AdminCorporateAffairs />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/partnerships"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="partnerships_engagements">
+                            <AdminPartnershipCommandCentre />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/communications"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="communications_service">
+                            <AdminCommunicationsDepartment />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/operations-office"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="operations">
+                            <AdminOperationsOffice />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/finance-admin"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="finance_admin">
+                            <AdminFinanceAdmin />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/intelligence"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="intelligence_analytics">
+                            <AdminIntelligenceAnalytics />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/technology"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="technology_systems">
+                            <AdminTechnologySystems />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
 
                     {/* Legacy admin URLs resolve into the new departmental operating model. */}
-                    <Route path="/admin/analytics" element={<ProtectedRoute><DepartmentRoute department="intelligence_analytics"><AdminIntelligenceAnalytics /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/growth" element={<ProtectedRoute><DepartmentRoute department="marketing_corporate_affairs"><AdminCorporateAffairs /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/operations" element={<ProtectedRoute><DepartmentRoute department="accommodation"><AdminOperationsHub /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/application-hub" element={<ProtectedRoute><DepartmentRoute department="student_opportunities"><AdminStudentOpportunities /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/onboarding" element={<ProtectedRoute><DepartmentRoute department="operations"><AdminOperationsOffice /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/commerce" element={<ProtectedRoute><DepartmentRoute department="finance_admin"><AdminFinanceAdmin /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/media" element={<ProtectedRoute><DepartmentRoute department="marketing_corporate_affairs"><AdminCorporateAffairs /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/admin/system" element={<ProtectedRoute><DepartmentRoute department="technology_systems"><AdminTechnologySystems /></DepartmentRoute></ProtectedRoute>} />
-                    <Route path="/media" element={<ProtectedRoute><SpecialistRoute allowedRoles={["admin", "growth_lead"]}><MediaDashboard /></SpecialistRoute></ProtectedRoute>} />
-                    <Route path="/commerce" element={<ProtectedRoute><SpecialistRoute allowedRoles={["admin", "commerce_lead"]}><CommerceDashboard /></SpecialistRoute></ProtectedRoute>} />
-                    <Route path="/admin/residences" element={<ProtectedRoute><AdminRoute><AdminResidences /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/applications" element={<ProtectedRoute><AdminRoute><AdminApplications /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/documents" element={<ProtectedRoute><AdminRoute><AdminDocuments /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/follow-up" element={<ProtectedRoute><AdminRoute><AdminFollowUp /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/users" element={<ProtectedRoute><AdminRoute><AdminUsers /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/slides" element={<ProtectedRoute><AdminRoute><AdminSlides /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/bursaries" element={<ProtectedRoute><AdminRoute><AdminBursaries /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/discounts" element={<ProtectedRoute><AdminRoute><AdminDiscounts /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/discount-orders" element={<ProtectedRoute><AdminRoute><AdminDiscountOrders /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/events" element={<ProtectedRoute><AdminRoute><AdminEvents /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/marketplace" element={<ProtectedRoute><AdminRoute><AdminMarketplace /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/stores" element={<ProtectedRoute><AdminRoute><AdminStores /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/hamper-items" element={<ProtectedRoute><AdminRoute><AdminHamperItems /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/whatsapp-templates" element={<ProtectedRoute><AdminRoute><AdminWhatsAppTemplates /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/news" element={<ProtectedRoute><AdminRoute><AdminNews /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/system-status" element={<ProtectedRoute><AdminRoute><AdminSystemStatus /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/settings" element={<ProtectedRoute><AdminRoute><AdminSettings /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/residence-portals" element={<ProtectedRoute><AdminRoute><AdminResidencePortals /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/wil" element={<ProtectedRoute><AdminRoute><AdminWIL /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/seller-approvals" element={<ProtectedRoute><AdminRoute><AdminSellerApprovals /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/recruitment" element={<ProtectedRoute><AdminRoute><AdminRecruitmentProgramme /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/admin/tvet" element={<ProtectedRoute><AdminRoute><AdminTvetHub /></AdminRoute></ProtectedRoute>} />
-                    <Route path="/tvet-dashboard" element={<ProtectedRoute><SpecialistRoute allowedRoles={["tvet_lead", "admin", "super_admin", "developer", "owner"]}><TvetDashboard /></SpecialistRoute></ProtectedRoute>} />
-                    <Route path="/residence/login" element={<ResidenceLogin />} />
-                    <Route path="/residence" element={<ResidenceRoute><ResidenceLayout /></ResidenceRoute>}>
+                    <Route
+                      path="/admin/analytics"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="intelligence_analytics">
+                            <AdminIntelligenceAnalytics />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/growth"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="marketing_corporate_affairs">
+                            <AdminCorporateAffairs />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/operations"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="accommodation">
+                            <AdminOperationsHub />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/application-hub"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="student_opportunities">
+                            <AdminStudentOpportunities />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/onboarding"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="operations">
+                            <AdminOperationsOffice />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/commerce"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="finance_admin">
+                            <AdminFinanceAdmin />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/media"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="marketing_corporate_affairs">
+                            <AdminCorporateAffairs />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/system"
+                      element={
+                        <ProtectedRoute>
+                          <DepartmentRoute department="technology_systems">
+                            <AdminTechnologySystems />
+                          </DepartmentRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/media"
+                      element={
+                        <ProtectedRoute>
+                          <SpecialistRoute
+                            allowedRoles={["admin", "growth_lead"]}
+                          >
+                            <MediaDashboard />
+                          </SpecialistRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/commerce"
+                      element={
+                        <ProtectedRoute>
+                          <SpecialistRoute
+                            allowedRoles={["admin", "commerce_lead"]}
+                          >
+                            <CommerceDashboard />
+                          </SpecialistRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/residences"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminResidences />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/applications"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminApplications />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/documents"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminDocuments />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/follow-up"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminFollowUp />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/users"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminUsers />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/slides"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminSlides />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/bursaries"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminBursaries />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/discounts"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminDiscounts />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/discount-orders"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminDiscountOrders />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/events"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminEvents />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/marketplace"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminMarketplace />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/stores"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminStores />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/hamper-items"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminHamperItems />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/whatsapp-templates"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminWhatsAppTemplates />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/news"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminNews />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/system-status"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminSystemStatus />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/settings"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminSettings />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/residence-portals"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminResidencePortals />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/wil"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminWIL />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/seller-approvals"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminSellerApprovals />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/recruitment"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminRecruitmentProgramme />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/tvet"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminTvetHub />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/tvet-dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <SpecialistRoute
+                            allowedRoles={[
+                              "tvet_lead",
+                              "admin",
+                              "super_admin",
+                              "developer",
+                              "owner",
+                            ]}
+                          >
+                            <TvetDashboard />
+                          </SpecialistRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/residence/login"
+                      element={<ResidenceLogin />}
+                    />
+                    <Route
+                      path="/residence"
+                      element={
+                        <ResidenceRoute>
+                          <ResidenceLayout />
+                        </ResidenceRoute>
+                      }
+                    >
                       <Route index element={<ResidenceDashboard />} />
-                      <Route path="reservations-2027" element={<ResidenceReservations2027 />} />
-                      <Route path="listing" element={<ResidenceListingProfile />} />
-                      <Route path="virtual-tour" element={<ResidenceVirtualTour />} />
+                      <Route
+                        path="reservations-2027"
+                        element={<ResidenceReservations2027 />}
+                      />
+                      <Route
+                        path="listing"
+                        element={<ResidenceListingProfile />}
+                      />
+                      <Route
+                        path="compliance"
+                        element={<ResidenceComplianceReadiness />}
+                      />
+                      <Route
+                        path="virtual-tour"
+                        element={<ResidenceVirtualTour />}
+                      />
                       <Route path="inbox" element={<ResidenceInbox />} />
-                      <Route path="application/:id" element={<ResidenceApplicationDetail />} />
+                      <Route
+                        path="application/:id"
+                        element={<ResidenceApplicationDetail />}
+                      />
                       <Route path="crm" element={<ResidenceCRM />} />
-                      <Route path="inventory" element={<ResidenceInventory />} />
-                      <Route path="recruiters" element={<ResidenceRecruitment />} />
-                      <Route path="analytics" element={<ResidenceAnalytics />} />
+                      <Route
+                        path="inventory"
+                        element={<ResidenceInventory />}
+                      />
+                      <Route
+                        path="recruiters"
+                        element={<ResidenceRecruitment />}
+                      />
+                      <Route
+                        path="analytics"
+                        element={<ResidenceAnalytics />}
+                      />
                     </Route>
-                    <Route path="/student-accommodation" element={<SeoLandingPage pageKey="/student-accommodation" />} />
-                    <Route path="/student-accommodation/pretoria-west" element={<SeoLandingPage pageKey="/student-accommodation/pretoria-west" />} />
-                    <Route path="/student-accommodation/near-tut" element={<SeoLandingPage pageKey="/student-accommodation/near-tut" />} />
-                    <Route path="/student-accommodation/near-tut-pretoria-west" element={<SeoLandingPage pageKey="/student-accommodation/near-tut-pretoria-west" />} />
-                    <Route path="/student-accommodation/near-tshwane-south-tvet" element={<SeoLandingPage pageKey="/student-accommodation/near-tshwane-south-tvet" />} />
-                    <Route path="/student-accommodation/tvet" element={<SeoLandingPage pageKey="/student-accommodation/tvet" />} />
-                    <Route path="/student-accommodation/university" element={<SeoLandingPage pageKey="/student-accommodation/university" />} />
-                    <Route path="/student-accommodation/nsfas-accredited" element={<SeoLandingPage pageKey="/student-accommodation/nsfas-accredited" />} />
-                    <Route path="/private-rentals" element={<SeoLandingPage pageKey="/private-rentals" />} />
-                    <Route path="/private-rentals/pretoria-west" element={<SeoLandingPage pageKey="/private-rentals/pretoria-west" />} />
-                    <Route path="/private-rentals/bachelor-rooms-pretoria" element={<SeoLandingPage pageKey="/private-rentals/bachelor-rooms-pretoria" />} />
-                    <Route path="/applications/application-readiness" element={<SeoLandingPage pageKey="/applications/application-readiness" />} />
-                    <Route path="/applications/tvet-application-readiness" element={<SeoLandingPage pageKey="/applications/tvet-application-readiness" />} />
-                    <Route path="/applications/university-application-readiness" element={<SeoLandingPage pageKey="/applications/university-application-readiness" />} />
-                    <Route path="/applications/aps-checker" element={<SeoLandingPage pageKey="/applications/aps-checker" />} />
-                    <Route path="/opportunities/wil-placement-support" element={<SeoLandingPage pageKey="/opportunities/wil-placement-support" />} />
-                    <Route path="/guides/how-to-find-safe-student-accommodation" element={<SeoLandingPage pageKey="/guides/how-to-find-safe-student-accommodation" />} />
-                    <Route path="/guides/student-accommodation-pretoria-west" element={<SeoLandingPage pageKey="/guides/student-accommodation-pretoria-west" />} />
-                    <Route path="/guides/tvet-application-checklist" element={<SeoLandingPage pageKey="/guides/tvet-application-checklist" />} />
-                    <Route path="/guides/university-application-checklist" element={<SeoLandingPage pageKey="/guides/university-application-checklist" />} />
-                    <Route path="/guides/what-documents-do-you-need-for-student-accommodation" element={<SeoLandingPage pageKey="/guides/what-documents-do-you-need-for-student-accommodation" />} />
-                    <Route path="/student-accommodation-:province" element={<ProvinceLanding />} />
-                    <Route path="/tut-:campus-accommodation" element={<CampusLanding />} />
-                    <Route path="/nsfas-accredited-accommodation" element={<NsfAsLanding />} />
-                    <Route path="/south-africa-student-accommodation" element={<NationalLanding />} />
+                    <Route
+                      path="/student-accommodation"
+                      element={
+                        <SeoLandingPage pageKey="/student-accommodation" />
+                      }
+                    />
+                    <Route
+                      path="/student-accommodation/pretoria-west"
+                      element={
+                        <SeoLandingPage pageKey="/student-accommodation/pretoria-west" />
+                      }
+                    />
+                    <Route
+                      path="/student-accommodation/near-tut"
+                      element={
+                        <SeoLandingPage pageKey="/student-accommodation/near-tut" />
+                      }
+                    />
+                    <Route
+                      path="/student-accommodation/near-tut-pretoria-west"
+                      element={
+                        <SeoLandingPage pageKey="/student-accommodation/near-tut-pretoria-west" />
+                      }
+                    />
+                    <Route
+                      path="/student-accommodation/near-tshwane-south-tvet"
+                      element={
+                        <SeoLandingPage pageKey="/student-accommodation/near-tshwane-south-tvet" />
+                      }
+                    />
+                    <Route
+                      path="/student-accommodation/tvet"
+                      element={
+                        <SeoLandingPage pageKey="/student-accommodation/tvet" />
+                      }
+                    />
+                    <Route
+                      path="/student-accommodation/university"
+                      element={
+                        <SeoLandingPage pageKey="/student-accommodation/university" />
+                      }
+                    />
+                    <Route
+                      path="/student-accommodation/nsfas-accredited"
+                      element={<NsfAsLanding />}
+                    />
+                    <Route
+                      path="/private-rentals"
+                      element={<SeoLandingPage pageKey="/private-rentals" />}
+                    />
+                    <Route
+                      path="/private-rentals/pretoria-west"
+                      element={
+                        <SeoLandingPage pageKey="/private-rentals/pretoria-west" />
+                      }
+                    />
+                    <Route
+                      path="/private-rentals/bachelor-rooms-pretoria"
+                      element={
+                        <SeoLandingPage pageKey="/private-rentals/bachelor-rooms-pretoria" />
+                      }
+                    />
+                    <Route
+                      path="/applications/application-readiness"
+                      element={
+                        <SeoLandingPage pageKey="/applications/application-readiness" />
+                      }
+                    />
+                    <Route
+                      path="/applications/tvet-application-readiness"
+                      element={
+                        <SeoLandingPage pageKey="/applications/tvet-application-readiness" />
+                      }
+                    />
+                    <Route
+                      path="/applications/university-application-readiness"
+                      element={
+                        <SeoLandingPage pageKey="/applications/university-application-readiness" />
+                      }
+                    />
+                    <Route
+                      path="/applications/aps-checker"
+                      element={
+                        <SeoLandingPage pageKey="/applications/aps-checker" />
+                      }
+                    />
+                    <Route
+                      path="/opportunities/wil-placement-support"
+                      element={
+                        <SeoLandingPage pageKey="/opportunities/wil-placement-support" />
+                      }
+                    />
+                    <Route
+                      path="/guides/how-to-find-safe-student-accommodation"
+                      element={
+                        <SeoLandingPage pageKey="/guides/how-to-find-safe-student-accommodation" />
+                      }
+                    />
+                    <Route
+                      path="/guides/student-accommodation-pretoria-west"
+                      element={
+                        <SeoLandingPage pageKey="/guides/student-accommodation-pretoria-west" />
+                      }
+                    />
+                    <Route
+                      path="/guides/tvet-application-checklist"
+                      element={
+                        <SeoLandingPage pageKey="/guides/tvet-application-checklist" />
+                      }
+                    />
+                    <Route
+                      path="/guides/university-application-checklist"
+                      element={
+                        <SeoLandingPage pageKey="/guides/university-application-checklist" />
+                      }
+                    />
+                    <Route
+                      path="/guides/what-documents-do-you-need-for-student-accommodation"
+                      element={
+                        <SeoLandingPage pageKey="/guides/what-documents-do-you-need-for-student-accommodation" />
+                      }
+                    />
+                    <Route
+                      path="/student-accommodation-:province"
+                      element={<ProvinceLanding />}
+                    />
+                    <Route
+                      path="/tut-:campus-accommodation"
+                      element={<CampusLanding />}
+                    />
+                    <Route
+                      path="/nsfas-accredited-accommodation"
+                      element={<NsfAsLanding />}
+                    />
+                    <Route
+                      path="/south-africa-student-accommodation"
+                      element={<NationalLanding />}
+                    />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

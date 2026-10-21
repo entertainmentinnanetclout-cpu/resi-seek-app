@@ -303,6 +303,10 @@
       "destination": "/_seo/partners-landlords"
     },
     {
+      "source": "/accreditation-readiness",
+      "destination": "/_seo/accreditation-readiness"
+    },
+    {
       "source": "/bursaries",
       "destination": "/_seo/bursaries"
     },
