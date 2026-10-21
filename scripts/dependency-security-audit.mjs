@@ -35,10 +35,15 @@ function vulnerabilityCount(report) {
 
 // Production/runtime dependencies are never allowlisted. Any known issue at
 // low severity or above blocks the release.
-const production = runAudit(["--omit=dev", "--audit-level=low"]);
-if (production.result.status !== 0 || vulnerabilityCount(production.report) > 0) {
-  console.error("Production dependency audit failed. Runtime dependencies must have zero known vulnerabilities.");
-  console.error(JSON.stringify(production.report, null, 2));
+const { result: productionResult, report: productionReport } = runAudit([
+  "--omit=dev",
+  "--audit-level=low",
+]);
+if (productionResult.status !== 0 || vulnerabilityCount(productionReport) > 0) {
+  console.error(
+    "Production dependency audit failed. Runtime dependencies must have zero known vulnerabilities.",
+  );
+  console.error(JSON.stringify(productionReport, null, 2));
   process.exit(1);
 }
 console.log("PASS production dependencies: zero known vulnerabilities.");
