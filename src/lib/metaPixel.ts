@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-export const META_PIXEL_ID = (import.meta.env.VITE_META_PIXEL_ID || "950382421094982").trim();
+export const META_PIXEL_ID = (import.meta.env.VITE_META_PIXEL_ID || "28804235542543183").trim();
 export const MARKETING_CONSENT_KEY = "reskonnect_marketing_consent_v1";
 export const MARKETING_CONSENT_EVENT = "reskonnect:marketing-consent";
 export const MARKETING_PREFERENCES_EVENT = "reskonnect:open-marketing-preferences";
