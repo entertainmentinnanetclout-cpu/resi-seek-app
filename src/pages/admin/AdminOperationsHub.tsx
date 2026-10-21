@@ -2,7 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BadgePercent, Building2, FileText, FolderOpen, KeyRound, Layers, Rotate3D, Settings2 } from "lucide-react";
+import { BadgePercent, Building2, FileText, FolderOpen, KeyRound, Layers, Rotate3D, Settings2, ShieldCheck } from "lucide-react";
 import { AdminResidencesContent } from "./AdminResidences";
 import { AdminResidencePortalsContent } from "./AdminResidencePortals";
 import { AdminApplicationsContent } from "./AdminApplications";
@@ -21,15 +21,16 @@ import AdminApplicationOperationsPanel from "@/components/admin/AdminApplication
 import AdminOccupancyIntelligence from "@/components/admin/AdminOccupancyIntelligence";
 import AdminDepartmentTaskQueue from "@/components/admin/AdminDepartmentTaskQueue";
 import AdminMetaResidenceManager from "@/components/admin/AdminMetaResidenceManager";
+import AdminAccommodationCompliance from "@/components/admin/AdminAccommodationCompliance";
 
 const normalize=(value:string|null)=>{
   const legacy:Record<string,string>={
     applications:"applications-reservations","2027-reservations":"applications-reservations","academic-inventory":"inventory-occupancy",
     residences:"residences",portals:"portals-documents",documents:"portals-documents","follow-up":"applications-reservations",
     "pricing-promos":"commercial","landlord-apps":"commercial",recruitment:"commercial","360-gold":"360","meta-feed":"meta-feed",
-    sections:"configuration",filters:"configuration",users:"configuration"
+    compliance:"compliance",sections:"configuration",filters:"configuration",users:"configuration"
   };
-  const valid=["applications-reservations","inventory-occupancy","residences","meta-feed","commercial","portals-documents","360","configuration"];
+  const valid=["applications-reservations","inventory-occupancy","residences","compliance","meta-feed","commercial","portals-documents","360","configuration"];
   return value&&valid.includes(value)?value:legacy[value||""]||"applications-reservations";
 };
 
@@ -39,15 +40,16 @@ export default function AdminOperationsHub(){
   const setTab=(tab:string)=>{const next=new URLSearchParams(searchParams);next.set("tab",tab);setSearchParams(next);};
 
   return <AdminLayout>
-    <SEO noIndex title="Accommodation Department | ResKonnect Admin" description="Accommodation applications, reservations, RG7 application automation, RG8 occupancy intelligence, residences and operational delivery."/>
+    <SEO noIndex title="Accommodation Department | ResKonnect Admin" description="Accommodation applications, reservations, property compliance, accreditation-readiness control, occupancy intelligence, residences and operational delivery."/>
     <div className="space-y-6">
-      <header><div className="flex flex-wrap gap-2"><span className="rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-wider text-primary-foreground">Accommodation Department</span><span className="rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Institutional service delivery</span></div><h1 className="mt-3 text-3xl font-black tracking-tight">Accommodation Operations</h1><p className="mt-1 max-w-4xl text-sm text-muted-foreground">One departmental workspace for the complete accommodation lifecycle: inventory → applications and reservations → RG7 health automation → RG8 year-isolated occupancy intelligence → portals → commercial delivery. Academic years remain isolated and room allocation remains human-controlled.</p></header>
+      <header><div className="flex flex-wrap gap-2"><span className="rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-wider text-primary-foreground">Accommodation Department</span><span className="rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Institutional service delivery</span></div><h1 className="mt-3 text-3xl font-black tracking-tight">Accommodation Operations</h1><p className="mt-1 max-w-4xl text-sm text-muted-foreground">One departmental workspace for the complete accommodation lifecycle: inventory → applications and reservations → compliance and accreditation readiness → occupancy intelligence → portals → commercial delivery. Official accreditation and grading remain evidence-controlled authority decisions; room allocation remains human-controlled.</p></header>
 
       <Tabs value={activeTab} onValueChange={setTab}>
         <TabsList className="flex h-auto flex-wrap gap-1">
           <TabsTrigger value="applications-reservations" className="gap-2"><FileText className="h-4 w-4"/>Applications & Reservations</TabsTrigger>
           <TabsTrigger value="inventory-occupancy" className="gap-2"><Layers className="h-4 w-4"/>Inventory & Occupancy</TabsTrigger>
           <TabsTrigger value="residences" className="gap-2"><Building2 className="h-4 w-4"/>Residences</TabsTrigger>
+          <TabsTrigger value="compliance" className="gap-2"><ShieldCheck className="h-4 w-4"/>Compliance & Accreditation</TabsTrigger>
           <TabsTrigger value="meta-feed" className="gap-2"><Building2 className="h-4 w-4"/>Meta Feed</TabsTrigger>
           <TabsTrigger value="commercial" className="gap-2"><BadgePercent className="h-4 w-4"/>Commercial & Recruitment</TabsTrigger>
           <TabsTrigger value="portals-documents" className="gap-2"><FolderOpen className="h-4 w-4"/>Portals & Records</TabsTrigger>
@@ -78,6 +80,7 @@ export default function AdminOperationsHub(){
           </Tabs>
         </TabsContent>
         <TabsContent value="residences"><AdminResidencesContent /></TabsContent>
+        <TabsContent value="compliance"><AdminAccommodationCompliance /></TabsContent>
         <TabsContent value="meta-feed"><AdminMetaResidenceManager /></TabsContent>
 
         <TabsContent value="commercial" className="space-y-4">
