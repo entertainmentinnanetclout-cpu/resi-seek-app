@@ -19,6 +19,13 @@ const checks = [
     const activity = read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
     assert.ok(activity.includes("onBackPressed") && activity.includes("rk-native-guide-dismiss") && activity.includes("canGoBack"));
   }],
+  ["RG2 API 36 edge-to-edge and safe insets", () => {
+    const activity = read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
+    const config = JSON.parse(read("capacitor.config.json"));
+    assert.ok(activity.includes("androidx.activity.EdgeToEdge") && activity.includes("EdgeToEdge.enable(this)"));
+    assert.equal(config.plugins?.SystemBars?.insetsHandling, "native");
+    assert.equal(config.plugins?.SystemBars?.initialViewportFitValueHint, "cover");
+  }],
   ["RG3 Android permission and low-resource 3D fallback", () => {
     const location = read("src/lib/resmap/liveLocation.ts");
     const map = read("src/components/resmap/NativeResMapExperience.tsx");
