@@ -1,4 +1,4 @@
-# ResKonnect Android 1.1.6 (versionCode 9) — P9–P12 Release Candidate
+# ResKonnect Android 1.1.7 (versionCode 10) — P9–P12 Release Candidate
 
 Date: 2026-10-22  
 Package: `org.reskonnect.app`  
@@ -66,13 +66,15 @@ Required gates:
 
 ## P12 — Final release candidate
 
-The Play testing repair candidate is **1.1.6 / versionCode 9**. Do not upload a later code revision under versionCode 9.
+The corrected native packaging candidate is **1.1.7 / versionCode 10**. Do not upload a later code revision under versionCode 10.
 
-This candidate supersedes 1.1.5 / versionCode 8 after the internal-testing onboarding defect. The repaired candidate must prove that onboarding is always dismissible and does not return after a persisted close/skip action.
+This candidate supersedes 1.1.6 / versionCode 9 after the pre-upload audit found that the prior bundle did not contain the expected Capacitor native plugin registry. The corrected candidate must prove that App, Geolocation, Local Notifications and Push Notifications are registered after Capacitor sync and are physically present in the final AAB.
 
 ### Automated candidate acceptance
 - [ ] All PR checks green on the exact release-candidate head SHA.
 - [ ] Unsigned API-36 readiness AAB compiles from the exact release-candidate head.
+- [ ] Generated `capacitor.plugins.json` contains App, Geolocation, Local Notifications and Push Notifications.
+- [ ] Final readiness AAB contains the same four native plugin registrations.
 - [ ] AAB contains no unreviewed native ELF libraries.
 - [ ] Native onboarding closes in portrait and landscape and remains dismissed after reload/reopen.
 - [ ] Website Meta consent never appears in the Capacitor runtime.
@@ -83,14 +85,17 @@ This candidate supersedes 1.1.5 / versionCode 8 after the internal-testing onboa
 
 ### Protected signed artifact
 Run **Android Play Store Signed Release** with:
-- `version_code = 9`
-- `version_name = 1.1.6`
+- `version_code = 10`
+- `version_name = 1.1.7`
 
 The protected workflow must:
 - validate protected upload-key secrets;
 - materialize the keystore only on the runner;
 - rerun P1–P11 release gates;
+- declare the pinned Capacitor native dependencies before sync;
+- verify the generated native plugin registry;
 - compile the signed AAB;
+- verify the native plugin registry inside the final AAB;
 - verify the AAB signature with `jarsigner`;
 - check native ELF packaging;
 - generate SHA-256;
