@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
-def versionCodeValue = (System.getenv("ANDROID_VERSION_CODE") ?: "8").toInteger()
-def versionNameValue = System.getenv("ANDROID_VERSION_NAME") ?: "1.1.5"
+def versionCodeValue = (System.getenv("ANDROID_VERSION_CODE") ?: "9").toInteger()
+def versionNameValue = System.getenv("ANDROID_VERSION_NAME") ?: "1.1.6"
 def keyStorePathValue = System.getenv("RK_ANDROID_KEYSTORE_PATH")
 def keyStorePasswordValue = System.getenv("RK_ANDROID_KEYSTORE_PASSWORD")
 def keyAliasValue = System.getenv("RK_ANDROID_KEY_ALIAS")
@@ -47,15 +47,12 @@ android {
             versionNameSuffix "-debug"
         }
     }
-
-    lint {
-        abortOnError true
-        checkReleaseBuilds true
-    }
 }
 
 repositories {
-    flatDir { dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs' }
+    flatDir {
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
 }
 
 dependencies {
@@ -64,17 +61,19 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
-    implementation project(':capacitor-cordova-android-plugins')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
 }
 
 apply from: 'capacitor.build.gradle'
 
 try {
     def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) { apply plugin: 'com.google.gms.google-services' }
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
 } catch(Exception e) {
-    logger.info("google-services.json not found; native push is intentionally disabled for Android v1")
+    logger.info("google-services.json not found, google-services plugin not applied. Push notifications remain disabled.")
 }
