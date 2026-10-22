@@ -14,16 +14,27 @@ jobs:
   cross-platform-web:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # Keep the image version exactly aligned with @playwright/test/playwright-core.
+    # The official Playwright image already contains Chromium, WebKit and their
+    # Linux system dependencies, avoiding slow/non-deterministic apt mirrors.
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --user 1001
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
       - name: Install locked dependencies
         run: npm ci
+      - name: Verify Playwright container parity
+        run: |
+          test "$(node -p "require('@playwright/test/package.json').version")" = "1.56.1"
+          test "$(node -p "require('playwright-core/package.json').version")" = "1.56.1"
+          npx playwright --version | grep -F "1.56.1"
       - name: Static cross-platform checks
         run: npm run web:check
       - name: P5-P8 platform stability audit
@@ -32,13 +43,11 @@ jobs:
         run: npm run release:p11
       - name: TypeScript
         run: npx tsc --noEmit -p tsconfig.app.json
-      - name: Install Chromium and WebKit
-        run: npx playwright install --with-deps chromium webkit
       - name: Responsive public browser smoke
         run: node scripts/web-platform-smoke.mjs
       - name: Upload public smoke diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-platform-smoke-diagnostics
           path: artifacts/web-platform-smoke.json
