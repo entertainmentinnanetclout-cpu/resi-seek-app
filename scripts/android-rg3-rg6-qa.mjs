@@ -12,7 +12,8 @@ const checks = [
   }],
   ["RG2 stateful first-run guide", () => {
     const tour = read("src/components/native/NativeGuidedOnboarding.tsx");
-    for (const term of ["rk_native_guide_v1_", "MutationObserver", "Skip guide", "Find My Res", "profileNeedsAttention", "my-applications"]) assert.ok(tour.includes(term), term);
+    for (const term of ["rk_native_guide_v1_", "MutationObserver", "Skip guide", "Close app guide", "Find My Res", "profileNeedsAttention", "my-applications", "100dvh", "orientationchange"]) assert.ok(tour.includes(term), term);
+    assert.ok(!tour.includes(":has("), "native guide must not depend on CSS :has() support");
   }],
   ["RG3 Android permission and low-resource 3D fallback", () => {
     const location = read("src/lib/resmap/liveLocation.ts");
@@ -67,7 +68,7 @@ const checks = [
   ["RG6 version and protected signing parity", () => {
     const readiness = read(".github/workflows/android-playstore-readiness.yml");
     const signed = read(".github/workflows/android-playstore-release.yml");
-    assert.equal(release.versionName, "1.1.5"); assert.equal(release.versionCode, 8);
+    assert.equal(release.versionName, "1.1.6"); assert.equal(release.versionCode, 9);
     assert.ok(readiness.includes("@capacitor/local-notifications@8.0.0") && signed.includes("@capacitor/local-notifications@8.0.0"));
     assert.ok(signed.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64") && signed.includes("jarsigner"));
     assert.equal(release.nativePushNotifications, false, "Never represent FCM background delivery as working without provider configuration");
