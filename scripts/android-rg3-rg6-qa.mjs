@@ -103,11 +103,11 @@ const checks = [
   ["RG6 version, plugin and protected signing parity", () => {
     const readiness = read(".github/workflows/android-playstore-readiness.yml");
     const signed = read(".github/workflows/android-playstore-release.yml");
-    assert.equal(release.versionName, "1.1.6"); assert.equal(release.versionCode, 9);
+    assert.equal(release.versionName, "1.1.7"); assert.equal(release.versionCode, 10);
     for (const dependency of ["@capacitor/app@8.0.0", "@capacitor/local-notifications@8.0.0", "@capacitor/push-notifications@8.0.0"]) {
       assert.ok(readiness.includes(dependency) && signed.includes(dependency), dependency);
     }
-    assert.ok(signed.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64") && signed.includes("jarsigner") && signed.includes("RK_FIREBASE_GOOGLE_SERVICES_JSON_B64"));
+    assert.ok(signed.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64") && signed.includes("jarsigner") && signed.includes("RK_FIREBASE_GOOGLE_SERVICES_JSON_B64") && signed.includes("Verify packaged AAB native plugin registry"));
     assert.equal(release.nativePushClientImplemented, true);
     assert.equal(release.nativePushNotifications, false, "Provider credentials and Play-device delivery must be verified before claiming closed-app FCM operational");
     assert.equal(release.androidAppLinksClientImplemented, true);
