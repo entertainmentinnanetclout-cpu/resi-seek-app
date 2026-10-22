@@ -1,6 +1,6 @@
-# ResKonnect Android 1.1.5 (versionCode 8) — P9–P12 Release Candidate
+# ResKonnect Android 1.1.6 (versionCode 9) — P9–P12 Release Candidate
 
-Date: 2026-09-30  
+Date: 2026-10-22  
 Package: `org.reskonnect.app`  
 Compile / target SDK: 36  
 Minimum SDK: 24  
@@ -33,6 +33,8 @@ Automated Chromium/WebView-style profiles cover:
 - current Android 16 profile.
 
 Automated scenarios:
+- native first-run onboarding close/dismiss persistence, including short landscape viewport;
+- native isolation from website-only marketing consent;
 - portrait and landscape resize;
 - location denied/granted containment;
 - repeated 360 open/close/navigation;
@@ -64,12 +66,16 @@ Required gates:
 
 ## P12 — Final release candidate
 
-The final code candidate is **1.1.5 / versionCode 8**. Do not upload a later code revision under versionCode 8.
+The Play testing repair candidate is **1.1.6 / versionCode 9**. Do not upload a later code revision under versionCode 9.
+
+This candidate supersedes 1.1.5 / versionCode 8 after the internal-testing onboarding defect. The repaired candidate must prove that onboarding is always dismissible and does not return after a persisted close/skip action.
 
 ### Automated candidate acceptance
 - [ ] All PR checks green on the exact release-candidate head SHA.
 - [ ] Unsigned API-36 readiness AAB compiles from the exact release-candidate head.
 - [ ] AAB contains no unreviewed native ELF libraries.
+- [ ] Native onboarding closes in portrait and landscape and remains dismissed after reload/reopen.
+- [ ] Website Meta consent never appears in the Capacitor runtime.
 - [ ] Production web/PWA matrix passes.
 - [ ] P9 bundle/memory budget passes.
 - [ ] P10 Android compatibility matrix passes.
@@ -77,8 +83,8 @@ The final code candidate is **1.1.5 / versionCode 8**. Do not upload a later cod
 
 ### Protected signed artifact
 Run **Android Play Store Signed Release** with:
-- `version_code = 8`
-- `version_name = 1.1.5`
+- `version_code = 9`
+- `version_name = 1.1.6`
 
 The protected workflow must:
 - validate protected upload-key secrets;
@@ -107,6 +113,8 @@ For each device test:
 - fresh install;
 - signed-out launch;
 - login;
+- first-run guide close and skip;
+- relaunch after guide dismissal;
 - dashboard;
 - Find My Res;
 - residence details;
@@ -129,6 +137,6 @@ Before production promotion:
 - review Android Vitals for crashes and ANRs from the internal candidate;
 - review Play pre-launch report;
 - investigate renderer/OOM/GPU/WebView events using `mobile_runtime_events`;
-- do not promote if a repeatable crash, ANR, auth/session loss, or renderer-loop remains.
+- do not promote if a repeatable crash, ANR, auth/session loss, onboarding trap, or renderer-loop remains.
 
 Production promotion is a separate release action after these acceptance records are green.

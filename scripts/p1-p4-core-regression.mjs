@@ -221,13 +221,26 @@ try {
   assert.deepEqual(pageErrors,[]);
   console.log("PASS login access outage recovery and dashboard");
 
+  // Core failure/retry testing must not click through a legitimate first-run
+  // overlay. Prove the native guide's close action once, then keep that dismissal
+  // persisted while the remainder of this suite exercises the account surfaces.
+  const nativeGuide=page.getByRole("dialog",{name:"ResKonnect app guide"});
+  if (await nativeGuide.isVisible().catch(()=>false)) {
+    await nativeGuide.getByRole("button",{name:"Close app guide"}).click();
+    await nativeGuide.waitFor({state:"hidden",timeout:3000});
+    await page.getByRole("button",{name:"Resume native app guide"}).waitFor({state:"visible",timeout:3000});
+    console.log("PASS native first-run guide closes before P1-P4 recovery suite");
+  }
+
   await page.reload();
   await page.getByText("Good to see you, Core.").waitFor({timeout:15000});
+  assert.equal(await page.getByRole("dialog",{name:"ResKonnect app guide"}).count(),0,"closed guide reopened after reload");
   await page.close();
   page=await context.newPage(); observe(page);
   await page.goto(origin+"/dashboard");
   await page.getByText("Good to see you, Core.").waitFor({timeout:15000});
   assert.ok(await page.evaluate(key=>Boolean(localStorage.getItem(key)),storageKey));
+  assert.equal(await page.getByRole("dialog",{name:"ResKonnect app guide"}).count(),0,"closed guide reopened after native page recreation");
   console.log("PASS persisted session reload and close/reopen");
 
   // A transient access-context failure must fail closed with an immediate retry,
@@ -306,7 +319,6 @@ try {
   await page.getByText(opportunity.title,{exact:false}).first().waitFor({timeout:15000});
   console.log("PASS Opportunities failure/retry");
 
-
   // Remaining core student surfaces must also fail visibly and recover instead of
   // looking empty or staying busy forever.
   failure.messagesOnce=true;
@@ -322,6 +334,7 @@ try {
   await page.getByRole("button",{name:"Try again"}).click();
   await page.getByText("No Favorites Yet").waitFor({timeout:15000});
   console.log("PASS Favorites failure/retry");
+
   failure.wilOnce=true;
   await page.goto(origin+"/wil");
   await page.getByText("WIL data needs a connection refresh").waitFor({timeout:15000});

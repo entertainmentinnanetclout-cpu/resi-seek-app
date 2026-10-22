@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
-def versionCodeValue = (System.getenv("ANDROID_VERSION_CODE") ?: "8").toInteger()
-def versionNameValue = System.getenv("ANDROID_VERSION_NAME") ?: "1.1.5"
+def versionCodeValue = (System.getenv("ANDROID_VERSION_CODE") ?: "9").toInteger()
+def versionNameValue = System.getenv("ANDROID_VERSION_NAME") ?: "1.1.6"
 def keyStorePathValue = System.getenv("RK_ANDROID_KEYSTORE_PATH")
 def keyStorePasswordValue = System.getenv("RK_ANDROID_KEYSTORE_PASSWORD")
 def keyAliasValue = System.getenv("RK_ANDROID_KEY_ALIAS")
@@ -60,6 +60,7 @@ repositories {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.activity:activity:$androidxActivityVersion"
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"

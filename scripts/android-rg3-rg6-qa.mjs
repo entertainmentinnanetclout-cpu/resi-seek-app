@@ -12,7 +12,20 @@ const checks = [
   }],
   ["RG2 stateful first-run guide", () => {
     const tour = read("src/components/native/NativeGuidedOnboarding.tsx");
-    for (const term of ["rk_native_guide_v1_", "MutationObserver", "Skip guide", "Find My Res", "profileNeedsAttention", "my-applications"]) assert.ok(tour.includes(term), term);
+    for (const term of ["rk_native_guide_v1_", "MutationObserver", "Skip guide", "Close app guide", "Find My Res", "profileNeedsAttention", "my-applications", "100dvh", "orientationchange"]) assert.ok(tour.includes(term), term);
+    assert.ok(!tour.includes('button:has('), "native guide must not depend on relational :has selectors");
+  }],
+  ["RG2 Android 16 predictive-back onboarding escape", () => {
+    const activity = read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
+    assert.ok(activity.includes("OnBackPressedCallback") && activity.includes("getOnBackPressedDispatcher") && activity.includes("rk-native-guide-dismiss") && activity.includes("canGoBack"));
+    assert.ok(!activity.includes("public void onBackPressed()"), "targetSdk 36 must not depend on the unsupported Activity.onBackPressed override");
+  }],
+  ["RG2 API 36 edge-to-edge and safe insets", () => {
+    const activity = read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
+    const config = JSON.parse(read("capacitor.config.json"));
+    assert.ok(activity.includes("androidx.activity.EdgeToEdge") && activity.includes("EdgeToEdge.enable(this)"));
+    assert.equal(config.plugins?.SystemBars?.insetsHandling, "native");
+    assert.equal(config.plugins?.SystemBars?.initialViewportFitValueHint, "cover");
   }],
   ["RG3 Android permission and low-resource 3D fallback", () => {
     const location = read("src/lib/resmap/liveLocation.ts");
@@ -67,7 +80,7 @@ const checks = [
   ["RG6 version and protected signing parity", () => {
     const readiness = read(".github/workflows/android-playstore-readiness.yml");
     const signed = read(".github/workflows/android-playstore-release.yml");
-    assert.equal(release.versionName, "1.1.5"); assert.equal(release.versionCode, 8);
+    assert.equal(release.versionName, "1.1.6"); assert.equal(release.versionCode, 9);
     assert.ok(readiness.includes("@capacitor/local-notifications@8.0.0") && signed.includes("@capacitor/local-notifications@8.0.0"));
     assert.ok(signed.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64") && signed.includes("jarsigner"));
     assert.equal(release.nativePushNotifications, false, "Never represent FCM background delivery as working without provider configuration");

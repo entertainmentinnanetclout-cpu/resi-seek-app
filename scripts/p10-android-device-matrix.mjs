@@ -12,6 +12,7 @@ const user={id:"91000000-0000-4000-8000-000000000001",aud:"authenticated",role:"
 const token=[Buffer.from("{}").toString("base64url"),Buffer.from(JSON.stringify({sub:user.id,exp:Math.floor(Date.now()/1000)+3600})).toString("base64url"),"fixture"].join(".");
 const session={access_token:token,refresh_token:"fixture-refresh",token_type:"bearer",expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,user};
 const storageKey="sb-mefjzkhobkltlbmhusdh-auth-token";
+const guideStorageKey=`rk_native_guide_v1_${user.id}`;
 const profile={id:user.id,full_name:"Device Matrix Student",phone:"0820000000",student_number:"DEVICE001",campus:"Pretoria West (Main Campus)",course:"Marketing",year_of_study:"3",applicant_stage:"university_student"};
 const residence={id:"92000000-0000-4000-8000-000000000001",slug:"device-fixture-residence",name:"Device Fixture Residence",address:"Pretoria",campus:"Pretoria West (Main Campus)",price:3500,private_price:3500,available_spots:5,is_visible:true,latitude:-25.754,longitude:28.188,room_type:"single",images:[],image_url:null};
 const tour={tour:{id:"93000000-0000-4000-8000-000000000001",title:"Native Device Fixture 360",workspace_type:"standalone"},workspace:{type:"standalone",label:"Native Device Fixture 360"},residence:null,scenes:[{id:"94000000-0000-4000-8000-000000000001",name:"Room",area_type:"room",is_start:true,panorama_url:"data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2216%22%3E%3Crect width=%2232%22 height=%2216%22 fill=%22%23111%22/%3E%3C/svg%3E",quality_score:90}],hotspots:[],connections:[]};
@@ -36,6 +37,7 @@ async function api(route){
   if(path.includes("/rest/v1/rpc/record_virtual_tour_event"))return json(route,true);
   if(path.includes("/rest/v1/residences"))return json(route,[residence]);
   if(path.includes("/rest/v1/residence_room_types"))return json(route,[]);
+  if(path.includes("/rest/v1/profiles"))return json(route,route.request().headers().accept?.includes("object")?profile:[profile]);
   if(path.includes("/rest/v1/resmap_campuses"))return json(route,[{id:"c1",campus_key:"pretoria-west",name:"Pretoria West (Main Campus)",latitude:-25.754,longitude:28.188,is_active:true}]);
   if(path.includes("/rest/v1/resmap_map_config"))return json(route,{google_maps_enabled:false,raster_primary_url:"https://tile.openstreetmap.org/{z}/{x}/{y}.png",raster_fallback_url:"https://tile.openstreetmap.org/{z}/{x}/{y}.png"});
   if(path.includes("/rest/v1/"))return json(route,path.includes("/rpc/")?{}:[]);
@@ -48,21 +50,26 @@ try{
   for(const p of profiles){
     const context=await browser.newContext({viewport:p.viewport,isMobile:true,hasTouch:true,userAgent:p.ua,locale:"en-ZA",serviceWorkers:"block",geolocation:{latitude:-25.754,longitude:28.188}});
     await context.routeWebSocket("**/*",socket=>socket.close());
-    await context.addInitScript(({memory,cores,key,value,safe})=>{
+    await context.addInitScript(({memory,cores,key,value,safe,guideKey})=>{
       window.Capacitor={isNativePlatform:()=>true};
       try{Object.defineProperty(navigator,"deviceMemory",{configurable:true,get:()=>memory});}catch{}
       try{Object.defineProperty(navigator,"hardwareConcurrency",{configurable:true,get:()=>cores});}catch{}
       localStorage.setItem(key,JSON.stringify(value));
+      // Seed the first-run state once. Later navigations must preserve the state
+      // written by the real close/skip controls instead of reopening the guide.
+      if(!localStorage.getItem(guideKey))localStorage.setItem(guideKey,JSON.stringify({step:0,paused:false,complete:false}));
       if(safe)localStorage.setItem("rk_native_safe_graphics_v1","1");
       else localStorage.removeItem("rk_native_safe_graphics_v1");
-    },{memory:p.memory,cores:p.cores,key:storageKey,value:session,safe:p.safe});
+    },{memory:p.memory,cores:p.cores,key:storageKey,value:session,safe:p.safe,guideKey:guideStorageKey});
     await context.route("**/*",async route=>{
       const url=new URL(route.request().url());
       if(url.origin===origin)return route.continue();
       if(url.hostname.endsWith(".supabase.co"))return api(route);
       if(url.hostname.includes("tile.openstreetmap.org"))return route.fulfill({status:204,body:""});
       if(["image","font","media"].includes(route.request().resourceType()))return route.fulfill({status:204,body:""});
-      if(route.request().resourceType()==="script")return route.fulfill({status:200,contentType:"application/javascript",body:"export {};"});
+      // A plain no-op is valid in both classic and module script contexts. The old
+      // `export {};` stub crashed classic third-party scripts on every P10 profile.
+      if(route.request().resourceType()==="script")return route.fulfill({status:200,contentType:"application/javascript",body:"/* rk external script stub */"});
       if(route.request().resourceType()==="stylesheet")return route.fulfill({status:200,contentType:"text/css",body:""});
       return route.fulfill({status:204,body:""});
     });
@@ -71,7 +78,20 @@ try{
     try{
       await page.goto(origin+"/dashboard",{waitUntil:"domcontentloaded"});
       await page.getByText("Good to see you, Device.").waitFor({timeout:15000});
-      assert.equal(errors.length,0,`${p.name}: dashboard errors ${errors.join("; ")}`);
+      assert.equal(await page.getByRole("dialog",{name:"Marketing privacy preferences"}).count(),0,`${p.name}: web marketing consent leaked into native app`);
+
+      const guide=page.getByRole("dialog",{name:"ResKonnect app guide"});
+      await guide.waitFor({state:"visible",timeout:5000});
+      // Prove the close action is reachable even in short landscape viewports.
+      await page.setViewportSize({width:p.viewport.height,height:p.viewport.width});
+      const closeGuide=guide.getByRole("button",{name:"Close app guide"});
+      await closeGuide.scrollIntoViewIfNeeded();
+      await closeGuide.click();
+      await guide.waitFor({state:"hidden",timeout:3000});
+      await page.getByRole("button",{name:"Resume native app guide"}).waitFor({state:"visible",timeout:3000});
+      await page.setViewportSize(p.viewport);
+      assert.equal(errors.length,0,`${p.name}: dashboard/onboarding errors ${errors.join("; ")}`);
+      console.log("PASS",p.name,"native onboarding closes in landscape and stays resumable");
 
       await page.setViewportSize({width:p.viewport.height,height:p.viewport.width});
       await page.waitForTimeout(150);
@@ -99,6 +119,7 @@ try{
         assert.equal(await page.getByText("Something went wrong",{exact:true}).count(),0,`${p.name}: 360 iteration ${i+1}`);
         await page.goto(origin+"/dashboard",{waitUntil:"domcontentloaded"});
         await page.getByText("Good to see you, Device.").waitFor({timeout:10000});
+        assert.equal(await page.getByRole("dialog",{name:"ResKonnect app guide"}).count(),0,`${p.name}: paused guide unexpectedly reopened`);
       }
       if(p.safe) await page.getByText("Good to see you, Device.").waitFor();
       console.log("PASS",p.name,"repeated 360/navigation");
@@ -119,8 +140,9 @@ try{
       await page.goto(origin+"/dashboard",{waitUntil:"domcontentloaded"});
       await page.getByText("Good to see you, Device.").waitFor({timeout:15000});
       assert.ok(await page.evaluate(key=>Boolean(localStorage.getItem(key)),storageKey),`${p.name}: session missing after reopen`);
+      assert.equal(await page.getByRole("dialog",{name:"ResKonnect app guide"}).count(),0,`${p.name}: dismissed guide returned after reopen`);
       assert.equal(errors.length,0,`${p.name}: reopen errors ${errors.join("; ")}`);
-      console.log("PASS",p.name,"close/reopen session");
+      console.log("PASS",p.name,"close/reopen session and onboarding persistence");
     }catch(error){
       failures.push({profile:p.name,message:error instanceof Error?error.stack||error.message:String(error)});
       console.error("FAIL",p.name,failures.at(-1).message);

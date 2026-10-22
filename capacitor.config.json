@@ -3,5 +3,12 @@
   "appName": "ResKonnect",
   "webDir": "dist",
   "server": { "androidScheme": "https" },
-  "android": { "allowMixedContent": false }
+  "android": { "allowMixedContent": false },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "native",
+      "initialViewportFitValueHint": "cover",
+      "hidden": false
+    }
+  }
 }

@@ -157,7 +157,7 @@ try {
         if (url.hostname.endsWith(".supabase.co")) return fulfillApi(route);
         if (url.hostname.includes("tile.openstreetmap.org") || url.hostname.includes("openstreetmap.fr")) return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
         if (["image","font","media"].includes(route.request().resourceType())) return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
-        if (route.request().resourceType()==="script") return route.fulfill({status:200,contentType:"application/javascript",headers:{"access-control-allow-origin":"*"},body:"export {};"});
+        if (route.request().resourceType()==="script") return route.fulfill({status:200,contentType:"application/javascript",headers:{"access-control-allow-origin":"*"},body:"/* rk external script stub */"});
         if (route.request().resourceType()==="stylesheet") return route.fulfill({status:200,contentType:"text/css",headers:{"access-control-allow-origin":"*"},body:""});
         return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
       });
@@ -168,6 +168,11 @@ try {
 
       // Real form login on each target profile.
       await page.goto(origin+"/auth", {waitUntil:"domcontentloaded"});
+      const marketingPreferences=page.getByRole("dialog",{name:"Marketing privacy preferences"});
+      if (await marketingPreferences.isVisible().catch(()=>false)) {
+        await marketingPreferences.getByRole("button",{name:"Essential only",exact:true}).click();
+        await marketingPreferences.waitFor({state:"hidden"});
+      }
       await page.getByLabel("Email address *").fill(user.email);
       await page.getByLabel("Password *", {exact:true}).fill("FixturePassword123");
       await page.getByRole("button",{name:"Sign In",exact:true}).click();
@@ -268,7 +273,7 @@ try {
         await pwaContext.route("**/*", async route => {
           const url=new URL(route.request().url());
           if(url.origin===origin) return route.continue();
-          if (route.request().resourceType()==="script") return route.fulfill({status:200,contentType:"application/javascript",headers:{"access-control-allow-origin":"*"},body:"export {};"});
+          if (route.request().resourceType()==="script") return route.fulfill({status:200,contentType:"application/javascript",headers:{"access-control-allow-origin":"*"},body:"/* rk external script stub */"});
           if (route.request().resourceType()==="stylesheet") return route.fulfill({status:200,contentType:"text/css",headers:{"access-control-allow-origin":"*"},body:""});
           return route.fulfill({status:204,headers:{"access-control-allow-origin":"*"},body:""});
         });

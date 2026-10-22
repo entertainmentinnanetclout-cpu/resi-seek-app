@@ -28,6 +28,8 @@ const privacy=read("src/pages/Privacy.tsx");
 const auth=read("src/pages/Auth.tsx");
 const workflow=read(".github/workflows/android-playstore-readiness.yml");
 const signedWorkflow=read(".github/workflows/android-playstore-release.yml");
+const nativeGuide=read("src/components/native/NativeGuidedOnboarding.tsx");
+const meta=read("src/components/MetaPixelTracker.tsx");
 
 if(config.appId==="org.reskonnect.app" && release.packageId===config.appId && gradle.includes('applicationId "org.reskonnect.app"')) pass("Package identity","org.reskonnect.app consistent across project files.");
 else block("Package identity","Android package identity mismatch.");
@@ -38,8 +40,8 @@ for(const [label,min] of [["minSdk",24],["compileSdk",36],["targetSdk",36]]) {
   const value=sdk(label+"Version");
   if(value>=min) pass(label,String(value)); else block(label,`${value||"missing"}; minimum ${min}.`);
 }
-if(release.versionName==="1.1.5"&&release.versionCode===8) pass("Release identity","1.1.5 / versionCode 8 (new final P9-P12 candidate).");
-else block("Release identity","Expected release 1.1.5 / versionCode 8. Do not reuse code 7 after P9-P12 changes.");
+if(release.versionName==="1.1.6"&&release.versionCode===9) pass("Release identity","1.1.6 / versionCode 9 (Play onboarding/stability repair candidate).");
+else block("Release identity","Expected release 1.1.6 / versionCode 9. Do not reuse versionCode 8 after the Play testing repair.");
 if(!manifest) block("AndroidManifest","Missing.");
 else {
   for(const name of ["INTERNET","CAMERA","ACCESS_COARSE_LOCATION","ACCESS_FINE_LOCATION"]) {
@@ -77,6 +79,10 @@ if(mainActivity.includes("onRenderProcessGone")&&mainActivity.includes("view.des
 else block("WebView renderer recovery","MainActivity must destroy the dead WebView, recreate the activity and return true.");
 if(nativeMap.includes("ResMapExperienceStable")&&nativeMap.includes("allow3d={false}")&&nativeMap.includes("rk_native_safe_graphics_v1")&&stableMap.includes("allow3d")) pass("Native graphics safety","Android defaults to raster ResMap and gates GPU 3D behind device capability/safe mode.");
 else block("Native graphics safety","Native map can still mount an unsafe GPU-heavy path.");
+if(nativeGuide.includes('aria-label="Close app guide"')&&nativeGuide.includes("max-h-[calc(100dvh")&&nativeGuide.includes("paused: true")) pass("Native onboarding escape","First-run guide has an explicit reachable close action and persisted pause state.");
+else block("Native onboarding escape","Native onboarding can trap a user or lacks a persisted dismissal path.");
+if(meta.includes("if (native || !preferencesOpen) return null")&&meta.includes("if (native) return")) pass("Native marketing isolation","Website Meta consent/pixel cannot block the installed app.");
+else block("Native marketing isolation","Website marketing consent can leak into the native first-run flow.");
 if(launcher.includes("@drawable/app_icon_foreground_safe")) pass("Adaptive icon safe zone","Launcher uses the inset adaptive foreground.");
 else block("Adaptive icon safe zone","Launcher foreground is not using the safe inset.");
 if(workflow.includes("bundleRelease")&&workflow.includes("android-36")&&workflow.includes("--strict")) pass("AAB readiness","Strict audit and API-36 AAB compile enabled.");

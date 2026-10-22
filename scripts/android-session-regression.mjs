@@ -120,18 +120,12 @@ try {
   await page.goto(origin);
   await page.waitForURL("**/auth");
   await page.getByLabel("Account portals").waitFor();
-  console.log("PASS native signed-out entry and account portal choices");
-
-  const marketingPreferences = page.getByRole("dialog", {
-    name: "Marketing privacy preferences",
-  });
-  if (await marketingPreferences.isVisible().catch(() => false)) {
-    await marketingPreferences
-      .getByRole("button", { name: "Essential only", exact: true })
-      .click();
-    await marketingPreferences.waitFor({ state: "hidden" });
-    console.log("PASS marketing consent does not block authentication flow");
-  }
+  assert.equal(
+    await page.getByRole("dialog", { name: "Marketing privacy preferences" }).count(),
+    0,
+    "website marketing consent must never mount inside Capacitor",
+  );
+  console.log("PASS native signed-out entry has account portals and no web marketing-consent blocker");
 
   await page.getByLabel("Email address *").fill(user.email);
   await page.getByLabel("Password *", { exact: true }).fill("FixturePassword123");
@@ -149,12 +143,13 @@ try {
     "native safe home must not replace full dashboard",
   );
 
-  const tour = page.getByRole("dialog", { name: "ResKonnect app guide" });
-  if (await tour.isVisible().catch(() => false)) {
-    await tour.getByRole("button", { name: "Skip guide" }).click();
-  }
+  let tour = page.getByRole("dialog", { name: "ResKonnect app guide" });
+  await tour.waitFor({ state: "visible", timeout: 5000 });
+  await tour.getByRole("button", { name: "Close app guide" }).click();
+  await tour.waitFor({ state: "hidden", timeout: 3000 });
+  await page.getByRole("button", { name: "Resume native app guide" }).waitFor({ state: "visible" });
   assert.equal(await page.getByText("Something went wrong", { exact: true }).count(), 0);
-  console.log("PASS direct full native dashboard, no duplicate header, optional onboarding");
+  console.log("PASS first-run native onboarding has a working close action");
 
   const callsBeforeResume = accessCalls;
   await page.evaluate(() => window.dispatchEvent(new Event("online")));
@@ -167,6 +162,32 @@ try {
 
   await page.reload();
   await page.getByText("Good to see you, Test.").waitFor();
+  assert.equal(
+    await page.getByRole("dialog", { name: "ResKonnect app guide" }).count(),
+    0,
+    "closed guide must remain paused after reload",
+  );
+  await page.getByRole("button", { name: "Resume native app guide" }).click();
+  tour = page.getByRole("dialog", { name: "ResKonnect app guide" });
+  await tour.waitFor({ state: "visible" });
+  await tour.getByRole("button", { name: "Find accommodation", exact: true }).click();
+  await page.waitForURL("**/findmyres");
+  tour = page.getByRole("dialog", { name: "ResKonnect app guide" });
+  await tour.waitFor({ state: "visible" });
+  await tour.getByText("Step 3 of 4", { exact: true }).waitFor();
+  console.log("PASS onboarding progress persists synchronously across route remount");
+  await tour.getByRole("button", { name: "Skip guide" }).click();
+  await tour.waitFor({ state: "hidden" });
+  await page.goto(`${origin}/dashboard`);
+  await page.getByText("Good to see you, Test.").waitFor();
+  await page.reload();
+  await page.getByText("Good to see you, Test.").waitFor();
+  assert.equal(
+    await page.getByRole("dialog", { name: "ResKonnect app guide" }).count(),
+    0,
+    "skipped guide must not auto-open after reload",
+  );
+  console.log("PASS onboarding close/route-progress/skip state persists through reload");
   await page.close();
 
   page = await context.newPage();
@@ -174,6 +195,11 @@ try {
   await page.goto(origin);
   await page.waitForURL("**/dashboard");
   await page.getByText("Good to see you, Test.").waitFor();
+  assert.equal(
+    await page.getByRole("dialog", { name: "ResKonnect app guide" }).count(),
+    0,
+    "onboarding must stay dismissed after native close/reopen",
+  );
   console.log("PASS login, reload, close/reopen and unchanged-identity resume");
 
   for (const path of [
@@ -235,7 +261,12 @@ try {
   assert.equal(await page.evaluate((key) => localStorage.getItem(key), storageKey), null);
   await page.reload();
   await page.getByRole("button", { name: "Sign In", exact: true }).waitFor();
-  console.log("PASS sidebar logout removes persisted session");
+  assert.equal(
+    await page.getByRole("dialog", { name: "Marketing privacy preferences" }).count(),
+    0,
+    "native marketing consent must remain absent after logout/reload",
+  );
+  console.log("PASS sidebar logout removes persisted session without introducing native consent blockers");
 
   for (const [staffRole, path] of [
     ["operations_lead", "/portals"],

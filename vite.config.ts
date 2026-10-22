@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
-import path from "path";
+import { fileURLToPath } from "node:url";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ mode }) => {
@@ -155,7 +155,7 @@ export default defineConfig(({ mode }) => {
       alias: [
         {
           find: "@",
-          replacement: path.resolve(__dirname, "./src"),
+          replacement: fileURLToPath(new URL("./src", import.meta.url)),
         },
       ],
     },

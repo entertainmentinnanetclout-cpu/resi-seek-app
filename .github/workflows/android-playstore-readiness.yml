@@ -1,5 +1,8 @@
 name: Android Play Store Readiness
 
+# Release-candidate gate: ResKonnect Android 1.1.6 / versionCode 9.
+# Keep this workflow tied to every native/runtime regression change so the exact
+# PR head must reach API-36 AAB compilation before merge.
 on:
   workflow_dispatch:
   push:
@@ -17,6 +20,8 @@ on:
       - "src/pages/Updates.tsx"
       - "src/pages/NotificationDetail.tsx"
       - "src/components/native/**"
+      - "src/components/onboarding/**"
+      - "src/components/MetaPixelTracker.tsx"
       - "src/hooks/useRealtimeNotifications.ts"
       - "src/lib/nativeNotifications.ts"
       - "src/lib/resmap/**"
@@ -78,26 +83,26 @@ jobs:
     timeout-minutes: 40
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
       - name: Setup Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
         with:
-          cmdline-tools-version: "14742923"
+          cmdline-tools-version: "15859902"
           packages: ""
       - name: Install Android 16 SDK
         run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
       - name: Setup Gradle 8.14.3
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "8.14.3"
       - name: Install locked web dependencies
@@ -125,7 +130,25 @@ jobs:
       - name: Verify P1-P4 core journeys and failure recovery
         run: node scripts/p1-p4-core-regression.mjs
       - name: P10 Android OEM and device compatibility
-        run: node scripts/p10-android-device-matrix.mjs
+        id: p10
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/p10-android-device-matrix.mjs 2>&1 | tee p10-android-device-matrix.log
+      - name: Upload P10 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: p10-android-device-matrix-diagnostics
+          path: p10-android-device-matrix.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Enforce P10 Android device gate
+        if: steps.p10.outcome != 'success'
+        run: |
+          cat p10-android-device-matrix.log
+          exit 1
       - name: Install pinned Capacitor, geolocation and local notifications
         run: npm install --no-save --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0
       - name: Build production web bundle
@@ -138,8 +161,8 @@ jobs:
         run: npx cap sync android
       - name: Compile API 36 release AAB
         env:
-          ANDROID_VERSION_CODE: "8"
-          ANDROID_VERSION_NAME: "1.1.5"
+          ANDROID_VERSION_CODE: "9"
+          ANDROID_VERSION_NAME: "1.1.6"
         run: gradle -p android bundleRelease --stacktrace
       - name: Verify release artifact exists
         run: test -s android/app/build/outputs/bundle/release/app-release.aab
@@ -155,7 +178,7 @@ jobs:
           fi
           echo "No packaged native ELF libraries; 16 KB native ELF alignment is not applicable to this bundle."
       - name: Upload unsigned readiness AAB
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reskonnect-android-readiness-aab
           path: android/app/build/outputs/bundle/release/app-release.aab

@@ -1,6 +1,6 @@
 import React from "react";
 import { X } from "lucide-react";
-import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import GuidedOnboardingFlow from "./GuidedOnboardingFlow";
 import { BRAND } from "@/constants/brand";
@@ -44,15 +44,16 @@ export const GuidedOnboardingModal: React.FC<GuidedOnboardingModalProps> = ({
             style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
           >
             <img src={BRAND.logos.full} alt={BRAND.name} className="h-10 w-auto object-contain" />
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Close"
-              onClick={() => onOpenChange?.(false)}
-              className="text-white/70 hover:bg-white/10 hover:text-white"
-            >
-              <X className="h-5 w-5" />
-            </Button>
+            <DialogClose asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Close onboarding"
+                className="min-h-11 min-w-11 text-white/70 hover:bg-white/10 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </DialogClose>
           </div>
 
           <div className="flex-1 px-2 pb-10 sm:px-6">

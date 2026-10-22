@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { isNativeApp } from "@/lib/accountRouting";
 import {
   getMarketingConsent,
   initMetaPixel,
@@ -14,11 +15,15 @@ import { ShieldCheck, X } from "lucide-react";
 
 const MetaPixelTracker = () => {
   const location = useLocation();
-  const [consent, setConsent] = useState<MarketingConsent>(() => getMarketingConsent());
-  const [preferencesOpen, setPreferencesOpen] = useState(() => getMarketingConsent() === null);
+  const native = isNativeApp();
+  const [consent, setConsent] = useState<MarketingConsent>(() => native ? "denied" : getMarketingConsent());
+  const [preferencesOpen, setPreferencesOpen] = useState(() => !native && getMarketingConsent() === null);
   const lastPage = useRef("");
 
   useEffect(() => {
+    // Meta Pixel and its website consent surface are intentionally web-only.
+    // They must never block the installed Capacitor app's first-run/auth flow.
+    if (native) return;
     const onConsent = (event: Event) => {
       const next = (event as CustomEvent<MarketingConsent>).detail ?? getMarketingConsent();
       setConsent(next);
@@ -32,10 +37,10 @@ const MetaPixelTracker = () => {
       window.removeEventListener(MARKETING_CONSENT_EVENT, onConsent);
       window.removeEventListener(MARKETING_PREFERENCES_EVENT, onOpen);
     };
-  }, []);
+  }, [native]);
 
   useEffect(() => {
-    if (consent !== "granted") return;
+    if (native || consent !== "granted") return;
     initMetaPixel();
     const pageKey = `${location.pathname}${location.search}`;
     if (lastPage.current === pageKey) return;
@@ -49,9 +54,9 @@ const MetaPixelTracker = () => {
     } else if (location.pathname === "/partners/landlords" || location.pathname === "/accreditation-readiness") {
       trackMetaEvent("ViewContent", { content_category: "landlord_services", content_type: "service" });
     }
-  }, [consent, location.pathname, location.search]);
+  }, [consent, location.pathname, location.search, native]);
 
-  if (!preferencesOpen) return null;
+  if (native || !preferencesOpen) return null;
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-[2000] p-3 sm:p-5" role="dialog" aria-label="Marketing privacy preferences">

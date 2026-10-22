@@ -37,8 +37,8 @@ export async function recordMobileRuntime(
     await (supabase as any).from("mobile_runtime_events").insert({
       user_id: session?.user?.id || null,
       platform: runtimePlatform(),
-      release: isNativeApp() ? "1.1.5" : "web",
-      version_code: isNativeApp() ? 8 : null,
+      release: isNativeApp() ? "1.1.6" : "web",
+      version_code: isNativeApp() ? 9 : null,
       event_type: eventType,
       stage: stage.slice(0, 80),
       message: null,

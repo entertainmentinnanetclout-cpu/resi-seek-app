@@ -156,10 +156,10 @@ async function mockNetwork(context) {
     }
 
     // Optional third-party scripts/styles are neutralized rather than networked.
-    // Supplying valid MIME prevents WebKit from surfacing a module-load exception
-    // that is unrelated to ResKonnect route rendering.
+    // The script stub must be valid in both classic and module contexts. Using
+    // `export {};` breaks classic script execution in Chromium and WebKit.
     if (req.resourceType() === "script") {
-      return route.fulfill({ status: 200, contentType: "application/javascript", headers: { "access-control-allow-origin": "*" }, body: "export {};" });
+      return route.fulfill({ status: 200, contentType: "application/javascript", headers: { "access-control-allow-origin": "*" }, body: "/* rk external script stub */" });
     }
     if (req.resourceType() === "stylesheet") {
       return route.fulfill({ status: 200, contentType: "text/css", headers: { "access-control-allow-origin": "*" }, body: "" });

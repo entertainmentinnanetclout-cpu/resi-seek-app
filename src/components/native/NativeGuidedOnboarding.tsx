@@ -36,14 +36,22 @@ export default function NativeGuidedOnboarding() {
   useEffect(() => {
     if (!user || !isStudent) return;
     const prior = readSaved(key);
-    setSaved(prior ?? { step: 0, paused: pathname !== "/dashboard", complete: false });
+    setSaved(prior ?? { step: 0, paused: window.location.pathname !== "/dashboard", complete: false });
     setReady(true);
   }, [key, isStudent, user?.id]);
   useEffect(() => { if (ready && key) writeSaved(key, saved); }, [key, ready, saved]);
+
+  const commitSaved = useCallback((next: Saved) => {
+    // A guide route change unmounts this component. Persist synchronously before
+    // calling navigate so progress cannot roll back on a slower Android WebView.
+    if (key) writeSaved(key, next);
+    setSaved(next);
+  }, [key]);
+
   useEffect(() => {
     if (!ready || saved.paused || saved.complete) return;
-    // If the existing mandatory profile form is open, it has priority. Never put
-    // an onboarding overlay above another modal or interfere with typing/saving.
+    // If an existing mandatory form/dialog is open it has priority. Never put
+    // the guide above another modal or interfere with typing/saving.
     const update = () => setBlocked(Boolean(document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"], [data-rk-guide-suppress="true"]')));
     update();
     const observer = new MutationObserver(update);
@@ -51,51 +59,94 @@ export default function NativeGuidedOnboarding() {
     return () => observer.disconnect();
   }, [ready, saved.paused, saved.complete, pathname]);
 
+  const dismiss = useCallback(() => {
+    // Release the UI immediately even when WebView storage is unavailable.
+    commitSaved({ ...saved, paused: true });
+  }, [commitSaved, saved]);
+  const skip = useCallback(() => {
+    commitSaved({ step: STEP_COUNT - 1, paused: false, complete: true });
+  }, [commitSaved]);
+
   const active = ready && Boolean(user && isStudent) && !saved.paused && !saved.complete && !blocked;
+
+  useEffect(() => {
+    if (!active) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      dismiss();
+    };
+    const onNativeDismiss = () => dismiss();
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("rk-native-guide-dismiss", onNativeDismiss);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("rk-native-guide-dismiss", onNativeDismiss);
+    };
+  }, [active, dismiss]);
+
   useEffect(() => {
     if (!active) return;
     const selectTarget = () => {
-      const selector = saved.step === 0
-        ? 'button[aria-label="Open navigation"], aside nav, header button:has([data-slot="avatar"]), main'
-        : saved.step === 1 ? 'main form, main'
-        : saved.step === 2 ? 'main input[type="search"], main input[placeholder], main'
-        : 'main';
-      const node = document.querySelector<HTMLElement>(selector);
+      // Avoid relational selectors that older Android System WebView versions
+      // may reject. An unsupported selector must never crash onboarding.
+      const selectors = saved.step === 0
+        ? ['button[aria-label="Open navigation"]', "aside nav", "header button", "main"]
+        : saved.step === 1 ? ["main form", "main"]
+        : saved.step === 2 ? ['main input[type="search"]', "main input[placeholder]", "main"]
+        : ["main"];
+      let node: HTMLElement | null = null;
+      for (const selector of selectors) {
+        try {
+          node = document.querySelector<HTMLElement>(selector);
+          if (node) break;
+        } catch { /* unsupported selector must not break the guide */ }
+      }
       if (!node) { setRect(null); return; }
       const bounds = node.getBoundingClientRect();
       setRect(bounds.width > 0 && bounds.height > 0 ? bounds : null);
     };
     selectTarget();
     window.addEventListener("resize", selectTarget);
+    window.addEventListener("orientationchange", selectTarget);
     window.addEventListener("scroll", selectTarget, true);
     const interval = window.setInterval(selectTarget, 650);
-    return () => { window.removeEventListener("resize", selectTarget); window.removeEventListener("scroll", selectTarget, true); window.clearInterval(interval); };
+    return () => {
+      window.removeEventListener("resize", selectTarget);
+      window.removeEventListener("orientationchange", selectTarget);
+      window.removeEventListener("scroll", selectTarget, true);
+      window.clearInterval(interval);
+    };
   }, [active, pathname, saved.step]);
 
   const next = useCallback(() => {
     if (saved.step === 0) {
       if (!loading && profileNeedsAttention(profile)) {
-        setSaved(previous => ({ ...previous, step: 1 }));
+        const nextState = { ...saved, step: 1 };
+        commitSaved(nextState);
         navigate("/profile");
       } else {
-        setSaved(previous => ({ ...previous, step: 2 }));
+        const nextState = { ...saved, step: 2 };
+        commitSaved(nextState);
         navigate("/findmyres");
       }
     } else if (saved.step === 1) {
-      setSaved(previous => ({ ...previous, step: 2 }));
+      const nextState = { ...saved, step: 2 };
+      commitSaved(nextState);
       navigate("/findmyres");
     } else if (saved.step === 2) {
-      setSaved(previous => ({ ...previous, step: 3 }));
+      const nextState = { ...saved, step: 3 };
+      commitSaved(nextState);
       navigate("/my-applications");
     } else {
-      setSaved({ step: STEP_COUNT - 1, paused: false, complete: true });
+      commitSaved({ step: STEP_COUNT - 1, paused: false, complete: true });
     }
-  }, [saved.step, loading, profile, navigate]);
+  }, [saved, loading, profile, navigate, commitSaved]);
   if (!user || !isStudent || !ready) return null;
 
   if (!active) {
     if (blocked || (saved.step === 0 && pathname !== "/dashboard")) return null;
-    return pathname === "/dashboard" ? <button type="button" onClick={() => setSaved({ step: 0, paused: false, complete: false })} className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-3 z-[110] flex min-h-10 items-center gap-2 rounded-full border bg-card/95 px-3 text-xs font-bold text-foreground shadow-lg backdrop-blur" aria-label="Resume native app guide"><Compass className="h-4 w-4 text-primary" />App guide</button> : null;
+    return pathname === "/dashboard" ? <button type="button" onClick={() => commitSaved({ step: saved.complete ? 0 : saved.step, paused: false, complete: false })} className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-3 z-[110] flex min-h-11 items-center gap-2 rounded-full border bg-card/95 px-3 text-xs font-bold text-foreground shadow-lg backdrop-blur" aria-label="Resume native app guide"><Compass className="h-4 w-4 text-primary" />App guide</button> : null;
   }
 
   const steps = [
@@ -112,18 +163,18 @@ export default function NativeGuidedOnboarding() {
   const right = rect ? Math.min(vw, rect.right + padding) : vw * 0.9;
   const bottom = rect ? Math.min(vh, rect.bottom + padding) : vh * 0.55;
   const shade = "rgba(4,13,33,0.77)";
-  const panel = (style: React.CSSProperties) => <div aria-hidden="true" className="fixed z-[2000]" style={{ background: shade, ...style }} />;
+  const panel = (style: React.CSSProperties) => <div aria-hidden="true" className="pointer-events-none fixed z-[2000]" style={{ background: shade, ...style }} />;
 
-  return <div role="dialog" aria-modal="false" aria-label="ResKonnect app guide" className="pointer-events-none fixed inset-0 z-[2000]">
+  return <div role="dialog" aria-modal="true" aria-label="ResKonnect app guide" className="fixed inset-0 z-[2000] overflow-hidden">
     {panel({ left: 0, top: 0, right: 0, height: top })}
     {panel({ left: 0, top, width: left, height: Math.max(0, bottom - top) })}
     {panel({ left: right, right: 0, top, height: Math.max(0, bottom - top) })}
     {panel({ left: 0, right: 0, top: bottom, bottom: 0 })}
-    <div className="fixed z-[2001] rounded-2xl border-2 border-cyan-300 shadow-[0_0_0_5px_rgba(34,211,238,.12)]" style={{ pointerEvents: "none", top, left, width: Math.max(0, right - left), height: Math.max(0, bottom - top) }} />
-    <section className="pointer-events-auto fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-[2002] w-[min(94vw,390px)] -translate-x-1/2 rounded-[24px] border border-primary/20 bg-card p-5 text-foreground shadow-2xl" aria-live="polite">
-      <div className="mb-3 flex items-center justify-between"><span className="text-xs font-black uppercase tracking-widest text-primary">Step {saved.step + 1} of {STEP_COUNT}</span><button type="button" onClick={() => setSaved(previous => ({ ...previous, paused: true }))} className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted" aria-label="Pause the guide"><X className="h-4 w-4" /></button></div>
+    <div aria-hidden="true" className="pointer-events-none fixed z-[2001] rounded-2xl border-2 border-cyan-300 shadow-[0_0_0_5px_rgba(34,211,238,.12)]" style={{ top, left, width: Math.max(0, right - left), height: Math.max(0, bottom - top) }} />
+    <section className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 z-[2002] max-h-[calc(100dvh-1.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-[min(94vw,390px)] -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[24px] border border-primary/20 bg-card p-5 text-foreground shadow-2xl" aria-live="polite">
+      <div className="mb-3 flex items-center justify-between gap-3"><span className="text-xs font-black uppercase tracking-widest text-primary">Step {saved.step + 1} of {STEP_COUNT}</span><button type="button" onClick={dismiss} className="grid min-h-11 min-w-11 place-items-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="Close app guide" title="Close guide"><X className="h-5 w-5" /></button></div>
       <h2 className="text-lg font-black">{current.title}</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{current.text}</p>
-      <div className="mt-5 flex items-center justify-between gap-3"><button type="button" onClick={() => setSaved({ step: STEP_COUNT - 1, paused: false, complete: true })} className="min-h-10 px-2 text-xs font-bold text-muted-foreground">Skip guide</button><button type="button" onClick={next} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground">{current.cta}<ArrowRight className="h-4 w-4" /></button></div>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><button type="button" onClick={skip} className="min-h-11 rounded-full px-3 text-xs font-bold text-muted-foreground hover:bg-muted">Skip guide</button><button type="button" onClick={next} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground">{current.cta}<ArrowRight className="h-4 w-4" /></button></div>
     </section>
   </div>;
 }
