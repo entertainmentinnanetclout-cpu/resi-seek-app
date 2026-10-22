@@ -130,7 +130,25 @@ jobs:
       - name: Verify P1-P4 core journeys and failure recovery
         run: node scripts/p1-p4-core-regression.mjs
       - name: P10 Android OEM and device compatibility
-        run: node scripts/p10-android-device-matrix.mjs
+        id: p10
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/p10-android-device-matrix.mjs 2>&1 | tee p10-android-device-matrix.log
+      - name: Upload P10 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: p10-android-device-matrix-diagnostics
+          path: p10-android-device-matrix.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Enforce P10 Android device gate
+        if: steps.p10.outcome != 'success'
+        run: |
+          cat p10-android-device-matrix.log
+          exit 1
       - name: Install pinned Capacitor, geolocation and local notifications
         run: npm install --no-save --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0
       - name: Build production web bundle
