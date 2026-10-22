@@ -62,7 +62,9 @@ try{
       if(url.hostname.endsWith(".supabase.co"))return api(route);
       if(url.hostname.includes("tile.openstreetmap.org"))return route.fulfill({status:204,body:""});
       if(["image","font","media"].includes(route.request().resourceType()))return route.fulfill({status:204,body:""});
-      if(route.request().resourceType()==="script")return route.fulfill({status:200,contentType:"application/javascript",body:"export {};"});
+      // A plain no-op is valid in both classic and module script contexts. The old
+      // `export {};` stub crashed classic third-party scripts on every P10 profile.
+      if(route.request().resourceType()==="script")return route.fulfill({status:200,contentType:"application/javascript",body:"/* rk external script stub */"});
       if(route.request().resourceType()==="stylesheet")return route.fulfill({status:200,contentType:"text/css",body:""});
       return route.fulfill({status:204,body:""});
     });
@@ -71,7 +73,20 @@ try{
     try{
       await page.goto(origin+"/dashboard",{waitUntil:"domcontentloaded"});
       await page.getByText("Good to see you, Device.").waitFor({timeout:15000});
-      assert.equal(errors.length,0,`${p.name}: dashboard errors ${errors.join("; ")}`);
+      assert.equal(await page.getByRole("dialog",{name:"Marketing privacy preferences"}).count(),0,`${p.name}: web marketing consent leaked into native app`);
+
+      const guide=page.getByRole("dialog",{name:"ResKonnect app guide"});
+      await guide.waitFor({state:"visible",timeout:5000});
+      // Prove the close action is reachable even in short landscape viewports.
+      await page.setViewportSize({width:p.viewport.height,height:p.viewport.width});
+      const closeGuide=guide.getByRole("button",{name:"Close app guide"});
+      await closeGuide.scrollIntoViewIfNeeded();
+      await closeGuide.click();
+      await guide.waitFor({state:"hidden",timeout:3000});
+      await page.getByRole("button",{name:"Resume native app guide"}).waitFor({state:"visible",timeout:3000});
+      await page.setViewportSize(p.viewport);
+      assert.equal(errors.length,0,`${p.name}: dashboard/onboarding errors ${errors.join("; ")}`);
+      console.log("PASS",p.name,"native onboarding closes in landscape and stays resumable");
 
       await page.setViewportSize({width:p.viewport.height,height:p.viewport.width});
       await page.waitForTimeout(150);
@@ -99,6 +114,7 @@ try{
         assert.equal(await page.getByText("Something went wrong",{exact:true}).count(),0,`${p.name}: 360 iteration ${i+1}`);
         await page.goto(origin+"/dashboard",{waitUntil:"domcontentloaded"});
         await page.getByText("Good to see you, Device.").waitFor({timeout:10000});
+        assert.equal(await page.getByRole("dialog",{name:"ResKonnect app guide"}).count(),0,`${p.name}: paused guide unexpectedly reopened`);
       }
       if(p.safe) await page.getByText("Good to see you, Device.").waitFor();
       console.log("PASS",p.name,"repeated 360/navigation");
@@ -119,8 +135,9 @@ try{
       await page.goto(origin+"/dashboard",{waitUntil:"domcontentloaded"});
       await page.getByText("Good to see you, Device.").waitFor({timeout:15000});
       assert.ok(await page.evaluate(key=>Boolean(localStorage.getItem(key)),storageKey),`${p.name}: session missing after reopen`);
+      assert.equal(await page.getByRole("dialog",{name:"ResKonnect app guide"}).count(),0,`${p.name}: dismissed guide returned after reopen`);
       assert.equal(errors.length,0,`${p.name}: reopen errors ${errors.join("; ")}`);
-      console.log("PASS",p.name,"close/reopen session");
+      console.log("PASS",p.name,"close/reopen session and onboarding persistence");
     }catch(error){
       failures.push({profile:p.name,message:error instanceof Error?error.stack||error.message:String(error)});
       console.error("FAIL",p.name,failures.at(-1).message);
