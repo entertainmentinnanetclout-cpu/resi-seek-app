@@ -36,9 +36,9 @@ export default function NativeGuidedOnboarding() {
   useEffect(() => {
     if (!user || !isStudent) return;
     const prior = readSaved(key);
-    setSaved(prior ?? { step: 0, paused: pathname !== "/dashboard", complete: false });
+    setSaved(prior ?? { step: 0, paused: window.location.pathname !== "/dashboard", complete: false });
     setReady(true);
-  }, [key, isStudent, pathname, user?.id]);
+  }, [key, isStudent, user?.id]);
   useEffect(() => { if (ready && key) writeSaved(key, saved); }, [key, ready, saved]);
   useEffect(() => {
     if (!ready || saved.paused || saved.complete) return;
@@ -80,8 +80,8 @@ export default function NativeGuidedOnboarding() {
   useEffect(() => {
     if (!active) return;
     const selectTarget = () => {
-      // Avoid CSS :has(). Some older Android System WebView versions reject an
-      // unsupported selector by throwing, which must never crash onboarding.
+      // Avoid relational selectors that older Android System WebView versions
+      // may reject. An unsupported selector must never crash onboarding.
       const selectors = saved.step === 0
         ? ['button[aria-label="Open navigation"]', "aside nav", "header button", "main"]
         : saved.step === 1 ? ["main form", "main"]
