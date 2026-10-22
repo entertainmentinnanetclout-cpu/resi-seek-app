@@ -40,6 +40,14 @@ export default function NativeGuidedOnboarding() {
     setReady(true);
   }, [key, isStudent, user?.id]);
   useEffect(() => { if (ready && key) writeSaved(key, saved); }, [key, ready, saved]);
+
+  const commitSaved = useCallback((next: Saved) => {
+    // A guide route change unmounts this component. Persist synchronously before
+    // calling navigate so progress cannot roll back on a slower Android WebView.
+    if (key) writeSaved(key, next);
+    setSaved(next);
+  }, [key]);
+
   useEffect(() => {
     if (!ready || saved.paused || saved.complete) return;
     // If an existing mandatory form/dialog is open it has priority. Never put
@@ -53,11 +61,11 @@ export default function NativeGuidedOnboarding() {
 
   const dismiss = useCallback(() => {
     // Release the UI immediately even when WebView storage is unavailable.
-    setSaved(previous => ({ ...previous, paused: true }));
-  }, []);
+    commitSaved({ ...saved, paused: true });
+  }, [commitSaved, saved]);
   const skip = useCallback(() => {
-    setSaved({ step: STEP_COUNT - 1, paused: false, complete: true });
-  }, []);
+    commitSaved({ step: STEP_COUNT - 1, paused: false, complete: true });
+  }, [commitSaved]);
 
   const active = ready && Boolean(user && isStudent) && !saved.paused && !saved.complete && !blocked;
 
@@ -114,27 +122,31 @@ export default function NativeGuidedOnboarding() {
   const next = useCallback(() => {
     if (saved.step === 0) {
       if (!loading && profileNeedsAttention(profile)) {
-        setSaved(previous => ({ ...previous, step: 1 }));
+        const nextState = { ...saved, step: 1 };
+        commitSaved(nextState);
         navigate("/profile");
       } else {
-        setSaved(previous => ({ ...previous, step: 2 }));
+        const nextState = { ...saved, step: 2 };
+        commitSaved(nextState);
         navigate("/findmyres");
       }
     } else if (saved.step === 1) {
-      setSaved(previous => ({ ...previous, step: 2 }));
+      const nextState = { ...saved, step: 2 };
+      commitSaved(nextState);
       navigate("/findmyres");
     } else if (saved.step === 2) {
-      setSaved(previous => ({ ...previous, step: 3 }));
+      const nextState = { ...saved, step: 3 };
+      commitSaved(nextState);
       navigate("/my-applications");
     } else {
-      setSaved({ step: STEP_COUNT - 1, paused: false, complete: true });
+      commitSaved({ step: STEP_COUNT - 1, paused: false, complete: true });
     }
-  }, [saved.step, loading, profile, navigate]);
+  }, [saved, loading, profile, navigate, commitSaved]);
   if (!user || !isStudent || !ready) return null;
 
   if (!active) {
     if (blocked || (saved.step === 0 && pathname !== "/dashboard")) return null;
-    return pathname === "/dashboard" ? <button type="button" onClick={() => setSaved({ step: saved.complete ? 0 : saved.step, paused: false, complete: false })} className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-3 z-[110] flex min-h-11 items-center gap-2 rounded-full border bg-card/95 px-3 text-xs font-bold text-foreground shadow-lg backdrop-blur" aria-label="Resume native app guide"><Compass className="h-4 w-4 text-primary" />App guide</button> : null;
+    return pathname === "/dashboard" ? <button type="button" onClick={() => commitSaved({ step: saved.complete ? 0 : saved.step, paused: false, complete: false })} className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-3 z-[110] flex min-h-11 items-center gap-2 rounded-full border bg-card/95 px-3 text-xs font-bold text-foreground shadow-lg backdrop-blur" aria-label="Resume native app guide"><Compass className="h-4 w-4 text-primary" />App guide</button> : null;
   }
 
   const steps = [
