@@ -6,13 +6,11 @@ on:
       version_code:
         description: "Play versionCode (must increase every upload)"
         required: false
-        default: "9"
+        default: "10"
       version_name:
         description: "Public versionName"
         required: false
-        default: "1.1.6"
-  # A reviewed change to the release request marker can trigger one protected
-  # signing run after merge. Secrets stay behind the play-store environment.
+        default: "1.1.7"
   push:
     branches: [main]
     paths:
@@ -93,7 +91,7 @@ jobs:
             echo "Firebase Android configuration is present for org.reskonnect.app."
           else
             echo "RK_FIREBASE_CONFIGURED=0" >> "$GITHUB_ENV"
-            echo "Firebase Android configuration is not provisioned; this signed bundle will retain in-app/foreground alerts but closed-app FCM cannot be claimed as verified."
+            echo "Firebase Android configuration is not provisioned; closed-app FCM is not verified."
           fi
       - name: Install locked web dependencies
         run: npm ci
@@ -119,8 +117,18 @@ jobs:
         run: node scripts/p1-p4-core-regression.mjs
       - name: P10 Android OEM and device compatibility
         run: node scripts/p10-android-device-matrix.mjs
-      - name: Install pinned Capacitor native toolchain
-        run: npm install --no-save --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/app@8.0.0 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0 @capacitor/push-notifications@8.0.0
+      - name: Install and declare pinned Capacitor native toolchain
+        run: |
+          npm install --save-exact --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/app@8.0.0 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0 @capacitor/push-notifications@8.0.0
+          node - <<'NODE'
+          const p = require('./package.json');
+          const all = {...p.dependencies, ...p.devDependencies};
+          const required = ['@capacitor/core','@capacitor/android','@capacitor/app','@capacitor/geolocation','@capacitor/local-notifications','@capacitor/push-notifications'];
+          for (const name of required) {
+            if (!all[name]) throw new Error(`Capacitor native dependency was not declared: ${name}`);
+          }
+          console.log('Pinned Capacitor native dependencies are declared for sync.');
+          NODE
       - name: Build production web bundle
         env:
           RK_NATIVE_BUILD: "1"
@@ -129,12 +137,37 @@ jobs:
         run: npm run platform:p9
       - name: Sync Capacitor Android
         run: npx cap sync android
+      - name: Verify generated Capacitor native plugin registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          registry="android/app/src/main/assets/capacitor.plugins.json"
+          test -s "$registry"
+          cat "$registry"
+          grep -q 'AppPlugin' "$registry"
+          grep -q 'GeolocationPlugin' "$registry"
+          grep -q 'LocalNotificationsPlugin' "$registry"
+          grep -q 'PushNotificationsPlugin' "$registry"
+          echo "Capacitor registry contains App, Geolocation, Local Notifications and Push Notifications."
       - name: Build signed Play AAB
         env:
           RK_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.RK_ANDROID_UPLOAD_STORE_PASSWORD }}
           RK_ANDROID_KEY_ALIAS: ${{ secrets.RK_ANDROID_UPLOAD_KEY_ALIAS }}
           RK_ANDROID_KEY_PASSWORD: ${{ secrets.RK_ANDROID_UPLOAD_KEY_PASSWORD }}
         run: gradle -p android bundleRelease --stacktrace
+      - name: Verify packaged AAB native plugin registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          aab="android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$aab"
+          unzip -p "$aab" base/assets/capacitor.plugins.json > "$RUNNER_TEMP/capacitor.plugins.json"
+          test -s "$RUNNER_TEMP/capacitor.plugins.json"
+          grep -q 'AppPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
+          grep -q 'GeolocationPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
+          grep -q 'LocalNotificationsPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
+          grep -q 'PushNotificationsPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
+          echo "Final AAB contains all four required Capacitor native plugins."
       - name: Verify AAB signature
         run: jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab
       - name: Verify upload certificate
@@ -162,6 +195,7 @@ jobs:
             echo "targetSdk=36"
             echo "signed_aab=true"
             echo "firebase_android_config=$RK_FIREBASE_CONFIGURED"
+            echo "native_plugin_registry_verified=true"
             echo "native_push_client=true"
             echo "app_links_client=true"
             echo "app_links_play_certificate_requires_external_verification=true"
