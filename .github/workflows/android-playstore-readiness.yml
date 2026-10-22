@@ -1,5 +1,8 @@
 name: Android Play Store Readiness
 
+# Release-candidate gate: ResKonnect Android 1.1.6 / versionCode 9.
+# Keep this workflow tied to every native/runtime regression change so the exact
+# PR head must reach API-36 AAB compilation before merge.
 on:
   workflow_dispatch:
   push:
