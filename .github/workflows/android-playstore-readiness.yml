@@ -17,6 +17,8 @@ on:
       - "src/pages/Updates.tsx"
       - "src/pages/NotificationDetail.tsx"
       - "src/components/native/**"
+      - "src/components/onboarding/**"
+      - "src/components/MetaPixelTracker.tsx"
       - "src/hooks/useRealtimeNotifications.ts"
       - "src/lib/nativeNotifications.ts"
       - "src/lib/resmap/**"
@@ -78,26 +80,26 @@ jobs:
     timeout-minutes: 40
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
       - name: Setup Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
         with:
-          cmdline-tools-version: "14742923"
+          cmdline-tools-version: "15859902"
           packages: ""
       - name: Install Android 16 SDK
         run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
       - name: Setup Gradle 8.14.3
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "8.14.3"
       - name: Install locked web dependencies
@@ -138,8 +140,8 @@ jobs:
         run: npx cap sync android
       - name: Compile API 36 release AAB
         env:
-          ANDROID_VERSION_CODE: "8"
-          ANDROID_VERSION_NAME: "1.1.5"
+          ANDROID_VERSION_CODE: "9"
+          ANDROID_VERSION_NAME: "1.1.6"
         run: gradle -p android bundleRelease --stacktrace
       - name: Verify release artifact exists
         run: test -s android/app/build/outputs/bundle/release/app-release.aab
@@ -155,7 +157,7 @@ jobs:
           fi
           echo "No packaged native ELF libraries; 16 KB native ELF alignment is not applicable to this bundle."
       - name: Upload unsigned readiness AAB
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reskonnect-android-readiness-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
