@@ -61,11 +61,12 @@ const checks = [
     assert.ok(native.includes("requestPermissions") && native.includes("foregroundAlertsEnabled") && native.includes("ResKonnect update"));
     assert.ok(manifest.includes("POST_NOTIFICATIONS") && settings.includes("enableForegroundAlerts") && settings.includes("startNativePush") && settings.includes("generic wording"));
   }],
-  ["RG4 native FCM token ownership and logout cleanup", () => {
+  ["RG4 native FCM token ownership, confirmation and logout cleanup", () => {
     const client = read("src/lib/nativePush.ts");
     const auth = read("src/contexts/AuthContext.tsx");
     const sql = read("supabase/migrations/20260919131500_android_rg4_account_notifications.sql");
-    for (const term of ["PushNotifications", "rk_register_native_push_token", "rk_unregister_native_push_token", "pushNotificationActionPerformed", "reskonnect_updates"]) assert.ok(client.includes(term), term);
+    for (const term of ["PushNotifications", "rk_register_native_push_token", "rk_unregister_native_push_token", "pushNotificationActionPerformed", "reskonnect_updates", "waitForConfirmedRegistration", "REGISTRATION_TIMEOUT_MS"]) assert.ok(client.includes(term), term);
+    assert.ok(client.includes("registerTokenForSignedInUser(event.value).then(settleRegistration)") && client.includes("return await waitForConfirmedRegistration(push)"), "push readiness must require a real FCM token plus successful owner-bound backend registration");
     assert.ok(client.includes("ResKonnect update") && client.includes("Tap to view your latest account update."));
     assert.ok(auth.includes("unregisterNativePushToken") && auth.indexOf("unregisterNativePushToken()") < auth.indexOf("supabase.auth.signOut"));
     assert.ok(sql.includes("auth.uid()") && sql.includes("rk_unregister_native_push_token") && sql.includes("enable row level security"));
