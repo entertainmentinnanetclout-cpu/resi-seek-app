@@ -14,6 +14,7 @@ import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebView;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
 
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.WebViewListener;
@@ -31,6 +32,7 @@ public class MainActivity extends BridgeActivity {
     private static final long REPEAT_WINDOW_MS = 120_000L;
 
     private boolean recoveringRenderer = false;
+    private OnBackPressedCallback nativeBackCallback;
 
     private static String jsEscape(String value) {
         if (value == null) return "";
@@ -175,20 +177,29 @@ public class MainActivity extends BridgeActivity {
         // SystemBars handling can supply reliable insets across API 24-36/WebView
         // versions. The web layer consumes those insets via viewport-fit=cover.
         EdgeToEdge.enable(this);
+
+        // Android 16 / targetSdk 36 no longer calls Activity.onBackPressed().
+        // Register through AndroidX so button and predictive-gesture Back both
+        // dismiss the guide first, then fall through to Capacitor/system history.
+        nativeBackCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleSystemBack(this);
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, nativeBackCallback);
     }
 
-    @Override
-    @SuppressWarnings("deprecation")
-    public void onBackPressed() {
+    private void handleSystemBack(OnBackPressedCallback callback) {
         final WebView webView = bridge == null ? null : bridge.getWebView();
         if (webView == null) {
-            super.onBackPressed();
+            dispatchDefaultBack(callback);
             return;
         }
 
-        // The first hardware-back press is an unconditional escape hatch for the
-        // native guide. This prevents a first-run overlay from trapping a tester
-        // even if touch layout, font scaling or an OEM WebView behaves differently.
+        // Back is an unconditional escape hatch for the native guide. This
+        // prevents a first-run overlay from trapping a tester even when touch
+        // layout, font scaling or an OEM WebView behaves differently.
         final String dismissGuideScript =
             "(function(){try{" +
             "var guide=document.querySelector('[aria-label=\"ResKonnect app guide\"]');" +
@@ -200,20 +211,30 @@ public class MainActivity extends BridgeActivity {
         try {
             webView.evaluateJavascript(dismissGuideScript, result -> {
                 if ("\"handled\"".equals(result)) return;
-                runOnUiThread(() -> performDefaultBack(webView));
+                runOnUiThread(() -> performDefaultBack(webView, callback));
             });
         } catch (Exception error) {
             Log.w(TAG, "Could not query native guide before Back", error);
-            performDefaultBack(webView);
+            performDefaultBack(webView, callback);
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private void performDefaultBack(WebView webView) {
+    private void performDefaultBack(WebView webView, OnBackPressedCallback callback) {
         if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {
-            super.onBackPressed();
+            dispatchDefaultBack(callback);
+        }
+    }
+
+    private void dispatchDefaultBack(OnBackPressedCallback callback) {
+        // Temporarily remove this interception so Capacitor's existing callback,
+        // or ultimately the system back-to-home behavior, receives the event.
+        callback.setEnabled(false);
+        try {
+            getOnBackPressedDispatcher().onBackPressed();
+        } finally {
+            callback.setEnabled(true);
         }
     }
 }
