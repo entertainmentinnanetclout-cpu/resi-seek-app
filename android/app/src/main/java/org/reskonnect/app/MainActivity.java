@@ -39,7 +39,6 @@ public class MainActivity extends BridgeActivity {
             .replace("\r", " ");
     }
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         bridgeBuilder.addWebViewListener(new WebViewListener() {
@@ -170,5 +169,45 @@ public class MainActivity extends BridgeActivity {
         });
 
         super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void onBackPressed() {
+        final WebView webView = bridge == null ? null : bridge.getWebView();
+        if (webView == null) {
+            super.onBackPressed();
+            return;
+        }
+
+        // The first hardware-back press is an unconditional escape hatch for the
+        // native guide. This prevents a first-run overlay from trapping a tester
+        // even if touch layout, font scaling or an OEM WebView behaves differently.
+        final String dismissGuideScript =
+            "(function(){try{" +
+            "var guide=document.querySelector('[aria-label=\"ResKonnect app guide\"]');" +
+            "if(!guide)return 'not-handled';" +
+            "window.dispatchEvent(new Event('rk-native-guide-dismiss'));" +
+            "return 'handled';" +
+            "}catch(e){return 'not-handled';}})();";
+
+        try {
+            webView.evaluateJavascript(dismissGuideScript, result -> {
+                if ("\"handled\"".equals(result)) return;
+                runOnUiThread(() -> performDefaultBack(webView));
+            });
+        } catch (Exception error) {
+            Log.w(TAG, "Could not query native guide before Back", error);
+            performDefaultBack(webView);
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void performDefaultBack(WebView webView) {
+        if (webView != null && webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            super.onBackPressed();
+        }
     }
 }
