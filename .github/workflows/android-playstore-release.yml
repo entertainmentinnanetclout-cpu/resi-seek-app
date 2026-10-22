@@ -81,20 +81,20 @@ jobs:
           printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/reskonnect-upload.jks"
           chmod 600 "$RUNNER_TEMP/reskonnect-upload.jks"
           echo "RK_ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/reskonnect-upload.jks" >> "$GITHUB_ENV"
-      - name: Materialize Firebase Android config when provisioned
+      - name: Materialize required Firebase Android config
         env:
           FIREBASE_CONFIG_B64: ${{ secrets.RK_FIREBASE_GOOGLE_SERVICES_JSON_B64 }}
         run: |
-          if [ -n "$FIREBASE_CONFIG_B64" ]; then
-            printf '%s' "$FIREBASE_CONFIG_B64" | base64 --decode > android/app/google-services.json
-            chmod 600 android/app/google-services.json
-            node -e "const f=require('./android/app/google-services.json'); if(!f.project_info?.project_id) process.exit(1); const c=(f.client||[]).find(x=>x.client_info?.android_client_info?.package_name==='org.reskonnect.app'); if(!c) process.exit(1);"
-            echo "RK_FIREBASE_CONFIGURED=1" >> "$GITHUB_ENV"
-            echo "Firebase Android configuration is present for org.reskonnect.app."
-          else
-            echo "RK_FIREBASE_CONFIGURED=0" >> "$GITHUB_ENV"
-            echo "Firebase Android configuration is not provisioned; this signed bundle will retain in-app/foreground alerts but closed-app FCM cannot be claimed as verified."
+          set -euo pipefail
+          if [ -z "$FIREBASE_CONFIG_B64" ]; then
+            echo "::error::RK_FIREBASE_GOOGLE_SERVICES_JSON_B64 is required for the signed Play release. Refusing to produce a false-green AAB without Firebase Android configuration."
+            exit 1
           fi
+          printf '%s' "$FIREBASE_CONFIG_B64" | base64 --decode > android/app/google-services.json
+          chmod 600 android/app/google-services.json
+          node -e "const f=require('./android/app/google-services.json'); if(!f.project_info?.project_id) throw new Error('Firebase project_id missing'); const c=(f.client||[]).find(x=>x.client_info?.android_client_info?.package_name==='org.reskonnect.app'); if(!c) throw new Error('Firebase Android client org.reskonnect.app missing');"
+          echo "RK_FIREBASE_CONFIGURED=1" >> "$GITHUB_ENV"
+          echo "Firebase Android configuration validated for org.reskonnect.app."
       - name: Install locked web dependencies
         run: npm ci
       - name: Strict Play readiness audit
@@ -157,6 +157,7 @@ jobs:
           echo "No packaged native ELF libraries; 16 KB native ELF alignment is not applicable to this bundle."
       - name: Generate release capability report
         run: |
+          test "$RK_FIREBASE_CONFIGURED" = "1"
           {
             echo "ResKonnect Android $ANDROID_VERSION_NAME ($ANDROID_VERSION_CODE)"
             echo "targetSdk=36"
