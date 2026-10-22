@@ -19,11 +19,19 @@
     "android.permission.POST_NOTIFICATIONS"
   ],
   "foregroundLocalNotifications": true,
+  "nativePushClientImplemented": true,
   "nativePushNotifications": false,
   "nativeBackgroundPushRequires": [
-    "Firebase Android configuration",
-    "FCM server credentials",
-    "delivery and device testing"
+    "Firebase Android google-services.json for org.reskonnect.app",
+    "FCM HTTP v1 service-account credentials on trusted backend",
+    "closed-app delivery test on a Play-installed physical device"
+  ],
+  "androidAppLinksClientImplemented": true,
+  "androidAppLinksVerified": false,
+  "androidAppLinksRequires": [
+    "Play App Signing SHA-256 certificate fingerprint",
+    "ANDROID_APP_LINKS_SHA256_CERTS on production website",
+    "assetlinks.json verification against a Play-installed build"
   ],
   "googleOauthInNativeWebView": false
 }
