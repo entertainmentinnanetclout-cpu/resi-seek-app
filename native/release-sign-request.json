@@ -1,6 +1,7 @@
 {
   "versionName": "1.1.6",
   "versionCode": 9,
-  "requestedAt": "2026-10-22",
-  "reason": "Android native gold signed Play AAB after PR #163 release gates"
+  "requestedAt": "2026-10-22T20:01:00+02:00",
+  "firebaseProvisioned": true,
+  "reason": "Reviewed Android native gold signing request after exact-head release gates; Firebase installed and ready for protected signed AAB verification"
 }
