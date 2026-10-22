@@ -5,11 +5,13 @@ import { recordMobileRuntime } from "@/lib/runtimeTelemetry";
 const TOKEN_KEY = "rk_native_push_token_v1";
 const CHANNEL_ID = "reskonnect_updates";
 const CANONICAL_HOST = "www.reskonnect.org";
+const REGISTRATION_TIMEOUT_MS = 10_000;
 
 type ListenerHandle = { remove?: () => Promise<void> | void };
 let listenerHandles: ListenerHandle[] = [];
 let listenerUserId: string | null = null;
 let starting: Promise<boolean> | null = null;
+let registrationSettler: ((ready: boolean) => void) | null = null;
 
 function plugin(name: string): any {
   return isNativeApp() ? (window as any).Capacitor?.Plugins?.[name] : null;
@@ -37,6 +39,12 @@ function saveToken(token: string | null) {
   }
 }
 
+function settleRegistration(ready: boolean) {
+  const settle = registrationSettler;
+  registrationSettler = null;
+  settle?.(ready);
+}
+
 export function safeNativeNotificationRoute(value: unknown): string {
   if (typeof value !== "string" || value.length > 1800) return "/dashboard/updates";
   const trimmed = value.trim();
@@ -59,6 +67,7 @@ function navigateFromNotification(notification: any) {
 }
 
 async function removeOurListeners() {
+  settleRegistration(false);
   const handles = listenerHandles;
   listenerHandles = [];
   listenerUserId = null;
@@ -131,10 +140,15 @@ async function installListeners(userId: string) {
 
   const handles = await Promise.all([
     push.addListener("registration", (event: any) => {
-      if (validToken(event?.value)) void registerTokenForSignedInUser(event.value);
+      if (!validToken(event?.value)) {
+        settleRegistration(false);
+        return;
+      }
+      void registerTokenForSignedInUser(event.value).then(settleRegistration).catch(() => settleRegistration(false));
     }),
     push.addListener("registrationError", (event: any) => {
       console.warn("[native-push] FCM registration failed", event?.error || event);
+      settleRegistration(false);
       void recordMobileRuntime("js_error", "android.fcm.registration", { error_name: "NativePushRegistrationError" });
     }),
     push.addListener("pushNotificationReceived", (notification: any) => { void showPrivateForegroundNotice(notification); }),
@@ -152,6 +166,25 @@ async function installListeners(userId: string) {
   return true;
 }
 
+async function waitForConfirmedRegistration(push: any) {
+  return await new Promise<boolean>((resolve) => {
+    let finished = false;
+    const finish = (ready: boolean) => {
+      if (finished) return;
+      finished = true;
+      window.clearTimeout(timeout);
+      if (registrationSettler === finish) registrationSettler = null;
+      resolve(ready);
+    };
+    const timeout = window.setTimeout(() => finish(false), REGISTRATION_TIMEOUT_MS);
+    registrationSettler = finish;
+    Promise.resolve(push.register()).catch((error) => {
+      console.warn("[native-push] FCM register call failed", error);
+      finish(false);
+    });
+  });
+}
+
 /** Registers an already-authorized installation silently, or requests permission only after an explicit user action. */
 export function startNativePush(userId: string, requestPermission = false): Promise<boolean> {
   if (!isNativeApp() || !userId) return Promise.resolve(false);
@@ -165,10 +198,10 @@ export function startNativePush(userId: string, requestPermission = false): Prom
       if (permission?.receive !== "granted") return false;
       await ensureChannel();
       if (!await installListeners(userId)) return false;
-      await push.register();
-      return true;
+      return await waitForConfirmedRegistration(push);
     } catch (error) {
       console.warn("[native-push] Native push unavailable", error);
+      settleRegistration(false);
       void recordMobileRuntime("js_error", "android.fcm.start", { error_name: "NativePushUnavailable" });
       return false;
     } finally {
