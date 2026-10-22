@@ -13,6 +13,8 @@ import android.view.ViewParent;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebView;
 
+import androidx.activity.EdgeToEdge;
+
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.WebViewListener;
 
@@ -169,6 +171,10 @@ public class MainActivity extends BridgeActivity {
         });
 
         super.onCreate(savedInstanceState);
+        // Capacitor 8 requires explicit edge-to-edge enablement on Android so its
+        // SystemBars handling can supply reliable insets across API 24-36/WebView
+        // versions. The web layer consumes those insets via viewport-fit=cover.
+        EdgeToEdge.enable(this);
     }
 
     @Override
