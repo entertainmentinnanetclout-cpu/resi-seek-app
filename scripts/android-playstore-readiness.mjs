@@ -29,6 +29,9 @@ const auth=read("src/pages/Auth.tsx");
 const workflow=read(".github/workflows/android-playstore-readiness.yml");
 const signedWorkflow=read(".github/workflows/android-playstore-release.yml");
 const nativeGuide=read("src/components/native/NativeGuidedOnboarding.tsx");
+const nativePush=read("src/lib/nativePush.ts");
+const nativeLinks=read("src/lib/nativeAppLinks.ts");
+const assetLinks=read("scripts/emit-android-assetlinks.mjs");
 const meta=read("src/components/MetaPixelTracker.tsx");
 
 if(config.appId==="org.reskonnect.app" && release.packageId===config.appId && gradle.includes('applicationId "org.reskonnect.app"')) pass("Package identity","org.reskonnect.app consistent across project files.");
@@ -54,7 +57,12 @@ else {
   if(release.foregroundLocalNotifications===true&&permission) pass("Foreground notifications","Android 13+ permission declared; explicit in-app opt-in required.");
   else if(release.foregroundLocalNotifications===false&&!permission) pass("Foreground notifications","Disabled consistently.");
   else block("Foreground notifications","Native permission and declared capability mismatch.");
-  if(release.nativePushNotifications===false) warn("Background push","FCM transport is not configured; do not represent closed-app push as operational.");
+  if(release.nativePushClientImplemented===true&&nativePush.includes("rk_register_native_push_token")&&nativePush.includes("pushNotificationActionPerformed")) pass("Native push client","FCM token lifecycle and safe tap routing are implemented.");
+  else block("Native push client","Missing FCM registration/token lifecycle.");
+  if(release.nativePushNotifications===false) warn("Background push verification","Client/server path exists, but provider credentials and Play-device closed-app delivery are not yet verified.");
+  if(manifest.includes('android:autoVerify="true"')&&manifest.includes('android:host="www.reskonnect.org"')&&nativeLinks.includes("appUrlOpen")&&assetLinks.includes("ANDROID_APP_LINKS_SHA256_CERTS")) pass("Android App Links client","Canonical HTTPS App Links and certificate-bound association output are implemented.");
+  else block("Android App Links client","Missing verified-link manifest, runtime bridge, or association emitter.");
+  if(release.androidAppLinksVerified===false) warn("Android App Links verification","Play App Signing SHA-256 and Play-installed verification remain external release evidence.");
   if(manifest.includes('android:usesCleartextTraffic="false"')) pass("Cleartext traffic","Disabled.");
   else block("Cleartext traffic","Cleartext traffic must be disabled.");
   if(manifest.includes('android:allowBackup="false"')) pass("Android backup","Account/document backup disabled.");
@@ -69,8 +77,8 @@ for(const name of ["android/app/src/main/java/org/reskonnect/app/MainActivity.ja
 }
 if(gradle.includes("RK_ANDROID_KEYSTORE_PATH")&&gradle.includes("signingConfigs")) pass("Release signing","Upload key sourced outside GitHub source tree.");
 else block("Release signing","Protected keystore integration missing.");
-if(release.capacitorVersion==="8.5.2"&&workflow.includes("@capacitor/core@8.5.2")&&workflow.includes("@capacitor/android@8.5.2")&&workflow.includes("@capacitor/geolocation@8.0.0")&&workflow.includes("@capacitor/local-notifications@8")) pass("Capacitor toolchain","Capacitor 8.5.2 core/Android/CLI and required native plugins are pinned in CI.");
-else block("Capacitor toolchain","Android CI does not install required native toolchain/plugins.");
+if(release.capacitorVersion==="8.5.2"&&workflow.includes("@capacitor/core@8.5.2")&&workflow.includes("@capacitor/android@8.5.2")&&workflow.includes("@capacitor/app@8.0.0")&&workflow.includes("@capacitor/geolocation@8.0.0")&&workflow.includes("@capacitor/local-notifications@8.0.0")&&workflow.includes("@capacitor/push-notifications@8.0.0")) pass("Capacitor toolchain","Capacitor 8.5.2 core/Android/CLI and exact native plugins are pinned in CI.");
+else block("Capacitor toolchain","Android CI does not install the required native toolchain/plugins.");
 const agp = androidBuild.match(/com\.android\.tools\.build:gradle:(\d+)\.(\d+)\.(\d+)/);
 const agpMajor=Number(agp?.[1]||0),agpMinor=Number(agp?.[2]||0);
 if(agpMajor>8||(agpMajor===8&&agpMinor>=5)) pass("16 KB page-size toolchain",`AGP ${agp?.slice(1).join(".")} is >= 8.5.1; compatible packaging/alignment toolchain in place.`);
@@ -87,7 +95,7 @@ if(launcher.includes("@drawable/app_icon_foreground_safe")) pass("Adaptive icon 
 else block("Adaptive icon safe zone","Launcher foreground is not using the safe inset.");
 if(workflow.includes("bundleRelease")&&workflow.includes("android-36")&&workflow.includes("--strict")) pass("AAB readiness","Strict audit and API-36 AAB compile enabled.");
 else block("AAB readiness","Workflow missing strict audit or bundle build.");
-if(signedWorkflow.includes("bundleRelease")&&signedWorkflow.includes("jarsigner")&&signedWorkflow.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64")&&signedWorkflow.includes("@capacitor/local-notifications@8")) pass("Signed Play build","Protected signing and native plugin install configured.");
+if(signedWorkflow.includes("bundleRelease")&&signedWorkflow.includes("jarsigner")&&signedWorkflow.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64")&&signedWorkflow.includes("@capacitor/push-notifications@8.0.0")) pass("Signed Play build","Protected signing and native plugin install configured.");
 else block("Signed Play build","Signed workflow incomplete.");
 if(app.includes('path="/delete-account"')&&app.includes("<AccountDeletion")) pass("Public deletion URL","/delete-account is routable.");
 else block("Public deletion URL","Missing deletion URL.");
@@ -97,7 +105,7 @@ if(privacy.includes("foreground location")&&privacy.includes("/delete-account"))
 else block("Privacy policy","Missing required disclosure.");
 if(auth.includes('publicAuthOrigin = isNativeShell ? "https://www.reskonnect.org"')&&auth.includes("!isNativeShell &&")) pass("Native authentication","Native OAuth callback/embedded Google OAuth restrictions preserved.");
 else block("Native authentication","Native auth flow changed unsafely.");
-if(!exists("android/app/google-services.json")) warn("Firebase configuration","No bundled Firebase Android settings. Closed-app push cannot be enabled by this build alone.");
+if(!exists("android/app/google-services.json")) warn("Firebase configuration","No source-controlled Firebase config (expected). The protected signed workflow may materialize it from a secret; delivery must still be verified on-device.");
 
 const blockers=findings.filter(x=>x.level==="BLOCKER");
 const warnings=findings.filter(x=>x.level==="WARN");
