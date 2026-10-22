@@ -7,6 +7,8 @@ const expect=(ok,label)=>{if(ok)console.log("PASS",label);else{console.error("FA
 
 const pkg=JSON.parse(read("package.json"));
 const web=read(".github/workflows/web-platform-readiness.yml");
+const webSmoke=read("scripts/web-platform-smoke.mjs");
+const sessionSmoke=read("scripts/cross-platform-session-smoke.mjs");
 const android=read(".github/workflows/android-playstore-readiness.yml");
 const signed=read(".github/workflows/android-playstore-release.yml");
 const p1=read("scripts/p1-p4-stability-audit.mjs");
@@ -22,7 +24,9 @@ const generated=read("src/integrations/supabase/types.production.generated.ts");
 
 console.log("\nP11 — automated release QA");
 expect(pkg.scripts["platform:p5-p8"]&&pkg.scripts["platform:p9"]&&pkg.scripts["platform:p10"]&&pkg.scripts["release:p11"],"package exposes P5-P11 release gates");
-expect(web.includes("npx tsc --noEmit")&&web.includes("chromium webkit")&&web.includes("web-platform-smoke.mjs")&&web.includes("cross-platform-session-smoke.mjs"),"web gate covers types Chromium WebKit responsive routes sessions and PWA");
+const exactPlaywrightContainer = web.includes("mcr.microsoft.com/playwright:v1.56.1-noble") && web.includes("Verify Playwright container parity") && web.includes("playwright-core/package.json") && web.includes("1.56.1");
+const explicitBrowserCoverage = webSmoke.includes('import { chromium, webkit } from "playwright"') && webSmoke.includes("chromium-windows-desktop") && webSmoke.includes("webkit-iphone") && webSmoke.includes("webkit-mac");
+expect(web.includes("npx tsc --noEmit")&&exactPlaywrightContainer&&explicitBrowserCoverage&&web.includes("web-platform-smoke.mjs")&&web.includes("cross-platform-session-smoke.mjs")&&sessionSmoke.includes("playwright"),"web gate covers types exact Playwright Chromium WebKit responsive routes sessions and PWA");
 expect(web.includes("npm run platform:p9")&&web.includes("npm run release:p11"),"web gate enforces performance and P11 static matrix");
 expect(android.includes("p1-p4-stability-audit.mjs")&&android.includes("p5-p8-stability-audit.mjs")&&android.includes("p10-android-device-matrix.mjs"),"Android gate composes P1-P10 regression coverage");
 expect(android.includes("npx cap sync android")&&android.includes("bundleRelease")&&android.includes('platforms;android-36'),"Android gate syncs Capacitor and compiles API 36 AAB");

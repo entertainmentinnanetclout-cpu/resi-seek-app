@@ -108,6 +108,8 @@ const checks = [
       assert.ok(readiness.includes(dependency) && signed.includes(dependency), dependency);
     }
     assert.ok(signed.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64") && signed.includes("jarsigner") && signed.includes("RK_FIREBASE_GOOGLE_SERVICES_JSON_B64"));
+    assert.ok(signed.includes("RK_FIREBASE_GOOGLE_SERVICES_JSON_B64 is required for the signed Play release") && signed.includes('test "$RK_FIREBASE_CONFIGURED" = "1"'), "signed release must fail closed without validated Firebase Android configuration");
+    assert.ok(!signed.includes('echo "RK_FIREBASE_CONFIGURED=0"'), "signed release must never emit a successful Firebase-disabled release candidate");
     assert.equal(release.nativePushClientImplemented, true);
     assert.equal(release.nativePushNotifications, false, "Provider credentials and Play-device delivery must be verified before claiming closed-app FCM operational");
     assert.equal(release.androidAppLinksClientImplemented, true);
