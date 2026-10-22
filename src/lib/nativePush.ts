@@ -40,9 +40,7 @@ function saveToken(token: string | null) {
 export function safeNativeNotificationRoute(value: unknown): string {
   if (typeof value !== "string" || value.length > 1800) return "/dashboard/updates";
   const trimmed = value.trim();
-  if (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.startsWith("/_") && !trimmed.startsWith("/api/")) {
-    return trimmed;
-  }
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.startsWith("/_") && !trimmed.startsWith("/api/")) return trimmed;
   try {
     const url = new URL(trimmed);
     if (url.protocol !== "https:" || url.hostname.toLowerCase() !== CANONICAL_HOST) return "/dashboard/updates";
@@ -87,11 +85,8 @@ async function ensureChannel() {
 async function registerTokenForSignedInUser(token: string) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user?.id) return false;
-
   const previous = storedToken();
-  if (previous && previous !== token) {
-    await (supabase as any).rpc("rk_unregister_native_push_token", { p_token: previous }).catch(() => undefined);
-  }
+  if (previous && previous !== token) await (supabase as any).rpc("rk_unregister_native_push_token", { p_token: previous }).catch(() => undefined);
 
   const { data, error } = await (supabase as any).rpc("rk_register_native_push_token", {
     p_token: token,
@@ -119,10 +114,7 @@ async function showPrivateForegroundNotice(notification: any) {
         channelId: CHANNEL_ID,
         title: "ResKonnect update",
         body: "Tap to view your latest account update.",
-        extra: {
-          nativePush: true,
-          route: safeNativeNotificationRoute(notification?.data?.route || notification?.data?.url),
-        },
+        extra: { nativePush: true, route: safeNativeNotificationRoute(notification?.data?.route || notification?.data?.url) },
       }],
     });
   } catch (error) {
@@ -134,27 +126,19 @@ async function installListeners(userId: string) {
   const push = plugin("PushNotifications");
   const local = plugin("LocalNotifications");
   if (!push?.addListener) return false;
-
   if (listenerUserId && listenerUserId !== userId) await removeOurListeners();
   if (listenerUserId === userId && listenerHandles.length) return true;
 
   const handles = await Promise.all([
     push.addListener("registration", (event: any) => {
-      if (!validToken(event?.value)) return;
-      void registerTokenForSignedInUser(event.value).then((ok) => {
-        if (ok) void recordMobileRuntime("native_push_registered" as any, "android.fcm");
-      });
+      if (validToken(event?.value)) void registerTokenForSignedInUser(event.value);
     }),
     push.addListener("registrationError", (event: any) => {
       console.warn("[native-push] FCM registration failed", event?.error || event);
-      void recordMobileRuntime("native_push_error" as any, "android.fcm.registration");
+      void recordMobileRuntime("js_error", "android.fcm.registration", { error_name: "NativePushRegistrationError" });
     }),
-    push.addListener("pushNotificationReceived", (notification: any) => {
-      void showPrivateForegroundNotice(notification);
-    }),
-    push.addListener("pushNotificationActionPerformed", (event: any) => {
-      navigateFromNotification(event?.notification || event);
-    }),
+    push.addListener("pushNotificationReceived", (notification: any) => { void showPrivateForegroundNotice(notification); }),
+    push.addListener("pushNotificationActionPerformed", (event: any) => { navigateFromNotification(event?.notification || event); }),
   ]);
 
   if (local?.addListener) {
@@ -163,18 +147,12 @@ async function installListeners(userId: string) {
     });
     handles.push(localHandle);
   }
-
   listenerHandles = handles.filter(Boolean);
   listenerUserId = userId;
   return true;
 }
 
-/**
- * Registers this installed Android app with FCM. Permission prompts happen only
- * after an explicit user action; normal app boot silently re-registers an
- * already-authorized installation so refreshed FCM tokens are reclaimed by the
- * currently signed-in account.
- */
+/** Registers an already-authorized installation silently, or requests permission only after an explicit user action. */
 export function startNativePush(userId: string, requestPermission = false): Promise<boolean> {
   if (!isNativeApp() || !userId) return Promise.resolve(false);
   if (starting) return starting;
@@ -185,14 +163,13 @@ export function startNativePush(userId: string, requestPermission = false): Prom
       let permission = await push.checkPermissions();
       if (permission?.receive !== "granted" && requestPermission) permission = await push.requestPermissions();
       if (permission?.receive !== "granted") return false;
-
       await ensureChannel();
       if (!await installListeners(userId)) return false;
       await push.register();
       return true;
     } catch (error) {
       console.warn("[native-push] Native push unavailable", error);
-      void recordMobileRuntime("native_push_error" as any, "android.fcm.start");
+      void recordMobileRuntime("js_error", "android.fcm.start", { error_name: "NativePushUnavailable" });
       return false;
     } finally {
       starting = null;
@@ -208,9 +185,7 @@ export async function unregisterNativePushToken() {
   try {
     if (token) {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) {
-        await (supabase as any).rpc("rk_unregister_native_push_token", { p_token: token });
-      }
+      if (session?.user?.id) await (supabase as any).rpc("rk_unregister_native_push_token", { p_token: token });
     }
   } catch (error) {
     console.warn("[native-push] Token cleanup unavailable", error);
