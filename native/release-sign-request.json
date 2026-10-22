@@ -1,0 +1,6 @@
+{
+  "versionName": "1.1.6",
+  "versionCode": 9,
+  "requestedAt": "2026-10-22",
+  "reason": "Android native gold signed Play AAB after PR #163 release gates"
+}

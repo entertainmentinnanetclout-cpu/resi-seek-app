@@ -59,13 +59,36 @@ const checks = [
     const manifest = read("android/app/src/main/AndroidManifest.xml");
     const settings = read("src/components/native/NativeAlertSettings.tsx");
     assert.ok(native.includes("requestPermissions") && native.includes("foregroundAlertsEnabled") && native.includes("ResKonnect update"));
-    assert.ok(manifest.includes("POST_NOTIFICATIONS") && settings.includes("enableForegroundAlerts") && settings.includes("Background and closed-app alerts require"));
+    assert.ok(manifest.includes("POST_NOTIFICATIONS") && settings.includes("enableForegroundAlerts") && settings.includes("startNativePush") && settings.includes("generic wording"));
+  }],
+  ["RG4 native FCM token ownership, confirmation and logout cleanup", () => {
+    const client = read("src/lib/nativePush.ts");
+    const auth = read("src/contexts/AuthContext.tsx");
+    const sql = read("supabase/migrations/20260919131500_android_rg4_account_notifications.sql");
+    for (const term of ["PushNotifications", "rk_register_native_push_token", "rk_unregister_native_push_token", "pushNotificationActionPerformed", "reskonnect_updates", "waitForConfirmedRegistration", "REGISTRATION_TIMEOUT_MS"]) assert.ok(client.includes(term), term);
+    assert.ok(client.includes("registerTokenForSignedInUser(event.value).then(settleRegistration)") && client.includes("return await waitForConfirmedRegistration(push)"), "push readiness must require a real FCM token plus successful owner-bound backend registration");
+    assert.ok(client.includes("ResKonnect update") && client.includes("Tap to view your latest account update."));
+    assert.ok(auth.includes("unregisterNativePushToken") && auth.indexOf("unregisterNativePushToken()") < auth.indexOf("supabase.auth.signOut"));
+    assert.ok(sql.includes("auth.uid()") && sql.includes("rk_unregister_native_push_token") && sql.includes("enable row level security"));
+  }],
+  ["RG4 dual web + FCM server sender", () => {
+    const sender = read("supabase/functions/send-push/index.ts");
+    for (const term of ["FIREBASE_SERVICE_ACCOUNT_JSON", "firebase.messaging", "fcm.googleapis.com/v1/projects/", "rk_native_device_tokens", "last_success_at", "push_subscriptions"]) assert.ok(sender.includes(term), term);
+    assert.ok(sender.includes("ResKonnect update") && sender.includes("Tap to view your latest account update."));
+    assert.ok(!sender.includes("service_account.json"), "Firebase credentials must come from protected environment only");
   }],
   ["RG4 idempotent backend events and owner-bound token registry", () => {
     const sql = read("supabase/migrations/20260919131500_android_rg4_account_notifications.sql");
     assert.ok(sql.includes("on conflict(event_key) do nothing") && sql.includes("notifications_user_created_idx"));
-    assert.ok(sql.includes("auth.uid()") && sql.includes("rk_unregister_native_push_token") && sql.includes("enable row level security"));
     assert.ok(!sql.includes("whatsapp_messages") && !sql.includes("SEND_SMS"));
+  }],
+  ["RG5 verified Android App Links are host-bound", () => {
+    const manifest = read("android/app/src/main/AndroidManifest.xml");
+    const links = read("src/lib/nativeAppLinks.ts");
+    const emitter = read("scripts/emit-android-assetlinks.mjs");
+    assert.ok(manifest.includes('android:autoVerify="true"') && manifest.includes('android.intent.category.BROWSABLE') && manifest.includes('android:host="www.reskonnect.org"'));
+    assert.ok(links.includes("appUrlOpen") && links.includes("getLaunchUrl") && links.includes("www.reskonnect.org") && links.includes("safeNativeRoute"));
+    assert.ok(emitter.includes("ANDROID_APP_LINKS_SHA256_CERTS") && emitter.includes("org.reskonnect.app") && emitter.includes("sha256_cert_fingerprints"));
   }],
   ["RG5 branded dashboard first paint", () => {
     const full = read("src/components/FullDashboard.tsx");
@@ -77,13 +100,18 @@ const checks = [
     const activity = read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
     assert.ok(activity.includes("onRenderProcessGone") && activity.includes("view.destroy()") && activity.includes("recreate") && activity.includes("return true"));
   }],
-  ["RG6 version and protected signing parity", () => {
+  ["RG6 version, plugin and protected signing parity", () => {
     const readiness = read(".github/workflows/android-playstore-readiness.yml");
     const signed = read(".github/workflows/android-playstore-release.yml");
     assert.equal(release.versionName, "1.1.6"); assert.equal(release.versionCode, 9);
-    assert.ok(readiness.includes("@capacitor/local-notifications@8.0.0") && signed.includes("@capacitor/local-notifications@8.0.0"));
-    assert.ok(signed.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64") && signed.includes("jarsigner"));
-    assert.equal(release.nativePushNotifications, false, "Never represent FCM background delivery as working without provider configuration");
+    for (const dependency of ["@capacitor/app@8.0.0", "@capacitor/local-notifications@8.0.0", "@capacitor/push-notifications@8.0.0"]) {
+      assert.ok(readiness.includes(dependency) && signed.includes(dependency), dependency);
+    }
+    assert.ok(signed.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64") && signed.includes("jarsigner") && signed.includes("RK_FIREBASE_GOOGLE_SERVICES_JSON_B64"));
+    assert.equal(release.nativePushClientImplemented, true);
+    assert.equal(release.nativePushNotifications, false, "Provider credentials and Play-device delivery must be verified before claiming closed-app FCM operational");
+    assert.equal(release.androidAppLinksClientImplemented, true);
+    assert.equal(release.androidAppLinksVerified, false, "Play App Signing certificate association must be externally verified before claiming verified links");
   }],
 ];
 let failed = 0;
@@ -92,4 +120,4 @@ for (const [name, run] of checks) {
   catch (error) { failed++; console.error(`FAIL ${name}`, error.message); }
 }
 if (failed) process.exitCode = 1;
-else console.log(`RG3–RG6 native source checks passed (${checks.length} checks); hardware/FCM delivery verification remains separate.`);
+else console.log(`RG3–RG6 native source checks passed (${checks.length} checks); provider credentials and physical Play-device delivery remain explicit external verification gates.`);

@@ -5,12 +5,18 @@ on:
     inputs:
       version_code:
         description: "Play versionCode (must increase every upload)"
-        required: true
+        required: false
         default: "9"
       version_name:
         description: "Public versionName"
-        required: true
+        required: false
         default: "1.1.6"
+  # A reviewed change to the release request marker can trigger one protected
+  # signing run after merge. Secrets stay behind the play-store environment.
+  push:
+    branches: [main]
+    paths:
+      - "native/release-sign-request.json"
 
 permissions:
   contents: read
@@ -44,6 +50,19 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "8.14.3"
+      - name: Resolve release identity
+        env:
+          INPUT_VERSION_CODE: ${{ inputs.version_code }}
+          INPUT_VERSION_NAME: ${{ inputs.version_name }}
+        run: |
+          metadata_code=$(node -p "require('./native/android-release.json').versionCode")
+          metadata_name=$(node -p "require('./native/android-release.json').versionName")
+          version_code="${INPUT_VERSION_CODE:-$metadata_code}"
+          version_name="${INPUT_VERSION_NAME:-$metadata_name}"
+          test "$version_code" = "$metadata_code"
+          test "$version_name" = "$metadata_name"
+          echo "ANDROID_VERSION_CODE=$version_code" >> "$GITHUB_ENV"
+          echo "ANDROID_VERSION_NAME=$version_name" >> "$GITHUB_ENV"
       - name: Validate protected signing inputs
         env:
           KEYSTORE_B64: ${{ secrets.RK_ANDROID_UPLOAD_KEYSTORE_B64 }}
@@ -62,11 +81,25 @@ jobs:
           printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/reskonnect-upload.jks"
           chmod 600 "$RUNNER_TEMP/reskonnect-upload.jks"
           echo "RK_ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/reskonnect-upload.jks" >> "$GITHUB_ENV"
+      - name: Materialize Firebase Android config when provisioned
+        env:
+          FIREBASE_CONFIG_B64: ${{ secrets.RK_FIREBASE_GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          if [ -n "$FIREBASE_CONFIG_B64" ]; then
+            printf '%s' "$FIREBASE_CONFIG_B64" | base64 --decode > android/app/google-services.json
+            chmod 600 android/app/google-services.json
+            node -e "const f=require('./android/app/google-services.json'); if(!f.project_info?.project_id) process.exit(1); const c=(f.client||[]).find(x=>x.client_info?.android_client_info?.package_name==='org.reskonnect.app'); if(!c) process.exit(1);"
+            echo "RK_FIREBASE_CONFIGURED=1" >> "$GITHUB_ENV"
+            echo "Firebase Android configuration is present for org.reskonnect.app."
+          else
+            echo "RK_FIREBASE_CONFIGURED=0" >> "$GITHUB_ENV"
+            echo "Firebase Android configuration is not provisioned; this signed bundle will retain in-app/foreground alerts but closed-app FCM cannot be claimed as verified."
+          fi
       - name: Install locked web dependencies
         run: npm ci
       - name: Strict Play readiness audit
         run: node scripts/android-playstore-readiness.mjs --strict
-      - name: Native notification, location and 3D checks
+      - name: Native notification, App Links, location and 3D checks
         run: node scripts/android-rg3-rg6-qa.mjs
       - name: P1-P4 architecture and crash-risk audit
         run: node scripts/p1-p4-stability-audit.mjs
@@ -86,8 +119,8 @@ jobs:
         run: node scripts/p1-p4-core-regression.mjs
       - name: P10 Android OEM and device compatibility
         run: node scripts/p10-android-device-matrix.mjs
-      - name: Install pinned Capacitor, geolocation and local notification toolchain
-        run: npm install --no-save --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0
+      - name: Install pinned Capacitor native toolchain
+        run: npm install --no-save --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/app@8.0.0 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0 @capacitor/push-notifications@8.0.0
       - name: Build production web bundle
         env:
           RK_NATIVE_BUILD: "1"
@@ -98,14 +131,19 @@ jobs:
         run: npx cap sync android
       - name: Build signed Play AAB
         env:
-          ANDROID_VERSION_CODE: ${{ inputs.version_code }}
-          ANDROID_VERSION_NAME: ${{ inputs.version_name }}
           RK_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.RK_ANDROID_UPLOAD_STORE_PASSWORD }}
           RK_ANDROID_KEY_ALIAS: ${{ secrets.RK_ANDROID_UPLOAD_KEY_ALIAS }}
           RK_ANDROID_KEY_PASSWORD: ${{ secrets.RK_ANDROID_UPLOAD_KEY_PASSWORD }}
         run: gradle -p android bundleRelease --stacktrace
       - name: Verify AAB signature
         run: jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab
+      - name: Verify upload certificate
+        env:
+          STORE_PASSWORD: ${{ secrets.RK_ANDROID_UPLOAD_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RK_ANDROID_UPLOAD_KEY_ALIAS }}
+        run: |
+          keytool -list -v -keystore "$RK_ANDROID_KEYSTORE_PATH" -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" | awk '/SHA256:/{print "Upload certificate SHA-256: "$2}' > android/app/build/outputs/bundle/release/upload-certificate.sha256.txt
+          test -s android/app/build/outputs/bundle/release/upload-certificate.sha256.txt
       - name: Verify no unreviewed native ELF libraries
         shell: bash
         run: |
@@ -117,14 +155,27 @@ jobs:
             exit 1
           fi
           echo "No packaged native ELF libraries; 16 KB native ELF alignment is not applicable to this bundle."
+      - name: Generate release capability report
+        run: |
+          {
+            echo "ResKonnect Android $ANDROID_VERSION_NAME ($ANDROID_VERSION_CODE)"
+            echo "targetSdk=36"
+            echo "signed_aab=true"
+            echo "firebase_android_config=$RK_FIREBASE_CONFIGURED"
+            echo "native_push_client=true"
+            echo "app_links_client=true"
+            echo "app_links_play_certificate_requires_external_verification=true"
+          } > android/app/build/outputs/bundle/release/release-capabilities.txt
       - name: Generate release checksum
         run: sha256sum android/app/build/outputs/bundle/release/app-release.aab | tee android/app/build/outputs/bundle/release/app-release.aab.sha256
       - name: Upload signed Play artifact
         uses: actions/upload-artifact@v7
         with:
-          name: reskonnect-play-${{ inputs.version_name }}-${{ inputs.version_code }}
+          name: reskonnect-play-${{ env.ANDROID_VERSION_NAME }}-${{ env.ANDROID_VERSION_CODE }}
           path: |
             android/app/build/outputs/bundle/release/app-release.aab
             android/app/build/outputs/bundle/release/app-release.aab.sha256
+            android/app/build/outputs/bundle/release/upload-certificate.sha256.txt
+            android/app/build/outputs/bundle/release/release-capabilities.txt
           if-no-files-found: error
           retention-days: 30
