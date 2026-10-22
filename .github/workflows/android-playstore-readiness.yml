@@ -12,6 +12,7 @@ on:
       - "android/**"
       - "native/**"
       - "capacitor.config.*"
+      - "package.json"
       - "src/pages/Auth.tsx"
       - "src/pages/Privacy.tsx"
       - "src/pages/AccountDeletion.tsx"
@@ -24,6 +25,8 @@ on:
       - "src/components/MetaPixelTracker.tsx"
       - "src/hooks/useRealtimeNotifications.ts"
       - "src/lib/nativeNotifications.ts"
+      - "src/lib/nativePush.ts"
+      - "src/lib/nativeAppLinks.ts"
       - "src/lib/resmap/**"
       - "src/components/findmyres/**"
       - "src/components/resmap/**"
@@ -46,6 +49,7 @@ on:
       - "src/pages/ResidenceDetail.tsx"
       - "src/integrations/supabase/client.ts"
       - "src/lib/runtimeTelemetry.ts"
+      - "scripts/emit-android-assetlinks.mjs"
       - "scripts/p1-p4-stability-audit.mjs"
       - "scripts/p1-p4-core-regression.mjs"
       - "scripts/p5-p8-stability-audit.mjs"
@@ -149,8 +153,8 @@ jobs:
         run: |
           cat p10-android-device-matrix.log
           exit 1
-      - name: Install pinned Capacitor, geolocation and local notifications
-        run: npm install --no-save --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0
+      - name: Install pinned Capacitor native toolchain
+        run: npm install --no-save --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/app@8.0.0 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0 @capacitor/push-notifications@8.0.0
       - name: Build production web bundle
         env:
           RK_NATIVE_BUILD: "1"
