@@ -12,6 +12,7 @@ const user={id:"91000000-0000-4000-8000-000000000001",aud:"authenticated",role:"
 const token=[Buffer.from("{}").toString("base64url"),Buffer.from(JSON.stringify({sub:user.id,exp:Math.floor(Date.now()/1000)+3600})).toString("base64url"),"fixture"].join(".");
 const session={access_token:token,refresh_token:"fixture-refresh",token_type:"bearer",expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,user};
 const storageKey="sb-mefjzkhobkltlbmhusdh-auth-token";
+const guideStorageKey=`rk_native_guide_v1_${user.id}`;
 const profile={id:user.id,full_name:"Device Matrix Student",phone:"0820000000",student_number:"DEVICE001",campus:"Pretoria West (Main Campus)",course:"Marketing",year_of_study:"3",applicant_stage:"university_student"};
 const residence={id:"92000000-0000-4000-8000-000000000001",slug:"device-fixture-residence",name:"Device Fixture Residence",address:"Pretoria",campus:"Pretoria West (Main Campus)",price:3500,private_price:3500,available_spots:5,is_visible:true,latitude:-25.754,longitude:28.188,room_type:"single",images:[],image_url:null};
 const tour={tour:{id:"93000000-0000-4000-8000-000000000001",title:"Native Device Fixture 360",workspace_type:"standalone"},workspace:{type:"standalone",label:"Native Device Fixture 360"},residence:null,scenes:[{id:"94000000-0000-4000-8000-000000000001",name:"Room",area_type:"room",is_start:true,panorama_url:"data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2216%22%3E%3Crect width=%2232%22 height=%2216%22 fill=%22%23111%22/%3E%3C/svg%3E",quality_score:90}],hotspots:[],connections:[]};
@@ -48,14 +49,18 @@ try{
   for(const p of profiles){
     const context=await browser.newContext({viewport:p.viewport,isMobile:true,hasTouch:true,userAgent:p.ua,locale:"en-ZA",serviceWorkers:"block",geolocation:{latitude:-25.754,longitude:28.188}});
     await context.routeWebSocket("**/*",socket=>socket.close());
-    await context.addInitScript(({memory,cores,key,value,safe})=>{
+    await context.addInitScript(({memory,cores,key,value,safe,guideKey})=>{
       window.Capacitor={isNativePlatform:()=>true};
       try{Object.defineProperty(navigator,"deviceMemory",{configurable:true,get:()=>memory});}catch{}
       try{Object.defineProperty(navigator,"hardwareConcurrency",{configurable:true,get:()=>cores});}catch{}
       localStorage.setItem(key,JSON.stringify(value));
+      // Every profile starts from the same explicit first-run guide state. This
+      // avoids auth-bootstrap timing deciding whether the guide is paused before
+      // /dashboard becomes the stable route and keeps the OEM matrix deterministic.
+      localStorage.setItem(guideKey,JSON.stringify({step:0,paused:false,complete:false}));
       if(safe)localStorage.setItem("rk_native_safe_graphics_v1","1");
       else localStorage.removeItem("rk_native_safe_graphics_v1");
-    },{memory:p.memory,cores:p.cores,key:storageKey,value:session,safe:p.safe});
+    },{memory:p.memory,cores:p.cores,key:storageKey,value:session,safe:p.safe,guideKey:guideStorageKey});
     await context.route("**/*",async route=>{
       const url=new URL(route.request().url());
       if(url.origin===origin)return route.continue();
