@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { AppStaffRole, GOD_MODE_ROLES } from "@/lib/constants/roles";
 import { AdminDepartmentKey } from "@/lib/adminDepartments";
+import { unregisterNativePushToken } from "@/lib/nativePush";
 import { useQueryClient } from "@tanstack/react-query";
 
 export type StaffRole = AppStaffRole | null;
@@ -283,6 +284,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [accessError, checkStatus, userId]);
 
   const signOut = async () => {
+    // Detach this physical installation from the current account before the
+    // auth token is revoked. Bound the cleanup so weak mobile data can never
+    // trap the user on a logout spinner; token ownership is also reclaimed
+    // atomically by the next signed-in account during registration.
+    await Promise.race([
+      unregisterNativePushToken(),
+      new Promise<void>((resolve) => window.setTimeout(resolve, 1500)),
+    ]).catch(() => undefined);
+
     const { error } = await supabase.auth.signOut({ scope: "local" });
     if (error) throw error;
     accessRequestRef.current += 1;
