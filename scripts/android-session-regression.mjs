@@ -143,7 +143,7 @@ try {
     "native safe home must not replace full dashboard",
   );
 
-  const tour = page.getByRole("dialog", { name: "ResKonnect app guide" });
+  let tour = page.getByRole("dialog", { name: "ResKonnect app guide" });
   await tour.waitFor({ state: "visible", timeout: 5000 });
   await tour.getByRole("button", { name: "Close app guide" }).click();
   await tour.waitFor({ state: "hidden", timeout: 3000 });
@@ -168,9 +168,18 @@ try {
     "closed guide must remain paused after reload",
   );
   await page.getByRole("button", { name: "Resume native app guide" }).click();
-  await page.getByRole("dialog", { name: "ResKonnect app guide" }).waitFor({ state: "visible" });
-  await page.getByRole("dialog", { name: "ResKonnect app guide" }).getByRole("button", { name: "Skip guide" }).click();
-  await page.getByRole("dialog", { name: "ResKonnect app guide" }).waitFor({ state: "hidden" });
+  tour = page.getByRole("dialog", { name: "ResKonnect app guide" });
+  await tour.waitFor({ state: "visible" });
+  await tour.getByRole("button", { name: "Find accommodation", exact: true }).click();
+  await page.waitForURL("**/findmyres");
+  tour = page.getByRole("dialog", { name: "ResKonnect app guide" });
+  await tour.waitFor({ state: "visible" });
+  await tour.getByText("Step 3 of 4", { exact: true }).waitFor();
+  console.log("PASS onboarding progress persists synchronously across route remount");
+  await tour.getByRole("button", { name: "Skip guide" }).click();
+  await tour.waitFor({ state: "hidden" });
+  await page.goto(`${origin}/dashboard`);
+  await page.getByText("Good to see you, Test.").waitFor();
   await page.reload();
   await page.getByText("Good to see you, Test.").waitFor();
   assert.equal(
@@ -178,7 +187,7 @@ try {
     0,
     "skipped guide must not auto-open after reload",
   );
-  console.log("PASS onboarding close/skip state persists through reload");
+  console.log("PASS onboarding close/route-progress/skip state persists through reload");
   await page.close();
 
   page = await context.newPage();
