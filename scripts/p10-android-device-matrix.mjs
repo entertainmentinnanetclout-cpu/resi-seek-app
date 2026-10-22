@@ -37,6 +37,7 @@ async function api(route){
   if(path.includes("/rest/v1/rpc/record_virtual_tour_event"))return json(route,true);
   if(path.includes("/rest/v1/residences"))return json(route,[residence]);
   if(path.includes("/rest/v1/residence_room_types"))return json(route,[]);
+  if(path.includes("/rest/v1/profiles"))return json(route,route.request().headers().accept?.includes("object")?profile:[profile]);
   if(path.includes("/rest/v1/resmap_campuses"))return json(route,[{id:"c1",campus_key:"pretoria-west",name:"Pretoria West (Main Campus)",latitude:-25.754,longitude:28.188,is_active:true}]);
   if(path.includes("/rest/v1/resmap_map_config"))return json(route,{google_maps_enabled:false,raster_primary_url:"https://tile.openstreetmap.org/{z}/{x}/{y}.png",raster_fallback_url:"https://tile.openstreetmap.org/{z}/{x}/{y}.png"});
   if(path.includes("/rest/v1/"))return json(route,path.includes("/rpc/")?{}:[]);
@@ -54,10 +55,9 @@ try{
       try{Object.defineProperty(navigator,"deviceMemory",{configurable:true,get:()=>memory});}catch{}
       try{Object.defineProperty(navigator,"hardwareConcurrency",{configurable:true,get:()=>cores});}catch{}
       localStorage.setItem(key,JSON.stringify(value));
-      // Every profile starts from the same explicit first-run guide state. This
-      // avoids auth-bootstrap timing deciding whether the guide is paused before
-      // /dashboard becomes the stable route and keeps the OEM matrix deterministic.
-      localStorage.setItem(guideKey,JSON.stringify({step:0,paused:false,complete:false}));
+      // Seed the first-run state once. Later navigations must preserve the state
+      // written by the real close/skip controls instead of reopening the guide.
+      if(!localStorage.getItem(guideKey))localStorage.setItem(guideKey,JSON.stringify({step:0,paused:false,complete:false}));
       if(safe)localStorage.setItem("rk_native_safe_graphics_v1","1");
       else localStorage.removeItem("rk_native_safe_graphics_v1");
     },{memory:p.memory,cores:p.cores,key:storageKey,value:session,safe:p.safe,guideKey:guideStorageKey});
