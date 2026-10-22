@@ -13,7 +13,11 @@ const checks = [
   ["RG2 stateful first-run guide", () => {
     const tour = read("src/components/native/NativeGuidedOnboarding.tsx");
     for (const term of ["rk_native_guide_v1_", "MutationObserver", "Skip guide", "Close app guide", "Find My Res", "profileNeedsAttention", "my-applications", "100dvh", "orientationchange"]) assert.ok(tour.includes(term), term);
-    assert.ok(!tour.includes(":has("), "native guide must not depend on CSS :has() support");
+    assert.ok(!tour.includes('button:has('), "native guide must not depend on relational :has selectors");
+  }],
+  ["RG2 hardware-back onboarding escape", () => {
+    const activity = read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
+    assert.ok(activity.includes("onBackPressed") && activity.includes("rk-native-guide-dismiss") && activity.includes("canGoBack"));
   }],
   ["RG3 Android permission and low-resource 3D fallback", () => {
     const location = read("src/lib/resmap/liveLocation.ts");
