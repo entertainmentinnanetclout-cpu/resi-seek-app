@@ -57,6 +57,7 @@ on:
       - "scripts/p10-android-device-matrix.mjs"
       - "scripts/p11-release-gate.mjs"
       - "scripts/p12-release-candidate-audit.mjs"
+      - "scripts/verify-android-16kb-elf.mjs"
       - "docs/P9_P12_RELEASE_CANDIDATE_2026-09-30.md"
       - "src/lib/devicePerformance.ts"
       - "src/contexts/AuthContext.tsx"
@@ -199,17 +200,8 @@ jobs:
           grep -q 'GeolocationPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
           grep -q 'LocalNotificationsPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
           grep -q 'PushNotificationsPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
-      - name: Verify no unreviewed native ELF libraries
-        shell: bash
-        run: |
-          set -e
-          libs=$(unzip -Z1 android/app/build/outputs/bundle/release/app-release.aab | grep -E '^base/lib/.+[.]so$' || true)
-          if [ -n "$libs" ]; then
-            echo "Native ELF libraries detected. 16 KB page-size compatibility requires explicit ELF alignment verification:"
-            echo "$libs"
-            exit 1
-          fi
-          echo "No packaged native ELF libraries; 16 KB native ELF alignment is not applicable to this bundle."
+      - name: Verify Android 16 KB ELF compatibility
+        run: node scripts/verify-android-16kb-elf.mjs android/app/build/outputs/bundle/release/app-release.aab
       - name: Upload unsigned readiness AAB
         uses: actions/upload-artifact@v7
         with:
