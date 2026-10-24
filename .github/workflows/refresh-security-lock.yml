@@ -1,0 +1,38 @@
+name: Refresh Security Lock
+
+on:
+  push:
+    branches: [fix/android-native-plugin-packaging-v117]
+    paths:
+      - "package.json"
+      - ".github/workflows/refresh-security-lock.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lock:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/android-native-plugin-packaging-v117
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Regenerate deterministic lock
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Verify locked production dependency security
+        run: |
+          npm ci --ignore-scripts
+          node scripts/dependency-security-audit.mjs
+      - name: Commit regenerated lock and remove one-shot workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/refresh-security-lock.yml
+          git add package-lock.json
+          git commit -m "Regenerate secure dependency lock for Play release"
+          git push origin HEAD:fix/android-native-plugin-packaging-v117
