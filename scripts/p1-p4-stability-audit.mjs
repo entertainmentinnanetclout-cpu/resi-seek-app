@@ -38,7 +38,7 @@ const telemetry = read("src/lib/runtimeTelemetry.ts");
 const connectivity = read("src/components/ConnectivityStatus.tsx");
 const runtimeMigration = read("supabase/migrations/20260929121500_mobile_runtime_crash_telemetry.sql");
 
-expect(release.versionCode >= 9 && release.versionName === "1.1.6", "final Android release identity is v1.1.6 / code 9+");
+expect(release.versionCode >= 10 && release.versionName === "1.1.7", "final Android release identity is v1.1.7 / code 10+");
 expect(release.compileSdk === 36 && release.targetSdk === 36, "Android compile/target SDK is API 36");
 expect(release.minSdk <= 24, "supported Android floor remains broad enough for existing minSdk 24 clients");
 expect(mainActivity.includes("onRenderProcessGone") && mainActivity.includes("view.destroy()") && mainActivity.includes("recreate") && mainActivity.includes("return true"), "dead WebView renderer is destroyed and activity recovery is handled");

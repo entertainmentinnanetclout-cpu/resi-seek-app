@@ -1,6 +1,6 @@
 name: Android Play Store Readiness
 
-# Release-candidate gate: ResKonnect Android 1.1.6 / versionCode 9.
+# Release-candidate gate: ResKonnect Android 1.1.7 / versionCode 10.
 # Keep this workflow tied to every native/runtime regression change so the exact
 # PR head must reach API-36 AAB compilation before merge.
 on:
@@ -57,6 +57,7 @@ on:
       - "scripts/p10-android-device-matrix.mjs"
       - "scripts/p11-release-gate.mjs"
       - "scripts/p12-release-candidate-audit.mjs"
+      - "scripts/verify-android-16kb-elf.mjs"
       - "docs/P9_P12_RELEASE_CANDIDATE_2026-09-30.md"
       - "src/lib/devicePerformance.ts"
       - "src/contexts/AuthContext.tsx"
@@ -153,8 +154,15 @@ jobs:
         run: |
           cat p10-android-device-matrix.log
           exit 1
-      - name: Install pinned Capacitor native toolchain
-        run: npm install --no-save --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/app@8.0.0 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0 @capacitor/push-notifications@8.0.0
+      - name: Install and declare pinned Capacitor native toolchain
+        run: |
+          npm install --save-exact --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/app@8.0.0 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0 @capacitor/push-notifications@8.0.0
+          node - <<'NODE'
+          const p = require('./package.json');
+          const all = {...p.dependencies, ...p.devDependencies};
+          const required = ['@capacitor/core','@capacitor/android','@capacitor/app','@capacitor/geolocation','@capacitor/local-notifications','@capacitor/push-notifications'];
+          for (const name of required) if (!all[name]) throw new Error(`Missing declared native dependency: ${name}`);
+          NODE
       - name: Build production web bundle
         env:
           RK_NATIVE_BUILD: "1"
@@ -163,24 +171,37 @@ jobs:
         run: npm run platform:p9
       - name: Sync Capacitor Android
         run: npx cap sync android
+      - name: Verify generated Capacitor native plugin registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          registry="android/app/src/main/assets/capacitor.plugins.json"
+          test -s "$registry"
+          grep -q 'AppPlugin' "$registry"
+          grep -q 'GeolocationPlugin' "$registry"
+          grep -q 'LocalNotificationsPlugin' "$registry"
+          grep -q 'PushNotificationsPlugin' "$registry"
+          cat "$registry"
       - name: Compile API 36 release AAB
         env:
-          ANDROID_VERSION_CODE: "9"
-          ANDROID_VERSION_NAME: "1.1.6"
+          ANDROID_VERSION_CODE: "10"
+          ANDROID_VERSION_NAME: "1.1.7"
         run: gradle -p android bundleRelease --stacktrace
       - name: Verify release artifact exists
         run: test -s android/app/build/outputs/bundle/release/app-release.aab
-      - name: Verify no unreviewed native ELF libraries
+      - name: Verify packaged AAB native plugin registry
         shell: bash
         run: |
-          set -e
-          libs=$(unzip -Z1 android/app/build/outputs/bundle/release/app-release.aab | grep -E '^base/lib/.+[.]so$' || true)
-          if [ -n "$libs" ]; then
-            echo "Native ELF libraries detected. 16 KB page-size compatibility requires explicit ELF alignment verification:"
-            echo "$libs"
-            exit 1
-          fi
-          echo "No packaged native ELF libraries; 16 KB native ELF alignment is not applicable to this bundle."
+          set -euo pipefail
+          aab="android/app/build/outputs/bundle/release/app-release.aab"
+          unzip -p "$aab" base/assets/capacitor.plugins.json > "$RUNNER_TEMP/capacitor.plugins.json"
+          test -s "$RUNNER_TEMP/capacitor.plugins.json"
+          grep -q 'AppPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
+          grep -q 'GeolocationPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
+          grep -q 'LocalNotificationsPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
+          grep -q 'PushNotificationsPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
+      - name: Verify Android 16 KB ELF compatibility
+        run: node scripts/verify-android-16kb-elf.mjs android/app/build/outputs/bundle/release/app-release.aab
       - name: Upload unsigned readiness AAB
         uses: actions/upload-artifact@v7
         with:

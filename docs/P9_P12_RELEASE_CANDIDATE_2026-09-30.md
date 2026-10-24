@@ -1,6 +1,6 @@
-# ResKonnect Android 1.1.6 (versionCode 9) — P9–P12 Release Candidate
+# ResKonnect Android 1.1.7 (versionCode 10) — P9–P12 Release Candidate
 
-Date: 2026-10-22  
+Date: 2026-10-24  
 Package: `org.reskonnect.app`  
 Compile / target SDK: 36  
 Minimum SDK: 24  
@@ -62,18 +62,24 @@ Required gates:
 - renderer-death recovery;
 - safe 2D/graphics fallback;
 - source-controlled Supabase RPC/schema contract checks;
-- signed-release workflow parity.
+- signed-release workflow parity;
+- zero known production dependency vulnerabilities under the governed dependency-security audit.
+
+The 2026-10-24 release lock refresh pins patched production dependency resolutions, including `zod` 4.6.7, `fast-uri` 3.1.9 and `serialize-javascript` 7.1.3. The production audit must remain green on the exact candidate lockfile.
 
 ## P12 — Final release candidate
 
-The Play testing repair candidate is **1.1.6 / versionCode 9**. Do not upload a later code revision under versionCode 9.
+The corrected native packaging candidate is **1.1.7 / versionCode 10**. Do not upload a later code revision under versionCode 10.
 
-This candidate supersedes 1.1.5 / versionCode 8 after the internal-testing onboarding defect. The repaired candidate must prove that onboarding is always dismissible and does not return after a persisted close/skip action.
+This candidate supersedes 1.1.6 / versionCode 9 after the pre-upload audit found that the prior bundle did not contain the expected Capacitor native plugin registry. The corrected candidate must prove that App, Geolocation, Local Notifications and Push Notifications are registered after Capacitor sync and are physically present in the final AAB.
 
 ### Automated candidate acceptance
 - [ ] All PR checks green on the exact release-candidate head SHA.
 - [ ] Unsigned API-36 readiness AAB compiles from the exact release-candidate head.
-- [ ] AAB contains no unreviewed native ELF libraries.
+- [ ] Generated `capacitor.plugins.json` contains App, Geolocation, Local Notifications and Push Notifications.
+- [ ] Final readiness AAB contains the same four native plugin registrations.
+- [ ] Every packaged native ELF `LOAD` segment is verified at 16 KB (`0x4000`) alignment or greater.
+- [ ] Production dependency security audit reports zero known production vulnerabilities.
 - [ ] Native onboarding closes in portrait and landscape and remains dismissed after reload/reopen.
 - [ ] Website Meta consent never appears in the Capacitor runtime.
 - [ ] Production web/PWA matrix passes.
@@ -83,16 +89,19 @@ This candidate supersedes 1.1.5 / versionCode 8 after the internal-testing onboa
 
 ### Protected signed artifact
 Run **Android Play Store Signed Release** with:
-- `version_code = 9`
-- `version_name = 1.1.6`
+- `version_code = 10`
+- `version_name = 1.1.7`
 
 The protected workflow must:
 - validate protected upload-key secrets;
 - materialize the keystore only on the runner;
 - rerun P1–P11 release gates;
+- declare the pinned Capacitor native dependencies before sync;
+- verify the generated native plugin registry;
 - compile the signed AAB;
+- verify the native plugin registry inside the final AAB;
 - verify the AAB signature with `jarsigner`;
-- check native ELF packaging;
+- verify every packaged native ELF library for 16 KB page-size-compatible `LOAD` alignment;
 - generate SHA-256;
 - upload the AAB and checksum as a retained CI artifact.
 

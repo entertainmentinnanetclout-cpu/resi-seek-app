@@ -43,8 +43,8 @@ for(const [label,min] of [["minSdk",24],["compileSdk",36],["targetSdk",36]]) {
   const value=sdk(label+"Version");
   if(value>=min) pass(label,String(value)); else block(label,`${value||"missing"}; minimum ${min}.`);
 }
-if(release.versionName==="1.1.6"&&release.versionCode===9) pass("Release identity","1.1.6 / versionCode 9 (Play onboarding/stability repair candidate).");
-else block("Release identity","Expected release 1.1.6 / versionCode 9. Do not reuse versionCode 8 after the Play testing repair.");
+if(release.versionName==="1.1.7"&&release.versionCode===10) pass("Release identity","1.1.7 / versionCode 10 replacement Play candidate.");
+else block("Release identity","Expected release 1.1.7 / versionCode 10. Do not reuse versionCode 9 for the corrected native package.");
 if(!manifest) block("AndroidManifest","Missing.");
 else {
   for(const name of ["INTERNET","CAMERA","ACCESS_COARSE_LOCATION","ACCESS_FINE_LOCATION"]) {
@@ -95,7 +95,7 @@ if(launcher.includes("@drawable/app_icon_foreground_safe")) pass("Adaptive icon 
 else block("Adaptive icon safe zone","Launcher foreground is not using the safe inset.");
 if(workflow.includes("bundleRelease")&&workflow.includes("android-36")&&workflow.includes("--strict")) pass("AAB readiness","Strict audit and API-36 AAB compile enabled.");
 else block("AAB readiness","Workflow missing strict audit or bundle build.");
-if(signedWorkflow.includes("bundleRelease")&&signedWorkflow.includes("jarsigner")&&signedWorkflow.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64")&&signedWorkflow.includes("@capacitor/push-notifications@8.0.0")) pass("Signed Play build","Protected signing and native plugin install configured.");
+if(signedWorkflow.includes("bundleRelease")&&signedWorkflow.includes("jarsigner")&&signedWorkflow.includes("RK_ANDROID_UPLOAD_KEYSTORE_B64")&&signedWorkflow.includes("@capacitor/push-notifications@8.0.0")&&signedWorkflow.includes("Verify packaged AAB native plugin registry")) pass("Signed Play build","Protected signing and final AAB native-plugin verification configured.");
 else block("Signed Play build","Signed workflow incomplete.");
 if(app.includes('path="/delete-account"')&&app.includes("<AccountDeletion")) pass("Public deletion URL","/delete-account is routable.");
 else block("Public deletion URL","Missing deletion URL.");

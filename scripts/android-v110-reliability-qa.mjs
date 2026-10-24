@@ -37,12 +37,12 @@ expect(!notFound.includes("CareerEducation")&&!notFound.includes("ManagedSeoPage
 expect(app.includes('const Landing = lazy(')&&app.includes("DeferredGlobalEnhancements"),"landing/global enhancements are split from boot bundle");
 expect(dashboard.includes("!isMobile")&&dashboard.includes("dashboard-notifications-mobile"),"dashboard mounts one notification centre per viewport");
 expect(notifications.includes("stores = new Map")&&fullMessage.includes('.eq("user_id", user.id)'),"notifications share one realtime feed and full details are owner-scoped");
-expect(native.versionName==="1.1.6"&&native.versionCode===9,"Android release metadata is 1.1.6 / versionCode 9");
+expect(native.versionName==="1.1.7"&&native.versionCode===10,"Android release metadata is 1.1.7 / versionCode 10");
 const mainActivity=read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
 const nativeMap=read("src/components/resmap/NativeResMapExperience.tsx");
 expect(mainActivity.includes("onRenderProcessGone")&&mainActivity.includes("view.destroy()")&&mainActivity.includes("recreate"),"Android recovers from WebView renderer death");
 expect(nativeMap.includes("ResMapExperienceStable")&&nativeMap.includes("allow3d={false}")&&nativeMap.includes("rk_native_safe_graphics_v1"),"native ResMap defaults to GPU-safe raster mode");
-expect(native.foregroundLocalNotifications===true&&native.nativePushNotifications===false,"foreground notification support is distinct from unconfigured FCM background push");
+expect(native.foregroundLocalNotifications===true&&native.nativePushNotifications===false,"foreground notification support is distinct from unverified FCM background push");
 
 if(process.exitCode) process.exit(process.exitCode);
 console.log("Android/web reliability gate passed.");
