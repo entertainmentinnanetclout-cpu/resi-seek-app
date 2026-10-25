@@ -24,6 +24,7 @@
     "release:p12": "node scripts/p12-release-candidate-audit.mjs"
   },
   "dependencies": {
+    "@capacitor/background-runner": "3.0.0",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.10.0",
     "@playwright/test": "^1.56.1",
