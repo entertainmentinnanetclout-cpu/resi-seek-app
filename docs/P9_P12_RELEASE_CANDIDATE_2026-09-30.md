@@ -1,4 +1,4 @@
-# ResKonnect Android 1.1.7 (versionCode 10) — P9–P12 Release Candidate
+# ResKonnect Android 1.1.8 (versionCode 11) — P9–P12 Release Candidate
 
 Date: 2026-10-24  
 Package: `org.reskonnect.app`  
@@ -69,7 +69,7 @@ The 2026-10-24 release lock refresh pins patched production dependency resolutio
 
 ## P12 — Final release candidate
 
-The corrected native packaging candidate is **1.1.7 / versionCode 10**. Do not upload a later code revision under versionCode 10.
+The corrected native packaging candidate is **1.1.8 / versionCode 11**. Do not upload a later code revision under versionCode 11.
 
 This candidate supersedes 1.1.6 / versionCode 9 after the pre-upload audit found that the prior bundle did not contain the expected Capacitor native plugin registry. The corrected candidate must prove that App, Geolocation, Local Notifications and Push Notifications are registered after Capacitor sync and are physically present in the final AAB.
 
@@ -90,7 +90,7 @@ This candidate supersedes 1.1.6 / versionCode 9 after the pre-upload audit found
 ### Protected signed artifact
 Run **Android Play Store Signed Release** with:
 - `version_code = 10`
-- `version_name = 1.1.7`
+- `version_name = 1.1.8`
 
 The protected workflow must:
 - validate protected upload-key secrets;

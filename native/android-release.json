@@ -1,8 +1,8 @@
 {
   "appName": "ResKonnect",
   "packageId": "org.reskonnect.app",
-  "versionName": "1.1.7",
-  "versionCode": 10,
+  "versionName": "1.1.8",
+  "versionCode": 11,
   "capacitorVersion": "8.5.2",
   "minSdk": 24,
   "compileSdk": 36,
@@ -22,9 +22,9 @@
   "nativePushClientImplemented": true,
   "nativePushNotifications": false,
   "nativeBackgroundPushRequires": [
-    "Firebase Android google-services.json for org.reskonnect.app",
-    "FCM HTTP v1 service-account credentials on trusted backend",
-    "closed-app delivery test on a Play-installed physical device"
+    "Firebase Android google-services.json only for instant FCM delivery",
+    "FCM HTTP v1 service-account credentials only for instant FCM delivery",
+    "physical-device verification of both instant and providerless fallback delivery"
   ],
   "androidAppLinksClientImplemented": true,
   "androidAppLinksVerified": false,
@@ -33,5 +33,8 @@
     "ANDROID_APP_LINKS_SHA256_CERTS on production website",
     "assetlinks.json verification against a Play-installed build"
   ],
-  "googleOauthInNativeWebView": false
+  "googleOauthInNativeWebView": false,
+  "providerlessBackgroundNotifications": true,
+  "providerlessBackgroundIntervalMinutes": 15,
+  "providerlessBackgroundTransport": "Supabase Edge Function + Capacitor Background Runner + Local Notifications"
 }
