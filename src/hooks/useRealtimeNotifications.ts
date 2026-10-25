@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { nativeForegroundAlert, listenForNativeNotificationAction } from "@/lib/nativeNotifications";
+import { listenForBackgroundNotificationAction } from "@/lib/backgroundNotifications";
 
 export interface AccountNotification {
   id: string;
@@ -53,7 +54,9 @@ async function load(userId: string, force = false) {
 function connect(userId: string) {
   const store = storeFor(userId);
   if (store.channel) return;
-  store.stopNativeAction = listenForNativeNotificationAction(userId);
+  const stopLocalAction = listenForNativeNotificationAction(userId);
+  const stopBackgroundAction = listenForBackgroundNotificationAction();
+  store.stopNativeAction = () => { stopLocalAction(); stopBackgroundAction(); };
   store.channel = supabase.channel(`rk-account-notices-${userId}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, payload => {
       if (payload.eventType === "DELETE") { void load(userId, true); return; }
