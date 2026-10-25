@@ -55,7 +55,10 @@ android {
 }
 
 repositories {
-    flatDir { dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs' }
+    flatDir {
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+        dirs '../../node_modules/@capacitor/background-runner/android/src/main/libs', 'libs'
+    }
 }
 
 dependencies {
@@ -77,5 +80,5 @@ try {
     def servicesJSON = file('google-services.json')
     if (servicesJSON.text) { apply plugin: 'com.google.gms.google-services' }
 } catch(Exception e) {
-    logger.info("google-services.json not found; native push is intentionally disabled for Android v1")
+    logger.info("google-services.json not found; FCM is disabled and Background Runner provides periodic notification delivery")
 }
