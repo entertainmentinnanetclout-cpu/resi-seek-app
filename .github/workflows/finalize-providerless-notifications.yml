@@ -1,0 +1,112 @@
+name: Finalize Providerless Notifications
+on:
+  push:
+    branches: [feat/android-providerless-notifications]
+    paths:
+      - ".github/workflows/finalize-providerless-notifications.yml"
+permissions:
+  contents: write
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feat/android-providerless-notifications
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Bump Android release and harden background-runner gates
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          version_files = [
+            'scripts/android-v110-reliability-qa.mjs',
+            'scripts/p12-release-candidate-audit.mjs',
+            'scripts/android-playstore-readiness.mjs',
+            'scripts/p1-p4-stability-audit.mjs',
+            'scripts/android-rg3-rg6-qa.mjs',
+            'src/lib/runtimeTelemetry.ts',
+            'docs/P9_P12_RELEASE_CANDIDATE_2026-09-30.md',
+            '.github/workflows/android-playstore-readiness.yml',
+            '.github/workflows/android-playstore-release.yml',
+            'android/app/build.gradle',
+          ]
+          for name in version_files:
+            p=Path(name)
+            s=p.read_text()
+            s=s.replace('1.1.7','1.1.8')
+            s=s.replace('versionCode 10','versionCode 11')
+            s=s.replace('versionCode===10','versionCode===11')
+            s=s.replace('versionCode === 10','versionCode === 11')
+            s=s.replace('versionCode >= 10','versionCode >= 11')
+            s=s.replace('versionCode >=10','versionCode >=11')
+            s=s.replace('release.versionCode, 10','release.versionCode, 11')
+            s=s.replace('ANDROID_VERSION_CODE: "10"','ANDROID_VERSION_CODE: "11"')
+            s=s.replace('default: "10"','default: "11"')
+            s=s.replace('?: "10"', '?: "11"')
+            p.write_text(s)
+
+          rel=Path('native/android-release.json')
+          data=json.loads(rel.read_text())
+          data['versionName']='1.1.8'
+          data['versionCode']=11
+          data['providerlessBackgroundNotifications']=True
+          data['providerlessBackgroundIntervalMinutes']=15
+          data['providerlessBackgroundTransport']='Supabase Edge Function + Capacitor Background Runner + Local Notifications'
+          data['nativeBackgroundPushRequires']=[
+            'Firebase Android google-services.json only for instant FCM delivery',
+            'FCM HTTP v1 service-account credentials only for instant FCM delivery',
+            'physical-device verification of both instant and providerless fallback delivery'
+          ]
+          rel.write_text(json.dumps(data,indent=2)+'\n')
+
+          req=Path('native/release-sign-request.json')
+          data=json.loads(req.read_text())
+          data['versionName']='1.1.8'
+          data['versionCode']=11
+          data['requestedAt']='2026-10-25'
+          data['reason']='Signed Play AAB with provider-independent Android background notifications and optional FCM instant delivery'
+          req.write_text(json.dumps(data,indent=2)+'\n')
+
+          for wf_name in ['.github/workflows/android-playstore-readiness.yml','.github/workflows/android-playstore-release.yml']:
+            p=Path(wf_name); s=p.read_text()
+            s=s.replace('@capacitor/push-notifications@8.0.0', '@capacitor/push-notifications@8.0.0 @capacitor/background-runner@3.0.0')
+            s=s.replace("'@capacitor/push-notifications']", "'@capacitor/push-notifications','@capacitor/background-runner']")
+            s=s.replace("grep -q 'PushNotificationsPlugin' \"$registry\"", "grep -q 'PushNotificationsPlugin' \"$registry\"\n          grep -q 'BackgroundRunnerPlugin' \"$registry\"")
+            s=s.replace("grep -q 'PushNotificationsPlugin' \"$RUNNER_TEMP/capacitor.plugins.json\"", "grep -q 'PushNotificationsPlugin' \"$RUNNER_TEMP/capacitor.plugins.json\"\n          grep -q 'BackgroundRunnerPlugin' \"$RUNNER_TEMP/capacitor.plugins.json\"")
+            s=s.replace('App, Geolocation, Local Notifications and Push Notifications.', 'App, Geolocation, Local Notifications, Push Notifications and Background Runner.')
+            s=s.replace('all four required Capacitor native plugins.', 'all five required Capacitor native plugins.')
+            if 'src/lib/backgroundNotifications.ts' not in s:
+              s=s.replace('      - "src/lib/nativePush.ts"', '      - "src/lib/nativePush.ts"\n      - "src/lib/backgroundNotifications.ts"\n      - "public/runners/reskonnect-notifications.js"\n      - "supabase/functions/native-notification-poll/**"\n      - "supabase/migrations/*providerless_background_notifications*"')
+            p.write_text(s)
+
+          signed=Path('.github/workflows/android-playstore-release.yml')
+          s=signed.read_text()
+          s=s.replace('echo "native_push_client=true"', 'echo "native_push_client=true"\n            echo "providerless_background_notifications=true"\n            echo "providerless_background_interval_minutes=15"')
+          signed.write_text(s)
+          PY
+      - name: Regenerate deterministic npm lock
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Verify dependency security
+        run: |
+          npm ci --ignore-scripts
+          node scripts/dependency-security-audit.mjs
+      - name: Verify release version replacements
+        run: |
+          node -e "const r=require('./native/android-release.json'); if(r.versionName!=='1.1.8'||r.versionCode!==11||r.providerlessBackgroundNotifications!==true) process.exit(1)"
+          grep -q 'BackgroundRunnerPlugin' .github/workflows/android-playstore-readiness.yml
+          grep -q 'BackgroundRunnerPlugin' .github/workflows/android-playstore-release.yml
+          grep -q '@capacitor/background-runner@3.0.0' .github/workflows/android-playstore-readiness.yml
+          grep -q '@capacitor/background-runner@3.0.0' .github/workflows/android-playstore-release.yml
+      - name: Commit final release state and remove one-shot workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/finalize-providerless-notifications.yml
+          git add package.json package-lock.json native android scripts src docs .github/workflows/android-playstore-readiness.yml .github/workflows/android-playstore-release.yml public/runners supabase/functions supabase/migrations
+          git commit -m "Finalize Android 1.1.8 providerless notifications"
+          git push origin HEAD:feat/android-providerless-notifications
