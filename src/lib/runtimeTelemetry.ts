@@ -38,7 +38,7 @@ export async function recordMobileRuntime(
       user_id: session?.user?.id || null,
       platform: runtimePlatform(),
       release: isNativeApp() ? "1.1.8" : "web",
-      version_code: isNativeApp() ? 10 : null,
+      version_code: isNativeApp() ? 11 : null,
       event_type: eventType,
       stage: stage.slice(0, 80),
       message: null,
