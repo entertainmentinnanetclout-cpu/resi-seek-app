@@ -9,6 +9,14 @@
       "insetsHandling": "native",
       "initialViewportFitValueHint": "cover",
       "hidden": false
+    },
+    "BackgroundRunner": {
+      "label": "org.reskonnect.background.notifications",
+      "src": "runners/reskonnect-notifications.js",
+      "event": "pollResKonnectNotifications",
+      "repeat": true,
+      "interval": 15,
+      "autoStart": true
     }
   }
 }
