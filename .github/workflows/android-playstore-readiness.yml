@@ -1,6 +1,6 @@
 name: Android Play Store Readiness
 
-# Release-candidate gate: ResKonnect Android 1.1.7 / versionCode 10.
+# Release-candidate gate: ResKonnect Android 1.1.8 / versionCode 11.
 # Keep this workflow tied to every native/runtime regression change so the exact
 # PR head must reach API-36 AAB compilation before merge.
 on:
@@ -13,6 +13,8 @@ on:
       - "native/**"
       - "capacitor.config.*"
       - "package.json"
+      - "package-lock.json"
+      - "public/runners/**"
       - "src/pages/Auth.tsx"
       - "src/pages/Privacy.tsx"
       - "src/pages/AccountDeletion.tsx"
@@ -26,6 +28,7 @@ on:
       - "src/hooks/useRealtimeNotifications.ts"
       - "src/lib/nativeNotifications.ts"
       - "src/lib/nativePush.ts"
+      - "src/lib/backgroundNotifications.ts"
       - "src/lib/nativeAppLinks.ts"
       - "src/lib/resmap/**"
       - "src/components/findmyres/**"
@@ -57,6 +60,7 @@ on:
       - "scripts/p10-android-device-matrix.mjs"
       - "scripts/p11-release-gate.mjs"
       - "scripts/p12-release-candidate-audit.mjs"
+      - "scripts/providerless-notification-qa.mjs"
       - "scripts/verify-android-16kb-elf.mjs"
       - "docs/P9_P12_RELEASE_CANDIDATE_2026-09-30.md"
       - "src/lib/devicePerformance.ts"
@@ -70,8 +74,10 @@ on:
       - "index.html"
       - "supabase/config.toml"
       - "supabase/migrations/*android_rg4*"
+      - "supabase/migrations/*providerless_background_notifications*"
       - "supabase/functions/push-subscription/**"
       - "supabase/functions/send-push/**"
+      - "supabase/functions/native-notification-poll/**"
       - "scripts/android-v110-reliability-qa.mjs"
       - "scripts/android-rg3-rg6-qa.mjs"
       - "scripts/android-session-regression.mjs"
@@ -116,6 +122,8 @@ jobs:
         run: node scripts/android-playstore-readiness.mjs --strict
       - name: Android / web reliability audit
         run: node scripts/android-v110-reliability-qa.mjs
+      - name: Providerless notification security audit
+        run: node scripts/providerless-notification-qa.mjs
       - name: P1-P4 architecture and crash-risk audit
         run: node scripts/p1-p4-stability-audit.mjs
       - name: P5-P8 graphics, PWA and network audit
@@ -156,11 +164,11 @@ jobs:
           exit 1
       - name: Install and declare pinned Capacitor native toolchain
         run: |
-          npm install --save-exact --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/app@8.0.0 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0 @capacitor/push-notifications@8.0.0
+          npm install --save-exact --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/app@8.0.0 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0 @capacitor/push-notifications@8.0.0 @capacitor/background-runner@3.0.0
           node - <<'NODE'
           const p = require('./package.json');
           const all = {...p.dependencies, ...p.devDependencies};
-          const required = ['@capacitor/core','@capacitor/android','@capacitor/app','@capacitor/geolocation','@capacitor/local-notifications','@capacitor/push-notifications'];
+          const required = ['@capacitor/core','@capacitor/android','@capacitor/app','@capacitor/geolocation','@capacitor/local-notifications','@capacitor/push-notifications','@capacitor/background-runner'];
           for (const name of required) if (!all[name]) throw new Error(`Missing declared native dependency: ${name}`);
           NODE
       - name: Build production web bundle
@@ -181,11 +189,12 @@ jobs:
           grep -q 'GeolocationPlugin' "$registry"
           grep -q 'LocalNotificationsPlugin' "$registry"
           grep -q 'PushNotificationsPlugin' "$registry"
+          grep -q 'BackgroundRunnerPlugin' "$registry"
           cat "$registry"
       - name: Compile API 36 release AAB
         env:
-          ANDROID_VERSION_CODE: "10"
-          ANDROID_VERSION_NAME: "1.1.7"
+          ANDROID_VERSION_CODE: "11"
+          ANDROID_VERSION_NAME: "1.1.8"
         run: gradle -p android bundleRelease --stacktrace
       - name: Verify release artifact exists
         run: test -s android/app/build/outputs/bundle/release/app-release.aab
@@ -200,6 +209,7 @@ jobs:
           grep -q 'GeolocationPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
           grep -q 'LocalNotificationsPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
           grep -q 'PushNotificationsPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
+          grep -q 'BackgroundRunnerPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
       - name: Verify Android 16 KB ELF compatibility
         run: node scripts/verify-android-16kb-elf.mjs android/app/build/outputs/bundle/release/app-release.aab
       - name: Upload unsigned readiness AAB

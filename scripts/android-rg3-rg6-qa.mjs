@@ -103,7 +103,7 @@ const checks = [
   ["RG6 version, plugin and protected signing parity", () => {
     const readiness = read(".github/workflows/android-playstore-readiness.yml");
     const signed = read(".github/workflows/android-playstore-release.yml");
-    assert.equal(release.versionName, "1.1.7"); assert.equal(release.versionCode, 10);
+    assert.equal(release.versionName, "1.1.8"); assert.equal(release.versionCode, 11);
     for (const dependency of ["@capacitor/app@8.0.0", "@capacitor/local-notifications@8.0.0", "@capacitor/push-notifications@8.0.0"]) {
       assert.ok(readiness.includes(dependency) && signed.includes(dependency), dependency);
     }

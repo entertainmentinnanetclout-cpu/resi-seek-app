@@ -37,7 +37,7 @@ expect(!notFound.includes("CareerEducation")&&!notFound.includes("ManagedSeoPage
 expect(app.includes('const Landing = lazy(')&&app.includes("DeferredGlobalEnhancements"),"landing/global enhancements are split from boot bundle");
 expect(dashboard.includes("!isMobile")&&dashboard.includes("dashboard-notifications-mobile"),"dashboard mounts one notification centre per viewport");
 expect(notifications.includes("stores = new Map")&&fullMessage.includes('.eq("user_id", user.id)'),"notifications share one realtime feed and full details are owner-scoped");
-expect(native.versionName==="1.1.7"&&native.versionCode===10,"Android release metadata is 1.1.7 / versionCode 10");
+expect(native.versionName==="1.1.8"&&native.versionCode===11,"Android release metadata is 1.1.8 / versionCode 11");
 const mainActivity=read("android/app/src/main/java/org/reskonnect/app/MainActivity.java");
 const nativeMap=read("src/components/resmap/NativeResMapExperience.tsx");
 expect(mainActivity.includes("onRenderProcessGone")&&mainActivity.includes("view.destroy()")&&mainActivity.includes("recreate"),"Android recovers from WebView renderer death");

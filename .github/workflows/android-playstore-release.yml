@@ -6,11 +6,11 @@ on:
       version_code:
         description: "Play versionCode (must increase every upload)"
         required: false
-        default: "10"
+        default: "11"
       version_name:
         description: "Public versionName"
         required: false
-        default: "1.1.7"
+        default: "1.1.8"
   push:
     branches: [main]
     paths:
@@ -91,7 +91,7 @@ jobs:
             echo "Firebase Android configuration is present for org.reskonnect.app."
           else
             echo "RK_FIREBASE_CONFIGURED=0" >> "$GITHUB_ENV"
-            echo "Firebase Android configuration is not provisioned; closed-app FCM is not verified."
+            echo "Firebase Android configuration is not provisioned; FCM instant delivery is unavailable, but the provider-independent background runner remains enabled."
           fi
       - name: Install locked web dependencies
         run: npm ci
@@ -99,6 +99,8 @@ jobs:
         run: node scripts/android-playstore-readiness.mjs --strict
       - name: Native notification, App Links, location and 3D checks
         run: node scripts/android-rg3-rg6-qa.mjs
+      - name: Providerless notification security audit
+        run: node scripts/providerless-notification-qa.mjs
       - name: P1-P4 architecture and crash-risk audit
         run: node scripts/p1-p4-stability-audit.mjs
       - name: P5-P8 graphics, PWA and network audit
@@ -119,11 +121,11 @@ jobs:
         run: node scripts/p10-android-device-matrix.mjs
       - name: Install and declare pinned Capacitor native toolchain
         run: |
-          npm install --save-exact --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/app@8.0.0 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0 @capacitor/push-notifications@8.0.0
+          npm install --save-exact --package-lock=false @capacitor/core@8.5.2 @capacitor/android@8.5.2 @capacitor/cli@8.5.2 @capacitor/app@8.0.0 @capacitor/geolocation@8.0.0 @capacitor/local-notifications@8.0.0 @capacitor/push-notifications@8.0.0 @capacitor/background-runner@3.0.0
           node - <<'NODE'
           const p = require('./package.json');
           const all = {...p.dependencies, ...p.devDependencies};
-          const required = ['@capacitor/core','@capacitor/android','@capacitor/app','@capacitor/geolocation','@capacitor/local-notifications','@capacitor/push-notifications'];
+          const required = ['@capacitor/core','@capacitor/android','@capacitor/app','@capacitor/geolocation','@capacitor/local-notifications','@capacitor/push-notifications','@capacitor/background-runner'];
           for (const name of required) {
             if (!all[name]) throw new Error(`Capacitor native dependency was not declared: ${name}`);
           }
@@ -148,7 +150,8 @@ jobs:
           grep -q 'GeolocationPlugin' "$registry"
           grep -q 'LocalNotificationsPlugin' "$registry"
           grep -q 'PushNotificationsPlugin' "$registry"
-          echo "Capacitor registry contains App, Geolocation, Local Notifications and Push Notifications."
+          grep -q 'BackgroundRunnerPlugin' "$registry"
+          echo "Capacitor registry contains App, Geolocation, Local Notifications, Push Notifications and Background Runner."
       - name: Build signed Play AAB
         env:
           RK_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.RK_ANDROID_UPLOAD_STORE_PASSWORD }}
@@ -167,7 +170,8 @@ jobs:
           grep -q 'GeolocationPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
           grep -q 'LocalNotificationsPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
           grep -q 'PushNotificationsPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
-          echo "Final AAB contains all four required Capacitor native plugins."
+          grep -q 'BackgroundRunnerPlugin' "$RUNNER_TEMP/capacitor.plugins.json"
+          echo "Final AAB contains all five required Capacitor native plugins."
       - name: Verify AAB signature
         run: jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab
       - name: Verify upload certificate
@@ -189,6 +193,8 @@ jobs:
             echo "native_plugin_registry_verified=true"
             echo "native_16kb_elf_alignment_verified=true"
             echo "native_push_client=true"
+            echo "providerless_background_notifications=true"
+            echo "providerless_background_interval_minutes=15"
             echo "app_links_client=true"
             echo "app_links_play_certificate_requires_external_verification=true"
           } > android/app/build/outputs/bundle/release/release-capabilities.txt

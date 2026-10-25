@@ -1,6 +1,7 @@
 import { isNativeApp } from "@/lib/accountRouting";
 
 const keyFor = (userId: string) => `rk_native_alerts_v1_${userId}`;
+const CHANNEL_ID = "reskonnect_updates";
 const nativePlugin = (name: string): any => isNativeApp() ? (window as any).Capacitor?.Plugins?.[name] : null;
 const validId = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 function numericId(uuid: string) {
@@ -17,6 +18,14 @@ export async function enableForegroundAlerts(userId: string): Promise<boolean> {
   try {
     const permission = await local.requestPermissions();
     if (permission.display !== "granted") return false;
+    await Promise.resolve(local.createChannel?.({
+      id: CHANNEL_ID,
+      name: "ResKonnect updates",
+      description: "Account and application updates",
+      importance: 3,
+      visibility: 0,
+      vibration: true,
+    })).catch(() => undefined);
     localStorage.setItem(keyFor(userId), "1");
     return true;
   } catch (error) { console.warn("Device notification permission unavailable", error); return false; }
@@ -24,7 +33,7 @@ export async function enableForegroundAlerts(userId: string): Promise<boolean> {
 export function disableForegroundAlerts(userId: string) {
   try { localStorage.removeItem(keyFor(userId)); } catch { /* storage optional */ }
 }
-/** Foreground-only OS alert. Background delivery requires an authenticated FCM sender. */
+/** Immediate foreground OS alert; closed-app delivery is handled by FCM or the providerless background runner. */
 export async function nativeForegroundAlert(userId: string, noticeId: string) {
   if (!foregroundAlertsEnabled(userId) || !validId(noticeId) || document.visibilityState !== "visible") return;
   const local = nativePlugin("LocalNotifications");
@@ -32,7 +41,7 @@ export async function nativeForegroundAlert(userId: string, noticeId: string) {
   try {
     const allowed = await local.checkPermissions();
     if (allowed.display !== "granted") return;
-    await local.schedule({ notifications: [{ id: numericId(noticeId), title: "ResKonnect update", body: "Tap to read your new account message.", extra: { notificationId: noticeId, userId } }] });
+    await local.schedule({ notifications: [{ id: numericId(noticeId), channelId: CHANNEL_ID, title: "ResKonnect update", body: "Tap to read your new account message.", extra: { notificationId: noticeId, userId } }] });
   } catch (error) { console.warn("Foreground device alert could not display", error); }
 }
 export function listenForNativeNotificationAction(userId: string) {

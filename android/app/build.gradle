@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
-def versionCodeValue = (System.getenv("ANDROID_VERSION_CODE") ?: "10").toInteger()
-def versionNameValue = System.getenv("ANDROID_VERSION_NAME") ?: "1.1.7"
+def versionCodeValue = (System.getenv("ANDROID_VERSION_CODE") ?: "11").toInteger()
+def versionNameValue = System.getenv("ANDROID_VERSION_NAME") ?: "1.1.8"
 def keyStorePathValue = System.getenv("RK_ANDROID_KEYSTORE_PATH")
 def keyStorePasswordValue = System.getenv("RK_ANDROID_KEYSTORE_PASSWORD")
 def keyAliasValue = System.getenv("RK_ANDROID_KEY_ALIAS")
@@ -55,7 +55,10 @@ android {
 }
 
 repositories {
-    flatDir { dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs' }
+    flatDir {
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+        dirs '../../node_modules/@capacitor/background-runner/android/src/main/libs', 'libs'
+    }
 }
 
 dependencies {
@@ -77,5 +80,5 @@ try {
     def servicesJSON = file('google-services.json')
     if (servicesJSON.text) { apply plugin: 'com.google.gms.google-services' }
 } catch(Exception e) {
-    logger.info("google-services.json not found; native push is intentionally disabled for Android v1")
+    logger.info("google-services.json not found; FCM is disabled and Background Runner provides periodic notification delivery")
 }
