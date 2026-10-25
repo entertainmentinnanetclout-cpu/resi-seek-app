@@ -30,40 +30,16 @@ declare
   v_user_id uuid := auth.uid();
   v_token text;
 begin
-  if v_user_id is null then
-    raise exception 'authentication required' using errcode = '42501';
-  end if;
-  if p_device_id is null then
-    raise exception 'device id required' using errcode = '22023';
-  end if;
-
+  if v_user_id is null then raise exception 'authentication required' using errcode = '42501'; end if;
+  if p_device_id is null then raise exception 'device id required' using errcode = '22023'; end if;
   v_token := encode(gen_random_bytes(32), 'hex');
-
-  insert into public.native_background_notification_devices (
-    user_id, device_id, token_hash, enabled, issued_at,
-    last_polled_at, last_notification_created_at, updated_at
-  ) values (
-    v_user_id,
-    p_device_id,
-    encode(digest(v_token, 'sha256'), 'hex'),
-    true,
-    now(),
-    null,
-    now(),
-    now()
-  )
+  insert into public.native_background_notification_devices (user_id, device_id, token_hash, enabled, issued_at, last_polled_at, last_notification_created_at, updated_at)
+  values (v_user_id, p_device_id, encode(digest(v_token, 'sha256'), 'hex'), true, now(), null, now(), now())
   on conflict (user_id, device_id) do update
-  set token_hash = excluded.token_hash,
-      enabled = true,
-      issued_at = now(),
-      last_polled_at = null,
-      last_notification_created_at = now(),
-      updated_at = now();
-
+  set token_hash = excluded.token_hash, enabled = true, issued_at = now(), last_polled_at = null, last_notification_created_at = now(), updated_at = now();
   return v_token;
 end;
 $$;
-
 revoke all on function public.rk_issue_background_notification_token(uuid) from public, anon;
 grant execute on function public.rk_issue_background_notification_token(uuid) to authenticated;
 
@@ -71,28 +47,22 @@ create or replace function public.rk_revoke_background_notification_token(p_devi
 returns boolean
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = public, extensions, pg_temp
 as $$
 declare
   v_user_id uuid := auth.uid();
   v_changed integer;
 begin
-  if v_user_id is null then
-    raise exception 'authentication required' using errcode = '42501';
-  end if;
-
+  if v_user_id is null then raise exception 'authentication required' using errcode = '42501'; end if;
   update public.native_background_notification_devices
   set enabled = false,
       token_hash = encode(digest(gen_random_uuid()::text || clock_timestamp()::text, 'sha256'), 'hex'),
       updated_at = now()
-  where user_id = v_user_id
-    and device_id = p_device_id;
-
+  where user_id = v_user_id and device_id = p_device_id;
   get diagnostics v_changed = row_count;
   return v_changed > 0;
 end;
 $$;
-
 revoke all on function public.rk_revoke_background_notification_token(uuid) from public, anon;
 grant execute on function public.rk_revoke_background_notification_token(uuid) to authenticated;
 
@@ -107,50 +77,26 @@ declare
   v_count integer := 0;
   v_latest timestamptz;
 begin
-  if p_token is null or p_token !~ '^[0-9a-f]{64}$' then
-    return jsonb_build_object('ok', false, 'count', 0);
-  end if;
-
-  select * into v_device
-  from public.native_background_notification_devices
-  where token_hash = encode(digest(p_token, 'sha256'), 'hex')
-    and enabled = true
-  for update;
-
-  if not found then
-    return jsonb_build_object('ok', false, 'count', 0);
-  end if;
-
-  if v_device.last_polled_at is not null
-     and v_device.last_polled_at > now() - interval '90 seconds' then
+  if p_token is null or p_token !~ '^[0-9a-f]{64}$' then return jsonb_build_object('ok', false, 'count', 0); end if;
+  select * into v_device from public.native_background_notification_devices
+  where token_hash = encode(digest(p_token, 'sha256'), 'hex') and enabled = true for update;
+  if not found then return jsonb_build_object('ok', false, 'count', 0); end if;
+  if v_device.last_polled_at is not null and v_device.last_polled_at > now() - interval '90 seconds' then
     return jsonb_build_object('ok', true, 'count', 0, 'throttled', true);
   end if;
-
-  select count(*)::integer,
-         max(n.created_at at time zone 'UTC')
-  into v_count, v_latest
+  select count(*)::integer, max(n.created_at at time zone 'UTC') into v_count, v_latest
   from public.notifications n
   where n.user_id = v_device.user_id
     and coalesce(n.is_read, false) = false
     and (n.created_at at time zone 'UTC') > v_device.last_notification_created_at;
-
   update public.native_background_notification_devices
   set last_polled_at = now(),
-      last_notification_created_at = greatest(
-        last_notification_created_at,
-        coalesce(v_latest, last_notification_created_at)
-      ),
+      last_notification_created_at = greatest(last_notification_created_at, coalesce(v_latest, last_notification_created_at)),
       updated_at = now()
   where id = v_device.id;
-
-  return jsonb_build_object(
-    'ok', true,
-    'count', v_count,
-    'has_updates', v_count > 0
-  );
+  return jsonb_build_object('ok', true, 'count', v_count, 'has_updates', v_count > 0);
 end;
 $$;
-
 revoke all on function public.rk_poll_background_notifications(text) from public, anon, authenticated;
 grant execute on function public.rk_poll_background_notifications(text) to service_role;
 
