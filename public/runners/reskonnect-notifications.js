@@ -49,6 +49,7 @@ addEventListener("pollResKonnectNotifications", async (resolve, reject) => {
           id: NOTIFICATION_ID,
           title: "ResKonnect update",
           body: count === 1 ? "You have a new account update. Tap to view it." : `You have ${Math.min(Math.floor(count), 99)} new account updates. Tap to view them.`,
+          scheduleAt: new Date(Date.now() + 1000),
           channelId: CHANNEL_ID,
           autoCancel: true,
         },
