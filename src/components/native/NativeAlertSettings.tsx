@@ -6,8 +6,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isNativeApp } from "@/lib/accountRouting";
 import { disableForegroundAlerts, enableForegroundAlerts, foregroundAlertsEnabled } from "@/lib/nativeNotifications";
 import { startNativePush, unregisterNativePushToken } from "@/lib/nativePush";
+import { disableBackgroundNotificationFallback, enableBackgroundNotificationFallback } from "@/lib/backgroundNotifications";
 
-/** One explicit Android notification opt-in controls foreground and FCM registration. */
+/** One explicit Android notification opt-in controls local alerts plus both closed-app transports. */
 export default function NativeAlertSettings() {
   const { user } = useAuth();
   const id = user?.id || "";
@@ -19,7 +20,7 @@ export default function NativeAlertSettings() {
   const toggle = async () => {
     if (enabled) {
       setBusy(true);
-      await unregisterNativePushToken();
+      await Promise.allSettled([unregisterNativePushToken(), disableBackgroundNotificationFallback()]);
       disableForegroundAlerts(id);
       setEnabled(false);
       setBusy(false);
@@ -36,19 +37,21 @@ export default function NativeAlertSettings() {
       return;
     }
 
-    // Push registration shares Android's notification permission. A missing or
-    // unconfigured FCM provider must not revoke the user's foreground preference;
-    // the app inbox and foreground local alerts continue to work safely.
-    const pushReady = await startNativePush(id, true);
+    const [pushReady, backgroundReady] = await Promise.all([
+      startNativePush(id, true).catch(() => false),
+      enableBackgroundNotificationFallback().catch(() => false),
+    ]);
     setBusy(false);
     setEnabled(true);
-    if (pushReady) toast.success("Android notifications enabled");
-    else toast.success("On-device alerts enabled; closed-app delivery is not connected on this build yet.");
+    if (pushReady && backgroundReady) toast.success("Android notifications enabled with instant and fallback delivery");
+    else if (backgroundReady) toast.success("Android notifications enabled with provider-independent background delivery");
+    else if (pushReady) toast.success("Android notifications enabled with instant push delivery");
+    else toast.warning("On-device alerts are enabled, but closed-app delivery is temporarily unavailable.");
   };
 
   return <section className="rounded-3xl border border-sky-500/20 bg-gradient-to-br from-sky-500/10 via-card to-violet-500/10 p-4 sm:p-6">
     <div className="flex items-start gap-3"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground"><BellRing className="h-5 w-5" /></div><div className="min-w-0 flex-1"><h2 className="font-black">Android notifications</h2><p className="mt-1 text-sm text-muted-foreground">Choose whether ResKonnect may display private-safe phone alerts for your account and application updates.</p></div></div>
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><span className="text-xs font-bold text-muted-foreground">{enabled ? "Android notifications enabled" : "Android notifications disabled"}</span><Button type="button" variant={enabled ? "outline" : "default"} disabled={busy} onClick={() => void toggle()}>{enabled ? <BellOff className="mr-2 h-4 w-4" /> : <BellRing className="mr-2 h-4 w-4" />}{busy ? "Updating…" : enabled ? "Turn off" : "Enable alerts"}</Button></div>
-    <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-muted-foreground"><Info className="mt-0.5 h-4 w-4 shrink-0" />Notification previews use generic wording so private application details are not exposed on the lock screen. Your complete message remains in the in-app inbox.</p>
+    <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-muted-foreground"><Info className="mt-0.5 h-4 w-4 shrink-0" />Notification previews use generic wording so private application details are not exposed on the lock screen. Firebase push is used when configured; the built-in Android background fallback keeps closed-app delivery available without another notification provider.</p>
   </section>;
 }
