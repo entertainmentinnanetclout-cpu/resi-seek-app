@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isNativeApp } from "@/lib/accountRouting";
 import { recordMobileRuntime } from "@/lib/runtimeTelemetry";
+import { disableBackgroundNotificationFallback } from "@/lib/backgroundNotifications";
 
 const TOKEN_KEY = "rk_native_push_token_v1";
 const CHANNEL_ID = "reskonnect_updates";
@@ -211,7 +212,7 @@ export function startNativePush(userId: string, requestPermission = false): Prom
   return starting;
 }
 
-/** Remove this installation from the signed-in user's push targets before logout. */
+/** Remove this installation from every native notification transport before logout. */
 export async function unregisterNativePushToken() {
   if (!isNativeApp()) return;
   const token = storedToken();
@@ -220,6 +221,7 @@ export async function unregisterNativePushToken() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.id) await (supabase as any).rpc("rk_unregister_native_push_token", { p_token: token });
     }
+    await disableBackgroundNotificationFallback().catch(() => undefined);
   } catch (error) {
     console.warn("[native-push] Token cleanup unavailable", error);
   } finally {
