@@ -3,7 +3,7 @@ import {readPublishedPhotoBytes} from "./residence-media.ts";
 
 export type LetterDetails={
  recipientName:string;property:string;reference:string;status:string;
- subject:string;body:string;kindLabel:string;issuedAt?:Date;
+ subject:string;body:string;nextStep?:string;kindLabel:string;issuedAt?:Date;
  residenceImageUrl?:string|null;
 };
 const WIDTH=595.28,HEIGHT=841.89;
@@ -118,7 +118,19 @@ export async function createBrandedPdf(details:LetterDetails):Promise<Uint8Array
  page.drawRectangle({x:42,y:y+3,width:41,height:4,color:gold});y-=24;
  const date=details.issuedAt||new Date();
  drawLines("ISSUED "+date.toISOString().slice(0,10)+"    |    "+transliterate(details.kindLabel).toUpperCase(),9,bold,muted,22,15);
- drawLines(details.body,11,regular,ink,12,17);
+ const step=transliterate(details.nextStep||"");
+ const mainBody=step?details.body.replace("Next step: "+step,"").replace(/\n{3,}/g,"\n\n").trim():details.body;
+ drawLines(mainBody,11,regular,ink,12,17);
+ if(step){
+  const steps=wrap(step,WIDTH-132,regular,10.5).slice(0,9);
+  const blockHeight=Math.max(67,43+steps.length*17);
+  ensure(blockHeight+18);
+  page.drawRectangle({x:42,y:y-blockHeight,width:WIDTH-84,height:blockHeight,color:rgb(251/255,249/255,244/255)});
+  page.drawRectangle({x:42,y:y-blockHeight,width:3.5,height:blockHeight,color:gold});
+  page.drawText("YOUR NEXT STEP",{x:58,y:y-22,size:9,font:bold,color:rgb(.48,.36,.16)});
+  steps.forEach((line,i)=>page.drawText(line,{x:58,y:y-43-i*17,size:10.5,font:regular,color:navy}));
+  y-=blockHeight+24;
+ }
  ensure(55);
  page.drawText("This letter reflects the recorded ResKonnect case status when issued.",{x:42,y:y-5,size:9,font:regular,color:muted});
  y-=23;
