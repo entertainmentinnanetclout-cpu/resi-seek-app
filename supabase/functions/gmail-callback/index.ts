@@ -1,6 +1,6 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2.86.2";
-const html=(title:string,msg:string,status=200)=>new Response(`<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${title}</title></head><body style="font:16px system-ui,sans-serif;max-width:550px;margin:10vh auto;padding:24px"><h1>${title}</h1><p>${msg}</p><p>You may close this tab and return to your ResKonnect dashboard.</p></body></html>`,{status,headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store","Referrer-Policy":"no-referrer","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"}});
+const html=(title:string,msg:string,status=200)=>new Response(`<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${title}</title></head><body style="font:16px system-ui,sans-serif;max-width:550px;margin:10vh auto;padding:24px"><h1>${title}</h1><p>${msg}</p><p><a href="https://www.reskonnect.org/residence/communications">Return to ResKonnect</a></p></body></html>`,{status,headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store","Referrer-Policy":"no-referrer","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"}});
 const b64=(bytes:Uint8Array)=>{let s="";for(const x of bytes)s+=String.fromCharCode(x);return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"")};
 Deno.serve(async (req:Request)=>{
   if(req.method!=="GET") return html("Invalid request","Google authorization must use a browser redirect.",405);
@@ -40,5 +40,10 @@ Deno.serve(async (req:Request)=>{
   if(!google.sub || !google.email || google.email_verified!==true) return html("Unverified Google account","Please use a verified Google email address.",400);
   const {error:saveError}=await admin.rpc("gmail_store_connection",{p_user_id:user_id,p_google_subject:google.sub,p_gmail_address:google.email,p_refresh_token:tokens.refresh_token});
   if(saveError){console.error("gmail vault save failed",saveError.message);return html("Unable to save connection","Please try connecting Gmail again.",503);}
-  return html("Gmail connected","Your Google account is connected for authorized ResKonnect emails.");
+  const destination=isAdmin
+    ? "https://www.reskonnect.org/admin/communications?tab=email&gmail=connected"
+    : "https://www.reskonnect.org/residence/communications?gmail=connected";
+  return new Response(null,{status:303,headers:{
+    "Location":destination,"Cache-Control":"no-store","Referrer-Policy":"no-referrer"
+  }});
 });
