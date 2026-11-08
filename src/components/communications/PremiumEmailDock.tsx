@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {useSearchParams} from "react-router-dom";
-import {AlertTriangle,CheckCircle2,CheckCheck,ChevronRight,Clock3,Download,FileCheck2,FileText,Inbox,Layers,Loader2,Mail,MailCheck,Paperclip,RefreshCw,Search,Send,Settings2,ShieldCheck,Sparkles,Unplug,Users,WalletCards} from "lucide-react";
+import {AlertTriangle,CheckCircle2,CheckCheck,ChevronRight,Clock3,Download,FileCheck2,FileText,Inbox,Layers,Loader2,Mail,MailCheck,MessageCircle,Paperclip,RefreshCw,Search,Send,Settings2,ShieldCheck,Sparkles,Unplug,Users,WalletCards} from "lucide-react";
+import ManualWhatsAppPanel from "./ManualWhatsAppPanel";
 import {supabase} from "@/integrations/supabase/client";
 import {toast} from "sonner";
 import {Badge} from "@/components/ui/badge";
@@ -26,6 +27,7 @@ type CaseItem={
 type CaseInfo={
  id:string;kind:Kind;label:string;status:string;property:string;reference:string;
  document_signal:Signal;recommended_template:Template;recipient_hint:string|null;can_email:boolean;academic_year:string;
+ residence_image_url?:string|null;has_whatsapp?:boolean;
 };
 type EmailPreview={subject:string;body:string;html:string;template_name:string;resolved_key:Template;case:CaseInfo;pdf_attached:boolean};
 type DocTemplate={name:string;subject:string;body:string};
@@ -71,7 +73,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [studioKey,setStudioKey]=useState<Template>("documents_needed");
  const [studioSubject,setStudioSubject]=useState("");
  const [studioBody,setStudioBody]=useState("");
- const [pane,setPane]=useState<"compose"|"bulk"|"templates"|"history">("compose");
+ const [pane,setPane]=useState<"compose"|"whatsapp"|"bulk"|"templates"|"history">("compose");
  const [bulkPreview,setBulkPreview]=useState<BulkResult[]>([]);
  const [bulkApproval,setBulkApproval]=useState(false);
  const [newStatus,setNewStatus]=useState("");
@@ -367,6 +369,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        <div className="rounded-xl border p-4">
         <p className="text-lg font-black">{caseInfo.label}</p>
         <p className="mt-1 text-xs text-muted-foreground">{caseInfo.property} · Ref {caseInfo.reference}</p>
+        {caseInfo.residence_image_url&&<img src={caseInfo.residence_image_url} alt={"Real listing photo: "+caseInfo.property} className="mt-3 max-h-44 w-full rounded-lg object-cover"/>}
         <div className="mt-3 grid grid-cols-2 gap-2">
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recorded status</p><p className="mt-1 text-xs font-bold">{pretty(caseInfo.status)}</p></div>
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recipient</p><p className="mt-1 text-xs font-bold">{caseInfo.recipient_hint||"No valid email"}</p></div>
@@ -393,6 +396,9 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        <Button className="w-full" variant="secondary" disabled={!caseInfo.can_email||!!busy} onClick={()=>void previewOne()}>
         {busy==="preview"?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<Sparkles className="mr-2 h-4 w-4"/>}Generate smart email preview
        </Button>
+       <Button className="w-full" variant="outline" onClick={()=>setPane("whatsapp")} disabled={!selected}>
+        <MessageCircle className="mr-2 h-4 w-4 text-emerald-700"/>Open manual WhatsApp handoff {caseInfo.has_whatsapp?"":"(check phone)"}
+       </Button>
       </div>}
     </section>
     {/* Main communications dock */}
@@ -400,6 +406,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
      <Tabs value={pane} onValueChange={v=>setPane(v as typeof pane)} className="min-w-0">
       <TabsList className="m-3 flex h-auto flex-wrap justify-start gap-1 bg-transparent p-0">
        <TabsTrigger value="compose"><Mail className="mr-1 h-3.5 w-3.5"/>Email</TabsTrigger>
+       <TabsTrigger value="whatsapp"><MessageCircle className="mr-1 h-3.5 w-3.5"/>WhatsApp</TabsTrigger>
        <TabsTrigger value="bulk"><Layers className="mr-1 h-3.5 w-3.5"/>Bulk</TabsTrigger>
        <TabsTrigger value="templates"><Settings2 className="mr-1 h-3.5 w-3.5"/>Templates</TabsTrigger>
        <TabsTrigger value="history"><Clock3 className="mr-1 h-3.5 w-3.5"/>History</TabsTrigger>
@@ -425,6 +432,9 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
         <FileText className="mx-auto h-10 w-10 text-blue-600"/><p className="mt-3 font-semibold">Email + PDF preview</p>
         <p className="mt-1 text-xs text-muted-foreground">Select a case and click Generate smart email preview to see a fully branded message here.</p>
        </div>}
+      </TabsContent>
+      <TabsContent value="whatsapp" className="m-0 space-y-4 px-4 pb-5">
+       <ManualWhatsAppPanel key={kind+":"+selected+":"+template+":"+note} kind={kind} targetId={selected} templateKey={template} note={note} invoke={premium}/>
       </TabsContent>
       <TabsContent value="bulk" className="m-0 space-y-4 px-4 pb-5">
        <div className="rounded-xl border bg-card p-4"><p className="flex items-center gap-2 font-semibold"><Users className="h-4 w-4 text-primary"/>Bulk communication</p>
