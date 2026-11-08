@@ -1,13 +1,17 @@
 import {supabase} from "@/integrations/supabase/client";
 
-export const ACCOMMODATION_APPLICATION_YEAR = 2026;
+export const ACCOMMODATION_APPLICATION_YEAR = new Date().getFullYear();
 export const RESERVATION_YEAR = 2027;
 
 export type ResidenceIntakeRule = {
  residence_id:string; academic_year:number; is_open:boolean;private_only:boolean;
  opens_on:string;closes_on:string;
 };
-const saDate=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Johannesburg",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const saDate=()=>{
+ const parts=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Johannesburg",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+ const pick=(type:string)=>parts.find(part=>part.type===type)?.value||"";
+ return pick("year")+"-"+pick("month")+"-"+pick("day");
+};
 
 /** Default closed. Failure to read the policy never opens a registration route. */
 export function canApplyToResidence(rule:ResidenceIntakeRule|null|undefined, fundingType="private"):boolean{
