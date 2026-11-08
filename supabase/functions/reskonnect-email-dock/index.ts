@@ -3,6 +3,9 @@ import {KINDS,TEMPLATES,TEMPLATE_KEYS,APPLICATION_STATUSES,RESERVATION_STATUSES,
  smartTemplate,validateTemplate,type Kind,type TemplateKey} from "./correspondence.ts";
 import {type EmailSession,readCase,listCases,validUuid,permitted,publicCase} from "./context.ts";
 import {previewPacket,makePreviewPdf,sendOne} from "./send.ts";
+import {whatsappClickToChat,whatsappMessage} from "./whatsapp.ts";
+import {readPublishedPhotoBytes} from "./residence-media.ts";
+import {pdfAsBase64} from "./pdf.ts";
 
 const HEAD={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type",
  "Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};
@@ -13,6 +16,7 @@ const isTemplate=(x:unknown):x is TemplateKey=>typeof x==="string"&&keys.include
 const idsFrom=(x:unknown,max:number):string[]|null=>
  Array.isArray(x)&&x.length>0&&x.length<=max&&x.every(validUuid)&&new Set(x).size===x.length?x:null;
 const messageText=(x:any)=>typeof x==="string"?x.trim():"";
+const sha256=async(value:string)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)))).map(x=>x.toString(16).padStart(2,"0")).join("");
 const failure=(e:unknown)=>{const msg=e instanceof Error?e.message:"Request could not be completed";
  const forbidden=/another residence|not consent|restricted|not authorized|permission|access denied/i.test(msg);
  return res({error:msg},forbidden?403:422);
@@ -76,10 +80,68 @@ Deno.serve(async(req:Request)=>{
   },{onConflict:"owner_user_id,target_kind,template_key"});
   return error?res({error:"Could not save template"},503):res({saved:true});
  }
+
+ if(action==="whatsapp_history"){
+  const {data,error}=await db.from("reskonnect_whatsapp_handoffs")
+   .select("id,target_kind,target_id,template_key,status,phone_last4,recorded_case_status,created_at,marked_sent_at")
+   .eq("actor_user_id",actor).order("created_at",{ascending:false}).limit(75);
+  if(error)return res({error:"Cannot read manual WhatsApp handoff history"},503);
+  return res({items:data||[]});
+ }
+ if(action==="whatsapp_mark_sent"){
+  if(!validUuid(input.handoff_id))return res({error:"Invalid handoff ID"},400);
+  if(input.operator_confirmed!==true)return res({error:"Confirm you pressed Send inside WhatsApp Business"},400);
+  const {data,error}=await db.from("reskonnect_whatsapp_handoffs")
+   .update({status:"operator_marked_sent",marked_sent_at:new Date().toISOString()})
+   .eq("id",input.handoff_id).eq("actor_user_id",actor)
+   .eq("status","opened").select("id,status").maybeSingle();
+  return error?res({error:"Could not update the manual handoff log"},503):
+    data?res({updated:true,status:data.status}):res({error:"Handoff not found or already marked"},409);
+ }
+
  if(!kindOK)return res({error:"Invalid or restricted record category"},403);
  if(action==="list"){
   try{const items=await listCases(s,kind);if(validUuid(input.highlight_id)&&!items.some(x=>x.id===input.highlight_id)){const c=await readCase(s,kind,input.highlight_id);const safe=publicCase(s,c);items.unshift({...safe,created_at:new Date().toISOString(),document_stage:c.documents.stage,missing_count:c.documents.missing.length,pending_review:c.documents.pendingReview});}return res({items});}catch(e){return failure(e);}
  }
+
+ if(["whatsapp_preview","whatsapp_handoff","residence_photo_download"].includes(action)){
+  if(!validUuid(input.target_id))return res({error:"Select a valid application, reservation or enquiry"},400);
+  try{
+   const c=await readCase(s,kind,input.target_id);
+   if(action==="residence_photo_download"){
+    if(!c.residenceImageUrl)return res({error:"No real residence image has been published for this listing"},404);
+    const image=await readPublishedPhotoBytes(c.residenceImageUrl);
+    if(!image)return res({error:"The published residence image is temporarily unavailable"},503);
+    const ext=image.mime==="image/png"?"png":"jpg";
+    return res({filename:"ResKonnect-"+c.reference+"-Residence."+ext,content_type:image.mime,base64:pdfAsBase64(image.bytes)});
+   }
+   const packet=await previewPacket(s,c,key,note);
+   const message=whatsappMessage(c,packet.subject,packet.body);
+   const fingerprint=await sha256(message);
+   if(action==="whatsapp_preview")
+    return res({subject:packet.subject,message,template_name:packet.template_name,
+      recommended_template:packet.resolved_key,preview_hash:fingerprint,
+      case:publicCase(s,c),phone_hint:c.phoneE164?"••••"+c.phoneE164.slice(-4):null,
+      can_open:!!c.phoneE164&&c.contactAllowed,
+      photo_url:c.residenceImageUrl||null,attachment_pdf_available:true,
+      handoff_note:"Opening WhatsApp does not send a message. The operator must press Send and attach any photo or PDF manually."});
+   if(!c.phoneE164||!c.contactAllowed)return res({error:"No valid contactable WhatsApp number is recorded for this applicant"},422);
+   if(input.operator_confirmed!==true||!validUuid(input.request_id)||input.preview_hash!==fingerprint||
+      input.expected_status!==c.status||input.expected_document_stage!==c.documents.stage)
+    return res({error:"Case changed or manual WhatsApp handoff was not confirmed. Refresh the preview."},409);
+   const {data:log,error:logErr}=await db.from("reskonnect_whatsapp_handoffs").insert({
+    actor_user_id:actor,target_kind:kind,target_id:c.id,template_key:packet.resolved_key,
+    request_id:input.request_id,phone_last4:c.phoneE164.slice(-4),
+    recorded_case_status:c.status,recorded_document_stage:c.documents.stage,
+    message_sha256:fingerprint,status:"opened"
+   }).select("id").single();
+   if(logErr)return res({error:logErr.code==="23505"?"This manual handoff was already opened":"Unable to audit manual WhatsApp handoff"},logErr.code==="23505"?409:503);
+   return res({opened:true,handoff_id:log.id,url:whatsappClickToChat(c.phoneE164,message),
+     message,photo_url:c.residenceImageUrl||null,
+     attachment_note:"Manually attach the downloaded residence photo and PDF in WhatsApp Business, then press Send."});
+  }catch(e){return failure(e);}
+ }
+
  if(["case","preview","pdf_preview","send"].includes(action)){
   if(!validUuid(input.target_id))return res({error:"Invalid record ID"},400);
   try{
