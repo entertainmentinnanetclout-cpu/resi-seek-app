@@ -51,3 +51,15 @@ export function deriveCaseJourney(c:CaseContext,last:OutboundEmail|null,lastUplo
   suggested_template:suggestedTemplate,service_action:serviceAction,age_hours:ageHours
  };
 }
+
+/** A case snapshot must match at final send, not merely its status label. */
+export async function caseFingerprint(c:CaseContext):Promise<string>{
+ const payload=JSON.stringify({
+  id:c.id,kind:c.kind,status:c.status,residence:c.residenceId,
+  email:c.email,contactAllowed:c.contactAllowed,funding:c.fundingType,
+  docs:c.documents.stage,uploaded:c.documents.uploaded,pending:c.documents.pendingReview,
+  missing:[...c.documents.missing].sort()
+ });
+ return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(payload))))
+  .map(byte=>byte.toString(16).padStart(2,"0")).join("");
+}
