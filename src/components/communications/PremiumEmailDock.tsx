@@ -110,15 +110,21 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   try{const r=await premium({action:"templates"});setDefaults(r.defaults||{});setOverrides(r.overrides||[]);setPlaceholders(r.placeholders||[]);}
   catch(e){console.warn("Template catalogue unavailable",e);}
  },[premium]);
- const loadItems=useCallback(async()=>{
-  setLoading(true);
+ const loadItems=useCallback(async({preserveLoaded=false}:{preserveLoaded?:boolean}={})=>{
+  if(!preserveLoaded)setLoading(true);
   try{
    const r=await premium({action:"list",kind,academic_year:Number(academicYear),offset:0,highlight_id:deepLinkedIdRef.current});
    const next=(r.items||[]) as CaseItem[];
-   setItems(next);setTotalCases(Number(r.total||0));setNextOffset(r.has_more?Number(r.next_offset):null);
-   setSelected(old=>old&&next.some(x=>x.id===old)?old:next[0]?.id||"");
-  }catch(e){setItems([]);toast.error(e instanceof Error?e.message:"Email cases could not load");}
-  finally{setLoading(false);}
+   setItems(previous=>{
+    if(!preserveLoaded||previous.length<=next.length)return next;
+    const seen=new Set(next.map(item=>item.id));
+    return [...next,...previous.filter(item=>!seen.has(item.id))];
+   });
+   setTotalCases(Number(r.total||0));
+   setNextOffset(current=>preserveLoaded?current:(r.has_more?Number(r.next_offset):null));
+   setSelected(old=>old||next[0]?.id||"");
+  }catch(e){if(!preserveLoaded)setItems([]);toast.error(e instanceof Error?e.message:"Email cases could not load");}
+  finally{if(!preserveLoaded)setLoading(false);}
  },[premium,kind,academicYear]);
  const loadRemaining=async(all=false)=>{
   if(nextOffset===null||loadingMore)return;
@@ -152,7 +158,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  },[premium,kind,selected]);
  useEffect(()=>{void loadConnection();void loadHistory();void loadTemplates();},[loadConnection,loadHistory,loadTemplates]);
  useEffect(()=>{void loadItems();setChecked(new Set());},[loadItems]);
- useEffect(()=>{const interval=window.setInterval(()=>{if(document.visibilityState==="visible")void loadItems();},45000);return ()=>window.clearInterval(interval);},[loadItems]);
+ useEffect(()=>{const interval=window.setInterval(()=>{if(document.visibilityState==="visible")void loadItems({preserveLoaded:true});},45000);return ()=>window.clearInterval(interval);},[loadItems]);
  useEffect(()=>{void loadCase();setPreview(null);setApproved(false);},[loadCase]);
  useEffect(()=>{
   if(params.get("gmail")==="connected"){
@@ -168,6 +174,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   if(filter==="missing")return x.document_stage==="missing"||x.document_stage==="incomplete";
   if(filter==="received")return x.document_stage==="received"||x.document_stage==="complete";
   if(filter==="decision")return ["approved","conditionally_approved","rejected","confirmed","cancelled"].includes(x.status);
+  if(filter==="not_contacted")return !x.email_sent;
   if(filter!=="all")return x.workflow_bucket===filter;
   return true;
  }),[items,filter,search]);
@@ -250,7 +257,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   if(!ids.length)return toast.error("Select cases from the inbox");
   setBusy("bulk-preview");setBulkPreview([]);setBulkApproval(false);setBatchSummary(null);
   try{
-   const response=await premium({action:"bulk_preview",kind,ids,template_key:template,message:note});
+   const response=await premium({action:"bulk_preview",kind,ids,template_key:"smart",message:note});
    setBulkPreview(response.items||[]);
    toast.info((response.eligible||0)+" of "+ids.length+" cases eligible");
   }catch(e){showError(e);}finally{setBusy(null);}
@@ -267,7 +274,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     const slice=ids.slice(i,i+5);
     const requests=slice.map(id=>{const info=bulkPreview.find(p=>p.id===id);return {id,request_id:crypto.randomUUID(),expected_status:info?.status,expected_document_stage:info?.document_signal?.stage,preview_hash:info?.preview_hash};});
     const response=await premium({action:"bulk_send",kind,ids:slice,requests,confirmed:true,
-     batch_id:batchId,template_key:template,message:note});
+     batch_id:batchId,template_key:"smart",message:note});
     ok+=response.succeeded||0;failed+=response.failed||0;
     setBatchSummary({ok,failed});
    }
@@ -483,6 +490,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       <TabsContent value="bulk" className="m-0 space-y-4 px-4 pb-5">
        <div className="rounded-xl border bg-card p-4"><p className="flex items-center gap-2 font-semibold"><Users className="h-4 w-4 text-primary"/>Bulk communication</p>
         <p className="mt-1 text-xs text-muted-foreground">{selectedCount} selected · individualized case context and PDF per recipient · five sends per batch</p>
+        <p className="mt-1 text-xs font-semibold text-primary">Bulk emails always use each student’s own Smart template, not the single-case template selection.</p>
         <Button className="mt-3 w-full" variant="secondary" onClick={()=>void previewBulk()} disabled={!selectedCount||!!busy}><FileCheck2 className="mr-2 h-4 w-4"/>Review selected messages</Button>
         {bulkPreview.length>0&&<div className="mt-3 space-y-2">{bulkPreview.map(messageCard)}
          <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs">
