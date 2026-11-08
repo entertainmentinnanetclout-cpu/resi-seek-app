@@ -2,6 +2,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {useSearchParams} from "react-router-dom";
 import {AlertTriangle,CheckCircle2,CheckCheck,ChevronRight,Clock3,Download,FileCheck2,FileText,Inbox,Layers,Loader2,Mail,MailCheck,MessageCircle,Paperclip,RefreshCw,Search,Send,Settings2,ShieldCheck,Sparkles,Unplug,Users,WalletCards} from "lucide-react";
 import ManualWhatsAppPanel from "./ManualWhatsAppPanel";
+import LandlordGmailGuide from "./LandlordGmailGuide";
 import {supabase} from "@/integrations/supabase/client";
 import {toast} from "sonner";
 import {Badge} from "@/components/ui/badge";
@@ -16,7 +17,7 @@ import {Textarea} from "@/components/ui/textarea";
 import {cn} from "@/lib/utils";
 
 type Kind="application"|"reservation"|"housing_lead"|"support_enquiry";
-type Template="smart"|"acknowledgement"|"documents_needed"|"documents_received"|"approved"|"rejected"|"conditionally_approved"|"status_update"|"feedback"|"next_steps"|"enquiry_response"|"viewing_invite"|"follow_up"|"reservation_confirmed";
+type Template="smart"|"acknowledgement"|"documents_needed"|"documents_received"|"approved"|"rejected"|"conditionally_approved"|"status_update"|"feedback"|"next_steps"|"enquiry_response"|"viewing_invite"|"follow_up"|"reservation_confirmed"|"move_in_arrangements";
 type Mode="admin"|"landlord";
 type Signal={stage:string;missing:string[];uploaded:number;pendingReview:number;summary:string};
 type CaseItem={
@@ -201,7 +202,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const templatesForKind=useMemo(()=>{
   const base:(Template)[]=["smart","acknowledgement","documents_needed","documents_received","status_update","feedback","next_steps","follow_up"];
   if(kind==="application")base.push("approved","rejected","conditionally_approved");
-  if(kind==="reservation")base.push("reservation_confirmed","viewing_invite");
+  if(kind==="reservation")base.push("reservation_confirmed","viewing_invite","move_in_arrangements");
   if(kind==="housing_lead")base.push("viewing_invite","enquiry_response");
   if(kind==="support_enquiry")base.push("enquiry_response");
   return [...new Set(base)];
@@ -370,7 +371,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     <div className="flex items-center gap-3">
      <div className="rounded-xl bg-blue-600 p-2.5"><MailCheck className="h-6 w-6"/></div>
      <div><p className="text-xs font-bold uppercase tracking-[.19em] text-amber-300">ResKonnect Communications OS</p>
-       <h2 className="text-xl font-black">Premium Email Dock</h2>
+       <h2 className="text-xl font-black">Premium Communications Dock</h2>
        <p className="text-xs text-slate-300">Case intelligence · branded PDF letters · Gmail operations</p></div>
     </div>
     <div className="flex items-center gap-2">
@@ -381,10 +382,14 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     </div>
    </div>
    <div className="flex flex-wrap items-center justify-between gap-2 bg-muted/20 px-5 py-2 text-xs text-muted-foreground">
-    <p>{connection?.connected?"Authorized sender: "+connection.email:(connectedError||"Sign in and connect a Google account to send")}</p>
+    <p>{connection?.connected?"Authorized sender: "+connection.email:(connectedError||"Connect your own residence email above to send from that mailbox")}</p>
     <p className="flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5"/>Server-verified recipients · PDF attached per email</p>
    </div>
-   <div className="grid min-h-[640px] grid-cols-1 divide-y xl:grid-cols-[310px_minmax(330px,1fr)_minmax(360px,1.13fr)] xl:divide-x xl:divide-y-0">
+   {mode==="landlord"&&<div className="border-b bg-[#f8fafc] p-4 sm:p-5">
+     <LandlordGmailGuide connected={!!connection?.connected} email={connection?.email||null} busy={!!busy}
+       onConnect={()=>void connectionAction("connect")} onRefresh={()=>void loadConnection()}/>
+    </div>}
+    <div className="grid min-h-[640px] grid-cols-1 divide-y xl:grid-cols-[310px_minmax(330px,1fr)_minmax(360px,1.13fr)] xl:divide-x xl:divide-y-0">
     {/* Inbox / queue */}
     <aside className="flex min-w-0 flex-col">
      <div className="space-y-3 border-b p-4">
@@ -467,7 +472,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
          </SelectContent></Select></div>
        <div><Label htmlFor="premium-email-note">Personalized message / decision details</Label>
         <Textarea id="premium-email-note" rows={6} value={note} maxLength={2500}
-          placeholder="Optional context: explain the exact missing documents, next steps, a follow-up or the recorded decision. This is merged into the branded template."
+          placeholder="Optional practical details: viewing date and time, move-in instructions, what to submit, or the next step. Avoid repeating the case status."
           onChange={e=>{setNote(e.target.value);resetPreview();}}/>
         <p className="mt-1 text-[11px] text-muted-foreground">{note.length}/2500 · Only recorded decisions appear as formal approvals or rejections.</p></div>
        <Button className="w-full" variant="secondary" disabled={!caseInfo.can_email||!!busy} onClick={()=>void previewOne()}>
@@ -489,8 +494,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        <TabsTrigger value="history"><Clock3 className="mr-1 h-3.5 w-3.5"/>History</TabsTrigger>
       </TabsList>
       <TabsContent value="compose" className="m-0 space-y-4 px-4 pb-5">
-       <div><p className="text-base font-bold">Official correspondence</p>
-        <p className="text-xs text-muted-foreground">Each email includes a branded HTML design and a case-specific PDF letter.</p></div>
+       <div><p className="text-base font-bold">Premium correspondence</p>
+        <p className="text-xs text-muted-foreground">White and gold branded emails, accurate case details and an individual PDF letter.</p></div>
        {preview?<div className="space-y-3">
         <div className="rounded-xl border bg-card p-3"><p className="text-[10px] font-bold uppercase text-muted-foreground">To: {preview.case.recipient_hint}</p>
          <p className="mt-2 text-sm font-bold">{preview.subject}</p>
