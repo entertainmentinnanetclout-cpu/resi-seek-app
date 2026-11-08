@@ -102,7 +102,7 @@ Deno.serve(async(req:Request)=>{
    const items:any[]=[];
    for(const id of ids){
     try{const c=await readCase(s,kind,id);const packet=await previewPacket(s,c,key,note);
-      items.push({id,ok:true,...publicCase(s,c),subject:packet.subject,resolved_key:packet.resolved_key});}
+      items.push({id,ok:true,...publicCase(s,c),subject:packet.subject,body:packet.body,resolved_key:packet.resolved_key});}
     catch(e){items.push({id,ok:false,error:e instanceof Error?e.message:"Unavailable"});}
    }
    return res({items,eligible:items.filter(x=>x.ok).length,requested:ids.length});
