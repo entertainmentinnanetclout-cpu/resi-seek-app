@@ -190,6 +190,7 @@ const ResidenceInventory = lazy(
 const ResidenceListingProfile = lazy(
   () => import("./pages/residence/ResidenceListingProfile"),
 );
+const ResidenceListingWizard = lazy(() => import("./pages/residence/ResidenceListingWizard"));
 const ResidenceComplianceReadiness = lazy(
   () => import("./pages/residence/ResidenceComplianceReadiness"),
 );
@@ -1188,6 +1189,7 @@ const App = () => {
                         path="listing"
                         element={<ResidenceListingProfile />}
                       />
+                      <Route path="listing/wizard" element={<ResidenceListingWizard />} />
                       <Route
                         path="compliance"
                         element={<ResidenceComplianceReadiness />}
