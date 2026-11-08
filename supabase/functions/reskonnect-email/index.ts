@@ -57,7 +57,7 @@ Deno.serve(async (req:Request) => {
       .eq("actor_user_id",actor).order("created_at",{ascending:false}).limit(50);
     const {data,error}=await q;
     if(error) return json({error:"Could not retrieve email history"},503);
-    return json({items:(data||[]).map(item=>({...item,recipient_email:hint(item.recipient_email)}))});
+    return json({items:(data||[]).map(item=>({...item,recipient_email:isAdmin?hint(item.recipient_email):"Private recipient"}))});
   }
   if(input.action==="list"){
     const kind=input.kind as Kind;
@@ -89,7 +89,7 @@ Deno.serve(async (req:Request) => {
       return {
         id:r.id,kind,label:safe(r.applicant_name||r.contact_name||r.full_name||p?.full_name||"Applicant"),
         status:r.status||r.stage||"new",residence_name:places.get(r.residence_id)||null,
-        email_hint:validEmail(email)?hint(email):null,can_email:validEmail(email)&&contactAllowed,
+        email_hint:validEmail(email)?(isAdmin?hint(email):"Verified recipient"):null,can_email:validEmail(email)&&contactAllowed,
         created_at:r.created_at
       };
     });
@@ -143,7 +143,7 @@ Deno.serve(async (req:Request) => {
     "Please sign in to ResKonnect for the latest official details. Do not email identity documents unless requested through a secure platform process.","",
     "Kind regards,",signer,"","This is a service message about your existing ResKonnect enquiry or application."
   ].filter((line)=>line!=="__unused__").join("\n");
-  if(input.action==="preview") return json({subject,body,recipient_hint:hint(recipientEmail),kind,template_key:template});
+  if(input.action==="preview") return json({subject,body,recipient_hint:isAdmin?hint(recipientEmail):"Private recipient",kind,template_key:template});
   if(!validUuid(input.idempotency_key)) return json({error:"Missing valid send request ID"},400);
   const {data:connected,error:connectedError}=await db.from("landlord_gmail_connections")
     .select("enabled,gmail_address").eq("user_id",actor).maybeSingle();
@@ -192,5 +192,5 @@ Deno.serve(async (req:Request) => {
   const data=await sent.json();
   await db.from("reskonnect_outbound_emails").update({delivery_status:"sent",provider_message_id:data.id||null,sent_at:new Date().toISOString(),failure_code:null}).eq("id",attempt.id);
   await db.from("landlord_gmail_connections").update({last_used_at:new Date().toISOString()}).eq("user_id",actor);
-  return json({sent:true,message_id:data.id||null,email_id:attempt.id,recipient_hint:hint(recipientEmail)});
+  return json({sent:true,message_id:data.id||null,email_id:attempt.id,recipient_hint:isAdmin?hint(recipientEmail):"Private recipient"});
 });
