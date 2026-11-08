@@ -15,6 +15,8 @@ import {
   Menu,
   Palette,
   Sparkles,
+  Receipt,
+  Headphones,
   Target,
   Rotate3D,
 } from "lucide-react";
@@ -104,6 +106,18 @@ const navItems = [
     label: "Email & Gmail",
     path: "/residence/communications",
     match: (path: string) => path.startsWith("/residence/communications"),
+  },
+  {
+    icon: Headphones,
+    label: "Unified Service Desk",
+    path: "/residence/service-desk",
+    match: (path: string) => path.startsWith("/residence/service-desk"),
+  },
+  {
+    icon: Receipt,
+    label: "Billing & Sponsorships",
+    path: "/residence/billing",
+    match: (path: string) => path.startsWith("/residence/billing"),
   },
   {
     icon: Target,
