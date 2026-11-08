@@ -19,6 +19,7 @@ import { useRealtimeResidences } from "@/hooks/useRealtimeResidences";
 import { useResidenceFilters, isMockResidence } from "@/hooks/useResidenceFilters";
 import { useResidenceSections } from "@/hooks/useResidenceSections";
 import { supabase } from "@/integrations/supabase/client";
+import {getResidenceIntake,canApplyToResidence} from "@/lib/residenceIntake";
 import { SmartSearchBar } from "@/components/findmyres/SmartSearchBar";
 import { FilterSidebar } from "@/components/findmyres/FilterSidebar";
 import { FilterBottomSheet } from "@/components/findmyres/FilterBottomSheet";
@@ -136,7 +137,12 @@ const FindMyRes = () => {
 
   const { isStudent } = useAuth();
 
-  const handleApply = (residence: any) => {
+  const handleApply = async (residence: any) => {
+    if(!canApplyToResidence(await getResidenceIntake(residence.id))){
+      toast.info("Accommodation applications are closed. Explore 2027 reservations instead.");
+      navigate("/res/"+residence.id+"#reservations");
+      return;
+    }
     if (!user) {
       toast.error("Please sign in to apply");
       navigate("/auth?returnTo=/find");
@@ -157,10 +163,13 @@ const FindMyRes = () => {
 
   const handleSubmitApplication = async () => {
     if (!selectedResidence || !user) return;
+    if(!canApplyToResidence(await getResidenceIntake(selectedResidence.id))){setShowApplyModal(false);toast.info("Applications are closed; please reserve for 2027.");navigate("/res/"+selectedResidence.id+"#reservations");return;}
     try {
       const { error } = await supabase.from("applications").insert({
         user_id: user.id,
         residence_id: selectedResidence.id,
+        academic_year:2026,
+        funding_type:"private",
         status: "submitted",
         notes: applicationNotes,
         institution_type: institutionType,
