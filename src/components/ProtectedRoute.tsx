@@ -20,8 +20,8 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user, isLoading, accessError, isTumeloOnly, location.pathname, navigate]);
 
-  if (isLoading) return <AuthLoadingRecovery onRetry={refreshProfile} />;
-  if (user && accessError) return <AuthLoadingRecovery message="We couldn't verify your ResKonnect account access." onRetry={refreshProfile} showRecoveryImmediately />;
+  if (user && accessError) return <AuthLoadingRecovery message="We couldn\'t verify your ResKonnect account access." onRetry={refreshProfile} showRecoveryImmediately retrying={isLoading} />;
+  if (isLoading) return <AuthLoadingRecovery onRetry={refreshProfile} retrying={isLoading} />;
 
   if (!user || (isTumeloOnly && location.pathname !== TUMELO_DASHBOARD)) {
     return null;
