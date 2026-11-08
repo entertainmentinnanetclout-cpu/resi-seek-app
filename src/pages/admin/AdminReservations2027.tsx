@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, CheckCircle2, Clock3, MessageCircle, Search, Users } from "lucide-react";
+import { Link } from "react-router-dom";
+import { CalendarDays, CheckCircle2, Clock3, Mail, MessageCircle, Search, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -216,6 +217,7 @@ export const AdminReservations2027Content = () => {
                   <Select value={row.status} onValueChange={(value) => void updateStatus(row, value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{statuses.map((x) => <SelectItem key={x} value={x}>{label(x)}</SelectItem>)}</SelectContent></Select>
                   <Textarea rows={3} value={notes[row.id] || ""} onChange={(e) => setNotes((p) => ({ ...p, [row.id]: e.target.value }))} placeholder="Internal follow-up note" />
                   <Button size="sm" variant="outline" className="w-full" onClick={() => void saveNotes(row)}>Save note</Button>
+                  <Button size="sm" variant="outline" className="w-full" asChild><Link to={`/admin/communications?tab=email&kind=reservation&target=${row.id}`}><Mail className="mr-2 h-4 w-4"/>Email reservation update</Link></Button>
                 </div>
               </div>
             </CardContent></Card>
