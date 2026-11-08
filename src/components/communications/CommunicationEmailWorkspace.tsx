@@ -62,7 +62,7 @@ export default function CommunicationEmailWorkspace({mode}:{mode:Mode}) {
   const [kind,setKind]=useState<Kind>(mode==="landlord"&&initialKind==="support_enquiry"?"application":initialKind);
   const [targets,setTargets]=useState<Target[]>([]);
   const [selectedId,setSelectedId]=useState(params.get("target")||"");
-  const [template,setTemplate]=useState<Template>(templates[initialKind][0].key);
+  const [template,setTemplate]=useState<Template>(templates[mode==="landlord"&&initialKind==="support_enquiry"?"application":initialKind][0].key);
   const [message,setMessage]=useState("");
   const [preview,setPreview]=useState<Preview|null>(null);
   const [confirmed,setConfirmed]=useState(false);
