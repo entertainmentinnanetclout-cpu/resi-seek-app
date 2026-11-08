@@ -280,7 +280,7 @@ begin
 end;
 $fn$;
 revoke all on function public.reskonnect_record_case_action(text,uuid,text,text,text,timestamptz,boolean) from public,anon;
-grant execute on function public.reskonnect_record_case_action(text,uuid,text,text,timestamptz,boolean) to authenticated,service_role;
+grant execute on function public.reskonnect_record_case_action(text,uuid,text,text,text,timestamptz,boolean) to authenticated,service_role;
 
 -- Profile-derived viewing request, user-authenticated, opt-in, deduplicated,
 -- no guaranteed appointment. Existing viewing_requests is the system of record.
