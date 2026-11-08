@@ -39,6 +39,7 @@ const actionDescriptions:Record<string,string>={
 export default function ResidenceJourneyPanel({residenceId,residenceName}:{residenceId:string;residenceName:string}){
  const {user}=useAuth(),loc=useLocation();
  const [cases,setCases]=useState<CaseItem[]>([]);
+ const [viewingTimes,setViewingTimes]=useState<Record<string,{preferred_date:string|null;preferred_time_window:string|null;confirmed_viewing_at:string|null}>>({});
  const [loading,setLoading]=useState(false),[sending,setSending]=useState(false);
  const [date,setDate]=useState(""),[slot,setSlot]=useState("afternoon"),[note,setNote]=useState("");
  const [consent,setConsent]=useState(false);
@@ -54,7 +55,17 @@ export default function ResidenceJourneyPanel({residenceId,residenceName}:{resid
   setLoading(false);
  },[user?.id,residenceId]);
  useEffect(()=>{void load();const handler=()=>void load();window.addEventListener("reskonnect-case-updated",handler);return()=>window.removeEventListener("reskonnect-case-updated",handler);},[load]);
- const viewing=useMemo(()=>cases.some(x=>x.source_kind==="viewing"&&!x.closed_at),[cases]);
+ useEffect(()=>{
+  const viewings=cases.filter(c=>c.source_kind==="viewing").slice(0,8);
+  if(viewings.length===0){setViewingTimes({});return;}
+  let active=true;
+  void Promise.all(viewings.map(c=>(supabase as any)
+   .rpc("reskonnect_viewing_summary",{p_viewing_id:c.source_id})
+   .then(({data,error}:any)=>({id:c.source_id,value:!error&&Array.isArray(data)?data[0]:null}))
+  )).then(rows=>{if(active)setViewingTimes(Object.fromEntries(rows.filter(r=>r.value).map(r=>[r.id,r.value])));});
+  return()=>{active=false;};
+ },[cases]);
+  const viewing=useMemo(()=>cases.some(x=>x.source_kind==="viewing"&&!x.closed_at),[cases]);
  const submit=async()=>{
   if(!user?.id)return;
   if(!date||!consent)return toast.error("Select a viewing day and confirm contact consent.");
@@ -107,6 +118,10 @@ export default function ResidenceJourneyPanel({residenceId,residenceName}:{resid
          <div className="flex flex-wrap items-center justify-between gap-2"><strong className="flex items-center gap-2 text-sm"><MessageCircle className="h-4 w-4 text-primary"/>{titles[item.source_kind]||"Case"}</strong>
            <Badge variant={item.closed_at?"secondary":"outline"}>{item.source_status.replaceAll("_"," ")}</Badge></div>
          <p className="mt-2 text-sm text-muted-foreground">{actionDescriptions[item.next_action]||"Your request is being processed."}</p>
+         {item.source_kind==="viewing"&&viewingTimes[item.source_id]&&<div className="mt-3 rounded-lg bg-muted/20 p-3 text-xs">
+          <p>Requested: {viewingTimes[item.source_id].preferred_date||"To be confirmed"} · {(viewingTimes[item.source_id].preferred_time_window||"flexible").replaceAll("_"," ")}</p>
+          {viewingTimes[item.source_id].confirmed_viewing_at&&<p className="mt-1 font-semibold text-emerald-700">Confirmed appointment: {new Date(viewingTimes[item.source_id].confirmed_viewing_at!).toLocaleString("en-ZA")}</p>}
+         </div>}
          {item.source_kind==="application"&&item.document_signal==="none_uploaded"&&<div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 p-3 text-xs"><FileCheck2 className="h-4 w-4 text-amber-600"/>No application documents uploaded yet. <Link className="font-bold text-primary underline" to="/documents">Open your documents</Link></div>}
          {item.last_responded_at&&<p className="mt-2 text-xs text-muted-foreground"><ShieldCheck className="mr-1 inline h-3.5 w-3.5"/>Last team response recorded {new Date(item.last_responded_at).toLocaleDateString("en-ZA")}</p>}
        </div>)}
