@@ -274,22 +274,17 @@ const ResidenceDetail = () => {
     if (!user || !residenceId) return;
     setSubmitting(true);
     try {
-      const { error } = await (supabase as any).from("accommodation_reservations").insert({
-        user_id: user.id,
-        residence_id: residenceId,
-        academic_year: 2027,
-        academic_cycle: "unspecified",
-        academic_period: 0,
-        funding_type: fundingType,
-        room_preference: roomPreference.trim() || null,
-        notes: reservationNotes.trim() || null,
-        status: "reserved",
-        source: "residence_detail",
+      const { data, error } = await (supabase as any).rpc("reskonnect_save_reservation_interest",{
+        p_residence_id:residenceId,
+        p_funding_type:fundingType,
+        p_room_preference:roomPreference.trim(),
+        p_notes:reservationNotes.trim(),
       });
       if (error) throw error;
       setShowReserve(false);
       setReservationNotes("");
-      toast.success("Your 2027 reservation interest has been recorded.");
+      if (data?.saved) toast.success("Your 2027 reservation interest has been recorded.");
+      else toast.info("This reservation is already in progress. Residence staff decisions were preserved.");
       window.dispatchEvent(new Event("reskonnect-case-updated"));
     } catch (error: any) {
       toast.error(error?.message || "Could not reserve this residence.");
