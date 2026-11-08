@@ -253,6 +253,17 @@ try {
   await page.getByText("Good to see you, Core.").waitFor({timeout:15000});
   console.log("PASS access-context outage fail-closed and retry");
 
+  // Browser navigator.onLine does not fire when the PostgREST pool recovers
+  // from a short 503. Confirm a signed-in user recovers automatically without
+  // touching Retry, without any role bypass, and without losing the session.
+  failure.accessOnce=true;
+  await page.reload();
+  await page.getByText("We couldn't verify your ResKonnect account access.",{exact:true}).waitFor({timeout:15000});
+  assert.equal(await page.getByText("Good to see you, Core.",{exact:true}).count(),0,"private dashboard opened before a successful role check");
+  await page.getByText("Good to see you, Core.").waitFor({timeout:20000});
+  assert.ok(await page.evaluate(key=>Boolean(localStorage.getItem(key)),storageKey),"recovery cleared the persisted login");
+  console.log("PASS automatic role-check retry after transient backend timeout without user action");
+
   const routes=[
     ["/dashboard","Good to see you, Core."],
     ["/findmyres",residence.name],
