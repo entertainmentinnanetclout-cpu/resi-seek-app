@@ -78,7 +78,7 @@ Deno.serve(async(req:Request)=>{
  }
  if(!kindOK)return res({error:"Invalid or restricted record category"},403);
  if(action==="list"){
-  try{return res({items:await listCases(s,kind)});}catch(e){return failure(e);}
+  try{const items=await listCases(s,kind);if(validUuid(input.highlight_id)&&!items.some(x=>x.id===input.highlight_id)){const c=await readCase(s,kind,input.highlight_id);const safe=publicCase(s,c);items.unshift({...safe,created_at:new Date().toISOString(),document_stage:c.documents.stage,missing_count:c.documents.missing.length,pending_review:c.documents.pendingReview});}return res({items});}catch(e){return failure(e);}
  }
  if(["case","preview","pdf_preview","send"].includes(action)){
   if(!validUuid(input.target_id))return res({error:"Invalid record ID"},400);
