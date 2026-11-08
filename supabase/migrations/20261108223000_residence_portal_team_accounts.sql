@@ -14,6 +14,8 @@ ALTER TABLE public.residence_portal_accounts
   ALTER COLUMN portal_role SET NOT NULL,
   ALTER COLUMN portal_role SET DEFAULT 'manager';
 ALTER TABLE public.residence_portal_accounts
+  DROP CONSTRAINT IF EXISTS residence_portal_accounts_portal_role_check;
+ALTER TABLE public.residence_portal_accounts
   DROP CONSTRAINT IF EXISTS residence_portal_accounts_pkey;
 ALTER TABLE public.residence_portal_accounts
   ADD CONSTRAINT residence_portal_accounts_pkey PRIMARY KEY (id),
