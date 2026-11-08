@@ -17,6 +17,9 @@ const isTemplate=(x:unknown):x is TemplateKey=>typeof x==="string"&&keys.include
 const idsFrom=(x:unknown,max:number):string[]|null=>
  Array.isArray(x)&&x.length>0&&x.length<=max&&x.every(validUuid)&&new Set(x).size===x.length?x:null;
 const messageText=(x:any)=>typeof x==="string"?x.trim():"";
+const sha256=async(text:string)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text))))
+ .map(x=>x.toString(16).padStart(2,"0")).join("");
+const reviewedHash=async(c:any,packet:any)=>sha256((await caseFingerprint(c))+"|"+packet.subject+"|"+packet.body);
 const sha256=async(value:string)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)))).map(x=>x.toString(16).padStart(2,"0")).join("");
 const failure=(e:unknown)=>{const msg=e instanceof Error?e.message:"Request could not be completed";
  const forbidden=/another residence|not consent|restricted|not authorized|permission|access denied/i.test(msg);
@@ -102,7 +105,7 @@ Deno.serve(async(req:Request)=>{
 
  if(!kindOK)return res({error:"Invalid or restricted record category"},403);
  if(action==="list"){
-  try{const result=await listCases(s,kind,{offset:Math.max(0,Math.floor(Number(input.offset)||0)),pageSize:100,academicYear:(kind==="application"||kind==="reservation")&&[2026,2027,2028].includes(Number(input.academic_year))?Number(input.academic_year):null});if(Number(input.offset||0)===0&&validUuid(input.highlight_id)&&!result.items.some(x=>x.id===input.highlight_id)){const c=await readCase(s,kind,input.highlight_id);const safe=publicCase(s,c);result.items.unshift({...safe,created_at:new Date().toISOString(),document_stage:c.documents.stage,missing_count:c.documents.missing.length,pending_review:c.documents.pendingReview,workflow_bucket:"not_contacted",service_action:"Review linked case"});}return res(result);}catch(e){return failure(e);}
+  try{const result:any=await listCases(s,kind,{offset:Math.max(0,Math.floor(Number(input.offset)||0)),pageSize:100,academicYear:(kind==="application"||kind==="reservation")&&[2026,2027,2028].includes(Number(input.academic_year))?Number(input.academic_year):null});if(Number(input.offset||0)===0&&validUuid(input.highlight_id)&&!result.items.some(x=>x.id===input.highlight_id)){const c=await readCase(s,kind,input.highlight_id);const safe=publicCase(s,c);result.items.unshift({...safe,created_at:new Date().toISOString(),document_stage:c.documents.stage,missing_count:c.documents.missing.length,pending_review:c.documents.pendingReview,workflow_bucket:"not_contacted",service_action:"Review linked case"});}return res(result);}catch(e){return failure(e);}
  }
 
  if(["whatsapp_preview","whatsapp_handoff","residence_photo_download"].includes(action)){
@@ -149,10 +152,10 @@ Deno.serve(async(req:Request)=>{
    const c=await readCase(s,kind,input.target_id);
    if(action==="case")return res({case:publicCase(s,c),statuses:kind==="application"?APPLICATION_STATUSES:kind==="reservation"?RESERVATION_STATUSES:[]});
    const packet=await previewPacket(s,c,key,note);
-   if(action==="preview")return res({...packet,case:publicCase(s,c),recipient_hint:publicCase(s,c).recipient_hint,pdf_attached:true,preview_hash:await caseFingerprint(c)});
+   if(action==="preview")return res({...packet,case:publicCase(s,c),recipient_hint:publicCase(s,c).recipient_hint,pdf_attached:true,preview_hash:await reviewedHash(c,packet)});
    if(action==="pdf_preview")return res(await makePreviewPdf(s,c,key,note));
    if(input.confirmed!==true||!validUuid(input.request_id))return res({error:"Send confirmation and request ID required"},400);
-   if(input.expected_status!==c.status||input.expected_document_stage!==c.documents.stage||input.preview_hash!==await caseFingerprint(c))return res({error:"Case details or document uploads changed since preview; regenerate the email"},409);
+   if(input.expected_status!==c.status||input.expected_document_stage!==c.documents.stage||input.preview_hash!==await reviewedHash(c,packet))return res({error:"Case details or document uploads changed since preview; regenerate the email"},409);
    const result=await sendOne(s,c,key,note,input.request_id,null);
    return res(result,result.sent?200:result.status||502);
   }catch(e){return failure(e);}
@@ -165,7 +168,7 @@ Deno.serve(async(req:Request)=>{
    const items:any[]=[];
    for(const id of ids){
     try{const c=await readCase(s,kind,id);const packet=await previewPacket(s,c,key,note);
-      items.push({id,ok:true,...publicCase(s,c),subject:packet.subject,body:packet.body,resolved_key:packet.resolved_key,preview_hash:await caseFingerprint(c)});}
+      items.push({id,ok:true,...publicCase(s,c),subject:packet.subject,body:packet.body,resolved_key:packet.resolved_key,preview_hash:await reviewedHash(c,packet)});}
     catch(e){items.push({id,ok:false,error:e instanceof Error?e.message:"Unavailable"});}
    }
    return res({items,eligible:items.filter(x=>x.ok).length,requested:ids.length});
@@ -176,7 +179,7 @@ Deno.serve(async(req:Request)=>{
     return res({error:"Review and explicitly approve each batch of up to five emails"},400);
    const results:any[]=[];
    for(const item of input.requests){
-    try{const c=await readCase(s,kind,item.id);if(item.expected_status!==c.status||item.expected_document_stage!==c.documents.stage||item.preview_hash!==await caseFingerprint(c))throw Error("Case changed since bulk preview; review again");const result=await sendOne(s,c,key,note,item.request_id,input.batch_id);
+    try{const c=await readCase(s,kind,item.id);const reviewed=await previewPacket(s,c,key,note);if(item.expected_status!==c.status||item.expected_document_stage!==c.documents.stage||item.preview_hash!==await reviewedHash(c,reviewed))throw Error("Case content changed since bulk preview; review again");const result=await sendOne(s,c,key,note,item.request_id,input.batch_id);
       results.push({id:item.id,...result});}
     catch(e){results.push({id:item.id,sent:false,error:e instanceof Error?e.message:"Send failed"});}
    }
