@@ -388,7 +388,7 @@ try {
   failure.bursariesOnce=true;
   await page.goto(origin+"/bursaries");
   await page.getByText("Failed to load bursaries:",{exact:false}).waitFor({timeout:15000});
-  await page.getByRole("button",{name:"Retry"}).click();
+  await page.getByRole("button",{name:"Retry",exact:true}).click();
   await page.getByText("No bursaries found").waitFor({timeout:15000});
   console.log("PASS Bursaries failure/retry");
 
