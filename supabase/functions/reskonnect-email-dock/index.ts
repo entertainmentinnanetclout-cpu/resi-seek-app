@@ -20,7 +20,6 @@ const messageText=(x:any)=>typeof x==="string"?x.trim():"";
 const sha256=async(text:string)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text))))
  .map(x=>x.toString(16).padStart(2,"0")).join("");
 const reviewedHash=async(c:any,packet:any)=>sha256((await caseFingerprint(c))+"|"+packet.subject+"|"+packet.body);
-const sha256=async(value:string)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)))).map(x=>x.toString(16).padStart(2,"0")).join("");
 const failure=(e:unknown)=>{const msg=e instanceof Error?e.message:"Request could not be completed";
  const forbidden=/another residence|not consent|restricted|not authorized|permission|access denied/i.test(msg);
  return res({error:msg},forbidden?403:422);
