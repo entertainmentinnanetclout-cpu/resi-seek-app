@@ -31,7 +31,7 @@ type EmailPreview={subject:string;body:string;html:string;template_name:string;r
 type DocTemplate={name:string;subject:string;body:string};
 type Override={target_kind:Kind;template_key:Template;subject_template:string;body_template:string};
 type History={id:string;subject:string;target_kind:Kind;template_key:string;delivery_status:string;recipient_email:string;created_at:string;failure_code:string|null;pdf_attached:boolean};
-type BulkResult={id:string;ok?:boolean;updated?:boolean;sent?:boolean;label?:string;status?:string;from?:string;to?:string;reason?:string;error?:string;subject?:string;resolved_key?:Template;document_signal?:Signal};
+type BulkResult={id:string;ok?:boolean;updated?:boolean;sent?:boolean;label?:string;status?:string;from?:string;to?:string;reason?:string;error?:string;subject?:string;body?:string;resolved_key?:Template;document_signal?:Signal};
 const kindLabels:Record<Kind,string>={application:"Applications",reservation:"Reservations",housing_lead:"Housing enquiries",support_enquiry:"Support enquiries"};
 const statusOptions:Record<"application"|"reservation",string[]>={
  application:["submitted","under_review","documents_required","conditionally_approved","approved","rejected","withdrawn"],
@@ -294,7 +294,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const formattedSignal=(x:string)=>x==="not_applicable"?"No document check":pretty(x);
  const messageCard=(message:BulkResult)=> <div key={message.id} className="flex items-start justify-between gap-2 rounded-xl border p-3">
    <div className="min-w-0"><p className="text-sm font-semibold">{message.label||message.id.slice(0,8)}</p>
-     <p className="text-xs text-muted-foreground">{message.subject||((message.from||"")+" → "+(message.to||""))}</p>
+     <p className="text-xs text-muted-foreground">{message.subject||((message.from||"")+" → "+(message.to||""))}</p>{message.body&&<details className="mt-2"><summary className="cursor-pointer text-xs font-semibold text-primary">Read personalized email</summary><pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-2 font-sans text-xs">{message.body}</pre></details>}
+     {message.document_signal?.missing?.length>0&&<p className="mt-2 text-xs text-muted-foreground">Missing: {message.document_signal.missing.join(", ")}</p>}
      {!message.ok&&<p className="mt-1 text-xs text-amber-700">{message.reason||message.error||"Not eligible"}</p>}</div>
    <Badge variant={message.ok?"secondary":"outline"}>{message.ok?"Ready":"Review"}</Badge>
   </div>;
