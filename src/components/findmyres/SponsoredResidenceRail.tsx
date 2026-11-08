@@ -14,7 +14,7 @@ export default function SponsoredResidenceRail({residences,onApply}:{residences:
    .then(({data,error}:any)=>{
     if(!active)return;
     // Sponsor queries never block ordinary accommodation discovery.
-    setPlacements(error?[]:(data||[]).filter((row:Placement)=>row.disclosure_label==="Sponsored"));
+    setPlacements(error?[]:(Array.isArray(data)?data:[]).filter((row:Placement)=>row?.disclosure_label==="Sponsored"));
    });
   return()=>{active=false;};
  },[]);
