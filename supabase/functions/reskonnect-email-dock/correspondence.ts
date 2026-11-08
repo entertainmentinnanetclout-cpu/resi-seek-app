@@ -44,6 +44,7 @@ export type CaseContext={
   studentName:string; property:string; year:string; status:string;
   email:string; documents:DocumentSignal; reference:string;
   fundingType:string|null; contactAllowed:boolean;
+  residenceImageUrl?:string|null; phoneE164?:string|null;
 };
 const normal=(x:unknown)=>String(x||"").toLowerCase().replace(/[^a-z0-9]+/g,"_");
 const present=(types:string[],aliases:string[])=>types.some(x=>aliases.includes(x));
@@ -126,11 +127,12 @@ export function renderLetter(c:CaseContext,key:TemplateKey,customNote:string="",
 }
 export function htmlEmail(c:CaseContext,subject:string,body:string):string{
  const esc=(x:string)=>x.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+ const hero=c.residenceImageUrl?'<tr><td style="padding:0;background:#e2e8f0"><img src="'+esc(c.residenceImageUrl)+'" alt="Real listing photo of '+esc(c.property)+'" width="640" style="display:block;width:100%;max-width:640px;height:auto;max-height:340px;object-fit:cover;border:0"><div style="padding:12px 28px;background:#f8fafc;color:#334155;font-weight:bold;font-size:12px">WELCOME TO '+esc(c.property)+' &nbsp; &bull; &nbsp; Actual residence listing photo</div></td></tr>':"";
  const paragraphs=body.split(/\n{2,}/).map(p=>"<p style=\"margin:0 0 15px;line-height:1.65;color:#29364a;font-size:14px\">"+esc(p).replace(/\n/g,"<br>")+"</p>").join("");
  return '<!doctype html><html><body style="background:#f1f5fa;padding:24px 8px;margin:0;font-family:Arial,Helvetica,sans-serif">'+
  '<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="max-width:640px;width:100%;margin:auto;background:#ffffff;border-radius:16px;overflow:hidden">'+
  '<tr><td style="background:#071326;padding:28px 32px;border-top:6px solid #F5B32F"><div style="color:#ffffff;font-size:29px;font-weight:900;letter-spacing:1px">RES<span style="color:#F5B32F">KONNECT</span></div>'+
- '<div style="color:#b6caea;font-size:11px;letter-spacing:1.5px;margin-top:5px">LIVING &bull; AI &bull; OPPORTUNITY</div></td></tr>'+
+ '<div style="color:#b6caea;font-size:11px;letter-spacing:1.5px;margin-top:5px">LIVING &bull; AI &bull; OPPORTUNITY</div></td></tr>'+hero+
  '<tr><td style="padding:32px"><div style="color:#2563EB;font-weight:bold;font-size:11px;letter-spacing:1.5px;text-transform:uppercase">OFFICIAL CASE COMMUNICATION</div>'+
  '<h1 style="margin:14px 0 20px;color:#071326;font-size:23px;line-height:1.3">'+esc(subject)+'</h1>'+
  '<div style="border-left:4px solid #F5B32F;padding:8px 14px;background:#f8fafc;margin-bottom:24px;color:#334155;font-size:12px">Case reference: <strong>'+esc(c.reference)+'</strong> &nbsp; &bull; &nbsp; Recorded status: '+esc(friendly(c.status))+'</div>'+

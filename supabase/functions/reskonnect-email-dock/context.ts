@@ -1,4 +1,6 @@
 import {documentSignal,smartTemplate,type CaseContext,type Kind,type DocumentRow} from "./correspondence.ts";
+import {residencePhoto} from "./residence-media.ts";
+import {normalizeWhatsAppPhone} from "./whatsapp.ts";
 
 export type EmailSession={db:any;actor:string;isAdmin:boolean;residences:Set<string>};
 export const tables:Record<Kind,string>={application:"applications",reservation:"accommodation_reservations",housing_lead:"residence_leads",support_enquiry:"application_support_queries"};
@@ -11,7 +13,8 @@ export const recipientHint=(s:EmailSession,email:string)=>s.isAdmin?email.slice(
 export const publicCase=(s:EmailSession,c:CaseContext)=>({
  id:c.id,kind:c.kind,label:c.studentName,status:c.status,property:c.property,reference:c.reference,
  academic_year:c.year,document_signal:c.documents,recommended_template:smartTemplate(c),
- recipient_hint:validEmail(c.email)?recipientHint(s,c.email):null,can_email:validEmail(c.email)&&c.contactAllowed
+ recipient_hint:validEmail(c.email)?recipientHint(s,c.email):null,can_email:validEmail(c.email)&&c.contactAllowed,
+ residence_image_url:c.residenceImageUrl||null,has_whatsapp:!!c.phoneE164
 });
 
 export async function readCase(s:EmailSession,kind:Kind,id:string):Promise<CaseContext>{
@@ -24,13 +27,17 @@ export async function readCase(s:EmailSession,kind:Kind,id:string):Promise<CaseC
  if(kind==="support_enquiry"&&row.consent_to_be_contacted!==true)throw Error("Applicant did not consent to contact");
  const userId=validUuid(row.user_id)?row.user_id:null;
  const [profile,property,docs,caseDocs]=await Promise.all([
-  userId?db.from("profiles").select("email,full_name").eq("id",userId).maybeSingle():Promise.resolve({data:null,error:null}),
-  row.residence_id?db.from("residences").select("name").eq("id",row.residence_id).maybeSingle():Promise.resolve({data:null,error:null}),
+  userId?db.from("profiles").select("email,full_name,phone,phone_number,phone_e164").eq("id",userId).maybeSingle():Promise.resolve({data:null,error:null}),
+  row.residence_id?db.from("residences").select("name,image_url,cover_image_url,images").eq("id",row.residence_id).maybeSingle():Promise.resolve({data:null,error:null}),
   userId&&(kind==="application"||kind==="reservation")?db.from("documents").select("document_type,status").eq("user_id",userId).limit(150):Promise.resolve({data:[],error:null}),
   kind==="application"?db.from("application_documents").select("doc_type,status").eq("application_id",id).limit(150):Promise.resolve({data:[],error:null})
  ]);
  if(profile.error||property.error||docs.error||caseDocs.error)throw Error("Cannot check applicant documents");
  const address=kind==="support_enquiry"?row.email:kind==="housing_lead"?(row.contact_email||profile.data?.email):profile.data?.email;
+ const image=await residencePhoto(db,row.residence_id||null,[property.data?.cover_image_url,property.data?.image_url,property.data?.images]);
+ const phoneCandidate=kind==="support_enquiry"?(row.whatsapp_number||row.phone):kind==="housing_lead"?(row.contact_phone||profile.data?.phone_e164||profile.data?.phone):
+  (profile.data?.phone_e164||profile.data?.phone||profile.data?.phone_number);
+ const phoneE164=normalizeWhatsAppPhone(phoneCandidate);
  const files:DocumentRow[]=[
   ...(docs.data||[]).map((d:any)=>({type:d.document_type,status:d.status})),
   ...(caseDocs.data||[]).map((d:any)=>({type:d.doc_type,status:d.status}))
@@ -42,6 +49,7 @@ export async function readCase(s:EmailSession,kind:Kind,id:string):Promise<CaseC
   status:String(row.status||row.stage||"new"),email:validEmail(address)?address:"",
   reference:id.split("-")[0].toUpperCase(),fundingType:row.funding_type||null,
   documents:documentSignal(kind,files,row.funding_type||null),
+  residenceImageUrl:image?.url||null,phoneE164,
   contactAllowed:kind!=="support_enquiry"||row.consent_to_be_contacted===true
  };
 }

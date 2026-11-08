@@ -44,7 +44,7 @@ export async function makePreviewPdf(s:EmailSession,ctx:CaseContext,key:Template
  const packet=await previewPacket(s,ctx,key,note);
  const bytes=await createBrandedPdf({
   recipientName:ctx.studentName,property:ctx.property,reference:ctx.reference,
-  status:ctx.status,subject:packet.subject,body:packet.body,kindLabel:KIND_LABELS[ctx.kind]
+  status:ctx.status,subject:packet.subject,body:packet.body,kindLabel:KIND_LABELS[ctx.kind],residenceImageUrl:ctx.residenceImageUrl
  });
  return {filename:"ResKonnect-"+ctx.kind+"-"+ctx.reference+".pdf",base64:pdfAsBase64(bytes)};
 }
@@ -77,7 +77,7 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
  let pdf:Uint8Array;
  try{
   pdf=await createBrandedPdf({recipientName:ctx.studentName,property:ctx.property,reference:ctx.reference,
-   status:ctx.status,subject:packet.subject,body:packet.body,kindLabel:KIND_LABELS[ctx.kind]});
+   status:ctx.status,subject:packet.subject,body:packet.body,kindLabel:KIND_LABELS[ctx.kind],residenceImageUrl:ctx.residenceImageUrl});
  }catch(e){console.error("Branded PDF generation failed",e);await mark("failed","pdf_generation");return {sent:false,error:"Could not generate the official PDF attachment; no email was sent",status:502};}
  const attachment="ResKonnect-"+ctx.kind+"-"+ctx.reference+".pdf";
  const raw=createGmailMime(ctx.email,packet.subject,packet.body,packet.html,pdf,attachment);
