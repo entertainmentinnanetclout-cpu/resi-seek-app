@@ -19,7 +19,7 @@ import { useRealtimeResidences } from "@/hooks/useRealtimeResidences";
 import { useResidenceFilters, isMockResidence } from "@/hooks/useResidenceFilters";
 import { useResidenceSections } from "@/hooks/useResidenceSections";
 import { supabase } from "@/integrations/supabase/client";
-import {getResidenceIntake,canApplyToResidence} from "@/lib/residenceIntake";
+import {getResidenceIntake,canApplyToResidence,ACCOMMODATION_APPLICATION_YEAR} from "@/lib/residenceIntake";
 import { SmartSearchBar } from "@/components/findmyres/SmartSearchBar";
 import { FilterSidebar } from "@/components/findmyres/FilterSidebar";
 import { FilterBottomSheet } from "@/components/findmyres/FilterBottomSheet";
@@ -168,7 +168,7 @@ const FindMyRes = () => {
       const { error } = await supabase.from("applications").insert({
         user_id: user.id,
         residence_id: selectedResidence.id,
-        academic_year:2026,
+        academic_year:ACCOMMODATION_APPLICATION_YEAR,
         funding_type:"private",
         status: "submitted",
         notes: applicationNotes,
