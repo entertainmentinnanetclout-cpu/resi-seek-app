@@ -6,6 +6,7 @@ import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
 import HandoverExportPanel from "@/components/admin/HandoverExportPanel";
 import ResidenceFillVisualTabs from "@/components/admin/ResidenceFillVisualTabs";
+import AdminApplicationIntakeManager from "@/components/admin/AdminApplicationIntakeManager";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,7 +77,7 @@ export const AdminApplicationsContent = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [semesterFilter, setSemesterFilter] = useState("all");
   const [institutionFilter, setInstitutionFilter] = useState<"all" | "university" | "tvet" | "private" | "other">("all");
-  const [academicYearFilter, setAcademicYearFilter] = useState("all");
+  const [academicYearFilter, setAcademicYearFilter] = useState(String(currentAcademicYear));
   const [academicCycleFilter, setAcademicCycleFilter] = useState("all");
   const [studyLevelFilter, setStudyLevelFilter] = useState("all");
   const [residenceFilter, setResidenceFilter] = useState("all");
@@ -221,6 +222,8 @@ export const AdminApplicationsContent = () => {
       <SEO title="Manage Applications | Admin" description="Review, validate and manage accommodation applications" />
       <div className="space-y-6">
         <HandoverExportPanel />
+        <AdminApplicationIntakeManager />
+        {academicYearFilter==="2027"&&<Card className="border-dashed"><CardContent className="py-8 text-center"><p className="text-lg font-black">2027 applications · Not open yet</p><p className="mt-2 text-sm text-muted-foreground">No accommodation applications have been opened for 2027. The 2026 cohort remains under the 2026 dropdown, and 2027 reservations are separate.</p></CardContent></Card>}
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div><h1 className="text-3xl font-black">Applications & Academic Cohorts</h1><p className="text-muted-foreground">Review applications by academic year, annual/semester/trimester cycle, study level and institutional context. Handover exports are available only through GOD MODE OS above.</p></div>
@@ -242,7 +245,7 @@ export const AdminApplicationsContent = () => {
           onSelectResidence={setResidenceFilter}
         />
 
-        {selectedIds.size > 0 && <Card className="border-primary/50 bg-primary/5"><CardContent className="flex flex-wrap items-center gap-3 py-3"><span className="font-medium">{selectedIds.size} selected</span><Button size="sm" onClick={() => void bulkUpdateStatus("approved")} disabled={bulkProcessing}><CheckCheck className="mr-2 h-4 w-4" />Approve All</Button><Button size="sm" variant="destructive" onClick={() => void bulkUpdateStatus("rejected")} disabled={bulkProcessing}><XCircle className="mr-2 h-4 w-4" />Reject All</Button><Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>Clear Selection</Button></CardContent></Card>}
+        {selectedIds.size > 0 && <Card className="border-primary/50 bg-primary/5"><CardContent className="flex flex-wrap items-center gap-3 py-3"><span className="font-medium">{selectedIds.size} selected</span><Button size="sm" asChild><Link to="/admin/communications?tab=email&kind=application">Review verified cases in Email Dock</Link></Button><Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>Clear Selection</Button><p className="w-full text-xs text-muted-foreground">Bulk approvals and rejections must pass the Email Dock document and status checks; direct blind approvals are disabled.</p></CardContent></Card>}
 
         <Card>
           <CardHeader><div className="flex flex-col gap-3 lg:flex-row">
