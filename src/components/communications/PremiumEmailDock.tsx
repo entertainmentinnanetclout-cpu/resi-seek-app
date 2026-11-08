@@ -5,7 +5,6 @@ import {supabase} from "@/integrations/supabase/client";
 import {toast} from "sonner";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
-import {Card,CardContent,CardDescription,CardHeader,CardTitle} from "@/components/ui/card";
 import {Checkbox} from "@/components/ui/checkbox";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
@@ -192,7 +191,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    const binary=atob(doc.base64);
    const out=new Uint8Array(binary.length);
    for(let i=0;i<binary.length;i++)out[i]=binary.charCodeAt(i);
-   const url=URL.createObjectURL(new Blob([out],{type:"application/pdf"}));
+   const url=URL.createObjectURL(new Blob([out.buffer as ArrayBuffer],{type:"application/pdf"}));
    const element=document.createElement("a");element.href=url;element.download=doc.filename||"ResKonnect-Letter.pdf";
    element.click();window.setTimeout(()=>URL.revokeObjectURL(url),30_000);
   }catch(e){showError(e);}finally{setBusy(null);}
@@ -204,7 +203,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   setBusy("send");
   try{
    const result=await premium({action:"send",kind,target_id:selected,template_key:template,
-    message:note,confirmed:true,request_id:crypto.randomUUID()});
+    message:note,confirmed:true,request_id:crypto.randomUUID(),expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage});
    if(!result.sent)throw Error(result.error||"Gmail did not accept the message");
    toast.success("Gmail accepted your email and branded PDF attachment");
    resetPreview();setNote("");
@@ -231,7 +230,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   try{
    for(let i=0;i<ids.length;i+=5){
     const slice=ids.slice(i,i+5);
-    const requests=slice.map(id=>({id,request_id:crypto.randomUUID()}));
+    const requests=slice.map(id=>{const info=bulkPreview.find(p=>p.id===id);return {id,request_id:crypto.randomUUID(),expected_status:info?.status,expected_document_stage:info?.document_signal?.stage};});
     const response=await premium({action:"bulk_send",kind,ids:slice,requests,confirmed:true,
      batch_id:batchId,template_key:template,message:note});
     ok+=response.succeeded||0;failed+=response.failed||0;
