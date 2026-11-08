@@ -26,8 +26,8 @@ function emitTransportState(type: "rk-network-degraded" | "rk-network-recovered"
 const resilientSupabaseFetch: typeof fetch = async (input, init) => {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
   let timeoutMs = 0;
-  if (url.startsWith(`${EXTERNAL_SUPABASE_URL}/rest/v1/`)) timeoutMs = 15_000;
-  else if (url.startsWith(`${EXTERNAL_SUPABASE_URL}/auth/v1/`)) timeoutMs = 15_000;
+  if (url.startsWith(`${EXTERNAL_SUPABASE_URL}/rest/v1/`)) timeoutMs = 25_000;
+  else if (url.startsWith(`${EXTERNAL_SUPABASE_URL}/auth/v1/`)) timeoutMs = 25_000;
   else if (url.startsWith(`${EXTERNAL_SUPABASE_URL}/functions/v1/`)) timeoutMs = 30_000;
   else if (url.startsWith(`${EXTERNAL_SUPABASE_URL}/storage/v1/`)) timeoutMs = 90_000;
   if (!timeoutMs) return fetch(input, init);
@@ -40,30 +40,57 @@ const resilientSupabaseFetch: typeof fetch = async (input, init) => {
 
   const controller = new AbortController();
   const originalSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
-  const relayAbort = () => controller.abort();
-  if (originalSignal?.aborted) controller.abort();
-  else originalSignal?.addEventListener('abort', relayAbort, { once: true });
-  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  let timedOut = false;
+  // A caller switching pages or retrying a role check should not be treated
+  // as a network outage. Preserve its cancellation reason for diagnostics.
+  const relayAbort = () => controller.abort(
+    originalSignal?.reason ?? new DOMException("The previous request was cancelled.", "AbortError")
+  );
+  if (originalSignal?.aborted) relayAbort();
+  else originalSignal?.addEventListener("abort", relayAbort, { once: true });
+  const timer = globalThis.setTimeout(() => {
+    timedOut = true;
+    controller.abort(new DOMException(
+      "ResKonnect did not receive a response in time. Please retry your request.",
+      "TimeoutError"
+    ));
+  }, timeoutMs);
 
   try {
     const response = await fetch(input, { ...init, signal: controller.signal });
-    if (transportDegraded) {
+    // 502/503/504 signal a transient service outage, but 401/403 are normal
+    // authorization decisions and must not be confused with bad connectivity.
+    if (response.status === 502 || response.status === 503 || response.status === 504 || response.status === 520) {
+      transportDegraded = true;
+      emitTransportState("rk-network-degraded", {
+        reason: "upstream_unavailable", status: response.status,
+        url_family: url.includes("/auth/v1/") ? "auth" : "supabase",
+      });
+    } else if (transportDegraded) {
       transportDegraded = false;
       emitTransportState("rk-network-recovered", { status: response.status });
     }
     return response;
   } catch (error) {
+    // User-driven aborts (route change, superseded access check) are expected,
+    // and must not leave a global "slow connection" warning stuck on-screen.
+    if (originalSignal?.aborted && !timedOut) throw error;
     transportDegraded = true;
     emitTransportState("rk-network-degraded", {
-      reason: controller.signal.aborted ? "timeout_or_abort" : "transport_error",
+      reason: timedOut ? "timeout" : "transport_error",
       timeout_ms: timeoutMs,
       url_family: url.includes("/storage/v1/") ? "storage" : url.includes("/functions/v1/") ? "functions" : url.includes("/auth/v1/") ? "auth" : "rest",
     });
+    if (timedOut) throw new DOMException(
+      "ResKonnect's live service timed out. Your session is saved; please retry.",
+      "TimeoutError"
+    );
     throw error;
   } finally {
     globalThis.clearTimeout(timer);
-    originalSignal?.removeEventListener('abort', relayAbort);
+    originalSignal?.removeEventListener("abort", relayAbort);
   }
+
 };
 
 export const supabase = createClient<Database>(EXTERNAL_SUPABASE_URL, EXTERNAL_SUPABASE_ANON_KEY, {
