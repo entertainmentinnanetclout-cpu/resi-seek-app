@@ -73,7 +73,7 @@ Deno.serve(async(req:Request)=>{
    if(profileErr)return json({error:"Cannot check for an existing ResKonnect login"},503);
    if(profiles?.length){
     const {data:existingIdentity,error:identityErr}=await db.auth.admin.getUserById(profiles[0].id);
-    if(identityErr||!existingIdentity.user||existingIdentity.user.email?.toLowerCase()!==email)
+    if(identityErr||!existingIdentity.user||!existingIdentity.user.email_confirmed_at||existingIdentity.user.email?.toLowerCase()!==email)
      return json({error:"This email is already registered but its login identity could not be confirmed. Contact support."},409);
     userId=existingIdentity.user.id;
    }else{
@@ -104,7 +104,7 @@ Deno.serve(async(req:Request)=>{
      .insert({residence_id:residenceId,user_id:userId,email,is_active:true,portal_role:newRole})
      .select("id,residence_id,user_id,email,is_active,portal_role").single();
     if(insertErr)throw insertErr;
-    await audit("created",null,residenceId,false);
+    await audit("created",{user_id:userId,residence_id:null},residenceId,false);
     return json({ok:true,account:assignment,created_user:createdByRequest,existing_login:!createdByRequest});
    }catch(e){
     if(createdByRequest)await db.auth.admin.deleteUser(userId);
