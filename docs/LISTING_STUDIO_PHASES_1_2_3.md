@@ -26,8 +26,9 @@ Release scope: Phase 1 shared residence/inventory foundation; Phase 2 guided lan
 - `20261108203000_listing_studio_service_events_discovery.sql` — RLS-backed drafts, review RPC, shared inventory projection and service events.
 - `20261108204500_listing_media_and_service_sync.sql` — validated photo paths, approved extras and property event tracking.
 - `20261108210500_listing_studio_review_integrity.sql` — real Storage object existence, stale room/photo retirement and pricing verification reset.
+- `20261108212000_listing_draft_audit_and_available_pricing.sql` — rejects forged draft review timestamps; prioritizes prices for room categories with available beds.
 
-**All three are applied to the linked ResKonnect Supabase project.** Approval remains a human decision, and no test property was published.
+**All four are applied to the linked ResKonnect Supabase project.** Approval remains a human decision, and no test property was published.
 
 ## Phase 2: Landlord Studio
 
@@ -47,7 +48,7 @@ Six stages: property details and letting model; group room capacity/prices; actu
 - Added 'available only', real-photo-only and platform-verified-price-only filters, plus recent-update ordering.
 - Search matches residence, city, neighbourhood, campus and description; it no longer relies on exact street address matching.
 - Public results hide `is_visible=false` listings and exclude demo rows.
-- Pricing/availability uses the shared inventory projection without an invented accreditation or occupancy claim; active room types carry `room_type_reported` provenance.
+- Pricing/availability uses the shared inventory projection without an invented accreditation or occupancy claim; active room types carry `room_type_reported` provenance. The displayed starting price prioritizes room types reporting available beds.
 - All existing map/discovery components remain available without recreating their 2D/3D functionality.
 
 ## Distinctions and safety
