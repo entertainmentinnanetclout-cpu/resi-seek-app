@@ -14,6 +14,7 @@ import {
   Megaphone,
   Menu,
   Palette,
+  Sparkles,
   Target,
   Rotate3D,
 } from "lucide-react";
@@ -55,10 +56,16 @@ const navItems = [
     match: (path: string) => path.startsWith("/residence/reservations-2027"),
   },
   {
+    icon: Sparkles,
+    label: "Guided Listing Studio",
+    path: "/residence/listing/wizard",
+    match: (path: string) => path.startsWith("/residence/listing/wizard"),
+  },
+  {
     icon: Palette,
-    label: "Listing & Brand",
+    label: "Advanced Listing Editor",
     path: "/residence/listing",
-    match: (path: string) => path.startsWith("/residence/listing"),
+    match: (path: string) => path === "/residence/listing",
   },
   {
     icon: FileCheck2,
