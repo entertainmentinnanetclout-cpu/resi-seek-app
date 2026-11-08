@@ -33,7 +33,7 @@ export const TEMPLATES:Record<Exclude<TemplateKey,"smart">,{name:string;subject:
   follow_up:{name:"Follow-up reminder",subject:"ResKonnect | Follow-up on your {{kind_label}} | {{reference}}",
     body:"We are following up on your {{kind_label}} for {{property}}.\nRecorded status: {{status}}.\n{{next_step}}\n{{custom_note}}"},
   reservation_confirmed:{name:"Confirmed reservation letter",subject:"ResKonnect | Reservation confirmed | {{reference}}",
-    body:"Your reservation for {{property}} is recorded as CONFIRMED.\nThis communication confirms the recorded reservation status, subject to any accommodation terms shown on your dashboard.\n{{next_step}}\n{{custom_note}}"}
+    body:"Your reservation for {{property}} is recorded as CONFIRMED.\nThis communication confirms the recorded reservation status, subject to any accommodation terms shown on your dashboard.\n{{document_list}}\n{{next_step}}\n{{custom_note}}"}
 };
 export const TEMPLATE_KEYS=Object.keys(TEMPLATES) as Exclude<TemplateKey,"smart">[];
 export const KIND_LABELS:Record<Kind,string>={application:"accommodation application",reservation:"accommodation reservation",housing_lead:"accommodation enquiry",support_enquiry:"support enquiry"};
@@ -74,7 +74,8 @@ export function smartTemplate(c:CaseContext):Exclude<TemplateKey,"smart">{
     if(status==="rejected")return "rejected";
     if(status==="conditionally_approved")return "conditionally_approved";
     if(status==="withdrawn")return "status_update";
-    if(status==="documents_required"||c.documents.missing.length)return "documents_needed";
+    if(status==="documents_required")return c.documents.missing.length?"documents_needed":c.documents.uploaded>0?"documents_received":"documents_needed";
+    if(c.documents.missing.length)return "documents_needed";
     if(c.documents.uploaded>0)return "documents_received";
     return "acknowledgement";
   }
