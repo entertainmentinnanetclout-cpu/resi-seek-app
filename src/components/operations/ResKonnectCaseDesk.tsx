@@ -1,8 +1,9 @@
-import {useCallback,useEffect,useMemo,useState} from "react";
+import {useCallback,useEffect,useState} from "react";
 import {Link} from "react-router-dom";
-import {AlertCircle,ArrowRight,CalendarClock,CheckCircle2,ClipboardList,FileCheck2,Mail,MessageCircle,RefreshCw,Send,ShieldCheck} from "lucide-react";
+import {AlertCircle,ArrowRight,CalendarClock,CheckCircle2,ClipboardList,Mail,MessageCircle,RefreshCw,ShieldCheck} from "lucide-react";
 import {toast} from "sonner";
 import {supabase} from "@/integrations/supabase/client";
+import {ResKonnectReservationActions,ResKonnectViewingActions} from "./ResKonnectReservationActions";
 import {Button} from "@/components/ui/button";
 import {Card,CardContent,CardHeader,CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
@@ -47,7 +48,6 @@ export default function ResKonnectCaseDesk({residenceId,admin=false}:{residenceI
  const [targetHours,setTargetHours]=useState("24"),[followupHours,setFollowupHours]=useState("48");
  const [counts,setCounts]=useState<{open:number;unanswered:number;due:number}>({open:0,unanswered:0,due:0});
  const res= residenceId||filterRes;
- const now=useMemo(()=>new Date().toISOString(),[page,kind,stage,filterRes]);
  const load=useCallback(async()=>{
   setLoading(true);
   let q=(supabase as any).from("reskonnect_case_work_items")
@@ -182,6 +182,8 @@ export default function ResKonnectCaseDesk({residenceId,admin=false}:{residenceI
     {action==="contact_confirmed"&&<label className="flex items-start gap-2 rounded-lg border p-3 text-sm"><Checkbox checked={confirm} onCheckedChange={v=>setConfirm(v===true)}/><span>I confirm I have already sent or completed this communication. ResKonnect should log the actual contact, not dispatch a message.</span></label>}
     <div className="flex flex-wrap gap-2"><Button disabled={busy!==null||(action==="contact_confirmed"&&!confirm)} onClick={()=>void handleAction()}><CheckCircle2 className="mr-2 h-4 w-4"/>Save service action</Button><Button variant="outline" onClick={()=>setSelected(null)}>Cancel</Button></div>
    </CardContent></Card>}
+  {selected?.source_kind==="reservation"&&<ResKonnectReservationActions reservationId={selected.source_id} residenceId={selected.residence_id} status={selected.source_status} onChanged={()=>{setSelected(null);void load();}}/>}
+  {selected?.source_kind==="viewing"&&<ResKonnectViewingActions viewingId={selected.source_id} status={selected.source_status} onChanged={()=>{setSelected(null);void load();}}/>}
   {admin&&res!=="all"&&<Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><CalendarClock className="h-4 w-4"/>Internal service targets for this residence</CardTitle>
     <p className="text-xs text-muted-foreground">Internal operational deadlines only; not a promise of automatic replies. New case targets use these settings.</p></CardHeader><CardContent className="flex flex-wrap items-end gap-3">
      <div className="space-y-1"><Label>First response (hours)</Label><Input type="number" min={1} max={168} value={targetHours} onChange={e=>setTargetHours(e.target.value)} className="w-32"/></div>
