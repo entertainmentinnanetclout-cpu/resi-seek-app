@@ -200,7 +200,8 @@ Deno.serve(async(req:Request)=>{
     const c=await readCase(s,kind,id);
     const needsDocumentCheck=(kind==="application"&&["approved","conditionally_approved"].includes(desired))||(kind==="reservation"&&desired==="confirmed");
     const missing=needsDocumentCheck?c.documents.missing:[];
-    let why=c.status===desired?"Already in this status":missing.length?"Missing required files: "+missing.join(", "):null;
+    const unverified=needsDocumentCheck?c.documents.pendingReview:0;
+    let why=c.status===desired?"Already in this status":missing.length?"Missing required files: "+missing.join(", "):unverified>0?"Supporting documents are still awaiting verification":null;
     if(typeof expected?.[id]==="string"&&expected[id]!==c.status)why="Recorded status changed since selection";
     preview.push({id,ok:!why,reason:why,from:c.status,to:desired,label:c.studentName,document_signal:c.documents});
    }catch(e){preview.push({id,ok:false,reason:e instanceof Error?e.message:"Not available"});}
