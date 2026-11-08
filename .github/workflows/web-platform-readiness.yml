@@ -33,7 +33,7 @@ jobs:
       - name: TypeScript
         run: npx tsc --noEmit -p tsconfig.app.json
       - name: Premium email case-decision safety tests
-        run: node --experimental-strip-types --test scripts/email-dock-case-logic.test.mjs scripts/reskonnect-whatsapp-handoff.test.mjs scripts/adminos-case-workflow.test.mjs scripts/email-dock-runtime-safety.test.mjs scripts/landlord-premium-communication.test.mjs
+        run: node --experimental-strip-types --test scripts/email-dock-case-logic.test.mjs scripts/reskonnect-whatsapp-handoff.test.mjs scripts/adminos-case-workflow.test.mjs scripts/email-dock-runtime-safety.test.mjs scripts/landlord-premium-communication.test.mjs scripts/residence-portal-team-access.test.mjs
       - name: Listing Studio and unified discovery safety tests
         run: node --experimental-strip-types --test scripts/reskonnect-listing-studio.test.mjs
       - name: Install Chromium and WebKit
