@@ -18,6 +18,8 @@ test("real transport timeouts include a reason, not a reasonless AbortError",()=
  assert.match(net,/originalSignal\?\.reason/);
  assert.match(net,/if \(originalSignal\?\.aborted && !timedOut\) throw error/);
  assert.match(net,/ResKonnect's live service timed out/);
+ assert.match(net,/response.status < 500/);
+ assert.doesNotMatch(net,/reason: "upstream_unavailable"/);
 });
 test("a cancelled stale account lookup does not trigger the network outage banner",()=>{
  assert.match(auth,/accessAbortRef/);
