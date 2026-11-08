@@ -4,6 +4,7 @@ import {
   BedDouble,
   Building2,
   Camera,
+  CalendarDays,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -29,6 +30,7 @@ import ReviewCard from "@/components/ReviewCard";
 import ReviewForm from "@/components/ReviewForm";
 import ResidenceBrandStudioCard from "@/components/findmyres/ResidenceBrandStudioCard";
 import ResidenceMapPreview from "@/components/findmyres/ResidenceMapPreview";
+import ResidenceJourneyPanel from "@/components/conversion/ResidenceJourneyPanel";
 import { ReferralBanner } from "@/components/referrals/ReferralBanner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -272,22 +274,18 @@ const ResidenceDetail = () => {
     if (!user || !residenceId) return;
     setSubmitting(true);
     try {
-      const { error } = await (supabase as any).from("accommodation_reservations").upsert({
-        user_id: user.id,
-        residence_id: residenceId,
-        academic_year: 2027,
-        academic_cycle: "unspecified",
-        academic_period: 0,
-        funding_type: fundingType,
-        room_preference: roomPreference.trim() || null,
-        notes: reservationNotes.trim() || null,
-        status: "reserved",
-        source: "residence_detail",
-      }, { onConflict: "user_id,residence_id,academic_year,academic_cycle,academic_period" });
+      const { data, error } = await (supabase as any).rpc("reskonnect_save_reservation_interest",{
+        p_residence_id:residenceId,
+        p_funding_type:fundingType,
+        p_room_preference:roomPreference.trim(),
+        p_notes:reservationNotes.trim(),
+      });
       if (error) throw error;
       setShowReserve(false);
       setReservationNotes("");
-      toast.success("Your 2027 reservation interest has been recorded.");
+      if (data?.saved) toast.success("Your 2027 reservation interest has been recorded.");
+      else toast.info("This reservation is already in progress. Residence staff decisions were preserved.");
+      window.dispatchEvent(new Event("reskonnect-case-updated"));
     } catch (error: any) {
       toast.error(error?.message || "Could not reserve this residence.");
     } finally {
@@ -351,7 +349,8 @@ const ResidenceDetail = () => {
                 <div className="mt-7 flex flex-wrap items-center gap-2">
                   <Button onClick={() => void openReserve()} disabled={!is2027Open} className="bg-[#E09008] font-black text-[#00102f] hover:bg-[#F2AE28]"><Sparkles className="mr-2 h-4 w-4" />Reserve for 2027</Button>
                   <Button onClick={() => void openApply()} disabled={intakeOpen && (hasApplied || available <= 0)} variant="secondary">{!intakeOpen ? "Applications closed · Reserve instead" : hasApplied ? <><CheckCircle2 className="mr-2 h-4 w-4" />Already applied</> : available <= 0 ? "Currently full" : "Apply now"}</Button>
-                  <WhatsAppButton phone={RESKONNECT_WHATSAPP} residenceName={residence.name} variant="full" />
+                  <Button type="button" variant="secondary" onClick={()=>document.getElementById("residence-journey")?.scrollIntoView({behavior:"smooth",block:"start"})}><CalendarDays className="mr-2 h-4 w-4"/>Request viewing</Button>
+                   <WhatsAppButton phone={RESKONNECT_WHATSAPP} residenceName={residence.name} variant="full" />
                   <FavoriteButton residenceId={residence.id} />
                   <ShareButton title={`${residence.name} - Student Accommodation`} text={`View ${residence.name} on ResKonnect. ${residence.address || locationLabel}`} imageUrl={schemaImage} variant="icon" />
                 </div>
@@ -375,7 +374,8 @@ const ResidenceDetail = () => {
 
               <Card><CardContent className="p-5 sm:p-6"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">About this residence</p><h2 className="mt-1 text-2xl font-black">Living details</h2></div><TrustScore verificationLevel={residence.verification_level || "basic"} averageRating={averageRating} reviewCount={reviews.length} /></div><p className="mt-4 text-sm leading-7 text-muted-foreground">{residence.description || "Property information is being completed by the residence through the ResKonnect Property OS."}</p><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Info icon={MapPin} label="Location" value={residence.address || locationLabel} /><Info icon={Users} label="Available spots" value={capacity > 0 ? `${available} / ${capacity}` : `${available}`} /><Info icon={BedDouble} label="Room types" value={roomTypes.length ? roomTypes.join(", ") : "Contact ResKonnect"} /><Info icon={Clock3} label="Distance" value={residence.distance_from_campus || "Map available"} /></div></CardContent></Card>
 
-              {roomPrices.length > 0 && <Card><CardContent className="p-5 sm:p-6"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Room-level pricing</p><h2 className="mt-1 text-2xl font-black">Choose the right room</h2><p className="mt-1 text-sm text-muted-foreground">Private and NSFAS-funded prices are stored separately and are never assumed to be equal.</p></div><div className="mt-5 grid gap-3 md:grid-cols-2">{roomPrices.map((room) => <div key={room.id} className="rounded-2xl border p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-black">{room.name}</p><p className="mt-1 text-xs text-muted-foreground">{room.academic_year || 2027} pricing · {room.available_beds ?? 0} bed(s) available</p></div>{room.price_verified_at && <Badge variant="outline" className="border-emerald-500/30 text-emerald-700">Verified</Badge>}</div><div className="mt-4 grid grid-cols-2 gap-2"><PriceTile label="Private" value={money(room.promo_price || room.private_price) || "Not listed"} /><PriceTile label="NSFAS" value={money(room.nsfas_price) || "Funded rate separate"} /></div>{(room.deposit || room.admin_fee || room.reservation_fee) && <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs"><MiniFee label="Deposit" value={money(room.deposit)} /><MiniFee label="Admin" value={money(room.admin_fee)} /><MiniFee label="Reserve" value={money(room.reservation_fee)} /></div>}{room.description && <p className="mt-3 text-xs leading-5 text-muted-foreground">{room.description}</p>}</div>)}</div></CardContent></Card>}
+              <ResidenceJourneyPanel residenceId={residence.id} residenceName={residence.name}/>
+               {roomPrices.length > 0 && <Card><CardContent className="p-5 sm:p-6"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Room-level pricing</p><h2 className="mt-1 text-2xl font-black">Choose the right room</h2><p className="mt-1 text-sm text-muted-foreground">Private and NSFAS-funded prices are stored separately and are never assumed to be equal.</p></div><div className="mt-5 grid gap-3 md:grid-cols-2">{roomPrices.map((room) => <div key={room.id} className="rounded-2xl border p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-black">{room.name}</p><p className="mt-1 text-xs text-muted-foreground">{room.academic_year || 2027} pricing · {room.available_beds ?? 0} bed(s) available</p></div>{room.price_verified_at && <Badge variant="outline" className="border-emerald-500/30 text-emerald-700">Verified</Badge>}</div><div className="mt-4 grid grid-cols-2 gap-2"><PriceTile label="Private" value={money(room.promo_price || room.private_price) || "Not listed"} /><PriceTile label="NSFAS" value={money(room.nsfas_price) || "Funded rate separate"} /></div>{(room.deposit || room.admin_fee || room.reservation_fee) && <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs"><MiniFee label="Deposit" value={money(room.deposit)} /><MiniFee label="Admin" value={money(room.admin_fee)} /><MiniFee label="Reserve" value={money(room.reservation_fee)} /></div>}{room.description && <p className="mt-3 text-xs leading-5 text-muted-foreground">{room.description}</p>}</div>)}</div></CardContent></Card>}
 
               <Card><CardContent className="p-5 sm:p-6"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">What you get</p><h2 className="mt-1 text-2xl font-black">Amenities</h2></div>{amenities.length ? <div className="mt-5 grid gap-2 sm:grid-cols-2 md:grid-cols-3">{amenities.map((amenity: string) => <div key={amenity} className="flex items-center gap-2 rounded-xl border bg-muted/20 px-3 py-3 text-sm font-semibold"><CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />{amenity}</div>)}</div> : <p className="mt-4 text-sm text-muted-foreground">Amenities are being completed by the residence.</p>}</CardContent></Card>
 

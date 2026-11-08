@@ -84,20 +84,15 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
     if (!user) return;
     setReserving(true);
     try {
-      const { error } = await (supabase as any).from("accommodation_reservations").upsert({
-        user_id: user.id,
-        residence_id: residence.id,
-        academic_year: 2027,
-        academic_cycle: "unspecified",
-        academic_period: 0,
-        funding_type: fundingType,
-        room_preference: roomPreference || null,
-        notes: reservationNotes || null,
-        status: "reserved",
-        source: "find_my_res_card",
-      }, { onConflict: "user_id,residence_id,academic_year,academic_cycle,academic_period" });
+      const { data, error } = await (supabase as any).rpc("reskonnect_save_reservation_interest",{
+        p_residence_id:residence.id,
+        p_funding_type:fundingType,
+        p_room_preference:roomPreference.trim(),
+        p_notes:reservationNotes.trim(),
+      });
       if (error) throw error;
-      toast.success(`2027 reservation saved for ${residence.name}`);
+      if (data?.saved) toast.success(`2027 reservation interest saved for ${residence.name}`);
+      else toast.info("This reservation is already in progress and has not been reset.");
       setReservationOpen(false);
     } catch (error: any) {
       toast.error(error?.message || "Could not save your 2027 reservation.");

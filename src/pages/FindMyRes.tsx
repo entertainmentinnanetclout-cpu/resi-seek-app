@@ -25,6 +25,7 @@ import { FilterSidebar } from "@/components/findmyres/FilterSidebar";
 import { FilterBottomSheet } from "@/components/findmyres/FilterBottomSheet";
 import { ActiveFilterChips } from "@/components/findmyres/ActiveFilterChips";
 import { ResidencePropertyCard } from "@/components/findmyres/ResidencePropertyCard";
+import SponsoredResidenceRail from "@/components/findmyres/SponsoredResidenceRail";
 import { CategoryRail } from "@/components/findmyres/CategoryRail";
 import { AccreditationCTA } from "@/components/findmyres/AccreditationCTA";
 import { AudienceSelector, type AudienceKey } from "@/components/findmyres/AudienceSelector";
@@ -320,6 +321,8 @@ const FindMyRes = () => {
             <AccreditationCTA />
           </div>
         )}
+
+        {!hasActiveFilters&&!loading&&<SponsoredResidenceRail residences={realResidences} onApply={handleApply}/>}
 
         {/* Main Content: Sidebar + Grid */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" id="results">
