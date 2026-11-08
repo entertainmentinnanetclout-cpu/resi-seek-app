@@ -67,7 +67,7 @@
   border-color: rgba(245,179,47,.65) !important;
   box-shadow: 0 26px 52px -23px rgba(7,19,38,.45), 0 0 0 1px rgba(245,179,47,.18);
 }
-.rk-gold-tilt-card .rk-gold-foil {
+.rk-gold-foil {
   background: linear-gradient(125deg, #b77714, #f5b32f 35%, #fff2bf 52%, #b87813 80%, #f5b32f);
   -webkit-background-clip: text;
   background-clip: text;
