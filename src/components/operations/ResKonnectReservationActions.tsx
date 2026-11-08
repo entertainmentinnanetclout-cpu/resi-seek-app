@@ -54,6 +54,13 @@ export function ResKonnectViewingActions({viewingId,status,onChanged}:{viewingId
  const choices:Record<string,string[]>={requested:["contacted","cancelled"],contacted:["scheduled","cancelled"],scheduled:["completed","no_show","cancelled"],no_show:["contacted"]};
  const statuses=choices[status]||[];
  const [next,setNext]=useState(statuses[0]||""),[confirmedAt,setConfirmedAt]=useState(""),[busy,setBusy]=useState(false);
+ const [schedule,setSchedule]=useState<{viewing_status:string;preferred_date:string|null;preferred_time_window:string|null;confirmed_viewing_at:string|null}|null>(null);
+ useEffect(()=>{
+   let active=true;
+   void (supabase as any).rpc("reskonnect_viewing_summary",{p_viewing_id:viewingId})
+     .then(({data,error}:any)=>{if(active&&!error)setSchedule(Array.isArray(data)?(data[0]||null):null);});
+   return()=>{active=false;};
+ },[viewingId,status]);
  useEffect(()=>{setNext((choices[status]||[])[0]||"");setConfirmedAt("");},[status,viewingId]);
  const submit=async()=>{
   if(!next)return;
@@ -69,6 +76,12 @@ export function ResKonnectViewingActions({viewingId,status,onChanged}:{viewingId
  };
  if(!statuses.length)return <p className="text-xs text-muted-foreground">This viewing is completed or closed.</p>;
  return <Card><CardHeader><CardTitle className="text-base">Confirm or progress viewing</CardTitle><p className="text-xs text-muted-foreground">Scheduled status requires a real, mutually agreed appointment. The student receives an in-app status notification; no WhatsApp or email is falsely marked sent.</p></CardHeader><CardContent className="space-y-3">
+  {schedule&&<div className="rounded-lg border bg-muted/20 p-3 text-sm">
+    <p><strong>Requested day:</strong> {schedule.preferred_date||"No date"}</p>
+    <p className="mt-1"><strong>Preferred window:</strong> {(schedule.preferred_time_window||"not specified").replaceAll("_"," ")}</p>
+    {schedule.confirmed_viewing_at&&<p className="mt-1"><strong>Confirmed appointment:</strong> {new Date(schedule.confirmed_viewing_at).toLocaleString("en-ZA")}</p>}
+    <p className="mt-2 text-xs text-muted-foreground">Contact information is protected; arrange confirmation using authorized ResKonnect communications.</p>
+   </div>}
   <div className="space-y-1"><Label>Next viewing status</Label><Select value={next} onValueChange={setNext}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>
    {statuses.map(x=><SelectItem key={x} value={x}>{x.replaceAll("_"," ")}</SelectItem>)}
   </SelectContent></Select></div>
