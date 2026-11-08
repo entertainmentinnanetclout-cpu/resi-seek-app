@@ -19,10 +19,11 @@ interface SmartSearchBarProps {
   updateFilter: <K extends keyof ResidenceFilters>(key: K, value: ResidenceFilters[K]) => void;
   resultCount: number;
   totalCount: number;
+  cityOptions: string[];
 }
 
 /** All finder overlays are URL-driven. An in-page link from a match can open its map without remounting FindMyRes. */
-export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount }: SmartSearchBarProps) {
+export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount,cityOptions }: SmartSearchBarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
@@ -37,10 +38,10 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
   };
 
   const resetMapFilters = () => {
-    updateFilter("searchQuery", ""); updateFilter("campus", "all"); updateFilter("category", "all"); updateFilter("gender", "all");
+    updateFilter("searchQuery", ""); updateFilter("city","all"); updateFilter("campus", "all"); updateFilter("category", "all"); updateFilter("gender", "all");
     updateFilter("audience", "all"); updateFilter("institutionTag", undefined); updateFilter("priceMin", 0); updateFilter("priceMax", 10000);
     updateFilter("distanceMax", 20); updateFilter("roomTypes", []); updateFilter("sectionCategory", "all"); updateFilter("nsfasOnly", false);
-    updateFilter("privatePayingOnly", false); updateFilter("tutOnly", false); updateFilter("singlesOnly", false); updateFilter("furnishedOnly", false);
+    updateFilter("privatePayingOnly", false); updateFilter("tutOnly", false); updateFilter("singlesOnly", false);updateFilter("photoOnly",false);updateFilter("priceVerifiedOnly",false); updateFilter("furnishedOnly", false);
     updateFilter("wifiOnly", false); updateFilter("parkingOnly", false); updateFilter("availability", "all"); updateFilter("amenities", []); updateFilter("sortBy", "match");
   };
 
@@ -59,7 +60,8 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
         </div>
         <div className="space-y-4 rounded-xl border bg-card/80 p-4 shadow-lg backdrop-blur-lg sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Search residence, area, campus or address..." className="h-12 pl-10 text-base" value={filters.searchQuery} onChange={(e) => updateFilter("searchQuery", e.target.value)} /></div>
+            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Search by residence, city, neighbourhood or campus…" className="h-12 pl-10 text-base" value={filters.searchQuery} onChange={(e) => updateFilter("searchQuery", e.target.value)} /></div>
+            <Select value={filters.city} onValueChange={v=>updateFilter("city",v)}><SelectTrigger className="h-12 sm:w-48" aria-label="Filter by city"><SelectValue placeholder="All cities"/></SelectTrigger><SelectContent><SelectItem value="all">All cities</SelectItem>{cityOptions.map(city=><SelectItem key={city} value={city}>{city}</SelectItem>)}</SelectContent></Select>
             <Select value={filters.campus} onValueChange={(v) => updateFilter("campus", v)}><SelectTrigger className="h-12 sm:w-56"><SelectValue placeholder="Area / campus" /></SelectTrigger><SelectContent><SelectItem value="all">All Areas</SelectItem>{getCampusOptions(filters.institutionType ?? (filters.audience === "tvet" ? "tvet" : filters.audience === "university" ? "university" : undefined)).map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -67,6 +69,13 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount 
             <div className="space-y-2"><Label className="text-xs font-medium text-muted-foreground">Room Type</Label><Select value={filters.roomTypes[0] || "any"} onValueChange={(v) => updateFilter("roomTypes", v === "any" ? [] : [v])}><SelectTrigger><SelectValue placeholder="Any type" /></SelectTrigger><SelectContent><SelectItem value="any">Any Type</SelectItem><SelectItem value="single">Single Room</SelectItem><SelectItem value="sharing">Sharing Room</SelectItem><SelectItem value="bachelor">Bachelor</SelectItem><SelectItem value="studio">Studio</SelectItem></SelectContent></Select></div>
             <div className="flex items-end gap-3 pb-1"><div className="flex items-center gap-2"><Switch checked={filters.nsfasOnly} onCheckedChange={(v) => updateFilter("nsfasOnly", v)} /><Label className="text-sm font-medium">NSFAS funding context</Label></div></div>
           </div>
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 p-3 text-xs">
+            <label className="flex items-center gap-2"><Switch checked={filters.availability==="available"} onCheckedChange={v=>updateFilter("availability",v?"available":"all")} /><span>Available beds only</span></label>
+            <label className="flex items-center gap-2"><Switch checked={filters.photoOnly} onCheckedChange={v=>updateFilter("photoOnly",v)} /><span>Listings with real photos</span></label>
+            <label className="flex items-center gap-2"><Switch checked={filters.priceVerifiedOnly} onCheckedChange={v=>updateFilter("priceVerifiedOnly",v)} /><span>Verified price only</span></label>
+            <span className="text-muted-foreground">Unverified availability remains landlord-reported, not a guaranteed booking.</span>
+          </div>
+          {cityOptions.length>0&&<div className="flex flex-wrap gap-2">{cityOptions.slice(0,7).map(city=><Button key={city} type="button" size="sm" variant={filters.city===city?"default":"outline"} className="rounded-full" onClick={()=>updateFilter("city",filters.city===city?"all":city)}>{city}</Button>)}</div>}
           {filters.nsfasOnly && <p className="text-xs leading-5 text-muted-foreground">This filter uses funding/accreditation context in listing data. It does not by itself prove current official accreditation; verify the status shown on the residence or NSFAS status page.</p>}
           <div className="flex flex-col gap-3 border-t border-border/50 pt-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">{resultCount}</span> of {totalCount} residences{resultCount === 0 && totalCount > 0 ? " · Try another campus or clear filters" : ""}</p>

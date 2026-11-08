@@ -4,6 +4,7 @@ import { captureLunaDemandEvent } from "@/lib/lunaGrowth";
 
 export interface ResidenceFilters {
   searchQuery: string;
+  city: string;
   campus: string;
   /** Scopes campus matching + audience. Set by the guide, never guessed. */
   institutionType?: InstitutionTypeKey;
@@ -21,6 +22,8 @@ export interface ResidenceFilters {
   privatePayingOnly: boolean;
   tutOnly: boolean;
   singlesOnly: boolean;
+  photoOnly: boolean;
+  priceVerifiedOnly: boolean;
   furnishedOnly: boolean;
   wifiOnly: boolean;
   parkingOnly: boolean;
@@ -31,6 +34,7 @@ export interface ResidenceFilters {
 
 const DEFAULT_FILTERS: ResidenceFilters = {
   searchQuery: "",
+  city: "all",
   campus: "all",
   institutionType: undefined,
   category: "all",
@@ -46,6 +50,8 @@ const DEFAULT_FILTERS: ResidenceFilters = {
   privatePayingOnly: false,
   tutOnly: false,
   singlesOnly: false,
+  photoOnly: false,
+  priceVerifiedOnly: false,
   furnishedOnly: false,
   wifiOnly: false,
   parkingOnly: false,
@@ -168,6 +174,7 @@ export function useResidenceFilters(residences: any[]) {
     let count = 0;
     if (filters.searchQuery) count++;
     if (filters.campus !== "all") count++;
+    if (filters.city !== "all") count++;
     if (filters.category !== "all") count++;
     if (filters.gender !== "all") count++;
     if (filters.audience !== "all") count++;
@@ -180,6 +187,8 @@ export function useResidenceFilters(residences: any[]) {
     if (filters.privatePayingOnly) count++;
     if (filters.tutOnly) count++;
     if (filters.singlesOnly) count++;
+    if (filters.photoOnly) count++;
+    if (filters.priceVerifiedOnly) count++;
     if (filters.furnishedOnly) count++;
     if (filters.wifiOnly) count++;
     if (filters.parkingOnly) count++;
@@ -190,9 +199,15 @@ export function useResidenceFilters(residences: any[]) {
 
   const hasActiveFilters = activeFilterCount > 0;
 
+  const cityOptions = useMemo(() => Array.from(new Set(residences.filter(r=>r.is_visible!==false).map(r=>String(r.canonical_city||r.city||"").trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b)),[residences]);
+
   const filteredResidences = useMemo(() => {
     // Never mix seed/demo rows into real results.
-    let filtered = residences.filter((r) => !isMockResidence(r));
+    let filtered = residences.filter((r) => !isMockResidence(r) && r.is_visible!==false);
+
+    if(filters.city!=="all")filtered=filtered.filter(r=>String(r.canonical_city||r.city||"").trim().toLowerCase()===filters.city.toLowerCase());
+    if(filters.photoOnly)filtered=filtered.filter(r=>Boolean(r.cover_image_url||r.image_url||(Array.isArray(r.images)&&r.images.length)));
+    if(filters.priceVerifiedOnly)filtered=filtered.filter(r=>Boolean(r.price_verified_at)||(r.room_pricing||[]).some((room:any)=>Boolean(room.price_verified_at)));
 
     // Search
     if (filters.searchQuery) {
@@ -200,7 +215,10 @@ export function useResidenceFilters(residences: any[]) {
       filtered = filtered.filter(
         (r) =>
           r.name?.toLowerCase().includes(q) ||
-          r.address?.toLowerCase().includes(q) ||
+          r.city?.toLowerCase().includes(q) ||
+          r.canonical_city?.toLowerCase().includes(q) ||
+          r.place_label?.toLowerCase().includes(q) ||
+          r.campus?.toLowerCase().includes(q) ||
           r.description?.toLowerCase().includes(q)
       );
     }
@@ -331,6 +349,9 @@ export function useResidenceFilters(residences: any[]) {
             (Number(b.distance_from_campus) || 999)
         );
         break;
+      case "recent":
+        withScores.sort((a,b)=>new Date(b.updated_at||0).getTime()-new Date(a.updated_at||0).getTime());
+        break;
       case "availability":
         withScores.sort(
           (a, b) => (b.available_spots || 0) - (a.available_spots || 0)
@@ -352,6 +373,7 @@ export function useResidenceFilters(residences: any[]) {
       surface: "find_my_res",
       path: typeof window === "undefined" ? "/find" : window.location.pathname,
       campus: filters.campus !== "all" ? filters.campus : null,
+      city:filters.city!=="all"?filters.city:null,
       search_query: filters.searchQuery || null,
       price_min: filters.priceMin,
       price_max: filters.priceMax,
@@ -389,7 +411,8 @@ export function useResidenceFilters(residences: any[]) {
     if (filters.priceMax >= 10000 && filters.priceMin <= 0) return [];
     const relaxed = { ...filters, priceMin: 0, priceMax: 10000 };
     return residences
-      .filter((r) => !isMockResidence(r))
+      .filter((r) => !isMockResidence(r)&&r.is_visible!==false)
+      .filter((r)=>(filters.city==="all"||String(r.canonical_city||r.city||"").toLowerCase()===filters.city.toLowerCase()))
       .filter((r) => (filters.campus === "all" ? true : residenceMatchesCampus(r, filters.campus, filters.institutionType)))
       .filter((r) => {
         if (relaxed.audience === "university") return acceptsUniversity(r);
@@ -408,6 +431,7 @@ export function useResidenceFilters(residences: any[]) {
 
   return {
     filters,
+    cityOptions,
     updateFilter,
     resetFilters,
     filteredResidences,

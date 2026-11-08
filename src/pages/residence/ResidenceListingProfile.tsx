@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { CheckCircle2, ImagePlus, MapPin, RefreshCw, Save, ShieldCheck, Sparkles, UploadCloud } from "lucide-react";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
@@ -89,7 +89,7 @@ export default function ResidenceListingProfile() {
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div><p className="text-sm font-semibold text-primary">Landlord Portal · Property Data Quality</p><h1 className="mt-1 text-3xl font-black">Listing & Brand Studio</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Control the public place, pricing baseline, cover/studio imagery and poster-style ResKonnect card for this residence. Trust, accreditation and platform verification remain ResKonnect-controlled.</p></div>
-        <div className="flex gap-2"><Button variant="outline" onClick={()=>void load()}><RefreshCw className="mr-2 h-4 w-4"/>Refresh</Button><Button onClick={()=>void save()} disabled={saving || Object.keys(changed).length===0}><Save className="mr-2 h-4 w-4"/>{saving?"Saving…":"Publish changes"}</Button></div>
+        <div className="flex flex-wrap gap-2"><Button asChild><Link to="/residence/listing/wizard"><Sparkles className="mr-2 h-4 w-4"/>Open Guided Listing Studio</Link></Button><Button variant="outline" onClick={()=>void load()}><RefreshCw className="mr-2 h-4 w-4"/>Refresh</Button><Button onClick={()=>void save()} disabled={saving || Object.keys(changed).length===0}><Save className="mr-2 h-4 w-4"/>{saving?"Saving…":"Publish changes"}</Button></div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">

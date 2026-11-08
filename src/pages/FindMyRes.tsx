@@ -56,6 +56,7 @@ const FindMyRes = () => {
   const { intent } = useUserIntent();
   const {
     filters,
+    cityOptions,
     updateFilter,
     resetFilters,
     filteredResidences,
@@ -92,6 +93,8 @@ const FindMyRes = () => {
 
   // Deep-link category support: /find?category=flats
   useEffect(() => {
+    const city = searchParams.get("city");
+    if(city && city!==filters.city)updateFilter("city",city);
     const cat = searchParams.get("category");
     if (cat && cat !== filters.category) updateFilter("category", cat);
     const aud = searchParams.get("audience") as AudienceKey | null;
@@ -235,6 +238,7 @@ const FindMyRes = () => {
 
         {/* Smart Search Hero */}
         <SmartSearchBar
+            cityOptions={cityOptions}
           filters={filters}
           updateFilter={updateFilter}
           resultCount={filteredResidences.length}
@@ -305,7 +309,7 @@ const FindMyRes = () => {
               </CategoryRail>
             ))}
             {featured.length > 0 && (
-              <CategoryRail title="Featured Accommodation" subtitle="Smart-ranked by demand, reviews and availability" count={featured.length}>
+              <CategoryRail title="Featured Accommodation" subtitle="Featured listings selected by ResKonnect — verify room availability and pricing with the residence" count={featured.length}>
                 {featured.map((r: any) => (
                   <div key={r.id} className="min-w-[280px] sm:min-w-[320px] snap-start">
                     <ResidencePropertyCard residence={r} onApply={handleApply} />
@@ -354,6 +358,7 @@ const FindMyRes = () => {
                       <SelectItem value="price-desc">Price: High to Low</SelectItem>
                       <SelectItem value="distance">Nearest First</SelectItem>
                       <SelectItem value="availability">Most Available</SelectItem>
+                      <SelectItem value="recent">Recently Updated</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

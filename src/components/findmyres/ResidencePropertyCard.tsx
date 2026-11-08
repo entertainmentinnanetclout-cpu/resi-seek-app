@@ -38,6 +38,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
   const [reserving, setReserving] = useState(false);
 
   const spots = Number(residence.available_spots) || 0;
+  const inventoryLabel=residence.inventory_source==="room_type_reported"?"Room-type inventory reported by landlord":"Residence-reported availability";
   const isFull = spots === 0;
   const basePrice = Number(residence.price) || 0;
   const privatePrice = Number(residence.private_price) || (residence.accepts_private ? basePrice : 0);
@@ -65,7 +66,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
   }, [residence.promo_active, residence.promo_starts_at, residence.promo_ends_at]);
 
   const pricedRooms = roomPricing.slice().sort((a: any, b: any) => Number(a.private_price || a.nsfas_price || 999999) - Number(b.private_price || b.nsfas_price || 999999));
-  const cheapestPrivate = pricedRooms.map((room: any) => Number(room.promo_price || room.private_price || 0)).filter((value: number) => value > 0).sort((a: number, b: number) => a - b)[0];
+  const cheapestPrivate = pricedRooms.filter((room: any) => Number(room.available_beds || 0) > 0).map((room: any) => Number(room.promo_price || room.private_price || 0)).filter((value: number) => value > 0).sort((a: number, b: number) => a - b)[0];
   const displayPrivate = cheapestPrivate || (promoLive && promoPrice > 0 ? promoPrice : privatePrice || basePrice);
 
   const openReservation = (event: React.MouseEvent) => {
@@ -131,7 +132,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
 
       <CardContent className="min-w-0 space-y-3 p-4">
         <div className="flex min-w-0 items-start justify-between gap-2">
-          <div className="min-w-0"><span className="inline-flex max-w-full items-baseline gap-0.5 rounded-full bg-gradient-price px-3 py-1 text-white shadow-sm"><span className="truncate text-lg font-bold">{money(displayPrivate)}</span><span className="shrink-0 text-xs opacity-90">/mo</span></span><p className="mt-1 text-[10px] font-medium text-muted-foreground">{roomPricing.length ? "From configured room-level pricing" : residence.accepts_private ? "Private tenant rate" : "Published residence rate"}</p></div>
+          <div className="min-w-0"><span className="inline-flex max-w-full items-baseline gap-0.5 rounded-full bg-gradient-price px-3 py-1 text-white shadow-sm"><span className="truncate text-lg font-bold">{money(displayPrivate)}</span><span className="shrink-0 text-xs opacity-90">/mo</span></span><p className="mt-1 text-[10px] font-medium text-muted-foreground">{roomPricing.length ? "From recorded room-type pricing" : residence.accepts_private ? "Private tenant rate" : "Published residence rate"} · {inventoryLabel}</p></div>
           <div className="flex min-w-0 shrink-0 flex-wrap justify-end gap-1">{residence.accepts_nsfas && <Badge className="border border-mint/40 bg-mint/15 text-[10px] text-mint">NSFAS</Badge>}{residence.is_tut_accredited && <Badge className="border border-sky/40 bg-sky/15 text-[10px] text-sky">TUT ✓</Badge>}{residence.accepts_tvet && <Badge className="border border-amber/40 bg-amber/15 text-[10px] text-amber">TVET</Badge>}{residence.accepts_private && <Badge className="border border-violet/40 bg-violet/15 text-[10px] text-violet">Private</Badge>}</div>
         </div>
 
