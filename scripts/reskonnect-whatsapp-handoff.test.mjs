@@ -58,6 +58,7 @@ test("Email retains branded fallback when a property has no photo",()=>{
  const packet=renderLetter(ctx,"smart");
  const html=htmlEmail(ctx,packet.subject,packet.body);
  assert.ok(html.includes("RES<span"));
- assert.ok(!html.includes("<img src="));
+ assert.ok(html.includes("favicon-transparent.png"), "Transparent logo remains visible even without a residence photo");
+  assert.ok(!html.includes("Actual residence listing photo"), "No listing photo panel should appear without a published image");
  assert.ok(!whatsappMessage(ctx,packet.subject,packet.body).includes("Residence photo:"));
 });
