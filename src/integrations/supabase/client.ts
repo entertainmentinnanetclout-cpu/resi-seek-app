@@ -58,15 +58,12 @@ const resilientSupabaseFetch: typeof fetch = async (input, init) => {
 
   try {
     const response = await fetch(input, { ...init, signal: controller.signal });
-    // 502/503/504 signal a transient service outage, but 401/403 are normal
-    // authorization decisions and must not be confused with bad connectivity.
-    if (response.status === 502 || response.status === 503 || response.status === 504 || response.status === 520) {
-      transportDegraded = true;
-      emitTransportState("rk-network-degraded", {
-        reason: "upstream_unavailable", status: response.status,
-        url_family: url.includes("/auth/v1/") ? "auth" : "supabase",
-      });
-    } else if (transportDegraded) {
+    // A completed HTTP request is not a transport failure. In particular a
+    // 503 from one feature should not broadcast global reconnect, which can
+    // cause unrelated pages to refetch simultaneously while PostgREST is busy.
+    // Each caller handles its own 5xx error; only confirmed transport failures
+    // or timeouts set the global degraded state.
+    if (transportDegraded && response.status < 500) {
       transportDegraded = false;
       emitTransportState("rk-network-recovered", { status: response.status });
     }
