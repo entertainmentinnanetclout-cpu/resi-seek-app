@@ -41,6 +41,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { BRAND } from "@/constants/brand";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import {getResidenceIntake,canApplyToResidence,type ResidenceIntakeRule} from "@/lib/residenceIntake";
 import { RESKONNECT_WHATSAPP } from "@/lib/constants";
 import { captureApplicationReferral } from "@/lib/referrals/referralApi";
 import { readReferral, savePendingApplication } from "@/lib/referrals/referralStorage";
@@ -102,6 +103,7 @@ const ResidenceDetail = () => {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [hasApplied, setHasApplied] = useState(false);
   const [showApply, setShowApply] = useState(false);
+  const [intakeRule,setIntakeRule]=useState<ResidenceIntakeRule|null>(null);
   const [showReserve, setShowReserve] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
@@ -121,6 +123,7 @@ const ResidenceDetail = () => {
   const available = Number(residence?.available_spots || 0);
   const capacity = Number(residence?.capacity || 0);
   const is2027Open = Boolean(residence?.reservations_2027_open);
+  const intakeOpen=canApplyToResidence(intakeRule);
   const locationLabel = residence?.place_label || residence?.campus || residence?.city || "Student accommodation";
   const amenities = Array.isArray(residence?.amenities) ? residence.amenities : [];
   const roomTypes = Array.isArray(residence?.room_types) && residence.room_types.length
@@ -146,6 +149,7 @@ const ResidenceDetail = () => {
         }
         setResidence(row || null);
         if (!row) return;
+        setIntakeRule(await getResidenceIntake(row.id));
 
         const [pricingResult, relatedResult, reviewResult] = await Promise.all([
           (supabase as any).from("residence_room_pricing_public_v").select("*").eq("residence_id", row.id).order("academic_year", { ascending: false }).order("name"),
@@ -214,6 +218,13 @@ const ResidenceDetail = () => {
   };
 
   const openApply = async () => {
+    const latest=await getResidenceIntake(residenceId!);
+    setIntakeRule(latest);
+    if(!canApplyToResidence(latest)){
+      toast.info("Accommodation applications are closed. Choose the 2027 reservation option instead.");
+      if(is2027Open)await openReserve();
+      return;
+    }
     if (hasApplied) return toast.info("You already have an application for this residence.");
     if (available <= 0) return toast.error("Current applications are closed because this residence is full. You can still reserve for 2027 when reservations are open.");
     if (await ensureProfileReady()) setShowApply(true);
@@ -226,11 +237,14 @@ const ResidenceDetail = () => {
 
   const submitApplication = async () => {
     if (!user || !residenceId) return;
+    if(!canApplyToResidence(await getResidenceIntake(residenceId))) {setShowApply(false);toast.error("Applications have closed. Please reserve for 2027 instead.");return;}
     setSubmitting(true);
     try {
       const { data, error } = await supabase.from("applications").insert({
         user_id: user.id,
         residence_id: residenceId,
+        academic_year:2026,
+        funding_type:"private",
         status: "submitted",
         notes: applicationNotes.trim() || null,
         institution_type: institutionType,
@@ -332,7 +346,7 @@ const ResidenceDetail = () => {
 
                 <div className="mt-7 flex flex-wrap items-center gap-2">
                   <Button onClick={() => void openReserve()} disabled={!is2027Open} className="bg-[#E09008] font-black text-[#00102f] hover:bg-[#F2AE28]"><Sparkles className="mr-2 h-4 w-4" />Reserve for 2027</Button>
-                  <Button onClick={() => void openApply()} disabled={hasApplied || available <= 0} variant="secondary">{hasApplied ? <><CheckCircle2 className="mr-2 h-4 w-4" />Already applied</> : available <= 0 ? "Currently full" : "Apply now"}</Button>
+                  <Button onClick={() => void openApply()} disabled={intakeOpen && (hasApplied || available <= 0)} variant="secondary">{!intakeOpen ? "Applications closed · Reserve instead" : hasApplied ? <><CheckCircle2 className="mr-2 h-4 w-4" />Already applied</> : available <= 0 ? "Currently full" : "Apply now"}</Button>
                   <WhatsAppButton phone={RESKONNECT_WHATSAPP} residenceName={residence.name} variant="full" />
                   <FavoriteButton residenceId={residence.id} />
                   <ShareButton title={`${residence.name} - Student Accommodation`} text={`View ${residence.name} on ResKonnect. ${residence.address || locationLabel}`} imageUrl={schemaImage} variant="icon" />
