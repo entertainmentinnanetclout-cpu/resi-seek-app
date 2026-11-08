@@ -121,6 +121,23 @@ Deno.serve(async(req:Request)=>{
    if(body.confirmed!==true)return json({error:"Confirm removal of this specific portal account"},400);
    const {data,error}=await session.rpc("admin_delete_residence_portal_account",{_account_id:id});
    if(error||!data?.success)return json({error:errorText(error,"Unable to revoke portal access")},409);
+   // No surviving portal assignment or AdminOS role: remove the user's OAuth
+   // credential from Vault, preserving unrelated student profiles and logins.
+   if(account.user_id){
+    const {data:remaining}=await db.from("user_roles").select("role")
+     .eq("user_id",account.user_id).in("role",["admin","residence_portal"]);
+    if(!remaining?.length){
+     const {data:oldToken}=await db.rpc("gmail_get_connection_secret",{p_user_id:account.user_id});
+     if(typeof oldToken==="string"&&oldToken){
+      try{await fetch("https://oauth2.googleapis.com/revoke",{
+       method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
+       body:new URLSearchParams({token:oldToken}),signal:AbortSignal.timeout(2500)
+      });}catch{/* Google's availability cannot block local access revocation. */}
+     }
+     const {error:cleanupErr}=await db.rpc("gmail_delete_connection",{p_user_id:account.user_id});
+     if(cleanupErr)console.error("OAuth credential cleanup failed after portal revoke",cleanupErr.code);
+    }
+   }
    return json({ok:true,deleted:true,auth_user_preserved:true,account_id:id});
   }
   if(action!=="update")return json({error:"Invalid portal management action"},400);
@@ -172,6 +189,17 @@ Deno.serve(async(req:Request)=>{
     }).eq("id",id);
     if(!revertErr&&originalAuthEmail)await db.auth.admin.updateUserById(account.user_id,{email:originalAuthEmail,email_confirm:true});
     return json({error:"Profile email sync failed; verify account details before retrying"},503);
+   }
+  }
+  if(account.is_active&&!updated.is_active&&account.user_id){
+   // A suspended landlord must not retain an enabled server-side Gmail sender.
+   // Do not interrupt a distinct, still-authorized global AdminOS account.
+   const {data:globalAdmin}=await db.from("user_roles").select("role")
+    .eq("user_id",account.user_id).eq("role","admin").limit(1);
+   if(!globalAdmin?.length){
+    const {error:suspendErr}=await db.from("landlord_gmail_connections")
+     .update({enabled:false}).eq("user_id",account.user_id);
+    if(suspendErr)console.error("Gmail sender suspension failed",suspendErr.code);
    }
   }
   const operation=account.is_active&&!updated.is_active?"deactivated":
