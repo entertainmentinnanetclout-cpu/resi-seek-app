@@ -21,7 +21,6 @@ import GoogleLogo from "@/components/auth/GoogleLogo";
 import { clearWeakPassword, rememberWeakPassword } from "@/lib/passwordSecurity";
 import PasswordReset from "@/pages/PasswordReset";
 import AccountPortals from "@/components/AccountPortals";
-import AuthLoadingRecovery from "@/components/AuthLoadingRecovery";
 import { accountHome } from "@/lib/accountRouting";
 
 const passwordSchema = z.string().min(8, "Password must be at least 8 characters").regex(/[A-Z]/, "Must contain an uppercase letter").regex(/[a-z]/, "Must contain a lowercase letter").regex(/[0-9]/, "Must contain a number");
@@ -307,7 +306,8 @@ const Auth = () => {
   };
 
   if (isPasswordRecovery) return <PasswordReset />;
-  if (user && accessError) return <AuthLoadingRecovery message="We couldn't verify your ResKonnect account access." onRetry={refreshProfile} showRecoveryImmediately />;
+  // The sign-in page must not reproduce the dashboard's failed account-check
+  // loader: users need an actual account-switching and recovery route.
 
   return (
     <div className="flex min-h-screen flex-col justify-center bg-background px-4 py-10 sm:px-6">
@@ -315,6 +315,15 @@ const Auth = () => {
       <div className="mx-auto w-full max-w-md">
         <div className="text-center"><img src={BRAND.logos.full} alt={BRAND.name} className="mx-auto h-16 w-auto object-contain" /><h1 className="mt-6 text-3xl font-black">{isLogin ? "Sign in to ResKonnect" : "Create your ResKonnect account"}</h1><p className="mt-2 text-sm text-muted-foreground">Accommodation, applications and opportunity — connected.</p></div>
         <AccountPortals />
+        {user && accessError && (
+          <div role="alert" className="mt-5 space-y-3 rounded-xl border border-amber-300/70 bg-amber-50 p-4 text-sm text-amber-950">
+            <p>Your signed-in session is saved, but account permissions could not be verified. This can happen during a service timeout.</p>
+            <Button type="button" size="sm" onClick={() => void refreshProfile()} disabled={authLoading}>
+              {authLoading ? "Checking account…" : "Retry account check"}
+            </Button>
+            <p className="text-xs">You can also sign in with another account below. Private dashboards will remain protected until permission checks succeed.</p>
+          </div>
+        )}
         <Card className="mt-7 shadow-xl"><CardContent className="p-6 sm:p-8">
           {error && <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-5">
