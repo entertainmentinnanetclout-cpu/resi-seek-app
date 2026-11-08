@@ -7,7 +7,7 @@ export type LetterDetails={
  residenceImageUrl?:string|null;
 };
 const WIDTH=595.28,HEIGHT=841.89;
-const navy=rgb(7/255,19/255,38/255),blue=rgb(37/255,99/255,235/255),gold=rgb(245/255,179/255,47/255);
+const navy=rgb(7/255,19/255,38/255),blue=rgb(37/255,99/255,235/255),gold=rgb(217/255,171/255,82/255);
 const light=rgb(242/255,246/255,251/255),ink=rgb(30/255,41/255,59/255),muted=rgb(82/255,102/255,125/255);
 const transliterate=(text:string)=>String(text||"").normalize("NFKD")
  .replace(/[\u0300-\u036f]/g,"").replace(/[–—]/g,"-").replace(/[‘’]/g,"'").replace(/[“”]/g,'"')
@@ -46,7 +46,7 @@ export async function createBrandedPdf(details:LetterDetails):Promise<Uint8Array
  // Official public app icon is a static, trusted source. The document still
  // renders with a complete vector wordmark when the network or image fails.
  try{
-  const image=await fetch("https://www.reskonnect.org/icon-192.png",{signal:AbortSignal.timeout(2500)});
+  const image=await fetch("https://www.reskonnect.org/favicon-transparent.png",{signal:AbortSignal.timeout(2500)});
   if(image.ok && Number(image.headers.get("content-length")||0)<250000){
    const bytes=new Uint8Array(await image.arrayBuffer());
    if(bytes.length<250000)logo=await pdf.embedPng(bytes);
@@ -57,47 +57,52 @@ export async function createBrandedPdf(details:LetterDetails):Promise<Uint8Array
  try{if(realPhoto)photo=realPhoto.mime==="image/png"?await pdf.embedPng(realPhoto.bytes):await pdf.embedJpg(realPhoto.bytes);}catch{/* Optional photo never prevents an official letter. */}
  const pages:any[]=[];
  const drawFooter=(page:any,index:number)=>{
-  page.drawRectangle({x:0,y:0,width:WIDTH,height:92,color:navy});
-  page.drawRectangle({x:0,y:90,width:WIDTH,height:3,color:gold});
-  page.drawText("RESKONNECT  |  CONNECTING RESIDENTS. ADVANCING FUTURES.",{x:42,y:63,size:9,font:bold,color:rgb(1,1,1)});
-  page.drawText("www.reskonnect.org  |  reskonnect@gmail.com  |  +27 63 732 3192",{x:42,y:45,size:8,font:regular,color:rgb(0.78,0.85,0.93)});
-  page.drawText("Official case communication  |  Do not share ID documents by email",{x:42,y:25,size:7,font:regular,color:rgb(0.73,0.80,0.9)});
-  page.drawText("Page "+index,{x:510,y:63,size:8,font:regular,color:rgb(0.85,0.9,1)});
+  page.drawRectangle({x:0,y:0,width:WIDTH,height:89,color:rgb(1,1,1)});
+  page.drawRectangle({x:0,y:88,width:WIDTH,height:2,color:gold});
+  page.drawText("RESKONNECT  /  CONNECTING RESIDENTS. ADVANCING FUTURES.",{x:42,y:60,size:9,font:bold,color:navy});
+  page.drawText("www.reskonnect.org  |  reskonnect@gmail.com  |  +27 63 732 3192",{x:42,y:43,size:8,font:regular,color:muted});
+  page.drawText("Official case update. Upload private documents only through your secure account.",{x:42,y:23,size:7,font:regular,color:muted});
+  page.drawText(String(index).padStart(2,"0"),{x:535,y:60,size:9,font:regular,color:navy});
  };
  const addPage=(first:boolean)=>{
   const page=pdf.addPage([WIDTH,HEIGHT]);pages.push(page);
+  let contentY=HEIGHT-259;
   if(first){
-   page.drawRectangle({x:0,y:HEIGHT-156,width:WIDTH,height:156,color:navy});
-   page.drawRectangle({x:0,y:HEIGHT-7,width:WIDTH,height:7,color:gold});
-   if(logo) {
+   // White, vector-sharp stationery with a restrained navy + gold identity.
+   page.drawRectangle({x:0,y:HEIGHT-6,width:WIDTH,height:6,color:gold});
+   if(logo){
     const d=logo.scale(1);
-    const ratio=Math.min(74/d.width,74/d.height,1);
-    page.drawImage(logo,{x:39,y:HEIGHT-119,width:d.width*ratio,height:d.height*ratio});
+    const scale=Math.min(58/d.width,58/d.height,1);
+    page.drawImage(logo,{x:42+(58-d.width*scale)/2,y:HEIGHT-94+(58-d.height*scale)/2,width:d.width*scale,height:d.height*scale});
    }else{
-    page.drawRectangle({x:42,y:HEIGHT-113,width:66,height:66,color:blue});
-    page.drawText("RK",{x:55,y:HEIGHT-90,size:26,font:bold,color:rgb(1,1,1)});
+    page.drawRectangle({x:43,y:HEIGHT-88,width:46,height:46,color:navy});
+    page.drawText("RK",{x:52,y:HEIGHT-73,size:19,font:bold,color:rgb(1,1,1)});
    }
-   page.drawText("RESKONNECT",{x:125,y:HEIGHT-74,size:26,font:bold,color:rgb(1,1,1)});
-   page.drawText("LIVING  |  AI  |  OPPORTUNITY",{x:127,y:HEIGHT-96,size:10,font:regular,color:rgb(.78,.86,.97)});
-   page.drawText("OFFICIAL BRANDED CORRESPONDENCE",{x:42,y:HEIGHT-140,size:9,font:bold,color:gold});
-   page.drawRectangle({x:40,y:HEIGHT-233,width:WIDTH-80,height:65,color:light,borderColor:rgb(.88,.91,.95),borderWidth:1});
-   page.drawText("REFERENCE",{x:52,y:HEIGHT-189,size:8,font:bold,color:muted});
-   page.drawText(transliterate(details.reference).slice(0,48),{x:52,y:HEIGHT-212,size:12,font:bold,color:navy});
-   page.drawText("RECORDED STATUS",{x:327,y:HEIGHT-189,size:8,font:bold,color:muted});
-   page.drawText(transliterate(details.status).slice(0,28),{x:327,y:HEIGHT-212,size:11,font:bold,color:blue});
+   page.drawText("RESKONNECT",{x:111,y:HEIGHT-61,size:24,font:bold,color:navy});
+   page.drawText("STUDENT LIVING  /  OPPORTUNITY",{x:113,y:HEIGHT-82,size:9,font:regular,color:muted});
+   page.drawLine({start:{x:42,y:HEIGHT-112},end:{x:WIDTH-42,y:HEIGHT-112},thickness:0.8,color:rgb(.88,.90,.93)});
+   page.drawText("PERSONALISED CORRESPONDENCE",{x:42,y:HEIGHT-137,size:9,font:bold,color:rgb(.60,.42,.17)});
+   page.drawRectangle({x:42,y:HEIGHT-231,width:WIDTH-84,height:72,color:light,borderColor:rgb(.90,.92,.95),borderWidth:0.7});
+   page.drawText("REFERENCE",{x:57,y:HEIGHT-184,size:8,font:bold,color:muted});
+   page.drawText(transliterate(details.reference).slice(0,48),{x:57,y:HEIGHT-209,size:12,font:bold,color:navy});
+   page.drawText("RECORDED STATUS",{x:325,y:HEIGHT-184,size:8,font:bold,color:muted});
+   page.drawText(transliterate(details.status).slice(0,28),{x:325,y:HEIGHT-209,size:11,font:bold,color:navy});
    if(photo){
-    page.drawRectangle({x:42,y:HEIGHT-425,width:WIDTH-84,height:177,color:light});
-    const scale=Math.min((WIDTH-84)/photo.width,177/photo.height);
+    const maxW=WIDTH-84,maxH=194;
+    const scale=Math.min(maxW/photo.width,maxH/photo.height);
     const imageW=photo.width*scale,imageH=photo.height*scale;
-    page.drawImage(photo,{x:42+((WIDTH-84)-imageW)/2,y:HEIGHT-425+(177-imageH)/2,width:imageW,height:imageH});
-    page.drawText("ACTUAL RESIDENCE LISTING PHOTO  |  "+transliterate(details.property).slice(0,40),{x:42,y:HEIGHT-444,size:8,font:bold,color:muted});
+    const top=HEIGHT-254,bottom=top-imageH;
+    page.drawImage(photo,{x:42+(maxW-imageW)/2,y:bottom,width:imageW,height:imageH});
+    page.drawText("ACTUAL RESIDENCE LISTING PHOTO  |  "+transliterate(details.property).slice(0,42),{x:42,y:bottom-17,size:8,font:regular,color:muted});
+    contentY=bottom-44;
    }
   }else{
-   page.drawRectangle({x:0,y:HEIGHT-58,width:WIDTH,height:58,color:navy});
-   page.drawText("RESKONNECT  |  CASE "+transliterate(details.reference).slice(0,30),{x:42,y:HEIGHT-39,size:12,font:bold,color:rgb(1,1,1)});
-   page.drawRectangle({x:0,y:HEIGHT-61,width:WIDTH,height:3,color:gold});
+   page.drawRectangle({x:0,y:HEIGHT-5,width:WIDTH,height:5,color:gold});
+   page.drawText("RESKONNECT",{x:42,y:HEIGHT-42,size:13,font:bold,color:navy});
+   page.drawText("CASE "+transliterate(details.reference).slice(0,30),{x:345,y:HEIGHT-42,size:9,font:regular,color:muted});
+   page.drawLine({start:{x:42,y:HEIGHT-56},end:{x:WIDTH-42,y:HEIGHT-56},thickness:0.8,color:rgb(.88,.90,.93)});
   }
-  return {page,y:first?(photo?HEIGHT-477:HEIGHT-260):HEIGHT-95};
+  return {page,y:first?contentY:HEIGHT-86};
  };
  let {page,y}=addPage(true);
  const maxX=WIDTH-84;
@@ -112,7 +117,7 @@ export async function createBrandedPdf(details:LetterDetails):Promise<Uint8Array
  drawLines(details.subject,18,bold,navy,15,23);
  page.drawRectangle({x:42,y:y+3,width:41,height:4,color:gold});y-=24;
  const date=details.issuedAt||new Date();
- drawLines("ISSUED "+date.toISOString().slice(0,10)+"    |    "+transliterate(details.kindLabel).toUpperCase(),9,bold,blue,22,15);
+ drawLines("ISSUED "+date.toISOString().slice(0,10)+"    |    "+transliterate(details.kindLabel).toUpperCase(),9,bold,muted,22,15);
  drawLines(details.body,11,regular,ink,12,17);
  ensure(55);
  page.drawText("This letter reflects the recorded ResKonnect case status when issued.",{x:42,y:y-5,size:9,font:regular,color:muted});

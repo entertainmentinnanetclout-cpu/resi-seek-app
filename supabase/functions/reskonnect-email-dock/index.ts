@@ -119,7 +119,7 @@ Deno.serve(async(req:Request)=>{
     return res({filename:"ResKonnect-"+c.reference+"-Residence."+ext,content_type:image.mime,base64:pdfAsBase64(image.bytes)});
    }
    const packet=await previewPacket(s,c,key,note);
-   const message=whatsappMessage(c,packet.subject,packet.body);
+   const message=whatsappMessage(c,packet.subject,packet.body,packet.resolved_key,note,s.isAdmin?"ResKonnect":c.property);
    const fingerprint=await sha256(message);
    if(action==="whatsapp_preview")
     return res({subject:packet.subject,message,template_name:packet.template_name,
