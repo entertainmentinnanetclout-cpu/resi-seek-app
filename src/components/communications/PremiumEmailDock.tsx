@@ -265,8 +265,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    const response=await premium({action:"bulk_status_apply",kind,ids,new_status:newStatus,status_note:statusNote,
     expected_statuses:expected,operation_id:crypto.randomUUID(),confirmed:true});
    toast.success((response.updated||0)+" statuses updated"+(response.failed?" · "+response.failed+" skipped":""));
-   setStatusPreview([]);setStatusApproved(false);setChecked(new Set());
+   const updatedIds=(response.results||[]).filter((r:{updated:boolean})=>r.updated).map((r:{id:string})=>r.id);
+   setStatusPreview([]);setStatusApproved(false);setChecked(new Set(updatedIds));
+   setTemplate("smart");setNote("");setBulkPreview([]);setBulkApproval(false);
    await Promise.all([loadItems(),loadCase(),loadHistory()]);
+   if(updatedIds.length)toast.info("Updated records remain selected. Review smart emails before sending their decisions.");
   }catch(e){showError(e);}finally{setBusy(null);}
  };
  const stored=overrides.find(x=>x.target_kind===kind&&x.template_key===studioKey);
