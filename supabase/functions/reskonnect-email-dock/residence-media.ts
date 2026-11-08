@@ -49,9 +49,9 @@ export async function readPublishedPhotoBytes(url:string|null|undefined):Promise
   const ct=(response.headers.get("content-type")||"").toLowerCase().split(";")[0];
   if(ct!=="image/png" && ct!=="image/jpeg" && ct!=="image/jpg")return null;
   const size=Number(response.headers.get("content-length")||0);
-  if(size>3_000_000)return null;
+  if(size>6_000_000)return null;
   const bytes=new Uint8Array(await response.arrayBuffer());
-  if(bytes.length>3_000_000||bytes.length<100)return null;
+  if(bytes.length>6_000_000||bytes.length<100)return null;
   const jpeg=bytes[0]===0xff&&bytes[1]===0xd8&&bytes[2]===0xff;
   const png=bytes[0]===0x89&&bytes[1]===0x50&&bytes[2]===0x4e&&bytes[3]===0x47;
   if(!jpeg&&!png)return null;
