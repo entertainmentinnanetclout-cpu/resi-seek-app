@@ -168,7 +168,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   if(filter==="missing")return x.document_stage==="missing"||x.document_stage==="incomplete";
   if(filter==="received")return x.document_stage==="received"||x.document_stage==="complete";
   if(filter==="decision")return ["approved","conditionally_approved","rejected","confirmed","cancelled"].includes(x.status);
-  if(filter!=="all"&&filter!=="missing"&&filter!=="received")return x.workflow_bucket===filter;
+  if(filter!=="all")return x.workflow_bucket===filter;
   return true;
  }),[items,filter,search]);
  const templatesForKind=useMemo(()=>{
