@@ -3,15 +3,17 @@ import { Bell, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { isNativeShell, isPushSupported, pushPermission, subscribePush } from "@/lib/push";
+import { isNativeShell, isPushSupported, pushPermission, subscribePushDetailed } from "@/lib/push";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const DISMISS_PREFIX = "rk_push_dismissed_at:";
-const ELIGIBLE_PATHS = ["/dashboard", "/profile", "/my-applications", "/applications", "/opportunities", "/wil"];
+const ELIGIBLE_PATHS = ["/", "/find", "/dashboard", "/profile", "/my-applications", "/applications", "/opportunities", "/wil"];
 
 export default function PushPrompt() {
   const [show, setShow] = useState(false);
+  const [busy,setBusy]=useState(false);
+  const [problem,setProblem]=useState("");
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
@@ -37,14 +39,14 @@ export default function PushPrompt() {
   };
 
   const enable = async () => {
-    const ok = await subscribePush();
-    if (ok) {
-      toast.success("Notifications enabled");
-      setShow(false);
-      return;
-    }
-    toast.error("Notifications could not be enabled right now. Your account and app remain available.");
-    dismiss();
+    if(busy)return;
+    setBusy(true);setProblem("");
+    const result=await subscribePushDetailed();
+    setBusy(false);
+    if(result.ok){toast.success("Notifications enabled");setShow(false);return;}
+    setProblem(result.reason);
+    toast.error(result.reason);
+    // Do not dismiss after failure; users need a clear retry path.
   };
 
   return (
@@ -54,8 +56,9 @@ export default function PushPrompt() {
         <div className="flex-1">
           <h4 className="text-sm font-semibold">Get account updates</h4>
           <p className="mt-1 text-xs text-muted-foreground">Allow browser notifications for important application and ResKonnect account updates.</p>
+          {problem&&<p role="alert" className="mt-2 text-xs text-amber-700 dark:text-amber-400">{problem}</p>}
           <div className="mt-3 flex gap-2">
-            <Button size="sm" onClick={() => void enable()}>Enable</Button>
+            <Button size="sm" onClick={() => void enable()} disabled={busy}>{busy?"Enabling…":"Enable"}</Button>
             <Button size="sm" variant="ghost" onClick={dismiss}>Not now</Button>
           </div>
         </div>
