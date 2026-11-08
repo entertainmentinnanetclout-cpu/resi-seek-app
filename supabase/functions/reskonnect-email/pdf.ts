@@ -69,7 +69,7 @@ export async function createBrandedPdf(details:LetterDetails):Promise<Uint8Array
     const ratio=Math.min(74/d.width,74/d.height,1);
     page.drawImage(logo,{x:39,y:HEIGHT-119,width:d.width*ratio,height:d.height*ratio});
    }else{
-    page.drawRectangle({x:42,y:HEIGHT-113,width:66,height:66,color:blue,borderRadius:0});
+    page.drawRectangle({x:42,y:HEIGHT-113,width:66,height:66,color:blue});
     page.drawText("RK",{x:55,y:HEIGHT-90,size:26,font:bold,color:rgb(1,1,1)});
    }
    page.drawText("RESKONNECT",{x:125,y:HEIGHT-74,size:26,font:bold,color:rgb(1,1,1)});
@@ -93,8 +93,7 @@ export async function createBrandedPdf(details:LetterDetails):Promise<Uint8Array
  const drawLines=(text:string,size:number,font:any,color:any,after:number,lineHeight:number)=>{
   for(const paragraph of String(text).split(/\n/)){
    const lines=paragraph.trim()?wrap(paragraph,maxX,font,size):[""];
-   ensure(lines.length*lineHeight+after);
-   for(const line of lines){if(line)page.drawText(line,{x:42,y,size,font,color});y-=lineHeight;}
+   for(const line of lines){ensure(lineHeight+after);if(line)page.drawText(line,{x:42,y,size,font,color});y-=lineHeight;}
   }
   y-=after;
  };
