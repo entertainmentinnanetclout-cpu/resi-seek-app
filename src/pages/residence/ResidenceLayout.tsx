@@ -9,6 +9,7 @@ import {
   FileCheck2,
   Home,
   Inbox,
+  Mail,
   LogOut,
   Megaphone,
   Menu,
@@ -90,6 +91,12 @@ const navItems = [
     match: (path: string) =>
       path.startsWith("/residence/inbox") ||
       path.startsWith("/residence/application/"),
+  },
+  {
+    icon: Mail,
+    label: "Email & Gmail",
+    path: "/residence/communications",
+    match: (path: string) => path.startsWith("/residence/communications"),
   },
   {
     icon: Target,
