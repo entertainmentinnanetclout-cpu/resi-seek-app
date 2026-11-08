@@ -176,6 +176,7 @@ const ResidenceReservations2027 = lazy(
   () => import("./pages/residence/ResidenceReservations2027"),
 );
 const ResidenceInbox = lazy(() => import("./pages/residence/ResidenceInbox"));
+const ResidenceCommunications = lazy(() => import("./pages/residence/ResidenceCommunications"));
 const ResidenceApplicationDetail = lazy(
   () => import("./pages/residence/ResidenceApplicationDetail"),
 );
@@ -1196,6 +1197,7 @@ const App = () => {
                         element={<ResidenceVirtualTour />}
                       />
                       <Route path="inbox" element={<ResidenceInbox />} />
+                      <Route path="communications" element={<ResidenceCommunications />} />
                       <Route
                         path="application/:id"
                         element={<ResidenceApplicationDetail />}
