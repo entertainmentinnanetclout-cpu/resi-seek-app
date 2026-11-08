@@ -217,7 +217,7 @@ export const AdminReservations2027Content = () => {
                   <Select value={row.status} onValueChange={(value) => void updateStatus(row, value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{statuses.map((x) => <SelectItem key={x} value={x}>{label(x)}</SelectItem>)}</SelectContent></Select>
                   <Textarea rows={3} value={notes[row.id] || ""} onChange={(e) => setNotes((p) => ({ ...p, [row.id]: e.target.value }))} placeholder="Internal follow-up note" />
                   <Button size="sm" variant="outline" className="w-full" onClick={() => void saveNotes(row)}>Save note</Button>
-                  <Button size="sm" variant="outline" className="w-full" asChild><Link to={`/admin/communications?tab=email&kind=reservation&target=${row.id}`}><Mail className="mr-2 h-4 w-4"/>Email reservation update</Link></Button>
+                  <Button size="sm" variant="outline" className="w-full" asChild><Link to={`/admin/communications?tab=email&kind=reservation&target=${row.id}`}><Mail className="mr-2 h-4 w-4"/>Email reservation update</Link></Button><Button size="sm" variant="outline" className="w-full" asChild><Link to={`/admin/communications?tab=email&kind=reservation&target=${row.id}&channel=whatsapp`}><MessageCircle className="mr-2 h-4 w-4"/>WhatsApp confirmation</Link></Button>
                 </div>
               </div>
             </CardContent></Card>
