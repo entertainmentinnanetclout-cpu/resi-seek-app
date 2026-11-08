@@ -78,8 +78,11 @@ export async function listCases(s:EmailSession,kind:Kind,options:{offset:number;
   .select("target_id,template_key,delivery_status,created_at,sent_at,context_snapshot")
   .eq("target_kind",kind).in("target_id",rows.map((r:any)=>r.id)).order("created_at",{ascending:false}).limit(1000):{data:[],error:null};
  if(outreachError)throw Error("Unable to synchronize outbound email history");
- const lastMail=new Map<string,OutboundEmail>();
- for(const message of outreach||[]){if(!lastMail.has(message.target_id))lastMail.set(message.target_id,message as OutboundEmail);}
+ const lastMail=new Map<string,OutboundEmail>(),lastSent=new Map<string,OutboundEmail>();
+ for(const message of outreach||[]){
+  if(!lastMail.has(message.target_id))lastMail.set(message.target_id,message as OutboundEmail);
+  if(message.delivery_status==="sent"&&!lastSent.has(message.target_id))lastSent.set(message.target_id,message as OutboundEmail);
+ }
  const lastUpload=new Map<string,string>();
  const noteUpload=(id:string,date:string|null|undefined)=>{if(date&&(!lastUpload.has(id)||date>lastUpload.get(id)!))lastUpload.set(id,date);};
  const person=new Map<string,any>((people.data||[]).map((p:any)=>[p.id,p]));
@@ -100,7 +103,7 @@ export async function listCases(s:EmailSession,kind:Kind,options:{offset:number;
    documents:signal,contactAllowed:kind!=="support_enquiry"||r.consent_to_be_contacted===true
   };
   const latestUpload=[lastUpload.get(r.id),lastUpload.get(r.user_id)].filter(Boolean).sort().reverse()[0]||null;
-  const journey=deriveCaseJourney(c,lastMail.get(r.id)||null,latestUpload,r.created_at);
+  const journey=deriveCaseJourney(c,lastSent.get(r.id)||lastMail.get(r.id)||null,latestUpload,r.created_at);
   return {...publicCase(s,c),created_at:r.created_at,document_stage:signal.stage,
    missing_count:signal.missing.length,pending_review:signal.pendingReview,...journey};
  });
