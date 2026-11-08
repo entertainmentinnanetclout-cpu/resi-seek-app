@@ -45,7 +45,10 @@ test("WhatsApp and premium email render the same factual document-aware decision
  assert.ok(whatsapp.includes("Identity document"));
  assert.ok(whatsapp.includes("Proof of funding"));
  assert.ok(whatsapp.includes("www.reskonnect.org"));
- assert.ok(whatsapp.includes(safePhoto));
+ assert.ok(!whatsapp.includes(safePhoto), "Short WhatsApp text should not embed lengthy image URLs; photos remain separately downloadable");
+  assert.ok(whatsapp.length<950);
+  assert.ok(!whatsapp.includes("*"), "Plain conversational WhatsApp should not use bold markers");
+  assert.ok(whatsapp.includes("Next step:"));
  assert.ok(html.includes('src="'+safePhoto+'"'));
  assert.ok(html.includes("Actual residence listing photo"));
  assert.ok(!whatsapp.includes("is recorded as APPROVED"));
