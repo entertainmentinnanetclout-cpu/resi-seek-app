@@ -124,7 +124,8 @@ export function renderLetter(c:CaseContext,key:TemplateKey,customNote:string="",
  const expand=(v:string)=>v.replace(/\{\{([^}]+)\}\}/g,(_,name)=>variables[name.trim()]??"").replace(/\n{3,}/g,"\n\n").trim();
  const subject=expand(override?.subject_template||def.subject).replace(/[\r\n]/g," ").slice(0,180);
  const message=expand(override?.body_template||def.body);
- const body="Hello "+clean(c.studentName,90)+",\n\n"+message+"\n\nKind regards,\nResKonnect Communications\n"+(c.property!=="ResKonnect"?"On behalf of "+clean(c.property,140)+"\n":"")+"\nThis is a service notification about your existing ResKonnect case. Never email identity documents; upload securely on ResKonnect.";
+ const signoff=c.property==="ResKonnect"?"ResKonnect":clean(c.property,140)+" via ResKonnect";
+  const body="Hello "+clean(c.studentName,90)+",\n\n"+message+"\n\nKind regards,\n"+signoff;
  return {subject,body,resolved_key:resolved,template_name:def.name,next_step:nextStep(c)};
 }
 export function htmlEmail(c:CaseContext,subject:string,body:string):string{
