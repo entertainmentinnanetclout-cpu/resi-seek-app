@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
 import FloatingShapes from "@/components/FloatingShapes";
+import GoldTiltCard from "@/components/premium/GoldTiltCard";
+import "@/styles/premium-gold-depth.css";
 import { AudienceSelector } from "@/components/findmyres/AudienceSelector";
 import InteractiveNeedSection from "@/components/onboarding/InteractiveNeedSection";
 import { BRAND } from "@/constants/brand";
@@ -195,17 +197,17 @@ const Landing = () => {
           </div>
         </section>
 
-        <section className="border-b bg-gradient-to-b from-primary/5 to-background py-10 md:py-14">
+        <section className="border-b bg-gradient-to-b from-[#fff9e7] via-background to-background py-10 md:py-14 dark:from-[#171b21]">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-5xl text-center">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">One ResKonnect journey</p>
-              <h2 className="mt-2 text-3xl font-black md:text-4xl">Three pillars. One platform.</h2>
+              <h2 className="mt-2 text-3xl font-black md:text-4xl">Three pillars. <span className="rk-gold-foil">One platform.</span></h2>
               <p className="mx-auto mt-3 max-w-3xl text-sm text-muted-foreground md:text-base">Specialised capabilities such as ResMap, Luna and Dimpho strengthen the journey underneath these three master ResKonnect pillars.</p>
             </div>
             <div className="mx-auto mt-7 grid max-w-6xl gap-4 md:grid-cols-3">
-              <Card className="border-emerald-500/15 bg-card shadow-sm"><CardContent className="p-6"><Building2 className="h-8 w-8 text-emerald-600" /><h3 className="mt-4 text-xl font-black">Living</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Find verified student accommodation, private-rental support, roommates and connected housing services.</p><Button variant="link" className="mt-3 p-0" onClick={() => navigate("/living")}>Explore Living →</Button></CardContent></Card>
-              <Card className="border-violet-500/15 bg-card shadow-sm"><CardContent className="p-6"><BrainCircuit className="h-8 w-8 text-violet-600" /><h3 className="mt-4 text-xl font-black">AI</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Ask grounded questions, understand your next action and use account-aware ResKonnect guidance.</p><Button variant="link" className="mt-3 p-0" onClick={() => navigate("/ai")}>Ask ResKonnect AI →</Button></CardContent></Card>
-              <Card className="border-amber-500/15 bg-card shadow-sm"><CardContent className="p-6"><Award className="h-8 w-8 text-amber-600" /><h3 className="mt-4 text-xl font-black">Opportunity</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Move into applications, education pathways, bursaries, WIL, careers and verified student opportunities.</p><Button variant="link" className="mt-3 p-0" onClick={() => navigate("/opportunities")}>Explore Opportunity →</Button></CardContent></Card>
+              <GoldTiltCard><Card className="border-emerald-500/15 bg-card shadow-sm"><CardContent className="p-6"><Building2 className="h-8 w-8 text-emerald-600" /><h3 className="mt-4 text-xl font-black">Living</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Find verified student accommodation, private-rental support, roommates and connected housing services.</p><Button variant="link" className="mt-3 p-0" onClick={() => navigate("/living")}>Explore Living →</Button></CardContent></Card></GoldTiltCard>
+              <GoldTiltCard><Card className="border-violet-500/15 bg-card shadow-sm"><CardContent className="p-6"><BrainCircuit className="h-8 w-8 text-violet-600" /><h3 className="mt-4 text-xl font-black">AI</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Ask grounded questions, understand your next action and use account-aware ResKonnect guidance.</p><Button variant="link" className="mt-3 p-0" onClick={() => navigate("/ai")}>Ask ResKonnect AI →</Button></CardContent></Card></GoldTiltCard>
+              <GoldTiltCard><Card className="border-amber-500/15 bg-card shadow-sm"><CardContent className="p-6"><Award className="h-8 w-8 text-amber-600" /><h3 className="mt-4 text-xl font-black">Opportunity</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Move into applications, education pathways, bursaries, WIL, careers and verified student opportunities.</p><Button variant="link" className="mt-3 p-0" onClick={() => navigate("/opportunities")}>Explore Opportunity →</Button></CardContent></Card></GoldTiltCard>
             </div>
           </div>
         </section>
