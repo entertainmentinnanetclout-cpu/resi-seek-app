@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -110,6 +111,7 @@ const ResidenceDetail = () => {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [institutionType, setInstitutionType] = useState("university");
   const [applicationNotes, setApplicationNotes] = useState("");
+  const [privateTenantConfirmed,setPrivateTenantConfirmed]=useState(false);
   const [fundingType, setFundingType] = useState("undecided");
   const [roomPreference, setRoomPreference] = useState("");
   const [reservationNotes, setReservationNotes] = useState("");
@@ -238,6 +240,7 @@ const ResidenceDetail = () => {
   const submitApplication = async () => {
     if (!user || !residenceId) return;
     if(!canApplyToResidence(await getResidenceIntake(residenceId))) {setShowApply(false);toast.error("Applications have closed. Please reserve for 2027 instead.");return;}
+    if(!privateTenantConfirmed){toast.error("Please confirm you are applying as a private-paying tenant.");return;}
     setSubmitting(true);
     try {
       const { data, error } = await supabase.from("applications").insert({
@@ -256,7 +259,7 @@ const ResidenceDetail = () => {
       }
       setHasApplied(true);
       setShowApply(false);
-      setApplicationNotes("");
+      setApplicationNotes("");setPrivateTenantConfirmed(false);
       toast.success("Application submitted successfully.");
     } catch (error: any) {
       toast.error(error?.message || "Could not submit application.");
@@ -390,7 +393,7 @@ const ResidenceDetail = () => {
         </div>
       </div>
 
-      <Dialog open={showApply} onOpenChange={setShowApply}><DialogContent><DialogHeader><DialogTitle>Apply to {residence.name}</DialogTitle><DialogDescription>Submit one application for this residence. ResKonnect prevents duplicate applications to the same property.</DialogDescription></DialogHeader><div className="space-y-4"><div><Label>Applicant type</Label><Select value={institutionType} onValueChange={setInstitutionType}><SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="university">University student</SelectItem><SelectItem value="tvet">TVET / college</SelectItem><SelectItem value="private">Private applicant / tenant</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div><div><Label>Application note</Label><Textarea className="mt-1.5 min-h-[110px]" value={applicationNotes} onChange={(e) => setApplicationNotes(e.target.value)} placeholder="Room preference, move-in timing or anything ResKonnect should know." /></div><Button onClick={() => void submitApplication()} disabled={submitting} className="w-full">{submitting ? "Submitting..." : "Submit application"}</Button></div></DialogContent></Dialog>
+      <Dialog open={showApply} onOpenChange={setShowApply}><DialogContent><DialogHeader><DialogTitle>Apply to {residence.name}</DialogTitle><DialogDescription>Submit one application for this residence. ResKonnect prevents duplicate applications to the same property.</DialogDescription></DialogHeader><div className="space-y-4"><div><Label>Applicant type</Label><Select value={institutionType} onValueChange={setInstitutionType}><SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="university">University student</SelectItem><SelectItem value="tvet">TVET / college</SelectItem><SelectItem value="private">Private applicant / tenant</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div><div><Label>Application note</Label><Textarea className="mt-1.5 min-h-[110px]" value={applicationNotes} onChange={(e) => setApplicationNotes(e.target.value)} placeholder="Room preference, move-in timing or anything ResKonnect should know." /></div><label className="flex items-start gap-2 rounded-lg border p-3 text-sm"><Checkbox checked={privateTenantConfirmed} onCheckedChange={checked=>setPrivateTenantConfirmed(checked===true)}/><span>I confirm I am applying as a <strong>private-paying tenant</strong> for the currently authorized intake window, not an NSFAS-funded placement. A reservation is a separate process.</span></label><Button onClick={() => void submitApplication()} disabled={submitting||!privateTenantConfirmed} className="w-full">{submitting ? "Submitting..." : "Submit application"}</Button></div></DialogContent></Dialog>
 
       <Dialog open={showReserve} onOpenChange={setShowReserve}><DialogContent><DialogHeader><DialogTitle>Reserve interest for 2027</DialogTitle><DialogDescription>This records your 2027 accommodation interest with ResKonnect. It is not a final lease or guaranteed placement.</DialogDescription></DialogHeader><div className="space-y-4"><div><Label>Expected funding</Label><Select value={fundingType} onValueChange={setFundingType}><SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="undecided">Undecided</SelectItem><SelectItem value="private">Private / self-funded</SelectItem><SelectItem value="nsfas">NSFAS-funded</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div><div><Label>Room preference</Label><Input className="mt-1.5" value={roomPreference} onChange={(e) => setRoomPreference(e.target.value)} placeholder={roomTypes[0] || "Single, sharing, bachelor..."} /></div><div><Label>Notes</Label><Textarea className="mt-1.5 min-h-[100px]" value={reservationNotes} onChange={(e) => setReservationNotes(e.target.value)} placeholder="Move-in month, room preference or anything else." /></div><Button onClick={() => void submitReservation()} disabled={submitting} className="w-full bg-[#E09008] font-black text-[#00102f] hover:bg-[#F2AE28]">{submitting ? "Saving..." : "Reserve 2027 interest"}</Button></div></DialogContent></Dialog>
 
