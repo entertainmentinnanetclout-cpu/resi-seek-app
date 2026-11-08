@@ -116,14 +116,16 @@ export default function ResidenceListingWizard(){
  },[residence?.id,user?.id,draft,readonly]);
  // Save a durable draft after edits; submit still waits for an explicit review.
  useEffect(()=>{
-  if(!dirty||!listing||readonly||loading)return;
+  if(!dirty||!listing||readonly||loading||saving)return;
+  // Queue a retry after an in-flight save finishes, instead of dropping edits.
   const timer=window.setTimeout(()=>void save(listing,step,true),1500);
   return ()=>window.clearTimeout(timer);
- },[dirty,listing,step,save,readonly,loading]);
+ },[dirty,listing,step,save,readonly,loading,saving]);
  const advance=async(direction:number)=>{
   if(!listing)return;
   const nextStep=Math.max(0,Math.min(5,step+direction));setStep(nextStep);
-  if(!readonly)await save(listing,nextStep,true);
+  // Persist section progress even when another autosave is still in-flight.
+  if(!readonly){editRevision.current+=1;setDirty(true);if(!savingRef.current)await save(listing,nextStep,true);}
  };
  const uploadPhotos=async(files:FileList|null)=>{
   if(!files||!listing||!residence?.id||readonly)return;
