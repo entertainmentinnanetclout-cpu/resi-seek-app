@@ -47,23 +47,28 @@ export async function ensureServiceWorker(): Promise<ServiceWorkerRegistration |
   }
 }
 
-export async function subscribePush(): Promise<boolean> {
-  if (!isPushSupported()) return false;
+export type PushSetupResult={ok:boolean;reason:string;permission:NotificationPermission|"unsupported"};
+export async function subscribePushDetailed(): Promise<PushSetupResult> {
+  if (!isPushSupported()) return {ok:false,reason:"This browser cannot register web push here. On iPhone, add ResKonnect to your Home Screen first.",permission:"unsupported"};
+
+  // IMPORTANT: invoke the browser permission request synchronously from the
+  // Enable button gesture. Awaiting Supabase/network calls first loses user
+  // activation in Safari and other browsers.
+  let permission: NotificationPermission;
+  try {permission=await Notification.requestPermission();}
+  catch{return {ok:false,reason:"The browser blocked the permission request. Check site notification settings.",permission:Notification.permission};}
+  if(permission!=="granted")return {ok:false,reason:permission==="denied"?"Notifications are blocked in your browser settings. Allow them for this site and retry.":"Choose Allow in the browser permission dialog to enable notifications.",permission};
 
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !session?.user?.id || !session.access_token) {
     console.warn("[push] Sign-in is required before notification registration");
-    return false;
+    return {ok:false,reason:"Sign in before registering a notification subscription.",permission};
   }
 
-  const key = await getVapidKey();
-  if (!key) return false;
-
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted") return false;
-
-  const registration = await ensureServiceWorker();
-  if (!registration) return false;
+  const key=await getVapidKey();
+  if(!key)return {ok:false,reason:"ResKonnect notification key is temporarily unavailable. Try again shortly.",permission};
+  const registration=await ensureServiceWorker();
+  if(!registration)return {ok:false,reason:"The service worker could not start. Refresh or install the ResKonnect app and retry.",permission};
 
   try {
     let subscription = await registration.pushManager.getSubscription();
@@ -86,12 +91,14 @@ export async function subscribePush(): Promise<boolean> {
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
     if (error) throw error;
-    return true;
+    return {ok:true,reason:"Notifications enabled",permission};
   } catch (error) {
     console.error("[push] Subscription registration failed:", error);
-    return false;
+    return {ok:false,reason:"Permission was granted, but the subscription could not be saved. Retry or refresh the app.",permission};
   }
 }
+
+export async function subscribePush():Promise<boolean>{return (await subscribePushDetailed()).ok;}
 
 export function isPushSupported() {
   return !isNativeShell()

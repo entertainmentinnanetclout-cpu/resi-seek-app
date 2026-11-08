@@ -35,12 +35,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { BRAND } from "@/constants/brand";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import {getResidenceIntake,canApplyToResidence,ACCOMMODATION_APPLICATION_YEAR,type ResidenceIntakeRule} from "@/lib/residenceIntake";
 import { RESKONNECT_WHATSAPP } from "@/lib/constants";
 import { captureApplicationReferral } from "@/lib/referrals/referralApi";
 import { readReferral, savePendingApplication } from "@/lib/referrals/referralStorage";
@@ -102,12 +104,14 @@ const ResidenceDetail = () => {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [hasApplied, setHasApplied] = useState(false);
   const [showApply, setShowApply] = useState(false);
+  const [intakeRule,setIntakeRule]=useState<ResidenceIntakeRule|null>(null);
   const [showReserve, setShowReserve] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [institutionType, setInstitutionType] = useState("university");
   const [applicationNotes, setApplicationNotes] = useState("");
+  const [privateTenantConfirmed,setPrivateTenantConfirmed]=useState(false);
   const [fundingType, setFundingType] = useState("undecided");
   const [roomPreference, setRoomPreference] = useState("");
   const [reservationNotes, setReservationNotes] = useState("");
@@ -121,6 +125,7 @@ const ResidenceDetail = () => {
   const available = Number(residence?.available_spots || 0);
   const capacity = Number(residence?.capacity || 0);
   const is2027Open = Boolean(residence?.reservations_2027_open);
+  const intakeOpen=canApplyToResidence(intakeRule);
   const locationLabel = residence?.place_label || residence?.campus || residence?.city || "Student accommodation";
   const amenities = Array.isArray(residence?.amenities) ? residence.amenities : [];
   const roomTypes = Array.isArray(residence?.room_types) && residence.room_types.length
@@ -146,6 +151,7 @@ const ResidenceDetail = () => {
         }
         setResidence(row || null);
         if (!row) return;
+        setIntakeRule(await getResidenceIntake(row.id));
 
         const [pricingResult, relatedResult, reviewResult] = await Promise.all([
           (supabase as any).from("residence_room_pricing_public_v").select("*").eq("residence_id", row.id).order("academic_year", { ascending: false }).order("name"),
@@ -214,6 +220,13 @@ const ResidenceDetail = () => {
   };
 
   const openApply = async () => {
+    const latest=await getResidenceIntake(residenceId!);
+    setIntakeRule(latest);
+    if(!canApplyToResidence(latest)){
+      toast.info("Accommodation applications are closed. Choose the 2027 reservation option instead.");
+      if(is2027Open)await openReserve();
+      return;
+    }
     if (hasApplied) return toast.info("You already have an application for this residence.");
     if (available <= 0) return toast.error("Current applications are closed because this residence is full. You can still reserve for 2027 when reservations are open.");
     if (await ensureProfileReady()) setShowApply(true);
@@ -226,11 +239,15 @@ const ResidenceDetail = () => {
 
   const submitApplication = async () => {
     if (!user || !residenceId) return;
+    if(!canApplyToResidence(await getResidenceIntake(residenceId))) {setShowApply(false);toast.error("Applications have closed. Please reserve for 2027 instead.");return;}
+    if(!privateTenantConfirmed){toast.error("Please confirm you are applying as a private-paying tenant.");return;}
     setSubmitting(true);
     try {
       const { data, error } = await supabase.from("applications").insert({
         user_id: user.id,
         residence_id: residenceId,
+        academic_year:ACCOMMODATION_APPLICATION_YEAR,
+        funding_type:"private",
         status: "submitted",
         notes: applicationNotes.trim() || null,
         institution_type: institutionType,
@@ -242,7 +259,7 @@ const ResidenceDetail = () => {
       }
       setHasApplied(true);
       setShowApply(false);
-      setApplicationNotes("");
+      setApplicationNotes("");setPrivateTenantConfirmed(false);
       toast.success("Application submitted successfully.");
     } catch (error: any) {
       toast.error(error?.message || "Could not submit application.");
@@ -315,6 +332,7 @@ const ResidenceDetail = () => {
                   <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-[#000F2F] shadow-lg"><img src={BRAND.logos.icon} alt="" className="h-8 w-8 object-contain" /><span className="font-black">ResKonnect</span></div>
                   <Badge className="bg-[#E09008] font-black text-[#00102f] hover:bg-[#E09008]">{residence.brand_badge || "RESKONNECT LIVING"}</Badge>
                   {is2027Open && <Badge className="border border-white/20 bg-white/10 text-white hover:bg-white/10">2027 RESERVATIONS OPEN</Badge>}
+                  {!intakeOpen&&<Badge className="border border-white/20 bg-white/10 text-white hover:bg-white/10">APPLICATIONS CLOSED</Badge>}
                   {residence.promo_active && <Badge className="bg-emerald-500 text-white hover:bg-emerald-500">{residence.promo_badge || "PROMO"}</Badge>}
                 </div>
 
@@ -332,7 +350,7 @@ const ResidenceDetail = () => {
 
                 <div className="mt-7 flex flex-wrap items-center gap-2">
                   <Button onClick={() => void openReserve()} disabled={!is2027Open} className="bg-[#E09008] font-black text-[#00102f] hover:bg-[#F2AE28]"><Sparkles className="mr-2 h-4 w-4" />Reserve for 2027</Button>
-                  <Button onClick={() => void openApply()} disabled={hasApplied || available <= 0} variant="secondary">{hasApplied ? <><CheckCircle2 className="mr-2 h-4 w-4" />Already applied</> : available <= 0 ? "Currently full" : "Apply now"}</Button>
+                  <Button onClick={() => void openApply()} disabled={intakeOpen && (hasApplied || available <= 0)} variant="secondary">{!intakeOpen ? "Applications closed · Reserve instead" : hasApplied ? <><CheckCircle2 className="mr-2 h-4 w-4" />Already applied</> : available <= 0 ? "Currently full" : "Apply now"}</Button>
                   <WhatsAppButton phone={RESKONNECT_WHATSAPP} residenceName={residence.name} variant="full" />
                   <FavoriteButton residenceId={residence.id} />
                   <ShareButton title={`${residence.name} - Student Accommodation`} text={`View ${residence.name} on ResKonnect. ${residence.address || locationLabel}`} imageUrl={schemaImage} variant="icon" />
@@ -367,7 +385,7 @@ const ResidenceDetail = () => {
             </div>
 
             <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
-              <Card className="overflow-hidden border-0 shadow-xl ring-1 ring-border"><div className="bg-[#000F2F] px-5 py-4 text-white"><div className="flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#E09008]">Pricing & availability</p><p className="mt-1 text-lg font-black">{residence.name}</p></div><img src={BRAND.logos.icon} alt="" className="h-9 w-9 rounded-lg bg-white p-1" /></div></div><CardContent className="space-y-4 p-5"><div className="grid grid-cols-2 gap-2"><PriceTile label="Private" value={privatePrice || "Not listed"} /><PriceTile label="NSFAS" value={nsfasPrice || "Separate funded rate"} /></div>{residence.price_verified_at && <div className="flex items-center gap-2 rounded-xl bg-emerald-500/[0.07] px-3 py-2 text-xs font-semibold text-emerald-700"><ShieldCheck className="h-4 w-4" />Pricing verified {new Date(residence.price_verified_at).toLocaleDateString("en-ZA")}</div>}<div className="grid gap-2"><Info icon={Users} label="Available now" value={capacity ? `${available} of ${capacity} beds` : `${available} beds`} /><Info icon={WalletCards} label="2027 reservations" value={is2027Open ? "Open" : "Not open yet"} /><Info icon={BedDouble} label="Room type" value={roomTypes.length ? roomTypes.join(", ") : "To be confirmed"} /></div>{is2027Open && <div className="rounded-2xl border border-[#E09008]/30 bg-[#E09008]/[0.06] p-4"><p className="font-black">2027 intake</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{residence.reservations_2027_note || "Reserve your interest for the 2027 intake. A reservation is not a final lease or placement confirmation."}</p></div>}<Button onClick={() => void openReserve()} disabled={!is2027Open} className="w-full bg-[#E09008] font-black text-[#00102f] hover:bg-[#F2AE28]">Reserve for 2027</Button><Button onClick={() => void openApply()} disabled={hasApplied || available <= 0} variant="outline" className="w-full">{hasApplied ? "Already applied" : available <= 0 ? "Currently full" : "Apply for current intake"}</Button><WhatsAppButton phone={RESKONNECT_WHATSAPP} residenceName={residence.name} variant="full" /></CardContent></Card>
+              <Card className="overflow-hidden border-0 shadow-xl ring-1 ring-border"><div className="bg-[#000F2F] px-5 py-4 text-white"><div className="flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#E09008]">Pricing & availability</p><p className="mt-1 text-lg font-black">{residence.name}</p></div><img src={BRAND.logos.icon} alt="" className="h-9 w-9 rounded-lg bg-white p-1" /></div></div><CardContent className="space-y-4 p-5"><div className="grid grid-cols-2 gap-2"><PriceTile label="Private" value={privatePrice || "Not listed"} /><PriceTile label="NSFAS" value={nsfasPrice || "Separate funded rate"} /></div>{residence.price_verified_at && <div className="flex items-center gap-2 rounded-xl bg-emerald-500/[0.07] px-3 py-2 text-xs font-semibold text-emerald-700"><ShieldCheck className="h-4 w-4" />Pricing verified {new Date(residence.price_verified_at).toLocaleDateString("en-ZA")}</div>}<div className="grid gap-2"><Info icon={Users} label="Available now" value={capacity ? `${available} of ${capacity} beds` : `${available} beds`} /><Info icon={WalletCards} label="2027 reservations" value={is2027Open ? "Open" : "Not open yet"} /><Info icon={BedDouble} label="Room type" value={roomTypes.length ? roomTypes.join(", ") : "To be confirmed"} /></div>{is2027Open && <div className="rounded-2xl border border-[#E09008]/30 bg-[#E09008]/[0.06] p-4"><p className="font-black">2027 intake</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{residence.reservations_2027_note || "Reserve your interest for the 2027 intake. A reservation is not a final lease or placement confirmation."}</p></div>}<Button onClick={() => void openReserve()} disabled={!is2027Open} className="w-full bg-[#E09008] font-black text-[#00102f] hover:bg-[#F2AE28]">Reserve for 2027</Button><Button onClick={() => void openApply()} disabled={intakeOpen && (hasApplied || available <= 0)} variant="outline" className="w-full">{!intakeOpen ? "Applications closed · View reservation" : hasApplied ? "Already applied" : available <= 0 ? "Currently full" : "Apply for current intake"}</Button><WhatsAppButton phone={RESKONNECT_WHATSAPP} residenceName={residence.name} variant="full" /></CardContent></Card>
             </aside>
           </div>
 
@@ -375,7 +393,7 @@ const ResidenceDetail = () => {
         </div>
       </div>
 
-      <Dialog open={showApply} onOpenChange={setShowApply}><DialogContent><DialogHeader><DialogTitle>Apply to {residence.name}</DialogTitle><DialogDescription>Submit one application for this residence. ResKonnect prevents duplicate applications to the same property.</DialogDescription></DialogHeader><div className="space-y-4"><div><Label>Applicant type</Label><Select value={institutionType} onValueChange={setInstitutionType}><SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="university">University student</SelectItem><SelectItem value="tvet">TVET / college</SelectItem><SelectItem value="private">Private applicant / tenant</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div><div><Label>Application note</Label><Textarea className="mt-1.5 min-h-[110px]" value={applicationNotes} onChange={(e) => setApplicationNotes(e.target.value)} placeholder="Room preference, move-in timing or anything ResKonnect should know." /></div><Button onClick={() => void submitApplication()} disabled={submitting} className="w-full">{submitting ? "Submitting..." : "Submit application"}</Button></div></DialogContent></Dialog>
+      <Dialog open={showApply} onOpenChange={setShowApply}><DialogContent><DialogHeader><DialogTitle>Apply to {residence.name}</DialogTitle><DialogDescription>Submit one application for this residence. ResKonnect prevents duplicate applications to the same property.</DialogDescription></DialogHeader><div className="space-y-4"><div><Label>Applicant type</Label><Select value={institutionType} onValueChange={setInstitutionType}><SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="university">University student</SelectItem><SelectItem value="tvet">TVET / college</SelectItem><SelectItem value="private">Private applicant / tenant</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div><div><Label>Application note</Label><Textarea className="mt-1.5 min-h-[110px]" value={applicationNotes} onChange={(e) => setApplicationNotes(e.target.value)} placeholder="Room preference, move-in timing or anything ResKonnect should know." /></div><label className="flex items-start gap-2 rounded-lg border p-3 text-sm"><Checkbox checked={privateTenantConfirmed} onCheckedChange={checked=>setPrivateTenantConfirmed(checked===true)}/><span>I confirm I am applying as a <strong>private-paying tenant</strong> for the currently authorized intake window, not an NSFAS-funded placement. A reservation is a separate process.</span></label><Button onClick={() => void submitApplication()} disabled={submitting||!privateTenantConfirmed} className="w-full">{submitting ? "Submitting..." : "Submit application"}</Button></div></DialogContent></Dialog>
 
       <Dialog open={showReserve} onOpenChange={setShowReserve}><DialogContent><DialogHeader><DialogTitle>Reserve interest for 2027</DialogTitle><DialogDescription>This records your 2027 accommodation interest with ResKonnect. It is not a final lease or guaranteed placement.</DialogDescription></DialogHeader><div className="space-y-4"><div><Label>Expected funding</Label><Select value={fundingType} onValueChange={setFundingType}><SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="undecided">Undecided</SelectItem><SelectItem value="private">Private / self-funded</SelectItem><SelectItem value="nsfas">NSFAS-funded</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div><div><Label>Room preference</Label><Input className="mt-1.5" value={roomPreference} onChange={(e) => setRoomPreference(e.target.value)} placeholder={roomTypes[0] || "Single, sharing, bachelor..."} /></div><div><Label>Notes</Label><Textarea className="mt-1.5 min-h-[100px]" value={reservationNotes} onChange={(e) => setReservationNotes(e.target.value)} placeholder="Move-in month, room preference or anything else." /></div><Button onClick={() => void submitReservation()} disabled={submitting} className="w-full bg-[#E09008] font-black text-[#00102f] hover:bg-[#F2AE28]">{submitting ? "Saving..." : "Reserve 2027 interest"}</Button></div></DialogContent></Dialog>
 

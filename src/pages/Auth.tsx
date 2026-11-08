@@ -149,25 +149,14 @@ const Auth = () => {
         return navigate(isRecruiter ? "/recruit/dashboard" : "/recruit/apply", { replace: true });
       }
 
-      const pendingApp = readPendingApplication();
-      if (pendingApp?.residence_id) {
+      const pendingApp=readPendingApplication();
+      if(pendingApp?.residence_id){
         clearPendingApplication();
-        try {
-          const { data: existing } = await supabase.from("applications").select("id").eq("user_id", user.id).eq("residence_id", pendingApp.residence_id).maybeSingle();
-          if (!existing) {
-            const { data: inserted, error: insErr } = await supabase.from("applications").insert({
-              user_id: user.id,
-              residence_id: pendingApp.residence_id,
-              status: "submitted",
-              institution_type: (pendingApp as any).institution_type || "university",
-            } as any).select("id").maybeSingle();
-            if (!insErr && inserted?.id && (pendingApp.referral_code || pendingApp.referral_session_id)) {
-              const { captureApplicationReferral } = await import("@/lib/referrals/referralApi");
-              await captureApplicationReferral(inserted.id, pendingApp.referral_code || null, pendingApp.referral_session_id || null, "student_recruitment");
-            }
-          }
-        } catch (e) { console.warn("auto-submit application failed", e); }
-        return navigate(pendingApp.current_route || `/res/${pendingApp.residence_id}`, { replace: true });
+        // Do not auto-submit a private tenant application solely because a user
+        // has signed in. Private funding must be explicitly confirmed in the
+        // residence application form after logging in.
+        toast.info("Review current application availability or reserve for 2027.");
+        return navigate("/res/"+pendingApp.residence_id,{replace:true});
       }
       const savedHome = isNativeShell && localStorage.getItem(`rk_native_home_${user.id}`) === "/residence" ? "/residence" : "/dashboard";
       navigate(returnTo || savedHome, { replace: true });

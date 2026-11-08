@@ -19,6 +19,7 @@ import { useRealtimeResidences } from "@/hooks/useRealtimeResidences";
 import { useResidenceFilters, isMockResidence } from "@/hooks/useResidenceFilters";
 import { useResidenceSections } from "@/hooks/useResidenceSections";
 import { supabase } from "@/integrations/supabase/client";
+import {getResidenceIntake,canApplyToResidence,ACCOMMODATION_APPLICATION_YEAR} from "@/lib/residenceIntake";
 import { SmartSearchBar } from "@/components/findmyres/SmartSearchBar";
 import { FilterSidebar } from "@/components/findmyres/FilterSidebar";
 import { FilterBottomSheet } from "@/components/findmyres/FilterBottomSheet";
@@ -69,6 +70,7 @@ const FindMyRes = () => {
   const [showFirstVisitModal, setShowFirstVisitModal] = useState(false);
   const [showFloatingBar, setShowFloatingBar] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [privateTenantConfirmed,setPrivateTenantConfirmed]=useState(false);
   const [selectedResidence, setSelectedResidence] = useState<any | null>(null);
   const [applicationNotes, setApplicationNotes] = useState("");
   const [institutionType, setInstitutionType] = useState<string>("university");
@@ -136,7 +138,12 @@ const FindMyRes = () => {
 
   const { isStudent } = useAuth();
 
-  const handleApply = (residence: any) => {
+  const handleApply = async (residence: any) => {
+    if(!canApplyToResidence(await getResidenceIntake(residence.id))){
+      toast.info("Accommodation applications are closed. Explore 2027 reservations instead.");
+      navigate("/res/"+residence.id+"#reservations");
+      return;
+    }
     if (!user) {
       toast.error("Please sign in to apply");
       navigate("/auth?returnTo=/find");
@@ -157,17 +164,21 @@ const FindMyRes = () => {
 
   const handleSubmitApplication = async () => {
     if (!selectedResidence || !user) return;
+    if(!canApplyToResidence(await getResidenceIntake(selectedResidence.id))){setShowApplyModal(false);toast.info("Applications are closed; please reserve for 2027.");navigate("/res/"+selectedResidence.id+"#reservations");return;}
+    if(!privateTenantConfirmed){toast.error("Please confirm your private-paying tenant application.");return;}
     try {
       const { error } = await supabase.from("applications").insert({
         user_id: user.id,
         residence_id: selectedResidence.id,
+        academic_year:ACCOMMODATION_APPLICATION_YEAR,
+        funding_type:"private",
         status: "submitted",
         notes: applicationNotes,
         institution_type: institutionType,
       } as any);
       if (error) throw error;
       toast.success(`Application submitted for ${selectedResidence.name}!`);
-      setApplicationNotes("");
+      setApplicationNotes("");setPrivateTenantConfirmed(false);
       setShowApplyModal(false);
     } catch (err: any) {
       toast.error(err.message || "Failed to submit application");
@@ -502,6 +513,7 @@ const FindMyRes = () => {
                 Monthly Rent: R{Number(selectedResidence?.price || 0).toLocaleString()}
               </p>
             </div>
+            <label className="flex items-start gap-2 rounded-lg border p-3 text-sm"><Checkbox checked={privateTenantConfirmed} onCheckedChange={value=>setPrivateTenantConfirmed(value===true)}/><span>I confirm that I am applying as a <strong>private-paying tenant</strong>, not for an NSFAS-funded accommodation placement.</span></label>
             <div className="flex items-start space-x-2">
               <Checkbox id="terms-apply" required />
               <Label htmlFor="terms-apply" className="text-sm text-muted-foreground leading-relaxed -mt-1">
@@ -513,7 +525,7 @@ const FindMyRes = () => {
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
-            <Button onClick={handleSubmitApplication}>Submit Application</Button>
+            <Button onClick={handleSubmitApplication} disabled={!privateTenantConfirmed}>Submit Private Application</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

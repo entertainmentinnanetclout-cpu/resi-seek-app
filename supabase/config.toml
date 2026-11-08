@@ -124,3 +124,6 @@ verify_jwt = true
 
 [functions.reskonnect-email-dock]
 verify_jwt = true
+
+[functions.admin-residence-portal-accounts]
+verify_jwt = true

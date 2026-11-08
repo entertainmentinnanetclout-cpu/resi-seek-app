@@ -11,6 +11,14 @@ export function assertTemplateIsFactual(ctx:CaseContext,key:TemplateKey){
  if(selected==="reservation_confirmed"&&(ctx.kind!=="reservation"||!statusIs(ctx.status,"confirmed")))
   throw Error("A confirmation letter requires a confirmed reservation");
  if(selected==="documents_received"&&ctx.documents.uploaded===0)throw Error("No documents are recorded as received for this case");
+ if(selected==="documents_needed"&&ctx.documents.missing.length===0)
+  throw Error("A missing-document request is not appropriate: no required documents remain outstanding");
+ if(selected==="acknowledgement"&&["approved","rejected","withdrawn","cancelled","confirmed"].some(status=>statusIs(ctx.status,status)))
+  throw Error("A receipt-only template does not match the recorded final decision; choose Smart");
+ if((selected==="approved"||selected==="rejected"||selected==="conditionally_approved")&&ctx.kind!=="application")
+  throw Error("Application decision templates cannot be sent for reservation or enquiry records");
+ if(["withdrawn","cancelled"].some(status=>statusIs(ctx.status,status))&&["follow_up","viewing_invite","next_steps"].includes(selected))
+  throw Error("A closed case should receive a factual status notice, not an active-application invitation");
  return selected;
 }
 export async function previewPacket(s:EmailSession,ctx:CaseContext,key:TemplateKey,note:string){

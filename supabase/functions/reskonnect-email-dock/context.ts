@@ -1,6 +1,7 @@
 import {documentSignal,smartTemplate,type CaseContext,type Kind,type DocumentRow} from "./correspondence.ts";
 import {residencePhoto} from "./residence-media.ts";
 import {normalizeWhatsAppPhone} from "./whatsapp.ts";
+import {deriveCaseJourney,type OutboundEmail} from "./case-queue.ts";
 
 export type EmailSession={db:any;actor:string;isAdmin:boolean;residences:Set<string>};
 export const tables:Record<Kind,string>={application:"applications",reservation:"accommodation_reservations",housing_lead:"residence_leads",support_enquiry:"application_support_queries"};
@@ -53,12 +54,15 @@ export async function readCase(s:EmailSession,kind:Kind,id:string):Promise<CaseC
   contactAllowed:kind!=="support_enquiry"||row.consent_to_be_contacted===true
  };
 }
-export async function listCases(s:EmailSession,kind:Kind){
+export async function listCases(s:EmailSession,kind:Kind,options:{offset:number;pageSize:number;academicYear:number|null}){
  if(!permitted(s,kind))throw Error("Case category is restricted");
  const {db}=s;
- let q=db.from(tables[kind]).select("*").order("created_at",{ascending:false}).limit(100);
+ const offset=Math.max(0,Math.floor(options.offset)||0);
+ const pageSize=Math.min(100,Math.max(1,Math.floor(options.pageSize)||100));
+ let q=db.from(tables[kind]).select("*",{count:"exact"}).order("created_at",{ascending:false}).order("id",{ascending:false});
  if(!s.isAdmin)q=q.in("residence_id",[...s.residences]);
- const {data,error}=await q;
+ if((kind==="application"||kind==="reservation")&&options.academicYear)q=q.eq("academic_year",options.academicYear);
+ const {data,error,count}=await q.range(offset,offset+pageSize-1);
  if(error)throw Error("Unable to load selected cases");
  const rows=data||[];
  const ids=[...new Set(rows.map((r:any)=>r.user_id).filter(validUuid))] as string[];
@@ -66,16 +70,27 @@ export async function listCases(s:EmailSession,kind:Kind){
  const [people,places,globalDocs,appDocs]=await Promise.all([
   ids.length?db.from("profiles").select("id,full_name,email").in("id",ids):Promise.resolve({data:[],error:null}),
   rid.length?db.from("residences").select("id,name").in("id",rid):Promise.resolve({data:[],error:null}),
-  ids.length&&(kind==="application"||kind==="reservation")?db.from("documents").select("user_id,document_type,status").in("user_id",ids).limit(1500):Promise.resolve({data:[],error:null}),
-  kind==="application"&&rows.length?db.from("application_documents").select("application_id,doc_type,status").in("application_id",rows.map((r:any)=>r.id)).limit(1500):Promise.resolve({data:[],error:null})
+  ids.length&&(kind==="application"||kind==="reservation")?db.from("documents").select("user_id,document_type,status,uploaded_at").in("user_id",ids).limit(1500):Promise.resolve({data:[],error:null}),
+  kind==="application"&&rows.length?db.from("application_documents").select("application_id,doc_type,status,uploaded_at").in("application_id",rows.map((r:any)=>r.id)).limit(1500):Promise.resolve({data:[],error:null})
  ]);
  if(people.error||places.error||globalDocs.error||appDocs.error)throw Error("Unable to resolve documents or applicants");
+ const {data:outreach,error:outreachError}=rows.length?await db.from("reskonnect_outbound_emails")
+  .select("target_id,template_key,delivery_status,created_at,sent_at,context_snapshot")
+  .eq("target_kind",kind).in("target_id",rows.map((r:any)=>r.id)).order("created_at",{ascending:false}).limit(1000):{data:[],error:null};
+ if(outreachError)throw Error("Unable to synchronize outbound email history");
+ const lastMail=new Map<string,OutboundEmail>(),lastSent=new Map<string,OutboundEmail>();
+ for(const message of outreach||[]){
+  if(!lastMail.has(message.target_id))lastMail.set(message.target_id,message as OutboundEmail);
+  if(message.delivery_status==="sent"&&!lastSent.has(message.target_id))lastSent.set(message.target_id,message as OutboundEmail);
+ }
+ const lastUpload=new Map<string,string>();
+ const noteUpload=(id:string,date:string|null|undefined)=>{if(date&&(!lastUpload.has(id)||date>lastUpload.get(id)!))lastUpload.set(id,date);};
  const person=new Map<string,any>((people.data||[]).map((p:any)=>[p.id,p]));
  const place=new Map<string,string>((places.data||[]).map((p:any)=>[p.id,p.name]));
  const docs=new Map<string,DocumentRow[]>(),app=new Map<string,DocumentRow[]>();
- for(const d of globalDocs.data||[]){const list=docs.get(d.user_id)||[];list.push({type:d.document_type,status:d.status});docs.set(d.user_id,list);}
- for(const d of appDocs.data||[]){const list=app.get(d.application_id)||[];list.push({type:d.doc_type,status:d.status});app.set(d.application_id,list);}
- return rows.map((r:any)=>{
+ for(const d of globalDocs.data||[]){const list=docs.get(d.user_id)||[];list.push({type:d.document_type,status:d.status});docs.set(d.user_id,list);noteUpload(d.user_id,d.uploaded_at);}
+ for(const d of appDocs.data||[]){const list=app.get(d.application_id)||[];list.push({type:d.doc_type,status:d.status});app.set(d.application_id,list);noteUpload(d.application_id,d.uploaded_at);}
+ const items=rows.map((r:any)=>{
   const p=person.get(r.user_id);
   const address=kind==="support_enquiry"?r.email:kind==="housing_lead"?(r.contact_email||p?.email):p?.email;
   const signal=documentSignal(kind,[...(docs.get(r.user_id)||[]),...(app.get(r.id)||[])],r.funding_type||null);
@@ -87,7 +102,10 @@ export async function listCases(s:EmailSession,kind:Kind){
    reference:r.id.split("-")[0].toUpperCase(),fundingType:r.funding_type||null,
    documents:signal,contactAllowed:kind!=="support_enquiry"||r.consent_to_be_contacted===true
   };
+  const latestUpload=[lastUpload.get(r.id),lastUpload.get(r.user_id)].filter(Boolean).sort().reverse()[0]||null;
+  const journey=deriveCaseJourney(c,lastSent.get(r.id)||lastMail.get(r.id)||null,latestUpload,r.created_at);
   return {...publicCase(s,c),created_at:r.created_at,document_stage:signal.stage,
-   missing_count:signal.missing.length,pending_review:signal.pendingReview};
+   missing_count:signal.missing.length,pending_review:signal.pendingReview,...journey};
  });
+ return {items,total:count||0,has_more:offset+rows.length<(count||0),next_offset:offset+rows.length};
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Building2, Plus, Search, UserCog, ToggleLeft, ToggleRight, 
-  Mail, Trash2, RefreshCw, Loader2, CheckCircle
+  Mail, Pencil, Trash2, RefreshCw, Loader2, CheckCircle
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
@@ -119,6 +119,11 @@ export const AdminResidencePortalsContent = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [editing,setEditing]=useState<PortalAccount|null>(null);
+  const [editResidenceId,setEditResidenceId]=useState("");
+  const [editEmail,setEditEmail]=useState("");
+  const [editActive,setEditActive]=useState(true);
+  const [isSavingEdit,setIsSavingEdit]=useState(false);
 
   useEffect(() => {
     fetchData();
@@ -228,59 +233,43 @@ export const AdminResidencePortalsContent = () => {
     }
   };
 
-  const toggleAccountStatus = async (account: PortalAccount) => {
-    try {
-      const { error: rpcError } = await (supabase as any).rpc('admin_set_residence_portal_active', {
-        _residence_id: account.residence_id,
-        _active: !account.is_active,
-      });
-
-      if (rpcError) {
-        const message = getReadableError(rpcError, 'Failed to update account status');
-        if (!message.includes('schema cache') && !message.includes('Could not find the function')) throw rpcError;
-
-        const { error: fallbackError } = await supabase
-          .from('residence_portal_accounts')
-          .update({ is_active: !account.is_active })
-          .eq('residence_id', account.residence_id);
-        if (fallbackError) throw fallbackError;
-      }
-
-      toast.success(`Account ${account.is_active ? 'deactivated' : 'activated'}`);
-      fetchData();
-    } catch (err: unknown) {
-      console.error('Error toggling status:', err);
-      toast.error(getReadableError(err, 'Failed to update account status'));
-    }
+  const managePortal = async (request:Record<string,unknown>) => {
+    const {data,error}=await invokeEdgeFunction<{ok?:boolean;error?:string}>("admin-residence-portal-accounts",request);
+    if(error)throw new Error(getReadableError(error,"Residence portal update failed"));
+    if(data?.error)throw new Error(data.error);
+    if(!data?.ok)throw new Error("Portal management did not confirm the change");
+    return data;
   };
 
-  const deleteAccount = async (account: PortalAccount) => {
-    if (!confirm(`Are you sure you want to delete the portal account for ${account.residences?.name}?`)) {
-      return;
-    }
-
-    try {
-      const { error: rpcError } = await (supabase as any).rpc('admin_delete_residence_portal', {
-        _residence_id: account.residence_id,
-      });
-
-      if (rpcError) {
-        const message = getReadableError(rpcError, 'Failed to delete account');
-        if (!message.includes('schema cache') && !message.includes('Could not find the function')) throw rpcError;
-
-        const { error: fallbackError } = await supabase
-          .from('residence_portal_accounts')
-          .delete()
-          .eq('residence_id', account.residence_id);
-        if (fallbackError) throw fallbackError;
-      }
-
-      toast.success('Portal account deleted');
-      fetchData();
-    } catch (err: unknown) {
-      console.error('Error deleting account:', err);
-      toast.error(getReadableError(err, 'Failed to delete account'));
-    }
+  const editPortal=(account:PortalAccount)=>{
+    setEditing(account);setEditResidenceId(account.residence_id);
+    setEditEmail(account.email);setEditActive(account.is_active);
+  };
+  const saveEdit=async()=>{
+    if(!editing)return;
+    setIsSavingEdit(true);
+    try{
+      await managePortal({action:"update",residence_id:editing.residence_id,
+        new_residence_id:editResidenceId,email:editEmail,is_active:editActive});
+      toast.success("Residence portal account updated");
+      setEditing(null);await fetchData();
+    }catch(e){toast.error(getReadableError(e,"Could not save portal account"));}
+    finally{setIsSavingEdit(false);}
+  };
+  const toggleAccountStatus=async(account:PortalAccount)=>{
+    try{
+      await managePortal({action:"update",residence_id:account.residence_id,
+        new_residence_id:account.residence_id,email:account.email,is_active:!account.is_active});
+      toast.success(account.is_active?"Portal deactivated":"Portal activated");await fetchData();
+    }catch(e){toast.error(getReadableError(e,"Could not change portal status"));}
+  };
+  const deleteAccount=async(account:PortalAccount)=>{
+    if(!window.confirm("Remove portal access for "+(account.residences?.name||account.email)+"? The user's personal ResKonnect identity and unrelated student roles will be preserved."))return;
+    try{
+      await managePortal({action:"delete",residence_id:account.residence_id,confirmed:true});
+      toast.success("Residence portal access removed without deleting the user's other data");
+      await fetchData();
+    }catch(e){toast.error(getReadableError(e,"Could not remove portal access"));}
   };
 
   const filteredAccounts = accounts.filter(account => {
@@ -426,6 +415,7 @@ export const AdminResidencePortalsContent = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Button variant="ghost" size="sm" aria-label={"Edit "+account.email} onClick={()=>editPortal(account)}><Pencil className="h-4 w-4"/></Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -454,6 +444,35 @@ export const AdminResidencePortalsContent = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!editing} onOpenChange={open=>{if(!open)setEditing(null);}}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit residence portal</DialogTitle>
+            <DialogDescription>Update the linked residence, portal email, or active state. Existing student applications are not moved.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2"><Label>Assigned residence</Label>
+              <Select value={editResidenceId} onValueChange={setEditResidenceId}>
+                <SelectTrigger><SelectValue placeholder="Select residence"/></SelectTrigger>
+                <SelectContent>{residences.filter(r=>r.id===editing?.residence_id||availableResidences.some(a=>a.id===r.id)).map(r=><SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2"><Label htmlFor="portal-edit-email">Portal login email</Label>
+              <Input id="portal-edit-email" type="email" value={editEmail} onChange={e=>setEditEmail(e.target.value)} />
+              <p className="text-xs text-muted-foreground">Changing a shared student/admin login email is blocked for account safety.</p>
+            </div>
+            <div className="space-y-2"><Label>Portal access</Label>
+              <Select value={editActive?"active":"inactive"} onValueChange={v=>setEditActive(v==="active")}>
+                <SelectTrigger><SelectValue/></SelectTrigger><SelectContent>
+                  <SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Suspended</SelectItem>
+                </SelectContent></Select>
+            </div>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={()=>setEditing(null)}>Cancel</Button>
+            <Button disabled={isSavingEdit||!editResidenceId||!editEmail} onClick={()=>void saveEdit()}>{isSavingEdit&&<Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Save changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Portal Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

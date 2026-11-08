@@ -6,6 +6,7 @@ import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
 import HandoverExportPanel from "@/components/admin/HandoverExportPanel";
 import ResidenceFillVisualTabs from "@/components/admin/ResidenceFillVisualTabs";
+import AdminApplicationIntakeManager from "@/components/admin/AdminApplicationIntakeManager";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,7 +77,7 @@ export const AdminApplicationsContent = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [semesterFilter, setSemesterFilter] = useState("all");
   const [institutionFilter, setInstitutionFilter] = useState<"all" | "university" | "tvet" | "private" | "other">("all");
-  const [academicYearFilter, setAcademicYearFilter] = useState("all");
+  const [academicYearFilter, setAcademicYearFilter] = useState(String(currentAcademicYear));
   const [academicCycleFilter, setAcademicCycleFilter] = useState("all");
   const [studyLevelFilter, setStudyLevelFilter] = useState("all");
   const [residenceFilter, setResidenceFilter] = useState("all");
@@ -121,34 +122,31 @@ export const AdminApplicationsContent = () => {
     void fetchUserDocuments();
   }, [selectedApplication?.user_id]);
 
-  const updateStatus = async (id: string, newStatus: string, note?: string) => {
-    try {
-      const app = applications.find((a) => a.application_id === id);
-      const updateData: { status: string; notes?: string } = { status: newStatus };
-      if (note) {
-        const existingNotes = app?.notes || "";
-        updateData.notes = `${existingNotes}\n[${new Date().toLocaleString()}] Status: ${newStatus} - ${note}`.trim();
-      }
-      const { error: updateError } = await supabase.from("applications").update(updateData).eq("id", id);
-      if (updateError) throw updateError;
-      if (app?.user_id) {
-        const statusLabel = applicationStatuses.find((s) => s.value === newStatus)?.label || newStatus;
-        await supabase.from("notifications").insert({
-          user_id: app.user_id,
-          type: "application_status",
-          title: `Application ${statusLabel}`,
-          message: `Your application for ${app.residence_name || "accommodation"} has been updated to: ${statusLabel}${note ? `. Note: ${note}` : ""}`,
-          metadata: { application_id: id, status: newStatus, residence_name: app.residence_name },
-        });
-      }
-      toast.success(`Application ${newStatus.replaceAll("_", " ")}`);
-      setSelectedApplication(null);
-      setStatusNote("");
-      await fetchApplications();
-    } catch (err: any) {
-      console.error("Application status update failed", err);
-      toast.error(err?.message || "Failed to update application. Handover-critical approvals are blocked until required data is complete.");
+  const updateStatus=async(id:string,newStatus:string,note?:string)=>{
+    const providedNote=note?.trim()||"";
+    if(["approved","rejected","conditionally_approved","cancelled"].includes(newStatus)&&providedNote.length<8){
+      toast.error("Enter a factual decision reason of at least eight characters before changing a final status.");
+      return;
     }
+    try{
+      const preview=await supabase.functions.invoke("reskonnect-email-dock",{
+        body:{action:"bulk_status_preview",kind:"application",ids:[id],new_status:newStatus,status_note:providedNote}
+      });
+      if(preview.error||preview.data?.error)throw new Error(preview.data?.error||preview.error?.message||"Status preview failed");
+      const candidate=preview.data?.items?.[0];
+      if(!candidate?.ok)throw new Error(candidate?.reason||"Case did not pass status/document validation");
+      if(!window.confirm("Change the recorded application status from "+candidate.from+" to "+newStatus+"? This also creates an in-app update, not an email."))return;
+      const applied=await supabase.functions.invoke("reskonnect-email-dock",{
+        body:{action:"bulk_status_apply",kind:"application",ids:[id],new_status:newStatus,
+          status_note:providedNote,expected_statuses:{[id]:candidate.from},
+          operation_id:crypto.randomUUID(),confirmed:true}
+      });
+      if(applied.error||applied.data?.error||applied.data?.updated!==1)
+        throw new Error(applied.data?.error||applied.data?.results?.[0]?.error||applied.error?.message||"Status update not confirmed");
+      toast.success("Case status updated. Open the Email Dock to review the matching notification.");
+      setSelectedApplication(null);setStatusNote("");
+      await fetchApplications();
+    }catch(e){toast.error(e instanceof Error?e.message:"Unable to change case status safely");}
   };
 
   const updateAcademicContext = async (app: Application, patch: Partial<Application>) => {
@@ -170,18 +168,6 @@ export const AdminApplicationsContent = () => {
     setSelectedApplication((current) => current?.application_id === app.application_id ? { ...current, ...payload } : current);
     setApplications((current) => current.map((row) => row.application_id === app.application_id ? { ...row, ...payload } : row));
     toast.success("Academic classification updated");
-  };
-
-  const bulkUpdateStatus = async (newStatus: string) => {
-    if (!selectedIds.size) return toast.error("No applications selected");
-    setBulkProcessing(true);
-    const ids = Array.from(selectedIds);
-    const { error: bulkError } = await supabase.from("applications").update({ status: newStatus }).in("id", ids);
-    setBulkProcessing(false);
-    if (bulkError) return toast.error(bulkError.message || "Bulk update failed. One or more applications may be missing handover-critical data.");
-    toast.success(`${ids.length} applications updated`);
-    setSelectedIds(new Set());
-    await fetchApplications();
   };
 
   const filteredApplications = useMemo(() => applications.filter((app) => {
@@ -221,6 +207,8 @@ export const AdminApplicationsContent = () => {
       <SEO title="Manage Applications | Admin" description="Review, validate and manage accommodation applications" />
       <div className="space-y-6">
         <HandoverExportPanel />
+        <AdminApplicationIntakeManager />
+        {academicYearFilter==="2027"&&<Card className="border-dashed"><CardContent className="py-8 text-center"><p className="text-lg font-black">2027 applications · Not open yet</p><p className="mt-2 text-sm text-muted-foreground">No accommodation applications have been opened for 2027. The 2026 cohort remains under the 2026 dropdown, and 2027 reservations are separate.</p></CardContent></Card>}
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div><h1 className="text-3xl font-black">Applications & Academic Cohorts</h1><p className="text-muted-foreground">Review applications by academic year, annual/semester/trimester cycle, study level and institutional context. Handover exports are available only through GOD MODE OS above.</p></div>
@@ -242,7 +230,7 @@ export const AdminApplicationsContent = () => {
           onSelectResidence={setResidenceFilter}
         />
 
-        {selectedIds.size > 0 && <Card className="border-primary/50 bg-primary/5"><CardContent className="flex flex-wrap items-center gap-3 py-3"><span className="font-medium">{selectedIds.size} selected</span><Button size="sm" onClick={() => void bulkUpdateStatus("approved")} disabled={bulkProcessing}><CheckCheck className="mr-2 h-4 w-4" />Approve All</Button><Button size="sm" variant="destructive" onClick={() => void bulkUpdateStatus("rejected")} disabled={bulkProcessing}><XCircle className="mr-2 h-4 w-4" />Reject All</Button><Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>Clear Selection</Button></CardContent></Card>}
+        {selectedIds.size > 0 && <Card className="border-primary/50 bg-primary/5"><CardContent className="flex flex-wrap items-center gap-3 py-3"><span className="font-medium">{selectedIds.size} selected</span><Button size="sm" asChild><Link to="/admin/communications?tab=email&kind=application">Review verified cases in Email Dock</Link></Button><Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>Clear Selection</Button><p className="w-full text-xs text-muted-foreground">Bulk approvals and rejections must pass the Email Dock document and status checks; direct blind approvals are disabled.</p></CardContent></Card>}
 
         <Card>
           <CardHeader><div className="flex flex-col gap-3 lg:flex-row">
@@ -255,7 +243,7 @@ export const AdminApplicationsContent = () => {
             {pendingCount > 0 && <Button variant="outline" onClick={() => setSelectedIds(new Set(pendingIds))}>Select All Pending ({pendingCount})</Button>}
           </div></CardHeader>
           <CardContent>
-            {loading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> : error ? <div className="py-10 text-center text-destructive"><p className="font-semibold">{error}</p><Button variant="outline" className="mt-4" onClick={() => void fetchApplications()}>Retry</Button></div> : filteredApplications.length === 0 ? <p className="py-10 text-center text-muted-foreground">No applications found</p> : <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead className="w-12"><Checkbox checked={selectedIds.size > 0 && selectedIds.size === pendingIds.length} onCheckedChange={(checked) => setSelectedIds(checked ? new Set(pendingIds) : new Set())} /></TableHead><TableHead>Student</TableHead><TableHead>Residence</TableHead><TableHead>Academic Context</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{filteredApplications.map((app) => <TableRow key={app.application_id} className={selectedIds.has(app.application_id) ? "bg-primary/5" : ""}><TableCell>{(app.application_status === "submitted" || app.application_status === "pending") && <Checkbox checked={selectedIds.has(app.application_id)} onCheckedChange={() => toggleSelection(app.application_id)} />}</TableCell><TableCell><p className="font-medium">{app.student_name || "Unknown"}</p><p className="text-sm text-muted-foreground">{app.student_email}</p></TableCell><TableCell>{app.residence_name || "Unknown"}</TableCell><TableCell><div className="space-y-1"><Badge variant="outline">{app.academic_year} · {academicLabel(app.academic_cycle)}{app.academic_period > 0 ? ` ${app.academic_period}` : ""}</Badge><p className="text-xs text-muted-foreground">{academicLabel(app.study_level)} · {academicLabel(app.student_stage)}</p></div></TableCell><TableCell>{safeFormatDate(app.application_date)}</TableCell><TableCell>{getStatusBadge(app.application_status)}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => setSelectedApplication(app)}><Eye className="h-4 w-4" /></Button>{(app.application_status === "submitted" || app.application_status === "pending") && <><Button variant="ghost" size="icon" className="text-green-600" onClick={() => void updateStatus(app.application_id, "approved")}><Check className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="text-destructive" onClick={() => void updateStatus(app.application_id, "rejected")}><X className="h-4 w-4" /></Button></>}</TableCell></TableRow>)}</TableBody></Table></div>}
+            {loading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> : error ? <div className="py-10 text-center text-destructive"><p className="font-semibold">{error}</p><Button variant="outline" className="mt-4" onClick={() => void fetchApplications()}>Retry</Button></div> : filteredApplications.length === 0 ? <p className="py-10 text-center text-muted-foreground">No applications found</p> : <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead className="w-12"><Checkbox checked={selectedIds.size > 0 && selectedIds.size === pendingIds.length} onCheckedChange={(checked) => setSelectedIds(checked ? new Set(pendingIds) : new Set())} /></TableHead><TableHead>Student</TableHead><TableHead>Residence</TableHead><TableHead>Academic Context</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{filteredApplications.map((app) => <TableRow key={app.application_id} className={selectedIds.has(app.application_id) ? "bg-primary/5" : ""}><TableCell>{(app.application_status === "submitted" || app.application_status === "pending") && <Checkbox checked={selectedIds.has(app.application_id)} onCheckedChange={() => toggleSelection(app.application_id)} />}</TableCell><TableCell><p className="font-medium">{app.student_name || "Unknown"}</p><p className="text-sm text-muted-foreground">{app.student_email}</p></TableCell><TableCell>{app.residence_name || "Unknown"}</TableCell><TableCell><div className="space-y-1"><Badge variant="outline">{app.academic_year} · {academicLabel(app.academic_cycle)}{app.academic_period > 0 ? ` ${app.academic_period}` : ""}</Badge><p className="text-xs text-muted-foreground">{academicLabel(app.study_level)} · {academicLabel(app.student_stage)}</p></div></TableCell><TableCell>{safeFormatDate(app.application_date)}</TableCell><TableCell>{getStatusBadge(app.application_status)}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => setSelectedApplication(app)}><Eye className="h-4 w-4" /></Button></TableCell></TableRow>)}</TableBody></Table></div>}
           </CardContent>
         </Card>
       </div>

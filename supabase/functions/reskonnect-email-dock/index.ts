@@ -2,6 +2,7 @@ import {createClient} from "npm:@supabase/supabase-js@2.86.2";
 import {KINDS,TEMPLATES,TEMPLATE_KEYS,APPLICATION_STATUSES,RESERVATION_STATUSES,
  smartTemplate,validateTemplate,type Kind,type TemplateKey} from "./correspondence.ts";
 import {type EmailSession,readCase,listCases,validUuid,permitted,publicCase} from "./context.ts";
+import {caseFingerprint} from "./case-queue.ts";
 import {previewPacket,makePreviewPdf,sendOne} from "./send.ts";
 import {whatsappClickToChat,whatsappMessage} from "./whatsapp.ts";
 import {readPublishedPhotoBytes} from "./residence-media.ts";
@@ -16,6 +17,9 @@ const isTemplate=(x:unknown):x is TemplateKey=>typeof x==="string"&&keys.include
 const idsFrom=(x:unknown,max:number):string[]|null=>
  Array.isArray(x)&&x.length>0&&x.length<=max&&x.every(validUuid)&&new Set(x).size===x.length?x:null;
 const messageText=(x:any)=>typeof x==="string"?x.trim():"";
+const sha256=async(text:string)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text))))
+ .map(x=>x.toString(16).padStart(2,"0")).join("");
+const reviewedHash=async(c:any,packet:any)=>sha256((await caseFingerprint(c))+"|"+packet.subject+"|"+packet.body);
 const sha256=async(value:string)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)))).map(x=>x.toString(16).padStart(2,"0")).join("");
 const failure=(e:unknown)=>{const msg=e instanceof Error?e.message:"Request could not be completed";
  const forbidden=/another residence|not consent|restricted|not authorized|permission|access denied/i.test(msg);
@@ -101,7 +105,7 @@ Deno.serve(async(req:Request)=>{
 
  if(!kindOK)return res({error:"Invalid or restricted record category"},403);
  if(action==="list"){
-  try{const items=await listCases(s,kind);if(validUuid(input.highlight_id)&&!items.some(x=>x.id===input.highlight_id)){const c=await readCase(s,kind,input.highlight_id);const safe=publicCase(s,c);items.unshift({...safe,created_at:new Date().toISOString(),document_stage:c.documents.stage,missing_count:c.documents.missing.length,pending_review:c.documents.pendingReview});}return res({items});}catch(e){return failure(e);}
+  try{const result:any=await listCases(s,kind,{offset:Math.max(0,Math.floor(Number(input.offset)||0)),pageSize:100,academicYear:(kind==="application"||kind==="reservation")&&[2026,2027,2028].includes(Number(input.academic_year))?Number(input.academic_year):null});if(Number(input.offset||0)===0&&validUuid(input.highlight_id)&&!result.items.some(x=>x.id===input.highlight_id)){const c=await readCase(s,kind,input.highlight_id);const safe=publicCase(s,c);result.items.unshift({...safe,created_at:new Date().toISOString(),document_stage:c.documents.stage,missing_count:c.documents.missing.length,pending_review:c.documents.pendingReview,workflow_bucket:"not_contacted",service_action:"Review linked case"});}return res(result);}catch(e){return failure(e);}
  }
 
  if(["whatsapp_preview","whatsapp_handoff","residence_photo_download"].includes(action)){
@@ -148,10 +152,10 @@ Deno.serve(async(req:Request)=>{
    const c=await readCase(s,kind,input.target_id);
    if(action==="case")return res({case:publicCase(s,c),statuses:kind==="application"?APPLICATION_STATUSES:kind==="reservation"?RESERVATION_STATUSES:[]});
    const packet=await previewPacket(s,c,key,note);
-   if(action==="preview")return res({...packet,case:publicCase(s,c),recipient_hint:publicCase(s,c).recipient_hint,pdf_attached:true});
+   if(action==="preview")return res({...packet,case:publicCase(s,c),recipient_hint:publicCase(s,c).recipient_hint,pdf_attached:true,preview_hash:await reviewedHash(c,packet)});
    if(action==="pdf_preview")return res(await makePreviewPdf(s,c,key,note));
    if(input.confirmed!==true||!validUuid(input.request_id))return res({error:"Send confirmation and request ID required"},400);
-   if(input.expected_status!==c.status||input.expected_document_stage!==c.documents.stage)return res({error:"Case details or document uploads changed since preview; regenerate the email"},409);
+   if(input.expected_status!==c.status||input.expected_document_stage!==c.documents.stage||(typeof input.preview_hash==="string"&&input.preview_hash!==await reviewedHash(c,packet)))return res({error:"Case details, documents or reviewed email content changed since preview; regenerate the email"},409);
    const result=await sendOne(s,c,key,note,input.request_id,null);
    return res(result,result.sent?200:result.status||502);
   }catch(e){return failure(e);}
@@ -164,7 +168,7 @@ Deno.serve(async(req:Request)=>{
    const items:any[]=[];
    for(const id of ids){
     try{const c=await readCase(s,kind,id);const packet=await previewPacket(s,c,key,note);
-      items.push({id,ok:true,...publicCase(s,c),subject:packet.subject,body:packet.body,resolved_key:packet.resolved_key});}
+      items.push({id,ok:true,...publicCase(s,c),subject:packet.subject,body:packet.body,resolved_key:packet.resolved_key,preview_hash:await reviewedHash(c,packet)});}
     catch(e){items.push({id,ok:false,error:e instanceof Error?e.message:"Unavailable"});}
    }
    return res({items,eligible:items.filter(x=>x.ok).length,requested:ids.length});
@@ -175,7 +179,7 @@ Deno.serve(async(req:Request)=>{
     return res({error:"Review and explicitly approve each batch of up to five emails"},400);
    const results:any[]=[];
    for(const item of input.requests){
-    try{const c=await readCase(s,kind,item.id);if(item.expected_status!==c.status||item.expected_document_stage!==c.documents.stage)throw Error("Case changed since bulk preview; review again");const result=await sendOne(s,c,key,note,item.request_id,input.batch_id);
+    try{const c=await readCase(s,kind,item.id);const reviewed=await previewPacket(s,c,key,note);if(item.expected_status!==c.status||item.expected_document_stage!==c.documents.stage||(typeof item.preview_hash==="string"&&item.preview_hash!==await reviewedHash(c,reviewed)))throw Error("Case content changed since bulk preview; review again");const result=await sendOne(s,c,key,note,item.request_id,input.batch_id);
       results.push({id:item.id,...result});}
     catch(e){results.push({id:item.id,sent:false,error:e instanceof Error?e.message:"Send failed"});}
    }
@@ -196,7 +200,8 @@ Deno.serve(async(req:Request)=>{
     const c=await readCase(s,kind,id);
     const needsDocumentCheck=(kind==="application"&&["approved","conditionally_approved"].includes(desired))||(kind==="reservation"&&desired==="confirmed");
     const missing=needsDocumentCheck?c.documents.missing:[];
-    let why=c.status===desired?"Already in this status":missing.length?"Missing required files: "+missing.join(", "):null;
+    const unverified=needsDocumentCheck?c.documents.pendingReview:0;
+    let why=c.status===desired?"Already in this status":missing.length?"Missing required files: "+missing.join(", "):unverified>0?"Supporting documents are still awaiting verification":null;
     if(typeof expected?.[id]==="string"&&expected[id]!==c.status)why="Recorded status changed since selection";
     preview.push({id,ok:!why,reason:why,from:c.status,to:desired,label:c.studentName,document_signal:c.documents});
    }catch(e){preview.push({id,ok:false,reason:e instanceof Error?e.message:"Not available"});}

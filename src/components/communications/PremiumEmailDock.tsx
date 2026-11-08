@@ -23,17 +23,20 @@ type CaseItem={
  id:string;kind:Kind;label:string;status:string;property:string;reference:string;
  created_at:string;document_stage:string;missing_count:number;pending_review:number;
  recommended_template:Template;recipient_hint:string|null;can_email:boolean;
+ workflow_bucket?:string;service_action?:string;last_email_at?:string|null;last_email_template?:string|null;
+ email_sent?:boolean;email_status?:string|null;student_uploaded_after_email?:boolean;
+ suggested_template?:Template;academic_year?:string;
 };
 type CaseInfo={
  id:string;kind:Kind;label:string;status:string;property:string;reference:string;
  document_signal:Signal;recommended_template:Template;recipient_hint:string|null;can_email:boolean;academic_year:string;
  residence_image_url?:string|null;has_whatsapp?:boolean;
 };
-type EmailPreview={subject:string;body:string;html:string;template_name:string;resolved_key:Template;case:CaseInfo;pdf_attached:boolean};
+type EmailPreview={subject:string;body:string;html:string;template_name:string;resolved_key:Template;case:CaseInfo;pdf_attached:boolean;preview_hash:string};
 type DocTemplate={name:string;subject:string;body:string};
 type Override={target_kind:Kind;template_key:Template;subject_template:string;body_template:string};
 type History={id:string;subject:string;target_kind:Kind;template_key:string;delivery_status:string;recipient_email:string;created_at:string;failure_code:string|null;pdf_attached:boolean};
-type BulkResult={id:string;ok?:boolean;updated?:boolean;sent?:boolean;label?:string;status?:string;from?:string;to?:string;reason?:string;error?:string;subject?:string;body?:string;resolved_key?:Template;document_signal?:Signal};
+type BulkResult={id:string;ok?:boolean;updated?:boolean;sent?:boolean;label?:string;status?:string;from?:string;to?:string;reason?:string;error?:string;subject?:string;body?:string;resolved_key?:Template;document_signal?:Signal;preview_hash?:string};
 const kindLabels:Record<Kind,string>={application:"Applications",reservation:"Reservations",housing_lead:"Housing enquiries",support_enquiry:"Support enquiries"};
 const statusOptions:Record<"application"|"reservation",string[]>={
  application:["submitted","under_review","documents_required","conditionally_approved","approved","rejected","withdrawn"],
@@ -53,10 +56,14 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const initialKind=(Object.keys(kindLabels) as Kind[]).find(k=>params.get("kind")===k) || "application";
  const [kind,setKind]=useState<Kind>(mode==="landlord"&&initialKind==="support_enquiry"?"application":initialKind);
  const [items,setItems]=useState<CaseItem[]>([]);
+ const [academicYear,setAcademicYear]=useState(initialKind==="reservation"?"2027":params.get("year")==="2027"?"2027":"2026");
+ const [totalCases,setTotalCases]=useState(0);
+ const [nextOffset,setNextOffset]=useState<number|null>(null);
+ const [loadingMore,setLoadingMore]=useState(false);
  const [selected,setSelected]=useState(params.get("target")||"");
  const [checked,setChecked]=useState<Set<string>>(new Set());
  const [search,setSearch]=useState("");
- const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision">("all");
+ const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision"|"not_contacted"|"followup_due"|"student_acted"|"awaiting_review"|"decision_changed"|"approved"|"rejected">("all");
  const [caseInfo,setCaseInfo]=useState<CaseInfo|null>(null);
  const [template,setTemplate]=useState<Template>("smart");
  const [note,setNote]=useState("");
@@ -103,16 +110,45 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   try{const r=await premium({action:"templates"});setDefaults(r.defaults||{});setOverrides(r.overrides||[]);setPlaceholders(r.placeholders||[]);}
   catch(e){console.warn("Template catalogue unavailable",e);}
  },[premium]);
- const loadItems=useCallback(async()=>{
-  setLoading(true);
+ const loadItems=useCallback(async({preserveLoaded=false}:{preserveLoaded?:boolean}={})=>{
+  if(!preserveLoaded)setLoading(true);
   try{
-   const r=await premium({action:"list",kind,highlight_id:deepLinkedIdRef.current});
+   const r=await premium({action:"list",kind,academic_year:Number(academicYear),offset:0,highlight_id:deepLinkedIdRef.current});
    const next=(r.items||[]) as CaseItem[];
-   setItems(next);
-   setSelected(old=>old&&next.some(x=>x.id===old)?old:next[0]?.id||"");
-  }catch(e){setItems([]);toast.error(e instanceof Error?e.message:"Email cases could not load");}
-  finally{setLoading(false);}
- },[premium,kind]);
+   setItems(previous=>{
+    if(!preserveLoaded||previous.length<=next.length)return next;
+    const seen=new Set(next.map(item=>item.id));
+    return [...next,...previous.filter(item=>!seen.has(item.id))];
+   });
+   setTotalCases(Number(r.total||0));
+   setNextOffset(current=>preserveLoaded?current:(r.has_more?Number(r.next_offset):null));
+   setSelected(old=>old||next[0]?.id||"");
+  }catch(e){if(!preserveLoaded)setItems([]);toast.error(e instanceof Error?e.message:"Email cases could not load");}
+  finally{if(!preserveLoaded)setLoading(false);}
+ },[premium,kind,academicYear]);
+ const loadRemaining=async(all=false)=>{
+  if(nextOffset===null||loadingMore)return;
+  setLoadingMore(true);
+  try{
+   let offset=nextOffset,pages=0;
+   const appended:CaseItem[]=[];
+   while(offset!==null){
+    const result=await premium({action:"list",kind,academic_year:Number(academicYear),offset});
+    appended.push(...((result.items||[]) as CaseItem[]));
+    setTotalCases(Number(result.total||0));
+    offset=result.has_more?Number(result.next_offset):null;
+    pages++;
+    if(!all||pages>=75)break;
+   }
+   setItems(current=>{
+    const seen=new Set(current.map(i=>i.id));
+    return [...current,...appended.filter(i=>{if(seen.has(i.id))return false;seen.add(i.id);return true;})];
+   });
+   setNextOffset(offset);
+   if(all&&offset!==null)toast.info("Loaded another 7,500 records. Continue loading to see the remaining cases.");
+  }catch(e){showError(e);}
+  finally{setLoadingMore(false);}
+ };
  const loadCase=useCallback(async()=>{
   if(!selected){setCaseInfo(null);return;}
   try{
@@ -122,6 +158,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  },[premium,kind,selected]);
  useEffect(()=>{void loadConnection();void loadHistory();void loadTemplates();},[loadConnection,loadHistory,loadTemplates]);
  useEffect(()=>{void loadItems();setChecked(new Set());},[loadItems]);
+ useEffect(()=>{const interval=window.setInterval(()=>{if(document.visibilityState==="visible")void loadItems({preserveLoaded:true});},45000);return ()=>window.clearInterval(interval);},[loadItems]);
  useEffect(()=>{void loadCase();setPreview(null);setApproved(false);},[loadCase]);
  useEffect(()=>{
   if(params.get("gmail")==="connected"){
@@ -137,6 +174,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   if(filter==="missing")return x.document_stage==="missing"||x.document_stage==="incomplete";
   if(filter==="received")return x.document_stage==="received"||x.document_stage==="complete";
   if(filter==="decision")return ["approved","conditionally_approved","rejected","confirmed","cancelled"].includes(x.status);
+  if(filter==="not_contacted")return !x.email_sent;
+  if(filter!=="all")return x.workflow_bucket===filter;
   return true;
  }),[items,filter,search]);
  const templatesForKind=useMemo(()=>{
@@ -151,11 +190,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const selectedCount=checked.size;
  const resetPreview=()=>{setPreview(null);setApproved(false);setBulkPreview([]);setBulkApproval(false);setStatusPreview([]);setStatusApproved(false);setBatchSummary(null);};
  const selectKind=(k:Kind)=>{
-  setKind(k);setSearch("");setFilter("all");setSelected("");setTemplate("smart");setChecked(new Set());setNote("");resetPreview();
+  setKind(k);setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setChecked(new Set());setNote("");resetPreview();
   const next=new URLSearchParams(params);next.set("kind",k);next.delete("target");setParams(next,{replace:true});
  };
  const selectRecord=(id:string)=>{
-  setSelected(id);setTemplate("smart");setNote("");resetPreview();
+  setSelected(id);setTemplate(items.find(x=>x.id===id)?.suggested_template||"smart");setNote("");resetPreview();
   const next=new URLSearchParams(params);next.set("kind",kind);next.set("target",id);setParams(next,{replace:true});
  };
  const toggleSelected=(id:string,checkedNow:boolean)=>{
@@ -206,7 +245,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   setBusy("send");
   try{
    const result=await premium({action:"send",kind,target_id:selected,template_key:template,
-    message:note,confirmed:true,request_id:crypto.randomUUID(),expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage});
+    message:note,confirmed:true,request_id:crypto.randomUUID(),expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage,preview_hash:preview.preview_hash});
    if(!result.sent)throw Error(result.error||"Gmail did not accept the message");
    toast.success("Gmail accepted your email and branded PDF attachment");
    resetPreview();setNote("");
@@ -218,7 +257,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   if(!ids.length)return toast.error("Select cases from the inbox");
   setBusy("bulk-preview");setBulkPreview([]);setBulkApproval(false);setBatchSummary(null);
   try{
-   const response=await premium({action:"bulk_preview",kind,ids,template_key:template,message:note});
+   const response=await premium({action:"bulk_preview",kind,ids,template_key:"smart",message:note});
    setBulkPreview(response.items||[]);
    toast.info((response.eligible||0)+" of "+ids.length+" cases eligible");
   }catch(e){showError(e);}finally{setBusy(null);}
@@ -233,9 +272,9 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   try{
    for(let i=0;i<ids.length;i+=5){
     const slice=ids.slice(i,i+5);
-    const requests=slice.map(id=>{const info=bulkPreview.find(p=>p.id===id);return {id,request_id:crypto.randomUUID(),expected_status:info?.status,expected_document_stage:info?.document_signal?.stage};});
+    const requests=slice.map(id=>{const info=bulkPreview.find(p=>p.id===id);return {id,request_id:crypto.randomUUID(),expected_status:info?.status,expected_document_stage:info?.document_signal?.stage,preview_hash:info?.preview_hash};});
     const response=await premium({action:"bulk_send",kind,ids:slice,requests,confirmed:true,
-     batch_id:batchId,template_key:template,message:note});
+     batch_id:batchId,template_key:"smart",message:note});
     ok+=response.succeeded||0;failed+=response.failed||0;
     setBatchSummary({ok,failed});
    }
@@ -329,32 +368,42 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     {/* Inbox / queue */}
     <aside className="flex min-w-0 flex-col">
      <div className="space-y-3 border-b p-4">
-      <p className="flex items-center gap-2 text-sm font-bold"><Inbox className="h-4 w-4 text-primary"/> Case inbox <Badge variant="secondary">{items.length}</Badge></p>
+      <p className="flex items-center gap-2 text-sm font-bold"><Inbox className="h-4 w-4 text-primary"/> Case inbox <Badge variant="secondary">{items.length} / {totalCases}</Badge></p>
       <div className="flex flex-wrap gap-1.5">{(Object.keys(kindLabels) as Kind[]).filter(k=>mode==="admin"||k!=="support_enquiry").map(k=>
        <Button key={k} size="sm" className="h-7 px-2.5 text-[11px]" variant={kind===k?"default":"outline"} onClick={()=>selectKind(k)}>{kindLabels[k]}</Button>)}</div>
+      {(kind==="application"||kind==="reservation")&&<Select value={academicYear} onValueChange={v=>{setAcademicYear(v);setSelected("");setChecked(new Set());resetPreview();}}><SelectTrigger><SelectValue placeholder="Academic year"/></SelectTrigger><SelectContent><SelectItem value="2026">2026 · Historical cases</SelectItem><SelectItem value="2027">2027 · {kind==="application"?"Applications not open":"Reservations"}</SelectItem></SelectContent></Select>}
       <div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/>
        <Input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search applicants, references..." className="pl-8" aria-label="Search case inbox"/></div>
       <Select value={filter} onValueChange={v=>setFilter(v as typeof filter)}>
        <SelectTrigger><SelectValue/></SelectTrigger><SelectContent>
         <SelectItem value="all">All cases</SelectItem><SelectItem value="missing">Missing documents</SelectItem>
         <SelectItem value="received">Documents received</SelectItem><SelectItem value="decision">Decisions and confirmations</SelectItem>
+        <SelectItem value="not_contacted">Not contacted yet</SelectItem><SelectItem value="followup_due">Follow-up due</SelectItem>
+        <SelectItem value="student_acted">Uploaded after outreach</SelectItem><SelectItem value="awaiting_review">Awaiting document review</SelectItem>
+        <SelectItem value="decision_changed">Status changed since email</SelectItem><SelectItem value="approved">Approved / confirmed</SelectItem>
+        <SelectItem value="rejected">Rejected</SelectItem>
        </SelectContent></Select>
       <div className="flex items-center justify-between"><p className="text-xs font-semibold text-muted-foreground">{selectedCount} selected for bulk actions</p>
        <Button size="sm" variant="ghost" className="h-7" onClick={()=>void loadItems()}><RefreshCw className="h-3.5 w-3.5"/></Button></div>
       <div className="flex gap-2">
-       <Button size="sm" variant="outline" className="h-8 flex-1 text-xs" onClick={()=>setChecked(new Set(visible.slice(0,25).map(x=>x.id)))}>Select visible (max 25)</Button>
+       <Button size="sm" variant="outline" className="h-8 flex-1 text-xs" onClick={()=>setChecked(new Set(visible.filter(x=>x.can_email).slice(0,25).map(x=>x.id)))}>Select next 25 eligible</Button>
        <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={()=>setChecked(new Set())}>Clear</Button>
       </div>
      </div>
+     <p className="px-4 py-2 text-[11px] text-muted-foreground">{items.length} cases loaded of {totalCases}. Sort and filter the loaded queue, or load the remaining pages.</p>
+     {nextOffset!==null&&<div className="flex gap-2 px-4 pb-2"><Button variant="outline" size="sm" disabled={loadingMore} onClick={()=>void loadRemaining(false)}>Load next 100</Button><Button variant="secondary" size="sm" disabled={loadingMore} onClick={()=>void loadRemaining(true)}>{loadingMore?"Loading…":"Load all remaining"}</Button></div>}
      <ScrollArea className="h-[360px] xl:h-[650px]">
       {loading?<p className="p-6 text-center text-sm text-muted-foreground">Loading case intelligence…</p>:
-       visible.length===0?<p className="p-6 text-center text-sm text-muted-foreground">No matching cases in this view.</p>:
+       visible.length===0?<p className="p-6 text-center text-sm text-muted-foreground">{kind==="application"&&academicYear==="2027"?"2027 applications are not open yet. Existing reservations are managed under Reservations.":"No matching cases in this view."}</p>:
        visible.map(item=><div key={item.id} className={cn("flex items-start gap-2 border-b px-3 py-3 transition-colors",selected===item.id?"bg-primary/10":"hover:bg-muted/40")}>
         <Checkbox className="mt-2" checked={checked.has(item.id)} onCheckedChange={v=>toggleSelected(item.id,v===true)} aria-label={"Select "+item.label}/>
         <button type="button" className="min-w-0 flex-1 text-left" onClick={()=>selectRecord(item.id)}>
          <div className="flex items-start justify-between gap-2"><p className="truncate text-sm font-bold">{item.label}</p><ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground"/></div>
          <p className="mt-1 truncate text-xs text-muted-foreground">{item.property} · {item.reference}</p>
          <p className="mt-1 text-xs">{pretty(item.status)}</p>
+         <p className="mt-1 text-[11px] font-semibold text-primary">{pretty(item.workflow_bucket||"not_contacted")}</p>
+         {item.email_sent&&<p className="mt-1 text-[10px] text-muted-foreground">Email sent {item.last_email_at?new Date(item.last_email_at).toLocaleDateString("en-ZA"):""} · {pretty(item.last_email_template||"status_update")}</p>}
+         {item.student_uploaded_after_email&&<Badge variant="secondary" className="mt-1 text-[10px]">Applicant uploaded after email</Badge>}
          <div className="mt-2 flex flex-wrap gap-1.5"><Badge variant="outline" className={cn("text-[10px]",signalStyle(item.document_stage))}>
            {formattedSignal(item.document_stage)}</Badge>{!item.can_email&&<Badge variant="destructive" className="text-[10px]">No contact</Badge>}</div>
         </button>
@@ -381,7 +430,9 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
         {caseInfo.document_signal.missing.length>0&&<div className="mt-2"><p className="text-xs font-bold">Outstanding requirements:</p>
           <ul className="mt-1 list-inside list-disc space-y-1 text-xs">{caseInfo.document_signal.missing.map(d=><li key={d}>{d}</li>)}</ul></div>}
         {caseInfo.document_signal.uploaded>0&&<p className="mt-2 text-xs text-muted-foreground">{caseInfo.document_signal.uploaded} uploaded · {caseInfo.document_signal.pendingReview} awaiting verification</p>}
-        <p className="mt-3 text-xs font-medium">Recommended: {pretty(caseInfo.recommended_template)}</p>
+        <p className="mt-3 text-xs font-medium">Recommended: {pretty(active?.suggested_template||caseInfo.recommended_template)}</p>
+        {active?.service_action&&<p className="mt-2 rounded-lg bg-background p-2 text-xs font-semibold">{active.service_action}</p>}
+        <p className="mt-2 text-[11px] text-muted-foreground">Applicant progress is based on recorded uploads and status changes. Gmail replies and reads cannot be detected with send-only permission.</p>
        </div>
        <div className="space-y-2"><Label htmlFor="premium-email-type">Choose context-aware email</Label>
         <Select value={template} onValueChange={v=>{setTemplate(v as Template);resetPreview();}}>
@@ -439,6 +490,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       <TabsContent value="bulk" className="m-0 space-y-4 px-4 pb-5">
        <div className="rounded-xl border bg-card p-4"><p className="flex items-center gap-2 font-semibold"><Users className="h-4 w-4 text-primary"/>Bulk communication</p>
         <p className="mt-1 text-xs text-muted-foreground">{selectedCount} selected · individualized case context and PDF per recipient · five sends per batch</p>
+        <p className="mt-1 text-xs font-semibold text-primary">Bulk emails always use each student’s own Smart template, not the single-case template selection.</p>
         <Button className="mt-3 w-full" variant="secondary" onClick={()=>void previewBulk()} disabled={!selectedCount||!!busy}><FileCheck2 className="mr-2 h-4 w-4"/>Review selected messages</Button>
         {bulkPreview.length>0&&<div className="mt-3 space-y-2">{bulkPreview.map(messageCard)}
          <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs">
