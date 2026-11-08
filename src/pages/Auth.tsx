@@ -153,11 +153,18 @@ const Auth = () => {
       if (pendingApp?.residence_id) {
         clearPendingApplication();
         try {
+          const {getResidenceIntake,canApplyToResidence}=await import("@/lib/residenceIntake");
+          if(!canApplyToResidence(await getResidenceIntake(pendingApp.residence_id))){
+            toast.info("Accommodation applications are closed. View the 2027 reservation option.");
+            return navigate("/res/"+pendingApp.residence_id+"#reservations",{replace:true});
+          }
           const { data: existing } = await supabase.from("applications").select("id").eq("user_id", user.id).eq("residence_id", pendingApp.residence_id).maybeSingle();
           if (!existing) {
             const { data: inserted, error: insErr } = await supabase.from("applications").insert({
               user_id: user.id,
               residence_id: pendingApp.residence_id,
+              academic_year:2026,
+              funding_type:"private",
               status: "submitted",
               institution_type: (pendingApp as any).institution_type || "university",
             } as any).select("id").maybeSingle();
