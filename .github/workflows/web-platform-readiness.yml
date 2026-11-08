@@ -32,6 +32,8 @@ jobs:
         run: npm run release:p11
       - name: TypeScript
         run: npx tsc --noEmit -p tsconfig.app.json
+      - name: Premium email case-decision safety tests
+        run: node --experimental-strip-types --test scripts/email-dock-case-logic.test.mjs
       - name: Install Chromium and WebKit
         run: npx playwright install --with-deps chromium webkit
       - name: Responsive public browser smoke
