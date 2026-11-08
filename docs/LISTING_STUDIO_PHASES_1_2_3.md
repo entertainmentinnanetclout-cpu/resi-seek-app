@@ -15,10 +15,19 @@ Release scope: Phase 1 shared residence/inventory foundation; Phase 2 guided lan
 
 - New RLS-protected `reskonnect_listing_studio_drafts` holds one durable, revisioned listing draft per residence. Statuses: draft, submitted, changes_requested, approved.
 - A database submission guard checks genuine same-residence photo URLs, property details, room capacities/prices, move-in date, lease terms and verification route. Landlords cannot self-approve.
+- The final integrity migration additionally verifies that every submitted image actually exists in the residence-owned Supabase Storage folder, rather than trusting a syntactically plausible link. Removed studio photos and room categories are retired during a subsequent approval; inherited platform price-verification timestamps are cleared when landlord pricing is republished.
 - `reskonnect_review_listing` requires a ResKonnect administrator and a submitted, locked draft. Approval updates only verified listing facts, real photos, room-type prices/capacities and selected confirmed amenities; it preserves accreditation/trust/visibility controls and does not notify applicants.
 - Event triggers feed the private `reskonnect_service_events` table with listing, inventory, property publication and reservation-change actions. No applicant contact details are included.
 - `reskonnect_discovery_inventory_v` is a security-invoker public read model. It uses configured active room types when available, otherwise falls back to the existing residence's **reported** capacity and rate. This avoids inventing beds for historical listings.
 - The existing `useRealtimeResidences` hook merges that projection into the existing finder and refreshes on residence and room-type changes. Cached data may be up to 24 hours old during outages and is expressly labelled as cached.
+
+## Applied Supabase migrations
+
+- `20261108203000_listing_studio_service_events_discovery.sql` — RLS-backed drafts, review RPC, shared inventory projection and service events.
+- `20261108204500_listing_media_and_service_sync.sql` — validated photo paths, approved extras and property event tracking.
+- `20261108210500_listing_studio_review_integrity.sql` — real Storage object existence, stale room/photo retirement and pricing verification reset.
+
+**All three are applied to the linked ResKonnect Supabase project.** Approval remains a human decision, and no test property was published.
 
 ## Phase 2: Landlord Studio
 
@@ -53,7 +62,7 @@ Six stages: property details and letting model; group room capacity/prices; actu
 ## Acceptance plan
 
 1. With a consented test landlord account, open the new wizard, populate the six sections, verify autosave and reload resume, upload three actual authorized residence photos and preview on mobile.
-2. Test malformed room capacities, zero rent, duplicated room names, insufficient photos and incorrect signed/private storage URLs; submission must fail clearly.
+2. Test malformed room capacities, zero rent, duplicated room names, insufficient photos, non-existent uploaded-object URLs and incorrect signed/private storage URLs; submission must fail clearly.
 3. Submit a controlled test listing; ensure the landlord cannot self-approve and AdminOS review queue receives it.
 4. Have an authorized test admin request changes, verify feedback appears, resubmit and approve. Validate that only the intended residence's facts, room types, approved media, amenity flags and availability change.
 5. Open `/find`: check city and campus matching, search by suburb, verified-price-only selection, availability provenance, photo-only filter and mobile layout. Confirm old listings remain discoverable without inventing room types.
