@@ -10,7 +10,11 @@ export function assertTemplateIsFactual(ctx:CaseContext,key:TemplateKey){
  if(selected==="conditionally_approved"&&!statusIs(ctx.status,"conditionally_approved"))throw Error("Conditional acceptance requires a recorded conditional approval");
  if(selected==="reservation_confirmed"&&(ctx.kind!=="reservation"||!statusIs(ctx.status,"confirmed")))
   throw Error("A confirmation letter requires a confirmed reservation");
- if(selected==="documents_received"&&ctx.documents.uploaded===0)throw Error("No documents are recorded as received for this case");
+ if(selected==="move_in_arrangements"&&(ctx.kind!=="reservation"||!statusIs(ctx.status,"confirmed")))
+   throw Error("Move-in arrangements require a confirmed reservation");
+  if(selected==="viewing_invite"&&ctx.kind==="application"&&!["approved","conditionally_approved"].some(s=>statusIs(ctx.status,s)))
+   throw Error("Viewing arrangements require an approved or conditionally approved application");
+  if(selected==="documents_received"&&ctx.documents.uploaded===0)throw Error("No documents are recorded as received for this case");
  if(selected==="documents_needed"&&ctx.documents.missing.length===0)
   throw Error("A missing-document request is not appropriate: no required documents remain outstanding");
  if(selected==="acknowledgement"&&["approved","rejected","withdrawn","cancelled","confirmed"].some(status=>statusIs(ctx.status,status)))
@@ -27,7 +31,9 @@ export async function previewPacket(s:EmailSession,ctx:CaseContext,key:TemplateK
   .select("subject_template,body_template").eq("owner_user_id",s.actor)
   .eq("target_kind",ctx.kind).eq("template_key",resolved).maybeSingle();
  if(error)throw Error("Saved template could not be loaded");
- const letter=renderLetter(ctx,key,note,custom||undefined);
+ if(["viewing_invite","move_in_arrangements"].includes(resolved)&&note.trim().length<10)
+   throw Error("Add practical details such as the viewing date/time or move-in instructions before sending");
+  const letter=renderLetter(ctx,key,note,custom||undefined);
  return {...letter,html:htmlEmail(ctx,letter.subject,letter.body)};
 }
 async function bearerToken(s:EmailSession){
