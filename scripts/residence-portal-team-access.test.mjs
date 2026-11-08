@@ -37,6 +37,9 @@ test("edit, suspend and delete target only the selected membership, never a whol
  assert.match(ui,/action:"delete",account_id:account\.id/);
  assert.match(mgmt,/\.eq\("id",id\)/);
  assert.match(mgmt,/admin_delete_residence_portal_account/);
+ assert.match(mgmt,/gmail_delete_connection/);
+ assert.match(mgmt,/oauth2.googleapis.com\\/revoke/);
+ assert.match(mgmt,/update\\(\\{enabled:false\\}\\)/);
  assert.doesNotMatch(mgmt,/admin_delete_residence_portal",/);
  assert.match(schema,/replaced by per-account revocation/);
 });
