@@ -66,7 +66,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
   }, [residence.promo_active, residence.promo_starts_at, residence.promo_ends_at]);
 
   const pricedRooms = roomPricing.slice().sort((a: any, b: any) => Number(a.private_price || a.nsfas_price || 999999) - Number(b.private_price || b.nsfas_price || 999999));
-  const cheapestPrivate = pricedRooms.map((room: any) => Number(room.promo_price || room.private_price || 0)).filter((value: number) => value > 0).sort((a: number, b: number) => a - b)[0];
+  const cheapestPrivate = pricedRooms.filter((room: any) => Number(room.available_beds || 0) > 0).map((room: any) => Number(room.promo_price || room.private_price || 0)).filter((value: number) => value > 0).sort((a: number, b: number) => a - b)[0];
   const displayPrivate = cheapestPrivate || (promoLive && promoPrice > 0 ? promoPrice : privatePrice || basePrice);
 
   const openReservation = (event: React.MouseEvent) => {
