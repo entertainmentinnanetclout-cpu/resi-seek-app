@@ -78,10 +78,13 @@ export default function ResidenceListingWizard(){
  const [uploading,setUploading]=useState(false);
  const [submitting,setSubmitting]=useState(false);
  const savingRef=useRef(false);
+ const editRevision=useRef(0);
  const roomTotal=useMemo(()=>listing?.rooms.reduce((sum,r)=>sum+Number(r.capacity||0),0)||0,[listing]);
+ const minimumRent=listing?.rooms.map(r=>r.private_price).filter(v=>v>0).reduce((a,b)=>Math.min(a,b),Infinity)??Infinity;
  const errors=useMemo(()=>listing?requirements(listing):[],[listing]);
  const readonly=draft?.status==="submitted";
  const change=useCallback((patch:Partial<Listing>)=>{
+   editRevision.current+=1;
    setListing(old=>old?{...old,...patch}:old);setDirty(true);
  },[]);
  const load=useCallback(async()=>{
@@ -113,6 +116,7 @@ export default function ResidenceListingWizard(){
   if(!residence?.id||!user?.id||savingRef.current)return false;
   if(readonly){if(!silent)toast.error("This listing is already awaiting staff review.");return false;}
   savingRef.current=true;setSaving(true);
+  const savingVersion=editRevision.current;
   try{
    const record={payload:next,step_index:index,status:"draft"};
    const db=supabase as any;
@@ -121,7 +125,7 @@ export default function ResidenceListingWizard(){
     :await db.from("reskonnect_listing_studio_drafts").insert({residence_id:residence.id,owner_id:user.id,...record}).select("revision").single();
    if(res.error)throw res.error;
    setDraft({status:"draft",reviewer_note:draft?.reviewer_note||null,revision:res.data.revision});
-   setDirty(false);
+   if(savingVersion===editRevision.current)setDirty(false);
    if(!silent)toast.success("Draft saved securely");
    return true;
   }catch(e){if(!silent)toast.error(e instanceof Error?e.message:"Could not save draft");return false;}
@@ -209,6 +213,7 @@ export default function ResidenceListingWizard(){
     <CardHeader><CardTitle className="flex items-center gap-2 text-xl"><Icon className="h-5 w-5 text-primary"/>{sections[step].title}</CardTitle>
      <p className="text-sm text-muted-foreground">{sections[step].detail}</p></CardHeader>
     <CardContent className="space-y-5">
+     <fieldset disabled={readonly} className="space-y-5 disabled:opacity-70">
      {step===0&&<div className="space-y-4">
       <div className="space-y-2"><Label>How do you let this property?</Label>
        <div className="grid gap-2 sm:grid-cols-2">{([["room_by_room","Room by room","Each room has an independent capacity and price"],["whole_property","Whole property","One private rental with its own price"]] as const).map(([value,title,detail])=><button key={value} type="button" disabled={readonly} onClick={()=>change({letting_mode:value})} className={"rounded-xl border p-4 text-left "+(listing.letting_mode===value?"border-primary bg-primary/5":"hover:bg-muted")}><strong className="block">{title}</strong><span className="mt-1 block text-xs text-muted-foreground">{detail}</span></button>)}</div>
@@ -271,12 +276,13 @@ export default function ResidenceListingWizard(){
      </div>}
      {step===5&&<div className="space-y-4">
        {listing.photos[0]&&<img src={listing.photos[0].url} alt="Residence listing cover preview" className="aspect-[16/9] w-full rounded-xl object-cover"/>}
-       <div><p className="text-xs font-bold uppercase text-primary">Listing preview</p><h3 className="mt-1 text-2xl font-black">{listing.name||"Unnamed residence"}</h3><p className="mt-1 text-sm text-muted-foreground">{[listing.place_label,listing.city].filter(Boolean).join(", ")} · {roomTotal} beds · from {cash(Math.min(...rooms.map(r=>r.private_price).filter(p=>p>0),Infinity)===Infinity?0:Math.min(...rooms.map(r=>r.private_price).filter(p=>p>0)))} / month</p></div>
+       <div><p className="text-xs font-bold uppercase text-primary">Listing preview</p><h3 className="mt-1 text-2xl font-black">{listing.name||"Unnamed residence"}</h3><p className="mt-1 text-sm text-muted-foreground">{[listing.place_label,listing.city].filter(Boolean).join(", ")} · {roomTotal} beds · from {cash(Number.isFinite(minimumRent)?minimumRent:0)} / month</p></div>
        <p className="whitespace-pre-line text-sm">{listing.description||"Add an accurate description of your accommodation."}</p>
        <div className="grid gap-2 sm:grid-cols-2">{rooms.map(r=><div key={r.id} className="rounded-xl border p-3 text-sm"><strong>{r.name}</strong><p className="text-muted-foreground">{r.available_beds}/{r.capacity} beds reported · {cash(r.private_price)}/month</p></div>)}</div>
        {errors.length>0?<div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:bg-amber-950 dark:text-amber-100"><p className="font-bold">Complete these items before submitting:</p><ul className="mt-2 list-inside list-disc space-y-1 text-xs">{errors.map(e=><li key={e}>{e}</li>)}</ul></div>:<div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm"><Check className="h-5 w-5 text-emerald-600"/> All required fields are complete. Staff will verify before publishing.</div>}
        <Button className="w-full" size="lg" disabled={readonly||submitting||saving||errors.length>0} onClick={()=>void submit()}>{submitting?"Submitting…":"Submit listing for official review"}<ArrowRight className="ml-2 h-4 w-4"/></Button>
       </div>}
+    </fieldset>
     </CardContent>
    </Card>
    <div className="space-y-4">
