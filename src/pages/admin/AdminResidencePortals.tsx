@@ -35,7 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { invokeEdgeFunction } from "@/lib/lovableFunctions";
+
 import { toast } from "sonner";
 
 const stringifyErrorPart = (value: unknown): string | null => {
@@ -87,6 +87,8 @@ const getReadableError = (err: unknown, fallback: string) => {
 };
 
 interface PortalAccount {
+  id: string;
+  portal_role: "owner" | "manager" | "admin";
   residence_id: string;
   user_id: string | null;
   email: string;
@@ -116,12 +118,14 @@ export const AdminResidencePortalsContent = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedResidence, setSelectedResidence] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [newRole,setNewRole]=useState<"owner"|"manager"|"admin">("owner");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [editing,setEditing]=useState<PortalAccount|null>(null);
   const [editResidenceId,setEditResidenceId]=useState("");
   const [editEmail,setEditEmail]=useState("");
+  const [editRole,setEditRole]=useState<"owner"|"manager"|"admin">("owner");
   const [editActive,setEditActive]=useState(true);
   const [isSavingEdit,setIsSavingEdit]=useState(false);
 
@@ -157,7 +161,7 @@ export const AdminResidencePortalsContent = () => {
       // FKs on residence_portal_accounts.residence_id on External.
       const { data: accountsData, error: accountsError } = await supabase
         .from('residence_portal_accounts')
-        .select('residence_id, user_id, email, is_active, created_at')
+        .select('id, residence_id, user_id, email, portal_role, is_active, created_at')
         .order('created_at', { ascending: false });
 
       if (accountsError) {
@@ -176,11 +180,10 @@ export const AdminResidencePortalsContent = () => {
       })) as unknown as PortalAccount[];
       setAccounts(transformedAccounts);
 
-      // Filter out residences that already have accounts
-      const usedResidenceIds = new Set(transformedAccounts.map(a => a.residence_id));
-      setAvailableResidences(
-        (allResidences || []).filter(r => !usedResidenceIds.has(r.id))
-      );
+      // Suspended accounts also occupy one of a residence's three seats.
+      const counts = new Map<string, number>();
+      for(const a of transformedAccounts)counts.set(a.residence_id,(counts.get(a.residence_id)||0)+1);
+      setAvailableResidences((allResidences||[]).filter(r=>(counts.get(r.id)||0)<3));
     } catch (err) {
       console.error('Error fetching data:', err);
       toast.error('Failed to load portal accounts');
@@ -190,16 +193,14 @@ export const AdminResidencePortalsContent = () => {
   };
 
   const handleCreateAccount = async () => {
-    if (!selectedResidence || !newEmail || !newPassword || !confirmPassword) {
-      toast.error('Please fill in all fields');
+    if (!selectedResidence || !newEmail) {
+      toast.error('Select a residence and enter an email address');
       return;
     }
-
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
+    if (newPassword && newPassword.length < 12) {
+      toast.error('New passwords must be at least 12 characters');
       return;
     }
-
     if (newPassword !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -207,21 +208,14 @@ export const AdminResidencePortalsContent = () => {
 
     setIsCreating(true);
     try {
-      const { data, error } = await invokeEdgeFunction<{ success?: boolean; error?: string }>(
-        'create-residence-portal-user',
-        {
-          residence_id: selectedResidence,
-          email: newEmail,
-          password: newPassword,
-        }
-      );
-      if (error) throw new Error(getReadableError(error, 'Failed to create account'));
-      if (data?.error) throw new Error(data.error);
+      await managePortal({action:"create",residence_id:selectedResidence,email:newEmail,
+        password:newPassword,portal_role:newRole});
 
       toast.success('Portal account created successfully');
       setShowCreateDialog(false);
       setSelectedResidence("");
       setNewEmail("");
+      setNewRole("owner");
       setNewPassword("");
       setConfirmPassword("");
       fetchData();
@@ -234,23 +228,38 @@ export const AdminResidencePortalsContent = () => {
   };
 
   const managePortal = async (request:Record<string,unknown>) => {
-    const {data,error}=await invokeEdgeFunction<{ok?:boolean;error?:string}>("admin-residence-portal-accounts",request);
-    if(error)throw new Error(getReadableError(error,"Residence portal update failed"));
-    if(data?.error)throw new Error(data.error);
+    // The active portal-management function is hosted on the ResKonnect
+    // Supabase project, not the historical Lovable Cloud functions host.
+    const {data,error}=await supabase.functions.invoke("admin-residence-portal-accounts",{body:request});
+    if(error){
+      let detail="";
+      try{
+        const context=(error as {context?:Response}).context;
+        if(context&&typeof context.clone==="function"){
+          const payload=await context.clone().json();
+          detail=typeof payload?.error==="string"?payload.error:"";
+        }
+      }catch{/* Boot or network errors may return no JSON. */}
+      const message=detail||getReadableError(error,"Portal management failed");
+      throw new Error(/Failed to send a request to the Edge Function/i.test(message)
+        ?"Cannot reach the ResKonnect portal-management service; check its deployment."
+        :message);
+    }
+    if(data?.error)throw new Error(String(data.error));
     if(!data?.ok)throw new Error("Portal management did not confirm the change");
     return data;
   };
 
   const editPortal=(account:PortalAccount)=>{
     setEditing(account);setEditResidenceId(account.residence_id);
-    setEditEmail(account.email);setEditActive(account.is_active);
+    setEditEmail(account.email);setEditActive(account.is_active);setEditRole(account.portal_role);
   };
   const saveEdit=async()=>{
     if(!editing)return;
     setIsSavingEdit(true);
     try{
-      await managePortal({action:"update",residence_id:editing.residence_id,
-        new_residence_id:editResidenceId,email:editEmail,is_active:editActive});
+      await managePortal({action:"update",account_id:editing.id,
+        new_residence_id:editResidenceId,email:editEmail,is_active:editActive,portal_role:editRole});
       toast.success("Residence portal account updated");
       setEditing(null);await fetchData();
     }catch(e){toast.error(getReadableError(e,"Could not save portal account"));}
@@ -258,15 +267,15 @@ export const AdminResidencePortalsContent = () => {
   };
   const toggleAccountStatus=async(account:PortalAccount)=>{
     try{
-      await managePortal({action:"update",residence_id:account.residence_id,
-        new_residence_id:account.residence_id,email:account.email,is_active:!account.is_active});
+      await managePortal({action:"update",account_id:account.id,
+        new_residence_id:account.residence_id,email:account.email,is_active:!account.is_active,portal_role:account.portal_role});
       toast.success(account.is_active?"Portal deactivated":"Portal activated");await fetchData();
     }catch(e){toast.error(getReadableError(e,"Could not change portal status"));}
   };
   const deleteAccount=async(account:PortalAccount)=>{
-    if(!window.confirm("Remove portal access for "+(account.residences?.name||account.email)+"? The user's personal ResKonnect identity and unrelated student roles will be preserved."))return;
+    if(!window.confirm("Remove portal access for "+account.email+" at "+(account.residences?.name||"this residence")+"? The user's personal ResKonnect identity and unrelated student roles will be preserved."))return;
     try{
-      await managePortal({action:"delete",residence_id:account.residence_id,confirmed:true});
+      await managePortal({action:"delete",account_id:account.id,confirmed:true});
       toast.success("Residence portal access removed without deleting the user's other data");
       await fetchData();
     }catch(e){toast.error(getReadableError(e,"Could not remove portal access"));}
@@ -295,7 +304,7 @@ export const AdminResidencePortalsContent = () => {
           <div>
             <h1 className="text-3xl font-bold">Residence Portals</h1>
             <p className="text-muted-foreground">
-              Manage residence portal user accounts
+              Manage up to three owner, manager or admin logins per residence
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -314,7 +323,7 @@ export const AdminResidencePortalsContent = () => {
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Portals</CardTitle>
+              <CardTitle className="text-sm font-medium">Team logins</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{accounts.length}</div>
@@ -332,7 +341,7 @@ export const AdminResidencePortalsContent = () => {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Available Residences</CardTitle>
+              <CardTitle className="text-sm font-medium">Residences with space</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-muted-foreground">
@@ -387,7 +396,8 @@ export const AdminResidencePortalsContent = () => {
                     <TableHead>Residence</TableHead>
                     <TableHead>Campus</TableHead>
                     <TableHead>Province</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead>Portal login</TableHead>
+                    <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -395,16 +405,18 @@ export const AdminResidencePortalsContent = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredAccounts.map((account) => (
-                    <TableRow key={account.residence_id}>
+                    <TableRow key={account.id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-muted-foreground" />
                           {account.residences?.name || 'Unknown'}
+                          <span className="text-xs text-muted-foreground">({accounts.filter(x=>x.residence_id===account.residence_id).length}/3)</span>
                         </div>
                       </TableCell>
                       <TableCell>{account.residences?.campus || '-'}</TableCell>
                       <TableCell>{account.residences?.province || '-'}</TableCell>
                       <TableCell>{account.email}</TableCell>
+                      <TableCell><Badge variant="outline" className="capitalize">{account.portal_role}</Badge></TableCell>
                       <TableCell>
                         <Badge variant={account.is_active ? "default" : "secondary"}>
                           {account.is_active ? 'Active' : 'Inactive'}
@@ -419,6 +431,7 @@ export const AdminResidencePortalsContent = () => {
                           <Button
                             variant="ghost"
                             size="sm"
+                            aria-label={(account.is_active?"Disable ":"Enable ")+account.email}
                             onClick={() => toggleAccountStatus(account)}
                           >
                             {account.is_active ? (
@@ -430,6 +443,7 @@ export const AdminResidencePortalsContent = () => {
                           <Button
                             variant="ghost"
                             size="sm"
+                            aria-label={"Remove "+account.email}
                             onClick={() => deleteAccount(account)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -448,7 +462,7 @@ export const AdminResidencePortalsContent = () => {
       <Dialog open={!!editing} onOpenChange={open=>{if(!open)setEditing(null);}}>
         <DialogContent>
           <DialogHeader><DialogTitle>Edit residence portal</DialogTitle>
-            <DialogDescription>Update the linked residence, portal email, or active state. Existing student applications are not moved.</DialogDescription>
+            <DialogDescription>Edit this individual team member; other portal accounts stay unchanged.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2"><Label>Assigned residence</Label>
@@ -460,6 +474,12 @@ export const AdminResidencePortalsContent = () => {
             <div className="space-y-2"><Label htmlFor="portal-edit-email">Portal login email</Label>
               <Input id="portal-edit-email" type="email" value={editEmail} onChange={e=>setEditEmail(e.target.value)} />
               <p className="text-xs text-muted-foreground">Changing a shared student/admin login email is blocked for account safety.</p>
+            </div>
+            <div className="space-y-2"><Label>Team role</Label>
+              <Select value={editRole} onValueChange={v=>setEditRole(v as typeof editRole)}>
+                <SelectTrigger><SelectValue/></SelectTrigger>
+                <SelectContent><SelectItem value="owner">Residence owner</SelectItem><SelectItem value="manager">Manager</SelectItem><SelectItem value="admin">Residence admin</SelectItem></SelectContent>
+              </Select>
             </div>
             <div className="space-y-2"><Label>Portal access</Label>
               <Select value={editActive?"active":"inactive"} onValueChange={v=>setEditActive(v==="active")}>
@@ -480,32 +500,47 @@ export const AdminResidencePortalsContent = () => {
           <DialogHeader>
             <DialogTitle>Create Residence Portal</DialogTitle>
             <DialogDescription>
-              Create a portal account for a residence owner to manage their applications.
+              Add one of up to three team logins for this residence.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Residence</Label>
-              <Select value={selectedResidence} onValueChange={setSelectedResidence}>
+              <Select value={selectedResidence} onValueChange={value=>{
+                  setSelectedResidence(value);
+                  setNewRole(accounts.some(a=>a.residence_id===value)?"manager":"owner");
+                }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select residence..." />
                 </SelectTrigger>
                 <SelectContent>
                   {availableResidences.map((res) => (
                     <SelectItem key={res.id} value={res.id}>
-                      {res.name}
+                      {res.name} ({accounts.filter(a=>a.residence_id===res.id).length}/3)
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {availableResidences.length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  All residences already have portal accounts
+                  All residences have reached the three-account limit
                 </p>
               )}
             </div>
 
+            <div className="space-y-2">
+              <Label>Team member role</Label>
+              <Select value={newRole} onValueChange={v=>setNewRole(v as typeof newRole)}>
+                <SelectTrigger><SelectValue/></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="owner">Residence owner</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="admin">Residence admin</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Up to three accounts, with no more than one residence owner.</p>
+            </div>
             <div className="space-y-2">
               <Label>Portal Email</Label>
               <Input
@@ -520,12 +555,12 @@ export const AdminResidencePortalsContent = () => {
               <Label>Password</Label>
               <Input
                 type="password"
-                placeholder="Minimum 8 characters"
+                placeholder="At least 12 characters for a new login"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
               <p className="text-[10px] text-muted-foreground">
-                Must be at least 8 characters long.
+                Use 12 or more characters for new logins. Leave blank to link an existing verified ResKonnect account.
               </p>
             </div>
 
@@ -549,7 +584,7 @@ export const AdminResidencePortalsContent = () => {
             </Button>
             <Button 
               onClick={handleCreateAccount} 
-              disabled={isCreating || !selectedResidence || !newEmail || !newPassword}
+              disabled={isCreating || !selectedResidence || !newEmail || (Boolean(newPassword) && newPassword.length<12)}
             >
               {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Portal

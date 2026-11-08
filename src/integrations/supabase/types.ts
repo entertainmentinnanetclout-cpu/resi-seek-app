@@ -2367,6 +2367,8 @@ export type Database = {
       }
       residence_portal_accounts: {
         Row: {
+          id: string
+          portal_role: string
           created_at: string
           email: string
           is_active: boolean
@@ -2375,6 +2377,8 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          id?: string
+          portal_role?: string
           created_at?: string
           email: string
           is_active?: boolean
@@ -2383,6 +2387,8 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          id?: string
+          portal_role?: string
           created_at?: string
           email?: string
           is_active?: boolean
@@ -2394,14 +2400,14 @@ export type Database = {
           {
             foreignKeyName: "fk_portal_accounts_residence"
             columns: ["residence_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "residences"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "residence_portal_accounts_residence_id_fkey"
             columns: ["residence_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "residences"
             referencedColumns: ["id"]
           },
