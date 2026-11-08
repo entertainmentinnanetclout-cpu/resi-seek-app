@@ -184,6 +184,9 @@ const ResidenceAnalytics = lazy(
   () => import("./pages/residence/ResidenceAnalytics"),
 );
 const ResidenceCRM = lazy(() => import("./pages/residence/ResidenceCRM"));
+const ResidenceServiceDesk = lazy(() => import("./pages/residence/ResidenceServiceDesk"));
+const ResidenceBilling = lazy(() => import("./pages/residence/ResidenceBilling"));
+const ResKonnectInvoiceDocument = lazy(() => import("./pages/ResKonnectInvoiceDocument"));
 const ResidenceInventory = lazy(
   () => import("./pages/residence/ResidenceInventory"),
 );
@@ -524,6 +527,7 @@ const App = () => {
                       element={<AccommodationDemand />}
                     />
                     <Route path="/res/:id" element={<ResidenceDetail />} />
+                    <Route path="/commercial/invoice/:invoiceId" element={<ResKonnectInvoiceDocument />} />
                     <Route
                       path="/find-my-res/:slug"
                       element={<ResidenceDetail />}
@@ -1205,6 +1209,8 @@ const App = () => {
                         element={<ResidenceApplicationDetail />}
                       />
                       <Route path="crm" element={<ResidenceCRM />} />
+                      <Route path="service-desk" element={<ResidenceServiceDesk />} />
+                      <Route path="billing" element={<ResidenceBilling />} />
                       <Route
                         path="inventory"
                         element={<ResidenceInventory />}
