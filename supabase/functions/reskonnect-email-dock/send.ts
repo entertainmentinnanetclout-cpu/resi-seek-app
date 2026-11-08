@@ -44,7 +44,7 @@ export async function makePreviewPdf(s:EmailSession,ctx:CaseContext,key:Template
  const packet=await previewPacket(s,ctx,key,note);
  const bytes=await createBrandedPdf({
   recipientName:ctx.studentName,property:ctx.property,reference:ctx.reference,
-  status:ctx.status,subject:packet.subject,body:packet.body,kindLabel:KIND_LABELS[ctx.kind]
+  status:ctx.status,subject:packet.subject,body:packet.body,kindLabel:KIND_LABELS[ctx.kind],residenceImageUrl:ctx.residenceImageUrl,residenceImageUrl:ctx.residenceImageUrl
  });
  return {filename:"ResKonnect-"+ctx.kind+"-"+ctx.reference+".pdf",base64:pdfAsBase64(bytes)};
 }
