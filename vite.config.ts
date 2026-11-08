@@ -161,6 +161,20 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       chunkSizeWarningLimit: 950,
+      rollupOptions: {
+        output: {
+          // Long-lived vendor chunks keep the startup bundle lean on mobile and
+          // let frequent application deployments reuse unchanged library caches.
+          manualChunks(id) {
+            const modulePath = id.replace(/\\\\/g, "/");
+            if (/\/node_modules\/@supabase\//.test(modulePath)) return "supabase-vendor";
+            if (/\/node_modules\/@tanstack\/(react-query|query-core)\//.test(modulePath)) return "query-vendor";
+            if (/\/node_modules\/(react-router|react-router-dom)\//.test(modulePath)) return "router-vendor";
+            if (/\/node_modules\/lucide-react\//.test(modulePath)) return "icons-vendor";
+            return undefined;
+          },
+        },
+      },
     },
   };
 });

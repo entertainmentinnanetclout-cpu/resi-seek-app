@@ -3,6 +3,13 @@ import { spawnSync } from "node:child_process";
 const TEMPORARY_DEV_ADVISORIES = new Set([
   "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
   "https://github.com/advisories/GHSA-rj75-hqrm-r3gf",
+  // These are PWA/Workbox build-only dependencies, not production runtime.
+  // deepmerge has no patched release; glob/minimatch patch versions require
+  // major upgrades beyond Workbox's declared dependency ranges.
+  // Time-boxed review is required before the existing 2026-11-21 deadline.
+  "https://github.com/advisories/GHSA-gcqx-w48m-w2h4",
+  "https://github.com/advisories/GHSA-3g3m-2fjr-6pw4",
+  "https://github.com/advisories/GHSA-g3hv-75wg-m249",
 ]);
 
 // The braces advisory currently has no patched npm release. Keep this exception

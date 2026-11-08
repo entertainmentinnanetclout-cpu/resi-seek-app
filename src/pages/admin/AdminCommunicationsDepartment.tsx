@@ -3,15 +3,16 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Contact, MessageCircle, MessagesSquare, Sparkles, Target, WandSparkles } from "lucide-react";
+import { Contact, MessageCircle, MessagesSquare, Mail, Sparkles, Target, WandSparkles } from "lucide-react";
 import AdminOSWhatsAppDeskNext from "@/components/admin/AdminOSWhatsAppDeskNext";
 import AdminOSContactsDirectory from "@/components/admin/AdminOSContactsDirectory";
 import AdminOSWhatsAppConcierge from "@/components/admin/AdminOSWhatsAppConcierge";
 import AdminOSServiceIntelligence from "@/components/admin/AdminOSServiceIntelligence";
 import AdminWhatsAppConversionPipeline from "@/components/admin/AdminWhatsAppConversionPipeline";
 import { AdminWhatsAppTemplatesContent } from "./AdminWhatsAppTemplates";
+import CommunicationEmailWorkspace from "@/components/communications/CommunicationEmailWorkspace";
 
-const tabs=["desk","conversion","contacts","concierge","service","templates"];
+const tabs=["desk","email","conversion","contacts","concierge","service","templates"];
 
 export default function AdminCommunicationsDepartment(){
   const[params,setParams]=useSearchParams();
@@ -30,6 +31,7 @@ export default function AdminCommunicationsDepartment(){
       <Tabs value={active} onValueChange={setTab}>
         <TabsList className="flex h-auto flex-wrap gap-1">
           <TabsTrigger value="desk" className="gap-2"><MessageCircle className="h-4 w-4"/>WhatsApp Desk</TabsTrigger>
+          <TabsTrigger value="email" className="gap-2"><Mail className="h-4 w-4"/>Email & Gmail</TabsTrigger>
           <TabsTrigger value="conversion" className="gap-2"><Target className="h-4 w-4"/>RG6 Conversion</TabsTrigger>
           <TabsTrigger value="contacts" className="gap-2"><Contact className="h-4 w-4"/>Contacts</TabsTrigger>
           <TabsTrigger value="concierge" className="gap-2"><Sparkles className="h-4 w-4"/>Dimpho Concierge</TabsTrigger>
@@ -37,6 +39,7 @@ export default function AdminCommunicationsDepartment(){
           <TabsTrigger value="templates" className="gap-2"><MessagesSquare className="h-4 w-4"/>Templates</TabsTrigger>
         </TabsList>
         <TabsContent value="desk"><div className="adminos-whatsapp-mobile-fit min-w-0 max-w-full overflow-x-hidden"><AdminOSWhatsAppDeskNext/></div></TabsContent>
+        <TabsContent value="email"><CommunicationEmailWorkspace mode="admin"/></TabsContent>
         <TabsContent value="conversion"><AdminWhatsAppConversionPipeline/></TabsContent>
         <TabsContent value="contacts"><AdminOSContactsDirectory/></TabsContent>
         <TabsContent value="concierge"><AdminOSWhatsAppConcierge/></TabsContent>

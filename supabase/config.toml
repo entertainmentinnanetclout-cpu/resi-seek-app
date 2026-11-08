@@ -110,3 +110,14 @@ verify_jwt = false
 
 [functions.housing-intelligence]
 verify_jwt = false
+[functions.gmail-connect]
+verify_jwt = true
+
+[functions.gmail-callback]
+verify_jwt = false
+
+[functions.gmail-send]
+verify_jwt = true
+
+[functions.reskonnect-email]
+verify_jwt = true
