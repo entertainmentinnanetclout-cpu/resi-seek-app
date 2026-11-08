@@ -6,10 +6,12 @@ export default function AuthLoadingRecovery({
   message = "Loading your ResKonnect account…",
   onRetry,
   showRecoveryImmediately = false,
+  retrying = false,
 }: {
   message?: string;
   onRetry?: () => void | Promise<void>;
   showRecoveryImmediately?: boolean;
+  retrying?: boolean;
 }) {
   const navigate = useNavigate();
   const [slow, setSlow] = useState(showRecoveryImmediately);
@@ -42,9 +44,10 @@ export default function AuthLoadingRecovery({
               <button
                 type="button"
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
+                disabled={retrying}
                 onClick={() => void onRetry()}
               >
-                <RefreshCw className="h-4 w-4" />Retry account check
+                <RefreshCw className={`h-4 w-4 ${retrying ? "animate-spin" : ""}`} />{retrying ? "Checking account permissions…" : "Retry account check"}
               </button>
             )}
             <button type="button" className="w-full rounded-full border px-5 py-3 text-sm font-semibold" onClick={() => window.location.reload()}>
