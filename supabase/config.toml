@@ -121,3 +121,6 @@ verify_jwt = true
 
 [functions.reskonnect-email]
 verify_jwt = true
+
+[functions.reskonnect-email-dock]
+verify_jwt = true
