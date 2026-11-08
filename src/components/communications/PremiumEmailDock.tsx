@@ -80,6 +80,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [statusApproved,setStatusApproved]=useState(false);
  const [batchSummary,setBatchSummary]=useState<{ok:number;failed:number}|null>(null);
  const lastPreviewRef=useRef("");
+ const deepLinkedIdRef=useRef(params.get("target"));
  const invoke=useCallback(async(fn:string,body:Record<string,unknown>)=>{
   const {data,error}=await supabase.functions.invoke(fn,{body});
   if(error)throw new Error(await extractError(error));
@@ -103,7 +104,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const loadItems=useCallback(async()=>{
   setLoading(true);
   try{
-   const r=await premium({action:"list",kind});
+   const r=await premium({action:"list",kind,highlight_id:deepLinkedIdRef.current});
    const next=(r.items||[]) as CaseItem[];
    setItems(next);
    setSelected(old=>old&&next.some(x=>x.id===old)?old:next[0]?.id||"");
