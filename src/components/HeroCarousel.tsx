@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type PointerEvent } from "react";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,28 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slides, setSlides] = useState<Slide[]>(propSlides || []);
   const [isLoading, setIsLoading] = useState(useDatabase);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const moveHero = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== "mouse" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const hero = heroRef.current;
+    if (!hero) return;
+    const rect = hero.getBoundingClientRect();
+    const x = Math.max(-1, Math.min(1, (event.clientX - rect.left) / rect.width * 2 - 1));
+    const y = Math.max(-1, Math.min(1, (event.clientY - rect.top) / rect.height * 2 - 1));
+    hero.style.setProperty("--rk-hero-move-x", `${(-x * 11).toFixed(1)}px`);
+    hero.style.setProperty("--rk-hero-move-y", `${(-y * 8).toFixed(1)}px`);
+    hero.style.setProperty("--rk-hero-copy-x", `${(x * 5).toFixed(1)}px`);
+    hero.style.setProperty("--rk-hero-copy-y", `${(y * 4).toFixed(1)}px`);
+    hero.style.setProperty("--rk-hero-light-x", `${((x + 1) * 50).toFixed(1)}%`);
+    hero.style.setProperty("--rk-hero-light-y", `${((y + 1) * 50).toFixed(1)}%`);
+  };
+  const resetHero = () => {
+    const hero = heroRef.current;
+    if (!hero) return;
+    for (const key of ["--rk-hero-move-x", "--rk-hero-move-y", "--rk-hero-copy-x", "--rk-hero-copy-y"]) hero.style.setProperty(key, "0px");
+    hero.style.setProperty("--rk-hero-light-x", "72%");
+    hero.style.setProperty("--rk-hero-light-y", "30%");
+  };
 
   useEffect(() => {
     if (useDatabase) {
@@ -85,16 +107,16 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
   if (slides.length === 0) return null;
 
   return (
-    <div className={cn("group relative h-[520px] w-full overflow-hidden rounded-2xl bg-muted md:h-[640px] lg:h-[720px]", className)}>
+    <div ref={heroRef} onPointerMove={moveHero} onPointerLeave={resetHero} className={cn("rk-gold-hero group relative h-[520px] w-full overflow-hidden rounded-2xl bg-muted md:h-[640px] lg:h-[720px]", className)}>
       {slides.map((slide, index) => (
         <div key={index} className={cn("absolute inset-0 transition-all duration-700 ease-in-out", index === currentSlide ? "pointer-events-auto scale-100 opacity-100" : "pointer-events-none scale-105 opacity-0")}>
-          <div className="absolute inset-0 transform bg-cover bg-center transition-transform duration-700" style={{ backgroundImage: `url(${slide.image})`, transform: index === currentSlide ? 'scale(1.05)' : 'scale(1)' }}>
+          <div className="rk-hero-depth-background absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${slide.image})` }}>
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/10" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/25" />
           </div>
-          <div className="relative flex h-full items-end px-6 pb-20 md:px-12 lg:px-20">
+          <div className="rk-hero-copy relative flex h-full items-end px-6 pb-20 md:px-12 lg:px-20">
             <div className="max-w-4xl border-l-4 border-[#F5B32F] pl-5 md:pl-7">
-              <div className="mb-3 inline-flex rounded-full border border-white/40 bg-[#071326]/75 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white backdrop-blur-sm">ResKonnect</div>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#F5B32F]/60 bg-[#071326]/80 px-3 py-1 text-xs font-bold uppercase tracking-[.16em] text-[#FFE1A0] backdrop-blur-sm"><span className="h-1.5 w-1.5 rounded-full bg-[#F5B32F] shadow-[0_0_12px_#F5B32F]" />ResKonnect · Your next chapter</div>
               <h2 className={cn("mb-4 text-4xl font-black leading-[0.95] text-white drop-shadow-2xl transition-all duration-700 delay-100 md:text-5xl lg:text-7xl", index === currentSlide ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0")}>{slide.title}</h2>
               <p className={cn("mb-6 max-w-3xl text-base leading-relaxed text-white/95 drop-shadow transition-all duration-700 delay-200 md:text-xl lg:text-2xl", index === currentSlide ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0")}>{slide.description}</p>
               <div className={cn("flex flex-wrap items-center gap-3 transition-all duration-700 delay-300", index === currentSlide ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0")}>
@@ -106,6 +128,8 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
         </div>
       ))}
 
+      <div className="rk-hero-gold-halo pointer-events-none absolute inset-0" aria-hidden="true" />
+      <div className="rk-hero-orbit" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-4 opacity-100 transition-opacity duration-300 md:px-8 md:opacity-0 md:group-hover:opacity-100">
         <Button variant="outline" size="icon" onClick={prevSlide} aria-label="Previous slide" className="pointer-events-auto h-12 w-12 rounded-full border-2 border-white bg-white text-[#071326] shadow-2xl hover:border-[#F5B32F] hover:bg-[#F5B32F] hover:text-[#071326]"><ChevronLeft className="h-6 w-6 text-current" /></Button>
         <Button variant="outline" size="icon" onClick={nextSlide} aria-label="Next slide" className="pointer-events-auto h-12 w-12 rounded-full border-2 border-white bg-white text-[#071326] shadow-2xl hover:border-[#F5B32F] hover:bg-[#F5B32F] hover:text-[#071326]"><ChevronRight className="h-6 w-6 text-current" /></Button>

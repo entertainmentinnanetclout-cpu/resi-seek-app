@@ -44,11 +44,18 @@ const statusOptions:Record<"application"|"reservation",string[]>={
 };
 const pretty=(v:string)=>v.replace(/_/g," ").replace(/\b\w/g,x=>x.toUpperCase());
 const signalStyle=(stage:string)=>stage==="missing"||stage==="incomplete"?"text-amber-700 dark:text-amber-400":stage==="received"?"text-blue-700 dark:text-blue-400":"text-emerald-700 dark:text-emerald-400";
-function extractError(error:any):Promise<string>{
- return (async()=>{try{
-  const body=await error?.context?.json?.();
+async function extractError(error:any):Promise<string>{
+ const response=error?.context;
+ try {
+  const body=await (typeof response?.clone==="function"?response.clone():response)?.json?.();
   if(typeof body?.error==="string")return body.error;
- }catch{/* API may return non-JSON error */}return error?.message||"Unable to complete email operation";})();
+ }catch{/* The failed response may be empty, non-JSON or blocked by CORS. */}
+ const code=Number(response?.status||0);
+ if(code===401)return "Your session has expired. Sign in again to access the Email Dock.";
+ if(code===403)return "Your account does not have permission for this email queue.";
+ if(code===503||code===502)return "ResKonnect Email Dock is temporarily unavailable (server "+code+"). Please retry.";
+ if(error?.name==="FunctionsFetchError"||/Failed to send a request to the Edge Function/i.test(String(error?.message||"")))return "Cannot connect to the Email Dock service. Check your connection and retry. If it persists, report an Edge Function outage.";
+ return error?.message||"Unable to complete email operation";
 }
 
 export default function PremiumEmailDock({mode}:{mode:Mode}){
@@ -73,6 +80,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [connectedError,setConnectedError]=useState("");
  const [busy,setBusy]=useState<string|null>(null);
  const [loading,setLoading]=useState(false);
+ const [queueError,setQueueError]=useState("");
+ const loadedQueueKeyRef=useRef("");
  const [history,setHistory]=useState<History[]>([]);
  const [defaults,setDefaults]=useState<Record<string,DocTemplate>>({});
  const [overrides,setOverrides]=useState<Override[]>([]);
@@ -121,9 +130,20 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     return [...next,...previous.filter(item=>!seen.has(item.id))];
    });
    setTotalCases(Number(r.total||0));
+   setQueueError("");
+   loadedQueueKeyRef.current=kind+":"+academicYear;
    setNextOffset(current=>preserveLoaded?current:(r.has_more?Number(r.next_offset):null));
    setSelected(old=>old||next[0]?.id||"");
-  }catch(e){if(!preserveLoaded)setItems([]);toast.error(e instanceof Error?e.message:"Email cases could not load");}
+  }catch(e){
+   const message=e instanceof Error?e.message:"Email cases could not load";
+   setQueueError(message);
+   if(!preserveLoaded){
+    if(loadedQueueKeyRef.current!==kind+":"+academicYear){
+     setItems([]);setTotalCases(0);setNextOffset(null);setCaseInfo(null);
+    }
+    toast.error("Email Dock unavailable — use Retry to reload the queue");
+   }
+  }
   finally{if(!preserveLoaded)setLoading(false);}
  },[premium,kind,academicYear]);
  const loadRemaining=async(all=false)=>{
@@ -390,11 +410,17 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={()=>setChecked(new Set())}>Clear</Button>
       </div>
      </div>
-     <p className="px-4 py-2 text-[11px] text-muted-foreground">{items.length} cases loaded of {totalCases}. Sort and filter the loaded queue, or load the remaining pages.</p>
+     {queueError&&<div role="alert" className="mx-3 mb-3 rounded-xl border border-amber-400/50 bg-amber-50 p-3 text-amber-950 dark:bg-amber-950/25 dark:text-amber-100">
+      <p className="flex items-center gap-2 text-sm font-bold"><AlertTriangle className="h-4 w-4 shrink-0"/>Email queue connection failed</p>
+      <p className="mt-1 text-xs leading-5">{queueError}</p>
+      {items.length>0&&<p className="mt-1 text-xs">Previously loaded records are shown until the connection recovers.</p>}
+      <Button type="button" size="sm" variant="outline" className="mt-2" disabled={loading} onClick={()=>void loadItems()}><RefreshCw className="mr-1.5 h-3.5 w-3.5"/>Retry loading</Button>
+     </div>}
+     <p className="px-4 py-2 text-[11px] text-muted-foreground">{queueError&&items.length===0?"Case counts unavailable until the connection recovers.":`${items.length} cases loaded of ${totalCases}. Sort and filter the loaded queue, or load the remaining pages.`}</p>
      {nextOffset!==null&&<div className="flex gap-2 px-4 pb-2"><Button variant="outline" size="sm" disabled={loadingMore} onClick={()=>void loadRemaining(false)}>Load next 100</Button><Button variant="secondary" size="sm" disabled={loadingMore} onClick={()=>void loadRemaining(true)}>{loadingMore?"Loading…":"Load all remaining"}</Button></div>}
      <ScrollArea className="h-[360px] xl:h-[650px]">
       {loading?<p className="p-6 text-center text-sm text-muted-foreground">Loading case intelligence…</p>:
-       visible.length===0?<p className="p-6 text-center text-sm text-muted-foreground">{kind==="application"&&academicYear==="2027"?"2027 applications are not open yet. Existing reservations are managed under Reservations.":"No matching cases in this view."}</p>:
+       visible.length===0?<p className="p-6 text-center text-sm text-muted-foreground">{queueError?"The case queue could not be loaded. Use Retry above.":kind==="application"&&academicYear==="2027"?"2027 applications are not open yet. Existing reservations are managed under Reservations.":"No matching cases in this view."}</p>:
        visible.map(item=><div key={item.id} className={cn("flex items-start gap-2 border-b px-3 py-3 transition-colors",selected===item.id?"bg-primary/10":"hover:bg-muted/40")}>
         <Checkbox className="mt-2" checked={checked.has(item.id)} onCheckedChange={v=>toggleSelected(item.id,v===true)} aria-label={"Select "+item.label}/>
         <button type="button" className="min-w-0 flex-1 text-left" onClick={()=>selectRecord(item.id)}>
