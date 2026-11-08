@@ -1,8 +1,10 @@
 import { PDFDocument, StandardFonts, rgb } from "npm:pdf-lib@1.17.1";
+import {readPublishedPhotoBytes} from "./residence-media.ts";
 
 export type LetterDetails={
  recipientName:string;property:string;reference:string;status:string;
  subject:string;body:string;kindLabel:string;issuedAt?:Date;
+ residenceImageUrl?:string|null;
 };
 const WIDTH=595.28,HEIGHT=841.89;
 const navy=rgb(7/255,19/255,38/255),blue=rgb(37/255,99/255,235/255),gold=rgb(245/255,179/255,47/255);
@@ -50,6 +52,9 @@ export async function createBrandedPdf(details:LetterDetails):Promise<Uint8Array
    if(bytes.length<250000)logo=await pdf.embedPng(bytes);
   }
  }catch{/* Do not make document generation depend on a public image host. */}
+ const realPhoto=await readPublishedPhotoBytes(details.residenceImageUrl);
+ let photo:any=null;
+ try{if(realPhoto)photo=realPhoto.mime==="image/png"?await pdf.embedPng(realPhoto.bytes):await pdf.embedJpg(realPhoto.bytes);}catch{/* Optional photo never prevents an official letter. */}
  const pages:any[]=[];
  const drawFooter=(page:any,index:number)=>{
   page.drawRectangle({x:0,y:0,width:WIDTH,height:92,color:navy});
@@ -80,12 +85,19 @@ export async function createBrandedPdf(details:LetterDetails):Promise<Uint8Array
    page.drawText(transliterate(details.reference).slice(0,48),{x:52,y:HEIGHT-212,size:12,font:bold,color:navy});
    page.drawText("RECORDED STATUS",{x:327,y:HEIGHT-189,size:8,font:bold,color:muted});
    page.drawText(transliterate(details.status).slice(0,28),{x:327,y:HEIGHT-212,size:11,font:bold,color:blue});
+   if(photo){
+    page.drawRectangle({x:42,y:HEIGHT-425,width:WIDTH-84,height:177,color:light});
+    const scale=Math.min((WIDTH-84)/photo.width,177/photo.height);
+    const imageW=photo.width*scale,imageH=photo.height*scale;
+    page.drawImage(photo,{x:42+((WIDTH-84)-imageW)/2,y:HEIGHT-425+(177-imageH)/2,width:imageW,height:imageH});
+    page.drawText("ACTUAL RESIDENCE LISTING PHOTO  |  "+transliterate(details.property).slice(0,40),{x:42,y:HEIGHT-444,size:8,font:bold,color:muted});
+   }
   }else{
    page.drawRectangle({x:0,y:HEIGHT-58,width:WIDTH,height:58,color:navy});
    page.drawText("RESKONNECT  |  CASE "+transliterate(details.reference).slice(0,30),{x:42,y:HEIGHT-39,size:12,font:bold,color:rgb(1,1,1)});
    page.drawRectangle({x:0,y:HEIGHT-61,width:WIDTH,height:3,color:gold});
   }
-  return {page,y:first?HEIGHT-260:HEIGHT-95};
+  return {page,y:first?(photo?HEIGHT-477:HEIGHT-260):HEIGHT-95};
  };
  let {page,y}=addPage(true);
  const maxX=WIDTH-84;
