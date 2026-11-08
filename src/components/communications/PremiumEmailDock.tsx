@@ -144,7 +144,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   if(kind==="support_enquiry")base.push("enquiry_response");
   return [...new Set(base)];
  },[kind]);
- const availableStudio=templatesForKind.filter(x=>x!=="smart");
+ const availableStudio:Template[]=templatesForKind.filter(x=>x!=="smart");
  const selectedCount=checked.size;
  const resetPreview=()=>{setPreview(null);setApproved(false);setBulkPreview([]);setBulkApproval(false);setStatusPreview([]);setStatusApproved(false);setBatchSummary(null);};
  const selectKind=(k:Kind)=>{
