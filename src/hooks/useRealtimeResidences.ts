@@ -55,7 +55,8 @@ export const useRealtimeResidences = () => {
           const price=Number(available?.visible_private_price||0);
           return {
             ...residence,
-            room_pricing:pricingByResidence.get(residence.id)||[],
+            room_pricing:(pricingByResidence.get(residence.id)||[]).filter((room:any)=>
+              Number(room.academic_year||2027)===Number(residence.pricing_year||2027)),
             available_spots:available?.visible_available_beds??residence.available_spots,
             private_price:price>0?price:residence.private_price,
             price:price>0?price:residence.price,
