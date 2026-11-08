@@ -15,6 +15,7 @@ import {Checkbox} from "@/components/ui/checkbox";
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from "@/components/ui/select";
 import {Progress} from "@/components/ui/progress";
 import type {ResidencePortalContext} from "./ResidenceLayout";
+import {listingStudioIssues,listingMinimumPrivateRent} from "@/lib/listingStudioRules";
 
 type Room={id:string;name:string;capacity:number;available_beds:number;private_price:number;deposit:number};
 type Photo={id:string;url:string;room_tag:string};
@@ -45,24 +46,6 @@ const startDraft=(r:any):Listing=>({
  has_parking:!!r.has_parking,utilities_included:!!r.utilities_included,extras:[],
  verification_method:"",agree_terms:false,video_url:r.virtual_tour_url||""
 });
-const requirements=(x:Listing)=>{
- const errs:string[]=[];
- if(x.name.trim().length<3)errs.push("Enter a residence name");
- if(x.city.trim().length<2||x.place_label.trim().length<2)errs.push("Enter city and public suburb");
- if(x.address.trim().length<5)errs.push("Enter the actual address for internal verification");
- if(x.description.trim().length<80)errs.push("Write at least 80 characters of accurate property description");
- if(!x.rooms.length)errs.push("Add at least one room type");
- if(x.rooms.length>12)errs.push("Maximum twelve different room types");
- if(new Set(x.rooms.map(r=>r.name.trim().toLowerCase())).size!==x.rooms.length)errs.push("Use unique room type names");
- if(x.rooms.some(r=>r.name.trim().length<2||!Number.isInteger(r.capacity)||r.capacity<1||
-   !Number.isInteger(r.available_beds)||r.available_beds<0||r.available_beds>r.capacity||
-   !Number.isFinite(r.private_price)||r.private_price<=0))errs.push("Correct capacity, available beds and price on every room type");
- if(x.photos.length<3)errs.push("Upload at least three real property photos");
- if(!x.lease_period||!x.move_in_date)errs.push("Provide lease duration and move-in date");
- if(!x.verification_method)errs.push("Choose the property verification route");
- if(!x.agree_terms)errs.push("Confirm the listing terms");
- return errs;
-};
 const cash=(x:number)=>"R"+Number(x||0).toLocaleString("en-ZA");
 const textField=(label:string,value:string,onChange:(v:string)=>void,placeholder?:string)=><div className="space-y-1.5"><Label>{label}</Label><Input value={value} placeholder={placeholder} onChange={e=>onChange(e.target.value)} className="h-12 text-base"/></div>;
 
@@ -80,8 +63,8 @@ export default function ResidenceListingWizard(){
  const savingRef=useRef(false);
  const editRevision=useRef(0);
  const roomTotal=useMemo(()=>listing?.rooms.reduce((sum,r)=>sum+Number(r.capacity||0),0)||0,[listing]);
- const minimumRent=listing?.rooms.map(r=>r.private_price).filter(v=>v>0).reduce((a,b)=>Math.min(a,b),Infinity)??Infinity;
- const errors=useMemo(()=>listing?requirements(listing):[],[listing]);
+ const minimumRent=listing?listingMinimumPrivateRent(listing.rooms):null;
+ const errors=useMemo(()=>listing?listingStudioIssues(listing):[],[listing]);
  const readonly=draft?.status==="submitted";
  const change=useCallback((patch:Partial<Listing>)=>{
    editRevision.current+=1;
@@ -266,6 +249,7 @@ export default function ResidenceListingWizard(){
        <div className="space-y-1"><Label>Earliest move-in date</Label><Input type="date" value={listing.move_in_date} onChange={e=>change({move_in_date:e.target.value})}/></div>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">{([["is_furnished","Furnished"],["has_wifi","Wi-Fi available"],["has_parking","Parking on site"],["utilities_included","Utilities included"]] as const).map(([key,label])=><label key={key} className="flex items-center gap-3 rounded-xl border p-3"><Checkbox checked={listing[key]} onCheckedChange={v=>change({[key]:v===true})}/><span className="text-sm font-semibold">{label}</span></label>)}</div>
+      <div className="space-y-2"><Label>Additional genuine amenities</Label><div className="grid gap-2 sm:grid-cols-2">{["Security","Study Room","Laundry","Gym","Garden","Bike Storage","Swimming Pool","Shared Kitchen"].map(item=><label key={item} className="flex items-center gap-3 rounded-xl border p-3 text-sm"><Checkbox checked={listing.extras.includes(item)} onCheckedChange={v=>change({extras:v===true?[...listing.extras,item]:listing.extras.filter(e=>e!==item)})}/><span>{item}</span></label>)}</div></div>
       <p className="text-xs text-muted-foreground">Only confirm amenities that exist. Fees, tenancy and official university accreditation are verified separately by staff.</p>
      </div>}
      {step===4&&<div className="space-y-4">
@@ -276,7 +260,7 @@ export default function ResidenceListingWizard(){
      </div>}
      {step===5&&<div className="space-y-4">
        {listing.photos[0]&&<img src={listing.photos[0].url} alt="Residence listing cover preview" className="aspect-[16/9] w-full rounded-xl object-cover"/>}
-       <div><p className="text-xs font-bold uppercase text-primary">Listing preview</p><h3 className="mt-1 text-2xl font-black">{listing.name||"Unnamed residence"}</h3><p className="mt-1 text-sm text-muted-foreground">{[listing.place_label,listing.city].filter(Boolean).join(", ")} · {roomTotal} beds · from {cash(Number.isFinite(minimumRent)?minimumRent:0)} / month</p></div>
+       <div><p className="text-xs font-bold uppercase text-primary">Listing preview</p><h3 className="mt-1 text-2xl font-black">{listing.name||"Unnamed residence"}</h3><p className="mt-1 text-sm text-muted-foreground">{[listing.place_label,listing.city].filter(Boolean).join(", ")} · {roomTotal} beds · from {cash(minimumRent||0)} / month</p></div>
        <p className="whitespace-pre-line text-sm">{listing.description||"Add an accurate description of your accommodation."}</p>
        <div className="grid gap-2 sm:grid-cols-2">{rooms.map(r=><div key={r.id} className="rounded-xl border p-3 text-sm"><strong>{r.name}</strong><p className="text-muted-foreground">{r.available_beds}/{r.capacity} beds reported · {cash(r.private_price)}/month</p></div>)}</div>
        {errors.length>0?<div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:bg-amber-950 dark:text-amber-100"><p className="font-bold">Complete these items before submitting:</p><ul className="mt-2 list-inside list-disc space-y-1 text-xs">{errors.map(e=><li key={e}>{e}</li>)}</ul></div>:<div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm"><Check className="h-5 w-5 text-emerald-600"/> All required fields are complete. Staff will verify before publishing.</div>}
