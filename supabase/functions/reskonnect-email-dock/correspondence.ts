@@ -5,7 +5,7 @@
 export type Kind = "application"|"reservation"|"housing_lead"|"support_enquiry";
 export type TemplateKey = "smart"|"acknowledgement"|"documents_needed"|"documents_received"|"approved"|"rejected"|"conditionally_approved"|"status_update"|"feedback"|"next_steps"|"enquiry_response"|"viewing_invite"|"follow_up"|"reservation_confirmed";
 export const KINDS:Kind[]=["application","reservation","housing_lead","support_enquiry"];
-export const APPLICATION_STATUSES=["submitted","under_review","documents_required","conditionally_approved","approved","rejected","withdrawn"];
+export const APPLICATION_STATUSES=["submitted","under_review","documents_required","interview_scheduled","waitlisted","conditionally_approved","approved","rejected","withdrawn"];
 export const RESERVATION_STATUSES=["reserved","contacted","provisional_hold","confirmed","cancelled"];
 export const TEMPLATES:Record<Exclude<TemplateKey,"smart">,{name:string;subject:string;body:string}>={
   acknowledgement:{name:"Application / reservation receipt",subject:"ResKonnect | We received your {{kind_label}} | {{reference}}",
