@@ -31,7 +31,7 @@ type EmailPreview={subject:string;body:string;html:string;template_name:string;r
 type DocTemplate={name:string;subject:string;body:string};
 type Override={target_kind:Kind;template_key:Template;subject_template:string;body_template:string};
 type History={id:string;subject:string;target_kind:Kind;template_key:string;delivery_status:string;recipient_email:string;created_at:string;failure_code:string|null;pdf_attached:boolean};
-type BulkResult={id:string;ok?:boolean;updated?:boolean;sent?:boolean;label?:string;from?:string;to?:string;reason?:string;error?:string;subject?:string;resolved_key?:Template;document_signal?:Signal};
+type BulkResult={id:string;ok?:boolean;updated?:boolean;sent?:boolean;label?:string;status?:string;from?:string;to?:string;reason?:string;error?:string;subject?:string;resolved_key?:Template;document_signal?:Signal};
 const kindLabels:Record<Kind,string>={application:"Applications",reservation:"Reservations",housing_lead:"Housing enquiries",support_enquiry:"Support enquiries"};
 const statusOptions:Record<"application"|"reservation",string[]>={
  application:["submitted","under_review","documents_required","conditionally_approved","approved","rejected","withdrawn"],
