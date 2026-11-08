@@ -4,6 +4,7 @@ import {
   BedDouble,
   Building2,
   Camera,
+  CalendarDays,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
