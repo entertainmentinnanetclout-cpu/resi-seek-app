@@ -73,7 +73,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [studioKey,setStudioKey]=useState<Template>("documents_needed");
  const [studioSubject,setStudioSubject]=useState("");
  const [studioBody,setStudioBody]=useState("");
- const [pane,setPane]=useState<"compose"|"whatsapp"|"bulk"|"templates"|"history">("compose");
+ const [pane,setPane]=useState<"compose"|"whatsapp"|"bulk"|"templates"|"history">(params.get("channel")==="whatsapp"?"whatsapp":"compose");
  const [bulkPreview,setBulkPreview]=useState<BulkResult[]>([]);
  const [bulkApproval,setBulkApproval]=useState(false);
  const [newStatus,setNewStatus]=useState("");
@@ -155,7 +155,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   const next=new URLSearchParams(params);next.set("kind",k);next.delete("target");setParams(next,{replace:true});
  };
  const selectRecord=(id:string)=>{
-  setSelected(id);setPane("compose");setTemplate("smart");setNote("");resetPreview();
+  setSelected(id);setTemplate("smart");setNote("");resetPreview();
   const next=new URLSearchParams(params);next.set("kind",kind);next.set("target",id);setParams(next,{replace:true});
  };
  const toggleSelected=(id:string,checkedNow:boolean)=>{
