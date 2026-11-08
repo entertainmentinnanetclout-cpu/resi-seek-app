@@ -213,7 +213,7 @@ try {
   // expose recovery before any account-specific redirect occurs.
   failure.accessOnce=true;
   await page.getByRole("button",{name:"Sign In",exact:true}).click();
-  await page.getByText("We couldn't verify your ResKonnect account access.",{exact:true}).waitFor({timeout:15000});
+  await page.getByText(/Your signed-in session is saved, but account permissions could not be verified/).waitFor({timeout:15000});
   assert.ok(page.url().endsWith("/auth"),"auth page redirected before access verification");
   await page.getByRole("button",{name:"Retry account check"}).click();
   await page.waitForURL("**/dashboard");
