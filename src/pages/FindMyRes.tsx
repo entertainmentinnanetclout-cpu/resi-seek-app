@@ -231,8 +231,8 @@ const FindMyRes = () => {
   return (
     <DashboardLayout>
       <SEO
-        title="ResKonnect Find My Res | Search Verified Student Accommodation"
-        description="Browse and apply to verified accommodation for university students, TVET college students and private applicants. NSFAS options available."
+        title="ResKonnect Find My Res | Student Accommodation & Room Search"
+        description="Explore student accommodation by area, campus, room type and price. Listing evidence, funding acceptance and verification status are shown separately."
         keywords="TVET accommodation, university student accommodation, private student rentals, NSFAS residence, Pretoria accommodation"
       />
       <div className="min-h-screen bg-background">

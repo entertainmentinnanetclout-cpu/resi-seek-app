@@ -118,6 +118,15 @@ export function FilterSidebar({ filters, updateFilter, resetFilters, activeFilte
 
             <Separator />
 
+            {/* Property evidence - evidence claims are distinct from official accreditation. */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase text-muted-foreground">Listing evidence</Label>
+              <label className="flex items-center gap-2 text-sm"><Checkbox checked={filters.photoOnly} onCheckedChange={(checked) => updateFilter("photoOnly", checked === true)} />Photo reference available</label>
+              <label className="flex items-center gap-2 text-sm"><Checkbox checked={filters.priceVerifiedOnly} onCheckedChange={(checked) => updateFilter("priceVerifiedOnly", checked === true)} />Verified monthly rent</label>
+              <p className="text-xs leading-relaxed text-muted-foreground">Unpriced properties never match a budget. Reported distances exclude unknown values and are not verified route estimates.</p>
+            </div>
+            <Separator />
+
             {/* Section Category */}
             {sections.length > 0 && (
               <>

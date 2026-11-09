@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 // A WebView can resume with a stale network connection. A request must never
 // leave Find My Res on a permanent skeleton, even if the network never replies.
 const RESIDENCE_REQUEST_TIMEOUT_MS = 12_000;
-const RESIDENCE_CACHE_KEY = 'rk_public_residences_cache_v1';
+const RESIDENCE_CACHE_KEY = 'rk_public_residences_cache_v2';
 const RESIDENCE_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 export const useRealtimeResidences = () => {
@@ -32,10 +32,11 @@ export const useRealtimeResidences = () => {
           setError(null);
         }
         const db = supabase as any;
-        const [residenceResult, roomPricingResult, inventoryResult] = await Promise.all([
-          supabase.from('residences').select('*').abortSignal(controller.signal),
+        const [residenceResult, roomPricingResult, inventoryResult, readinessResult] = await Promise.all([
+          db.from('residences').select('*').eq('is_visible', true).abortSignal(controller.signal),
           db.from('residence_room_types').select('*').eq('is_active', true).abortSignal(controller.signal),
           db.from('reskonnect_discovery_inventory_v').select('residence_id,visible_available_beds,visible_private_price,availability_source,room_type_count').abortSignal(controller.signal),
+          db.from('reskonnect_marketplace_readiness_v').select('residence_id,readiness_score,marketplace_review_ready,has_photo_reference,has_verified_private_price,has_verified_location,readiness_gaps').abortSignal(controller.signal),
         ]);
         if (residenceResult.error) throw residenceResult.error;
 
@@ -50,6 +51,8 @@ export const useRealtimeResidences = () => {
 
         const inventoryByResidence=new Map<string,any>();
         if(!inventoryResult.error)(inventoryResult.data||[]).forEach((entry:any)=>inventoryByResidence.set(entry.residence_id,entry));
+        const readinessByResidence=new Map<string,any>();
+        if(!readinessResult.error)(readinessResult.data||[]).forEach((entry:any)=>readinessByResidence.set(entry.residence_id,entry));
         const merged=(residenceResult.data||[]).map((residence:any)=>{
           const available=inventoryByResidence.get(residence.id);
           const price=Number(available?.visible_private_price||0);
@@ -61,6 +64,7 @@ export const useRealtimeResidences = () => {
             private_price:price>0?price:residence.private_price,
             price:price>0?price:residence.price,
             inventory_source:available?.availability_source||"listing_reported",
+            listing_readiness:readinessByResidence.get(residence.id)||null,
             room_type_count:Number(available?.room_type_count||0)
           };
         });

@@ -21,6 +21,7 @@ import SectionsManager from "@/components/admin/SectionsManager";
 import { useResidenceSections } from "@/hooks/useResidenceSections";
 import { BulkAudienceActions } from "@/components/admin/residences/BulkAudienceActions";
 import AdminListingReview from "@/components/admin/AdminListingReview";
+import AdminMarketplaceReadiness from "@/components/admin/AdminMarketplaceReadiness";
 
 interface Residence {
   id: string;
@@ -308,6 +309,7 @@ export const AdminResidencesContent = () => {
           <TabsList>
             <TabsTrigger value="all">All Residences</TabsTrigger>
             <TabsTrigger value="listing-review" className="gap-2"><Sparkles className="h-4 w-4"/>Listing reviews</TabsTrigger>
+            <TabsTrigger value="readiness">Listing readiness</TabsTrigger>
             <TabsTrigger value="trusted" className="gap-2">
               <Grid3X3 className="w-4 h-4" />
               Trusted Grid
@@ -319,6 +321,7 @@ export const AdminResidencesContent = () => {
           </TabsList>
 
           <TabsContent value="listing-review" className="space-y-4"><AdminListingReview/></TabsContent>
+          <TabsContent value="readiness" className="space-y-4"><AdminMarketplaceReadiness residences={residences}/></TabsContent>
           <TabsContent value="all" className="space-y-4">
             <div className="flex justify-end">
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

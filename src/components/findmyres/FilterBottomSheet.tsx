@@ -1,4 +1,5 @@
 import { SlidersHorizontal } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -23,8 +24,9 @@ export function FilterBottomSheet({
   sections,
   resultCount,
 }: FilterBottomSheetProps) {
+  const [open, setOpen] = useState(false);
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
           variant="outline"
@@ -55,7 +57,7 @@ export function FilterBottomSheet({
           />
         </div>
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
-          <Button className="w-full h-12 text-base">
+          <Button className="w-full h-12 text-base" onClick={() => setOpen(false)}>
             Show {resultCount} Results
           </Button>
         </div>

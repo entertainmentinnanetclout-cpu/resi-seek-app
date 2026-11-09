@@ -3,6 +3,7 @@ import { Building2, Camera, MapPin, ShieldCheck } from "lucide-react";
 import { BRAND } from "@/constants/brand";
 import ResidencePosterDownloadButton from "@/components/findmyres/ResidencePosterDownloadButton";
 import VirtualTourMarketBadge from "@/components/virtualTours/VirtualTourMarketBadge";
+import { publicPrivateMonthlyRent } from "@/lib/residenceListingEvidence";
 
 interface ResidenceBrandStudioCardProps {
   residence: any;
@@ -38,7 +39,6 @@ const galleryImages = (residence: any) => {
     residence?.cover_image_url,
     ...raw,
     residence?.image_url,
-    residence?.studio_image_url,
   ]
     .map(imageUrl)
     .filter(Boolean) as string[];
@@ -56,7 +56,7 @@ export default function ResidenceBrandStudioCard({ residence, className = "", sh
   const headline = residence?.brand_headline || residence?.name || "Student Accommodation";
   const subheadline = residence?.brand_subheadline || "STUDENT ACCOMMODATION, CONNECTED";
   const badge = residence?.brand_badge || "RESKONNECT LIVING";
-  const price = money(residence?.promo_price || residence?.private_price || residence?.price);
+  const price = money(publicPrivateMonthlyRent(residence));
   const style = { "--rk-navy": navy, "--rk-gold": gold } as CSSProperties;
 
   return (

@@ -4,6 +4,7 @@ import { BedDouble, Bike, Building2, Bus, Car, CheckCircle2, Clock3, ExternalLin
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { TravelMode } from "@/lib/resmap/spatial";
+import { hasVerifiedLocation, publicPrivateMonthlyRent } from "@/lib/residenceListingEvidence";
 
 interface NearbyPlace { name: string; kind: string; distanceKm?: number; }
 interface RouteInfo { distance_m: number; duration_s: number; provider: string; profile: TravelMode; }
@@ -26,10 +27,10 @@ export default function ResMapResidenceCard({ residence, routeInfo, nearby = [],
   const image = residence.cover_image_url || residence.image_url || (Array.isArray(residence.images) ? residence.images[0] : null);
   const slug = residence.slug || residence.id;
   const spots = Number(residence.available_spots || 0);
-  const price = residence.accepts_nsfas && residence.nsfas_price ? residence.nsfas_price : residence.private_price || residence.price;
+  const price = publicPrivateMonthlyRent(residence);
   const ModeIcon = iconForMode(travelMode);
   const roomTypes = useMemo(() => Array.from(new Set([...(residence.room_types || []), residence.room_type].filter(Boolean))) as string[], [residence]);
-  const approximate = residence.location_verification_status === "approximate" || residence.geocode_source === "campus_area_approximation";
+  const approximate = !hasVerifiedLocation(residence) || residence.geocode_source === "campus_area_approximation";
 
   const startRoute = async () => {
     if (routing || approximate) return;
@@ -58,10 +59,10 @@ export default function ResMapResidenceCard({ residence, routeInfo, nearby = [],
             className="absolute right-3 top-2 grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-slate-950/65 text-white shadow-lg backdrop-blur sm:top-3"
             aria-label="Close residence card"
           ><X className="h-5 w-5" /></button>
-          <div className="absolute left-3 top-2 flex flex-wrap gap-1.5 sm:top-3">{approximate ? <Badge className="border border-amber-300 bg-amber-500/90 text-white">Approximate area pin</Badge> : <Badge className="border border-emerald-300 bg-emerald-600/90 text-white">Mapped location</Badge>}</div>
+          <div className="absolute left-3 top-2 flex flex-wrap gap-1.5 sm:top-3">{approximate ? <Badge className="border border-amber-300 bg-amber-500/90 text-white">Location not verified</Badge> : <Badge className="border border-emerald-300 bg-emerald-600/90 text-white">Verified location</Badge>}</div>
           <div className="absolute bottom-2.5 left-3 right-3 flex items-end justify-between gap-2 text-white sm:bottom-3">
             <div className="min-w-0"><p className="truncate text-base font-black sm:text-lg">{residence.name}</p><p className="flex items-center gap-1 truncate text-[11px] text-white/85 sm:text-xs"><MapPin className="h-3.5 w-3.5 shrink-0" />{residence.canonical_address || residence.place_label || residence.address || residence.campus}</p></div>
-            <span className="shrink-0 rounded-full bg-white/95 px-2.5 py-1 text-xs font-black text-slate-950 sm:px-3 sm:text-sm">{money(price)}/mo</span>
+            <span className="shrink-0 rounded-full bg-white/95 px-2.5 py-1 text-xs font-black text-slate-950 sm:px-3 sm:text-sm">{money(price)}{price !== null ? "/mo" : ""}</span>
           </div>
         </div>
       </div>
@@ -76,7 +77,7 @@ export default function ResMapResidenceCard({ residence, routeInfo, nearby = [],
             <Badge variant="outline" className={spots > 5 ? "border-emerald-300 text-emerald-700" : spots > 0 ? "border-amber-300 text-amber-700" : "border-slate-300"}>{spots > 0 ? `${spots} spaces` : "Check availability"}</Badge>
           </div>
 
-          {approximate && <div className="rounded-2xl border border-amber-300/70 bg-amber-50 p-3 text-xs leading-relaxed text-amber-950">This pin is an area-level fallback while the exact entrance is being verified. Routing is disabled until the entrance coordinate is confirmed.</div>}
+          {approximate && <div className="rounded-2xl border border-amber-300/70 bg-amber-50 p-3 text-xs leading-relaxed text-amber-950">This map pin has not been independently confirmed as the property entrance. Directions remain disabled until the location is verified.</div>}
           {routeInfo && !approximate && <div className="grid grid-cols-2 gap-2 rounded-2xl border bg-slate-50 p-3 text-sm dark:bg-slate-900"><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground sm:text-[11px]">Travel time</p><p className="mt-1 flex items-center gap-1 font-bold"><ModeIcon className="h-4 w-4" />{Math.max(1, Math.round(routeInfo.duration_s / 60))} min</p></div><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground sm:text-[11px]">Route distance</p><p className="mt-1 font-bold">{(routeInfo.distance_m / 1000).toFixed(1)} km</p></div></div>}
 
           {nearby.length > 0 && <div><div className="mb-2 flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /><p className="text-sm font-bold">Nearby on the live map</p></div><div className="flex gap-2 overflow-x-auto pb-1">{nearby.slice(0, 6).map((place) => <div key={`${place.name}-${place.kind}`} className="min-w-[140px] rounded-xl border bg-background p-2"><p className="truncate text-xs font-semibold">{place.name}</p><p className="mt-0.5 text-[10px] capitalize text-muted-foreground">{place.kind}{place.distanceKm != null ? ` · ${place.distanceKm.toFixed(1)} km` : ""}</p></div>)}</div></div>}

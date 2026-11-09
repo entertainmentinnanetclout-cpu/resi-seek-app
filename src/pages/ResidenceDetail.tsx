@@ -49,6 +49,7 @@ import { RESKONNECT_WHATSAPP } from "@/lib/constants";
 import { captureApplicationReferral } from "@/lib/referrals/referralApi";
 import { readReferral, savePendingApplication } from "@/lib/referrals/referralStorage";
 import { toast } from "sonner";
+import { publicPrivateMonthlyRent, hasVerifiedPrivateRent, isPublishedPromotionCurrent, hasVerifiedLocation } from "@/lib/residenceListingEvidence";
 
 type RoomPrice = {
   id: string;
@@ -86,7 +87,7 @@ const getImages = (residence: any) => {
     : Array.isArray(residence?.gallery_images)
       ? residence.gallery_images
       : [];
-  const candidates = [residence?.cover_image_url, ...raw, residence?.image_url, residence?.studio_image_url]
+  const candidates = [residence?.cover_image_url, ...raw, residence?.image_url]
     .map(normalizeImage)
     .filter(Boolean) as string[];
   return Array.from(new Set(candidates));
@@ -122,7 +123,7 @@ const ResidenceDetail = () => {
   const residenceId = residence?.id as string | undefined;
   const images = useMemo(() => getImages(residence), [residence]);
   const heroImage = images[0] || null;
-  const privatePrice = money(residence?.promo_active && residence?.promo_price ? residence.promo_price : residence?.private_price || residence?.price);
+  const privatePrice = money(publicPrivateMonthlyRent({ ...residence, room_pricing: roomPrices }));
   const nsfasPrice = money(residence?.nsfas_price);
   const available = Number(residence?.available_spots || 0);
   const capacity = Number(residence?.capacity || 0);
@@ -303,11 +304,8 @@ const ResidenceDetail = () => {
   // but must not compete with a published property's human-readable slug.
   const canonicalPath = residence.slug ? `/find-my-res/${residence.slug}` : `/res/${residence.id}`;
   const canonicalUrl = `https://www.reskonnect.org${canonicalPath}`;
-  const confirmedMonthly = Number(
-    (residence.promo_active && residence.promo_price) ||
-    residence.private_price || residence.price || 0,
-  );
-  const verifiedMonthlyOffer = Boolean(residence.price_verified_at) && confirmedMonthly > 0;
+  const confirmedMonthly = publicPrivateMonthlyRent({ ...residence, room_pricing: roomPrices }) ?? 0;
+  const verifiedMonthlyOffer = hasVerifiedPrivateRent({ ...residence, room_pricing: roomPrices }) && confirmedMonthly > 0;
   const jsonLd = [
     {
       "@context": "https://schema.org",
@@ -318,7 +316,7 @@ const ResidenceDetail = () => {
       image: images,
       address: {
         "@type": "PostalAddress",
-        ...(residence.address ? { streetAddress: residence.address } : {}),
+        ...(hasVerifiedLocation(residence) && residence.address ? { streetAddress: residence.address } : {}),
         ...(residence.city ? { addressLocality: residence.city } : {}),
         ...(residence.province ? { addressRegion: residence.province } : {}),
         addressCountry: "ZA",
@@ -373,7 +371,7 @@ const ResidenceDetail = () => {
                   <Badge className="bg-[#E09008] font-black text-[#00102f] hover:bg-[#E09008]">{residence.brand_badge || "RESKONNECT LIVING"}</Badge>
                   {is2027Open && <Badge className="border border-white/20 bg-white/10 text-white hover:bg-white/10">2027 RESERVATIONS OPEN</Badge>}
                   {!intakeOpen&&<Badge className="border border-white/20 bg-white/10 text-white hover:bg-white/10">APPLICATIONS CLOSED</Badge>}
-                  {residence.promo_active && <Badge className="bg-emerald-500 text-white hover:bg-emerald-500">{residence.promo_badge || "PROMO"}</Badge>}
+                  {isPublishedPromotionCurrent(residence) && <Badge className="bg-emerald-500 text-white hover:bg-emerald-500">{residence.promo_badge || "PROMO"}</Badge>}
                 </div>
 
                 <div className="mt-7 max-w-3xl">
@@ -412,7 +410,7 @@ const ResidenceDetail = () => {
 
           <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr),360px]">
             <div className="min-w-0 space-y-5">
-              {residence.promo_active && <Card className="overflow-hidden border-[#E09008]/30 bg-[#E09008]/[0.06]"><CardContent className="p-5"><div className="flex items-start gap-3"><Sparkles className="mt-1 h-5 w-5 shrink-0 text-[#E09008]" /><div><p className="font-black">{residence.promo_title || "Residence promotion"}</p><p className="mt-1 text-sm text-muted-foreground">{residence.promo_description || "A promotional accommodation offer is currently available."}</p>{residence.promo_room_type && <Badge variant="outline" className="mt-3">{residence.promo_room_type}</Badge>}</div></div></CardContent></Card>}
+              {isPublishedPromotionCurrent(residence) && <Card className="overflow-hidden border-[#E09008]/30 bg-[#E09008]/[0.06]"><CardContent className="p-5"><div className="flex items-start gap-3"><Sparkles className="mt-1 h-5 w-5 shrink-0 text-[#E09008]" /><div><p className="font-black">{residence.promo_title || "Residence promotion"}</p><p className="mt-1 text-sm text-muted-foreground">{residence.promo_description || "A promotional accommodation offer is currently available."}</p>{residence.promo_room_type && <Badge variant="outline" className="mt-3">{residence.promo_room_type}</Badge>}</div></div></CardContent></Card>}
 
               <Card><CardContent className="p-5 sm:p-6"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">About this residence</p><h2 className="mt-1 text-2xl font-black">Living details</h2></div><TrustScore verificationLevel={residence.verification_level || "basic"} averageRating={averageRating} reviewCount={reviews.length} /></div><p className="mt-4 text-sm leading-7 text-muted-foreground">{residence.description || "Property information is being completed by the residence through the ResKonnect Property OS."}</p><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Info icon={MapPin} label="Location" value={residence.address || locationLabel} /><Info icon={Users} label="Available spots" value={capacity > 0 ? `${available} / ${capacity}` : `${available}`} /><Info icon={BedDouble} label="Room types" value={roomTypes.length ? roomTypes.join(", ") : "Contact ResKonnect"} /><Info icon={Clock3} label="Distance" value={residence.distance_from_campus || "Map available"} /></div></CardContent></Card>
 
