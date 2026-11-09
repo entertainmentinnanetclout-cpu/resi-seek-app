@@ -6,7 +6,7 @@ const net = code("src/integrations/supabase/client.ts");
 const ctx = code("src/contexts/AuthContext.tsx");
 const status = code("src/components/ConnectivityStatus.tsx");
 const cron = code("supabase/migrations/20261110000000_auth_database_load_budget.sql");
-const trigger = code("supabase/migrations/20261110001000_auth_identity_trigger_fast_path.sql");
+const trigger = code("supabase/migrations/20261110001000_auth_identity_trigger_fast_path.sql").split("-- Reversal")[0];
 
 test("a backend HTTP 500/504 is distinguished from a client network outage",()=>{
   assert.match(net,/\[500, 502, 503, 504\]\.includes\(response\.status\)/);
