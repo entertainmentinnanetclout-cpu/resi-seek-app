@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "auth:check": "node scripts/auth-service-outage.test.mjs && node scripts/auth-backend-resilience.test.mjs",
+    "auth:check": "node scripts/auth-service-outage.test.mjs && node scripts/auth-backend-resilience.test.mjs && node scripts/cron-schedule-budget.test.mjs",
     "marketplace:check": "node scripts/marketplace-quality.test.mjs",
     "build": "npm run auth:check && npm run marketplace:check && npm run link:check && npm run brain:check && npm run luna:check && npm run platform:check && npm run stability:check && npm run platform:p5-p8 && npm run release:p11 && npm run release:p12 && npm run web:check && npm run seo:check && npm run 360:check && vite build && node scripts/emit-android-assetlinks.mjs && npm run platform:p9 && node scripts/prerender-seo.mjs && node scripts/emit-private-spa-entries.mjs",
     "build:dev": "vite build --mode development",
