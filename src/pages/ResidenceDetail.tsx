@@ -299,20 +299,62 @@ const ResidenceDetail = () => {
 
   const averageRating = reviews.length ? reviews.reduce((sum, row) => sum + Number(row.rating || 0), 0) / reviews.length : 0;
   const schemaImage = heroImage || residence.image_url || undefined;
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Accommodation",
-    name: residence.name,
-    description: residence.description,
-    image: images,
-    address: { "@type": "PostalAddress", streetAddress: residence.address, addressLocality: residence.city || "Pretoria", addressRegion: residence.province || "Gauteng", addressCountry: "ZA" },
-    amenityFeature: amenities.map((name: string) => ({ "@type": "LocationFeatureSpecification", name, value: true })),
-    url: `https://www.reskonnect.org/res/${residence.id}`,
-  };
+  // Canonical URLs follow the public sitemap; old /res/:id links remain usable
+  // but must not compete with a published property's human-readable slug.
+  const canonicalPath = residence.slug ? `/find-my-res/${residence.slug}` : `/res/${residence.id}`;
+  const canonicalUrl = `https://www.reskonnect.org${canonicalPath}`;
+  const confirmedMonthly = Number(
+    (residence.promo_active && residence.promo_price) ||
+    residence.private_price || residence.price || 0,
+  );
+  const verifiedMonthlyOffer = Boolean(residence.price_verified_at) && confirmedMonthly > 0;
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Accommodation",
+      "@id": `${canonicalUrl}#residence`,
+      name: residence.name,
+      description: residence.description || `Student accommodation in ${residence.city || residence.province || "South Africa"}.`,
+      image: images,
+      address: {
+        "@type": "PostalAddress",
+        ...(residence.address ? { streetAddress: residence.address } : {}),
+        ...(residence.city ? { addressLocality: residence.city } : {}),
+        ...(residence.province ? { addressRegion: residence.province } : {}),
+        addressCountry: "ZA",
+      },
+      amenityFeature: amenities.filter((item: unknown) => typeof item === "string").map((name: string) => ({
+        "@type": "LocationFeatureSpecification", name, value: true,
+      })),
+      ...(roomTypes.length ? { additionalProperty: [{
+        "@type": "PropertyValue", name: "Room types", value: roomTypes.join(", "),
+      }] } : {}),
+      ...(verifiedMonthlyOffer ? { offers: {
+        "@type": "Offer",
+        price: confirmedMonthly,
+        priceCurrency: "ZAR",
+        priceSpecification: {
+          "@type": "UnitPriceSpecification",
+          price: confirmedMonthly, priceCurrency: "ZAR", unitText: "MONTH",
+        },
+        url: canonicalUrl,
+      } } : {}),
+      url: canonicalUrl,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: "https://www.reskonnect.org/" },
+        { "@type": "ListItem", position: 2, name: "Student accommodation", item: "https://www.reskonnect.org/student-accommodation" },
+        { "@type": "ListItem", position: 3, name: residence.name, item: canonicalUrl },
+      ],
+    },
+  ];
 
   return (
     <DashboardLayout>
-      <SEO title={`${residence.name} | Student Accommodation | ResKonnect`} description={residence.description || `View pricing, rooms, photos and 2027 reservations for ${residence.name}.`} imageUrl={schemaImage} jsonLd={jsonLd} />
+      <SEO title={`${residence.name}${residence.city ? ` · ${residence.city}` : ""} | Student Accommodation | ResKonnect`} description={residence.description || `View published room details, photos, funding acceptance and reservation information for ${residence.name}${residence.city ? ` in ${residence.city}` : ""}. Confirm current availability and pricing with the residence.`} canonicalPath={canonicalPath} noIndex={residence.is_visible === false} imageUrl={schemaImage} jsonLd={jsonLd} />
       <div className="min-w-0 max-w-full overflow-x-hidden">
         <div className="mx-auto max-w-7xl space-y-5 px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
           <ReferralBanner />
