@@ -213,10 +213,15 @@ export const AdminResidencePortalsContent = () => {
 
     setIsCreating(true);
     try {
-      await managePortal({action:"create",residence_id:selectedResidence,email:newEmail,
+      const outcome=await managePortal({action:"create",residence_id:selectedResidence,email:newEmail,
         password:newPassword,portal_role:newRole});
-
-      toast.success('Portal account created successfully');
+      toast.success(outcome.invitation_sent
+        ? "Secure invitation sent. The new team member should open their email to activate the login."
+        : outcome.existing_login
+          ? "Existing verified account linked. The member can use their current ResKonnect password."
+          : "Residence portal login created successfully.");
+      if(outcome.archived_legacy_contact)
+        toast.info("An imported contact record was preserved separately; the new login has its own verified identity.");
       setShowCreateDialog(false);
       setSelectedResidence("");
       setNewEmail("");
@@ -263,9 +268,13 @@ export const AdminResidencePortalsContent = () => {
     if(!editing)return;
     setIsSavingEdit(true);
     try{
-      await managePortal({action:"update",account_id:editing.id,
+      const outcome=await managePortal({action:"update",account_id:editing.id,
         new_residence_id:editResidenceId,email:editEmail,is_active:editActive,portal_role:editRole});
-      toast.success("Residence portal account updated");
+      toast.success(outcome.replaced
+        ? outcome.invitation_sent
+          ? "Replacement invitation sent. The previous user's ResKonnect account remains unchanged."
+          : "Residence login replaced. The previous user's personal login remains unchanged."
+        : "Residence portal account updated");
       setEditing(null);await fetchData();
     }catch(e){toast.error(getReadableError(e,"Could not save portal account"));}
     finally{setIsSavingEdit(false);}
@@ -555,7 +564,7 @@ export const AdminResidencePortalsContent = () => {
             </div>
             <div className="space-y-2"><Label htmlFor="portal-edit-email">Portal login email</Label>
               <Input id="portal-edit-email" type="email" value={editEmail} onChange={e=>setEditEmail(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Changing a shared student/admin login email is blocked for account safety.</p>
+              <p className="text-xs text-muted-foreground">Changing this address replaces only this residence's portal login. It does not rename or reset the previous person's ResKonnect account. An existing verified user keeps their password; a new email receives an activation invitation. Save role or residence changes separately before replacing an email.</p>
             </div>
             <div className="space-y-2"><Label>Team role</Label>
               <Select value={editRole} onValueChange={v=>setEditRole(v as typeof editRole)}>
@@ -580,9 +589,9 @@ export const AdminResidencePortalsContent = () => {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Residence Portal</DialogTitle>
+            <DialogTitle>Add residence team login</DialogTitle>
             <DialogDescription>
-              Add one of up to three team logins for this residence.
+              Add up to three owner, manager or admin accounts per residence. Existing accounts are linked without changing passwords, and new members can be invited by email.
             </DialogDescription>
           </DialogHeader>
           
@@ -634,7 +643,7 @@ export const AdminResidencePortalsContent = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Password</Label>
+              <Label>Temporary password (optional)</Label>
               <Input
                 type="password"
                 placeholder="At least 12 characters for a new login"
@@ -642,12 +651,12 @@ export const AdminResidencePortalsContent = () => {
                 onChange={(e) => setNewPassword(e.target.value)}
               />
               <p className="text-[10px] text-muted-foreground">
-                Use 12 or more characters for new logins. Leave blank to link an existing verified ResKonnect account.
+                Leave blank to send a secure activation invitation. If you set a 12+ character temporary password, share it privately with the account owner. Existing ResKonnect accounts always keep their original passwords.
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label>Confirm Password</Label>
+              <Label>Confirm temporary password</Label>
               <Input
                 type="password"
                 placeholder="Re-enter password"
@@ -669,7 +678,7 @@ export const AdminResidencePortalsContent = () => {
               disabled={isCreating || !selectedResidence || !newEmail || (Boolean(newPassword) && newPassword.length<12)}
             >
               {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Portal
+              Add team member
             </Button>
           </DialogFooter>
         </DialogContent>
