@@ -219,6 +219,10 @@
       "destination": "/_seo/home"
     },
     {
+      "source": "/privacy",
+      "destination": "/_seo/privacy"
+    },
+    {
       "source": "/living",
       "destination": "/_seo/living"
     },
