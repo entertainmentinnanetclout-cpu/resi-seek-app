@@ -2,7 +2,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const DIST = path.resolve("dist");
-const sourcePath = path.join(DIST, "index.html");
+// The physical index is now crawlable homepage HTML. Private and wildcard
+// navigation must use the original Vite app shell without homepage content.
+const sourcePath = path.join(DIST, "_spa", "fallback.html");
 const source = await fs.readFile(sourcePath, "utf8");
 
 const replaceOrInsert = (html, regex, tag) => regex.test(html)
