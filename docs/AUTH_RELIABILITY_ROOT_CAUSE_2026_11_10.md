@@ -19,7 +19,7 @@ Five existing cron jobs rescheduled and staggered; their scheduled starts reduce
 - Rebuild and run web/Android auth regression suite.
 
 ## Auth trigger migration
-The migration removing `last_sign_in_at` from the synchronous trigger is separately tracked. The existing deferred `identity-sync` function records last login. Apply to external Supabase only once service allows migration history writes, confirm the exact resulting definition; the trigger must continue covering metadata updates. Never silently claim applied if migration failed.
+The narrow migration removing `last_sign_in_at` from the synchronous trigger was **applied and verified on external Supabase** using `auth_identity_trigger_fast_path_20261110`. The resulting `auth.users` trigger continues covering email/confirmation and metadata edits; the existing deferred `identity-sync` function records last login after verified access.
 
 ## Safety / scope and unresolved
 - A zero-downtime guarantee is impossible. Do not accept expired tokens, bypass RLS, copy session JWTs to another auth provider, or turn off password verification.
