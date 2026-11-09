@@ -331,7 +331,9 @@ const Auth = () => {
           {error && <div role="alert" className={serviceUnavailable ? "mb-4 space-y-2 rounded-lg border border-amber-400/70 bg-amber-50 p-3 text-sm text-amber-950" : "mb-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"}>
             {serviceUnavailable && <p className="font-bold">Authentication service temporarily unavailable</p>}
             <p>{error}</p>
-            {serviceUnavailable && <p className="text-xs">Your account has not been changed by this attempt. The form remains available to retry when the service responds. Avoid repeatedly resetting your password.</p>}
+            {serviceUnavailable && <p className="text-xs">{isLogin
+              ? "A server error does not mean you need a new account or password reset. Retry when the service responds."
+              : "Registration could have completed even if the response failed. Check your email before submitting another registration."}</p>}
           </div>
           <form onSubmit={handleSubmit} className="space-y-5">
             {!isLogin && <div className="space-y-2"><Label htmlFor="fullName">Full name *</Label><Input id="fullName" name="fullName" required autoComplete="name" placeholder="Your full name" /></div>}
