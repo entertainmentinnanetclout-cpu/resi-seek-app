@@ -44,6 +44,15 @@ test("server-delivered SEO HTML contains actual human-readable homepage and priv
   assert.ok(policy.length > 8000, "full privacy document must not be an empty app shell");
 });
 
+test("marketing pixels are not loaded before privacy consent", () => {
+  const shell = read("index.html");
+  const tracker = read("src/lib/metaPixel.ts");
+  assert.doesNotMatch(shell, /connect\\.facebook\\.net\\/en_US\\/fbevents\\.js/);
+  assert.doesNotMatch(shell, /facebook\\.com\\/tr\\?id=/);
+  assert.doesNotMatch(shell, /fbq\\('init'/);
+  assert.match(tracker, /getMarketingConsent\\(\\) !== "granted"/);
+});
+
 test("Google reviewers and users receive consistent Gmail scope disclosures", () => {
   assert.match(privacy, /Gmail send-only/);
   assert.match(privacy, /does not allow ResKonnect to read your Gmail inbox/);
