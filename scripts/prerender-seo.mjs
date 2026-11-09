@@ -9,7 +9,7 @@ const pages = [
     "/",
     "Student Accommodation, Applications & WIL | ResKonnect",
     "Search student housing in Pretoria, Soshanguve, Ga-Rankuwa, Mbombela and Polokwane. Explore rooms, NSFAS funding checks, applications, bursaries and WIL on ResKonnect.",
-    "Building Africa's First AI/SI-Powered Student Platform",
+    "ResKonnect — Building Africa's First AI/SI-Powered Student Platform",
   ],
   [
     "/living",
