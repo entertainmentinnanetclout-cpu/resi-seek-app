@@ -43,8 +43,8 @@ test("Public pages sitemap stays readable when upstream REST is offline; dynamic
  const oldUrl=process.env.SUPABASE_URL;
  const oldKey=process.env.SUPABASE_ANON_KEY;
  try {
-  process.env.SUPABASE_URL="https://example.invalid";
-  process.env.SUPABASE_ANON_KEY="test-public-key";
+  process.env.SUPABASE_URL="https://example.supabase.co";
+  process.env.SUPABASE_ANON_KEY="eyJtest.eyJanonymous.synthetic_signature";
   globalThis.fetch=async()=>{throw new Error("fetch failed");};
   const pages=fakeResponse();
   await sitemapHandler({query:{type:"pages"}},pages);
