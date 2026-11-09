@@ -19,7 +19,16 @@ const Privacy = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl">Privacy Policy</CardTitle>
-            <p className="text-muted-foreground">Last updated: 21 October 2026</p>
+            <p className="text-muted-foreground">Last updated: 9 November 2026</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              ResKonnect explains how we access, use, store, share, retain and delete personal information,
+              including Google user data for the optional Gmail send-only connection used by authorised residence teams.
+            </p>
+            <nav aria-label="Public legal navigation" className="mt-3 flex flex-wrap gap-4 text-sm">
+              <Link to="/" className="font-semibold text-primary underline underline-offset-4">ResKonnect Home</Link>
+              <Link to="/terms" className="font-semibold text-primary underline underline-offset-4">Terms of Service</Link>
+              <Link to="/partners/landlords" className="font-semibold text-primary underline underline-offset-4">Residence services</Link>
+            </nav>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none space-y-6 dark:prose-invert">
             <section>
@@ -58,7 +67,7 @@ const Privacy = () => {
             </section>
             <section>
               <h2 className="mb-3 text-xl font-semibold">Connected Google Gmail accounts</h2>
-              <p className="text-muted-foreground">Residence owners, managers and authorised ResKonnect staff may optionally connect their own Google Gmail or Google Workspace mailbox. With your consent, we request your Google account identity and the narrow <strong>Gmail send-only</strong> permission (<code>gmail.send</code>) to send messages that an authorised user reviews and initiates. This connection does not allow ResKonnect to read your Gmail inbox, search messages or delete Gmail messages.</p>
+              <p className="text-muted-foreground">Residence owners, managers and authorised ResKonnect staff may optionally connect their own Google Gmail or Google Workspace mailbox. With your consent, we request your Google account identity and the narrow <strong>Gmail send-only</strong> permission (<code>gmail.send</code>) to send messages that an authorised user reviews and initiates. This connection does not allow ResKonnect to read your Gmail inbox, search, modify or delete Gmail messages. Typical emails include application acknowledgements, missing-document requests, application decisions, reservation confirmations, viewing arrangements and move-in instructions.</p>
               <p className="mt-3 text-muted-foreground">The connected Google account identifier, sending address and an encrypted/restricted refresh credential are stored on our server to maintain the authorised connection. When a user sends an applicant update, the message is delivered through Google's Gmail API; we retain limited correspondence audit information such as the recipient, case reference, subject, sending status and provider message identifier for accountability and duplicate prevention. These Google credentials and message records are not used for advertising or sold to third parties.</p>
               <p className="mt-3 text-muted-foreground">You can disconnect Gmail from the residence communications screen. ResKonnect attempts to revoke Google's authorisation and removes the locally stored sending credential. Previously sent mail may still be in your Gmail account, and operational audit records may remain for legitimate service, dispute, legal or security reasons under our retention policy. You can also review or revoke access at <a href="https://myaccount.google.com/connections" target="_blank" rel="noopener noreferrer" className="underline">Google Account connections</a>.</p>
             </section>
