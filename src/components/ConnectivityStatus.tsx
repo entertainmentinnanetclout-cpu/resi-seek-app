@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { RefreshCw, WifiOff } from "lucide-react";
+import { RefreshCw, WifiOff, ServerOff } from "lucide-react";
 import { toast } from "sonner";
 import { recordMobileRuntime } from "@/lib/runtimeTelemetry";
 
-type ConnectivityMode = "online" | "offline" | "degraded";
+type ConnectivityMode = "online" | "offline" | "degraded" | "auth-service";
 
 export default function ConnectivityStatus() {
   const [mode, setMode] = useState<ConnectivityMode>(() => navigator.onLine ? "online" : "offline");
@@ -12,40 +12,52 @@ export default function ConnectivityStatus() {
     if (!navigator.onLine) void recordMobileRuntime("offline_boot", "connectivity.initial");
 
     const onOnline = () => {
-      setMode("online");
+      setMode((current) => current === "auth-service" ? current : "online");
       toast.success("ResKonnect is back online");
       window.dispatchEvent(new Event("rk-reconnected"));
       void recordMobileRuntime("reconnected", "connectivity.online");
     };
     const onOffline = () => setMode("offline");
     const onDegraded = () => {
-      if (navigator.onLine) setMode("degraded");
+      if (navigator.onLine) setMode((current) => current === "auth-service" ? current : "degraded");
     };
     const onRecovered = () => {
       if (navigator.onLine) {
-        setMode("online");
+        setMode((current) => current === "auth-service" ? current : "online");
         window.dispatchEvent(new Event("rk-reconnected"));
       }
+    };
+
+    const onAuthServiceDown = () => {
+      if (navigator.onLine) setMode("auth-service");
+    };
+    const onAuthServiceRecovered = () => {
+      if (navigator.onLine) setMode((current) => current === "auth-service" ? "online" : current);
     };
 
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
     window.addEventListener("rk-network-degraded", onDegraded as EventListener);
     window.addEventListener("rk-network-recovered", onRecovered as EventListener);
+    window.addEventListener("rk-auth-service-degraded", onAuthServiceDown as EventListener);
+    window.addEventListener("rk-auth-service-recovered", onAuthServiceRecovered as EventListener);
     return () => {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
       window.removeEventListener("rk-network-degraded", onDegraded as EventListener);
       window.removeEventListener("rk-network-recovered", onRecovered as EventListener);
+      window.removeEventListener("rk-auth-service-degraded", onAuthServiceDown as EventListener);
+      window.removeEventListener("rk-auth-service-recovered", onAuthServiceRecovered as EventListener);
     };
   }, []);
 
   if (mode === "online") return null;
 
   const offline = mode === "offline";
+  const authUnavailable = mode === "auth-service";
   const retry = () => {
     window.dispatchEvent(new Event("rk-reconnected"));
-    toast.message(offline ? "Waiting for a network connection…" : "Retrying live ResKonnect data…");
+    toast.message(offline ? "Waiting for a network connection…" : authUnavailable ? "Rechecking live services. Sign-in still requires the authentication server." : "Retrying live ResKonnect data…");
   };
 
   return (
@@ -54,11 +66,13 @@ export default function ConnectivityStatus() {
       aria-live="polite"
       className="fixed inset-x-0 top-0 z-[3000] flex min-h-10 items-center justify-center gap-2 bg-amber-500 px-3 pb-2 pt-[max(.5rem,env(safe-area-inset-top))] text-center text-xs font-bold text-slate-950 shadow-lg"
     >
-      <WifiOff className="h-4 w-4 shrink-0" />
+      {authUnavailable ? <ServerOff className="h-4 w-4 shrink-0" /> : <WifiOff className="h-4 w-4 shrink-0" />}
       <span>
         {offline
           ? "You're offline. Your session is kept safely; live account data will return when the connection does."
-          : "Your connection is slow or unstable. Live requests will time out safely instead of loading forever."}
+          : authUnavailable
+            ? "ResKonnect sign-in is temporarily unavailable on the server. Your connection may be fine; do not reset your password."
+            : "ResKonnect's live service is not responding. Check your connection and retry; your existing session is preserved where possible."}
       </span>
       <button
         type="button"
