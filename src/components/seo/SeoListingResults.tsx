@@ -74,7 +74,10 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
 
     const run = async () => {
       try {
-        let req = supabase
+        // Keep the large generated Supabase relation type from recursively
+        // expanding during the public listing query. Results are narrowed to
+        // the Residence display contract below, and RLS stays enforced.
+        let req = (supabase as any)
           .from("residences")
           .select(
             "id, slug, name, address, campus, province, city, place_label, price, private_price, nsfas_price, promo_price, image_url, cover_image_url, images, available_spots, capacity, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, room_type, room_types, singles_available, amenities, has_wifi, has_parking, is_furnished, utilities_included, reservations_2027_open",
