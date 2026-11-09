@@ -45,7 +45,7 @@ export default function LandlordGmailGuide({connected,email,busy,onConnect,onRef
   </div>
   <div className="flex items-start gap-2 border-t border-[#e8ebf0] px-5 py-3 text-xs leading-5 text-[#64748b]">
    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#977338]"/>
-   <span>Only the Google mailbox you authorize can send on your behalf. Google may show an <strong>unverified app</strong> warning while ResKonnect's application is awaiting Google's OAuth approval. This is not a problem with your mailbox, and the warning cannot be removed by a landlord or by clicking inside ResKonnect. Contact ResKonnect onboarding support instead of bypassing an unexpected Google security warning. Never share passwords or verification codes.</span>
+   <span>Only the Google mailbox you authorize can send on your behalf. Google may show an <strong>unverified app</strong> warning while ResKonnect's application is awaiting Google's OAuth approval. This is not a problem with your mailbox, and the warning cannot be removed by a landlord or by clicking inside ResKonnect. Contact ResKonnect onboarding support instead of bypassing an unexpected Google security warning. Do not share your password or verification codes.</span>
   </div>
   <details className="group border-t border-[#e8ebf0] px-5 py-4 text-xs text-[#52637d]">
     <summary className="cursor-pointer font-semibold text-[#10213a]">ResKonnect administrator: Google app verification and inbox delivery checklist</summary>
