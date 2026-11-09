@@ -88,20 +88,35 @@ const absoluteUrl = (path = "/") => {
 
 function getSupabaseConfig() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  // Vercel Hub uses the modern public key. The legacy names remain supported
+  // for the second Vercel project during its own migration.
   const key =
-    process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key)
     throw new Error("Supabase server environment variables are not configured");
-  return { url, key };
+  if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(url))
+    throw new Error("Invalid Supabase project URL for sitemap");
+  if (!(key.startsWith("sb_publishable_") || /^eyJ[A-Za-z0-9_-]+\./.test(key)))
+    throw new Error("A publishable or legacy anon key is required for public sitemaps");
+  return { url: url.replace(/\/$/, ""), key };
 }
 async function rest(path) {
   const { url, key } = getSupabaseConfig();
+  // New sb_publishable_ keys are NOT JWTs; only the legacy anon JWT may be
+  // sent in Authorization. The Supabase API gateway authenticates publishable
+  // keys via apikey and enforces the anon role's database/RLS permissions.
+  const headers = {
+    apikey: key,
+    Accept: "application/json",
+    ...(key.startsWith("sb_publishable_") ? {} : { Authorization: `Bearer ${key}` }),
+  };
   const response = await fetch(`${url}/rest/v1/${path}`, {
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      Accept: "application/json",
-    },
+    headers,
   });
   if (!response.ok)
     throw new Error(`sitemap-upstream-http-${response.status}`);
