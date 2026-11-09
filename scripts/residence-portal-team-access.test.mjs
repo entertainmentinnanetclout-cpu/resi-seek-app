@@ -59,11 +59,14 @@ test("every residence account has a visible, accessible Manage menu at desktop a
  assert.match(ui,/setPendingAccountId\(null\)/);
  assert.doesNotMatch(ui,/variant="ghost" size="sm" aria-label={\"Edit /);
 });
-test("existing student users may be linked without resetting their login password",()=>{
- assert.match(mgmt,/existingIdentity\.user\.email/);
+test("existing Auth users link without resetting their password, while stale profiles are separately preserved",()=>{
+ assert.match(mgmt,/portal_lookup_login_email/);
+ assert.match(mgmt,/portal_prepare_orphan_profile_email/);
+ assert.match(mgmt,/portal_restore_orphan_profile_email/);
  assert.match(mgmt,/existing_login:!createdByRequest/);
- assert.match(mgmt,/if\(createdByRequest\)await db\.auth\.admin\.deleteUser/);
- assert.match(mgmt,/Role assignment|residence_portal/);
+ assert.match(mgmt,/db\.auth\.admin\.inviteUserByEmail/);
+ assert.match(mgmt,/residence_portal/);
+ assert.doesNotMatch(mgmt,/updateUserById\(account\.user_id/);
 });
 test("email-only claims cannot mutate residence or account authority",()=>{
  assert.match(schema,/DROP POLICY IF EXISTS rpa_self_claim_by_email/);
