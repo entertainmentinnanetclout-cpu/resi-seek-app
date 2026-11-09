@@ -60,9 +60,9 @@ export function canonicalUrl(pathname: string): string {
 /** Per-route metadata for the main public pillars and utility pages. */
 export const ROUTE_META: Record<string, RouteMeta> = {
   "/": {
-    title: "ResKonnect | Living • AI • Opportunity",
+    title: "Student Accommodation, Applications & WIL | ResKonnect",
     description:
-      "ResKonnect connects Living, AI and Opportunity in one integrated student platform for accommodation, intelligent guidance, applications, bursaries, WIL and verified opportunities.",
+      "Search student housing in Pretoria, Soshanguve, Ga-Rankuwa, Mbombela and Polokwane, with rooms, NSFAS checks, bursaries, applications and AI/SI guidance.",
     keywords:
       "ResKonnect, Living AI Opportunity, student platform South Africa, student accommodation, student AI, student applications, bursaries, WIL, student opportunities",
   },
@@ -147,7 +147,7 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   "/find": {
     title: "Find Student Accommodation | ResKonnect Find My Res",
     description:
-      "Search student residences, flats, communes and private rentals by campus, budget, room type and availability with ResKonnect.",
+      "Compare published student accommodation by city, campus, monthly rent, single or shared rooms, funding acceptance and availability. Unpriced rooms are not budget matches.",
   },
   "/findmyres": {
     title: "Find My Res | Verified Student Accommodation | ResKonnect",
@@ -158,7 +158,7 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   "/bursaries": {
     title: "Student Bursaries & Funding Opportunities | ResKonnect",
     description:
-      "Browse open bursaries and student funding opportunities with closing dates, requirements and official application links.",
+      "Discover South African student bursaries and scholarships, compare eligibility, closing dates, required documents and official application links on ResKonnect.",
   },
   "/events": {
     title: "ResKonnect Events | Campus Events for South African Students",
