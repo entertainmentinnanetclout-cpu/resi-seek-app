@@ -234,9 +234,16 @@ try {
       await connectivityPage.evaluate(() => window.dispatchEvent(new Event("online")));
       await connectivityPage.getByText(/You're offline/).waitFor({ state: "detached", timeout: 5_000 });
       await connectivityPage.evaluate(() => window.dispatchEvent(new CustomEvent("rk-network-degraded")));
-      await connectivityPage.getByText(/slow or unstable/).waitFor({ timeout: 5_000 });
+      await connectivityPage.getByText(/live service is not responding/).waitFor({ timeout: 5_000 });
       await connectivityPage.evaluate(() => window.dispatchEvent(new CustomEvent("rk-network-recovered")));
-      await connectivityPage.getByText(/slow or unstable/).waitFor({ state: "detached", timeout: 5_000 });
+      await connectivityPage.getByText(/live service is not responding/).waitFor({ state: "detached", timeout: 5_000 });
+      await connectivityPage.evaluate(() => window.dispatchEvent(new CustomEvent("rk-auth-service-degraded")));
+      await connectivityPage.getByText(/sign-in is temporarily unavailable on the server/).waitFor({ timeout: 5_000 });
+      // A successful unrelated REST response must not hide an Auth outage.
+      await connectivityPage.evaluate(() => window.dispatchEvent(new CustomEvent("rk-network-recovered")));
+      await connectivityPage.getByText(/sign-in is temporarily unavailable on the server/).waitFor({ timeout: 5_000 });
+      await connectivityPage.evaluate(() => window.dispatchEvent(new CustomEvent("rk-auth-service-recovered")));
+      await connectivityPage.getByText(/sign-in is temporarily unavailable on the server/).waitFor({ state: "detached", timeout: 5_000 });
       await connectivityPage.close();
 
       await context.close();
