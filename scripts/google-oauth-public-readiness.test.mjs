@@ -47,10 +47,10 @@ test("server-delivered SEO HTML contains actual human-readable homepage and priv
 test("marketing pixels are not loaded before privacy consent", () => {
   const shell = read("index.html");
   const tracker = read("src/lib/metaPixel.ts");
-  assert.doesNotMatch(shell, /connect\\.facebook\\.net\\/en_US\\/fbevents\\.js/);
-  assert.doesNotMatch(shell, /facebook\\.com\\/tr\\?id=/);
-  assert.doesNotMatch(shell, /fbq\\('init'/);
-  assert.match(tracker, /getMarketingConsent\\(\\) !== "granted"/);
+  assert.ok(!shell.includes("connect.facebook.net/en_US/fbevents.js"));
+  assert.ok(!shell.includes("facebook.com/tr?id="));
+  assert.ok(!shell.includes("fbq('init'"));
+  assert.ok(tracker.includes('getMarketingConsent() !== "granted"'));
 });
 
 test("Google reviewers and users receive consistent Gmail scope disclosures", () => {
