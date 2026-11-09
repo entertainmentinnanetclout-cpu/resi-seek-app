@@ -161,7 +161,12 @@ const pages = [
 // Do not invent city stock, monthly rents, official NSFAS decisions or room availability.
 const discoveryPages = JSON.parse(await fs.readFile(path.resolve("src/data/seo/discoveryPages.json"), "utf8"));
 const discoveryByPath = new Map(discoveryPages.map((entry) => [entry.path, entry]));
-for (const entry of discoveryPages) pages.push([entry.path, entry.title, entry.description, entry.h1]);
+for (const entry of discoveryPages) {
+  const row = [entry.path, entry.title, entry.description, entry.h1];
+  const existing = pages.findIndex(([route]) => route === entry.path);
+  if (existing >= 0) pages[existing] = row;
+  else pages.push(row);
+}
 
 const esc = (value = "") =>
   String(value).replace(
