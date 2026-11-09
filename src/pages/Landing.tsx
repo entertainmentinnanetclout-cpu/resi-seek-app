@@ -212,6 +212,28 @@ const Landing = () => {
           </div>
         </section>
 
+        <section aria-label="ResKonnect Gmail integration and privacy" className="border-y border-slate-200 bg-slate-50 py-8 text-slate-800">
+          <div className="container mx-auto flex max-w-6xl flex-col items-start justify-between gap-5 px-4 md:flex-row md:items-center">
+            <div className="max-w-3xl">
+              <h2 className="text-xl font-bold text-[#10213a]">Public information about ResKonnect and Google Gmail</h2>
+              <p className="mt-2 text-sm leading-relaxed">
+                ResKonnect connects students with accommodation, applications and opportunities. Approved residence owners,
+                managers and administrators may choose to connect their own Gmail account to send accommodation case updates,
+                document requests, reservation notices and move-in instructions. The optional <strong>Gmail send-only</strong>
+                permission does not grant ResKonnect access to read, edit or delete a user's Gmail inbox.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
+                <a href="/privacy" className="text-[#164d9c] underline underline-offset-4">Privacy Policy & Google user data</a>
+                <a href="/terms" className="text-[#164d9c] underline underline-offset-4">Terms of Service</a>
+                <a href="/partners/landlords" className="text-[#164d9c] underline underline-offset-4">For accommodation providers</a>
+              </div>
+            </div>
+            <a href="mailto:reskonnect@gmail.com" className="shrink-0 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-[#10213a] hover:bg-slate-100">
+              Contact ResKonnect
+            </a>
+          </div>
+        </section>
+
         <StudentCareLinks />
         <InteractiveNeedSection />
 
