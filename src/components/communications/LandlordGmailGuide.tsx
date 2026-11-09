@@ -45,7 +45,20 @@ export default function LandlordGmailGuide({connected,email,busy,onConnect,onRef
   </div>
   <div className="flex items-start gap-2 border-t border-[#e8ebf0] px-5 py-3 text-xs leading-5 text-[#64748b]">
    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#977338]"/>
-   <span>Only the Google account you approve can send from that address. If Google says the app is unavailable or not verified, ask ResKonnect onboarding support to check the Google app publishing and verification settings. Do not share your password or verification codes.</span>
+   <span>Only the Google mailbox you authorize can send on your behalf. Google may show an <strong>unverified app</strong> warning while ResKonnect's application is awaiting Google's OAuth approval. This is not a problem with your mailbox, and the warning cannot be removed by a landlord or by clicking inside ResKonnect. Contact ResKonnect onboarding support instead of bypassing an unexpected Google security warning. Do not share your password or verification codes.</span>
   </div>
+  <details className="group border-t border-[#e8ebf0] px-5 py-4 text-xs text-[#52637d]">
+    <summary className="cursor-pointer font-semibold text-[#10213a]">ResKonnect administrator: Google app verification and inbox delivery checklist</summary>
+    <div className="mt-3 space-y-3 leading-6">
+      <p>The OAuth client is owned by ResKonnect. Landlords do not need their own Google Cloud API keys. The Gmail send-only permission is a <strong>sensitive scope</strong>, so an external production application must complete Google's review before the verification warning disappears.</p>
+      <ol className="list-decimal space-y-2 pl-5">
+        <li><a className="font-medium text-[#1c4b81] underline" href="https://console.cloud.google.com/auth/branding" target="_blank" rel="noopener noreferrer">Open Google Auth Platform · Branding</a>. Select the ResKonnect Google project; set the app name, support contact, authorized domain and public <a href="https://www.reskonnect.org/privacy" className="underline">Privacy Policy</a> and <a href="https://www.reskonnect.org/terms" className="underline">Terms</a>. Verify domain ownership and publish the branding.</li>
+        <li><a className="font-medium text-[#1c4b81] underline" href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noopener noreferrer">Open Audience</a>. Use the External production app configuration when onboarding landlords outside one Workspace organization; keep test accounts separate.</li>
+        <li><a className="font-medium text-[#1c4b81] underline" href="https://console.cloud.google.com/auth/data-access" target="_blank" rel="noopener noreferrer">Open Data Access</a>. Declare the exact scopes used by ResKonnect: <code>openid</code>, <code>email</code> and <code>gmail.send</code>. The integration does not request inbox read access.</li>
+        <li><a className="font-medium text-[#1c4b81] underline" href="https://console.cloud.google.com/auth/verification" target="_blank" rel="noopener noreferrer">Open Verification Center</a>. Submit Google's sensitive-scope review with a real connection-flow demonstration and justification, then respond to Google's review requests. Google—not ResKonnect—decides when the warning can be removed.</li>
+      </ol>
+      <p>Inbox placement is a separate issue. Use the actual connected mailbox as the sender; for a residence domain, configure SPF, DKIM and DMARC with its mail provider, and check Gmail's <a className="text-[#1c4b81] underline" href="https://support.google.com/mail/answer/81126" target="_blank" rel="noopener noreferrer">sender guidelines</a>. Avoid misleading sender names and only send relevant, consented case notices. Delivery to Inbox cannot be guaranteed.</p>
+    </div>
+  </details>
  </section>;
 }

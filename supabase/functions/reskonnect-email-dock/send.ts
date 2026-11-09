@@ -38,8 +38,10 @@ export async function previewPacket(s:EmailSession,ctx:CaseContext,key:TemplateK
 }
 async function bearerToken(s:EmailSession){
  const {data:connected,error:connectedError}=await s.db.from("landlord_gmail_connections")
-  .select("enabled").eq("user_id",s.actor).maybeSingle();
+  .select("enabled,gmail_address").eq("user_id",s.actor).maybeSingle();
  if(connectedError||!connected?.enabled)throw Error("Connect your Gmail account before sending");
+ const fromEmail=String(connected.gmail_address||"").trim().toLowerCase();
+ if(!validEmail(fromEmail))throw Error("The connected Gmail sender address could not be verified. Reconnect Gmail.");
  const {data:refresh,error:refreshErr}=await s.db.rpc("gmail_get_connection_secret",{p_user_id:s.actor});
  if(refreshErr||typeof refresh!=="string"||!refresh)throw Error("Reconnect Gmail to renew sending authorization");
  const id=Deno.env.get("GOOGLE_GMAIL_CLIENT_ID"),secret=Deno.env.get("GOOGLE_GMAIL_CLIENT_SECRET");
@@ -52,7 +54,7 @@ async function bearerToken(s:EmailSession){
  if(!response.ok)throw Error("Google Gmail authorization has expired or been revoked");
  const data=await response.json();
  if(!data.access_token)throw Error("Google did not return an access token");
- return data.access_token as string;
+ return {token:data.access_token as string,fromEmail};
 }
 export async function makePreviewPdf(s:EmailSession,ctx:CaseContext,key:TemplateKey,note:string){
  const packet=await previewPacket(s,ctx,key,note);
@@ -86,19 +88,21 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
  }).select("id").single();
  if(logErr)return {sent:false,error:logErr.code==="23505"?"This send request has already been processed":"Could not record email request",status:409};
  const mark=async(status:"failed"|"unknown",code:string)=>{await s.db.from("reskonnect_outbound_emails").update({delivery_status:status,failure_code:code}).eq("id",log.id);};
- let token;
- try{token=await bearerToken(s);}catch(e){await mark("failed","google_oauth");return {sent:false,error:e instanceof Error?e.message:"Gmail authorization unavailable",status:409};}
+ let sender:{token:string;fromEmail:string};
+ try{sender=await bearerToken(s);}catch(e){await mark("failed","google_oauth");return {sent:false,error:e instanceof Error?e.message:"Gmail authorization unavailable",status:409};}
  let pdf:Uint8Array;
  try{
   pdf=await createBrandedPdf({recipientName:ctx.studentName,property:ctx.property,reference:ctx.reference,
    status:ctx.status,subject:packet.subject,body:packet.body,kindLabel:KIND_LABELS[ctx.kind],nextStep:packet.next_step,residenceImageUrl:ctx.residenceImageUrl});
  }catch(e){console.error("Branded PDF generation failed",e);await mark("failed","pdf_generation");return {sent:false,error:"Could not generate the official PDF attachment; no email was sent",status:502};}
  const attachment="ResKonnect-"+ctx.kind+"-"+ctx.reference+".pdf";
- const raw=createGmailMime(ctx.email,packet.subject,packet.body,packet.html,pdf,attachment);
+ const senderName=s.isAdmin?"ResKonnect":(ctx.property==="ResKonnect"?"ResKonnect":ctx.property);
+ const raw=createGmailMime(ctx.email,packet.subject,packet.body,packet.html,pdf,attachment,
+   {name:senderName,email:sender.fromEmail});
  let sent:Response;
  try{
   sent=await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send",{
-   method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+   method:"POST",headers:{"Authorization":"Bearer "+sender.token,"Content-Type":"application/json"},
    body:JSON.stringify({raw}),signal:AbortSignal.timeout(15000)
   });
  }catch{await mark("unknown","gmail_delivery_uncertain");return {sent:false,error:"Delivery outcome unknown. Check Gmail Sent Mail before retrying.",status:502};}
