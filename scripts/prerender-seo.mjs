@@ -7,9 +7,9 @@ const SITE = "https://www.reskonnect.org";
 const pages = [
   [
     "/",
-    "ResKonnect | Student Accommodation, Applications & Opportunities",
-    "Find student accommodation, prepare applications, discover WIL and student opportunities, and explore student-housing property intelligence with ResKonnect.",
-    "Living, AI and Opportunity in one student platform",
+    "Student Accommodation, Applications & WIL | ResKonnect",
+    "Search student housing in Pretoria, Soshanguve, Ga-Rankuwa, Mbombela and Polokwane. Explore rooms, NSFAS funding checks, applications, bursaries and WIL on ResKonnect.",
+    "Building Africa's First AI/SI-Powered Student Platform",
   ],
   [
     "/living",
@@ -157,6 +157,12 @@ const pages = [
   ],
 ];
 
+// Curated, evidence-led city and topic content shared with the React routes.
+// Do not invent city stock, monthly rents, official NSFAS decisions or room availability.
+const discoveryPages = JSON.parse(await fs.readFile(path.resolve("src/data/seo/discoveryPages.json"), "utf8"));
+const discoveryByPath = new Map(discoveryPages.map((entry) => [entry.path, entry]));
+for (const entry of discoveryPages) pages.push([entry.path, entry.title, entry.description, entry.h1]);
+
 const esc = (value = "") =>
   String(value).replace(
     /[&<>"']/g,
@@ -233,20 +239,46 @@ for (const [route, title, description, h1] of pages) {
     '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />',
   );
 
+  const discovery = discoveryByPath.get(route);
+  const discoverHtml = discovery ? [
+    '<div style="margin-top:28px;max-width:980px;font-size:1rem;line-height:1.75">',
+    ...discovery.intro.map((text)=>'<p style="margin-top:12px">'+esc(text)+'</p>'),
+    '<section style="margin-top:24px"><h2>What you can compare</h2><ul>',
+    ...discovery.benefits.map((item)=>'<li style="margin-top:8px"><strong>'+esc(item.title)+'</strong> — '+esc(item.body)+'</li>'),
+    '</ul></section>',
+    ...discovery.body.flatMap((block)=>['<section style="margin-top:24px"><h2>'+esc(block.heading)+'</h2>',...block.paragraphs.map(t=>'<p>'+esc(t)+'</p>'),'</section>']),
+    '<section style="margin-top:24px"><h2>Practical questions</h2>',
+    ...discovery.faqs.flatMap((f)=>['<h3>'+esc(f.question)+'</h3><p>'+esc(f.answer)+'</p>']),
+    '</section><section style="margin-top:24px"><h2>Continue searching</h2>',
+    '<p><a href="'+esc(discovery.cta.to)+'">'+esc(discovery.cta.label)+'</a></p><ul>',
+    ...discovery.links.map((link)=>'<li><a href="'+esc(link.to)+'">'+esc(link.label)+'</a></li>'),
+    '</ul></section>',
+    '</div>'
+  ].join("") : "";
+  const homeCityHtml = route === "/" ? '<section aria-label="Explore student accommodation and opportunities" style="margin-top:30px;padding:26px;border:1px solid #dbe5f2;border-radius:14px"><h2>Student accommodation by city</h2><p>ResKonnect has published residence records in Pretoria, Soshanguve, Ga-Rankuwa, Mbombela and Polokwane. Rent, room type and official funding eligibility should be checked on the individual property rather than inferred from the city name.</p><ul>'+
+    ["pretoria","soshanguve","ga-rankuwa","mbombela","polokwane"].map(c=>'<li><a href="/student-accommodation/'+c+'">'+(c==="ga-rankuwa"?"Ga-Rankuwa":c[0].toUpperCase()+c.slice(1))+' student accommodation</a></li>').join("")+
+    '</ul><h2>What do you need?</h2><ul><li><a href="/student-accommodation/single-rooms">Single student rooms</a></li><li><a href="/student-accommodation/nsfas-no-top-up">NSFAS no-top-up checklist</a></li><li><a href="/student-accommodation/r1500-to-budget">R1,500 rent budget guide</a></li><li><a href="/student-accommodation/private-paying">Private-paying accommodation</a></li><li><a href="/student-accommodation/room-types">Student housing types</a></li><li><a href="/applications">University and TVET applications</a></li><li><a href="/opportunities/wil">WIL placements</a></li><li><a href="/bursaries">Bursaries</a></li><li><a href="/properties">Student housing property intelligence</a></li></ul><p>Our vision is to build Africa\\'s first AI/SI-powered student journey platform. AI means Artificial Intelligence and SI means Service Intelligence. This is a vision, not a verified market-first award or ranking.</p></section>' : "";
   const googlePublicInfo = route === "/" ? '<section aria-label="About ResKonnect and Google Gmail" style="margin-top:32px;padding:24px;background:#f3f7fd;border-radius:14px;line-height:1.7"><h2>What ResKonnect does</h2><p>ResKonnect is a South African student living, applications and opportunity platform. Students can explore accommodation, understand application requirements and use guidance services. Authorised residence owners, managers and administrators manage accommodation enquiries, application decisions, reservation steps and resident communications in their own role-protected portal.</p><h2>Why ResKonnect requests Gmail permission</h2><p>Gmail connection is optional and only for authorised residence teams or ResKonnect staff. After a user connects their own Google account, the Gmail send-only permission (gmail.send) enables that user to send reviewed case notices, missing-document requests, booking confirmations and move-in instructions from the connected mailbox. ResKonnect does not request permission to read, search, edit or delete Gmail messages. Users can disconnect Gmail at any time.</p><p><a href="/partners/landlords">Residence team services</a> · <a href="/residence/login">Landlord sign-in</a> · <a href="/privacy">Privacy Policy and Google user data</a> · <a href="/terms">Terms of Service</a> · <a href="mailto:reskonnect@gmail.com">Contact ResKonnect</a></p></section>' : "";
-  const initial = `<div id="root"><main data-seo-prerender="true" style="max-width:1120px;margin:0 auto;padding:48px 24px;font-family:Inter,Arial,sans-serif;color:#111827"><header><p style="font-weight:700;letter-spacing:.04em">ResKonnect — Living • AI • Opportunity</p><h1 style="font-size:clamp(2rem,5vw,3.5rem);line-height:1.05;margin:16px 0">${esc(h1)}</h1><p style="max-width:760px;font-size:1.125rem;line-height:1.7;color:#4b5563">${esc(description)}</p></header><nav aria-label="Primary search topics" style="margin-top:28px;display:flex;gap:16px;flex-wrap:wrap"><a href="/living">Living</a><a href="/ai">ResKonnect AI</a><a href="/opportunities">Opportunity</a><a href="/apply">Applications & Course Match</a><a href="/partners">Partners</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a></nav>${googlePublicInfo}</main></div>`;
+  const initial = `<div id="root"><main data-seo-prerender="true" style="max-width:1120px;margin:0 auto;padding:48px 24px;font-family:Inter,Arial,sans-serif;color:#111827"><header><p style="font-weight:700;letter-spacing:.04em">ResKonnect — Living • AI • Opportunity</p><h1 style="font-size:clamp(2rem,5vw,3.5rem);line-height:1.05;margin:16px 0">${esc(h1)}</h1><p style="max-width:760px;font-size:1.125rem;line-height:1.7;color:#4b5563">${esc(description)}</p></header><nav aria-label="Primary search topics" style="margin-top:28px;display:flex;gap:16px;flex-wrap:wrap"><a href="/living">Living</a><a href="/ai">ResKonnect AI</a><a href="/opportunities">Opportunity</a><a href="/apply">Applications & Course Match</a><a href="/partners">Partners</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a></nav>${homeCityHtml}${discoverHtml}${googlePublicInfo}</main></div>`;
   html = html.replace('<div id="root"></div>', initial);
 
   const schema = {
     "@context": "https://schema.org",
-    "@type": "WebPage",
+    "@type": discovery ? (discovery.kind === "guide" ? "Article" : "CollectionPage") : "WebPage",
     name: h1,
     description,
     url,
     inLanguage: "en-ZA",
     isPartOf: { "@id": `${SITE}/#website` },
     publisher: { "@id": `${SITE}/#organization` },
+    ...(discovery ? { about: [{ "@type": "Thing", name: "Student accommodation" }, { "@type": "Place", name: discovery.crumbs?.at(-1)?.name || "South Africa" }] } : {}),
   };
+  if (discovery) {
+    schema.breadcrumb = { "@type": "BreadcrumbList", itemListElement: discovery.crumbs.map((crumb, index) => ({
+      "@type": "ListItem", position: index + 1, name: crumb.name,
+      item: canonical(crumb.path),
+    })) };
+  }
   html = html.replace(
     "</head>",
     `<script type="application/ld+json">${JSON.stringify(schema).replace(/</g, "\\u003c")}</script>\n</head>`,
