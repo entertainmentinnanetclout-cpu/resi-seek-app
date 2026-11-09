@@ -50,6 +50,37 @@ Deno.serve(async(req:Request)=>{
   if(error)throw Error("Unable to check residence team capacity");
   return count??0;
  };
+ // Email identity is resolved from auth.users, not from profiles alone:
+ // imported CRM profiles can exist without any Supabase login.
+ const resolveLogin=async(email:string,password:string="")=>{
+  const {data:found,error:lookupError}=await db.rpc("portal_lookup_login_email",{p_email:email});
+  if(lookupError)throw Error("Could not check Auth identities: "+errorText(lookupError,"Try again"));
+  if(found?.auth_user_id){
+   if(!found.is_verified&&!found.is_invited)
+    throw Error("This account exists but its email is not verified. Ask the mailbox owner to verify their ResKonnect sign-in first.");
+   return {userId:String(found.auth_user_id),created:false,invited:!found.is_verified,archivedLegacy:false};
+  }
+  let archivedId:string|null=null;
+  if(found?.orphan_profile_id){
+   // Preserve the historic CRM/contact record. No profile or other data is
+   // deleted or transferred to a newly created login without verification.
+   const {data:archived,error:archiveError}=await db.rpc("portal_prepare_orphan_profile_email",{
+    p_email:email,p_admin_id:actor
+   });
+   if(archiveError)throw Error(errorText(archiveError,"Legacy profile needs manual review"));
+   if(archived?.archived)archivedId=String(archived.legacy_profile_id);
+  }
+  const useInvitation=password.trim().length===0;
+  const created=useInvitation
+    ?await db.auth.admin.inviteUserByEmail(email,{redirectTo:"https://www.reskonnect.org/auth"})
+    :await db.auth.admin.createUser({email,password,email_confirm:true});
+  if(created.error||!created.data.user?.id){
+   if(archivedId)await db.rpc("portal_restore_orphan_profile_email",{p_email:email,p_legacy_profile_id:archivedId});
+   throw Error(errorText(created.error,"Could not create or invite the landlord login")+
+      (useInvitation?" Check your Supabase email invitation configuration.":""));
+  }
+  return {userId:created.data.user.id,created:true,invited:useInvitation,archivedLegacy:!!archivedId};
+ };
  try{
   if(action==="create"){
    const residenceId=body.residence_id;
@@ -67,30 +98,14 @@ Deno.serve(async(req:Request)=>{
    const {data:existingOwner}=await db.from("residence_portal_accounts").select("id").eq("residence_id",residenceId).eq("portal_role","owner").limit(1);
    if(newRole==="owner"&&existingOwner?.length)return json({error:"This residence already has an owner; select manager or admin"},409);
 
-   let userId:string|null=null,createdByRequest=false;
-   // Reuse a verified existing student login without changing its password.
-   const {data:profiles,error:profileErr}=await db.from("profiles").select("id,email").ilike("email",email).limit(1);
-   if(profileErr)return json({error:"Cannot check for an existing ResKonnect login"},503);
-   if(profiles?.length){
-    const {data:existingIdentity,error:identityErr}=await db.auth.admin.getUserById(profiles[0].id);
-    if(identityErr||!existingIdentity.user||!existingIdentity.user.email_confirmed_at||existingIdentity.user.email?.toLowerCase()!==email)
-     return json({error:"This email is already registered but its login identity could not be confirmed. Contact support."},409);
-    userId=existingIdentity.user.id;
-   }else{
-    if(password.length<12)return json({error:"A new portal login requires a password of at least 12 characters"},400);
-    const {data:created,error:createErr}=await db.auth.admin.createUser({
-     email,password,email_confirm:true
-    });
-    if(createErr)return json({error:/already registered|already been registered|already exists/i.test(createErr.message)
-      ?"This email already has a login. Ask support to link the existing verified account."
-      :errorText(createErr,"Could not create the login")},409);
-    userId=created.user?.id||null;
-    createdByRequest=!!userId;
-    if(!userId)return json({error:"Portal login could not be created"},503);
-   }
+   if(password && password.length<12)return json({error:"Temporary passwords must contain at least 12 characters, or leave blank to send a secure invitation"},400);
+   let identity:{userId:string;created:boolean;invited:boolean;archivedLegacy:boolean};
+   try{identity=await resolveLogin(email,password);}
+   catch(e){return json({error:errorText(e,"Could not prepare the residence login")},409);}
+   const userId=identity.userId;
+   const createdByRequest=identity.created;
    const {data:already}=await db.from("residence_portal_accounts").select("id").eq("user_id",userId).limit(1);
    if(already?.length){
-    if(createdByRequest)await db.auth.admin.deleteUser(userId);
     return json({error:"This user already manages another residence; assign a different email"},409);
    }
    let grantedRole=false;
@@ -105,9 +120,11 @@ Deno.serve(async(req:Request)=>{
      .select("id,residence_id,user_id,email,is_active,portal_role").single();
     if(insertErr)throw insertErr;
     await audit("created",{user_id:userId,residence_id:null},residenceId,false);
-    return json({ok:true,account:assignment,created_user:createdByRequest,existing_login:!createdByRequest});
+    return json({ok:true,account:assignment,created_user:createdByRequest,existing_login:!createdByRequest,invitation_sent:identity.invited&&createdByRequest,archived_legacy_contact:identity.archivedLegacy});
    }catch(e){
-    if(createdByRequest)await db.auth.admin.deleteUser(userId);
+    // Do not delete an invited identity after an email link was dispatched;
+    // retry can later connect it after the owner accepts the invitation.
+    if(createdByRequest&&!identity.invited)await db.auth.admin.deleteUser(userId);
     else if(grantedRole)await db.from("user_roles").delete().eq("user_id",userId).eq("role","residence_portal");
     return json({error:errorText(e,"Could not assign portal access")},409);
    }
@@ -159,37 +176,39 @@ Deno.serve(async(req:Request)=>{
    if(owners?.length)return json({error:"This residence already has a portal owner"},409);
   }
   const changedEmail=newEmail!==account.email.toLowerCase();
-  let originalAuthEmail:string|null=null;
   if(changedEmail){
-   const {data:already}=await db.from("residence_portal_accounts").select("id").ilike("email",newEmail).neq("id",id).limit(1);
-   if(already?.length)return json({error:"This email is already used by another residence account"},409);
-   if(!account.user_id)return json({error:"This legacy assignment needs to be claimed before its login email can change"},409);
-   const {data:otherRoles,error:rolesErr}=await db.from("user_roles").select("role")
-    .eq("user_id",account.user_id).neq("role","residence_portal");
-   if(rolesErr||otherRoles?.length)return json({error:"This login also has another ResKonnect role. Do not change a shared email through the residence editor."},409);
-   const {data:userIdentity,error:identityErr}=await db.auth.admin.getUserById(account.user_id);
-   if(identityErr||!userIdentity.user)return json({error:"Portal login identity was not found"},409);
-   originalAuthEmail=userIdentity.user.email||null;
-   const {error:identityChangeErr}=await db.auth.admin.updateUserById(account.user_id,{email:newEmail,email_confirm:true});
-   if(identityChangeErr)return json({error:errorText(identityChangeErr,"Could not change the login email")},409);
+   if(newResidenceId!==account.residence_id||newRole!==account.portal_role||body.is_active!==account.is_active)
+    return json({error:"Save residence, role or status changes first. Then replace this login email separately."},400);
+   const {data:already}=await db.from("residence_portal_accounts")
+     .select("id").ilike("email",newEmail).neq("id",id).limit(1);
+   if(already?.length)return json({error:"This email already manages another residence. Choose another email."},409);
+   let identity:{userId:string;created:boolean;invited:boolean;archivedLegacy:boolean};
+   try{identity=await resolveLogin(newEmail);}
+   catch(e){return json({error:errorText(e,"Could not prepare the replacement login")},409);}
+   const {data:swap,error:swapError}=await db.rpc("portal_replace_residence_login",{
+     p_account_id:id,p_new_user_id:identity.userId,p_email:newEmail,p_admin_id:actor
+   });
+   if(swapError||!swap?.ok)return json({error:errorText(swapError,"Could not replace the login; the previous account is unchanged")},409);
+   // The previous account retains its own Auth identity, student roles and
+   // original email. Revoke Gmail send only if no independent staff role remains.
+   if(account.user_id&&swap.previous_user_id){
+    const {data:remaining}=await db.from("user_roles").select("role")
+      .eq("user_id",account.user_id).in("role",["admin","residence_portal"]);
+    if(!remaining?.length){
+      await db.from("landlord_gmail_connections").update({enabled:false}).eq("user_id",account.user_id);
+      const {error:cleanupError}=await db.rpc("gmail_delete_connection",{p_user_id:account.user_id});
+      if(cleanupError)console.error("Previous portal sender cleanup failed",cleanupError.code);
+    }
+   }
+   return json({ok:true,replaced:true,account_id:id,invitation_sent:identity.created&&identity.invited,
+     existing_login:!identity.created,archived_legacy_contact:identity.archivedLegacy});
   }
   const {data:updated,error:updateErr}=await db.from("residence_portal_accounts")
-   .update({residence_id:newResidenceId,email:newEmail,is_active:body.is_active,portal_role:newRole})
+   .update({residence_id:newResidenceId,is_active:body.is_active,portal_role:newRole})
    .eq("id",id).eq("email",account.email)
    .select("id,residence_id,user_id,email,is_active,portal_role").maybeSingle();
   if(updateErr||!updated){
-   if(changedEmail&&account.user_id&&originalAuthEmail)await db.auth.admin.updateUserById(account.user_id,{email:originalAuthEmail,email_confirm:true});
-   return json({error:errorText(updateErr,"Could not update this assignment; check role and team limit")},409);
-  }
-  if(changedEmail&&account.user_id){
-   const {error:profileErr}=await db.from("profiles").update({email:newEmail}).eq("id",account.user_id);
-   if(profileErr){
-    const {error:revertErr}=await db.from("residence_portal_accounts").update({
-     residence_id:account.residence_id,email:account.email,is_active:account.is_active,portal_role:account.portal_role
-    }).eq("id",id);
-    if(!revertErr&&originalAuthEmail)await db.auth.admin.updateUserById(account.user_id,{email:originalAuthEmail,email_confirm:true});
-    return json({error:"Profile email sync failed; verify account details before retrying"},503);
-   }
+   return json({error:errorText(updateErr,"Could not update the portal account")},409);
   }
   if(account.is_active&&!updated.is_active&&account.user_id){
    // A suspended landlord must not retain an enabled server-side Gmail sender.
@@ -206,7 +225,7 @@ Deno.serve(async(req:Request)=>{
    !account.is_active&&updated.is_active?"reactivated":
    account.portal_role!==updated.portal_role?"role_changed":"updated";
   await audit(operation,account,newResidenceId,changedEmail);
-  return json({ok:true,account:updated,login_email_changed:changedEmail});
+  return json({ok:true,account:updated,login_email_changed:false});
  }catch(e){
   console.error("Portal management error",e instanceof Error?e.message:"unknown");
   return json({error:errorText(e,"Portal action failed")},503);
