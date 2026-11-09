@@ -14,8 +14,10 @@ const livePromo = (data: any, now: number): boolean => {
 
 /** Null is UNKNOWN, not R0/month. An unavailable room never supplies a budget match. */
 export const publicPrivateMonthlyRent = (residence: any, now = Date.now()): number | null => {
+  const pricingYear = Number(residence?.pricing_year || 2027);
   const rooms: any[] = Array.isArray(residence?.room_pricing)
-    ? residence.room_pricing.filter((room: any) => room?.is_active !== false)
+    ? residence.room_pricing.filter((room: any) =>
+        room?.is_active !== false && Number(room?.academic_year || pricingYear) === pricingYear)
     : [];
   if (rooms.length) {
     const prices = rooms
@@ -32,8 +34,10 @@ export const publicPrivateMonthlyRent = (residence: any, now = Date.now()): numb
 export const isPublishedPromotionCurrent = (residence: any, now = Date.now()): boolean => livePromo(residence, now);
 
 export const hasVerifiedPrivateRent = (residence: any): boolean => {
+  const pricingYear = Number(residence?.pricing_year || 2027);
   const rooms: any[] = Array.isArray(residence?.room_pricing)
-    ? residence.room_pricing.filter((room: any) => room?.is_active !== false)
+    ? residence.room_pricing.filter((room: any) =>
+        room?.is_active !== false && Number(room?.academic_year || pricingYear) === pricingYear)
     : [];
   if (rooms.length) return rooms.some((room) =>
     Number(room.available_beds) > 0 && Boolean(room.price_verified_at) && positiveRand(room.private_price) !== null,

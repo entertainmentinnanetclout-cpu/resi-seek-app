@@ -15,6 +15,8 @@ assert.equal(hasVerifiedPrivateRent({ price: 2850 }), false, "reported is not ve
 assert.equal(hasVerifiedPrivateRent({ price: 2850, price_verified_at: "2026-11-09" }), true);
 assert.equal(publicPrivateMonthlyRent({ room_pricing: [{ private_price: 1700, available_beds: 0 }] }), null, "unavailable room cannot match a budget");
 assert.equal(publicPrivateMonthlyRent({ room_pricing: [{ private_price: 2500, available_beds: 1 }, { private_price: 1900, available_beds: 2 }] }), 1900);
+assert.equal(publicPrivateMonthlyRent({ pricing_year: 2027, room_pricing: [{ academic_year: 2026, private_price: 1200, available_beds: 1 }, { academic_year: 2027, private_price: 3100, available_beds: 1 }] }), 3100, "historical room rates must not undercut the active intake");
+assert.equal(hasVerifiedPrivateRent({ pricing_year: 2027, room_pricing: [{ academic_year: 2026, private_price: 1200, available_beds: 1, price_verified_at: "2026-01-01" }, { academic_year: 2027, private_price: 3100, available_beds: 1 }] }), false, "old verified prices are not current verified prices");
 assert.equal(publicPrivateMonthlyRent({ promo_active: true, promo_price: 1500, promo_ends_at: "2026-01-01", private_price: 2800 }, Date.parse("2026-11-09")), 2800, "expired promos are not live");
 assert.equal(reportedCampusDistanceKm(null), null);
 assert.equal(reportedCampusDistanceKm(0), null, "missing distances cannot pass a radius filter");
