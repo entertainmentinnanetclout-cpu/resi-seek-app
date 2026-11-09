@@ -140,11 +140,21 @@ export async function createBrandedPdf(details:LetterDetails):Promise<Uint8Array
 }
 const encodeBase64=(text:string)=>base64(new TextEncoder().encode(text));
 const wrappedBase64=(base:string)=>base.match(/.{1,76}/g)?.join("\r\n")||"";
-export function createGmailMime(to:string,subject:string,textBody:string,htmlBody:string,pdf?:Uint8Array,filename?:string):string{
+export function createGmailMime(to:string,subject:string,textBody:string,htmlBody:string,pdf?:Uint8Array,filename?:string,
+ sender?:{name:string;email:string}):string{
  const boundary="rk_alt_"+crypto.randomUUID().replace(/-/g,"");
  const mixed="rk_mixed_"+crypto.randomUUID().replace(/-/g,"");
  const top=pdf?mixed:boundary;
+ // Send via the Google-verified mailbox only. The display name may be branded,
+ // but the actual From/Reply-To address must match the OAuth mailbox; never
+ // spoof a sender, nor let residence metadata inject RFC-5322 headers.
+ const senderEmail=sender?.email?.trim().toLowerCase()||"";
+ if(sender && !/^[^\s@<>;,]+@[^\s@<>;,]+\.[^\s@<>;,]+$/.test(senderEmail))
+   throw new Error("Connected Gmail sender address is invalid");
+ const displayName=(sender?.name||"ResKonnect").replace(/[\r\n\u0000-\u001f\u007f<>]/g," ").replace(/\s+/g," ").trim().slice(0,100)||"ResKonnect";
+ const fromHeader=sender?("From: =?UTF-8?B?"+encodeBase64(displayName)+"?= <"+senderEmail+">"):null;
  const headers=[
+  ...(fromHeader?[fromHeader,"Reply-To: "+senderEmail]:[]),
   "To: "+to.replace(/[\r\n]/g,""),
   "Subject: =?UTF-8?B?"+encodeBase64(subject.replace(/[\r\n]/g," "))+"?=",
   "MIME-Version: 1.0",
