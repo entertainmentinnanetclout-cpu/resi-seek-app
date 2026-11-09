@@ -5,6 +5,18 @@ import {readFileSync} from "node:fs";
 const read=p=>readFileSync(p,"utf8");
 const sql=read("supabase/migrations/20261109054000_portal_email_verified_invitations.sql");
 const permissionFix=read("supabase/migrations/20261109061000_portal_rpc_service_role_permissions.sql");
+const adminRoleFix=read("supabase/migrations/20261109061500_portal_rpc_direct_admin_role.sql");
+test("privileged portal mutations verify AdminOS memberships without missing JWT context",()=>{
+ assert.equal((adminRoleFix.match(/CREATE OR REPLACE FUNCTION public\.portal_/g)||[]).length,2);
+ assert.equal((adminRoleFix.match(/SECURITY DEFINER SET search_path=''/g)||[]).length,2);
+ assert.equal((adminRoleFix.match(/SELECT 1 FROM public\.user_roles AS assigned/g)||[]).length,2);
+ assert.equal((adminRoleFix.match(/assigned\.role='admin'::public\.app_role/g)||[]).length,2);
+ assert.doesNotMatch(adminRoleFix,/public\.has_role\(p_admin_id/);
+ assert.doesNotMatch(adminRoleFix,/current_setting\('request\.jwt\.claim\.role',true\)/);
+ assert.equal((adminRoleFix.match(/REVOKE ALL ON FUNCTION public\.portal_/g)||[]).length,2);
+ assert.equal((adminRoleFix.match(/GRANT EXECUTE ON FUNCTION public\.portal_/g)||[]).length,2);
+});
+
 test("service-only portal RPCs do not require the legacy request.jwt.claim.role setting",()=>{
  const names=["portal_lookup_login_email","portal_prepare_orphan_profile_email","portal_restore_orphan_profile_email","portal_replace_residence_login"];
  for(const name of names){
