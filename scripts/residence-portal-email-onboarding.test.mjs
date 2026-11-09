@@ -4,6 +4,22 @@ import {readFileSync} from "node:fs";
 
 const read=p=>readFileSync(p,"utf8");
 const sql=read("supabase/migrations/20261109054000_portal_email_verified_invitations.sql");
+const permissionFix=read("supabase/migrations/20261109061000_portal_rpc_service_role_permissions.sql");
+test("service-only portal RPCs do not require the legacy request.jwt.claim.role setting",()=>{
+ const names=["portal_lookup_login_email","portal_prepare_orphan_profile_email","portal_restore_orphan_profile_email","portal_replace_residence_login"];
+ for(const name of names){
+   assert.ok(permissionFix.includes(`CREATE OR REPLACE FUNCTION public.${name}(`), `missing: ${name}`);
+   assert.ok(permissionFix.includes(`REVOKE ALL ON FUNCTION public.${name}(`), `not revoked: ${name}`);
+   assert.ok(permissionFix.includes("TO service_role;"),"service role grant required");
+ }
+ assert.equal((permissionFix.match(/SECURITY DEFINER SET search_path=''/g)||[]).length,4);
+ assert.equal((permissionFix.match(/REVOKE ALL ON FUNCTION public\.portal_/g)||[]).length,4);
+ assert.equal((permissionFix.match(/GRANT EXECUTE ON FUNCTION public\.portal_/g)||[]).length,4);
+ assert.doesNotMatch(permissionFix,/current_setting\('request\.jwt\.claim\.role',true\)[\s\S]*?RAISE EXCEPTION/);
+ assert.doesNotMatch(permissionFix,/Service access required/);
+ assert.match(permissionFix,/FROM PUBLIC, anon, authenticated/);
+});
+
 const edge=read("supabase/functions/admin-residence-portal-accounts/index.ts");
 const ui=read("src/pages/admin/AdminResidencePortals.tsx");
 
