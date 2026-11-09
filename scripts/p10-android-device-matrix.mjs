@@ -130,9 +130,13 @@ try{
       await context.setOffline(false);
       await page.getByText("You're offline.",{exact:false}).waitFor({state:"detached",timeout:5000});
       await page.evaluate(()=>{window.dispatchEvent(new CustomEvent("rk-network-degraded"));window.dispatchEvent(new Event("visibilitychange"));});
-      await page.getByText(/slow or unstable/i).waitFor({timeout:5000});
+      await page.getByText(/live service is not responding/i).waitFor({timeout:5000});
       await page.evaluate(()=>window.dispatchEvent(new CustomEvent("rk-network-recovered")));
-      await page.getByText(/slow or unstable/i).waitFor({state:"detached",timeout:5000});
+      await page.getByText(/live service is not responding/i).waitFor({state:"detached",timeout:5000});
+      await page.evaluate(()=>window.dispatchEvent(new CustomEvent("rk-auth-service-degraded")));
+      await page.getByText(/sign-in is temporarily unavailable on the server/i).waitFor({timeout:5000});
+      await page.evaluate(()=>window.dispatchEvent(new CustomEvent("rk-auth-service-recovered")));
+      await page.getByText(/sign-in is temporarily unavailable on the server/i).waitFor({state:"detached",timeout:5000});
       console.log("PASS",p.name,"offline/reconnect/network transition");
 
       await page.close();
