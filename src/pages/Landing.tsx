@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -104,8 +104,8 @@ const Landing = () => {
     "alternateName": ["RESKONNECT", "Res Konnect", "ResConnect"],
     "url": "https://www.reskonnect.org",
     "logo": "https://www.reskonnect.org/icon-512.png",
-    "slogan": "Connecting Residents. Advancing Futures.",
-    "description": "ResKonnect is an integrated Living, AI and Opportunity platform connecting student accommodation, intelligent guidance, applications, education pathways, bursaries, WIL and verified opportunities through one connected journey.",
+    "slogan": "Building Africa's First AI/SI-Powered Student Platform",
+    "description": "ResKonnect is a South African student accommodation, applications and opportunities platform combining artificial intelligence and service intelligence. Our ambition is to build an Africa-wide connected student journey.",
     "parentOrganization": { "@type": "Organization", "name": "Start To Up", "url": "https://www.start-to-up.co.za/" },
     "email": "reskonnect@gmail.com",
     "telephone": "+27637323192",
@@ -130,7 +130,7 @@ const Landing = () => {
     "applicationCategory": "LifestyleApplication",
     "operatingSystem": "Web",
     "description": "Integrated student platform for Living, grounded AI guidance, applications and opportunity discovery through one ResKonnect account.",
-    "featureList": ["verified accommodation discovery", "ResKonnect AI", "application readiness", "course and APS guidance", "bursaries", "WIL and opportunity discovery", "student journey next actions"],
+    "featureList": ["student accommodation search by city and budget", "AI and service intelligence guidance", "application readiness", "course and APS guidance", "student bursaries", "WIL placement support", "private rental and residence matching"],
     "publisher": { "@id": "https://www.reskonnect.org/#organization" },
   };
   const faqSchema = {
@@ -167,9 +167,9 @@ const Landing = () => {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <SEO
-        title="ResKonnect | Living • AI • Opportunity"
-        description="ResKonnect connects Living, AI and Opportunity in one integrated student platform for accommodation, intelligent guidance, applications, bursaries, WIL and verified opportunities."
-        keywords="ResKonnect, Living AI Opportunity, student platform South Africa, student accommodation, student AI, applications, bursaries, WIL, student opportunities"
+        title="Student Accommodation, Applications & WIL | ResKonnect"
+        description="Search student accommodation in Pretoria, Soshanguve, Ga-Rankuwa, Mbombela and Polokwane. Explore single rooms, NSFAS funding checks, applications, bursaries and WIL with ResKonnect AI/SI."
+        keywords="ResKonnect, student accommodation Pretoria, student housing Soshanguve, student rooms Mbombela, Ga-Rankuwa accommodation, Polokwane accommodation, NSFAS, WIL placements, bursaries, private rentals"
         canonicalPath="/"
       />
       <SEOJsonLd schema={[organizationSchema, websiteSchema, applicationSchema, faqSchema]} />
@@ -183,16 +183,62 @@ const Landing = () => {
 
         <section className="border-b bg-background py-9 md:py-14">
           <div className="container mx-auto px-4 text-center">
-            <p className="mb-2 text-xs font-black uppercase tracking-[0.24em] text-primary">LIVING • AI • OPPORTUNITY</p>
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-primary">OUR VISION · AFRICA'S FIRST AI/SI-POWERED STUDENT PLATFORM</p>
             <h1 className="mx-auto max-w-5xl text-3xl font-black leading-tight md:text-5xl lg:text-6xl">
-              Everything students need to <span className="text-primary">move forward. Connected.</span>
+              ResKonnect — <span className="text-primary">Building Africa's First AI/SI-Powered Student Platform.</span>
             </h1>
             <p className="mx-auto mt-4 max-w-3xl text-sm leading-7 text-muted-foreground md:text-lg">
-              ResKonnect connects where students live, the intelligence they need to make decisions and the opportunities that move them forward — through one account, one profile and one connected journey.
+              From student accommodation and single-room searches to applications, NSFAS funding checks, bursaries and WIL placements — ResKonnect connects Artificial Intelligence (AI) with Service Intelligence (SI) to help students make informed next steps.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Button size="lg" onClick={() => navigate("/get-started")}>Explore ResKonnect</Button>
+              <Button size="lg" onClick={() => navigate("/findmyres")}>Find Student Accommodation</Button>
               <Button size="lg" variant="outline" onClick={() => navigate("/ai")}>Ask ResKonnect AI</Button>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="discover-reskonnect" className="border-b bg-background py-11 md:py-14">
+          <div className="container mx-auto max-w-6xl px-4">
+            <div className="max-w-3xl">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Student accommodation in South Africa</p>
+              <h2 id="discover-reskonnect" className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-4xl">Find a room near your campus, in the city that actually suits you.</h2>
+              <p className="mt-3 text-sm leading-7 text-muted-foreground md:text-base">Explore the areas where ResKonnect has published residence records. Check property addresses, funding acceptance, room types and real provider prices when supplied. Missing prices are not advertised as budget offers.</p>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {[
+                ["Pretoria", "/student-accommodation/pretoria"],
+                ["Soshanguve", "/student-accommodation/soshanguve"],
+                ["Ga-Rankuwa", "/student-accommodation/ga-rankuwa"],
+                ["Mbombela", "/student-accommodation/mbombela"],
+                ["Polokwane", "/student-accommodation/polokwane"]
+              ].map(([city, url]) => (
+                <Link key={url} to={url} className="group rounded-xl border border-border bg-card px-4 py-5 shadow-sm transition hover:border-primary/60 hover:bg-primary/5">
+                  <MapPin className="mb-3 h-5 w-5 text-primary" aria-hidden="true" />
+                  <span className="block text-base font-bold">{city}</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">Student rooms & residences →</span>
+                </Link>
+              ))}
+            </div>
+            <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                ["Single student rooms", "/student-accommodation/single-rooms", "Single occupancy, privacy and room rules"],
+                ["NSFAS no-top-up checklist", "/student-accommodation/nsfas-no-top-up", "Check full cost and current funding rules"],
+                ["Rooms from a R1,500 budget", "/student-accommodation/r1500-to-budget", "Use a budget filter; availability not guaranteed"],
+                ["Private-paying accommodation", "/student-accommodation/private-paying", "Compare private rentals and deposits"],
+                ["All room and property types", "/student-accommodation/room-types", "Shared rooms, communes, residences and flats"],
+                ["NSFAS funding acceptance", "/student-accommodation/nsfas-accredited", "Separate acceptance from official accreditation"]
+              ].map(([label, to, desc]) => (
+                <Link key={to} to={to} className="rounded-xl border border-border/80 bg-card p-4 transition hover:border-primary/60 hover:shadow-sm">
+                  <span className="block text-sm font-bold text-foreground">{label} →</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">{desc}</span>
+                </Link>
+              ))}
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3 border-t border-border/70 pt-6 text-sm">
+              <Link className="font-semibold text-primary underline underline-offset-4" to="/applications">University & TVET applications</Link>
+              <Link className="font-semibold text-primary underline underline-offset-4" to="/opportunities/wil">WIL placement support</Link>
+              <Link className="font-semibold text-primary underline underline-offset-4" to="/bursaries">Bursaries & funding</Link>
+              <Link className="font-semibold text-primary underline underline-offset-4" to="/properties">Student housing property intelligence</Link>
             </div>
           </div>
         </section>

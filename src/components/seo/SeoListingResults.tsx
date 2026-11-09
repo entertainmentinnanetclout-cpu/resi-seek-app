@@ -11,6 +11,10 @@ export interface ListingQuery {
   audience?: "university" | "tvet" | "private";
   nsfasOnly?: boolean;
   areaTerms?: string[];
+  city?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  singlesOnly?: boolean;
   category?: string;
   limit?: number;
 }
@@ -28,6 +32,8 @@ interface Residence {
   private_price: number | null;
   nsfas_price: number | null;
   promo_price: number | null;
+  promo_active: boolean | null;
+  price_verified_at: string | null;
   image_url: string | null;
   cover_image_url: string | null;
   images: string[] | null;
@@ -39,6 +45,7 @@ interface Residence {
   accepts_university: boolean;
   room_type: string | null;
   room_types: string[] | null;
+  singles_available: number | null;
   amenities: unknown;
   has_wifi: boolean | null;
   has_parking: boolean | null;
@@ -69,14 +76,19 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
 
     const run = async () => {
       try {
-        let req = supabase
+        // Keep the large generated Supabase relation type from recursively
+        // expanding during the public listing query. Results are narrowed to
+        // the Residence display contract below, and RLS stays enforced.
+        let req = (supabase as any)
           .from("residences")
           .select(
-            "id, slug, name, address, campus, province, city, place_label, price, private_price, nsfas_price, promo_price, image_url, cover_image_url, images, available_spots, capacity, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, room_type, room_types, amenities, has_wifi, has_parking, is_furnished, utilities_included, reservations_2027_open",
+            "id, slug, name, address, campus, province, city, place_label, price, private_price, nsfas_price, promo_price, promo_active, price_verified_at, image_url, cover_image_url, images, available_spots, capacity, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, room_type, room_types, singles_available, amenities, has_wifi, has_parking, is_furnished, utilities_included, reservations_2027_open",
           )
+          .eq("is_visible", true)
           .order("display_order", { ascending: true })
-          .limit(60);
+          .limit(query.city ? 200 : 500);
 
+        if (query.city) req = req.eq("city", query.city);
         if (query.audience) req = req.eq(AUDIENCE_COLUMN[query.audience], true);
         if (query.nsfasOnly) req = req.eq("accepts_nsfas", true);
         if (query.category) req = req.eq("category", query.category);
@@ -94,6 +106,19 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
           });
         }
 
+        // Do not turn a missing price or unknown room category into a budget offer.
+        // The price comparison uses the same property price displayed in the card.
+        if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+          rows = rows.filter((r) => {
+            const monthly = Number((r.promo_active && r.promo_price) || r.private_price || r.price || 0);
+            return monthly > 0 && monthly >= (query.minPrice ?? 0) && monthly <= (query.maxPrice ?? Number.POSITIVE_INFINITY);
+          });
+        }
+        if (query.singlesOnly) {
+          rows = rows.filter((r) => (r.singles_available ?? 0) > 0 ||
+            [r.room_type, ...(r.room_types || [])].some((v) => /\\bsingle\\b/i.test(String(v || ""))));
+        }
+
         if (!cancelled) setResidences(rows.slice(0, query.limit ?? 6));
       } catch (err) {
         console.error("[SeoListingResults]", err);
@@ -107,7 +132,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
     return () => {
       cancelled = true;
     };
-  }, [query.audience, query.nsfasOnly, query.category, query.limit, JSON.stringify(query.areaTerms)]);
+  }, [query.audience, query.nsfasOnly, query.category, query.city, query.minPrice, query.maxPrice, query.singlesOnly, query.limit, JSON.stringify(query.areaTerms)]);
 
   return (
     <section aria-labelledby="listings-heading" className="mt-14">
@@ -133,7 +158,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
           {residences.map((r) => {
             const image = r.cover_image_url || r.images?.[0] || r.image_url || "/placeholder.svg";
             const area = r.campus || r.province || "South Africa";
-            const displayPrice = Number(r.promo_price || r.private_price || r.price || 0);
+            const displayPrice = Number((r.promo_active && r.promo_price) || r.private_price || r.price || 0);
             return (
               <li key={r.id}>
                 <Card className="h-full overflow-hidden transition-shadow hover:shadow-lg">
@@ -163,7 +188,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
                       </h3>
                       {r.accepts_nsfas && (
                         <Badge variant="secondary" className="shrink-0 gap-1">
-                          <ShieldCheck className="h-3 w-3" aria-hidden="true" /> NSFAS
+                          <ShieldCheck className="h-3 w-3" aria-hidden="true" /> Accepts NSFAS
                         </Badge>
                       )}
                     </div>
@@ -177,7 +202,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
                     </p>
                     {displayPrice > 0 ? (
                       <p className="text-sm font-semibold text-foreground">
-                        From R{displayPrice.toLocaleString("en-ZA")} per month
+                        Listed from R{displayPrice.toLocaleString("en-ZA")}/month · {r.price_verified_at ? "price verified" : "confirm rate"}
                       </p>
                     ) : (
                       <p className="text-sm font-semibold text-muted-foreground">Rate available on listing</p>

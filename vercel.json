@@ -235,6 +235,42 @@
       "destination": "/_seo/student-accommodation-pretoria"
     },
     {
+      "source": "/student-accommodation/soshanguve",
+      "destination": "/_seo/student-accommodation-soshanguve"
+    },
+    {
+      "source": "/student-accommodation/ga-rankuwa",
+      "destination": "/_seo/student-accommodation-ga-rankuwa"
+    },
+    {
+      "source": "/student-accommodation/mbombela",
+      "destination": "/_seo/student-accommodation-mbombela"
+    },
+    {
+      "source": "/student-accommodation/polokwane",
+      "destination": "/_seo/student-accommodation-polokwane"
+    },
+    {
+      "source": "/student-accommodation/single-rooms",
+      "destination": "/_seo/student-accommodation-single-rooms"
+    },
+    {
+      "source": "/student-accommodation/nsfas-no-top-up",
+      "destination": "/_seo/student-accommodation-nsfas-no-top-up"
+    },
+    {
+      "source": "/student-accommodation/r1500-to-budget",
+      "destination": "/_seo/student-accommodation-r1500-to-budget"
+    },
+    {
+      "source": "/student-accommodation/private-paying",
+      "destination": "/_seo/student-accommodation-private-paying"
+    },
+    {
+      "source": "/student-accommodation/room-types",
+      "destination": "/_seo/student-accommodation-room-types"
+    },
+    {
       "source": "/student-accommodation/pretoria-west",
       "destination": "/_seo/student-accommodation-pretoria-west"
     },

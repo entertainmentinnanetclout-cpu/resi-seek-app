@@ -102,6 +102,22 @@ const FindMyRes = () => {
     if (aud && aud !== filters.audience) updateFilter("audience", aud);
     const inst = searchParams.get("institution");
     if (inst && inst !== filters.institutionTag) updateFilter("institutionTag", inst);
+    // Search-engine landing pages can deep-link into real, removable filters.
+    // Unknown values are ignored, and price bounds are clamped to the UI range.
+    const lower = searchParams.get("minPrice");
+    const upper = searchParams.get("maxPrice");
+    if (lower !== null && /^\\d{1,5}$/.test(lower)) {
+      const n = Math.min(10000, Math.max(0, Number(lower)));
+      if (n !== filters.priceMin) updateFilter("priceMin", n);
+    }
+    if (upper !== null && /^\\d{1,5}$/.test(upper)) {
+      const n = Math.min(10000, Math.max(0, Number(upper)));
+      if (n !== filters.priceMax) updateFilter("priceMax", n);
+    }
+    if (searchParams.get("singlesOnly") === "true" && !filters.singlesOnly) updateFilter("singlesOnly", true);
+    if (searchParams.get("nsfasOnly") === "true" && !filters.nsfasOnly) updateFilter("nsfasOnly", true);
+    if (searchParams.get("privatePayingOnly") === "true" && !filters.privatePayingOnly) updateFilter("privatePayingOnly", true);
+    if (searchParams.get("priceVerifiedOnly") === "true" && !filters.priceVerifiedOnly) updateFilter("priceVerifiedOnly", true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 

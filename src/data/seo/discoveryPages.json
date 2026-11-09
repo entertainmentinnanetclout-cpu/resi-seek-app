@@ -1,0 +1,1284 @@
+[
+  {
+    "path": "/student-accommodation/pretoria",
+    "kind": "landing",
+    "title": "Student Accommodation Pretoria | Rooms & Residences | ResKonnect",
+    "description": "Explore student accommodation in Pretoria, Gauteng. Compare published residence addresses, room types, funding acceptance and availability on ResKonnect.",
+    "keywords": "student accommodation Pretoria, student housing Pretoria, rooms to rent Pretoria, student residence Pretoria",
+    "h1": "Student Accommodation in Pretoria",
+    "intro": [
+      "In Pretoria, students often need to balance campus access, route costs and their actual funding or private-rent budget. Pretoria West, Hatfield and Arcadia are not interchangeable: confirm your specific campus and a residence's address before calculating travel.",
+      "ResKonnect has published residence records for Pretoria, Gauteng. Use the live search to review each provider's verified information; prices, single-room supply and funding status are only shown when recorded. Listings are not a guarantee of vacancies."
+    ],
+    "audience": "University, TVET and private-paying students comparing student accommodation around Pretoria and TUT Pretoria West, the University of Pretoria, UNISA and nearby colleges.",
+    "benefits": [
+      {
+        "title": "Relevant local search",
+        "body": "Start with properties marked Pretoria rather than unrelated cities. Open each listing to check its complete address."
+      },
+      {
+        "title": "Budget reality check",
+        "body": "Where the provider has supplied a price, compare it with your full monthly budget. Missing rates are not R0 or proof of affordability."
+      },
+      {
+        "title": "Funding and eligibility",
+        "body": "Accepts NSFAS, officially accredited and within your funding cap are different conditions; confirm each separately."
+      },
+      {
+        "title": "Straightforward next steps",
+        "body": "Review room details, request a viewing or quote, and continue your application or reservation through the relevant property process."
+      }
+    ],
+    "body": [
+      {
+        "heading": "Choosing accommodation around TUT Pretoria West, the University of Pretoria, UNISA and nearby colleges",
+        "paragraphs": [
+          "Students studying at TUT Pretoria West may prioritise safe access to that campus. University of Pretoria students may use different routes depending on faculty. Always verify an address, viewing arrangements and transport options on the individual listing.",
+          "Distance information should be checked against the exact campus entrance and current transport routes. ResKonnect does not claim that every property in a city is walkable from any institution."
+        ]
+      },
+      {
+        "heading": "Single rooms, shared rooms and private tenants",
+        "paragraphs": [
+          "Explore single rooms, shared accommodation and private rentals in Pretoria where providers have supplied the relevant information. A listing without a room type or price is not counted as a matching single-room offer.",
+          "If you are NSFAS-funded, ask for current official accreditation evidence, the relevant institution's allowance rule and a full quote before deciding whether extra payment is required."
+        ]
+      }
+    ],
+    "listings": {
+      "heading": "Live residence records in Pretoria",
+      "query": {
+        "city": "Pretoria",
+        "limit": 12
+      },
+      "emptyText": "No published Pretoria listings can be retrieved right now. Search all areas, or request a provider quote rather than assuming a place is available."
+    },
+    "helps": [
+      "Find residence records categorised under Pretoria",
+      "See recorded room information and request missing quotes",
+      "Compare funding acceptance with actual accreditation evidence",
+      "Continue to applications or reservations on eligible listings"
+    ],
+    "notDoing": [
+      "ResKonnect does not guarantee accommodation in a specific area or residence.",
+      "Do not treat the city label as measured walking distance.",
+      "Unpriced properties are never advertised as R1,500 offers or no-top-up rentals."
+    ],
+    "faqs": [
+      {
+        "question": "How can I find rooms to rent in Pretoria?",
+        "answer": "Open the city-filtered ResKonnect search, compare the published properties and ask a provider for any missing rent, room or availability details."
+      },
+      {
+        "question": "Can I search using my monthly budget?",
+        "answer": "Yes. Filter by price on Find My Res. Properties without a recorded price cannot be assumed to meet your budget."
+      },
+      {
+        "question": "Are Pretoria West and central Pretoria listings the same?",
+        "answer": "No. Pretoria West is a specific part of Pretoria. Check the listed street address and campus route rather than assuming every Pretoria residence is near your campus."
+      }
+    ],
+    "links": [
+      {
+        "label": "Student accommodation in Soshanguve",
+        "to": "/student-accommodation/soshanguve"
+      },
+      {
+        "label": "Student accommodation in Ga-Rankuwa",
+        "to": "/student-accommodation/ga-rankuwa"
+      },
+      {
+        "label": "Student accommodation in Mbombela",
+        "to": "/student-accommodation/mbombela"
+      },
+      {
+        "label": "Student accommodation in Polokwane",
+        "to": "/student-accommodation/polokwane"
+      },
+      {
+        "label": "Single rooms guide",
+        "to": "/student-accommodation/single-rooms"
+      },
+      {
+        "label": "NSFAS no-top-up checklist",
+        "to": "/student-accommodation/nsfas-no-top-up"
+      },
+      {
+        "label": "WIL placement support",
+        "to": "/opportunities/wil"
+      },
+      {
+        "label": "Bursaries",
+        "to": "/bursaries"
+      }
+    ],
+    "cta": {
+      "label": "Search Pretoria residences",
+      "to": "/findmyres?city=Pretoria",
+      "secondaryLabel": "Compare all South African areas",
+      "secondaryTo": "/student-accommodation"
+    },
+    "crumbs": [
+      {
+        "name": "Home",
+        "path": "/"
+      },
+      {
+        "name": "Student Accommodation",
+        "path": "/student-accommodation"
+      },
+      {
+        "name": "Pretoria",
+        "path": "/student-accommodation/pretoria"
+      }
+    ]
+  },
+  {
+    "path": "/student-accommodation/soshanguve",
+    "kind": "landing",
+    "title": "Student Accommodation Soshanguve | Rooms & Residences | ResKonnect",
+    "description": "Explore student accommodation in Soshanguve, Gauteng. Compare published residence addresses, room types, funding acceptance and availability on ResKonnect.",
+    "keywords": "student accommodation Soshanguve, student housing Soshanguve, rooms to rent Soshanguve, student residence Soshanguve",
+    "h1": "Student Accommodation in Soshanguve",
+    "intro": [
+      "Soshanguve searches should focus on the correct campus entrance and the actual daily travel route. A property may be in Soshanguve yet still require a taxi or an additional transport connection.",
+      "ResKonnect has published residence records for Soshanguve, Gauteng. Use the live search to review each provider's verified information; prices, single-room supply and funding status are only shown when recorded. Listings are not a guarantee of vacancies."
+    ],
+    "audience": "University, TVET and private-paying students comparing student accommodation around Soshanguve and TUT Soshanguve campuses and nearby study centres.",
+    "benefits": [
+      {
+        "title": "Relevant local search",
+        "body": "Start with properties marked Soshanguve rather than unrelated cities. Open each listing to check its complete address."
+      },
+      {
+        "title": "Budget reality check",
+        "body": "Where the provider has supplied a price, compare it with your full monthly budget. Missing rates are not R0 or proof of affordability."
+      },
+      {
+        "title": "Funding and eligibility",
+        "body": "Accepts NSFAS, officially accredited and within your funding cap are different conditions; confirm each separately."
+      },
+      {
+        "title": "Straightforward next steps",
+        "body": "Review room details, request a viewing or quote, and continue your application or reservation through the relevant property process."
+      }
+    ],
+    "body": [
+      {
+        "heading": "Choosing accommodation around TUT Soshanguve campuses and nearby study centres",
+        "paragraphs": [
+          "Compare the residence address and the campus you attend. Confirm availability, visitor or viewing procedures, monthly rent and whether the property accepts your funding route directly with the provider.",
+          "Distance information should be checked against the exact campus entrance and current transport routes. ResKonnect does not claim that every property in a city is walkable from any institution."
+        ]
+      },
+      {
+        "heading": "Single rooms, shared rooms and private tenants",
+        "paragraphs": [
+          "Explore single rooms, shared accommodation and private rentals in Soshanguve where providers have supplied the relevant information. A listing without a room type or price is not counted as a matching single-room offer.",
+          "If you are NSFAS-funded, ask for current official accreditation evidence, the relevant institution's allowance rule and a full quote before deciding whether extra payment is required."
+        ]
+      }
+    ],
+    "listings": {
+      "heading": "Live residence records in Soshanguve",
+      "query": {
+        "city": "Soshanguve",
+        "limit": 12
+      },
+      "emptyText": "No published Soshanguve listings can be retrieved right now. Search all areas, or request a provider quote rather than assuming a place is available."
+    },
+    "helps": [
+      "Find residence records categorised under Soshanguve",
+      "See recorded room information and request missing quotes",
+      "Compare funding acceptance with actual accreditation evidence",
+      "Continue to applications or reservations on eligible listings"
+    ],
+    "notDoing": [
+      "ResKonnect does not guarantee accommodation in a specific area or residence.",
+      "Do not treat the city label as measured walking distance.",
+      "Unpriced properties are never advertised as R1,500 offers or no-top-up rentals."
+    ],
+    "faqs": [
+      {
+        "question": "How can I find rooms to rent in Soshanguve?",
+        "answer": "Open the city-filtered ResKonnect search, compare the published properties and ask a provider for any missing rent, room or availability details."
+      },
+      {
+        "question": "Can I search using my monthly budget?",
+        "answer": "Yes. Filter by price on Find My Res. Properties without a recorded price cannot be assumed to meet your budget."
+      },
+      {
+        "question": "Can I find housing near TUT Soshanguve?",
+        "answer": "ResKonnect has published residence records in Soshanguve. Compare each property's exact address and room information to your TUT campus; proximity is not guaranteed by the city label."
+      }
+    ],
+    "links": [
+      {
+        "label": "Student accommodation in Pretoria",
+        "to": "/student-accommodation/pretoria"
+      },
+      {
+        "label": "Student accommodation in Ga-Rankuwa",
+        "to": "/student-accommodation/ga-rankuwa"
+      },
+      {
+        "label": "Student accommodation in Mbombela",
+        "to": "/student-accommodation/mbombela"
+      },
+      {
+        "label": "Student accommodation in Polokwane",
+        "to": "/student-accommodation/polokwane"
+      },
+      {
+        "label": "Single rooms guide",
+        "to": "/student-accommodation/single-rooms"
+      },
+      {
+        "label": "NSFAS no-top-up checklist",
+        "to": "/student-accommodation/nsfas-no-top-up"
+      },
+      {
+        "label": "WIL placement support",
+        "to": "/opportunities/wil"
+      },
+      {
+        "label": "Bursaries",
+        "to": "/bursaries"
+      }
+    ],
+    "cta": {
+      "label": "Search Soshanguve residences",
+      "to": "/findmyres?city=Soshanguve",
+      "secondaryLabel": "Compare all South African areas",
+      "secondaryTo": "/student-accommodation"
+    },
+    "crumbs": [
+      {
+        "name": "Home",
+        "path": "/"
+      },
+      {
+        "name": "Student Accommodation",
+        "path": "/student-accommodation"
+      },
+      {
+        "name": "Soshanguve",
+        "path": "/student-accommodation/soshanguve"
+      }
+    ]
+  },
+  {
+    "path": "/student-accommodation/ga-rankuwa",
+    "kind": "landing",
+    "title": "Student Accommodation Ga-Rankuwa | Rooms & Residences | ResKonnect",
+    "description": "Explore student accommodation in Ga-Rankuwa, Gauteng. Compare published residence addresses, room types, funding acceptance and availability on ResKonnect.",
+    "keywords": "student accommodation Ga-Rankuwa, student housing Ga-Rankuwa, rooms to rent Ga-Rankuwa, student residence Ga-Rankuwa",
+    "h1": "Student Accommodation in Ga-Rankuwa",
+    "intro": [
+      "Ga-Rankuwa residence searches require careful attention to local transport, study times and the specific location of your college, clinical placement or campus.",
+      "ResKonnect has published residence records for Ga-Rankuwa, Gauteng. Use the live search to review each provider's verified information; prices, single-room supply and funding status are only shown when recorded. Listings are not a guarantee of vacancies."
+    ],
+    "audience": "University, TVET and private-paying students comparing student accommodation around Ga-Rankuwa and Ga-Rankuwa study and healthcare training centres.",
+    "benefits": [
+      {
+        "title": "Relevant local search",
+        "body": "Start with properties marked Ga-Rankuwa rather than unrelated cities. Open each listing to check its complete address."
+      },
+      {
+        "title": "Budget reality check",
+        "body": "Where the provider has supplied a price, compare it with your full monthly budget. Missing rates are not R0 or proof of affordability."
+      },
+      {
+        "title": "Funding and eligibility",
+        "body": "Accepts NSFAS, officially accredited and within your funding cap are different conditions; confirm each separately."
+      },
+      {
+        "title": "Straightforward next steps",
+        "body": "Review room details, request a viewing or quote, and continue your application or reservation through the relevant property process."
+      }
+    ],
+    "body": [
+      {
+        "heading": "Choosing accommodation around Ga-Rankuwa study and healthcare training centres",
+        "paragraphs": [
+          "If you are attending classes or practical training at different sites, check both routes before signing. Request an itemised quote showing rent, utilities, deposits and any compulsory charges.",
+          "Distance information should be checked against the exact campus entrance and current transport routes. ResKonnect does not claim that every property in a city is walkable from any institution."
+        ]
+      },
+      {
+        "heading": "Single rooms, shared rooms and private tenants",
+        "paragraphs": [
+          "Explore single rooms, shared accommodation and private rentals in Ga-Rankuwa where providers have supplied the relevant information. A listing without a room type or price is not counted as a matching single-room offer.",
+          "If you are NSFAS-funded, ask for current official accreditation evidence, the relevant institution's allowance rule and a full quote before deciding whether extra payment is required."
+        ]
+      }
+    ],
+    "listings": {
+      "heading": "Live residence records in Ga-Rankuwa",
+      "query": {
+        "city": "Ga-Rankuwa",
+        "limit": 12
+      },
+      "emptyText": "No published Ga-Rankuwa listings can be retrieved right now. Search all areas, or request a provider quote rather than assuming a place is available."
+    },
+    "helps": [
+      "Find residence records categorised under Ga-Rankuwa",
+      "See recorded room information and request missing quotes",
+      "Compare funding acceptance with actual accreditation evidence",
+      "Continue to applications or reservations on eligible listings"
+    ],
+    "notDoing": [
+      "ResKonnect does not guarantee accommodation in a specific area or residence.",
+      "Do not treat the city label as measured walking distance.",
+      "Unpriced properties are never advertised as R1,500 offers or no-top-up rentals."
+    ],
+    "faqs": [
+      {
+        "question": "How can I find rooms to rent in Ga-Rankuwa?",
+        "answer": "Open the city-filtered ResKonnect search, compare the published properties and ask a provider for any missing rent, room or availability details."
+      },
+      {
+        "question": "Can I search using my monthly budget?",
+        "answer": "Yes. Filter by price on Find My Res. Properties without a recorded price cannot be assumed to meet your budget."
+      },
+      {
+        "question": "Do all Ga-Rankuwa listings accept NSFAS?",
+        "answer": "No. Funding acceptance and official accreditation are separate facts. Check the status of each property and confirm the funding and lease rules with the provider."
+      }
+    ],
+    "links": [
+      {
+        "label": "Student accommodation in Pretoria",
+        "to": "/student-accommodation/pretoria"
+      },
+      {
+        "label": "Student accommodation in Soshanguve",
+        "to": "/student-accommodation/soshanguve"
+      },
+      {
+        "label": "Student accommodation in Mbombela",
+        "to": "/student-accommodation/mbombela"
+      },
+      {
+        "label": "Student accommodation in Polokwane",
+        "to": "/student-accommodation/polokwane"
+      },
+      {
+        "label": "Single rooms guide",
+        "to": "/student-accommodation/single-rooms"
+      },
+      {
+        "label": "NSFAS no-top-up checklist",
+        "to": "/student-accommodation/nsfas-no-top-up"
+      },
+      {
+        "label": "WIL placement support",
+        "to": "/opportunities/wil"
+      },
+      {
+        "label": "Bursaries",
+        "to": "/bursaries"
+      }
+    ],
+    "cta": {
+      "label": "Search Ga-Rankuwa residences",
+      "to": "/findmyres?city=Ga-Rankuwa",
+      "secondaryLabel": "Compare all South African areas",
+      "secondaryTo": "/student-accommodation"
+    },
+    "crumbs": [
+      {
+        "name": "Home",
+        "path": "/"
+      },
+      {
+        "name": "Student Accommodation",
+        "path": "/student-accommodation"
+      },
+      {
+        "name": "Ga-Rankuwa",
+        "path": "/student-accommodation/ga-rankuwa"
+      }
+    ]
+  },
+  {
+    "path": "/student-accommodation/mbombela",
+    "kind": "landing",
+    "title": "Student Accommodation Mbombela | Rooms & Residences | ResKonnect",
+    "description": "Explore student accommodation in Mbombela, Mpumalanga. Compare published residence addresses, room types, funding acceptance and availability on ResKonnect.",
+    "keywords": "student accommodation Mbombela, student housing Mbombela, rooms to rent Mbombela, student residence Mbombela",
+    "h1": "Student Accommodation in Mbombela",
+    "intro": [
+      "Mbombela students may study at different city or regional locations. The best housing match depends on verified travel options, room occupancy, utilities and the published rent.",
+      "ResKonnect has published residence records for Mbombela, Mpumalanga. Use the live search to review each provider's verified information; prices, single-room supply and funding status are only shown when recorded. Listings are not a guarantee of vacancies."
+    ],
+    "audience": "University, TVET and private-paying students comparing student accommodation around Mbombela and Mbombela study locations and regional colleges.",
+    "benefits": [
+      {
+        "title": "Relevant local search",
+        "body": "Start with properties marked Mbombela rather than unrelated cities. Open each listing to check its complete address."
+      },
+      {
+        "title": "Budget reality check",
+        "body": "Where the provider has supplied a price, compare it with your full monthly budget. Missing rates are not R0 or proof of affordability."
+      },
+      {
+        "title": "Funding and eligibility",
+        "body": "Accepts NSFAS, officially accredited and within your funding cap are different conditions; confirm each separately."
+      },
+      {
+        "title": "Straightforward next steps",
+        "body": "Review room details, request a viewing or quote, and continue your application or reservation through the relevant property process."
+      }
+    ],
+    "body": [
+      {
+        "heading": "Choosing accommodation around Mbombela study locations and regional colleges",
+        "paragraphs": [
+          "Compare property details rather than relying on a general city search. Confirm transport availability and the location of lectures or practical sessions before reserving; budget for the full monthly cost, not only the headline rent.",
+          "Distance information should be checked against the exact campus entrance and current transport routes. ResKonnect does not claim that every property in a city is walkable from any institution."
+        ]
+      },
+      {
+        "heading": "Single rooms, shared rooms and private tenants",
+        "paragraphs": [
+          "Explore single rooms, shared accommodation and private rentals in Mbombela where providers have supplied the relevant information. A listing without a room type or price is not counted as a matching single-room offer.",
+          "If you are NSFAS-funded, ask for current official accreditation evidence, the relevant institution's allowance rule and a full quote before deciding whether extra payment is required."
+        ]
+      }
+    ],
+    "listings": {
+      "heading": "Live residence records in Mbombela",
+      "query": {
+        "city": "Mbombela",
+        "limit": 12
+      },
+      "emptyText": "No published Mbombela listings can be retrieved right now. Search all areas, or request a provider quote rather than assuming a place is available."
+    },
+    "helps": [
+      "Find residence records categorised under Mbombela",
+      "See recorded room information and request missing quotes",
+      "Compare funding acceptance with actual accreditation evidence",
+      "Continue to applications or reservations on eligible listings"
+    ],
+    "notDoing": [
+      "ResKonnect does not guarantee accommodation in a specific area or residence.",
+      "Do not treat the city label as measured walking distance.",
+      "Unpriced properties are never advertised as R1,500 offers or no-top-up rentals."
+    ],
+    "faqs": [
+      {
+        "question": "How can I find rooms to rent in Mbombela?",
+        "answer": "Open the city-filtered ResKonnect search, compare the published properties and ask a provider for any missing rent, room or availability details."
+      },
+      {
+        "question": "Can I search using my monthly budget?",
+        "answer": "Yes. Filter by price on Find My Res. Properties without a recorded price cannot be assumed to meet your budget."
+      },
+      {
+        "question": "What if a Mbombela listing does not show a price?",
+        "answer": "Some published properties have not supplied a confirmed monthly rate. Contact the provider for a written quote and confirm deposit, utilities, occupancy and any compulsory top-up."
+      }
+    ],
+    "links": [
+      {
+        "label": "Student accommodation in Pretoria",
+        "to": "/student-accommodation/pretoria"
+      },
+      {
+        "label": "Student accommodation in Soshanguve",
+        "to": "/student-accommodation/soshanguve"
+      },
+      {
+        "label": "Student accommodation in Ga-Rankuwa",
+        "to": "/student-accommodation/ga-rankuwa"
+      },
+      {
+        "label": "Student accommodation in Polokwane",
+        "to": "/student-accommodation/polokwane"
+      },
+      {
+        "label": "Single rooms guide",
+        "to": "/student-accommodation/single-rooms"
+      },
+      {
+        "label": "NSFAS no-top-up checklist",
+        "to": "/student-accommodation/nsfas-no-top-up"
+      },
+      {
+        "label": "WIL placement support",
+        "to": "/opportunities/wil"
+      },
+      {
+        "label": "Bursaries",
+        "to": "/bursaries"
+      }
+    ],
+    "cta": {
+      "label": "Search Mbombela residences",
+      "to": "/findmyres?city=Mbombela",
+      "secondaryLabel": "Compare all South African areas",
+      "secondaryTo": "/student-accommodation"
+    },
+    "crumbs": [
+      {
+        "name": "Home",
+        "path": "/"
+      },
+      {
+        "name": "Student Accommodation",
+        "path": "/student-accommodation"
+      },
+      {
+        "name": "Mbombela",
+        "path": "/student-accommodation/mbombela"
+      }
+    ]
+  },
+  {
+    "path": "/student-accommodation/polokwane",
+    "kind": "landing",
+    "title": "Student Accommodation Polokwane | Rooms & Residences | ResKonnect",
+    "description": "Explore student accommodation in Polokwane, Limpopo. Compare published residence addresses, room types, funding acceptance and availability on ResKonnect.",
+    "keywords": "student accommodation Polokwane, student housing Polokwane, rooms to rent Polokwane, student residence Polokwane",
+    "h1": "Student Accommodation in Polokwane",
+    "intro": [
+      "For student accommodation in Polokwane, campus location, travel time and transparent monthly charges are more useful than a generic 'near college' claim.",
+      "ResKonnect has published residence records for Polokwane, Limpopo. Use the live search to review each provider's verified information; prices, single-room supply and funding status are only shown when recorded. Listings are not a guarantee of vacancies."
+    ],
+    "audience": "University, TVET and private-paying students comparing student accommodation around Polokwane and Polokwane colleges, universities and training providers.",
+    "benefits": [
+      {
+        "title": "Relevant local search",
+        "body": "Start with properties marked Polokwane rather than unrelated cities. Open each listing to check its complete address."
+      },
+      {
+        "title": "Budget reality check",
+        "body": "Where the provider has supplied a price, compare it with your full monthly budget. Missing rates are not R0 or proof of affordability."
+      },
+      {
+        "title": "Funding and eligibility",
+        "body": "Accepts NSFAS, officially accredited and within your funding cap are different conditions; confirm each separately."
+      },
+      {
+        "title": "Straightforward next steps",
+        "body": "Review room details, request a viewing or quote, and continue your application or reservation through the relevant property process."
+      }
+    ],
+    "body": [
+      {
+        "heading": "Choosing accommodation around Polokwane colleges, universities and training providers",
+        "paragraphs": [
+          "Ask whether the room is single or shared, whether Wi-Fi and utilities are included and whether the residence supports your funding arrangement. Treat unverified accreditation or NSFAS labels as a prompt to investigate, not a guarantee.",
+          "Distance information should be checked against the exact campus entrance and current transport routes. ResKonnect does not claim that every property in a city is walkable from any institution."
+        ]
+      },
+      {
+        "heading": "Single rooms, shared rooms and private tenants",
+        "paragraphs": [
+          "Explore single rooms, shared accommodation and private rentals in Polokwane where providers have supplied the relevant information. A listing without a room type or price is not counted as a matching single-room offer.",
+          "If you are NSFAS-funded, ask for current official accreditation evidence, the relevant institution's allowance rule and a full quote before deciding whether extra payment is required."
+        ]
+      }
+    ],
+    "listings": {
+      "heading": "Live residence records in Polokwane",
+      "query": {
+        "city": "Polokwane",
+        "limit": 12
+      },
+      "emptyText": "No published Polokwane listings can be retrieved right now. Search all areas, or request a provider quote rather than assuming a place is available."
+    },
+    "helps": [
+      "Find residence records categorised under Polokwane",
+      "See recorded room information and request missing quotes",
+      "Compare funding acceptance with actual accreditation evidence",
+      "Continue to applications or reservations on eligible listings"
+    ],
+    "notDoing": [
+      "ResKonnect does not guarantee accommodation in a specific area or residence.",
+      "Do not treat the city label as measured walking distance.",
+      "Unpriced properties are never advertised as R1,500 offers or no-top-up rentals."
+    ],
+    "faqs": [
+      {
+        "question": "How can I find rooms to rent in Polokwane?",
+        "answer": "Open the city-filtered ResKonnect search, compare the published properties and ask a provider for any missing rent, room or availability details."
+      },
+      {
+        "question": "Can I search using my monthly budget?",
+        "answer": "Yes. Filter by price on Find My Res. Properties without a recorded price cannot be assumed to meet your budget."
+      },
+      {
+        "question": "Can private-paying students use Polokwane listings?",
+        "answer": "Check each published provider's private-tenant acceptance and the actual rent, deposit and lease conditions. ResKonnect supports private tenants as well as students using funding."
+      }
+    ],
+    "links": [
+      {
+        "label": "Student accommodation in Pretoria",
+        "to": "/student-accommodation/pretoria"
+      },
+      {
+        "label": "Student accommodation in Soshanguve",
+        "to": "/student-accommodation/soshanguve"
+      },
+      {
+        "label": "Student accommodation in Ga-Rankuwa",
+        "to": "/student-accommodation/ga-rankuwa"
+      },
+      {
+        "label": "Student accommodation in Mbombela",
+        "to": "/student-accommodation/mbombela"
+      },
+      {
+        "label": "Single rooms guide",
+        "to": "/student-accommodation/single-rooms"
+      },
+      {
+        "label": "NSFAS no-top-up checklist",
+        "to": "/student-accommodation/nsfas-no-top-up"
+      },
+      {
+        "label": "WIL placement support",
+        "to": "/opportunities/wil"
+      },
+      {
+        "label": "Bursaries",
+        "to": "/bursaries"
+      }
+    ],
+    "cta": {
+      "label": "Search Polokwane residences",
+      "to": "/findmyres?city=Polokwane",
+      "secondaryLabel": "Compare all South African areas",
+      "secondaryTo": "/student-accommodation"
+    },
+    "crumbs": [
+      {
+        "name": "Home",
+        "path": "/"
+      },
+      {
+        "name": "Student Accommodation",
+        "path": "/student-accommodation"
+      },
+      {
+        "name": "Polokwane",
+        "path": "/student-accommodation/polokwane"
+      }
+    ]
+  },
+  {
+    "path": "/student-accommodation/single-rooms",
+    "kind": "guide",
+    "title": "Single Rooms for Students | Private & NSFAS Options | ResKonnect",
+    "description": "Find guidance on single student rooms, privacy, occupancy, monthly costs and NSFAS or private funding checks. Browse only properties with actual room details.",
+    "h1": "Single Rooms for Students",
+    "keywords": "single rooms for students, NSFAS student accommodation, Pretoria housing, South Africa student rooms",
+    "intro": [
+      "A single room usually means one resident has a private sleeping space, but bathrooms, kitchens and study areas may still be shared. Confirm exactly what is private before paying a deposit.",
+      "ResKonnect only treats a room as a single-room option where its property data actually identifies it as such. If there are no confirmed single rooms, use the request flow rather than treating an unclassified listing as a match."
+    ],
+    "audience": "South African university, TVET, NSFAS-funded, bursary-funded and private-paying students comparing rooms and verified total costs.",
+    "benefits": [
+      {
+        "title": "Understand your options",
+        "body": "Learn what the room category actually includes before comparing properties."
+      },
+      {
+        "title": "Avoid surprise costs",
+        "body": "Check rent, deposits, utilities and compulsory charges before committing."
+      },
+      {
+        "title": "Check eligibility",
+        "body": "Separate provider funding acceptance from official accreditation and your personal allowance."
+      },
+      {
+        "title": "Move forward safely",
+        "body": "Search relevant listings or request a full written quote for missing details."
+      }
+    ],
+    "body": [
+      {
+        "heading": "What counts as a single room?",
+        "paragraphs": [
+          "Confirm the number of beds and authorised occupants, lockable door, kitchen and bathroom sharing, furnishing, study access and visitor rules. A 'bachelor' or studio unit is different from a private bedroom in a communal residence."
+        ]
+      },
+      {
+        "heading": "NSFAS-funded versus privately paid singles",
+        "paragraphs": [
+          "Ask the residence whether it accepts NSFAS students, whether official accreditation applies, and whether a single-room surcharge or utilities exceed your funding allowance. Private-paying tenants should compare rent, deposit and lease conditions independently."
+        ]
+      }
+    ],
+    "listings": {
+      "heading": "Matching property details currently recorded",
+      "query": {
+        "singlesOnly": true,
+        "limit": 9
+      },
+      "emptyText": "No public records currently meet all of these criteria. Try the general search or request a quote; we do not invent matching listings."
+    },
+    "helps": [
+      "Compare published property facts rather than assumptions",
+      "See whether a provider recorded the room or funding option",
+      "Ask about missing prices and additional charges",
+      "Continue to the provider's real application or reservation process"
+    ],
+    "notDoing": [
+      "A private bedroom is not the same as self-contained accommodation.",
+      "No published single-room price is promised from R1,500.",
+      "Funding acceptance alone does not establish eligibility or no-top-up status."
+    ],
+    "faqs": [
+      {
+        "question": "Are all properties guaranteed to match this category?",
+        "answer": "No. Only supplied and published attributes are treated as matches; missing details should be confirmed by the provider."
+      },
+      {
+        "question": "Can I submit an enquiry without assuming availability?",
+        "answer": "Yes. Open the listing or use guided onboarding. Final room availability and contract terms must be confirmed with the residence."
+      },
+      {
+        "question": "How can I compare my funding allowance?",
+        "answer": "Check your current funding rules and a written full cost breakdown. ResKonnect does not set institutional rental caps."
+      }
+    ],
+    "links": [
+      {
+        "label": "Student accommodation by city",
+        "to": "/student-accommodation"
+      },
+      {
+        "label": "Pretoria residences",
+        "to": "/student-accommodation/pretoria"
+      },
+      {
+        "label": "Soshanguve residences",
+        "to": "/student-accommodation/soshanguve"
+      },
+      {
+        "label": "Accommodation applications",
+        "to": "/applications"
+      },
+      {
+        "label": "Student bursaries",
+        "to": "/bursaries"
+      },
+      {
+        "label": "WIL placements",
+        "to": "/opportunities/wil"
+      }
+    ],
+    "cta": {
+      "label": "Browse matching accommodation",
+      "to": "/findmyres?singlesOnly=true",
+      "secondaryLabel": "Explore all residences",
+      "secondaryTo": "/findmyres"
+    },
+    "crumbs": [
+      {
+        "name": "Home",
+        "path": "/"
+      },
+      {
+        "name": "Student Accommodation",
+        "path": "/student-accommodation"
+      },
+      {
+        "name": "Single Rooms for Students",
+        "path": "/student-accommodation/single-rooms"
+      }
+    ]
+  },
+  {
+    "path": "/student-accommodation/nsfas-no-top-up",
+    "kind": "guide",
+    "title": "NSFAS Accommodation Without Top-Up | Checklist | ResKonnect",
+    "description": "Understand what no top-up means for NSFAS student accommodation, which charges to verify and how to compare provider statements with your current allowance.",
+    "h1": "NSFAS Accommodation: Checking for No Top-Up",
+    "keywords": "nsfas accommodation: checking for no top-up, NSFAS student accommodation, Pretoria housing, South Africa student rooms",
+    "intro": [
+      "'No top-up' means the full compulsory accommodation cost is covered under the student's applicable funding conditions. A listing that says it accepts NSFAS is not automatically no-top-up.",
+      "Before reserving, obtain a written rent and fee breakdown and compare it with the rules for your institution, funding year and accommodation category. ResKonnect does not label unverified stock as no-top-up."
+    ],
+    "audience": "South African university, TVET, NSFAS-funded, bursary-funded and private-paying students comparing rooms and verified total costs.",
+    "benefits": [
+      {
+        "title": "Understand your options",
+        "body": "Learn what the room category actually includes before comparing properties."
+      },
+      {
+        "title": "Avoid surprise costs",
+        "body": "Check rent, deposits, utilities and compulsory charges before committing."
+      },
+      {
+        "title": "Check eligibility",
+        "body": "Separate provider funding acceptance from official accreditation and your personal allowance."
+      },
+      {
+        "title": "Move forward safely",
+        "body": "Search relevant listings or request a full written quote for missing details."
+      }
+    ],
+    "body": [
+      {
+        "heading": "Check all compulsory charges",
+        "paragraphs": [
+          "Ask whether rent, utilities, security, Wi-Fi, cleaning, deposits, booking fees and any mandatory services are included. Identify refundable deposits separately, and clarify who pays if an allowance is delayed."
+        ]
+      },
+      {
+        "heading": "Verify the funding route",
+        "paragraphs": [
+          "Confirm the provider's current official accreditation where required, the student’s applicable allowance and the precise contract period. Rules and caps vary by institution, funder and policy year, so do not rely on an outdated generic online figure."
+        ]
+      }
+    ],
+    "helps": [
+      "Compare published property facts rather than assumptions",
+      "See whether a provider recorded the room or funding option",
+      "Ask about missing prices and additional charges",
+      "Continue to the provider's real application or reservation process"
+    ],
+    "notDoing": [
+      "Accepts NSFAS does not prove no top-up.",
+      "We cannot guarantee a property meets a student's individual allowance.",
+      "ResKonnect does not submit NSFAS funding applications or issue official accreditation decisions."
+    ],
+    "faqs": [
+      {
+        "question": "Are all properties guaranteed to match this category?",
+        "answer": "No. Only supplied and published attributes are treated as matches; missing details should be confirmed by the provider."
+      },
+      {
+        "question": "Can I submit an enquiry without assuming availability?",
+        "answer": "Yes. Open the listing or use guided onboarding. Final room availability and contract terms must be confirmed with the residence."
+      },
+      {
+        "question": "How can I compare my funding allowance?",
+        "answer": "Check your current funding rules and a written full cost breakdown. ResKonnect does not set institutional rental caps."
+      }
+    ],
+    "links": [
+      {
+        "label": "Student accommodation by city",
+        "to": "/student-accommodation"
+      },
+      {
+        "label": "Pretoria residences",
+        "to": "/student-accommodation/pretoria"
+      },
+      {
+        "label": "Soshanguve residences",
+        "to": "/student-accommodation/soshanguve"
+      },
+      {
+        "label": "Accommodation applications",
+        "to": "/applications"
+      },
+      {
+        "label": "Student bursaries",
+        "to": "/bursaries"
+      },
+      {
+        "label": "WIL placements",
+        "to": "/opportunities/wil"
+      }
+    ],
+    "cta": {
+      "label": "Check NSFAS acceptance and request quotes",
+      "to": "/findmyres?nsfasOnly=true",
+      "secondaryLabel": "Explore all residences",
+      "secondaryTo": "/findmyres"
+    },
+    "crumbs": [
+      {
+        "name": "Home",
+        "path": "/"
+      },
+      {
+        "name": "Student Accommodation",
+        "path": "/student-accommodation"
+      },
+      {
+        "name": "NSFAS Accommodation: Checking for No Top-Up",
+        "path": "/student-accommodation/nsfas-no-top-up"
+      }
+    ]
+  },
+  {
+    "path": "/student-accommodation/r1500-to-budget",
+    "kind": "guide",
+    "title": "Student Rooms from R1,500? Check Budget & Rent | ResKonnect",
+    "description": "Compare student accommodation using a R1,500 starting budget, provider prices and funding caps. See only recorded prices and request quotes where rates are missing.",
+    "h1": "Student Accommodation Budget: R1,500 to Your Rent Cap",
+    "keywords": "student accommodation budget: r1,500 to your rent cap, NSFAS student accommodation, Pretoria housing, South Africa student rooms",
+    "intro": [
+      "Looking for a room from R1,500 per month? Use R1,500 as your preferred minimum while setting a maximum you can actually afford. ResKonnect does not currently promise rooms at R1,500.",
+      "Many published properties have not supplied a confirmed price. They are not counted as budget matches; ask for a written quote and include deposits and utilities before making a decision."
+    ],
+    "audience": "South African university, TVET, NSFAS-funded, bursary-funded and private-paying students comparing rooms and verified total costs.",
+    "benefits": [
+      {
+        "title": "Understand your options",
+        "body": "Learn what the room category actually includes before comparing properties."
+      },
+      {
+        "title": "Avoid surprise costs",
+        "body": "Check rent, deposits, utilities and compulsory charges before committing."
+      },
+      {
+        "title": "Check eligibility",
+        "body": "Separate provider funding acceptance from official accreditation and your personal allowance."
+      },
+      {
+        "title": "Move forward safely",
+        "body": "Search relevant listings or request a full written quote for missing details."
+      }
+    ],
+    "body": [
+      {
+        "heading": "How to compare rent fairly",
+        "paragraphs": [
+          "Begin with your monthly total budget, not the first rental figure you see. Compare price per person, room occupancy, electricity, Wi-Fi, deposits, commuting costs and any compulsory add-ons."
+        ]
+      },
+      {
+        "heading": "Funded student rent caps",
+        "paragraphs": [
+          "For NSFAS or a bursary, use your current funding letter and institution rules rather than assuming one maximum rental cap applies in every city. Ask a provider to confirm in writing whether its full compulsory fee is within your allowance."
+        ]
+      }
+    ],
+    "listings": {
+      "heading": "Matching property details currently recorded",
+      "query": {
+        "minPrice": 1500,
+        "maxPrice": 10000,
+        "limit": 9
+      },
+      "emptyText": "No public records currently meet all of these criteria. Try the general search or request a quote; we do not invent matching listings."
+    },
+    "helps": [
+      "Compare published property facts rather than assumptions",
+      "See whether a provider recorded the room or funding option",
+      "Ask about missing prices and additional charges",
+      "Continue to the provider's real application or reservation process"
+    ],
+    "notDoing": [
+      "A page about R1,500 budgets is not an offer of a room at R1,500.",
+      "A missing price is not zero and is excluded from budget-filtered results.",
+      "We do not invent or guarantee the official NSFAS rent cap."
+    ],
+    "faqs": [
+      {
+        "question": "Are all properties guaranteed to match this category?",
+        "answer": "No. Only supplied and published attributes are treated as matches; missing details should be confirmed by the provider."
+      },
+      {
+        "question": "Can I submit an enquiry without assuming availability?",
+        "answer": "Yes. Open the listing or use guided onboarding. Final room availability and contract terms must be confirmed with the residence."
+      },
+      {
+        "question": "How can I compare my funding allowance?",
+        "answer": "Check your current funding rules and a written full cost breakdown. ResKonnect does not set institutional rental caps."
+      }
+    ],
+    "links": [
+      {
+        "label": "Student accommodation by city",
+        "to": "/student-accommodation"
+      },
+      {
+        "label": "Pretoria residences",
+        "to": "/student-accommodation/pretoria"
+      },
+      {
+        "label": "Soshanguve residences",
+        "to": "/student-accommodation/soshanguve"
+      },
+      {
+        "label": "Accommodation applications",
+        "to": "/applications"
+      },
+      {
+        "label": "Student bursaries",
+        "to": "/bursaries"
+      },
+      {
+        "label": "WIL placements",
+        "to": "/opportunities/wil"
+      }
+    ],
+    "cta": {
+      "label": "Browse matching accommodation",
+      "to": "/findmyres?minPrice=1500&maxPrice=10000",
+      "secondaryLabel": "Explore all residences",
+      "secondaryTo": "/findmyres"
+    },
+    "crumbs": [
+      {
+        "name": "Home",
+        "path": "/"
+      },
+      {
+        "name": "Student Accommodation",
+        "path": "/student-accommodation"
+      },
+      {
+        "name": "Student Accommodation Budget: R1,500 to Your Rent Cap",
+        "path": "/student-accommodation/r1500-to-budget"
+      }
+    ]
+  },
+  {
+    "path": "/student-accommodation/private-paying",
+    "kind": "guide",
+    "title": "Private Student Accommodation & Tenants | ResKonnect",
+    "description": "Explore student accommodation open to private-paying tenants. Compare residence rules, deposits, monthly rent, shared rooms and private rental terms.",
+    "h1": "Private-Paying Student Accommodation and Rentals",
+    "keywords": "private-paying student accommodation and rentals, NSFAS student accommodation, Pretoria housing, South Africa student rooms",
+    "intro": [
+      "Not every student is NSFAS funded. Private-paying students, bursary recipients and young professionals should be able to evaluate rent and lease terms without being shown funding assumptions that do not apply.",
+      "ResKonnect lets you start with residences marked as accepting private tenants, then compare recorded costs and room details. Always confirm the lease period, deposit and occupancy before paying."
+    ],
+    "audience": "South African university, TVET, NSFAS-funded, bursary-funded and private-paying students comparing rooms and verified total costs.",
+    "benefits": [
+      {
+        "title": "Understand your options",
+        "body": "Learn what the room category actually includes before comparing properties."
+      },
+      {
+        "title": "Avoid surprise costs",
+        "body": "Check rent, deposits, utilities and compulsory charges before committing."
+      },
+      {
+        "title": "Check eligibility",
+        "body": "Separate provider funding acceptance from official accreditation and your personal allowance."
+      },
+      {
+        "title": "Move forward safely",
+        "body": "Search relevant listings or request a full written quote for missing details."
+      }
+    ],
+    "body": [
+      {
+        "heading": "Private rent checklist",
+        "paragraphs": [
+          "Ask whether the advertised price is per room or per bed, whether there is a guarantor requirement, and what happens if you leave before the contract ends. Confirm electricity, internet, cleaning and any agency or booking charge."
+        ]
+      },
+      {
+        "heading": "Shared houses, flats and student residences",
+        "paragraphs": [
+          "A privately paid rental can be a single room, a shared house or a residence bed. Property categories are shown only where a manager has supplied them, so do not assume every listing supports a specific housing type."
+        ]
+      }
+    ],
+    "listings": {
+      "heading": "Matching property details currently recorded",
+      "query": {
+        "audience": "private",
+        "limit": 9
+      },
+      "emptyText": "No public records currently meet all of these criteria. Try the general search or request a quote; we do not invent matching listings."
+    },
+    "helps": [
+      "Compare published property facts rather than assumptions",
+      "See whether a provider recorded the room or funding option",
+      "Ask about missing prices and additional charges",
+      "Continue to the provider's real application or reservation process"
+    ],
+    "notDoing": [
+      "Not every listing is a self-contained flat or bachelor unit.",
+      "We cannot promise a private rental is available until the provider confirms it.",
+      "No tenant should pay before reviewing the actual property and terms."
+    ],
+    "faqs": [
+      {
+        "question": "Are all properties guaranteed to match this category?",
+        "answer": "No. Only supplied and published attributes are treated as matches; missing details should be confirmed by the provider."
+      },
+      {
+        "question": "Can I submit an enquiry without assuming availability?",
+        "answer": "Yes. Open the listing or use guided onboarding. Final room availability and contract terms must be confirmed with the residence."
+      },
+      {
+        "question": "How can I compare my funding allowance?",
+        "answer": "Check your current funding rules and a written full cost breakdown. ResKonnect does not set institutional rental caps."
+      }
+    ],
+    "links": [
+      {
+        "label": "Student accommodation by city",
+        "to": "/student-accommodation"
+      },
+      {
+        "label": "Pretoria residences",
+        "to": "/student-accommodation/pretoria"
+      },
+      {
+        "label": "Soshanguve residences",
+        "to": "/student-accommodation/soshanguve"
+      },
+      {
+        "label": "Accommodation applications",
+        "to": "/applications"
+      },
+      {
+        "label": "Student bursaries",
+        "to": "/bursaries"
+      },
+      {
+        "label": "WIL placements",
+        "to": "/opportunities/wil"
+      }
+    ],
+    "cta": {
+      "label": "Browse matching accommodation",
+      "to": "/findmyres?audience=private",
+      "secondaryLabel": "Explore all residences",
+      "secondaryTo": "/findmyres"
+    },
+    "crumbs": [
+      {
+        "name": "Home",
+        "path": "/"
+      },
+      {
+        "name": "Student Accommodation",
+        "path": "/student-accommodation"
+      },
+      {
+        "name": "Private-Paying Student Accommodation and Rentals",
+        "path": "/student-accommodation/private-paying"
+      }
+    ]
+  },
+  {
+    "path": "/student-accommodation/room-types",
+    "kind": "guide",
+    "title": "Student Housing Types | Single, Shared, Studio & Residence | ResKonnect",
+    "description": "Compare single rooms, shared student rooms, communes, student residences, studios and private flats. Understand real costs, facilities and occupancy before applying.",
+    "h1": "Student Housing Types Explained",
+    "keywords": "student housing types explained, NSFAS student accommodation, Pretoria housing, South Africa student rooms",
+    "intro": [
+      "Students may search for a res, digs, commune, single room, shared room, bachelor flat or self-contained apartment. Those labels can describe very different living arrangements.",
+      "Use ResKonnect's room and property details to compare what the provider has recorded rather than assuming every listing offers all housing types."
+    ],
+    "audience": "South African university, TVET, NSFAS-funded, bursary-funded and private-paying students comparing rooms and verified total costs.",
+    "benefits": [
+      {
+        "title": "Understand your options",
+        "body": "Learn what the room category actually includes before comparing properties."
+      },
+      {
+        "title": "Avoid surprise costs",
+        "body": "Check rent, deposits, utilities and compulsory charges before committing."
+      },
+      {
+        "title": "Check eligibility",
+        "body": "Separate provider funding acceptance from official accreditation and your personal allowance."
+      },
+      {
+        "title": "Move forward safely",
+        "body": "Search relevant listings or request a full written quote for missing details."
+      }
+    ],
+    "body": [
+      {
+        "heading": "Single rooms versus shared rooms",
+        "paragraphs": [
+          "A single room normally has one resident sleeping there, while a shared room houses more than one occupant. Confirm how many beds are included, the per-person cost and who can access shared facilities."
+        ]
+      },
+      {
+        "heading": "Communes, residences and bachelor flats",
+        "paragraphs": [
+          "A commune may be a shared house with common bathrooms and kitchens. A student residence can have managed beds and shared services. A bachelor flat usually has an independent living area. Request evidence of the exact room configuration and monthly inclusions."
+        ]
+      }
+    ],
+    "listings": {
+      "heading": "Matching property details currently recorded",
+      "query": {
+        "limit": 9
+      },
+      "emptyText": "No public records currently meet all of these criteria. Try the general search or request a quote; we do not invent matching listings."
+    },
+    "helps": [
+      "Compare published property facts rather than assumptions",
+      "See whether a provider recorded the room or funding option",
+      "Ask about missing prices and additional charges",
+      "Continue to the provider's real application or reservation process"
+    ],
+    "notDoing": [
+      "Room types are not inferred where managers have left the field blank.",
+      "A studio or bachelor rental is not automatically NSFAS eligible.",
+      "A city label alone is not proof of campus proximity."
+    ],
+    "faqs": [
+      {
+        "question": "Are all properties guaranteed to match this category?",
+        "answer": "No. Only supplied and published attributes are treated as matches; missing details should be confirmed by the provider."
+      },
+      {
+        "question": "Can I submit an enquiry without assuming availability?",
+        "answer": "Yes. Open the listing or use guided onboarding. Final room availability and contract terms must be confirmed with the residence."
+      },
+      {
+        "question": "How can I compare my funding allowance?",
+        "answer": "Check your current funding rules and a written full cost breakdown. ResKonnect does not set institutional rental caps."
+      }
+    ],
+    "links": [
+      {
+        "label": "Student accommodation by city",
+        "to": "/student-accommodation"
+      },
+      {
+        "label": "Pretoria residences",
+        "to": "/student-accommodation/pretoria"
+      },
+      {
+        "label": "Soshanguve residences",
+        "to": "/student-accommodation/soshanguve"
+      },
+      {
+        "label": "Accommodation applications",
+        "to": "/applications"
+      },
+      {
+        "label": "Student bursaries",
+        "to": "/bursaries"
+      },
+      {
+        "label": "WIL placements",
+        "to": "/opportunities/wil"
+      }
+    ],
+    "cta": {
+      "label": "Browse matching accommodation",
+      "to": "/findmyres",
+      "secondaryLabel": "Explore all residences",
+      "secondaryTo": "/findmyres"
+    },
+    "crumbs": [
+      {
+        "name": "Home",
+        "path": "/"
+      },
+      {
+        "name": "Student Accommodation",
+        "path": "/student-accommodation"
+      },
+      {
+        "name": "Student Housing Types Explained",
+        "path": "/student-accommodation/room-types"
+      }
+    ]
+  }
+]
