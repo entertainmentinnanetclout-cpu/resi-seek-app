@@ -185,7 +185,7 @@ const Landing = () => {
           <div className="container mx-auto px-4 text-center">
             <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-primary">OUR VISION · AFRICA'S FIRST AI/SI-POWERED STUDENT PLATFORM</p>
             <h1 className="mx-auto max-w-5xl text-3xl font-black leading-tight md:text-5xl lg:text-6xl">
-              Building Africa's First <span className="text-primary">AI/SI-Powered Student Platform.</span>
+              ResKonnect — <span className="text-primary">Building Africa's First AI/SI-Powered Student Platform.</span>
             </h1>
             <p className="mx-auto mt-4 max-w-3xl text-sm leading-7 text-muted-foreground md:text-lg">
               From student accommodation and single-room searches to applications, NSFAS funding checks, bursaries and WIL placements — ResKonnect connects Artificial Intelligence (AI) with Service Intelligence (SI) to help students make informed next steps.
