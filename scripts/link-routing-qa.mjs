@@ -14,9 +14,19 @@ const rewrites = Array.isArray(config.rewrites) ? config.rewrites : [];
 const headers = Array.isArray(config.headers) ? config.headers : [];
 
 const spaFallback = rewrites.find(
-  (rule) => rule.source === "/(.*)" && rule.destination === "/index",
+  (rule) => rule.source === "/(.*)" && rule.destination === "/_spa/fallback",
 );
-if (!spaFallback) fail("Vercel SPA deep-link fallback /(.*) -> /index is missing.");
+if (!spaFallback) fail("Vercel SPA deep-link fallback /(.*) -> /_spa/fallback is missing.");
+// The SEO home and SPA fallback must be independent: the physical /index.html
+// contains the homepage, and non-indexed paths receive the original Vite shell.
+const prerender = read("scripts/prerender-seo.mjs");
+const spaEmitter = read("scripts/emit-private-spa-entries.mjs");
+if (!prerender.includes('"fallback.html"') || !prerender.includes('"home.html"), path.join(DIST, "index.html")')) {
+  fail("Static SEO homepage must publish to dist/index.html while preserving the SPA fallback.");
+}
+if (!spaEmitter.includes('"_spa", "fallback.html"')) {
+  fail("Private SPA entries must not be generated from the public homepage document.");
+}
 
 if (config.cleanUrls === true) {
   const badStaticTarget = rewrites.find(
