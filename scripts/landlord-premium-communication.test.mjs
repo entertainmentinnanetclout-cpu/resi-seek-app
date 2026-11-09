@@ -81,6 +81,7 @@ test("branded sender keeps the OAuth mailbox as From and Reply-To, never a forge
  assert.match(pdf,/const senderEmail=sender\?\.email\?\.trim\(\)\.toLowerCase\(\)/);
  assert.match(pdf,/From: =\?UTF-8\?B\?/);
  assert.match(pdf,/Reply-To: /);
+ assert.match(pdf,/Date: /);
  assert.match(pdf,/senderEmail/);
  assert.match(pdf,/Connected Gmail sender address is invalid/);
  assert.match(send,/select\("enabled,gmail_address"\)/);
