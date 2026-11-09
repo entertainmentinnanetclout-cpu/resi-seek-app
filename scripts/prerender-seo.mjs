@@ -249,6 +249,21 @@ for (const [route, title, description, h1] of pages) {
   );
 
   const discovery = discoveryByPath.get(route);
+  const cityGeo = {
+    "/student-accommodation/pretoria": { region: "ZA-GT", name: "Pretoria" },
+    "/student-accommodation/soshanguve": { region: "ZA-GT", name: "Soshanguve" },
+    "/student-accommodation/ga-rankuwa": { region: "ZA-GT", name: "Ga-Rankuwa" },
+    "/student-accommodation/mbombela": { region: "ZA-MP", name: "Mbombela" },
+    "/student-accommodation/polokwane": { region: "ZA-LP", name: "Polokwane" },
+  };
+  const city = cityGeo[route];
+  if (city) {
+    html = replaceOrInsert(html, /<meta name="geo.region"[^>]*>/i,
+      `<meta name="geo.region" content="${city.region}" />`);
+    html = replaceOrInsert(html, /<meta name="geo.placename"[^>]*>/i,
+      `<meta name="geo.placename" content="${esc(city.name)}" />`);
+  }
+
   const discoverHtml = discovery ? [
     '<div style="margin-top:28px;max-width:980px;font-size:1rem;line-height:1.75">',
     ...discovery.intro.map((text)=>'<p style="margin-top:12px">'+esc(text)+'</p>'),
