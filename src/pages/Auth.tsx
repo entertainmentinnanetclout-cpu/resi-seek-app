@@ -334,7 +334,7 @@ const Auth = () => {
             {serviceUnavailable && <p className="text-xs">{isLogin
               ? "A server error does not mean you need a new account or password reset. Retry when the service responds."
               : "Registration could have completed even if the response failed. Check your email before submitting another registration."}</p>}
-          </div>
+          </div>}
           <form onSubmit={handleSubmit} className="space-y-5">
             {!isLogin && <div className="space-y-2"><Label htmlFor="fullName">Full name *</Label><Input id="fullName" name="fullName" required autoComplete="name" placeholder="Your full name" /></div>}
             <div className="space-y-2"><Label htmlFor="email">Email address *</Label><Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@example.com" value={emailValue} onChange={(event) => setEmailValue(event.target.value)} /></div>
