@@ -233,7 +233,8 @@ for (const [route, title, description, h1] of pages) {
     '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />',
   );
 
-  const initial = `<div id="root"><main data-seo-prerender="true" style="max-width:1120px;margin:0 auto;padding:48px 24px;font-family:Inter,Arial,sans-serif;color:#111827"><header><p style="font-weight:700;letter-spacing:.04em">ResKonnect — Living • AI • Opportunity</p><h1 style="font-size:clamp(2rem,5vw,3.5rem);line-height:1.05;margin:16px 0">${esc(h1)}</h1><p style="max-width:760px;font-size:1.125rem;line-height:1.7;color:#4b5563">${esc(description)}</p></header><nav aria-label="Primary search topics" style="margin-top:28px;display:flex;gap:16px;flex-wrap:wrap"><a href="/living">Living</a><a href="/ai">ResKonnect AI</a><a href="/opportunities">Opportunity</a><a href="/apply">Applications & Course Match</a><a href="/partners">Partners</a></nav></main></div>`;
+  const googlePublicInfo = route === "/" ? '<section aria-label="About ResKonnect and Google Gmail" style="margin-top:32px;padding:24px;background:#f3f7fd;border-radius:14px;line-height:1.7"><h2>What ResKonnect does</h2><p>ResKonnect is a South African student living, applications and opportunity platform. Students can explore accommodation, understand application requirements and use guidance services. Authorised residence owners, managers and administrators manage accommodation enquiries, application decisions, reservation steps and resident communications in their own role-protected portal.</p><h2>Why ResKonnect requests Gmail permission</h2><p>Gmail connection is optional and only for authorised residence teams or ResKonnect staff. After a user connects their own Google account, the Gmail send-only permission (gmail.send) enables that user to send reviewed case notices, missing-document requests, booking confirmations and move-in instructions from the connected mailbox. ResKonnect does not request permission to read, search, edit or delete Gmail messages. Users can disconnect Gmail at any time.</p><p><a href="/partners/landlords">Residence team services</a> · <a href="/residence/login">Landlord sign-in</a> · <a href="/privacy">Privacy Policy and Google user data</a> · <a href="/terms">Terms of Service</a> · <a href="mailto:reskonnect@gmail.com">Contact ResKonnect</a></p></section>' : "";
+  const initial = `<div id="root"><main data-seo-prerender="true" style="max-width:1120px;margin:0 auto;padding:48px 24px;font-family:Inter,Arial,sans-serif;color:#111827"><header><p style="font-weight:700;letter-spacing:.04em">ResKonnect — Living • AI • Opportunity</p><h1 style="font-size:clamp(2rem,5vw,3.5rem);line-height:1.05;margin:16px 0">${esc(h1)}</h1><p style="max-width:760px;font-size:1.125rem;line-height:1.7;color:#4b5563">${esc(description)}</p></header><nav aria-label="Primary search topics" style="margin-top:28px;display:flex;gap:16px;flex-wrap:wrap"><a href="/living">Living</a><a href="/ai">ResKonnect AI</a><a href="/opportunities">Opportunity</a><a href="/apply">Applications & Course Match</a><a href="/partners">Partners</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a></nav>${googlePublicInfo}</main></div>`;
   html = html.replace('<div id="root"></div>', initial);
 
   const schema = {
@@ -253,4 +254,100 @@ for (const [route, title, description, h1] of pages) {
   await fs.writeFile(path.join(DIST, "_seo", `${fileName(route)}.html`), html);
 }
 
-console.log(`Prerendered ${pages.length} strategic ResKonnect search pages.`);
+
+const googleOAuthPolicySections = [
+  {
+    "heading": "1. Scope and organisation",
+    "paragraphs": [
+      "ResKonnect is a South African student accommodation, application and opportunity platform. This privacy policy applies to the publicly accessible ResKonnect website, the Android app and associated services, including the optional residence Gmail connection. ResKonnect may process personal information under South Africa’s Protection of Personal Information Act (POPIA).",
+      "ResKonnect can be contacted at reskonnect@gmail.com, Pretoria, South Africa."
+    ]
+  },
+  {
+    "heading": "2. Information collected",
+    "paragraphs": [
+      "For accounts and application services, we may process names, email addresses, phone numbers, authentication identifiers, education and funding information, accommodation preferences, applications and documents chosen by users.",
+      "Other services may process optional foreground location, camera or user-selected media, device/security events, service analytics, commercial references and user-entered support requests. Access depends on the feature and permissions the user chooses."
+    ]
+  },
+  {
+    "heading": "3. Uses of personal information",
+    "paragraphs": [
+      "Information supports accounts, student accommodation search, applications, document verification, reservations, opportunities, customer support, fraud prevention, audit trails and service updates. Optional marketing measurement requires the corresponding choice. Private application data is only shared with authorised service staff, relevant accommodation providers, institutions and other partners where necessary for the requested workflow."
+    ]
+  },
+  {
+    "heading": "4. Connected Google Gmail accounts — access and permissions",
+    "paragraphs": [
+      "Authorised residence owners, managers and ResKonnect staff may optionally use Google OAuth to connect their own Gmail or Google Workspace mailbox. The requested Google account identity information identifies the connected person and mailbox. The Google Gmail API scope https://www.googleapis.com/auth/gmail.send is used only to send messages that an authorised person reviews and initiates from the ResKonnect residence communications interface.",
+      "Typical messages include application acknowledgements, missing-document requests, application decisions, reservation confirmations, viewing arrangements and move-in instructions. ResKonnect does not request permission to read, search, modify or delete Gmail inbox messages. It does not silently send marketing campaigns using these permissions."
+    ]
+  },
+  {
+    "heading": "5. Storage, sharing, retention and security of Google user data",
+    "paragraphs": [
+      "ResKonnect stores the connected Google account identifier, email sending address and a restricted server-side OAuth refresh credential for the duration of the authorised connection. Credentials are not exposed in public pages or shared with residence applicants. Messages are transmitted through Google’s Gmail API; operational correspondence audit records may include recipient, residence or case reference, subject, sending status and Gmail provider message identifier.",
+      "Access is limited to authorised functions and relevant residence roles. The Google connection and related user data are not sold, used for third-party advertising or provided to AI systems for general model training. We use infrastructure providers for secure storage, application hosting and delivery of the requested services. Operational records are retained only for applicable service, accounting, security, dispute or legal requirements, then deleted or de-identified when no longer needed."
+    ]
+  },
+  {
+    "heading": "6. Disconnecting Gmail and revoking consent",
+    "paragraphs": [
+      "Users may disconnect the Gmail integration in Residence Communications or revoke the app’s access in their Google Account connections. ResKonnect attempts to revoke Google's authorisation and removes the locally stored sending credential. Disconnection prevents future sending through ResKonnect; emails already sent remain in the sender and recipient mailboxes, and necessary service audit records may remain under the lawful retention policy.",
+      "Google Account connections: https://myaccount.google.com/connections"
+    ]
+  },
+  {
+    "heading": "7. Other service providers and disclosures",
+    "paragraphs": [
+      "ResKonnect uses service providers as required, including Supabase for authentication, database and storage; Vercel for hosting; Google services for authorised Gmail sending and maps; Twilio for appropriate communications; and approved AI services for explicitly invoked functionality. We limit disclosed information to what each requested function reasonably requires.",
+      "Application documents and case details may be shared with the provider, institution or service personnel responsible for the workflow. Legal or security disclosures may occur where lawful."
+    ]
+  },
+  {
+    "heading": "8. Security and rights",
+    "paragraphs": [
+      "ResKonnect uses secure transport, server-managed secrets, role-based access rules, database security controls, security monitoring and audit events. No online service can guarantee absolute security.",
+      "Subject to POPIA and other applicable law, users may request access, correction or deletion of personal information, and object to some processing, by contacting reskonnect@gmail.com. Account and data deletion requests may also be submitted through the public account-deletion page at https://www.reskonnect.org/delete-account."
+    ]
+  },
+  {
+    "heading": "9. Cookies, retention and policy changes",
+    "paragraphs": [
+      "Authentication, preferences, fraud prevention, diagnostics and service delivery may use cookies or local storage. Optional Meta marketing measurement is not intended to collect personal application documents or identity numbers, and preferences may be changed in the app. Records are kept only as long as reasonably needed for valid service purposes, mandatory legal obligations and legitimate security/audit needs.",
+      "The privacy policy may be updated when features or data practices change. The date and latest policy remain available on this page."
+    ]
+  },
+  {
+    "heading": "10. Contact",
+    "paragraphs": [
+      "For questions, Google user-data access inquiries, connection deletion or privacy complaints, contact ResKonnect at reskonnect@gmail.com, Pretoria, South Africa."
+    ]
+  }
+];
+const privacySectionsHtml = googleOAuthPolicySections.map((section) =>
+  '<section style="margin:28px 0" aria-label="'+esc(section.heading)+'"><h2 style="font-size:1.35rem;line-height:1.35;color:#10213a">'+esc(section.heading)+'</h2>'+
+  section.paragraphs.map((paragraph)=>'<p style="font-size:1rem;line-height:1.8;color:#435169;margin:12px 0">'+esc(paragraph)+'</p>').join("")+
+  '</section>'
+).join("");
+let privacyHtml = base.replace(/<title>[\s\S]*?<\/title>/i,"<title>Privacy Policy and Google Gmail data | ResKonnect</title>");
+privacyHtml = replaceOrInsert(privacyHtml,/<meta name="description" content="[^"]*"\s*\/?\s*>/i,
+ '<meta name="description" content="How ResKonnect handles account, student and connected Google Gmail data, including permissions, secure storage, deletion, retention and contact." />');
+privacyHtml = replaceOrInsert(privacyHtml,/<link rel="canonical" href="[^"]*"\s*\/?\s*>/i,
+ '<link rel="canonical" href="https://www.reskonnect.org/privacy" />');
+privacyHtml = replaceOrInsert(privacyHtml,/<meta property="og:url" content="[^"]*"\s*\/?\s*>/i,
+ '<meta property="og:url" content="https://www.reskonnect.org/privacy" />');
+privacyHtml = replaceOrInsert(privacyHtml,/<meta property="og:title" content="[^"]*"\s*\/?\s*>/i,
+ '<meta property="og:title" content="ResKonnect Privacy Policy and Google Gmail data" />');
+privacyHtml = replaceOrInsert(privacyHtml,/<meta property="og:description" content="[^"]*"\s*\/?\s*>/i,
+ '<meta property="og:description" content="Privacy policy for ResKonnect, including how optional Gmail send-only OAuth access is used, secured, retained and disconnected." />');
+privacyHtml=privacyHtml.replace('<div id="root"></div>',
+ '<div id="root"><main data-seo-prerender="true" style="max-width:920px;margin:0 auto;padding:40px 24px;font-family:Inter,Arial,sans-serif;color:#10213a">'+
+ '<nav aria-label="Public ResKonnect pages" style="display:flex;gap:20px;flex-wrap:wrap"><a href="/">ResKonnect Home</a><a href="/about">About</a><a href="/partners/landlords">Residence Portal</a><a href="/terms">Terms of Service</a></nav>'+
+ '<header style="padding:24px 0;border-bottom:1px solid #e0e7f0"><p style="font-weight:700;color:#2459bd">ResKonnect</p><h1 style="font-size:2.6rem;margin:12px 0">Privacy Policy</h1><p>Last updated: 9 November 2026</p><p style="line-height:1.7">How we access, use, store, share, retain and delete personal information, including Google user data used for optional Gmail sending by authorised residence teams.</p></header>'+
+ privacySectionsHtml+
+ '<footer style="border-top:1px solid #e0e7f0;padding:28px 0"><a href="/">Homepage</a> · <a href="/terms">Terms</a> · <a href="/delete-account">Account deletion</a> · <a href="mailto:reskonnect@gmail.com">Privacy contact</a></footer>'+
+ '</main></div>');
+await fs.writeFile(path.join(DIST,"_seo","privacy.html"),privacyHtml);
+
+console.log(`Prerendered ${pages.length} strategic ResKonnect search pages plus the public privacy policy.`);
