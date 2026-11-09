@@ -32,6 +32,8 @@ interface Residence {
   private_price: number | null;
   nsfas_price: number | null;
   promo_price: number | null;
+  promo_active: boolean | null;
+  price_verified_at: string | null;
   image_url: string | null;
   cover_image_url: string | null;
   images: string[] | null;
@@ -80,7 +82,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
         let req = (supabase as any)
           .from("residences")
           .select(
-            "id, slug, name, address, campus, province, city, place_label, price, private_price, nsfas_price, promo_price, image_url, cover_image_url, images, available_spots, capacity, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, room_type, room_types, singles_available, amenities, has_wifi, has_parking, is_furnished, utilities_included, reservations_2027_open",
+            "id, slug, name, address, campus, province, city, place_label, price, private_price, nsfas_price, promo_price, promo_active, price_verified_at, image_url, cover_image_url, images, available_spots, capacity, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, room_type, room_types, singles_available, amenities, has_wifi, has_parking, is_furnished, utilities_included, reservations_2027_open",
           )
           .eq("is_visible", true)
           .order("display_order", { ascending: true })
@@ -108,7 +110,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
         // The price comparison uses the same property price displayed in the card.
         if (query.minPrice !== undefined || query.maxPrice !== undefined) {
           rows = rows.filter((r) => {
-            const monthly = Number(r.promo_price || r.private_price || r.price || 0);
+            const monthly = Number((r.promo_active && r.promo_price) || r.private_price || r.price || 0);
             return monthly > 0 && monthly >= (query.minPrice ?? 0) && monthly <= (query.maxPrice ?? Number.POSITIVE_INFINITY);
           });
         }
@@ -156,7 +158,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
           {residences.map((r) => {
             const image = r.cover_image_url || r.images?.[0] || r.image_url || "/placeholder.svg";
             const area = r.campus || r.province || "South Africa";
-            const displayPrice = Number(r.promo_price || r.private_price || r.price || 0);
+            const displayPrice = Number((r.promo_active && r.promo_price) || r.private_price || r.price || 0);
             return (
               <li key={r.id}>
                 <Card className="h-full overflow-hidden transition-shadow hover:shadow-lg">
@@ -200,7 +202,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
                     </p>
                     {displayPrice > 0 ? (
                       <p className="text-sm font-semibold text-foreground">
-                        From R{displayPrice.toLocaleString("en-ZA")} per month
+                        Listed from R{displayPrice.toLocaleString("en-ZA")}/month · {r.price_verified_at ? "price verified" : "confirm rate"}
                       </p>
                     ) : (
                       <p className="text-sm font-semibold text-muted-foreground">Rate available on listing</p>
