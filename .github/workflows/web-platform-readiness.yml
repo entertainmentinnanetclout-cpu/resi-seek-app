@@ -50,6 +50,8 @@ jobs:
           retention-days: 7
       - name: Production build
         run: npm run build
+      - name: Google OAuth public homepage and privacy review readiness
+        run: node --test scripts/google-oauth-public-readiness.test.mjs
       - name: P9 production performance budget
         run: npm run platform:p9
       - name: Authenticated production-PWA matrix
