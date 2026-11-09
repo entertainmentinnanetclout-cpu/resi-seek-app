@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Building2, Plus, Search, UserCog, ToggleLeft, ToggleRight, 
-  Mail, Pencil, Trash2, RefreshCw, Loader2, CheckCircle
+  Mail, Pencil, Trash2, RefreshCw, Loader2, CheckCircle, ChevronDown
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
@@ -35,6 +35,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { toast } from "sonner";
 
@@ -128,6 +132,7 @@ export const AdminResidencePortalsContent = () => {
   const [editRole,setEditRole]=useState<"owner"|"manager"|"admin">("owner");
   const [editActive,setEditActive]=useState(true);
   const [isSavingEdit,setIsSavingEdit]=useState(false);
+  const [pendingAccountId, setPendingAccountId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -266,19 +271,26 @@ export const AdminResidencePortalsContent = () => {
     finally{setIsSavingEdit(false);}
   };
   const toggleAccountStatus=async(account:PortalAccount)=>{
+    if(pendingAccountId)return;
+    setPendingAccountId(account.id);
     try{
       await managePortal({action:"update",account_id:account.id,
         new_residence_id:account.residence_id,email:account.email,is_active:!account.is_active,portal_role:account.portal_role});
-      toast.success(account.is_active?"Portal deactivated":"Portal activated");await fetchData();
+      toast.success(account.is_active?"Portal deactivated":"Portal activated");
+      await fetchData();
     }catch(e){toast.error(getReadableError(e,"Could not change portal status"));}
+    finally{setPendingAccountId(null);}
   };
   const deleteAccount=async(account:PortalAccount)=>{
+    if(pendingAccountId)return;
     if(!window.confirm("Remove portal access for "+account.email+" at "+(account.residences?.name||"this residence")+"? The user's personal ResKonnect identity and unrelated student roles will be preserved."))return;
+    setPendingAccountId(account.id);
     try{
       await managePortal({action:"delete",account_id:account.id,confirmed:true});
       toast.success("Residence portal access removed without deleting the user's other data");
       await fetchData();
     }catch(e){toast.error(getReadableError(e,"Could not remove portal access"));}
+    finally{setPendingAccountId(null);}
   };
 
   const filteredAccounts = accounts.filter(account => {
@@ -291,6 +303,63 @@ export const AdminResidencePortalsContent = () => {
       account.residences?.province?.toLowerCase().includes(query)
     );
   });
+
+  // Always show a labeled, high-contrast action control rather than three
+  // icon-only buttons squeezed outside the horizontal table viewport.
+  // The same actions render in the mobile cards and desktop table.
+  const accountActions=(account:PortalAccount)=>(
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={pendingAccountId!==null}
+          aria-label={`Manage portal account for ${account.email}`}
+          className="h-10 min-w-[122px] shrink-0 gap-2 border-[#0B3A75] bg-white px-3 font-semibold text-[#0B3A75] shadow-sm hover:border-[#082E5F] hover:bg-[#EAF2FF] hover:text-[#082E5F] focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+        >
+          {pendingAccountId===account.id
+            ? <Loader2 className="h-4 w-4 animate-spin" />
+            : <UserCog className="h-4 w-4" />}
+          <span>Manage</span>
+          <ChevronDown className="h-3.5 w-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={6}
+        className="z-[100] w-64 border border-slate-200 bg-white p-1.5 text-slate-900 shadow-xl"
+      >
+        <DropdownMenuLabel className="space-y-1 px-3 py-2">
+          <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Portal account actions</span>
+          <span className="block break-all text-xs font-medium text-slate-800">{account.email}</span>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="min-h-11 cursor-pointer gap-3 px-3 text-sm font-medium text-slate-900 focus:bg-blue-50 focus:text-[#0B3A75]"
+          onSelect={()=>editPortal(account)}
+        >
+          <Pencil className="h-4 w-4 text-[#0B3A75]" /> Edit account and role
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="min-h-11 cursor-pointer gap-3 px-3 text-sm font-medium text-slate-900 focus:bg-blue-50 focus:text-[#0B3A75]"
+          onSelect={()=>void toggleAccountStatus(account)}
+        >
+          {account.is_active
+            ? <ToggleLeft className="h-4 w-4 text-amber-700" />
+            : <ToggleRight className="h-4 w-4 text-emerald-700" />}
+          {account.is_active?"Disable portal access":"Enable portal access"}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="min-h-11 cursor-pointer gap-3 px-3 text-sm font-medium text-red-700 focus:bg-red-50 focus:text-red-800"
+          onSelect={()=>void deleteAccount(account)}
+        >
+          <Trash2 className="h-4 w-4" /> Remove portal account
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <>
@@ -366,7 +435,7 @@ export const AdminResidencePortalsContent = () => {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin" />
@@ -390,70 +459,83 @@ export const AdminResidencePortalsContent = () => {
                 </Button>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Residence</TableHead>
-                    <TableHead>Campus</TableHead>
-                    <TableHead>Province</TableHead>
-                    <TableHead>Portal login</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAccounts.map((account) => (
-                    <TableRow key={account.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-muted-foreground" />
-                          {account.residences?.name || 'Unknown'}
-                          <span className="text-xs text-muted-foreground">({accounts.filter(x=>x.residence_id===account.residence_id).length}/3)</span>
+              <>
+                {/* At phone widths the key actions stay visible without horizontal scrolling. */}
+                <div className="space-y-3 lg:hidden" aria-label="Residence portal team accounts">
+                  {filteredAccounts.map(account=>(
+                    <div key={account.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold leading-5 text-slate-900">{account.residences?.name||"Residence"}</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {account.residences?.campus||"Campus not specified"} · {account.residences?.province||"Province not specified"}
+                          </p>
+                          <p className="mt-2 break-all text-sm text-slate-800">{account.email}</p>
                         </div>
-                      </TableCell>
-                      <TableCell>{account.residences?.campus || '-'}</TableCell>
-                      <TableCell>{account.residences?.province || '-'}</TableCell>
-                      <TableCell>{account.email}</TableCell>
-                      <TableCell><Badge variant="outline" className="capitalize">{account.portal_role}</Badge></TableCell>
-                      <TableCell>
-                        <Badge variant={account.is_active ? "default" : "secondary"}>
-                          {account.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(account.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="sm" aria-label={"Edit "+account.email} onClick={()=>editPortal(account)}><Pencil className="h-4 w-4"/></Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            aria-label={(account.is_active?"Disable ":"Enable ")+account.email}
-                            onClick={() => toggleAccountStatus(account)}
-                          >
-                            {account.is_active ? (
-                              <ToggleRight className="h-4 w-4 text-success" />
-                            ) : (
-                              <ToggleLeft className="h-4 w-4 text-muted-foreground" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            aria-label={"Remove "+account.email}
-                            onClick={() => deleteAccount(account)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                        {accountActions(account)}
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="capitalize">{account.portal_role}</Badge>
+                        <Badge variant={account.is_active?"default":"secondary"}>{account.is_active?"Active":"Inactive"}</Badge>
+                        <span className="text-xs text-slate-500">
+                          {accounts.filter(a=>a.residence_id===account.residence_id).length}/3 accounts
+                        </span>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+
+                {/* The action column stays at the visible right edge. Less
+                    critical columns are hidden until wide desktop screens. */}
+                <div className="hidden min-w-0 lg:block">
+                  <Table className="w-full min-w-[680px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[165px] px-3">Residence</TableHead>
+                        <TableHead className="hidden px-3 2xl:table-cell">Campus</TableHead>
+                        <TableHead className="hidden px-3 2xl:table-cell">Province</TableHead>
+                        <TableHead className="min-w-[185px] px-3">Portal login</TableHead>
+                        <TableHead className="px-3">Role</TableHead>
+                        <TableHead className="px-3">Status</TableHead>
+                        <TableHead className="hidden px-3 2xl:table-cell">Created</TableHead>
+                        <TableHead className="sticky right-0 z-10 w-[152px] min-w-[152px] bg-white px-3 text-right shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.35)]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAccounts.map(account=>(
+                        <TableRow key={account.id}>
+                          <TableCell className="max-w-[230px] px-3 font-medium">
+                            <div className="flex items-start gap-2">
+                              <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                              <div className="min-w-0">
+                                <p className="break-words leading-5">{account.residences?.name||"Unknown"}</p>
+                                <p className="mt-1 text-xs font-normal text-slate-500">
+                                  {accounts.filter(a=>a.residence_id===account.residence_id).length}/3 logins
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden px-3 2xl:table-cell">{account.residences?.campus||"—"}</TableCell>
+                          <TableCell className="hidden px-3 2xl:table-cell">{account.residences?.province||"—"}</TableCell>
+                          <TableCell className="max-w-[235px] break-all px-3 text-sm">{account.email}</TableCell>
+                          <TableCell className="px-3"><Badge variant="outline" className="capitalize">{account.portal_role}</Badge></TableCell>
+                          <TableCell className="px-3">
+                            <Badge variant={account.is_active?"default":"secondary"}>
+                              {account.is_active?"Active":"Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden whitespace-nowrap px-3 2xl:table-cell">
+                            {new Date(account.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="sticky right-0 z-10 w-[152px] min-w-[152px] bg-white px-3 text-right shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.35)]">
+                            <div className="flex justify-end">{accountActions(account)}</div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

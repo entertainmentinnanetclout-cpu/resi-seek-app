@@ -43,6 +43,22 @@ test("edit, suspend and delete target only the selected membership, never a whol
  assert.doesNotMatch(mgmt,/admin_delete_residence_portal",/);
  assert.match(schema,/replaced by per-account revocation/);
 });
+test("every residence account has a visible, accessible Manage menu at desktop and mobile sizes",()=>{
+ assert.match(ui,/aria-label={`Manage portal account for \$\{account\.email\}`}/);
+ assert.match(ui,/<span>Manage<\/span>/);
+ assert.match(ui,/Edit account and role/);
+ assert.match(ui,/Disable portal access/);
+ assert.match(ui,/Enable portal access/);
+ assert.match(ui,/Remove portal account/);
+ assert.match(ui,/sticky right-0 z-10/);
+ assert.match(ui,/className="space-y-3 lg:hidden"/);
+ assert.match(ui,/className="hidden min-w-0 lg:block"/);
+ assert.match(ui,/DropdownMenuTrigger asChild/);
+ assert.match(ui,/DropdownMenuContent/);
+ assert.match(ui,/pendingAccountId===account\.id/);
+ assert.match(ui,/setPendingAccountId\(null\)/);
+ assert.doesNotMatch(ui,/variant="ghost" size="sm" aria-label={\"Edit /);
+});
 test("existing student users may be linked without resetting their login password",()=>{
  assert.match(mgmt,/existingIdentity\.user\.email/);
  assert.match(mgmt,/existing_login:!createdByRequest/);
