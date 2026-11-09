@@ -362,7 +362,7 @@ const App = () => {
                     <Route
                       path="/student-accommodation/pretoria"
                       element={
-                        <ManagedSeoPage pagePath="/student-accommodation/pretoria" />
+                        <SeoLandingPage pageKey="/student-accommodation/pretoria" />
                       }
                     />
                     <Route
@@ -1229,6 +1229,42 @@ const App = () => {
                       element={
                         <SeoLandingPage pageKey="/student-accommodation" />
                       }
+                    />
+                    <Route
+                      path="/student-accommodation/soshanguve"
+                      element={<SeoLandingPage pageKey="/student-accommodation/soshanguve" />}
+                    />
+                    <Route
+                      path="/student-accommodation/ga-rankuwa"
+                      element={<SeoLandingPage pageKey="/student-accommodation/ga-rankuwa" />}
+                    />
+                    <Route
+                      path="/student-accommodation/mbombela"
+                      element={<SeoLandingPage pageKey="/student-accommodation/mbombela" />}
+                    />
+                    <Route
+                      path="/student-accommodation/polokwane"
+                      element={<SeoLandingPage pageKey="/student-accommodation/polokwane" />}
+                    />
+                    <Route
+                      path="/student-accommodation/single-rooms"
+                      element={<SeoLandingPage pageKey="/student-accommodation/single-rooms" />}
+                    />
+                    <Route
+                      path="/student-accommodation/nsfas-no-top-up"
+                      element={<SeoLandingPage pageKey="/student-accommodation/nsfas-no-top-up" />}
+                    />
+                    <Route
+                      path="/student-accommodation/r1500-to-budget"
+                      element={<SeoLandingPage pageKey="/student-accommodation/r1500-to-budget" />}
+                    />
+                    <Route
+                      path="/student-accommodation/private-paying"
+                      element={<SeoLandingPage pageKey="/student-accommodation/private-paying" />}
+                    />
+                    <Route
+                      path="/student-accommodation/room-types"
+                      element={<SeoLandingPage pageKey="/student-accommodation/room-types" />}
                     />
                     <Route
                       path="/student-accommodation/pretoria-west"
