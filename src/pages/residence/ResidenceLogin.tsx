@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAuthErrorMessage } from "@/lib/authErrors";
+import { getAuthErrorMessage, isTemporaryAuthServiceError } from "@/lib/authErrors";
 import { resolveResidencePortalAccount } from "@/lib/residencePortal";
 import SEO from "@/components/SEO";
 import { BRAND } from "@/constants/brand";
@@ -23,6 +23,7 @@ const ResidenceLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(false);
+  const [serviceUnavailable, setServiceUnavailable] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -66,6 +67,7 @@ const ResidenceLogin = () => {
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
+    setServiceUnavailable(false);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -98,6 +100,7 @@ const ResidenceLogin = () => {
       navigate("/residence", { replace: true });
     } catch (error: any) {
       console.error("Residence portal login error:", error);
+      setServiceUnavailable(isTemporaryAuthServiceError(error));
       toast.error(getAuthErrorMessage(error, "Could not sign in to the residence portal"));
     } finally {
       setIsLoading(false);
@@ -126,6 +129,10 @@ const ResidenceLogin = () => {
               <CardDescription>Use the email connected to your residence portal account.</CardDescription>
             </CardHeader>
             <CardContent>
+              {serviceUnavailable && <div role="alert" className="mb-4 rounded-xl border border-amber-400/70 bg-amber-50 p-3 text-sm text-amber-950">
+                <p className="font-bold">Sign-in service temporarily unavailable</p>
+                <p className="mt-1">The authentication database is not responding consistently. Your residence account has not been deleted. Please try again shortly.</p>
+              </div>}
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="residence-email">Email</Label>
