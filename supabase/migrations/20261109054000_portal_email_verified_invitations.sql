@@ -102,7 +102,12 @@ BEGIN
  INSERT INTO reskonnect_internal.portal_orphan_email_archive
   (legacy_profile_id,original_email,placeholder_email,archived_by)
  VALUES(legacy.id,v_email,placeholder,p_admin_id)
- ON CONFLICT(legacy_profile_id) DO NOTHING;
+ ON CONFLICT(legacy_profile_id) DO UPDATE SET
+  original_email=excluded.original_email,
+  placeholder_email=excluded.placeholder_email,
+  archived_by=excluded.archived_by,
+  archived_at=now(),
+  restored_at=NULL;
  UPDATE public.profiles SET email=placeholder,updated_at=now() WHERE id=legacy.id AND lower(email)=v_email;
  IF NOT FOUND THEN RAISE EXCEPTION 'Profile reconciliation was interrupted' USING ERRCODE='40001'; END IF;
  RETURN jsonb_build_object('archived',true,'legacy_profile_id',legacy.id);
