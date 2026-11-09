@@ -66,7 +66,7 @@ export default function ConnectivityStatus() {
         className="ml-1 inline-flex min-h-8 shrink-0 items-center gap-1 rounded-full border border-slate-950/25 bg-white/35 px-2.5 py-1 font-black hover:bg-white/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950"
       >
         <RefreshCw className="h-3.5 w-3.5" />
-        Retry
+        Retry connection
       </button>
     </div>
   );

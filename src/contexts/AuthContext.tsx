@@ -58,6 +58,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const accessRequestRef = useRef(0);
+  const accessAbortRef = useRef<AbortController | null>(null);
+  const [accessFailureCount, setAccessFailureCount] = useState(0);
   const currentUserIdRef = useRef<string | null>(null);
   const identitySyncUserRef = useRef<string | null>(null);
 
@@ -103,7 +105,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const nextUserId = nextSession?.user?.id ?? null;
       const identityChanged = currentUserIdRef.current !== nextUserId;
       if (identityChanged) {
+        accessAbortRef.current?.abort(new DOMException("Account changed", "AbortError"));
+        accessAbortRef.current = null;
         accessRequestRef.current += 1;
+        setAccessFailureCount(0);
         queryClient.clear();
         clearAccessState();
         setAccessError(false);
@@ -118,6 +123,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSessionChecked(true);
 
       if (!nextSession && event === "SIGNED_OUT") {
+        accessAbortRef.current?.abort(new DOMException("Signed out", "AbortError"));
+        accessAbortRef.current = null;
         accessRequestRef.current += 1;
         identitySyncUserRef.current = null;
         clearAccessState();
@@ -130,6 +137,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       mounted = false;
+      accessAbortRef.current?.abort(new DOMException("Auth provider unmounted", "AbortError"));
+      accessAbortRef.current = null;
       subscription.unsubscribe();
     };
   }, [clearAccessState, queryClient]);
@@ -214,24 +223,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const userId = user?.id;
   const checkStatus = useCallback(async () => {
-    const requestId = ++accessRequestRef.current;
     if (!sessionChecked) return;
+    const requestId = ++accessRequestRef.current;
+    accessAbortRef.current?.abort(new DOMException("Superseded by a newer account check", "AbortError"));
+    accessAbortRef.current = null;
     if (!userId) {
       clearAccessState();
       setAccessError(false);
+      setAccessFailureCount(0);
       setIsLoading(false);
       return;
     }
 
+    // Keep a previous failure visible while a retry is in progress. Users
+    // must still see Retry / Sign in options, not a brand-new blank spinner.
     setIsLoading(true);
-    setAccessError(false);
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 15000);
+    accessAbortRef.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(
+      new DOMException("Account permissions timed out. Your session remains saved.", "TimeoutError")
+    ), 29_000);
     try {
       const { data, error } = await (supabase as any).rpc("get_my_access_context").abortSignal(controller.signal);
       if (requestId !== accessRequestRef.current || currentUserIdRef.current !== userId) return;
       if (error) throw error;
-      const access = (data || {}) as AccessContext;
+      if (!data || typeof data !== "object" || Array.isArray(data) ||
+        typeof (data as AccessContext).is_student !== "boolean") {
+        throw new Error("The account permissions service returned an incomplete result.");
+      }
+      const access = data as AccessContext;
 
       const role = (access.staff_role || null) as StaffRole;
       const departments = Array.isArray(access.admin_departments) ? access.admin_departments as AdminDepartmentKey[] : [];
@@ -248,6 +268,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsRecruiter(Boolean(access.is_recruiter));
       setIsPendingRecruiter(Boolean(access.is_pending_recruiter));
       setIsStudent(!partnershipOnly && Boolean(access.is_student));
+      setAccessFailureCount(0);
       setAccessError(false);
     } catch (error) {
       if (requestId !== accessRequestRef.current || currentUserIdRef.current !== userId) return;
@@ -255,10 +276,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // resolved access context. Clearing roles on a transient network failure
       // can misroute staff/partners into student surfaces. Route guards fail
       // closed while accessError is true and expose an explicit retry instead.
-      console.error("[AuthContext] Access context failed safely:", error);
+      console.warn("[AuthContext] Account check temporarily unavailable; retry is scheduled:", error);
+      setAccessFailureCount(count => Math.min(count + 1, 12));
       setAccessError(true);
     } finally {
       window.clearTimeout(timeout);
+      if (accessAbortRef.current === controller) accessAbortRef.current = null;
       if (requestId === accessRequestRef.current) setIsLoading(false);
     }
   }, [clearAccessState, sessionChecked, userId]);
@@ -267,21 +290,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     void checkStatus();
   }, [checkStatus]);
 
-  // If access resolution failed because the device was offline or a WebView
-  // request stalled, automatically retry when the app is usable again. This
-  // avoids requiring a force-close while still keeping role-gated UI closed.
+  // Background recovery is bounded and resumes on network return, app focus,
+  // or the visible Retry action. We never infer a role from a cached identity
+  // or bypass get_my_access_context when permission verification is unavailable.
   useEffect(() => {
     if (!accessError || !userId) return;
     const retry = () => {
-      if (document.visibilityState !== "hidden" && navigator.onLine) void checkStatus();
+      if (!isLoading && document.visibilityState !== "hidden" && navigator.onLine)
+        void checkStatus();
     };
+    // Retry even if browser navigator.onLine never fires an event: browsers
+    // commonly report "online" while DNS, PostgREST or a DB pool is saturated.
+    const delay = Math.min(3_000 * Math.pow(2, Math.min(accessFailureCount, 4)), 60_000);
+    const timer = window.setTimeout(retry, delay);
     window.addEventListener("online", retry);
+    window.addEventListener("rk-reconnected", retry);
     document.addEventListener("visibilitychange", retry);
     return () => {
+      window.clearTimeout(timer);
       window.removeEventListener("online", retry);
+      window.removeEventListener("rk-reconnected", retry);
       document.removeEventListener("visibilitychange", retry);
     };
-  }, [accessError, checkStatus, userId]);
+  }, [accessError, accessFailureCount, checkStatus, userId, isLoading]);
 
   const signOut = async () => {
     // Detach this physical installation from the current account before the
@@ -295,6 +326,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { error } = await supabase.auth.signOut({ scope: "local" });
     if (error) throw error;
+    accessAbortRef.current?.abort(new DOMException("Signed out", "AbortError"));
+    accessAbortRef.current = null;
     accessRequestRef.current += 1;
     currentUserIdRef.current = null;
     identitySyncUserRef.current = null;
