@@ -104,7 +104,7 @@ async function rest(path) {
     },
   });
   if (!response.ok)
-    throw new Error(`Supabase sitemap query failed: ${response.status}`);
+    throw new Error(`sitemap-upstream-http-${response.status}`);
   return response.json();
 }
 function dedupeRows(rows) {
@@ -205,7 +205,30 @@ export default async function handler(req, res) {
         );
     return res.status(200).send(urlset(await rowsFor(type)));
   } catch (error) {
-    console.error("sitemap generation failed", error);
+    // Expose only a non-sensitive error category, never credentials, DB URLs,
+    // query data or stack traces. This allows production diagnosis even when
+    // runtime logging is unavailable from the connected Vercel account.
+    const message = String(error?.message || "");
+    const status = message.match(/^sitemap-upstream-http-(\\d{3})$/)?.[1];
+    const reason = status ? `upstream-${status}`
+      : message.includes("environment variables") ? "configuration"
+      : /fetch failed|connect|network|timeout|ENOTFOUND|ECONNREFUSED/i.test(message) ? "network"
+      : "unknown";
+    res.setHeader("X-SEO-Sitemap-Source", reason);
+    console.error("sitemap generation failed", reason);
+
+    if (req.query?.type === "pages") {
+      // Static public discovery URLs must remain crawlable during upstream
+      // outages. Managed dynamic URLs will reappear when the source recovers.
+      const staticRows = STATIC_PAGE_PATHS.map((path) => ({
+        loc: absoluteUrl(path), lastmod: null,
+      }));
+      res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
+      return res.status(200).send(urlset(staticRows));
+    }
+    // A failed dynamic feed is temporarily unavailable, not an empty
+    // permanent inventory. 503 encourages search engines to retry.
+    res.setHeader("Cache-Control", "no-store");
     return res
       .status(503)
       .send(

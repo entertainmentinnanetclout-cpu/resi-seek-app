@@ -54,6 +54,8 @@ jobs:
         run: node --test scripts/google-oauth-public-readiness.test.mjs
       - name: City and housing-intent SEO discovery validation
         run: node --test scripts/seo-discovery-upgrade.test.mjs
+      - name: Search crawling and sitemap runtime resilience
+        run: node --test scripts/seo-runtime-resilience.test.mjs
       - name: P9 production performance budget
         run: npm run platform:p9
       - name: Authenticated production-PWA matrix

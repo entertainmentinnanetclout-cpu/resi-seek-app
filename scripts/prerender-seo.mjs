@@ -196,6 +196,10 @@ const replaceOrInsert = (html, regex, tag) =>
 
 const base = await fs.readFile(path.join(DIST, "index.html"), "utf8");
 await fs.mkdir(path.join(DIST, "_seo"), { recursive: true });
+// Filesystem routing serves /index.html before a Vercel root rewrite.
+// Preserve the original Vite SPA shell separately for non-prerendered routes.
+await fs.mkdir(path.join(DIST, "_spa"), { recursive: true });
+await fs.writeFile(path.join(DIST, "_spa", "fallback.html"), base);
 
 for (const [route, title, description, h1] of pages) {
   const url = canonical(route);
@@ -245,6 +249,21 @@ for (const [route, title, description, h1] of pages) {
   );
 
   const discovery = discoveryByPath.get(route);
+  const cityGeo = {
+    "/student-accommodation/pretoria": { region: "ZA-GT", name: "Pretoria" },
+    "/student-accommodation/soshanguve": { region: "ZA-GT", name: "Soshanguve" },
+    "/student-accommodation/ga-rankuwa": { region: "ZA-GT", name: "Ga-Rankuwa" },
+    "/student-accommodation/mbombela": { region: "ZA-MP", name: "Mbombela" },
+    "/student-accommodation/polokwane": { region: "ZA-LP", name: "Polokwane" },
+  };
+  const city = cityGeo[route];
+  if (city) {
+    html = replaceOrInsert(html, /<meta name="geo.region"[^>]*>/i,
+      `<meta name="geo.region" content="${city.region}" />`);
+    html = replaceOrInsert(html, /<meta name="geo.placename"[^>]*>/i,
+      `<meta name="geo.placename" content="${esc(city.name)}" />`);
+  }
+
   const discoverHtml = discovery ? [
     '<div style="margin-top:28px;max-width:980px;font-size:1rem;line-height:1.75">',
     ...discovery.intro.map((text)=>'<p style="margin-top:12px">'+esc(text)+'</p>'),
@@ -386,5 +405,10 @@ privacyHtml=privacyHtml.replace('<div id="root"></div>',
  '<footer style="border-top:1px solid #e0e7f0;padding:28px 0"><a href="/">Homepage</a> · <a href="/terms">Terms</a> · <a href="/delete-account">Account deletion</a> · <a href="mailto:reskonnect@gmail.com">Privacy contact</a></footer>'+
  '</main></div>');
 await fs.writeFile(path.join(DIST,"_seo","privacy.html"),privacyHtml);
+
+// The homepage is a physical /index.html on Vercel, so a rewrite from "/"
+// is shadowed. Publish the full pre-rendered, OAuth-readable landing HTML there.
+// The separate /_spa/fallback remains the canonical shell for all unmatched routes.
+await fs.copyFile(path.join(DIST, "_seo", "home.html"), path.join(DIST, "index.html"));
 
 console.log(`Prerendered ${pages.length} strategic ResKonnect search pages plus the public privacy policy.`);
