@@ -154,6 +154,7 @@ export function createGmailMime(to:string,subject:string,textBody:string,htmlBod
  const displayName=(sender?.name||"ResKonnect").replace(/[\r\n\u0000-\u001f\u007f<>]/g," ").replace(/\s+/g," ").trim().slice(0,100)||"ResKonnect";
  const fromHeader=sender?("From: =?UTF-8?B?"+encodeBase64(displayName)+"?= <"+senderEmail+">"):null;
  const headers=[
+  "Date: "+new Date().toUTCString(),
   ...(fromHeader?[fromHeader,"Reply-To: "+senderEmail]:[]),
   "To: "+to.replace(/[\r\n]/g,""),
   "Subject: =?UTF-8?B?"+encodeBase64(subject.replace(/[\r\n]/g," "))+"?=",
