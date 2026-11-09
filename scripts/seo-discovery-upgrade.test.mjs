@@ -10,6 +10,7 @@ const landing=read("src/pages/Landing.tsx");
 const filters=read("src/pages/FindMyRes.tsx");
 const cards=read("src/components/seo/SeoListingResults.tsx");
 const detail=read("src/pages/ResidenceDetail.tsx");
+const globalSeo=read("src/components/SEO.tsx");
 const prerender=read("scripts/prerender-seo.mjs");
 const cities=["pretoria","soshanguve","ga-rankuwa","mbombela","polokwane"];
 const intents=["single-rooms","nsfas-no-top-up","r1500-to-budget","private-paying","room-types"];
@@ -49,6 +50,10 @@ test("No fabricated price, first-place rank, NSFAS accreditation or no-top-up pr
  assert.match(detail,/canonicalPath=\{canonicalPath\}/);
  assert.match(detail,/verifiedMonthlyOffer/);
  assert.match(detail,/noIndex=\{residence.is_visible === false\}/);
+ assert.match(globalSeo,/mbombela: \{ region: "ZA-MP"/);
+ assert.match(globalSeo,/polokwane: \{ region: "ZA-LP"/);
+ assert.match(globalSeo,/pretoria: \{ region: "ZA-GT"/);
+ assert.doesNotMatch(globalSeo,/meta name="geo\.region" content="ZA-GT"/);
 });
 
 test("Production build emits non-empty, unique HTML content for every public discovery page",()=>{
