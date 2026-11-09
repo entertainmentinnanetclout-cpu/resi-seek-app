@@ -33,7 +33,7 @@ export const useRealtimeResidences = () => {
         }
         const db = supabase as any;
         const [residenceResult, roomPricingResult, inventoryResult, readinessResult] = await Promise.all([
-          supabase.from('residences').select('*').eq('is_visible', true).abortSignal(controller.signal),
+          db.from('residences').select('*').eq('is_visible', true).abortSignal(controller.signal),
           db.from('residence_room_types').select('*').eq('is_active', true).abortSignal(controller.signal),
           db.from('reskonnect_discovery_inventory_v').select('residence_id,visible_available_beds,visible_private_price,availability_source,room_type_count').abortSignal(controller.signal),
           db.from('reskonnect_marketplace_readiness_v').select('residence_id,readiness_score,marketplace_review_ready,has_photo_reference,has_verified_private_price,has_verified_location,readiness_gaps').abortSignal(controller.signal),
