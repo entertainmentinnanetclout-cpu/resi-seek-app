@@ -89,11 +89,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const initAuth = async () => {
       try {
-        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        const { data: { session: existingSession }, error: sessionError } = await supabase.auth.getSession();
+        // A transient Auth/DB failure is not proof that the user signed out.
+        if (sessionError) throw sessionError;
         if (!authEventReceived) applySession(existingSession);
       } catch (error) {
         console.error("[AuthContext] Initial session restore failed safely:", error);
-        if (!authEventReceived) applySession(null);
+        // Do not overwrite a previously delivered session with a fabricated
+        // signed-out state when the Auth API/database is temporarily unavailable.
+        // The focus/online reconciler may recover the persisted session later.
       } finally {
         if (mounted) setSessionChecked(true);
       }
@@ -144,8 +148,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [clearAccessState, queryClient]);
 
   // Android/WebView can suspend JavaScript for long periods. Reconcile the
-  // persisted Supabase session when the app becomes visible and proactively
-  // refresh tokens that are close to expiry.
+  // persisted Supabase session when the app becomes visible, without
+  // launching a competing manual refresh request.
   useEffect(() => {
     let active = true;
     let reconciling = false;
@@ -153,7 +157,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (document.visibilityState === "hidden" || reconciling) return;
       reconciling = true;
       try {
-        const { data: { session: current } } = await supabase.auth.getSession();
+        const { data: { session: current }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
         if (!active) return;
         if (!current) {
           currentUserIdRef.current = null;
@@ -166,18 +171,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        const expiresAtMs = Number(current.expires_at || 0) * 1000;
-        if (expiresAtMs && expiresAtMs - Date.now() < 120_000) {
-          const { data, error } = await supabase.auth.refreshSession(current);
-          if (error) throw error;
-          if (active && data.session) {
-            currentUserIdRef.current = data.session.user.id;
-            setSession(data.session);
-            setUser(data.session.user);
-          }
-          return;
-        }
-
+        // getSession refreshes tokens when necessary; the browser client also
+        // handles foreground auto-refresh. Avoid a second manual refresh call
+        // on every app focus, which can contend for one-use refresh tokens
+        // when PostgreSQL/Auth is degraded.
         currentUserIdRef.current = current.user.id;
         setSession(current);
         setUser(current.user);

@@ -19,7 +19,7 @@ const notifications=read("src/hooks/useRealtimeNotifications.ts");
 const fullMessage=read("src/pages/NotificationDetail.tsx");
 
 expect(auth.includes('rpc("get_my_access_context")'),"auth bootstrap uses one access-context RPC");
-expect(auth.includes("refreshSession"),"auth reconciles near-expiry sessions after resume");
+expect(auth.includes("supabase.auth.getSession()") && auth.includes("if (sessionError) throw sessionError") && !auth.includes("await supabase.auth.refreshSession(current)") && read("src/integrations/supabase/client.ts").includes("autoRefreshToken: true"),"auth reconciles near-expiry sessions through safe Supabase getSession and browser auto-refresh");
 expect(auth.includes('visibilitychange'),"auth reconciles Android/web sessions on resume");
 expect(header.includes("useAuth")&&header.includes("My ResKonnect"),"public header reflects signed-in session");
 expect(home.includes("useAuth")&&home.includes("My ResKonnect"),"home journey reflects signed-in session");

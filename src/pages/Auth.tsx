@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BRAND } from "@/constants/brand";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase, EXTERNAL_SUPABASE_ANON_KEY, externalFunctionUrl } from "@/integrations/supabase/client";
-import { getAuthErrorMessage } from "@/lib/authErrors";
+import { getAuthErrorMessage, isTemporaryAuthServiceError } from "@/lib/authErrors";
 import { TUT_CAMPUSES } from "@/lib/campuses";
 import { attachReferralToUser } from "@/lib/referrals/referralApi";
 import { clearPendingApplication, clearPendingRecruiter, readPendingApplication, readPendingRecruiter, readReferral } from "@/lib/referrals/referralStorage";
@@ -88,6 +88,7 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(searchParams.get("mode") !== "signup");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const [selectedCampus, setSelectedCampus] = useState("");
   const [applicantStage, setApplicantStage] = useState("university_student");
   const [identifierType, setIdentifierType] = useState<"student_number" | "identity_number">("student_number");
@@ -175,6 +176,7 @@ const Auth = () => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
+    setServiceUnavailable(false);
     const form = new FormData(event.currentTarget);
     try {
       const email = z.string().email("Enter a valid email address").parse(String(form.get("email") || ""));
@@ -244,6 +246,7 @@ const Auth = () => {
       }
     } catch (err: any) {
       const message = err instanceof z.ZodError ? err.issues[0]?.message : getAuthErrorMessage(err);
+      setServiceUnavailable(isTemporaryAuthServiceError(err));
       setError(message);
       toast.error(message);
     } finally {
@@ -325,7 +328,13 @@ const Auth = () => {
           </div>
         )}
         <Card className="mt-7 shadow-xl"><CardContent className="p-6 sm:p-8">
-          {error && <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</div>}
+          {error && <div role="alert" className={serviceUnavailable ? "mb-4 space-y-2 rounded-lg border border-amber-400/70 bg-amber-50 p-3 text-sm text-amber-950" : "mb-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"}>
+            {serviceUnavailable && <p className="font-bold">Authentication service temporarily unavailable</p>}
+            <p>{error}</p>
+            {serviceUnavailable && <p className="text-xs">{isLogin
+              ? "A server error does not mean you need a new account or password reset. Retry when the service responds."
+              : "Registration could have completed even if the response failed. Check your email before submitting another registration."}</p>}
+          </div>}
           <form onSubmit={handleSubmit} className="space-y-5">
             {!isLogin && <div className="space-y-2"><Label htmlFor="fullName">Full name *</Label><Input id="fullName" name="fullName" required autoComplete="name" placeholder="Your full name" /></div>}
             <div className="space-y-2"><Label htmlFor="email">Email address *</Label><Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@example.com" value={emailValue} onChange={(event) => setEmailValue(event.target.value)} /></div>
