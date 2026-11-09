@@ -11,12 +11,12 @@ test("Physical homepage is crawlable and OAuth-readable, while fallback remains 
  const home=read("dist/_seo/home.html");
  const fallback=read("dist/_spa/fallback.html");
  assert.equal(root,home,"Vercel serves physical index before / rewrite");
- assert.match(root,/ResKonnect — Building Africa&#39;s First AI\\/SI-Powered Student Platform/);
+ assert.ok(root.includes("ResKonnect — Building Africa&#39;s First AI/SI-Powered Student Platform"));
  assert.match(root,/Student accommodation by city/);
  assert.match(root,/Soshanguve/);
  assert.match(root,/Why ResKonnect requests Gmail permission/);
- assert.match(root,/rel="canonical" href="https:\\/\\/www.reskonnect.org"/);
- assert.match(fallback,/<div id="root"><\\/div>/);
+ assert.ok(root.includes('rel="canonical" href="https://www.reskonnect.org"'));
+ assert.ok(fallback.includes('<div id="root"></div>'));
  assert.doesNotMatch(fallback,/Student accommodation by city/);
  assert.match(read("dist/360-studio.html"),/noindex, nofollow/);
  assert.equal(vercel.rewrites.find(r=>r.source==="/(.*)")?.destination,"/_spa/fallback");
@@ -51,9 +51,9 @@ test("Public pages sitemap stays readable when upstream REST is offline; dynamic
   const p=pages.result();
   assert.equal(p.status,200);
   assert.equal(p.headers["x-seo-sitemap-source"],"network");
-  assert.match(p.body,/https:\\/\\/www.reskonnect.org\\/student-accommodation\\/soshanguve/);
-  assert.match(p.body,/https:\\/\\/www.reskonnect.org\\/student-accommodation\\/nsfas-no-top-up/);
-  assert.match(p.body,/https:\\/\\/www.reskonnect.org\\/opportunities\\/wil/);
+  assert.ok(p.body.includes("https://www.reskonnect.org/student-accommodation/soshanguve"));
+  assert.ok(p.body.includes("https://www.reskonnect.org/student-accommodation/nsfas-no-top-up"));
+  assert.ok(p.body.includes("https://www.reskonnect.org/opportunities/wil"));
   const dynamic=fakeResponse();
   await sitemapHandler({query:{type:"residences"}},dynamic);
   assert.equal(dynamic.result().status,503,"keep source outages retryable");
