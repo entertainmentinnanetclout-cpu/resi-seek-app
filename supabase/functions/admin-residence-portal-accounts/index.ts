@@ -148,7 +148,7 @@ Deno.serve(async(req:Request)=>{
    // credential from Vault, preserving unrelated student profiles and logins.
    if(account.user_id){
     const {data:remaining}=await db.from("user_roles").select("role")
-     .eq("user_id",account.user_id).in("role",["admin","residence_portal"]);
+     .eq("user_id",account.user_id).neq("role","student");
     if(!remaining?.length){
      const {data:oldToken}=await db.rpc("gmail_get_connection_secret",{p_user_id:account.user_id});
      if(typeof oldToken==="string"&&oldToken){
@@ -199,7 +199,7 @@ Deno.serve(async(req:Request)=>{
    // original email. Revoke Gmail send only if no independent staff role remains.
    if(account.user_id&&swap.previous_user_id){
     const {data:remaining}=await db.from("user_roles").select("role")
-      .eq("user_id",account.user_id).in("role",["admin","residence_portal"]);
+      .eq("user_id",account.user_id).neq("role","student");
     if(!remaining?.length){
       await db.from("landlord_gmail_connections").update({enabled:false}).eq("user_id",account.user_id);
       const {error:cleanupError}=await db.rpc("gmail_delete_connection",{p_user_id:account.user_id});
