@@ -20,6 +20,11 @@ test("Physical homepage is crawlable and OAuth-readable, while fallback remains 
  assert.doesNotMatch(fallback,/Student accommodation by city/);
  assert.match(read("dist/360-studio.html"),/noindex, nofollow/);
  assert.equal(vercel.rewrites.find(r=>r.source==="/(.*)")?.destination,"/_spa/fallback");
+ assert.match(read("dist/_seo/student-accommodation-mbombela.html"),/name="geo.region" content="ZA-MP"/);
+ assert.match(read("dist/_seo/student-accommodation-polokwane.html"),/name="geo.region" content="ZA-LP"/);
+ assert.match(read("dist/_seo/student-accommodation-soshanguve.html"),/name="geo.region" content="ZA-GT"/);
+ assert.doesNotMatch(root,/name="geo.region" content="ZA-GT"/);
+ assert.doesNotMatch(fallback,/name="geo.placename" content="Pretoria"/);
 });
 
 function fakeResponse(){
