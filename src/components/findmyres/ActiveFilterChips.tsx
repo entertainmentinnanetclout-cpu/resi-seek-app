@@ -14,6 +14,9 @@ export function ActiveFilterChips({ filters, updateFilter, resetFilters, hasActi
 
   const chips: { label: string; onRemove: () => void }[] = [];
 
+  if (filters.city !== "all") chips.push({ label: `City: ${filters.city}`, onRemove: () => updateFilter("city", "all") });
+  if (filters.searchQuery) chips.push({ label: `Search: ${filters.searchQuery}`, onRemove: () => updateFilter("searchQuery", "") });
+  if (filters.priceMin > 0) chips.push({ label: `Min R${filters.priceMin.toLocaleString()}`, onRemove: () => updateFilter("priceMin", 0) });
   if (filters.campus !== "all") {
     chips.push({ label: `Campus: ${filters.campus}`, onRemove: () => updateFilter("campus", "all") });
   }
@@ -42,6 +45,10 @@ export function ActiveFilterChips({ filters, updateFilter, resetFilters, hasActi
   if (filters.nsfasOnly) {
     chips.push({ label: "NSFAS Funding Context", onRemove: () => updateFilter("nsfasOnly", false) });
   }
+  if (filters.photoOnly) chips.push({ label: "With photos", onRemove: () => updateFilter("photoOnly", false) });
+  if (filters.priceVerifiedOnly) chips.push({ label: "Verified price", onRemove: () => updateFilter("priceVerifiedOnly", false) });
+  if (filters.singlesOnly) chips.push({ label: "Single rooms", onRemove: () => updateFilter("singlesOnly", false) });
+  if (filters.privatePayingOnly) chips.push({ label: "Private-paying", onRemove: () => updateFilter("privatePayingOnly", false) });
   if (filters.availability !== "all") {
     chips.push({
       label: filters.availability === "available" ? "Available Only" : "Few Spots",

@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { residenceMatchesCampus, type InstitutionTypeKey } from "@/constants/institutionOptions";
 import { captureLunaDemandEvent } from "@/lib/lunaGrowth";
+import { publicPrivateMonthlyRent, hasVerifiedPrivateRent, hasPropertyPhotoReference, reportedCampusDistanceKm } from "@/lib/residenceListingEvidence";
 
 export interface ResidenceFilters {
   searchQuery: string;
@@ -62,13 +63,7 @@ const DEFAULT_FILTERS: ResidenceFilters = {
 
 /** A missing rate is unknown, never a free room. Use the publicly displayed
  * private/promotional monthly amount when supplied, and keep funded rates separate. */
-const publishedMonthlyPrice = (residence: any): number => {
-  const raw = residence?.promo_active && Number(residence?.promo_price) > 0
-    ? residence.promo_price
-    : residence?.private_price || residence?.price;
-  const price = Number(raw);
-  return Number.isFinite(price) && price > 0 ? price : 0;
-};
+const publishedMonthlyPrice = (residence: any): number => publicPrivateMonthlyRent(residence) ?? 0;
 
 export function calculateMatchScore(
   residence: any,
@@ -111,9 +106,9 @@ export function calculateMatchScore(
   // Distance within range: +15
   if (filters.distanceMax < 20) {
     maxScore += 15;
-    const dist = Number(residence.distance_from_campus) || 0;
-    if (dist <= filters.distanceMax) score += 15;
-    else if (dist <= filters.distanceMax + 2) score += 5;
+    const dist = reportedCampusDistanceKm(residence.distance_from_campus);
+    if (dist !== null && dist <= filters.distanceMax) score += 15;
+    else if (dist !== null && dist <= filters.distanceMax + 2) score += 5;
   }
 
   // Amenities: +10
@@ -216,8 +211,8 @@ export function useResidenceFilters(residences: any[]) {
     let filtered = residences.filter((r) => !isMockResidence(r) && r.is_visible!==false);
 
     if(filters.city!=="all")filtered=filtered.filter(r=>String(r.canonical_city||r.city||"").trim().toLowerCase()===filters.city.toLowerCase());
-    if(filters.photoOnly)filtered=filtered.filter(r=>Boolean(r.cover_image_url||r.image_url||(Array.isArray(r.images)&&r.images.length)));
-    if(filters.priceVerifiedOnly)filtered=filtered.filter(r=>Boolean(r.price_verified_at)||(r.room_pricing||[]).some((room:any)=>Boolean(room.price_verified_at)));
+    if(filters.photoOnly)filtered=filtered.filter(r=>hasPropertyPhotoReference(r));
+    if(filters.priceVerifiedOnly)filtered=filtered.filter(r=>hasVerifiedPrivateRent(r));
 
     // Search
     if (filters.searchQuery) {
@@ -287,7 +282,7 @@ export function useResidenceFilters(residences: any[]) {
     // Distance
     if (filters.distanceMax < 20) {
       filtered = filtered.filter(
-        (r) => (Number(r.distance_from_campus) || 0) <= filters.distanceMax
+        (r) => { const dist = reportedCampusDistanceKm(r.distance_from_campus); return dist !== null && dist <= filters.distanceMax; }
       );
     }
 
@@ -359,8 +354,8 @@ export function useResidenceFilters(residences: any[]) {
       case "distance":
         withScores.sort(
           (a, b) =>
-            (Number(a.distance_from_campus) || 999) -
-            (Number(b.distance_from_campus) || 999)
+            (reportedCampusDistanceKm(a.distance_from_campus) ?? 999) -
+            (reportedCampusDistanceKm(b.distance_from_campus) ?? 999)
         );
         break;
       case "recent":
@@ -435,6 +430,7 @@ export function useResidenceFilters(residences: any[]) {
         return true;
       })
       .filter((r) => (filters.nsfasOnly ? r.accepts_nsfas === true : true))
+      .filter((r) => publicPrivateMonthlyRent(r) !== null)
       .sort((a, b) => (publishedMonthlyPrice(a) || Number.POSITIVE_INFINITY) - (publishedMonthlyPrice(b) || Number.POSITIVE_INFINITY))
       .slice(0, 6);
   }, [residences, filters, filteredResidences]);

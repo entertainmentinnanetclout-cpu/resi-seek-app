@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { publicPrivateMonthlyRent, hasVerifiedPrivateRent, reportedCampusDistanceKm } from "@/lib/residenceListingEvidence";
 
 interface ResidencePropertyCardProps {
   residence: any;
@@ -39,12 +40,11 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
 
   const spots = Number(residence.available_spots) || 0;
   const inventoryLabel=residence.inventory_source==="room_type_reported"?"Room-type inventory reported by landlord":"Residence-reported availability";
-  const isFull = spots === 0;
+  const isFull = spots <= 0;
   const basePrice = Number(residence.price) || 0;
   const privatePrice = Number(residence.private_price) || (residence.accepts_private ? basePrice : 0);
   const nsfasPrice = Number(residence.nsfas_price) || 0;
-  const promoPrice = Number(residence.promo_price) || 0;
-  const distance = Number(residence.distance_from_campus) || 0;
+  const distance = reportedCampusDistanceKm(residence.distance_from_campus);
   const status = residenceStatus(residence);
   const slug = residence.slug || residence.id;
   const isSpotlight = residence.is_spotlight === true;
@@ -54,7 +54,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
   const roomTypes = Array.from(new Set([...(configuredRoomTypes || []), ...((residence.room_types || [residence.room_type]).filter(Boolean) as string[])])) as string[];
   const hasSingles = roomTypes.some((type) => type.toLowerCase().includes("single"));
   const singlesAvailable = Number(residence.singles_available) || 0;
-  const verifiedPricing = Boolean(residence.price_verified_at) || roomPricing.some((room: any) => Boolean(room.price_verified_at));
+  const verifiedPricing = hasVerifiedPrivateRent(residence);
   const contactPhone = residence.whatsapp_phone || residence.contact_phone || RESKONNECT_WHATSAPP;
 
   const promoLive = useMemo(() => {
@@ -66,8 +66,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
   }, [residence.promo_active, residence.promo_starts_at, residence.promo_ends_at]);
 
   const pricedRooms = roomPricing.slice().sort((a: any, b: any) => Number(a.private_price || a.nsfas_price || 999999) - Number(b.private_price || b.nsfas_price || 999999));
-  const cheapestPrivate = pricedRooms.filter((room: any) => Number(room.available_beds || 0) > 0).map((room: any) => Number(room.promo_price || room.private_price || 0)).filter((value: number) => value > 0).sort((a: number, b: number) => a - b)[0];
-  const displayPrivate = cheapestPrivate || (promoLive && promoPrice > 0 ? promoPrice : privatePrice || basePrice);
+  const displayPrivate = publicPrivateMonthlyRent(residence);
 
   const openReservation = (event: React.MouseEvent) => {
     event.preventDefault();
@@ -112,7 +111,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
       <div className="relative isolate bg-[#000F2F]">
         <ResidenceBrandStudioCard residence={residence} className="rounded-none shadow-none" />
         <div className="absolute right-3 top-3 z-30 flex max-w-[48%] flex-col items-end gap-1.5">
-          <StatusBadge variant={status} label={status === "limited" ? `${spots} LEFT` : undefined} />
+          <StatusBadge variant={status} label={isFull ? "CHECK AVAILABILITY" : status === "limited" ? `${spots} REPORTED` : status === "available" ? "REPORTED SPACES" : undefined} />
           {reservations2027 && <Badge className="border-0 bg-primary text-primary-foreground shadow-md"><CalendarDays className="mr-1 h-3 w-3" />2027 OPEN</Badge>}
           {promoLive && <Badge className="border-0 bg-amber-500 text-white shadow-md"><Tag className="mr-1 h-3 w-3" />{residence.promo_badge || "PROMO"}</Badge>}
           {verifiedPricing && <Badge className="border-0 bg-emerald-600 text-white shadow-md"><BadgeCheck className="mr-1 h-3 w-3" />PRICE VERIFIED</Badge>}
@@ -127,7 +126,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
 
       <CardContent className="min-w-0 space-y-3 p-4">
         <div className="flex min-w-0 items-start justify-between gap-2">
-          <div className="min-w-0"><span className="inline-flex max-w-full items-baseline gap-0.5 rounded-full bg-gradient-price px-3 py-1 text-white shadow-sm"><span className="truncate text-lg font-bold">{money(displayPrivate)}</span><span className="shrink-0 text-xs opacity-90">/mo</span></span><p className="mt-1 text-[10px] font-medium text-muted-foreground">{roomPricing.length ? "From recorded room-type pricing" : residence.accepts_private ? "Private tenant rate" : "Published residence rate"} · {inventoryLabel}</p></div>
+          <div className="min-w-0"><span className="inline-flex max-w-full items-baseline gap-0.5 rounded-full bg-gradient-price px-3 py-1 text-white shadow-sm"><span className="truncate text-lg font-bold">{displayPrivate !== null ? money(displayPrivate) : "Price on request"}</span>{displayPrivate !== null && <span className="shrink-0 text-xs opacity-90">/mo</span>}</span><p className="mt-1 text-[10px] font-medium text-muted-foreground">{displayPrivate === null ? "No confirmed monthly rent supplied" : verifiedPricing ? "Monthly price verified" : "Landlord-reported price · not verified"} · {inventoryLabel}</p></div>
           <div className="flex min-w-0 shrink-0 flex-wrap justify-end gap-1">{residence.accepts_nsfas && <Badge className="border border-mint/40 bg-mint/15 text-[10px] text-mint">NSFAS</Badge>}{residence.is_tut_accredited && <Badge className="border border-sky/40 bg-sky/15 text-[10px] text-sky">TUT ✓</Badge>}{residence.accepts_tvet && <Badge className="border border-amber/40 bg-amber/15 text-[10px] text-amber">TVET</Badge>}{residence.accepts_private && <Badge className="border border-violet/40 bg-violet/15 text-[10px] text-violet">Private</Badge>}</div>
         </div>
 
@@ -136,7 +135,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
         {promoLive && <div className="rounded-xl border border-amber-300/60 bg-amber-50/70 p-3 text-amber-950 dark:bg-amber-950/20 dark:text-amber-100"><div className="flex items-center gap-2 text-xs font-bold"><Tag className="h-3.5 w-3.5" />{residence.promo_title || "Accommodation promotion"}</div>{residence.promo_description && <p className="mt-1 text-[11px] leading-relaxed opacity-80">{residence.promo_description}</p>}</div>}
 
         <h3 className="line-clamp-1 text-base font-semibold">{residence.name}</h3>
-        <div className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-3.5 w-3.5 shrink-0" /><span className="line-clamp-1 min-w-0">{residence.place_label || residence.address || residence.campus}</span>{distance > 0 && <span className="ml-auto shrink-0 text-xs font-medium text-coral">{distance}km</span>}</div>
+        <div className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-3.5 w-3.5 shrink-0" /><span className="line-clamp-1 min-w-0">{residence.place_label || residence.address || residence.campus}</span>{distance !== null && <span className="ml-auto shrink-0 text-xs font-medium text-coral">{distance}km</span>}</div>
         <div onClick={(event) => event.stopPropagation()} className="min-w-0 overflow-hidden rounded-xl"><ResidenceMapPreview name={residence.name} address={residence.address} latitude={residence.latitude} longitude={residence.longitude} /></div>
         <div className="flex flex-wrap gap-1.5">{roomTypes.slice(0, 4).map((type) => <Badge key={type} className="border border-violet/30 bg-violet/10 text-xs capitalize text-violet"><Bed className="mr-1 h-3 w-3" />{type}</Badge>)}{(singlesAvailable > 0 || hasSingles) && <Badge className="border border-mint/40 bg-mint/15 text-xs text-mint">{singlesAvailable > 0 ? `${singlesAvailable} Singles` : "Singles"}</Badge>}{residence.gender && <Badge className="border border-pink/30 bg-pink/10 text-xs capitalize text-pink">{residence.gender}</Badge>}</div>
         {(residence.is_furnished || residence.has_wifi || residence.has_parking) && <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">{residence.is_furnished && <span className="flex items-center gap-1"><Sofa className="h-3.5 w-3.5" />Furnished</span>}{residence.has_wifi && <span className="flex items-center gap-1"><Wifi className="h-3.5 w-3.5" />WiFi</span>}{residence.has_parking && <span className="flex items-center gap-1"><Car className="h-3.5 w-3.5" />Parking</span>}</div>}
@@ -144,7 +143,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
 
         {reservations2027 && <div className="rounded-xl border border-primary/25 bg-primary/5 p-3"><div className="flex items-center gap-2 text-xs font-bold"><CalendarDays className="h-4 w-4 text-primary" />2027 reservations now open</div><p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">Reserve your interest now. A reservation is not a final lease until confirmed.</p><Button className="mt-2 w-full" size="sm" onClick={openReservation}>Reserve for 2027</Button></div>}
 
-        <div className="grid grid-cols-2 gap-2"><Button variant="outline" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/find-my-res/${slug}`); }}>View Residence</Button><Button className={!isFull ? "bg-gradient-vibrant text-white" : ""} variant={isFull ? "outline" : "default"} disabled={isFull} onClick={(event) => { event.preventDefault(); event.stopPropagation(); onApply(residence); }}>{isFull ? "Fully Booked" : "Apply Now"}</Button></div>
+        <div className="grid grid-cols-2 gap-2"><Button variant="outline" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/find-my-res/${slug}`); }}>View Residence</Button><Button className={!isFull ? "bg-gradient-vibrant text-white" : ""} variant={isFull ? "outline" : "default"} disabled={isFull} onClick={(event) => { event.preventDefault(); event.stopPropagation(); onApply(residence); }}>{isFull ? "Check availability" : "Apply Now"}</Button></div>
       </CardContent>
     </Card>
 
