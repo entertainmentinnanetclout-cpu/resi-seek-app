@@ -58,7 +58,8 @@ test("Production build emits non-empty, unique HTML content for every public dis
    const html=read(file);
    assert.ok(html.length>3800,`thin static HTML: ${page.path}`);
    assert.ok(html.includes(page.h1));
-   assert.ok(html.includes(page.intro[0].slice(0,55)),`missing unique local prose: ${page.path}`);
+   const snippet=page.intro[0].slice(0,55).replaceAll("&","&amp;").replaceAll("'","&#39;").replaceAll('"',"&quot;");
+   assert.ok(html.includes(snippet),`missing unique local prose: ${page.path}`);
    assert.ok(html.includes("https://www.reskonnect.org"+page.path));
    assert.match(html,/BreadcrumbList/);
    assert.match(html,/What you can compare/);
