@@ -35,6 +35,18 @@ const SEO: React.FC<SEOProps> = ({
     "Find student accommodation, prepare applications, discover opportunities and explore student-housing intelligence with ResKonnect.";
   const canonical = canonicalUrl(currentPath);
   const defaultImage = routeMeta?.ogImage || DEFAULT_OG_IMAGE;
+  // Only emit geographic metadata when the page unambiguously describes
+  // that city. A blanket Pretoria/Gauteng tag on Mpumalanga and Limpopo
+  // listings is misleading and cannot help local search visibility.
+  const cityFromPath = currentPath.match(/^\/student-accommodation\/(pretoria|soshanguve|ga-rankuwa|mbombela|polokwane)$/)?.[1];
+  const geo: Record<string, { region: string; place: string }> = {
+    pretoria: { region: "ZA-GT", place: "Pretoria" },
+    soshanguve: { region: "ZA-GT", place: "Soshanguve" },
+    "ga-rankuwa": { region: "ZA-GT", place: "Ga-Rankuwa" },
+    mbombela: { region: "ZA-MP", place: "Mbombela" },
+    polokwane: { region: "ZA-LP", place: "Polokwane" },
+  };
+  const place = cityFromPath ? geo[cityFromPath] : undefined;
   const shouldNoIndex = noIndex ?? isNoIndexPath(location.pathname);
   const pageSchemas = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
   const schemas = currentPath === "/"
@@ -77,8 +89,8 @@ const SEO: React.FC<SEOProps> = ({
       <meta name="twitter:site" content="@ResKonnect" />
 
       <meta name="author" content="ResKonnect" />
-      <meta name="geo.region" content="ZA-GT" />
-      <meta name="geo.placename" content="Pretoria" />
+      {place && <meta name="geo.region" content={place.region} />}
+      {place && <meta name="geo.placename" content={place.place} />}
 
       {schemas.map((schema, i) => (
         <script key={i} type="application/ld+json">{JSON.stringify(schema)}</script>
