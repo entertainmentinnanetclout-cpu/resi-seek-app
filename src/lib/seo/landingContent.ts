@@ -4,6 +4,7 @@
 import type { Crumb, FaqItem } from "./jsonLd";
 import type { SeoLink } from "@/components/seo/SeoInternalLinks";
 import type { ListingQuery } from "@/components/seo/SeoListingResults";
+import discoveryPages from "@/data/seo/discoveryPages.json";
 
 export interface SeoLandingContent {
   path: string;
@@ -1202,7 +1203,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
 ];
 
 export const SEO_LANDING_BY_PATH: Record<string, SeoLandingContent> = Object.fromEntries(
-  SEO_LANDING_PAGES.map((p) => [p.path, p]),
+  [...SEO_LANDING_PAGES, ...(discoveryPages as SeoLandingContent[])].map((p) => [p.path, p]),
 );
 
-export const SEO_LANDING_PATHS = SEO_LANDING_PAGES.map((p) => p.path);
+export const SEO_LANDING_PATHS = [...SEO_LANDING_PAGES, ...(discoveryPages as SeoLandingContent[])].map((p) => p.path);
