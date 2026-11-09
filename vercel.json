@@ -364,7 +364,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/index"
+      "destination": "/_spa/fallback"
     }
   ]
 }
