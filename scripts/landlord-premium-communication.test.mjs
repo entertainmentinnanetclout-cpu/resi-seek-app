@@ -73,3 +73,38 @@ test("PDF is vector text with a white header/footer and photo fit-to-ratio",()=>
  assert.match(pdf,/maxW\/photo\.width,maxH\/photo\.height/);
  assert.match(pdf,/height:89,color:rgb\(1,1,1\)/);
 });
+
+test("branded sender keeps the OAuth mailbox as From and Reply-To, never a forged address",()=>{
+ const pdf=read("supabase/functions/reskonnect-email-dock/pdf.ts");
+ const send=read("supabase/functions/reskonnect-email-dock/send.ts");
+ const correspondence=read("supabase/functions/reskonnect-email-dock/correspondence.ts");
+ assert.match(pdf,/const senderEmail=sender\?\.email\?\.trim\(\)\.toLowerCase\(\)/);
+ assert.match(pdf,/From: =\?UTF-8\?B\?/);
+ assert.match(pdf,/Reply-To: /);
+ assert.match(pdf,/senderEmail/);
+ assert.match(pdf,/Connected Gmail sender address is invalid/);
+ assert.match(send,/select\("enabled,gmail_address"\)/);
+ assert.match(send,/const fromEmail=String\(connected\.gmail_address/);
+ assert.match(send,/\{name:senderName,email:sender\.fromEmail\}/);
+ assert.match(send,/s\.isAdmin\?"ResKonnect":\(ctx\.property/);
+ assert.match(correspondence,/reply directly to the email address that sent this message/);
+ assert.match(correspondence,/ResKonnect platform support/);
+ assert.doesNotMatch(correspondence,/>reskonnect@gmail\.com · \+27 63 732 3192<br>Official service update/);
+});
+test("Berlin property title is preserved and Gmail verification is never misrepresented",()=>{
+ const ctx={...app(),property:"Berlin Private & Student Living"};
+ const letter=renderLetter(ctx,"acknowledgement");
+ assert.match(letter.subject,/^Berlin Private & Student Living \|/);
+ assert.match(letter.body,/Berlin Private & Student Living/);
+ const guide=read("src/components/communications/LandlordGmailGuide.tsx");
+ const privacy=read("src/pages/Privacy.tsx");
+ assert.match(guide,/unverified app/);
+ assert.match(guide,/Google.*OAuth approval/);
+ assert.match(guide,/console\.cloud\.google\.com\/auth\/branding/);
+ assert.match(guide,/console\.cloud\.google\.com\/auth\/verification/);
+ assert.match(guide,/gmail\.send/);
+ assert.match(guide,/SPF, DKIM and DMARC/);
+ assert.match(privacy,/Gmail send-only/);
+ assert.match(privacy,/does not allow ResKonnect to read your Gmail inbox/);
+ assert.match(privacy,/myaccount\.google\.com\/connections/);
+});
