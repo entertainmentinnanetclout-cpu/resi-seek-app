@@ -11,6 +11,10 @@ export interface ListingQuery {
   audience?: "university" | "tvet" | "private";
   nsfasOnly?: boolean;
   areaTerms?: string[];
+  city?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  singlesOnly?: boolean;
   category?: string;
   limit?: number;
 }
@@ -39,6 +43,7 @@ interface Residence {
   accepts_university: boolean;
   room_type: string | null;
   room_types: string[] | null;
+  singles_available: number | null;
   amenities: unknown;
   has_wifi: boolean | null;
   has_parking: boolean | null;
@@ -72,11 +77,13 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
         let req = supabase
           .from("residences")
           .select(
-            "id, slug, name, address, campus, province, city, place_label, price, private_price, nsfas_price, promo_price, image_url, cover_image_url, images, available_spots, capacity, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, room_type, room_types, amenities, has_wifi, has_parking, is_furnished, utilities_included, reservations_2027_open",
+            "id, slug, name, address, campus, province, city, place_label, price, private_price, nsfas_price, promo_price, image_url, cover_image_url, images, available_spots, capacity, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, room_type, room_types, singles_available, amenities, has_wifi, has_parking, is_furnished, utilities_included, reservations_2027_open",
           )
+          .eq("is_visible", true)
           .order("display_order", { ascending: true })
-          .limit(60);
+          .limit(query.city ? 200 : 500);
 
+        if (query.city) req = req.eq("city", query.city);
         if (query.audience) req = req.eq(AUDIENCE_COLUMN[query.audience], true);
         if (query.nsfasOnly) req = req.eq("accepts_nsfas", true);
         if (query.category) req = req.eq("category", query.category);
@@ -94,6 +101,19 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
           });
         }
 
+        // Do not turn a missing price or unknown room category into a budget offer.
+        // The price comparison uses the same property price displayed in the card.
+        if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+          rows = rows.filter((r) => {
+            const monthly = Number(r.promo_price || r.private_price || r.price || 0);
+            return monthly > 0 && monthly >= (query.minPrice ?? 0) && monthly <= (query.maxPrice ?? Number.POSITIVE_INFINITY);
+          });
+        }
+        if (query.singlesOnly) {
+          rows = rows.filter((r) => (r.singles_available ?? 0) > 0 ||
+            [r.room_type, ...(r.room_types || [])].some((v) => /\\bsingle\\b/i.test(String(v || ""))));
+        }
+
         if (!cancelled) setResidences(rows.slice(0, query.limit ?? 6));
       } catch (err) {
         console.error("[SeoListingResults]", err);
@@ -107,7 +127,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
     return () => {
       cancelled = true;
     };
-  }, [query.audience, query.nsfasOnly, query.category, query.limit, JSON.stringify(query.areaTerms)]);
+  }, [query.audience, query.nsfasOnly, query.category, query.city, query.minPrice, query.maxPrice, query.singlesOnly, query.limit, JSON.stringify(query.areaTerms)]);
 
   return (
     <section aria-labelledby="listings-heading" className="mt-14">
@@ -163,7 +183,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
                       </h3>
                       {r.accepts_nsfas && (
                         <Badge variant="secondary" className="shrink-0 gap-1">
-                          <ShieldCheck className="h-3 w-3" aria-hidden="true" /> NSFAS
+                          <ShieldCheck className="h-3 w-3" aria-hidden="true" /> Accepts NSFAS
                         </Badge>
                       )}
                     </div>
