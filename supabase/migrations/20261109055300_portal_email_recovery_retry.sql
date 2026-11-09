@@ -1,4 +1,4 @@
--- Keep failed invitations safely retryable without losing the archived contact audit.\nBEGIN;\nCREATE OR REPLACE FUNCTION public.portal_prepare_orphan_profile_email(p_email text,p_admin_id uuid)
+CREATE OR REPLACE FUNCTION public.portal_prepare_orphan_profile_email(p_email text,p_admin_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
 AS $$
 DECLARE v_email text:=lower(btrim(coalesce(p_email,'')));
@@ -70,4 +70,3 @@ $$;
 REVOKE ALL ON FUNCTION public.portal_prepare_orphan_profile_email(text,uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.portal_prepare_orphan_profile_email(text,uuid) TO service_role;
 
-COMMIT;\n
