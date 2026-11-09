@@ -29,6 +29,8 @@ export const publicPrivateMonthlyRent = (residence: any, now = Date.now()): numb
     : positiveRand(residence?.private_price) ?? positiveRand(residence?.price);
 };
 
+export const isPublishedPromotionCurrent = (residence: any, now = Date.now()): boolean => livePromo(residence, now);
+
 export const hasVerifiedPrivateRent = (residence: any): boolean => {
   const rooms: any[] = Array.isArray(residence?.room_pricing)
     ? residence.room_pricing.filter((room: any) => room?.is_active !== false)
