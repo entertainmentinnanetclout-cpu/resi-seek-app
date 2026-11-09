@@ -2,7 +2,7 @@ import {createClient} from "npm:@supabase/supabase-js@2.86.2";
 
 // Administrator-only portal account management. All identity and membership
 // changes are scoped to a specific assignment ID, not a residence ID.
-const VERSION="v2.0.0-three-member-teams";
+const VERSION="v3.0.0-verified-email-onboarding";
 const headers={
  "Access-Control-Allow-Origin":"*",
  "Access-Control-Allow-Headers":"authorization,apikey,x-client-info,content-type,x-supabase-client-platform,x-supabase-client-platform-version,x-supabase-client-runtime,x-supabase-client-runtime-version",
@@ -71,9 +71,15 @@ Deno.serve(async(req:Request)=>{
    if(archived?.archived)archivedId=String(archived.legacy_profile_id);
   }
   const useInvitation=password.trim().length===0;
-  const created=useInvitation
-    ?await db.auth.admin.inviteUserByEmail(email,{redirectTo:"https://www.reskonnect.org/auth"})
-    :await db.auth.admin.createUser({email,password,email_confirm:true});
+  let created;
+  try{
+    created=useInvitation
+      ?await db.auth.admin.inviteUserByEmail(email,{redirectTo:"https://www.reskonnect.org/auth"})
+      :await db.auth.admin.createUser({email,password,email_confirm:true});
+  }catch(e){
+    if(archivedId)await db.rpc("portal_restore_orphan_profile_email",{p_email:email,p_legacy_profile_id:archivedId});
+    throw Error(errorText(e,"Unable to contact the authentication service for a new residence login"));
+  }
   if(created.error||!created.data.user?.id){
    if(archivedId)await db.rpc("portal_restore_orphan_profile_email",{p_email:email,p_legacy_profile_id:archivedId});
    throw Error(errorText(created.error,"Could not create or invite the landlord login")+
