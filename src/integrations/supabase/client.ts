@@ -17,8 +17,9 @@ export const externalFunctionUrl = (name: string) => `${EXTERNAL_SUPABASE_URL}/f
 // Storage uploads get a longer ceiling, but are still prevented from hanging
 // forever after a Wi-Fi/mobile-data handoff or suspended browser process.
 let transportDegraded = false;
+let authServiceDegraded = false;
 
-function emitTransportState(type: "rk-network-degraded" | "rk-network-recovered", detail: Record<string, unknown>) {
+function emitTransportState(type: "rk-network-degraded" | "rk-network-recovered" | "rk-auth-service-degraded" | "rk-auth-service-recovered", detail: Record<string, unknown>) {
   if (typeof window === "undefined") return;
   try { window.dispatchEvent(new CustomEvent(type, { detail })); } catch {}
 }
@@ -31,6 +32,7 @@ const resilientSupabaseFetch: typeof fetch = async (input, init) => {
   else if (url.startsWith(`${EXTERNAL_SUPABASE_URL}/functions/v1/`)) timeoutMs = 30_000;
   else if (url.startsWith(`${EXTERNAL_SUPABASE_URL}/storage/v1/`)) timeoutMs = 90_000;
   if (!timeoutMs) return fetch(input, init);
+  const isAuthRequest = url.startsWith(`${EXTERNAL_SUPABASE_URL}/auth/v1/`);
 
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     transportDegraded = true;
@@ -58,6 +60,18 @@ const resilientSupabaseFetch: typeof fetch = async (input, init) => {
 
   try {
     const response = await fetch(input, { ...init, signal: controller.signal });
+    // The backend can return a genuine HTTP response even when the user's
+    // internet connection is fine. Label Auth 5xx as a server failure, not
+    // a slow customer connection. Never automatically retry a password POST.
+    if (isAuthRequest && [500, 502, 503, 504].includes(response.status)) {
+      if (!authServiceDegraded) {
+        authServiceDegraded = true;
+        emitTransportState("rk-auth-service-degraded", { status: response.status, service: "auth" });
+      }
+    } else if (isAuthRequest && authServiceDegraded && response.status < 500) {
+      authServiceDegraded = false;
+      emitTransportState("rk-auth-service-recovered", { status: response.status, service: "auth" });
+    }
     // A completed HTTP request is not a transport failure. In particular a
     // 503 from one feature should not broadcast global reconnect, which can
     // cause unrelated pages to refetch simultaneously while PostgREST is busy.

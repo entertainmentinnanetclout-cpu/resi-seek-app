@@ -198,25 +198,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, [clearAccessState]);
 
+  // Identity enrichment is nonessential to credential validation. Run only
+  // after the authenticated access-context RPC has succeeded, and defer it
+  // briefly so it cannot compete with the critical sign-in database work.
   useEffect(() => {
     const userId = session?.user?.id;
     const accessToken = session?.access_token;
-    if (!userId || !accessToken || identitySyncUserRef.current === userId) return;
+    if (!userId || !accessToken || !sessionChecked || isLoading || accessError ||
+        identitySyncUserRef.current === userId) return;
 
-    identitySyncUserRef.current = userId;
-    void supabase.functions.invoke("identity-sync", {
-      body: {},
-      headers: { Authorization: `Bearer ${accessToken}` },
-    }).then(({ error }) => {
-      if (error) {
+    const timer = window.setTimeout(() => {
+      if (identitySyncUserRef.current === userId || !navigator.onLine) return;
+      identitySyncUserRef.current = userId;
+      void supabase.functions.invoke("identity-sync", {
+        body: {},
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }).then(({ error }) => {
+        if (error) {
+          identitySyncUserRef.current = null;
+          console.warn("[AuthContext] Deferred identity sync unavailable:", error.message);
+        }
+      }).catch((error) => {
         identitySyncUserRef.current = null;
-        console.warn("[AuthContext] Identity sync failed safely:", error.message);
-      }
-    }).catch((error) => {
-      identitySyncUserRef.current = null;
-      console.warn("[AuthContext] Identity sync unavailable:", error);
-    });
-  }, [session?.user?.id, session?.access_token]);
+        console.warn("[AuthContext] Deferred identity sync unavailable:", error);
+      });
+    }, 8_000);
+
+    return () => window.clearTimeout(timer);
+  }, [session?.user?.id, session?.access_token, sessionChecked, isLoading, accessError]);
 
   const userId = user?.id;
   const checkStatus = useCallback(async () => {
@@ -298,7 +307,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
     // Retry even if browser navigator.onLine never fires an event: browsers
     // commonly report "online" while DNS, PostgREST or a DB pool is saturated.
-    const delay = Math.min(3_000 * Math.pow(2, Math.min(accessFailureCount, 4)), 60_000);
+    // Small per-client jitter avoids thousands of failed access checks
+    // retrying in lockstep when a shared database outage clears.
+    const delay = Math.min(3_000 * Math.pow(2, Math.min(accessFailureCount, 4)), 60_000) + Math.floor(Math.random() * 1_600);
     const timer = window.setTimeout(retry, delay);
     window.addEventListener("online", retry);
     window.addEventListener("rk-reconnected", retry);
