@@ -60,6 +60,16 @@ const DEFAULT_FILTERS: ResidenceFilters = {
   sortBy: "match",
 };
 
+/** A missing rate is unknown, never a free room. Use the publicly displayed
+ * private/promotional monthly amount when supplied, and keep funded rates separate. */
+const publishedMonthlyPrice = (residence: any): number => {
+  const raw = residence?.promo_active && Number(residence?.promo_price) > 0
+    ? residence.promo_price
+    : residence?.private_price || residence?.price;
+  const price = Number(raw);
+  return Number.isFinite(price) && price > 0 ? price : 0;
+};
+
 export function calculateMatchScore(
   residence: any,
   filters: ResidenceFilters
@@ -76,9 +86,9 @@ export function calculateMatchScore(
   // Price within budget: +25
   if (filters.priceMax < 10000 || filters.priceMin > 0) {
     maxScore += 25;
-    const price = Number(residence.price) || 0;
-    if (price >= filters.priceMin && price <= filters.priceMax) score += 25;
-    else if (price < filters.priceMin + 500 || price > filters.priceMax - 500)
+    const price = publishedMonthlyPrice(residence);
+    if (price > 0 && price >= filters.priceMin && price <= filters.priceMax) score += 25;
+    else if (price > 0 && (Math.abs(price - filters.priceMin) <= 500 || Math.abs(price - filters.priceMax) <= 500))
       score += 10;
   }
 
@@ -264,11 +274,15 @@ export function useResidenceFilters(residences: any[]) {
       });
     }
 
-    // Price
-    filtered = filtered.filter((r) => {
-      const price = Number(r.price) || 0;
-      return price >= filters.priceMin && price <= filters.priceMax;
-    });
+    // Unknown rental amounts remain discoverable when no budget is selected,
+    // but cannot be sold as matching R1,500 or an NSFAS rent cap.
+    const budgetActive = filters.priceMin > 0 || filters.priceMax < 10000;
+    if (budgetActive) {
+      filtered = filtered.filter((r) => {
+        const monthly = publishedMonthlyPrice(r);
+        return monthly > 0 && monthly >= filters.priceMin && monthly <= filters.priceMax;
+      });
+    }
 
     // Distance
     if (filters.distanceMax < 20) {
@@ -301,7 +315,7 @@ export function useResidenceFilters(residences: any[]) {
 
     // NSFAS
     if (filters.nsfasOnly) {
-      filtered = filtered.filter((r) => r.accepts_nsfas === true || r.nsfas_accredited === true || r.is_tut_accredited === true);
+      filtered = filtered.filter((r) => r.accepts_nsfas === true);
     }
     if (filters.tutOnly)       filtered = filtered.filter((r) => r.is_tut_accredited === true);
     if (filters.singlesOnly)   filtered = filtered.filter((r) => (Number(r.singles_available) || 0) > 0 || r.room_types?.some((t: string) => t.toLowerCase().includes("single")));
@@ -337,10 +351,10 @@ export function useResidenceFilters(residences: any[]) {
 
     switch (filters.sortBy) {
       case "price-asc":
-        withScores.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+        withScores.sort((a, b) => (publishedMonthlyPrice(a) || Number.POSITIVE_INFINITY) - (publishedMonthlyPrice(b) || Number.POSITIVE_INFINITY));
         break;
       case "price-desc":
-        withScores.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+        withScores.sort((a, b) => (publishedMonthlyPrice(b) ? publishedMonthlyPrice(b) : Number.NEGATIVE_INFINITY) - (publishedMonthlyPrice(a) ? publishedMonthlyPrice(a) : Number.NEGATIVE_INFINITY));
         break;
       case "distance":
         withScores.sort(
@@ -420,8 +434,8 @@ export function useResidenceFilters(residences: any[]) {
         if (relaxed.audience === "private") return r.accepts_private === true;
         return true;
       })
-      .filter((r) => (filters.nsfasOnly ? r.accepts_nsfas === true || r.nsfas_accredited === true || r.is_tut_accredited === true : true))
-      .sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0))
+      .filter((r) => (filters.nsfasOnly ? r.accepts_nsfas === true : true))
+      .sort((a, b) => (publishedMonthlyPrice(a) || Number.POSITIVE_INFINITY) - (publishedMonthlyPrice(b) || Number.POSITIVE_INFINITY))
       .slice(0, 6);
   }, [residences, filters, filteredResidences]);
 
