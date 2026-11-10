@@ -1,0 +1,1 @@
+Deno.serve(() => Response.json({ error: "Disabled after Twilio diagnostics completed" }, { status: 410 }));

@@ -127,3 +127,45 @@ verify_jwt = true
 
 [functions.admin-residence-portal-accounts]
 verify_jwt = true
+
+[functions.NoopCheck]
+verify_jwt = true
+
+[functions.adminos-twilio-diagnostics]
+verify_jwt = true
+
+[functions.adminos-twilio-one-shot]
+verify_jwt = true
+
+[functions.adminos-twilio-profile-once]
+verify_jwt = true
+
+[functions.adminos-twilio-replay]
+verify_jwt = true
+
+[functions.adminos-twilio-sync-once]
+verify_jwt = true
+
+[functions.create-payment]
+verify_jwt = true
+
+[functions.dimpho-eval-trigger-once]
+verify_jwt = false
+
+[functions.mobile-runtime-report]
+verify_jwt = true
+
+[functions.quick-service]
+verify_jwt = true
+
+[functions.seo-indexnow]
+verify_jwt = true
+
+[functions.seo-indexnow-processor]
+verify_jwt = true
+
+[functions.seo-indexnow-worker]
+verify_jwt = false
+
+[functions.seo-search-console-sync]
+verify_jwt = false

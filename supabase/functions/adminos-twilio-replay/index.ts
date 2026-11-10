@@ -1,0 +1,1 @@
+Deno.serve(() => Response.json({ error: "Disabled after Twilio replay verification completed" }, { status: 410 }));

@@ -1,0 +1,1 @@
+Deno.serve(() => Response.json({ error: "Disabled after WhatsApp profile update completed" }, { status: 410 }));

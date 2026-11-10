@@ -1,0 +1,1 @@
+Deno.serve(()=>new Response(JSON.stringify({ok:false,error:"Temporary release-gate trigger retired"}),{status:410,headers:{"content-type":"application/json","cache-control":"no-store"}}));
