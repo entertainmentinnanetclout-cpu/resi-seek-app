@@ -16,6 +16,7 @@ type LogItem={id:string;target_id:string;status:string;phone_last4:string;create
 type Props={
  kind:Kind;targetId:string;templateKey:string;note:string;
  invoke:(body:Record<string,unknown>)=>Promise<any>;
+ onActivityChange?:()=>void;
 };
 const blobDownload=(base64:string,mime:string,filename:string)=>{
  const raw=atob(base64),bytes=new Uint8Array(raw.length);
@@ -24,7 +25,7 @@ const blobDownload=(base64:string,mime:string,filename:string)=>{
  const link=document.createElement("a");link.href=objectUrl;link.download=filename;link.click();
  window.setTimeout(()=>URL.revokeObjectURL(objectUrl),30_000);
 };
-export default function ManualWhatsAppPanel({kind,targetId,templateKey,note,invoke}:Props){
+export default function ManualWhatsAppPanel({kind,targetId,templateKey,note,invoke,onActivityChange}:Props){
  const [preview,setPreview]=useState<ManualPreview|null>(null);
  const [confirmed,setConfirmed]=useState(false);
  const [working,setWorking]=useState<string|null>(null);
@@ -59,7 +60,7 @@ export default function ManualWhatsAppPanel({kind,targetId,templateKey,note,invo
    const result=await invoke({action:"whatsapp_handoff",kind,target_id:targetId,template_key:templateKey,
     message:note,expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage,
     preview_hash:preview.preview_hash,request_id:crypto.randomUUID(),operator_confirmed:true});
-   setHandoffId(result.handoff_id);
+   setHandoffId(result.handoff_id);onActivityChange?.();
    if(popup)popup.location.replace(result.url);else window.location.assign(result.url);
    void loadHistory();
    toast.info("WhatsApp opened with a draft. Press Send in WhatsApp Business; attach files manually.");
@@ -70,7 +71,7 @@ export default function ManualWhatsAppPanel({kind,targetId,templateKey,note,invo
   if(!handoffId||!window.confirm("Have you actually pressed Send in WhatsApp Business? This is an operator-reported status, not a delivery receipt."))return;
   setWorking("mark");
   try{await invoke({action:"whatsapp_mark_sent",handoff_id:handoffId,operator_confirmed:true});
-   toast.success("Manual WhatsApp handoff marked sent by operator");setHandoffId(null);void loadHistory();}
+   toast.success("Manual WhatsApp handoff marked sent by operator");setHandoffId(null);void loadHistory();onActivityChange?.();}
   catch(e){showErr(e);}finally{setWorking(null);}
  };
  const download=async(format:"pdf"|"image")=>{
