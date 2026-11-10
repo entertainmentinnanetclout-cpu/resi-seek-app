@@ -56,7 +56,15 @@ async function verifyService(){
   return sid;
 }
 async function securityEvent(userId:string,type:string,risk:string,outcome:string,meta:any={}){
-  await db.from("user_security_events").insert({user_id:userId,event_type:type,risk_level:risk,outcome,metadata:meta}).catch(()=>null);
+  // PostgREST builders are PromiseLike but do not expose .catch(). A
+  // best-effort audit write must never turn a rate-limit/OTP response into 500.
+  try {
+    const {error}=await db.from("user_security_events")
+      .insert({user_id:userId,event_type:type,risk_level:risk,outcome,metadata:meta});
+    if(error)console.warn("security_event_write_failed",error.code||"database_error");
+  }catch{
+    console.warn("security_event_write_unavailable");
+  }
 }
 async function rateLimit(userId:string,phone:string){
   const t=Date.now();
