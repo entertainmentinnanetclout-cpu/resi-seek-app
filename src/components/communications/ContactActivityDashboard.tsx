@@ -44,9 +44,9 @@ function joinPages(pages:Map<number,Response>):Contact[]{
    const newer=contact.last_at>old.last_at?contact:old;
    merged.set(contact.key,{
     ...newer,events,
-    email_count:events.filter(e=>e.channel==="email").length,
-    whatsapp_count:events.filter(e=>e.channel==="whatsapp").length,
-    status_count:events.filter(e=>e.channel==="status").length
+    email_count:old.email_count+contact.email_count,
+    whatsapp_count:old.whatsapp_count+contact.whatsapp_count,
+    status_count:old.status_count+contact.status_count
    });
   }
  }
