@@ -1,0 +1,31 @@
+name: Supabase frontend/backend contract audit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --no-audit --no-fund
+      - name: Compare frontend and Edge dependencies with verified public schema snapshot
+        run: npm run backend:contracts
+      - name: Store diagnostic audit without user data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reskonnect-backend-contract-audit
+          path: backend-contract-audit.json
+          if-no-files-found: ignore
