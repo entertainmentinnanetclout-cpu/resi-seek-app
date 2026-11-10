@@ -25,3 +25,14 @@ test("noncritical Cron work is staged but bookings and real-time messages are un
  assert.doesNotMatch(sql,/cron\.unschedule|DELETE FROM public\.staff_tasks|DELETE FROM cron\.job_run_details/i);
  assert.doesNotMatch(sql,/\('(?:resmap-expire-room-holds|reskonnect-expire-room-holds)'/);
 });
+
+test("external production monitor avoids repeated login attempts and is independent of PostgreSQL cron",()=>{
+ const monitor=readFileSync("scripts/production-health-probe.mjs","utf8");
+ const workflow=readFileSync(".github/workflows/reskonnect-uptime-auth.yml","utf8");
+ assert.match(monitor,/auth\/v1\/health/);
+ assert.match(monitor,/rest\/v1\/reskonnect_city_coverage_v/);
+ assert.match(monitor,/process\.exitCode = 1/);
+ assert.doesNotMatch(monitor,/signInWithPassword|service_role|refresh_token|password.*:|DELETE FROM/i);
+ assert.match(workflow,/schedule:/);
+ assert.match(workflow,/contents: read/);
+});
