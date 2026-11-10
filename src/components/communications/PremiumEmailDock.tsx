@@ -154,6 +154,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  },[premium,kind,academicYear]);
  const loadRemaining=async(all=false)=>{
   if(nextOffset===null||loadingMore)return;
+  const queueKey=kind+":"+academicYear;
+  if(loadedQueueKeyRef.current!==queueKey)return;
   setLoadingMore(true);
   try{
    let offset=nextOffset,pages=0;
@@ -166,6 +168,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     pages++;
     if(!all||pages>=75)break;
    }
+   if(loadedQueueKeyRef.current!==queueKey)return;
    setItems(current=>{
     const seen=new Set(current.map(i=>i.id));
     return [...current,...appended.filter(i=>{if(seen.has(i.id))return false;seen.add(i.id);return true;})];
@@ -185,6 +188,16 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  useEffect(()=>{void loadConnection();void loadHistory();void loadTemplates();},[loadConnection,loadHistory,loadTemplates]);
  useEffect(()=>{void loadItems();setChecked(new Set());},[loadItems]);
  useEffect(()=>{const interval=window.setInterval(()=>{if(document.visibilityState==="visible")void loadItems({preserveLoaded:true});},45000);return ()=>window.clearInterval(interval);},[loadItems]);
+ useEffect(()=>{
+  // Typical residence queues fit into a few pages. Load them automatically so
+  // searching or filtering doesn't silently hide students outside page one.
+  if(workspace!=="cases"||totalCases===0||totalCases>600||nextOffset===null||
+     loading||loadingMore||queueError||loadedQueueKeyRef.current!==kind+":"+academicYear)return;
+  void loadRemaining(true);
+ // loadRemaining is intentionally invoked only for the current case/year snapshot.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[workspace,kind,academicYear,totalCases,nextOffset,loading,loadingMore,queueError]);
+
  useEffect(()=>{void loadCase();setPreview(null);setApproved(false);},[loadCase]);
  useEffect(()=>{
   if(params.get("gmail")==="connected"){
