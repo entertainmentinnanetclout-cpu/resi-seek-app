@@ -2,6 +2,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {useSearchParams} from "react-router-dom";
 import {AlertTriangle,CheckCircle2,CheckCheck,ChevronRight,Clock3,Download,FileCheck2,FileText,Inbox,Layers,Loader2,Mail,MailCheck,MessageCircle,Paperclip,RefreshCw,Search,Send,Settings2,ShieldCheck,Sparkles,Unplug,Users,WalletCards,LayoutList,SlidersHorizontal,ArrowUpDown} from "lucide-react";
 import ManualWhatsAppPanel from "./ManualWhatsAppPanel";
+import DocumentReviewPanel,{type DocumentReviewReceipt} from "./DocumentReviewPanel";
 import ContactActivityDashboard from "./ContactActivityDashboard";
 import LandlordGmailGuide from "./LandlordGmailGuide";
 import {supabase} from "@/integrations/supabase/client";
@@ -89,13 +90,14 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const loadedQueueKeyRef=useRef("");
  const [history,setHistory]=useState<History[]>([]);
  const [activityRevision,setActivityRevision]=useState(0);
+ const [reviewReceipts,setReviewReceipts]=useState<Map<string,DocumentReviewReceipt>>(()=>new Map());
  const [defaults,setDefaults]=useState<Record<string,DocTemplate>>({});
  const [overrides,setOverrides]=useState<Override[]>([]);
  const [placeholders,setPlaceholders]=useState<string[]>([]);
  const [studioKey,setStudioKey]=useState<Template>("documents_needed");
  const [studioSubject,setStudioSubject]=useState("");
  const [studioBody,setStudioBody]=useState("");
- const [pane,setPane]=useState<"compose"|"whatsapp"|"bulk"|"templates"|"history">(params.get("channel")==="whatsapp"?"whatsapp":"compose");
+ const [pane,setPane]=useState<"documents"|"compose"|"whatsapp"|"bulk"|"templates"|"history">(params.get("channel")==="whatsapp"?"whatsapp":(initialKind==="application"||initialKind==="reservation")?"documents":"compose");
  const [bulkPreview,setBulkPreview]=useState<BulkResult[]>([]);
  const [bulkApproval,setBulkApproval]=useState(false);
  const [newStatus,setNewStatus]=useState("");
@@ -207,6 +209,10 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   }
  },[params,setParams,loadConnection]);
  const active=items.find(x=>x.id===selected)||null;
+ const needsReview=kind==="application"||kind==="reservation";
+ const selectedReceipt=reviewReceipts.get(kind+":"+selected)||null;
+ const reviewedNow=!needsReview||!!selectedReceipt&&Date.now()-new Date(selectedReceipt.at).getTime()<20*60*1000;
+ const reviewReceiptFor=(id:string)=>reviewReceipts.get(kind+":"+id)||null;
  const visible=useMemo(()=>items.filter(x=>{
   const match=(x.label+" "+x.status+" "+x.property+" "+x.reference).toLowerCase().includes(search.toLowerCase().trim());
   if(!match)return false;
@@ -256,6 +262,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  };
  const selectRecord=(id:string)=>{
   setSelected(id);setTemplate(items.find(x=>x.id===id)?.suggested_template||"smart");setNote("");resetPreview();
+  setPane(needsReview?"documents":"compose");
   const next=new URLSearchParams(params);next.set("kind",kind);next.set("target",id);next.delete("view");setParams(next,{replace:true});
   if(window.innerWidth<1024)window.requestAnimationFrame(()=>document.getElementById("rk-case-detail-panel")?.scrollIntoView({behavior:"smooth",block:"start"}));
  };
@@ -302,12 +309,13 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  };
  const sendOne=async()=>{
   if(!preview||!selected||!approved||!connection?.connected)return;
+  if(needsReview&&!reviewedNow)return toast.error("Review this student’s documents before sending");
   if(lastPreviewRef.current!==selected+":"+template+":"+note)return toast.error("Refresh your preview before sending");
   if(!window.confirm("Send this official ResKonnect email and branded PDF using your connected Gmail?"))return;
   setBusy("send");
   try{
    const result=await premium({action:"send",kind,target_id:selected,template_key:template,
-    message:note,confirmed:true,request_id:crypto.randomUUID(),expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage,preview_hash:preview.preview_hash});
+    message:note,confirmed:true,request_id:crypto.randomUUID(),expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage,preview_hash:preview.preview_hash,document_review_id:selectedReceipt?.id||null});
    if(!result.sent)throw Error(result.error||"Gmail did not accept the message");
    toast.success("Gmail accepted your email and branded PDF attachment");
    resetPreview();setNote("");
@@ -326,6 +334,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  };
  const sendBulk=async()=>{
   if(!connection?.connected||!bulkApproval||!bulkPreview.length)return;
+  if(needsReview&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))return toast.error("Review every selected student’s documents before a bulk send");
   const ids=bulkPreview.filter(x=>x.ok).map(x=>x.id);
   if(!ids.length)return toast.error("No eligible case emails");
   if(!window.confirm("Send "+ids.length+" individualized Gmail messages, each with its own ResKonnect PDF?"))return;
@@ -334,7 +343,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   try{
    for(let i=0;i<ids.length;i+=5){
     const slice=ids.slice(i,i+5);
-    const requests=slice.map(id=>{const info=bulkPreview.find(p=>p.id===id);return {id,request_id:crypto.randomUUID(),expected_status:info?.status,expected_document_stage:info?.document_signal?.stage,preview_hash:info?.preview_hash};});
+    const requests=slice.map(id=>{const info=bulkPreview.find(p=>p.id===id);return {id,request_id:crypto.randomUUID(),expected_status:info?.status,expected_document_stage:info?.document_signal?.stage,preview_hash:info?.preview_hash,document_review_id:reviewReceiptFor(id)?.id||null};});
     const response=await premium({action:"bulk_send",kind,ids:slice,requests,confirmed:true,
      batch_id:batchId,template_key:"smart",message:note});
     ok+=response.succeeded||0;failed+=response.failed||0;
@@ -498,7 +507,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     </nav>
     {workspace==="activity"?<ContactActivityDashboard mode={mode} invoke={premium} refreshKey={activityRevision}
      onOpenCase={(targetKind,id)=>{
-      deepLinkedIdRef.current=id;setWorkspace("cases");setKind(targetKind);setSelected(id);setPane("compose");resetPreview();setChecked(new Set());
+      deepLinkedIdRef.current=id;setWorkspace("cases");setKind(targetKind);setSelected(id);setPane(targetKind==="application"||targetKind==="reservation"?"documents":"compose");resetPreview();setChecked(new Set());
       const next=new URLSearchParams(params);next.delete("view");next.set("kind",targetKind);next.set("target",id);setParams(next,{replace:true});
      }}/>:
     <>
@@ -569,6 +578,12 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        <div className="rounded-xl border p-4">
         <p className="text-lg font-black">{caseInfo.label}</p>
         <p className="mt-1 text-xs text-muted-foreground">{caseInfo.property} · Ref {caseInfo.reference}</p>
+        {needsReview&&<div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-500/20 bg-blue-50/50 p-2.5 dark:bg-blue-950/20">
+         <span className="text-xs font-semibold">{reviewedNow?"Documents reviewed · Ready to communicate":"Review documents before contacting"}</span>
+         <Button size="sm" variant={reviewedNow?"outline":"default"} className="h-8 text-xs" onClick={()=>setPane("documents")}>
+          <FileCheck2 className="mr-1.5 h-3.5 w-3.5"/>{reviewedNow?"Open files":"Review files"}
+         </Button>
+        </div>}
         {caseInfo.residence_image_url&&<img src={caseInfo.residence_image_url} alt={"Real listing photo: "+caseInfo.property} className="mt-3 max-h-32 w-full rounded-lg object-cover"/>}
         <div className="mt-3 grid grid-cols-2 gap-2">
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recorded status</p><p className="mt-1 text-xs font-bold">{pretty(caseInfo.status)}</p></div>
@@ -595,10 +610,10 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           placeholder="Optional practical details: viewing date and time, move-in instructions, what to submit, or the next step. Avoid repeating the case status."
           onChange={e=>{setNote(e.target.value);resetPreview();}}/>
         <p className="mt-1 text-[11px] text-muted-foreground">{note.length}/2500 · Only recorded decisions appear as formal approvals or rejections.</p></div>
-       <Button className="w-full" variant="secondary" disabled={!caseInfo.can_email||!!busy} onClick={()=>void previewOne()}>
+       <Button className="w-full" variant="secondary" disabled={!caseInfo.can_email||!!busy} onClick={()=>{if(needsReview&&!reviewedNow){setPane("documents");toast.info("First review the uploaded documents and confirm readiness");return;}void previewOne();}}>
         {busy==="preview"?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<Sparkles className="mr-2 h-4 w-4"/>}Generate smart email preview
        </Button>
-       <Button className="w-full" variant="outline" onClick={()=>setPane("whatsapp")} disabled={!selected}>
+       <Button className="w-full" variant="outline" onClick={()=>{if(needsReview&&!reviewedNow){setPane("documents");toast.info("Review documents before opening WhatsApp");}else setPane("whatsapp");}} disabled={!selected}>
         <MessageCircle className="mr-2 h-4 w-4 text-emerald-700"/>Open manual WhatsApp handoff {caseInfo.has_whatsapp?"":"(check phone)"}
        </Button>
       </div>}
@@ -607,12 +622,23 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     <section className="min-w-0 border-t bg-muted/10 xl:border-l xl:border-t-0">
      <Tabs value={pane} onValueChange={v=>setPane(v as typeof pane)} className="min-w-0">
       <TabsList className="m-3 flex h-auto flex-wrap justify-start gap-1 bg-transparent p-0">
-       <TabsTrigger value="compose"><Mail className="mr-1 h-3.5 w-3.5"/>Email</TabsTrigger>
+       {needsReview&&<TabsTrigger value="documents"><FileCheck2 className="mr-1 h-3.5 w-3.5"/>1 · Documents</TabsTrigger>}
+       <TabsTrigger value="compose"><Mail className="mr-1 h-3.5 w-3.5"/>2 · Email</TabsTrigger>
        <TabsTrigger value="whatsapp"><MessageCircle className="mr-1 h-3.5 w-3.5"/>WhatsApp</TabsTrigger>
        <TabsTrigger value="bulk"><Layers className="mr-1 h-3.5 w-3.5"/>Bulk</TabsTrigger>
        <TabsTrigger value="templates"><Settings2 className="mr-1 h-3.5 w-3.5"/>Templates</TabsTrigger>
        <TabsTrigger value="history"><Clock3 className="mr-1 h-3.5 w-3.5"/>History</TabsTrigger>
       </TabsList>
+      {needsReview&&<TabsContent value="documents" className="m-0 space-y-4 px-4 pb-5">
+       {selected?<DocumentReviewPanel key={kind+":"+selected} kind={kind} targetId={selected} invoke={premium}
+        receipt={selectedReceipt}
+        onReviewed={value=>{
+         setReviewReceipts(old=>{const next=new Map(old);const key=kind+":"+selected;if(value)next.set(key,value);else next.delete(key);return next;});
+         if(value)setPane("compose");
+        }}
+        onDocumentsChanged={()=>{resetPreview();void Promise.all([loadCase(),loadItems()]);}}/>:
+       <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Select a student to review their private uploads.</div>}
+      </TabsContent>}
       <TabsContent value="compose" className="m-0 space-y-4 px-4 pb-5">
        <div><p className="text-base font-bold">Premium correspondence</p>
         <p className="text-xs text-muted-foreground">White and gold branded emails, accurate case details and an individual PDF letter.</p></div>
@@ -627,7 +653,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
          <Checkbox checked={approved} onCheckedChange={v=>setApproved(v===true)}/>
          <span>I reviewed the recipient, current status, decision wording and PDF attachment. I authorize this service email.</span>
         </label>
-        <Button className="w-full" disabled={!approved||!connection?.connected||!!busy} onClick={()=>void sendOne()}>
+        <Button className="w-full" disabled={!approved||!connection?.connected||!!busy||!reviewedNow} onClick={()=>void sendOne()}>
          {busy==="send"?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<Send className="mr-2 h-4 w-4"/>}Send official email + PDF
         </Button>
        </div>:<div className="rounded-xl border border-dashed bg-card p-8 text-center">
@@ -636,7 +662,10 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        </div>}
       </TabsContent>
       <TabsContent value="whatsapp" className="m-0 space-y-4 px-4 pb-5">
-       <ManualWhatsAppPanel key={kind+":"+selected+":"+template+":"+note} kind={kind} targetId={selected} templateKey={template} note={note} invoke={premium} onActivityChange={()=>setActivityRevision(v=>v+1)}/>
+       {needsReview&&!reviewedNow&&<div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950">
+        Review this student's uploaded documents before opening a WhatsApp handoff. <Button size="sm" variant="outline" className="ml-2" onClick={()=>setPane("documents")}>Review now</Button>
+       </div>}
+       <ManualWhatsAppPanel key={kind+":"+selected+":"+template+":"+note} kind={kind} targetId={selected} templateKey={template} note={note} invoke={premium} reviewId={selectedReceipt?.id||null} needsReview={needsReview} onActivityChange={()=>setActivityRevision(v=>v+1)}/>
       </TabsContent>
       <TabsContent value="bulk" className="m-0 space-y-4 px-4 pb-5">
        <div className="rounded-xl border bg-card p-4"><p className="flex items-center gap-2 font-semibold"><Users className="h-4 w-4 text-primary"/>Bulk communication</p>
@@ -644,11 +673,17 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
         <p className="mt-1 text-xs font-semibold text-primary">Bulk emails always use each student’s own Smart template, not the single-case template selection.</p>
         <Button className="mt-3 w-full" variant="secondary" onClick={()=>void previewBulk()} disabled={!selectedCount||!!busy}><FileCheck2 className="mr-2 h-4 w-4"/>Review selected messages</Button>
         {bulkPreview.length>0&&<div className="mt-3 space-y-2">{bulkPreview.map(messageCard)}
+         {needsReview&&bulkPreview.some(x=>x.ok&&!reviewReceiptFor(x.id))&&<div className="rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-950">
+          <p className="font-bold">Document review needed before bulk sending</p>
+          <p className="mt-1">Review each recipient's files individually. Your reviewed cases will stay recorded while you move between students.</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">{bulkPreview.filter(x=>x.ok&&!reviewReceiptFor(x.id)).map(x=>
+           <Button key={x.id} size="sm" variant="outline" onClick={()=>{setSelected(x.id);setPane("documents");}}>{x.label||x.id.slice(0,8)} · Review</Button>)}</div>
+         </div>}
          <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs">
           <Checkbox checked={bulkApproval} onCheckedChange={v=>setBulkApproval(v===true)}/>
           <span>I reviewed these recipients and understand each will get an individualized Gmail email and PDF.</span>
          </label>
-         <Button className="w-full" disabled={!bulkApproval||!connection?.connected||!!busy||!bulkPreview.some(x=>x.ok)} onClick={()=>void sendBulk()}>
+         <Button className="w-full" disabled={!bulkApproval||!connection?.connected||!!busy||!bulkPreview.some(x=>x.ok)||(needsReview&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))} onClick={()=>void sendBulk()}>
           <Send className="mr-2 h-4 w-4"/>{busy==="bulk-send"?"Sending approved batches…":"Send reviewed emails"}
          </Button>
         </div>}
