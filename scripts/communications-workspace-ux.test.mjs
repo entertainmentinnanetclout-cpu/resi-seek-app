@@ -35,6 +35,9 @@ test("queue shows trustworthy progress badges and actionable next steps",()=>{
  for(const x of ["No uploads","uploaded","missing","to review","Email sent","No email yet","Next:","selected===item.id"]) assert.ok(ui.includes(x));
  assert.match(ui,/item\.service_action/);
  assert.match(ui,/item\.student_uploaded_after_email/);
+ assert.match(ui,/totalCases>600/);
+ assert.match(ui,/loadedQueueKeyRef\.current!==queueKey/);
+ assert.match(ui,/void loadRemaining\(true\)/);
  assert.match(ui,/id="rk-case-detail-panel"/);
  assert.match(ui,/scrollIntoView/);
  assert.match(context,/uploaded_count:signal\.uploaded/);
