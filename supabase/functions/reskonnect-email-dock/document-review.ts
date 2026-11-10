@@ -117,13 +117,26 @@ export async function setDocumentDecision(s:EmailSession,kind:Kind,id:string,inp
  const data:Record<string,unknown>={
   status:decision,verified_by:s.actor,verified_at:new Date().toISOString()
  };
- if(source==="global"&&decision==="rejected")data.admin_notes=reason;
- else data.rejection_reason=decision==="rejected"?reason:null;
+ // These are different schemas: the student-level documents table has
+ // admin_notes, while application_documents has rejection_reason.
+ // Never include a column from the other table in the PostgREST payload.
+ if(source==="global"){
+  if(decision==="rejected")data.admin_notes=reason;
+ }else{
+  data.rejection_reason=decision==="rejected"?reason:null;
+ }
  let query=s.db.from(table).update(data).eq("id",doc.id).eq("status",expected);
  if(source==="global")query=query.eq("user_id",c.userId);
  else query=query.eq("application_id",id);
  const {data:changed,error}=await query.select("id").maybeSingle();
- if(error||!changed)throw Error("Document status changed or permission was denied. Refresh and retry");
+ if(error){
+  // Do not return row metadata or storage paths; keep the failure code in logs.
+  console.error("Document decision update failed",{source,code:error.code,message:error.message?.slice(0,220)});
+  if(error.code==="23503")throw Error("Reviewer profile is missing or invalid. Contact an administrator");
+  if(error.code==="PGRST204"||error.code==="42703")throw Error("Document update schema mismatch. Contact support");
+  throw Error("Document verification could not be saved. Try again or contact support");
+ }
+ if(!changed)throw Error("This document was changed or is no longer available. Refresh the document list");
  if(kind==="application"){
   const {error:auditError}=await s.db.from("application_activity_log").insert({
    application_id:id,residence_id:c.residenceId,actor_user_id:s.actor,

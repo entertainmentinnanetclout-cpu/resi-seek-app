@@ -59,7 +59,7 @@ test("premium queue shows document reviews before communication",()=>{
  assert.match(dock,/document_review_id:selectedReceipt\?\.id\|\|null/);
  assert.match(dock,/document_review_id:reviewReceiptFor\(id\)\?\.id\|\|null/);
  assert.match(dock,/selectedReceipt/);
- assert.match(panel,/View file/);
+ assert.match(panel,/Preview file/);
  assert.match(panel,/Confirm document review/);
  assert.match(panel,/Request correction/);
  assert.match(panel,/No files uploaded yet/);

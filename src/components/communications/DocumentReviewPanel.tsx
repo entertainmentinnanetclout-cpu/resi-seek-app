@@ -1,11 +1,11 @@
-import {useCallback,useEffect,useState} from "react";
-import {AlertTriangle,CheckCircle2,ExternalLink,Eye,FileCheck2,Loader2,RefreshCw,ShieldCheck,XCircle} from "lucide-react";
+import {useCallback,useEffect,useRef,useState} from "react";
+import {AlertTriangle,CheckCircle2,Eye,FileCheck2,Loader2,RefreshCw,ShieldCheck,XCircle} from "lucide-react";
 import {toast} from "sonner";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Checkbox} from "@/components/ui/checkbox";
 import {Input} from "@/components/ui/input";
-import {Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle} from "@/components/ui/dialog";
+import SecureDocumentPreview from "./SecureDocumentPreview";
 
 type Kind="application"|"reservation"|"housing_lead"|"support_enquiry";
 type DocumentItem={
@@ -36,12 +36,14 @@ export default function DocumentReviewPanel({kind,targetId,invoke,receipt,onRevi
  const [error,setError]=useState("");
  const [ack,setAck]=useState(false);
  const [opened,setOpened]=useState<Set<string>>(()=>new Set());
- const [preview,setPreview]=useState<{url:string;name:string;media:string}|null>(null);
+ const [preview,setPreview]=useState<{url:string;name:string;media:"pdf"|"image"|"download"}|null>(null);
+ const previewRef=useRef<HTMLDivElement|null>(null);
  const [rejecting,setRejecting]=useState<string|null>(null);
  const [reason,setReason]=useState("");
  const [now,setNow]=useState(Date.now());
  useEffect(()=>{const timer=window.setInterval(()=>setNow(Date.now()),30_000);return()=>window.clearInterval(timer);},[]);
  const available=kind==="application"||kind==="reservation";
+ useEffect(()=>{if(preview)previewRef.current?.scrollIntoView({behavior:"smooth",block:"nearest"});},[preview]);
  const load=useCallback(async()=>{
   if(!targetId||!available){setRecord(null);return;}
   setBusy("loading");
@@ -65,7 +67,7 @@ export default function DocumentReviewPanel({kind,targetId,invoke,receipt,onRevi
   try{
    const r=await invoke({action:"document_preview",kind,target_id:targetId,source:doc.source,document_id:doc.id});
    if(!r.url)throw Error("Secure preview unavailable");
-   setPreview({url:r.url,name:doc.name,media:r.media||"download"});
+   setPreview({url:r.url,name:doc.name,media:r.media==="pdf"?"pdf":r.media==="image"?"image":"download"});
    setOpened(s=>new Set(s).add(doc.source+":"+doc.id));
   }catch(e){toast.error(e instanceof Error?e.message:"Could not load this file");}
   finally{setBusy("");}
@@ -125,7 +127,8 @@ export default function DocumentReviewPanel({kind,targetId,invoke,receipt,onRevi
    </div>}
    {!record.items.length?<div className="rounded-xl border border-dashed bg-muted/20 p-4 text-sm">
     <p className="font-semibold">No files uploaded yet</p><p className="mt-1 text-xs text-muted-foreground">You can review this empty checklist and send a missing-document request. No document is marked verified automatically.</p>
-   </div>:<div className="space-y-2">
+   </div>:<div className={"grid items-start gap-3 "+(preview?"lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]":"")}>
+    <div className="space-y-2">
     {record.items.map(doc=><div key={doc.source+":"+doc.id} className="rounded-xl border p-3">
      <div className="flex flex-wrap items-start justify-between gap-2">
       <div className="min-w-0 flex-1"><p className="break-words text-xs font-bold">{doc.name}</p>
@@ -135,7 +138,7 @@ export default function DocumentReviewPanel({kind,targetId,invoke,receipt,onRevi
      {doc.rejection_reason&&stateType(doc.status)==="rejected"&&<p className="mt-2 text-xs text-red-700">{doc.rejection_reason}</p>}
      <div className="mt-2 flex flex-wrap gap-2">
       <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" disabled={!!busy||!doc.can_open} onClick={()=>void view(doc)}>
-       <Eye className="h-3.5 w-3.5"/>View file</Button>
+       <Eye className="h-3.5 w-3.5"/>{busy===doc.id?"Loading…":"Preview file"}</Button>
       {doc.can_verify&&stateType(doc.status)==="pending"&&<>
        <Button size="sm" className="h-8 gap-1.5 text-xs" disabled={!!busy||!opened.has(doc.source+":"+doc.id)} onClick={()=>void decide(doc,"verified")}>
         <CheckCircle2 className="h-3.5 w-3.5"/>Verify</Button>
@@ -153,6 +156,16 @@ export default function DocumentReviewPanel({kind,targetId,invoke,receipt,onRevi
       </div>
      </div>}
     </div>)}
+    </div>
+    {preview&&<div ref={previewRef} className="min-w-0 rounded-xl border border-blue-300/60 bg-blue-50/20 p-3 dark:border-blue-800/50">
+     <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+      <div><p className="text-xs font-bold">Document preview</p>
+       <p className="mt-1 break-all text-xs text-muted-foreground">{preview.name}</p>
+      </div>
+      <Button size="sm" variant="outline" className="h-8" onClick={()=>setPreview(null)}>Close preview</Button>
+     </div>
+     <SecureDocumentPreview url={preview.url} name={preview.name} media={preview.media}/>
+    </div>}
    </div>}
    {current?<div className="flex items-start gap-2 rounded-xl border border-emerald-400/40 bg-emerald-50/60 p-3 text-xs text-emerald-950 dark:bg-emerald-950/20 dark:text-emerald-100">
     <CheckCircle2 className="h-4 w-4 shrink-0"/>Readiness reviewed. You can preview and send an accurate message for this case. A status or file change will require another review.
@@ -173,18 +186,6 @@ export default function DocumentReviewPanel({kind,targetId,invoke,receipt,onRevi
    </div>}
    <p className="text-[11px] text-muted-foreground">Private files use expiring 90-second previews. Never share these links or include student documents in outgoing messages.</p>
   </div>}
-  <Dialog open={!!preview} onOpenChange={open=>{if(!open)setPreview(null);}}>
-   <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden">
-    <DialogHeader><DialogTitle className="break-words text-base">{preview?.name||"Private document"}</DialogTitle>
-     <DialogDescription>Secure, temporary preview. Check the content before recording a verification decision.</DialogDescription></DialogHeader>
-    {preview?.media==="image"?<img src={preview.url} alt={"Uploaded document "+preview.name} className="max-h-[70vh] w-full rounded-lg object-contain"/>:
-     preview?.media==="pdf"?<iframe title={"Document preview: "+preview.name} sandbox="" referrerPolicy="no-referrer" src={preview.url} className="h-[65vh] w-full rounded-lg border bg-white"/>:
-     <div className="rounded-lg border p-5 text-sm">This format cannot be shown inline. <a className="inline-flex items-center gap-1 font-semibold text-primary underline" href={preview?.url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4"/>Open the secure file</a></div>}
-   {preview?.url&&<a href={preview.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"
-    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline underline-offset-2">
-    <ExternalLink className="h-3.5 w-3.5"/>Open private file in a new tab (PDF/mobile fallback)
-   </a>}
-   </DialogContent>
-  </Dialog>
+
  </section>;
 }
