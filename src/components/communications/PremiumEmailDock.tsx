@@ -542,9 +542,9 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     <aside className="flex min-w-0 flex-col">
      <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/15 px-4 py-3">
       <div>
-       <p className="flex items-center gap-2 text-sm font-bold"><LayoutList className="h-4 w-4 text-primary"/>Student queue
+       <p className="flex items-center gap-2 text-sm font-bold"><LayoutList className="h-4 w-4 text-primary"/>{kind==="application"?"Application pipeline":kind==="reservation"?"Reservation pipeline":kind==="housing_lead"?"Housing enquiries":"Support enquiries"}
         <Badge variant="secondary">{visible.length} shown</Badge></p>
-       <p className="mt-0.5 text-[11px] text-muted-foreground">Choose a student to see progress and the next step</p>
+       <p className="mt-0.5 text-[11px] text-muted-foreground">{kind==="application"?"Review student documents → Decide → Notify":kind==="reservation"?"Check documents → Confirm details → Contact":"Choose a student to see progress and the next step"}</p>
       </div>
       <Button type="button" variant="ghost" size="icon" aria-label="Refresh student queue" disabled={loading} onClick={()=>void loadItems()}>
        <RefreshCw className={cn("h-4 w-4",loading&&"animate-spin")}/>
@@ -591,7 +591,12 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           <span className="font-semibold text-foreground">Next:</span> {item.service_action||pretty(item.workflow_bucket||"awaiting_action")}
          </p>
          {item.student_uploaded_after_email&&<p className="mt-1 text-[11px] font-semibold text-blue-600">New upload since last email</p>}
-        </button>
+         </button>
+         {needsReview&&<Button size="sm" variant="outline" className="mt-1 h-8 shrink-0 rounded-lg px-2 text-[10px]"
+          onClick={()=>{selectRecord(item.id);setPane("documents");}}
+          aria-label={"Review student documents for "+item.label}>
+          <FileCheck2 className="mr-1 h-3.5 w-3.5"/>Files
+         </Button>}
        </div>)}
      </ScrollArea>
     </aside>
