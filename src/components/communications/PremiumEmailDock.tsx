@@ -197,10 +197,10 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const visible=useMemo(()=>items.filter(x=>{
   const match=(x.label+" "+x.status+" "+x.property+" "+x.reference).toLowerCase().includes(search.toLowerCase().trim());
   if(!match)return false;
-  if(filter==="missing")return x.document_stage==="missing"||x.document_stage==="incomplete";
+  if(filter==="missing")return x.missing_count>0;
   if(filter==="uploaded")return (x.uploaded_count||0)>0;
   if(filter==="no_uploads")return (x.uploaded_count||0)===0;
-  if(filter==="received")return x.pending_review>0||x.document_stage==="received"||x.document_stage==="complete";
+  if(filter==="received")return x.pending_review>0||x.document_stage==="received";
   if(filter==="decision")return ["approved","conditionally_approved","rejected","confirmed","cancelled"].includes(x.status);
   if(filter==="not_contacted")return !x.email_sent;
   if(filter!=="all")return x.workflow_bucket===filter;
@@ -394,7 +394,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    <Badge variant={message.ok?"secondary":"outline"}>{message.ok?"Ready":"Review"}</Badge>
   </div>;
  return <div className="space-y-4">
-  <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+  <div className="overflow-visible rounded-2xl border bg-card shadow-sm">
    <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-slate-950 px-5 py-4 text-white">
     <div className="flex items-center gap-3">
      <div className="rounded-xl bg-blue-600 p-2.5"><MailCheck className="h-6 w-6"/></div>
@@ -521,17 +521,28 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
      <ScrollArea className="h-[min(68vh,710px)] min-h-[320px]">
       {loading?<p className="p-6 text-center text-sm text-muted-foreground">Loading case intelligence…</p>:
        visible.length===0?<p className="p-6 text-center text-sm text-muted-foreground">{queueError?"The case queue could not be loaded. Use Retry above.":kind==="application"&&academicYear==="2027"?"2027 applications are not open yet. Existing reservations are managed under Reservations.":"No matching cases in this view."}</p>:
-       visible.map(item=><div key={item.id} className={cn("flex items-start gap-2 border-b px-3 py-3 transition-colors",selected===item.id?"bg-primary/10":"hover:bg-muted/40")}>
+       visible.map(item=><div key={item.id} className={cn("flex items-start gap-2 border-b px-3 py-3 transition-colors",selected===item.id?"border-l-2 border-l-primary bg-primary/[0.06]":"hover:bg-muted/40")}>
         <Checkbox className="mt-2" checked={checked.has(item.id)} onCheckedChange={v=>toggleSelected(item.id,v===true)} aria-label={"Select "+item.label}/>
         <button type="button" className="min-w-0 flex-1 text-left" onClick={()=>selectRecord(item.id)}>
-         <div className="flex items-start justify-between gap-2"><p className="truncate text-sm font-bold">{item.label}</p><ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground"/></div>
+         <div className="flex items-start justify-between gap-2">
+          <p className="truncate text-sm font-bold">{item.label}</p>
+          <Badge variant="outline" className="max-w-[116px] shrink-0 truncate rounded-full px-2 py-0 text-[10px]">{pretty(item.status)}</Badge>
+         </div>
          <p className="mt-1 truncate text-xs text-muted-foreground">{item.property} · {item.reference}</p>
-         <p className="mt-1 text-xs">{pretty(item.status)}</p>
-         <p className="mt-1 text-[11px] font-semibold text-primary">{pretty(item.workflow_bucket||"not_contacted")}</p>
-         {item.email_sent&&<p className="mt-1 text-[10px] text-muted-foreground">Email sent {item.last_email_at?new Date(item.last_email_at).toLocaleDateString("en-ZA"):""} · {pretty(item.last_email_template||"status_update")}</p>}
-         {item.student_uploaded_after_email&&<Badge variant="secondary" className="mt-1 text-[10px]">Applicant uploaded after email</Badge>}
-         <div className="mt-2 flex flex-wrap gap-1.5"><Badge variant="outline" className={cn("text-[10px]",signalStyle(item.document_stage))}>
-           {formattedSignal(item.document_stage)}</Badge>{!item.can_email&&<Badge variant="destructive" className="text-[10px]">No contact</Badge>}</div>
+         <div className="mt-2 flex flex-wrap gap-1">
+          {(item.uploaded_count||0)>0
+           ?<Badge variant="secondary" className="text-[10px]">{item.uploaded_count} uploaded</Badge>
+           :<Badge variant="outline" className="text-[10px] text-muted-foreground">No uploads</Badge>}
+          {item.missing_count>0&&<Badge variant="outline" className="border-amber-400/50 bg-amber-50 text-[10px] text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">{item.missing_count} missing</Badge>}
+          {item.pending_review>0&&<Badge variant="outline" className="border-blue-400/50 bg-blue-50 text-[10px] text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">{item.pending_review} to review</Badge>}
+          {item.email_sent
+           ?<Badge variant="outline" className="border-emerald-500/30 text-[10px] text-emerald-700 dark:text-emerald-300">Email sent</Badge>
+           :<Badge variant="outline" className="text-[10px]">No email yet</Badge>}
+         </div>
+         <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+          <span className="font-semibold text-foreground">Next:</span> {item.service_action||pretty(item.workflow_bucket||"awaiting_action")}
+         </p>
+         {item.student_uploaded_after_email&&<p className="mt-1 text-[11px] font-semibold text-blue-600">New upload since last email</p>}
         </button>
        </div>)}
      </ScrollArea>
@@ -545,17 +556,17 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        <div className="rounded-xl border p-4">
         <p className="text-lg font-black">{caseInfo.label}</p>
         <p className="mt-1 text-xs text-muted-foreground">{caseInfo.property} · Ref {caseInfo.reference}</p>
-        {caseInfo.residence_image_url&&<img src={caseInfo.residence_image_url} alt={"Real listing photo: "+caseInfo.property} className="mt-3 max-h-44 w-full rounded-lg object-cover"/>}
+        {caseInfo.residence_image_url&&<img src={caseInfo.residence_image_url} alt={"Real listing photo: "+caseInfo.property} className="mt-3 max-h-32 w-full rounded-lg object-cover"/>}
         <div className="mt-3 grid grid-cols-2 gap-2">
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recorded status</p><p className="mt-1 text-xs font-bold">{pretty(caseInfo.status)}</p></div>
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recipient</p><p className="mt-1 text-xs font-bold">{caseInfo.recipient_hint||"No valid email"}</p></div>
         </div>
        </div>
        <div className="rounded-xl border border-blue-500/20 bg-blue-500/[.035] p-4">
-        <p className="flex items-center gap-2 text-sm font-bold"><Sparkles className="h-4 w-4 text-blue-600"/>Smart case assessment</p>
+        <p className="flex items-center gap-2 text-sm font-bold"><Sparkles className="h-4 w-4 text-blue-600"/>Documents & next step</p>
         <p className={cn("mt-2 text-sm font-semibold",signalStyle(caseInfo.document_signal.stage))}>{caseInfo.document_signal.summary}</p>
-        {caseInfo.document_signal.missing.length>0&&<div className="mt-2"><p className="text-xs font-bold">Outstanding requirements:</p>
-          <ul className="mt-1 list-inside list-disc space-y-1 text-xs">{caseInfo.document_signal.missing.map(d=><li key={d}>{d}</li>)}</ul></div>}
+        {caseInfo.document_signal.missing.length>0&&<details className="mt-2"><summary className="cursor-pointer text-xs font-bold">{caseInfo.document_signal.missing.length} outstanding requirements · View list</summary>
+          <ul className="mt-1 list-inside list-disc space-y-1 text-xs">{caseInfo.document_signal.missing.map(d=><li key={d}>{d}</li>)}</ul></details>}
         {caseInfo.document_signal.uploaded>0&&<p className="mt-2 text-xs text-muted-foreground">{caseInfo.document_signal.uploaded} uploaded · {caseInfo.document_signal.pendingReview} awaiting verification</p>}
         <p className="mt-3 text-xs font-medium">Recommended: {pretty(active?.suggested_template||caseInfo.recommended_template)}</p>
         {active?.service_action&&<p className="mt-2 rounded-lg bg-background p-2 text-xs font-semibold">{active.service_action}</p>}
@@ -567,7 +578,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           {templatesForKind.map(t=><SelectItem key={t} value={t}>{t==="smart"?"✨ Smart recommended for this case":defaults[t]?.name||pretty(t)}</SelectItem>)}
          </SelectContent></Select></div>
        <div><Label htmlFor="premium-email-note">Personalized message / decision details</Label>
-        <Textarea id="premium-email-note" rows={6} value={note} maxLength={2500}
+        <Textarea id="premium-email-note" rows={3} value={note} maxLength={2500}
           placeholder="Optional practical details: viewing date and time, move-in instructions, what to submit, or the next step. Avoid repeating the case status."
           onChange={e=>{setNote(e.target.value);resetPreview();}}/>
         <p className="mt-1 text-[11px] text-muted-foreground">{note.length}/2500 · Only recorded decisions appear as formal approvals or rejections.</p></div>
