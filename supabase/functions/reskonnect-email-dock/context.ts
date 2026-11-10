@@ -93,7 +93,8 @@ export async function listCases(s:EmailSession,kind:Kind,options:{offset:number;
  const items=rows.map((r:any)=>{
   const p=person.get(r.user_id);
   const address=kind==="support_enquiry"?r.email:kind==="housing_lead"?(r.contact_email||p?.email):p?.email;
-  const signal=documentSignal(kind,[...(docs.get(r.user_id)||[]),...(app.get(r.id)||[])],r.funding_type||null);
+  const submittedDocs=[...(docs.get(r.user_id)||[]),...(app.get(r.id)||[])];
+  const signal=documentSignal(kind,submittedDocs,r.funding_type||null);
   const c:CaseContext={
    kind,id:r.id,userId:r.user_id,residenceId:r.residence_id||null,
    studentName:safe(r.applicant_name||r.contact_name||r.full_name||p?.full_name||"Student",95),
@@ -105,7 +106,7 @@ export async function listCases(s:EmailSession,kind:Kind,options:{offset:number;
   const latestUpload=[lastUpload.get(r.id),lastUpload.get(r.user_id)].filter(Boolean).sort().reverse()[0]||null;
   const journey=deriveCaseJourney(c,lastSent.get(r.id)||lastMail.get(r.id)||null,latestUpload,r.created_at);
   return {...publicCase(s,c),created_at:r.created_at,document_stage:signal.stage,
-   missing_count:signal.missing.length,pending_review:signal.pendingReview,uploaded_count:signal.uploaded,
+   missing_count:signal.missing.length,pending_review:signal.pendingReview,uploaded_count:submittedDocs.length,
    workflow_bucket:journey.bucket,...journey};
  });
  return {items,total:count||0,has_more:offset+rows.length<(count||0),next_offset:offset+rows.length};
