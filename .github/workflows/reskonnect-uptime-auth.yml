@@ -1,0 +1,22 @@
+name: ResKonnect external uptime and Auth availability
+
+on:
+  schedule:
+    # Run outside PostgreSQL and stagger away from top-of-hour cron work.
+    - cron: "14,44 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  infrastructure-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Public site, Auth process and database API (no user credentials)
+        run: node scripts/production-health-probe.mjs
