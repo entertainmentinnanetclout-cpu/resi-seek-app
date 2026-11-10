@@ -180,6 +180,10 @@ export default function DocumentReviewPanel({kind,targetId,invoke,receipt,onRevi
     {preview?.media==="image"?<img src={preview.url} alt={"Uploaded document "+preview.name} className="max-h-[70vh] w-full rounded-lg object-contain"/>:
      preview?.media==="pdf"?<iframe title={"Document preview: "+preview.name} sandbox="" referrerPolicy="no-referrer" src={preview.url} className="h-[65vh] w-full rounded-lg border bg-white"/>:
      <div className="rounded-lg border p-5 text-sm">This format cannot be shown inline. <a className="inline-flex items-center gap-1 font-semibold text-primary underline" href={preview?.url} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4"/>Open the secure file</a></div>}
+   {preview?.url&&<a href={preview.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"
+    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline underline-offset-2">
+    <ExternalLink className="h-3.5 w-3.5"/>Open private file in a new tab (PDF/mobile fallback)
+   </a>}
    </DialogContent>
   </Dialog>
  </section>;
