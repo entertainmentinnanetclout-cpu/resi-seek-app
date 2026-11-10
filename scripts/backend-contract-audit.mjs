@@ -73,7 +73,12 @@ for (const { relative, loc } of sourceFiles) {
       const line = getLine(script, node);
       let kind = null;
       if (prop === "rpc" && receiver) kind = "rpc";
-      else if (prop === "from" && receiver) kind = nested === "storage" ? "buckets" : "relations";
+      else if (prop === "from" && receiver) {
+        // Do not mistake native Array.from()/Uint8Array.from() for a Supabase table.
+        const builtInReceiver = ts.isIdentifier(receiver) &&
+          ["Array", "Uint8Array", "Int8Array", "Float32Array", "Float64Array", "Object", "Buffer"].includes(receiver.text);
+        if (!builtInReceiver) kind = nested === "storage" ? "buckets" : "relations";
+      }
       else if (prop === "invoke" && nested === "functions") kind = "edge";
       else if (prop === "invokeEdgeFunction" || prop === "externalFunctionUrl") kind = "edge";
       else if (prop === "invoke" && typeof name === "string" && /^(adminos-|dimpho-|resmap-|luna-)/.test(name)) kind = "edge";
@@ -103,6 +108,7 @@ for (const { relative, loc } of sourceFiles) {
 const live = {
   relations: new Set(snapshot.public_relations),
   rpc: new Set(snapshot.callable_routines.map(x => x.name)),
+  serverRpc: new Set((snapshot.server_routines || []).map(x => x.name)),
   edge: new Set(snapshot.edge_functions.map(x => x.slug)),
   buckets: new Set(snapshot.storage_buckets),
 };
@@ -110,15 +116,19 @@ const issues = [];
 const warnings = [];
 for (const [kind, names] of Object.entries(refs)) {
   for (const [name, locations] of names) {
-    if (!live[kind].has(name)) {
+    if (!live[kind].has(name) && !(kind === "rpc" && live.serverRpc.has(name) && locations.every(x => x.file.startsWith("supabase/functions/")))) {
       issues.push({ code: "MISSING_" + kind.toUpperCase(), name, locations: locations.slice(0, 4) });
       continue;
     }
     if (kind === "rpc") {
-      const overloads = snapshot.callable_routines.filter(x => x.name === name);
-      if (!overloads.some(x => x.authenticated || x.anon)) {
-        issues.push({ code: "RPC_NOT_EXECUTABLE", name, locations: locations.slice(0, 3) });
+      const browserUse = locations.filter(x => x.file.startsWith("src/"));
+      if (browserUse.length && !live.rpc.has(name)) {
+        issues.push({ code: "PRIVATE_RPC_CALLED_BY_BROWSER", name, locations: browserUse.slice(0, 4) });
       }
+      const overloads = [
+        ...snapshot.callable_routines,
+        ...(snapshot.server_routines || [])
+      ].filter(x => x.name === name);
       for (const call of locations) {
         if (call.args?.length && !overloads.some(ov => call.args.every(a => ov.args.includes(a)))) {
           issues.push({ code: "RPC_PARAMETER_MISMATCH", name, supplied: call.args, serverArguments: overloads.map(x => x.args), locations: [call] });
@@ -151,7 +161,7 @@ const summary = {
   checkedSourceFiles: codeFiles,
   uniqueReferences: Object.fromEntries(Object.entries(refs).map(([k, v]) => [k, v.size])),
   totalCallSites: Object.fromEntries(Object.entries(refs).map(([k, v]) => [k, [...v.values()].reduce((a, b) => a + b.length, 0)])),
-  liveInventory: { relations: live.relations.size, rpc: live.rpc.size, edge: live.edge.size, buckets: live.buckets.size },
+  liveInventory: { relations: live.relations.size, clientCallableRpc: live.rpc.size, serviceCallableRpc: live.serverRpc.size, edge: live.edge.size, buckets: live.buckets.size },
   failures: issues.length,
   warnings: warnings.length,
   sourceOnlyFunctions: sourceOnly,
