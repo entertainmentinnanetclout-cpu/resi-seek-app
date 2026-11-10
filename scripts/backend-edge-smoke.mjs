@@ -16,3 +16,22 @@ if (!response.ok || !contentType.includes("image/svg+xml") || !body.includes("<s
 } else {
   console.log("PASS public OG Edge: HTTP " + response.status + ", SVG content and brand verified");
 }
+
+
+// A second independent public function needed by push registration.
+// Read-only, no user accounts or push subscriptions created.
+const keyResponse = await fetch(base + "/functions/v1/vapid-public-key", {
+  method: "GET",
+  headers: { Accept: "application/json" },
+  signal: AbortSignal.timeout(12000),
+  redirect: "error",
+});
+let keyPayload = null;
+try { keyPayload = await keyResponse.json(); } catch { /* strict check below */ }
+if (!keyResponse.ok || !keyPayload || typeof keyPayload.publicKey !== "string") {
+  console.error("Public VAPID key endpoint failed: HTTP " + keyResponse.status);
+  process.exitCode = 1;
+} else {
+  console.log("PASS public push-key Edge: HTTP " + keyResponse.status);
+  if (!keyPayload.publicKey) console.warn("WARN: Push public VAPID key is empty; push subscription setup may not be configured.");
+}
