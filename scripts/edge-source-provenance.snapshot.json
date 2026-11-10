@@ -1,0 +1,165 @@
+{
+  "project_id": "mefjzkhobkltlbmhusdh",
+  "captured_date": "2026-11-10",
+  "purpose": "Exact code copies of 14 existing production Edge Functions: source control only; no deployment",
+  "functions": [
+    {
+      "slug": "NoopCheck",
+      "version": 3,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/NoopCheck/index.ts",
+          "git_blob_sha": "2b320abad9a74768670421c6d7d7d53ccbcbff6c"
+        }
+      ]
+    },
+    {
+      "slug": "adminos-twilio-diagnostics",
+      "version": 8,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/adminos-twilio-diagnostics/index.ts",
+          "git_blob_sha": "e392fc867952d3450a136d88d75e811e00963b1c"
+        }
+      ]
+    },
+    {
+      "slug": "adminos-twilio-one-shot",
+      "version": 8,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/adminos-twilio-one-shot/index.ts",
+          "git_blob_sha": "d54b909ce275959f6ccae028b0f5102c34a23af4"
+        }
+      ]
+    },
+    {
+      "slug": "adminos-twilio-profile-once",
+      "version": 5,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/adminos-twilio-profile-once/index.ts",
+          "git_blob_sha": "877dbb26729003c7ea590923e20a9dd3a5ce54ca"
+        }
+      ]
+    },
+    {
+      "slug": "adminos-twilio-replay",
+      "version": 4,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/adminos-twilio-replay/index.ts",
+          "git_blob_sha": "4e84db0db4de5445054f68b115b484fc17d78ef5"
+        }
+      ]
+    },
+    {
+      "slug": "adminos-twilio-sync-once",
+      "version": 4,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/adminos-twilio-sync-once/index.ts",
+          "git_blob_sha": "d54b909ce275959f6ccae028b0f5102c34a23af4"
+        }
+      ]
+    },
+    {
+      "slug": "create-payment",
+      "version": 10,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/create-payment/index.ts",
+          "git_blob_sha": "13216f7502627c7341e4fe7e7b913b3333c44941"
+        }
+      ]
+    },
+    {
+      "slug": "dimpho-eval-trigger-once",
+      "version": 5,
+      "verify_jwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/dimpho-eval-trigger-once/index.ts",
+          "git_blob_sha": "81172ca8a160b8b6a776e78cfef859840611ed1f"
+        }
+      ]
+    },
+    {
+      "slug": "mobile-runtime-report",
+      "version": 2,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/mobile-runtime-report/index.ts",
+          "git_blob_sha": "b14b18b042563727d2e302015ce24abc7e4f06d2"
+        }
+      ]
+    },
+    {
+      "slug": "quick-service",
+      "version": 12,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/quick-service/index.ts",
+          "git_blob_sha": "5fe8891003179b56abdf56e09bc288d36e618d3e"
+        }
+      ]
+    },
+    {
+      "slug": "seo-indexnow",
+      "version": 7,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/seo-indexnow/index.ts",
+          "git_blob_sha": "f0a31aceb9723a8567541a6ae40119d5d7f2dc2c"
+        },
+        {
+          "path": "supabase/functions/seo-indexnow/deno.json",
+          "git_blob_sha": "26f214064a9165492dfd8a2cf6dc143dd8b29c63"
+        }
+      ]
+    },
+    {
+      "slug": "seo-indexnow-processor",
+      "version": 8,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/seo-indexnow-processor/index.ts",
+          "git_blob_sha": "514616c9f1549459ebfaeddb1c184614697b0bc6"
+        }
+      ]
+    },
+    {
+      "slug": "seo-indexnow-worker",
+      "version": 3,
+      "verify_jwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/seo-indexnow-worker/index.ts",
+          "git_blob_sha": "9e4718c94970039fa366df63457d128dbd4fe785"
+        }
+      ]
+    },
+    {
+      "slug": "seo-search-console-sync",
+      "version": 4,
+      "verify_jwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/seo-search-console-sync/index.ts",
+          "git_blob_sha": "ef490565aae6482aa4dcc730d5a7e229bb946d4d"
+        }
+      ]
+    }
+  ]
+}
