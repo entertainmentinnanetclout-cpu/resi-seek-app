@@ -163,7 +163,12 @@ export default function DocumentReviewPanel({kind,targetId,invoke,receipt,onRevi
      <span>I reviewed this student's available uploads, document statuses and outstanding requirements. This acknowledgement does not approve the application or confirm funding.</span>
     </label>
     <Button className="w-full" size="sm" disabled={!ack||!!busy||unviewedPending.length>0} onClick={()=>void confirmReview()}>
-     {busy==="review"?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<ShieldCheck className="mr-2 h-4 w-4"/>}Confirm document review · Continue
+     {busy==="review" ? (
+        <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+       ) : (
+        <ShieldCheck className="mr-2 h-4 w-4"/>
+       )}
+       <span>Confirm document review · Continue</span>
     </Button>
    </div>}
    <p className="text-[11px] text-muted-foreground">Private files use expiring 90-second previews. Never share these links or include student documents in outgoing messages.</p>
