@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {useSearchParams} from "react-router-dom";
-import {AlertTriangle,CheckCircle2,CheckCheck,ChevronRight,Clock3,Download,FileCheck2,FileText,Inbox,Layers,Loader2,Mail,MailCheck,MessageCircle,Paperclip,RefreshCw,Search,Send,Settings2,ShieldCheck,Sparkles,Unplug,Users,WalletCards} from "lucide-react";
+import {AlertTriangle,CheckCircle2,CheckCheck,ChevronRight,Clock3,Download,FileCheck2,FileText,Inbox,Layers,Loader2,Mail,MailCheck,MessageCircle,Paperclip,RefreshCw,Search,Send,Settings2,ShieldCheck,Sparkles,Unplug,Users,WalletCards,LayoutList,SlidersHorizontal,ArrowUpDown} from "lucide-react";
 import ManualWhatsAppPanel from "./ManualWhatsAppPanel";
 import ContactActivityDashboard from "./ContactActivityDashboard";
 import LandlordGmailGuide from "./LandlordGmailGuide";
@@ -23,7 +23,7 @@ type Mode="admin"|"landlord";
 type Signal={stage:string;missing:string[];uploaded:number;pendingReview:number;summary:string};
 type CaseItem={
  id:string;kind:Kind;label:string;status:string;property:string;reference:string;
- created_at:string;document_stage:string;missing_count:number;pending_review:number;
+ created_at:string;document_stage:string;missing_count:number;pending_review:number;uploaded_count?:number;
  recommended_template:Template;recipient_hint:string|null;can_email:boolean;
  workflow_bucket?:string;service_action?:string;last_email_at?:string|null;last_email_template?:string|null;
  email_sent?:boolean;email_status?:string|null;student_uploaded_after_email?:boolean;
@@ -72,7 +72,10 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [selected,setSelected]=useState(params.get("target")||"");
  const [checked,setChecked]=useState<Set<string>>(new Set());
  const [search,setSearch]=useState("");
- const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision"|"not_contacted"|"followup_due"|"student_acted"|"awaiting_review"|"decision_changed"|"approved"|"rejected">("all");
+ const [workspace,setWorkspace]=useState<"cases"|"activity">(params.get("view")==="activity"?"activity":"cases");
+ const [advancedFilters,setAdvancedFilters]=useState(false);
+ const [sortBy,setSortBy]=useState<"newest"|"oldest"|"needs_action">("needs_action");
+ const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision"|"not_contacted"|"followup_due"|"student_acted"|"awaiting_review"|"decision_changed"|"approved"|"rejected"|"uploaded"|"no_uploads">("all");
  const [caseInfo,setCaseInfo]=useState<CaseInfo|null>(null);
  const [template,setTemplate]=useState<Template>("smart");
  const [note,setNote]=useState("");
@@ -195,12 +198,34 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   const match=(x.label+" "+x.status+" "+x.property+" "+x.reference).toLowerCase().includes(search.toLowerCase().trim());
   if(!match)return false;
   if(filter==="missing")return x.document_stage==="missing"||x.document_stage==="incomplete";
-  if(filter==="received")return x.document_stage==="received"||x.document_stage==="complete";
+  if(filter==="uploaded")return (x.uploaded_count||0)>0;
+  if(filter==="no_uploads")return (x.uploaded_count||0)===0;
+  if(filter==="received")return x.pending_review>0||x.document_stage==="received"||x.document_stage==="complete";
   if(filter==="decision")return ["approved","conditionally_approved","rejected","confirmed","cancelled"].includes(x.status);
   if(filter==="not_contacted")return !x.email_sent;
   if(filter!=="all")return x.workflow_bucket===filter;
   return true;
- }),[items,filter,search]);
+ }).sort((a,b)=>{
+  if(sortBy==="oldest")return a.created_at.localeCompare(b.created_at);
+  if(sortBy==="newest")return b.created_at.localeCompare(a.created_at);
+  const priority=(item:CaseItem)=>{
+   if(item.workflow_bucket==="decision_changed"||item.workflow_bucket==="student_acted")return 0;
+   if(item.pending_review>0||item.workflow_bucket==="awaiting_review")return 1;
+   if(item.workflow_bucket==="followup_due")return 2;
+   if(item.missing_count>0&&!item.email_sent)return 3;
+   if(!item.email_sent)return 4;
+   if(["approved","confirmed"].includes(item.status))return 7;
+   return 5;
+  };
+  return priority(a)-priority(b)||b.created_at.localeCompare(a.created_at);
+ }),[items,filter,search,sortBy]);
+ const queueStats=useMemo(()=>({
+  uploaded:items.filter(x=>(x.uploaded_count||0)>0).length,
+  missing:items.filter(x=>x.missing_count>0).length,
+  review:items.filter(x=>x.pending_review>0||x.document_stage==="received").length,
+  unemailed:items.filter(x=>!x.email_sent).length,
+  followup:items.filter(x=>x.workflow_bucket==="followup_due").length
+ }),[items]);
  const templatesForKind=useMemo(()=>{
   const base:(Template)[]=["smart","acknowledgement","documents_needed","documents_received","status_update","feedback","next_steps","follow_up"];
   if(kind==="application")base.push("approved","rejected","conditionally_approved");
@@ -213,12 +238,13 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const selectedCount=checked.size;
  const resetPreview=()=>{setPreview(null);setApproved(false);setBulkPreview([]);setBulkApproval(false);setStatusPreview([]);setStatusApproved(false);setBatchSummary(null);};
  const selectKind=(k:Kind)=>{
-  setKind(k);setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setChecked(new Set());setNote("");resetPreview();
-  const next=new URLSearchParams(params);next.set("kind",k);next.delete("target");setParams(next,{replace:true});
+  setKind(k);setWorkspace("cases");setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setChecked(new Set());setNote("");resetPreview();
+  const next=new URLSearchParams(params);next.set("kind",k);next.delete("target");next.delete("view");setParams(next,{replace:true});
  };
  const selectRecord=(id:string)=>{
   setSelected(id);setTemplate(items.find(x=>x.id===id)?.suggested_template||"smart");setNote("");resetPreview();
-  const next=new URLSearchParams(params);next.set("kind",kind);next.set("target",id);setParams(next,{replace:true});
+  const next=new URLSearchParams(params);next.set("kind",kind);next.set("target",id);next.delete("view");setParams(next,{replace:true});
+  if(window.innerWidth<1024)window.requestAnimationFrame(()=>document.getElementById("rk-case-detail-panel")?.scrollIntoView({behavior:"smooth",block:"start"}));
  };
  const toggleSelected=(id:string,checkedNow:boolean)=>{
   setChecked(old=>{const next=new Set(old);if(checkedNow)next.add(id);else next.delete(id);return next;});
