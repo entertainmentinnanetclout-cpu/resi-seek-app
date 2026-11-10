@@ -43,6 +43,7 @@ export default function ManualWhatsAppPanel({kind,targetId,templateKey,note,invo
  const showErr=(e:unknown)=>toast.error(e instanceof Error?e.message:"Could not prepare WhatsApp");
  const generate=async()=>{
   if(!targetId)return toast.error("Choose an applicant or reservation first");
+  if(needsReview&&!reviewId)return toast.error("Review the uploaded files before preparing a WhatsApp message");
   setWorking("preview");setConfirmed(false);setHandoffId(null);
   try{const result=await invoke({action:"whatsapp_preview",kind,target_id:targetId,template_key:templateKey,message:note});
    setPreview(result);setCopied(false);}
@@ -50,6 +51,7 @@ export default function ManualWhatsAppPanel({kind,targetId,templateKey,note,invo
  };
  const copy=async()=>{
   if(!preview)return;
+  if(needsReview&&!reviewId)return toast.error("Complete document review before copying this student message");
   try{await navigator.clipboard.writeText(preview.message);setCopied(true);toast.success("Personalized WhatsApp template copied");}
   catch{toast.info("Select the message text below and copy it manually");}
  };
