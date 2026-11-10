@@ -30,3 +30,13 @@
 - The `backend:contracts` gate is invoked by the normal build and the GitHub Actions audit. Dynamic caller names, conditional SQL trigger bodies, authenticated RLS, webhook verification, secrets, provider status, runtime errors and real user journeys require separate tests.
 - Preserve all existing users, bookings, RLS and security checks. No automated deployment of security-sensitive Edge Functions; no blind migration or destructive data maintenance.
 - Relevant operational incidents: Auth #191, retention/capacity #195, 2027 reservation case-trigger fix PR #196.
+
+## Reconciliation follow-up, 2026-11-10
+
+- PR #197 was merged (GitHub/Vercel production commit `f15daa085ec18248386ea1081340f344df1ec529`; Vercel READY).
+- The safe public `og-image` Edge deployment was verified with HTTP 200 and exact source comparison.
+- A full second comparison of 18 formerly divergent shared Edge entrypoints separated **4 whitespace-only differences** from **14 containing substantive code differences**. Do not auto-deploy either side.
+- In PR #199, `generate-booking-slip/index.ts` was reconciled **from the running production v2.0.1 source back into GitHub**, after confirming JWT authentication, application ownership checks and no embedded credentials. **No Edge function was redeployed** as part of this reconciliation.
+- This reduces unresolved substantive differences from 14 to **13**, subject to a final comparison after merging PR #199. Tracked in issue #198.
+- PR #199 further pins dynamic booking/viewing/course-match RPC signatures, authenticated email/portal endpoints, and payment webhook JWT guard in CI, plus a safe VAPID public-key smoke.
+- A fresh one-hour Auth sample showed one HTTP 500: do not claim complete sign-in reliability; continue issue #191 diagnostics.
