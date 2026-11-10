@@ -6,6 +6,7 @@ import SeoBreadcrumbs from "@/components/seo/SeoBreadcrumbs";
 import SeoFaqSection from "@/components/seo/SeoFaqSection";
 import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
 import SeoListingResults from "@/components/seo/SeoListingResults";
+import CityEvidenceSnapshot from "@/components/seo/CityEvidenceSnapshot";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { articleSchema, breadcrumbSchema } from "@/lib/seo/jsonLd";
@@ -90,6 +91,10 @@ const SeoLandingPage = ({ pageKey }: Props) => {
             ))}
           </section>
         ))}
+
+        {page.path.startsWith("/student-accommodation") && (
+          <CityEvidenceSnapshot city={page.listings?.query.city || (page.path === "/student-accommodation/pretoria-west" ? "Pretoria" : undefined)} />
+        )}
 
         {page.listings && (
           <SeoListingResults

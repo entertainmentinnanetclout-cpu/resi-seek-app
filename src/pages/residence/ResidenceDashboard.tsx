@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { getResidenceApplicationRef, getResidenceApplicationStatusLabel } from "@/lib/residenceApplications";
 import SEO from "@/components/SEO";
+import ResidenceSupplyReadiness from "@/components/residence/ResidenceSupplyReadiness";
 import type { ResidencePortalContext } from "./ResidenceLayout";
 
 interface Stats {
@@ -112,6 +113,8 @@ const ResidenceDashboard = () => {
           <div><p className="text-sm font-semibold text-primary">ResKonnect Property OS</p><h1 className="mt-1 text-3xl font-black tracking-tight">{residence.name}</h1><p className="mt-2 text-sm text-muted-foreground">Manage applications, funding mix and 2027 reservation demand for this accommodation.</p></div>
           <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void load()} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} /> Refresh</Button><Button variant="outline" onClick={() => navigate("/residence/reservations-2027")}><CalendarDays className="mr-2 h-4 w-4" /> 2027 Reservations</Button><Button onClick={() => navigate("/residence/inbox?status=new")}><Inbox className="mr-2 h-4 w-4" /> Review applications{needsAttention > 0 ? ` (${needsAttention})` : ""}</Button></div>
         </div>
+
+        <ResidenceSupplyReadiness residenceId={residence.id} />
 
         {stats.reservations2027 > 0 && !error && <Card className="border-[#F5B32F]/35 bg-gradient-to-r from-[#071326] via-[#0c1c34] to-[#12386a] text-white"><CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2 text-sm font-black"><CalendarDays className="h-4 w-4 text-[#F5B32F]" /> 2027 reservation demand is live</div><p className="mt-1 text-sm text-white/70">{stats.reservations2027} active reservation{stats.reservations2027 === 1 ? "" : "s"} currently recorded for {residence.name}. Use this demand to plan rooms, pricing and follow-up.</p></div><Button className="bg-[#F5B32F] text-[#071326] hover:bg-[#F5B32F]/90" onClick={() => navigate("/residence/reservations-2027")}>Open 2027 intake <ArrowRight className="ml-2 h-4 w-4" /></Button></CardContent></Card>}
 

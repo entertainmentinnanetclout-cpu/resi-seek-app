@@ -40,7 +40,7 @@ const NOT_NSFAS = "ResKonnect does not provide NSFAS application services.";
 const NO_GUARANTEE = "We do not guarantee placement, funding outcomes or admission decisions.";
 
 const ACCOMMODATION_LINKS: SeoLink[] = [
-  { label: "Student accommodation", to: "/student-accommodation", description: "All verified listings across our areas." },
+  { label: "Student accommodation", to: "/student-accommodation", description: "Published residences across our areas, with separate evidence status." },
   { label: "Pretoria West accommodation", to: "/student-accommodation/pretoria-west", description: "Rooms close to Pretoria West campuses." },
   { label: "Accommodation near TUT", to: "/student-accommodation/near-tut", description: "Residences within reach of TUT campuses." },
   { label: "NSFAS accredited accommodation", to: "/student-accommodation/nsfas-accredited", description: "Listings with NSFAS accreditation context." },
@@ -55,16 +55,16 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
     kind: "landing",
     title: "ResKonnect Student Accommodation | Verified Residences Near Campus",
     description:
-      "Browse verified student accommodation for university, TVET and private-paying students. Compare rooms, prices, campus distance and availability on ResKonnect.",
+      "Browse published student accommodation for university, TVET and private-paying students. Compare recorded room details, reported prices, location evidence and funding acceptance.",
     keywords: "student accommodation, student housing South Africa, verified residences, campus accommodation",
     h1: "Student Accommodation in South Africa",
     intro: [
-      "ResKonnect lists verified student accommodation for university students, TVET college students and private-paying students. Every listing shows the room types, monthly price, distance from campus and current availability so you can compare properly before you commit.",
+      "ResKonnect lists published student accommodation records for university, TVET and private-paying students. Room types, quoted monthly prices, campus locations and availability are shown only where providers have supplied them, with independent verification identified separately.",
       "Instead of scrolling through group chats and unverified adverts, you get a single place to search by campus, budget and room type, then enquire through ResKonnect.",
     ],
     audience: "Students looking for a place to stay for the academic year, and parents helping them decide.",
     benefits: [
-      { title: "Verified listings only", body: "Each residence is checked before it goes live, and listing details are kept in sync with the property." },
+      { title: "Evidence-aware listings", body: "Compare provider-reported facts with the specific price, location and photo checks actually recorded. Publication does not mean official accreditation or available beds." },
       { title: "Compare on real detail", body: "Price, room type, distance from campus, availability, WiFi, parking and furnishing are shown per listing." },
       { title: "One enquiry channel", body: "All enquiries route through ResKonnect so your details are not scattered across strangers." },
       { title: "Built for the SA student journey", body: "University, TVET and private-paying options sit side by side, with NSFAS accreditation shown where it applies." },
@@ -83,7 +83,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
     },
     faqs: [
       { question: "What does it cost to use ResKonnect?", answer: "Searching listings and enquiring about accommodation is free for students." },
-      { question: "Are the listings verified?", answer: "Listings are checked before publication and property details are maintained with the landlord or residence manager." },
+      { question: "Are the listings verified?", answer: "Every property has a separate evidence status. Publication is not a guarantee of verification; ask for official accreditation documents and current quotes when they affect your decision." },
       { question: "Can I apply if I am not funded by NSFAS?", answer: "Yes. Many listings accept private-paying students, and private rental options are listed separately." },
       { question: "How do I contact a residence?", answer: "Enquire through the listing page. Enquiries route through ResKonnect rather than exposing private contact details." },
     ],
@@ -96,7 +96,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
     kind: "landing",
     title: "ResKonnect Student Accommodation in Pretoria West | Rooms Near Campus",
     description:
-      "Find verified student accommodation in Pretoria West. Compare rooms, prices and availability close to TUT Pretoria West and surrounding campuses.",
+      "Explore published student accommodation in Pretoria West and compare provider-reported room, price and availability details close to TUT Pretoria West.",
     keywords: "Pretoria West student accommodation, res in Pretoria West, student rooms Pretoria West",
     h1: "Student Accommodation in Pretoria West",
     intro: [
@@ -144,7 +144,7 @@ export const SEO_LANDING_PAGES: SeoLandingContent[] = [
     kind: "landing",
     title: "ResKonnect Student Accommodation Near TUT | Verified Residences",
     description:
-      "Find verified student accommodation near TUT campuses. Compare residences by campus, price, room type and availability on ResKonnect.",
+      "Browse accommodation records near TUT campuses and compare provider-reported pricing, room types and availability with explicit verification status.",
     keywords: "accommodation near TUT, TUT residence, TUT student housing",
     h1: "Student Accommodation Near TUT",
     intro: [

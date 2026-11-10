@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ResidencePosterDownloadButton from "@/components/findmyres/ResidencePosterDownloadButton";
 import { supabase } from "@/integrations/supabase/client";
+import { publicPrivateMonthlyRent, hasVerifiedPrivateRent } from "@/lib/residenceListingEvidence";
 
 export interface ListingQuery {
   audience?: "university" | "tvet" | "private";
@@ -33,6 +34,8 @@ interface Residence {
   nsfas_price: number | null;
   promo_price: number | null;
   promo_active: boolean | null;
+  promo_starts_at?: string | null;
+  promo_ends_at?: string | null;
   price_verified_at: string | null;
   image_url: string | null;
   cover_image_url: string | null;
@@ -70,11 +73,14 @@ const AUDIENCE_COLUMN = {
 const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: Props) => {
   const [residences, setResidences] = useState<Residence[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
     const run = async () => {
+      if (!cancelled) { setLoading(true); setError(false); }
       try {
         // Keep the large generated Supabase relation type from recursively
         // expanding during the public listing query. Results are narrowed to
@@ -82,7 +88,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
         let req = (supabase as any)
           .from("residences")
           .select(
-            "id, slug, name, address, campus, province, city, place_label, price, private_price, nsfas_price, promo_price, promo_active, price_verified_at, image_url, cover_image_url, images, available_spots, capacity, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, room_type, room_types, singles_available, amenities, has_wifi, has_parking, is_furnished, utilities_included, reservations_2027_open",
+            "id, slug, name, address, campus, province, city, place_label, price, private_price, nsfas_price, promo_price, promo_active, promo_starts_at, promo_ends_at, price_verified_at, image_url, cover_image_url, images, available_spots, capacity, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, room_type, room_types, singles_available, amenities, has_wifi, has_parking, is_furnished, utilities_included, reservations_2027_open",
           )
           .eq("is_visible", true)
           .order("display_order", { ascending: true })
@@ -110,8 +116,8 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
         // The price comparison uses the same property price displayed in the card.
         if (query.minPrice !== undefined || query.maxPrice !== undefined) {
           rows = rows.filter((r) => {
-            const monthly = Number((r.promo_active && r.promo_price) || r.private_price || r.price || 0);
-            return monthly > 0 && monthly >= (query.minPrice ?? 0) && monthly <= (query.maxPrice ?? Number.POSITIVE_INFINITY);
+            const monthly = publicPrivateMonthlyRent(r);
+            return monthly !== null && monthly >= (query.minPrice ?? 0) && monthly <= (query.maxPrice ?? Number.POSITIVE_INFINITY);
           });
         }
         if (query.singlesOnly) {
@@ -122,7 +128,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
         if (!cancelled) setResidences(rows.slice(0, query.limit ?? 6));
       } catch (err) {
         console.error("[SeoListingResults]", err);
-        if (!cancelled) setResidences([]);
+        if (!cancelled) setError(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -132,7 +138,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
     return () => {
       cancelled = true;
     };
-  }, [query.audience, query.nsfasOnly, query.category, query.city, query.minPrice, query.maxPrice, query.singlesOnly, query.limit, JSON.stringify(query.areaTerms)]);
+  }, [query.audience, query.nsfasOnly, query.category, query.city, query.minPrice, query.maxPrice, query.singlesOnly, query.limit, refreshKey, JSON.stringify(query.areaTerms)]);
 
   return (
     <section aria-labelledby="listings-heading" className="mt-14">
@@ -144,6 +150,11 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
             <div key={i} className="h-64 animate-pulse rounded-xl bg-muted" />
           ))}
         </div>
+      ) : error ? (
+        <Card className="mt-6"><CardContent className="space-y-3 p-8 text-center">
+          <p role="alert" className="text-sm text-muted-foreground">Live listings could not be retrieved. This does not mean accommodation is unavailable in this area.</p>
+          <Button type="button" variant="outline" onClick={() => setRefreshKey(n => n + 1)}>Retry listings</Button>
+        </CardContent></Card>
       ) : residences.length === 0 ? (
         <Card className="mt-6">
           <CardContent className="p-8 text-center">
@@ -158,7 +169,8 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
           {residences.map((r) => {
             const image = r.cover_image_url || r.images?.[0] || r.image_url || "/placeholder.svg";
             const area = r.campus || r.province || "South Africa";
-            const displayPrice = Number((r.promo_active && r.promo_price) || r.private_price || r.price || 0);
+            const displayPrice = publicPrivateMonthlyRent(r);
+            const isVerified = hasVerifiedPrivateRent(r);
             return (
               <li key={r.id}>
                 <Card className="h-full overflow-hidden transition-shadow hover:shadow-lg">
@@ -194,18 +206,18 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
                     </div>
                     <p className="flex items-start gap-2 text-sm text-muted-foreground">
                       <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                      <span>{r.address}</span>
+                      <span>{[r.place_label, r.campus, r.city].filter(Boolean).join(" · ") || "Area not provided"}</span>
                     </p>
                     <p className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Bed className="h-4 w-4" aria-hidden="true" />
-                      <span>{r.available_spots > 0 ? `${r.available_spots} spots available` : "Check live availability"}</span>
+                      <span>{r.available_spots > 0 ? `${r.available_spots} landlord-reported spaces · confirm` : "Ask the residence for current availability"}</span>
                     </p>
-                    {displayPrice > 0 ? (
+                    {displayPrice !== null ? (
                       <p className="text-sm font-semibold text-foreground">
-                        Listed from R{displayPrice.toLocaleString("en-ZA")}/month · {r.price_verified_at ? "price verified" : "confirm rate"}
+                        Reported from R{displayPrice.toLocaleString("en-ZA")}/month · {isVerified ? "base price verification on file; confirm current quote" : "landlord-reported; confirm current quote"}
                       </p>
                     ) : (
-                      <p className="text-sm font-semibold text-muted-foreground">Rate available on listing</p>
+                      <p className="text-sm font-semibold text-muted-foreground">Price on request · no confirmed monthly rate supplied</p>
                     )}
                     <Button asChild variant="outline" className="mt-2 w-full">
                       <Link to={`/find-my-res/${r.slug || r.id}`}>View residence</Link>

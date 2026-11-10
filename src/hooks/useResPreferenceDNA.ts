@@ -46,13 +46,23 @@ export function useResPreferenceDNA() {
   const save = useCallback(async (next: PreferenceDNA) => {
     setDna(next);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    if (!user) return;
-    await (supabase as any).from("resmap_preference_profiles").upsert({
+    if (!user) return false;
+    try {
+      const { error } = await (supabase as any).from("resmap_preference_profiles").upsert({
       user_id: user.id, campus: next.campus || null, institution_type: next.institutionType || null, institution_tag: next.institutionTag || null,
       funding_type: next.fundingType || null, budget_min: next.budgetMin, budget_max: next.budgetMax, room_types: next.roomTypes,
       amenities: next.amenities, priorities: next.priorities, style_tags: next.styleTags, travel_mode: next.travelMode,
       max_travel_minutes: next.maxTravelMinutes ?? null, group_size: next.groupSize, updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id" });
+      }, { onConflict: "user_id" });
+      if (error) {
+        console.warn("[Res DNA] Saved on device only; account synchronization unavailable.");
+        return false;
+      }
+      return true;
+    } catch {
+      // Never claim a remote preference save during a database outage.
+      return false;
+    }
   }, [user]);
 
   const patch = useCallback((values: Partial<PreferenceDNA>) => save({ ...dna, ...values }), [dna, save]);
