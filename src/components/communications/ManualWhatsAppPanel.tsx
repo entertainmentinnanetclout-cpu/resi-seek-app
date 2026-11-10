@@ -17,6 +17,8 @@ type Props={
  kind:Kind;targetId:string;templateKey:string;note:string;
  invoke:(body:Record<string,unknown>)=>Promise<any>;
  onActivityChange?:()=>void;
+ reviewId?:string|null;
+ needsReview?:boolean;
 };
 const blobDownload=(base64:string,mime:string,filename:string)=>{
  const raw=atob(base64),bytes=new Uint8Array(raw.length);
@@ -25,7 +27,7 @@ const blobDownload=(base64:string,mime:string,filename:string)=>{
  const link=document.createElement("a");link.href=objectUrl;link.download=filename;link.click();
  window.setTimeout(()=>URL.revokeObjectURL(objectUrl),30_000);
 };
-export default function ManualWhatsAppPanel({kind,targetId,templateKey,note,invoke,onActivityChange}:Props){
+export default function ManualWhatsAppPanel({kind,targetId,templateKey,note,invoke,onActivityChange,reviewId,needsReview=false}:Props){
  const [preview,setPreview]=useState<ManualPreview|null>(null);
  const [confirmed,setConfirmed]=useState(false);
  const [working,setWorking]=useState<string|null>(null);
@@ -53,13 +55,14 @@ export default function ManualWhatsAppPanel({kind,targetId,templateKey,note,invo
  };
  const openWhatsApp=async()=>{
   if(!preview?.can_open||!confirmed)return;
+  if(needsReview&&!reviewId)return toast.error("Review the uploaded documents before opening WhatsApp");
   const popup=window.open("about:blank","_blank");
   if(popup)popup.opener=null;
   setWorking("open");
   try{
    const result=await invoke({action:"whatsapp_handoff",kind,target_id:targetId,template_key:templateKey,
     message:note,expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage,
-    preview_hash:preview.preview_hash,request_id:crypto.randomUUID(),operator_confirmed:true});
+    preview_hash:preview.preview_hash,request_id:crypto.randomUUID(),operator_confirmed:true,document_review_id:reviewId||null});
    setHandoffId(result.handoff_id);onActivityChange?.();
    if(popup)popup.location.replace(result.url);else window.location.assign(result.url);
    void loadHistory();
@@ -127,7 +130,7 @@ export default function ManualWhatsAppPanel({kind,targetId,templateKey,note,invo
     <Checkbox checked={confirmed} onCheckedChange={value=>setConfirmed(value===true)}/>
     <span>I reviewed the applicant, recorded case status, outstanding documents and message. I will manually send this as an official service communication using WhatsApp Business.</span>
    </label>
-   <Button className="w-full bg-emerald-700 text-white hover:bg-emerald-800" disabled={!preview.can_open||!confirmed||!!working} onClick={()=>void openWhatsApp()}>
+   <Button className="w-full bg-emerald-700 text-white hover:bg-emerald-800" disabled={!preview.can_open||!confirmed||!!working||(needsReview&&!reviewId)} onClick={()=>void openWhatsApp()}>
     {working==="open"?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<ExternalLink className="mr-2 h-4 w-4"/>}
     Open prefilled WhatsApp Business chat
    </Button>
