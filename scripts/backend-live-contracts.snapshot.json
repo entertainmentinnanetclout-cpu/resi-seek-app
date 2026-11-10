@@ -1,0 +1,2689 @@
+{
+  "project_id": "mefjzkhobkltlbmhusdh",
+  "captured_date": "2026-11-10",
+  "purpose": "Read-only public API contract snapshot; names and signatures only; no row data, user IDs or secrets. Must be refreshed against Supabase when backend is changed.",
+  "public_relations": [
+    "Bookings",
+    "Users",
+    "academic_periods",
+    "accommodation_compliance_cases",
+    "accommodation_compliance_evidence",
+    "accommodation_compliance_requests",
+    "accommodation_compliance_requirements",
+    "accommodation_demands",
+    "accommodation_reservations",
+    "accommodation_reservations_admin_v",
+    "account_deletion_requests",
+    "admin_alerts",
+    "admin_applications_safe",
+    "admin_department_assignments",
+    "admin_department_audit_log",
+    "admin_logs",
+    "admin_referral_applications_v",
+    "admin_role_audit_log",
+    "admin_users_safe",
+    "adminos_agent_actions",
+    "adminos_agent_config",
+    "adminos_agent_errors",
+    "adminos_agent_feedback",
+    "adminos_agent_learning_queue",
+    "adminos_agent_prompt_versions",
+    "adminos_agent_runs",
+    "adminos_agent_usage",
+    "adminos_application_health_scores",
+    "adminos_approval_actions",
+    "adminos_approval_requests",
+    "adminos_attribution_sessions",
+    "adminos_audit_events",
+    "adminos_automation_events",
+    "adminos_automation_failures",
+    "adminos_automation_jobs",
+    "adminos_automation_rules",
+    "adminos_automation_runs",
+    "adminos_call_events",
+    "adminos_call_queue",
+    "adminos_call_turns",
+    "adminos_calls",
+    "adminos_campaign_assets",
+    "adminos_campaign_attributions",
+    "adminos_communication_preferences",
+    "adminos_company_document_events",
+    "adminos_company_document_versions",
+    "adminos_company_documents",
+    "adminos_company_operating_snapshots",
+    "adminos_consents",
+    "adminos_contact_360",
+    "adminos_contact_channels",
+    "adminos_contact_languages",
+    "adminos_contact_tags",
+    "adminos_contacts",
+    "adminos_content_plans",
+    "adminos_corporate_affairs_briefs",
+    "adminos_corporate_affairs_drafts",
+    "adminos_csat_responses",
+    "adminos_customer_events",
+    "adminos_demand_events",
+    "adminos_demand_snapshots",
+    "adminos_document_templates",
+    "adminos_email_messages",
+    "adminos_email_outbox",
+    "adminos_email_threads",
+    "adminos_enquiry_messages",
+    "adminos_enquiry_threads",
+    "adminos_escalation_alerts",
+    "adminos_escalation_recipients",
+    "adminos_executive_alerts",
+    "adminos_executive_authority_policy",
+    "adminos_executive_briefs",
+    "adminos_executive_commands",
+    "adminos_executive_priorities",
+    "adminos_finance_anomalies",
+    "adminos_finance_snapshots",
+    "adminos_followup_attempts",
+    "adminos_followup_enrollments",
+    "adminos_followup_message_templates",
+    "adminos_followup_sequences",
+    "adminos_followup_steps",
+    "adminos_growth_campaigns",
+    "adminos_i18n_phrases",
+    "adminos_integration_connections",
+    "adminos_integration_health",
+    "adminos_knowledge_entries",
+    "adminos_knowledge_sources",
+    "adminos_landlord_outreach_campaigns",
+    "adminos_landlord_outreach_recipients",
+    "adminos_lead_score_rules",
+    "adminos_lead_scores",
+    "adminos_next_best_actions",
+    "adminos_occupancy_intelligence",
+    "adminos_opportunity_catalog_health",
+    "adminos_organization_contacts",
+    "adminos_organizations",
+    "adminos_partnership_followup_drafts",
+    "adminos_partnership_lead_intelligence",
+    "adminos_partnership_relationship_health",
+    "adminos_pipeline_events",
+    "adminos_proactive_notification_log",
+    "adminos_prospects",
+    "adminos_reliability_expectations",
+    "adminos_reliability_incidents",
+    "adminos_reliability_snapshots",
+    "adminos_reputation_signals",
+    "adminos_residence_quality_v",
+    "adminos_residence_readiness_v",
+    "adminos_resmap_geo_readiness",
+    "adminos_resmap_location_issues",
+    "adminos_sales_pipeline_v",
+    "adminos_scheduler_secrets",
+    "adminos_search_console_query_metrics",
+    "adminos_seo_growth_signals",
+    "adminos_seo_growth_snapshots",
+    "adminos_service_metrics_daily",
+    "adminos_service_recovery_items",
+    "adminos_social_demand_snapshots",
+    "adminos_social_post_metrics",
+    "adminos_social_posts",
+    "adminos_student_opportunity_cases",
+    "adminos_student_opportunity_matches",
+    "adminos_tags",
+    "adminos_whatsapp_activity",
+    "adminos_whatsapp_conversion_leads",
+    "adminos_whatsapp_drafts",
+    "adminos_whatsapp_journeys",
+    "adminos_whatsapp_media_archive_queue",
+    "adminos_whatsapp_media_files",
+    "adminos_whatsapp_messages",
+    "adminos_whatsapp_notes",
+    "adminos_whatsapp_outbox",
+    "adminos_whatsapp_rich_content",
+    "adminos_whatsapp_site_events",
+    "adminos_whatsapp_templates",
+    "adminos_whatsapp_threads",
+    "application_activity_log",
+    "application_assistance_documents",
+    "application_documents",
+    "application_hub_institutions",
+    "application_messages",
+    "application_prep",
+    "application_readiness_results",
+    "application_referrals",
+    "application_status_history",
+    "application_support_partners",
+    "application_support_queries",
+    "applications",
+    "assistance_call_requests",
+    "assistance_case_activity",
+    "assistance_document_requests",
+    "assistance_submissions",
+    "balances",
+    "bursaries",
+    "call_logs",
+    "campaigns",
+    "campus_news",
+    "career_education_providers",
+    "carousel",
+    "cart",
+    "cart_items",
+    "category_card_configs",
+    "complaints",
+    "conversion_automation_tasks",
+    "course_match_import_batches",
+    "creator_assistance_cases",
+    "creator_attributions",
+    "creator_partners",
+    "creator_referral_events",
+    "delivery_zones",
+    "dimpho_app_features",
+    "dimpho_app_routes",
+    "dimpho_app_sync_runs",
+    "dimpho_app_workflow_steps",
+    "dimpho_app_workflows",
+    "dimpho_code_artifacts",
+    "dimpho_conversation_events",
+    "dimpho_conversation_state",
+    "dimpho_customer_memory",
+    "dimpho_dataset_releases",
+    "dimpho_eval_cases",
+    "dimpho_eval_results",
+    "dimpho_eval_runs",
+    "dimpho_eval_suites",
+    "dimpho_fine_tune_jobs",
+    "dimpho_intelligence_settings",
+    "dimpho_knowledge_chunks",
+    "dimpho_knowledge_documents",
+    "dimpho_knowledge_jobs",
+    "dimpho_lesson_candidates",
+    "dimpho_model_releases",
+    "dimpho_model_routes",
+    "dimpho_models",
+    "dimpho_persona_versions",
+    "dimpho_personas",
+    "dimpho_release_events",
+    "dimpho_router_decisions",
+    "dimpho_tool_approvals",
+    "dimpho_tool_invocations",
+    "dimpho_tool_permissions",
+    "dimpho_tools",
+    "dimpho_training_examples",
+    "dimpho_workflow_events",
+    "dimpho_workflow_runs",
+    "discount_code_redemptions",
+    "discount_codes",
+    "discount_orders",
+    "document_checks",
+    "document_requirements",
+    "documents",
+    "edge_rate_limits",
+    "eft_payments",
+    "events",
+    "faculties",
+    "favorites",
+    "filter_config",
+    "global_search",
+    "growth_events",
+    "hamper_bundle_items",
+    "hamper_items",
+    "hamper_order_items",
+    "hamper_orders",
+    "hampers",
+    "handover_application_exclusions",
+    "handover_corrections",
+    "handover_integrity_runs",
+    "handover_remediation_queue_v",
+    "hero_slides",
+    "institution_campuses",
+    "institution_source_documents",
+    "institutions",
+    "landlord_applications",
+    "landlord_gmail_connections",
+    "landlord_gmail_email_logs",
+    "landlord_gmail_oauth_states",
+    "leases",
+    "marketplace_banners",
+    "marketplace_listings",
+    "marketplace_orders",
+    "marketplace_seller_profiles",
+    "marketplace_settings",
+    "matches",
+    "message_templates",
+    "mobile_runtime_events",
+    "native_background_notification_devices",
+    "notification_queue",
+    "notifications",
+    "onboarding_request_events",
+    "onboarding_requests",
+    "order_status_history",
+    "partner_content",
+    "partner_leads",
+    "partner_showcase",
+    "partner_videos",
+    "partnership_attributions",
+    "partnership_conversion_events",
+    "partnership_memberships",
+    "partnership_resources",
+    "partnerships",
+    "payment_action_logs",
+    "payment_proofs",
+    "payment_rate_limits",
+    "payments",
+    "platform_revenue",
+    "platform_security_policy",
+    "platform_settings",
+    "posts",
+    "private_rental_listings",
+    "private_rental_requests",
+    "product_categories",
+    "product_variants",
+    "products",
+    "profiles",
+    "programme_requirements",
+    "programme_selection_rules",
+    "programme_subject_requirements",
+    "programmes",
+    "property_listing_requests",
+    "property_opportunities",
+    "public_opportunities",
+    "public_opportunity_market_v",
+    "public_property_market_v",
+    "public_residences",
+    "public_student_accommodation_market_v",
+    "push_subscriptions",
+    "recruitable_residences_v",
+    "recruiter_applicants_v",
+    "recruiter_applications",
+    "recruiter_dashboard_v",
+    "recruiter_residence_assignments",
+    "recruiter_residence_links",
+    "referral_agents",
+    "referral_claims",
+    "referral_codes",
+    "referral_earnings",
+    "referral_events",
+    "referral_sessions",
+    "referrals",
+    "reservations",
+    "residence_academic_inventory",
+    "residence_analytics",
+    "residence_application_intake",
+    "residence_comparisons",
+    "residence_feedback_campaigns",
+    "residence_handover_export_v",
+    "residence_leads",
+    "residence_portal_accounts",
+    "residence_portal_applications_safe",
+    "residence_portal_leads_safe",
+    "residence_profile_change_log",
+    "residence_recruitment_programs",
+    "residence_room_pricing_public_v",
+    "residence_room_types",
+    "residence_sections",
+    "residence_stay_feedback",
+    "residences",
+    "residences_public",
+    "reskonnect_bulk_status_audit",
+    "reskonnect_case_interactions",
+    "reskonnect_case_work_items",
+    "reskonnect_city_coverage_v",
+    "reskonnect_commercial_audit",
+    "reskonnect_commercial_billing_profiles",
+    "reskonnect_commercial_invoices",
+    "reskonnect_commercial_issuer",
+    "reskonnect_commercial_products",
+    "reskonnect_commercial_promotions",
+    "reskonnect_discovery_inventory_v",
+    "reskonnect_email_templates",
+    "reskonnect_listing_studio_drafts",
+    "reskonnect_marketplace_readiness_v",
+    "reskonnect_outbound_emails",
+    "reskonnect_portal_account_audit",
+    "reskonnect_residence_service_targets",
+    "reskonnect_service_events",
+    "reskonnect_whatsapp_handoffs",
+    "resmap_ai_usage",
+    "resmap_campuses",
+    "resmap_digital_twins",
+    "resmap_discovery_readiness",
+    "resmap_feed_events",
+    "resmap_floors",
+    "resmap_geocode_queue",
+    "resmap_group_members",
+    "resmap_map_config",
+    "resmap_navigation_events",
+    "resmap_navigation_sessions",
+    "resmap_preference_profiles",
+    "resmap_residence_media",
+    "resmap_room_holds",
+    "resmap_rooms",
+    "resmap_route_cache",
+    "resmap_search_groups",
+    "resmap_transport_routes",
+    "resmap_visual_searches",
+    "reviews",
+    "rk_brain_agents",
+    "rk_brain_config",
+    "rk_brain_conversation_state",
+    "rk_brain_feedback",
+    "rk_brain_intent_catalog",
+    "rk_brain_interactions",
+    "rk_brain_memory",
+    "rk_native_device_tokens",
+    "rk_partner_account_audit",
+    "rk_partner_decision_audit",
+    "rk_partner_profiles",
+    "rk_partner_scopes",
+    "rk_partner_staff_roles",
+    "roommate_profiles",
+    "roommate_profiles_public_v",
+    "roommates",
+    "saved_residences",
+    "seller_earnings",
+    "seller_kyc_log",
+    "seller_payouts",
+    "seo_audit_log",
+    "seo_campus_market_map",
+    "seo_crawler_registry",
+    "seo_entities",
+    "seo_entity_aliases",
+    "seo_entity_relations",
+    "seo_index_queue",
+    "seo_page_links",
+    "seo_page_metrics",
+    "seo_pages",
+    "seo_programmatic_eligibility_v",
+    "seo_public_pages_v",
+    "seo_redirects",
+    "seo_search_coverage_v",
+    "seo_search_intents",
+    "seo_site_config",
+    "seo_sources",
+    "shop_order_items",
+    "shop_orders",
+    "single_room_waitlist",
+    "site_announcements",
+    "space_reservations",
+    "staff_tasks",
+    "store_reviews",
+    "stores",
+    "student_care_placements",
+    "student_discounts",
+    "student_followup_dispatches",
+    "student_hamper_preferences",
+    "student_marks_profiles",
+    "student_opportunity_actions",
+    "student_programme_match_results",
+    "student_request_events",
+    "student_requests",
+    "student_saved_programmes",
+    "system_events",
+    "trusted_residences_safe",
+    "tvet_applications_v",
+    "updates",
+    "user_intent_profiles",
+    "user_phone_verification_attempts",
+    "user_roles",
+    "user_security_events",
+    "v_daily_operations_summary",
+    "v_onboarding_command_center",
+    "viewing_requests",
+    "virtual_tour_analytics",
+    "virtual_tour_capture_frames",
+    "virtual_tour_capture_sessions",
+    "virtual_tour_connections",
+    "virtual_tour_entitlements",
+    "virtual_tour_hotspots",
+    "virtual_tour_processing_jobs",
+    "virtual_tour_publications",
+    "virtual_tour_quality_reports",
+    "virtual_tour_release_registry",
+    "virtual_tour_release_state",
+    "virtual_tour_scene_assets",
+    "virtual_tour_scenes",
+    "virtual_tour_settings",
+    "virtual_tour_upgrade_requests",
+    "virtual_tour_versions",
+    "virtual_tours",
+    "webhook_events",
+    "whatsapp_templates",
+    "wil_admin_notes",
+    "wil_applications",
+    "wil_assignments",
+    "wil_documents"
+  ],
+  "callable_routines": [
+    {
+      "anon": false,
+      "args": [
+        "_app_id"
+      ],
+      "name": "admin_approve_recruiter_application",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_partner_slug",
+        "p_email",
+        "p_role"
+      ],
+      "name": "admin_assign_partnership_member_by_email",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_residence_ids",
+        "_mode",
+        "_audiences"
+      ],
+      "name": "admin_bulk_update_residence_audience",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_residence_id",
+        "_user_id",
+        "_email"
+      ],
+      "name": "admin_create_residence_portal",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "admin_dashboard_counts",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_academic_year",
+        "p_academic_cycle",
+        "p_academic_period",
+        "p_study_level",
+        "p_student_stage"
+      ],
+      "name": "admin_dashboard_overview",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_id"
+      ],
+      "name": "admin_delete_listing",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_account_id"
+      ],
+      "name": "admin_delete_residence_portal_account",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_days"
+      ],
+      "name": "admin_growth_command_centre",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_search"
+      ],
+      "name": "admin_list_staff_accounts",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_application_id",
+        "_status"
+      ],
+      "name": "admin_mark_referral_status",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_days"
+      ],
+      "name": "admin_partnership_command_center",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_limit"
+      ],
+      "name": "admin_recent_activity",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_app_id",
+        "_reason"
+      ],
+      "name": "admin_reject_recruiter_application",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_id",
+        "_status",
+        "_note"
+      ],
+      "name": "admin_set_application_status",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_user_id",
+        "p_departments"
+      ],
+      "name": "admin_set_department_assignments",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_residence_id",
+        "_active"
+      ],
+      "name": "admin_set_residence_portal_active",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_user_id",
+        "p_role"
+      ],
+      "name": "admin_set_staff_role",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_id",
+        "_v"
+      ],
+      "name": "admin_toggle_store_verified",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_id",
+        "p_approve"
+      ],
+      "name": "adminos_approve_corporate_affairs_draft",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_id",
+        "p_approve"
+      ],
+      "name": "adminos_approve_partnership_draft",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_id",
+        "p_approve",
+        "p_activate"
+      ],
+      "name": "adminos_approve_site_announcement",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_action_id"
+      ],
+      "name": "adminos_complete_next_best_action",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_contact_id"
+      ],
+      "name": "adminos_customer_360",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_approval_id",
+        "p_decision",
+        "p_note"
+      ],
+      "name": "adminos_decide_approval",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_text"
+      ],
+      "name": "adminos_detect_language",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_date"
+      ],
+      "name": "adminos_generate_executive_brief",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_generate_proactive_notifications",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_query",
+        "p_limit"
+      ],
+      "name": "adminos_global_search",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_gold_security_summary",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_is_staff",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_application_id"
+      ],
+      "name": "adminos_recalculate_application_health",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_thread_id",
+        "p_contact_id",
+        "p_source_message_id",
+        "p_context_key",
+        "p_satisfied",
+        "p_score",
+        "p_feedback_text",
+        "p_language_code",
+        "p_metadata"
+      ],
+      "name": "adminos_record_agent_feedback",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_thread_id",
+        "p_score",
+        "p_source_message_id",
+        "p_comment",
+        "p_language"
+      ],
+      "name": "adminos_record_csat",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_question",
+        "p_thread_id",
+        "p_contact_id",
+        "p_reason",
+        "p_category",
+        "p_metadata"
+      ],
+      "name": "adminos_record_learning_gap",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_refresh_next_best_actions",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_date"
+      ],
+      "name": "adminos_refresh_service_metrics",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_refresh_service_recovery",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_id"
+      ],
+      "name": "adminos_resolve_service_recovery",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_text"
+      ],
+      "name": "adminos_rg11_statement_risk",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_url"
+      ],
+      "name": "adminos_rg12_normalize_path",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_intent"
+      ],
+      "name": "adminos_rg6_normalize_intent",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_run_rg10_now",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_run_rg11_now",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_run_rg12_now",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_run_rg13_now",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_run_rg14_now",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_run_rg15_now",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_run_rg6_now",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_run_rg7_now",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_run_rg8_now",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "adminos_run_rg9_now",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_contact_id",
+        "p_language_code",
+        "p_source",
+        "p_confidence"
+      ],
+      "name": "adminos_set_contact_language",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_campaign_id"
+      ],
+      "name": "adminos_staff_build_landlord_campaign_recipients",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_campaign_id"
+      ],
+      "name": "adminos_staff_queue_landlord_campaign",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_thread_id",
+        "p_contact_id",
+        "p_user_id",
+        "p_intent",
+        "p_stage",
+        "p_patch"
+      ],
+      "name": "adminos_touch_whatsapp_conversion",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_session_id"
+      ],
+      "name": "attach_referral_to_user",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_creator_id",
+        "_referral_code",
+        "_session_id",
+        "_source"
+      ],
+      "name": "attribute_creator",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_partner_slug",
+        "p_session_id",
+        "p_source"
+      ],
+      "name": "attribute_partnership",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "automation_command_center",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_slug"
+      ],
+      "name": "can_access_partnership",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [],
+      "name": "can_manage_accommodation_reservations",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "can_manage_growth",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "can_manage_handover_export",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_slug"
+      ],
+      "name": "can_manage_partnership",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [],
+      "name": "can_manage_site_content",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "cancel_account_deletion_request",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_application_id",
+        "_code",
+        "_session_id"
+      ],
+      "name": "capture_application_referral",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "_code",
+        "_visitor_id",
+        "_landing_url",
+        "_user_agent"
+      ],
+      "name": "capture_referral_click",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_code"
+      ],
+      "name": "capture_referral_for_current_user",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_order_id"
+      ],
+      "name": "capture_referral_sale",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "_link_key",
+        "_visitor_id",
+        "_landing_url",
+        "_user_agent"
+      ],
+      "name": "capture_residence_referral_click",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "claim_residence_portal_account",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_student_aps",
+        "p_subjects",
+        "p_include_non_matches"
+      ],
+      "name": "course_match_tut",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_student_aps",
+        "p_subjects",
+        "p_include_non_matches"
+      ],
+      "name": "course_match_unisa",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_student_aps",
+        "p_subjects",
+        "p_include_non_matches"
+      ],
+      "name": "course_match_up",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_request_type",
+        "p_subject",
+        "p_description",
+        "p_related_entity_type",
+        "p_related_entity_id",
+        "p_source_surface"
+      ],
+      "name": "create_my_reskonnect_request",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_case_id",
+        "p_status",
+        "p_notes",
+        "p_reference"
+      ],
+      "name": "creator_update_assistance_case",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_version_id"
+      ],
+      "name": "dimpho_compile_persona",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_name"
+      ],
+      "name": "dimpho_create_dataset_release",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_user_id",
+        "p_contact_id"
+      ],
+      "name": "dimpho_customer_context_snapshot",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "dimpho_intelligence_overview",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_candidate_id"
+      ],
+      "name": "dimpho_promote_lesson",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_version_id"
+      ],
+      "name": "dimpho_publish_persona_version",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "dimpho_queue_full_reindex",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_query",
+        "p_embedding_text",
+        "p_limit",
+        "p_min_confidence"
+      ],
+      "name": "dimpho_search_knowledge",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_memory_key",
+        "p_value",
+        "p_confidence",
+        "p_source",
+        "p_source_ref",
+        "p_expires_at"
+      ],
+      "name": "dimpho_upsert_safe_memory",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "app_id"
+      ],
+      "name": "generate_ref_code",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "_slug"
+      ],
+      "name": "get_creator_public",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "get_my_access_context",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "get_my_admin_departments",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_slug"
+      ],
+      "name": "get_my_partnership_role",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "get_my_role",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "get_or_create_referral_code",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_residence_id"
+      ],
+      "name": "get_public_accreditation_residences",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_user_ids"
+      ],
+      "name": "get_push_targets",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "_code"
+      ],
+      "name": "get_referral_public",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_residence_id"
+      ],
+      "name": "get_residence_demand_summary",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id",
+        "p_year"
+      ],
+      "name": "get_residence_portal_reservations",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [],
+      "name": "get_residence_poster_marketing_config",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "get_student_activity",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "get_user_residence_id",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_user_id"
+      ],
+      "name": "get_user_staff_role",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_email",
+        "_role"
+      ],
+      "name": "grant_specialist_role",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_application_ids",
+        "_funding_type"
+      ],
+      "name": "handover_bulk_set_funding",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_application_id"
+      ],
+      "name": "handover_get_record",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_residence_id",
+        "_mode"
+      ],
+      "name": "handover_integrity_scan",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "handover_quarantine_summary",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_application_id"
+      ],
+      "name": "handover_release_quarantine",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_residence_id"
+      ],
+      "name": "handover_safe_auto_repair",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_application_id",
+        "_patch"
+      ],
+      "name": "handover_update_record",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_department_key"
+      ],
+      "name": "has_admin_department_access",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "_user_id",
+        "_role"
+      ],
+      "name": "has_role",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "user_id"
+      ],
+      "name": "is_admin",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "_application_id",
+        "_user_id"
+      ],
+      "name": "is_application_owner",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "target_residence_id"
+      ],
+      "name": "is_authorized_residence_user",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "is_platform_staff",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "_user_id"
+      ],
+      "name": "is_reskonnect_admin",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_academic_year",
+        "p_days"
+      ],
+      "name": "luna_academic_demand_heat",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_academic_year"
+      ],
+      "name": "luna_academic_supply_live",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_visitor_hash",
+        "p_session_id",
+        "p_landing_path",
+        "p_campaign_code",
+        "p_utm_source",
+        "p_utm_medium",
+        "p_utm_campaign",
+        "p_utm_content",
+        "p_utm_term",
+        "p_referrer_host"
+      ],
+      "name": "luna_capture_attribution",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "luna_growth_overview",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_brand_id",
+        "p_network",
+        "p_period_start",
+        "p_period_end",
+        "p_metrics",
+        "p_top_content",
+        "p_best_times",
+        "p_source",
+        "p_metadata"
+      ],
+      "name": "luna_import_social_demand",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_event_type",
+        "p_visitor_hash",
+        "p_session_id",
+        "p_payload"
+      ],
+      "name": "luna_log_demand_event",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_social_post_id",
+        "p_external_url",
+        "p_external_post_id",
+        "p_published_at"
+      ],
+      "name": "luna_mark_social_post_published",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "luna_social_demand_overview",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_demand_id"
+      ],
+      "name": "match_accommodation_demand",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "my_reskonnect_command_centre",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "my_reskonnect_service_centre",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "_code"
+      ],
+      "name": "normalize_referral_code",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_residence_id",
+        "_mode"
+      ],
+      "name": "prepare_handover_export",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_event_type",
+        "p_platform",
+        "p_release",
+        "p_version_code",
+        "p_stage",
+        "p_message",
+        "p_metadata"
+      ],
+      "name": "record_mobile_runtime_event",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_tour_id",
+        "p_scene_id",
+        "p_event_type",
+        "p_viewer_session",
+        "p_anonymous_id",
+        "p_metadata"
+      ],
+      "name": "record_virtual_tour_event",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id"
+      ],
+      "name": "recruiter_select_residence",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_reason"
+      ],
+      "name": "request_account_deletion",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id",
+        "p_enabled",
+        "p_message"
+      ],
+      "name": "residence_portal_set_recruitment",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_lead_id",
+        "p_patch"
+      ],
+      "name": "residence_portal_update_lead",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id",
+        "p_patch"
+      ],
+      "name": "residence_portal_update_profile",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_reservation_id",
+        "p_status",
+        "p_note"
+      ],
+      "name": "residence_portal_update_reservation",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id",
+        "p_days"
+      ],
+      "name": "residence_recruitment_summary",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_reservation_id"
+      ],
+      "name": "reskonnect_confirm_verified_room",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_reservation_id",
+        "p_room_id"
+      ],
+      "name": "reskonnect_hold_verified_room",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id",
+        "p_product_code",
+        "p_quantity",
+        "p_due_date"
+      ],
+      "name": "reskonnect_issue_invoice",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p",
+        "rid"
+      ],
+      "name": "reskonnect_listing_submit_errors",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_query",
+        "p_type",
+        "p_limit"
+      ],
+      "name": "reskonnect_opportunity_feed",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_viewing_id",
+        "p_status",
+        "p_confirmed_at"
+      ],
+      "name": "reskonnect_progress_viewing",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_placement"
+      ],
+      "name": "reskonnect_public_sponsored_residences",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_invoice_id",
+        "p_action",
+        "p_bank_reference",
+        "p_reconciliation_note",
+        "p_verified_from_bank"
+      ],
+      "name": "reskonnect_reconcile_invoice",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_kind",
+        "p_id",
+        "p_action",
+        "p_channel",
+        "p_note",
+        "p_followup_at",
+        "p_confirm_sent"
+      ],
+      "name": "reskonnect_record_case_action",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_reservation_id"
+      ],
+      "name": "reskonnect_release_verified_room_hold",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id",
+        "p_date",
+        "p_window",
+        "p_note",
+        "p_consent"
+      ],
+      "name": "reskonnect_request_property_viewing",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id",
+        "p_approve",
+        "p_note"
+      ],
+      "name": "reskonnect_review_listing",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id",
+        "p_funding_type",
+        "p_room_preference",
+        "p_notes"
+      ],
+      "name": "reskonnect_save_reservation_interest",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_invoice_id",
+        "p_reference"
+      ],
+      "name": "reskonnect_submit_invoice_payment_reference",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_viewing_id"
+      ],
+      "name": "reskonnect_viewing_summary",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_campus",
+        "p_address"
+      ],
+      "name": "resmap_canonical_city_for_campus",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_campus",
+        "p_address"
+      ],
+      "name": "resmap_canonical_province_for_campus",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p"
+      ],
+      "name": "resmap_clean_address_text",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_room_id",
+        "p_academic_year",
+        "p_funding_type"
+      ],
+      "name": "resmap_hold_room",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_invite_code"
+      ],
+      "name": "resmap_join_group",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_residence_id",
+        "p_event_type",
+        "p_visitor_hash",
+        "p_metadata"
+      ],
+      "name": "resmap_log_feed_event",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_lat",
+        "p_lng",
+        "p_radius_m",
+        "p_limit"
+      ],
+      "name": "resmap_nearby_residences",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_email",
+        "_role"
+      ],
+      "name": "revoke_specialist_role",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_profile_id",
+        "p_kind",
+        "p_value",
+        "p_state"
+      ],
+      "name": "rk_admin_assign_partner_scope",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_kind",
+        "p_user_id",
+        "p_status"
+      ],
+      "name": "rk_admin_review_partner_account",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_user_id",
+        "p_kind",
+        "p_enabled"
+      ],
+      "name": "rk_admin_set_partner_staff_role",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "rk_brain_overview",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_case_id",
+        "p_manage"
+      ],
+      "name": "rk_can_access_assistance",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_name"
+      ],
+      "name": "rk_can_write_assistance_file",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_offset",
+        "p_limit"
+      ],
+      "name": "rk_export_contacts",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_device_id"
+      ],
+      "name": "rk_issue_background_notification_token",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_request"
+      ],
+      "name": "rk_join_single_room_waitlist",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "rk_my_security_status",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_phone"
+      ],
+      "name": "rk_normalize_phone",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_value"
+      ],
+      "name": "rk_normalize_za_phone",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_kind"
+      ],
+      "name": "rk_partner_staff",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_profile_id"
+      ],
+      "name": "rk_partner_verified_analytics",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_persona",
+        "p_need"
+      ],
+      "name": "rk_priority_for_onboarding",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_token",
+        "p_platform"
+      ],
+      "name": "rk_register_native_push_token",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_profile_id"
+      ],
+      "name": "rk_request_bio_review",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_profile_id",
+        "p_kind",
+        "p_value"
+      ],
+      "name": "rk_request_partner_scope",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_profile_id",
+        "p_status",
+        "p_bio_review",
+        "p_bio_expiry"
+      ],
+      "name": "rk_review_partner",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_scope_id",
+        "p_state"
+      ],
+      "name": "rk_review_partner_scope",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_device_id"
+      ],
+      "name": "rk_revoke_background_notification_token",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_kind",
+        "p_slug",
+        "p_name",
+        "p_bio",
+        "p_campus",
+        "p_tiktok_url"
+      ],
+      "name": "rk_save_partner_profile",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_email_verified_at",
+        "p_phone_verified_at",
+        "p_is_privileged"
+      ],
+      "name": "rk_security_level",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_year"
+      ],
+      "name": "rk_single_room_waitlist_count",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_campaign_id",
+        "p_feedback"
+      ],
+      "name": "rk_submit_residence_feedback",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_token"
+      ],
+      "name": "rk_unregister_native_push_token",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_id"
+      ],
+      "name": "rk_withdraw_single_room",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_student_aps",
+        "p_subjects",
+        "p_full_name"
+      ],
+      "name": "save_tut_course_match",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_student_aps",
+        "p_subjects",
+        "p_full_name"
+      ],
+      "name": "save_unisa_course_match",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_student_aps",
+        "p_subjects",
+        "p_full_name"
+      ],
+      "name": "save_up_course_match",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "seo_command_center_summary",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_source_type",
+        "p_source_id",
+        "p_action"
+      ],
+      "name": "set_student_opportunity_action",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "payload"
+      ],
+      "name": "submit_recruiter_application",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_days"
+      ],
+      "name": "tumelo_intelligence_summary",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "_code",
+        "_store_id",
+        "_order_total"
+      ],
+      "name": "validate_discount_code",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "_residence_id"
+      ],
+      "name": "validate_handover_pack",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id",
+        "p_plan"
+      ],
+      "name": "virtual_tour_admin_set_entitlement",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "virtual_tour_admin_summary",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id"
+      ],
+      "name": "virtual_tour_can_manage",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id"
+      ],
+      "name": "virtual_tour_can_manage_residence",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_scope"
+      ],
+      "name": "virtual_tour_can_manage_storage_scope",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_tour_id"
+      ],
+      "name": "virtual_tour_can_manage_tour",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_residence_id"
+      ],
+      "name": "virtual_tour_can_view_studio",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [],
+      "name": "virtual_tour_is_admin",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_residence_ids"
+      ],
+      "name": "virtual_tour_marketplace_index",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
+        "p_public_token"
+      ],
+      "name": "virtual_tour_public_snapshot",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_tour_id"
+      ],
+      "name": "virtual_tour_publish_readiness",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_tour_id",
+        "p_published_by"
+      ],
+      "name": "virtual_tour_publish_snapshot",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_scene_id",
+        "p_metrics",
+        "p_privacy_issues"
+      ],
+      "name": "virtual_tour_scene_quality_upsert",
+      "authenticated": true
+    }
+  ],
+  "storage_buckets": [
+    "admin-images",
+    "adminos-company-documents",
+    "adminos-whatsapp-media",
+    "application-documents",
+    "bursary-images",
+    "campaign-assets",
+    "complaint-attachments",
+    "dimpho-model-artifacts",
+    "documents",
+    "hamper-images",
+    "landlord-documents",
+    "marketplace",
+    "partnership-resources",
+    "payment-proofs",
+    "product-images",
+    "profile-pictures",
+    "property-compliance-evidence",
+    "residence-assets",
+    "seller-kyc",
+    "store-assets",
+    "store-banners",
+    "tour-capture-private",
+    "tour-delivery-public",
+    "tour-masters-private",
+    "tour-thumbnails-public",
+    "user-documents",
+    "user-profiles",
+    "wil-documents"
+  ],
+  "edge_functions": [
+    {
+      "slug": "admin-residence-portal-accounts",
+      "version": 3,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-agent",
+      "version": 14,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-email-agent",
+      "version": 9,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-enquiry",
+      "version": 8,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-escalation-worker",
+      "version": 4,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-executive",
+      "version": 7,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-followup-autopilot",
+      "version": 9,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-paperwork",
+      "version": 7,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-sales",
+      "version": 7,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-twilio-bootstrap",
+      "version": 7,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-twilio-diagnostics",
+      "version": 8,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-twilio-one-shot",
+      "version": 8,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-twilio-profile-once",
+      "version": 5,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-twilio-replay",
+      "version": 4,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-twilio-sync-once",
+      "version": 4,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-voice",
+      "version": 7,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-voice-webhook",
+      "version": 8,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-whatsapp",
+      "version": 8,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-whatsapp-desk",
+      "version": 6,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-whatsapp-event-worker",
+      "version": 9,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-whatsapp-media-worker",
+      "version": 3,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-whatsapp-rich-bootstrap",
+      "version": 4,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "adminos-whatsapp-webhook",
+      "version": 18,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "create-payment",
+      "version": 10,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "create-residence-portal-user",
+      "version": 11,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "dimpho-eval-trigger-once",
+      "version": 5,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "dimpho-eval-worker",
+      "version": 4,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "dimpho-intelligence-worker",
+      "version": 3,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "dimpho-model-ops",
+      "version": 3,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "dimpho-tool-engine",
+      "version": 12,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "download-handover-pack",
+      "version": 7,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "generate-booking-slip",
+      "version": 10,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "gmail-callback",
+      "version": 3,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "gmail-connect",
+      "version": 2,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "gmail-send",
+      "version": 1,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "housing-intelligence",
+      "version": 3,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "identity-sync",
+      "version": 2,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "luna-agent",
+      "version": 6,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "luna-orchestrator",
+      "version": 8,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "meta-residence-feed",
+      "version": 2,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "mobile-runtime-report",
+      "version": 2,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "native-notification-poll",
+      "version": 2,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "NoopCheck",
+      "version": 3,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "phone-whatsapp-verification",
+      "version": 4,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "push-subscription",
+      "version": 3,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "quick-service",
+      "version": 12,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "referral-capture",
+      "version": 11,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "resbot-ai",
+      "version": 10,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "reskonnect-brain",
+      "version": 9,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "reskonnect-email",
+      "version": 2,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "reskonnect-email-dock",
+      "version": 12,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "resmap-geocode-worker",
+      "version": 4,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "resmap-spatial",
+      "version": 4,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "resmap-visual-search",
+      "version": 3,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "send-push",
+      "version": 12,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "seo-indexnow",
+      "version": 7,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "seo-indexnow-processor",
+      "version": 8,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "seo-indexnow-worker",
+      "version": 3,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "seo-search-console-sync",
+      "version": 4,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "vapid-public-key",
+      "version": 12,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "virtual-tour-processor",
+      "version": 4,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "yoco-verify-payment",
+      "version": 12,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "yoco-webhook",
+      "version": 11,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    }
+  ]
+}
