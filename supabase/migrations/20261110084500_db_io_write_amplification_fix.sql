@@ -23,7 +23,7 @@ begin
   insert into public.adminos_automation_events(event_type,entity_type,entity_id,contact_id,payload,correlation_id)
   values(case when tg_op='INSERT' then 'prospect.created' else 'prospect.updated' end,'prospect',new.id,new.contact_id,jsonb_build_object('pipeline',new.pipeline,'stage',new.stage,'score',new.score,'priority',new.priority),'prospect:'||new.id::text);
   return new;
-end; $function$
+end; $function$;
 
 
 CREATE OR REPLACE FUNCTION public.adminos_rg8_refresh_occupancy_year(p_academic_year integer)
@@ -298,7 +298,7 @@ begin
 
   return affected;
 end;
-$function$
+$function$;
 
 
 -- Load-shed noncritical *batch* jobs. Interactive application and Auth
