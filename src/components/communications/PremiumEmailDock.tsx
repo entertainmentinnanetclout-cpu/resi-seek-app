@@ -399,8 +399,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     <div className="flex items-center gap-3">
      <div className="rounded-xl bg-blue-600 p-2.5"><MailCheck className="h-6 w-6"/></div>
      <div><p className="text-xs font-bold uppercase tracking-[.19em] text-amber-300">ResKonnect Communications OS</p>
-       <h2 className="text-xl font-black">Premium Communications Dock</h2>
-       <p className="text-xs text-slate-300">Case intelligence · branded PDF letters · Gmail operations</p></div>
+       <h2 className="text-xl font-black">Student communications</h2>
+       <p className="text-xs text-slate-300">Manage applications, reservations and next steps</p></div>
     </div>
     <div className="flex items-center gap-2">
      <Badge className="border-white/20 bg-white/10 text-white">{connection?.connected?"Gmail connected":"Gmail not connected"}</Badge>
@@ -413,22 +413,83 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     <p>{connection?.connected?"Authorized sender: "+connection.email:(connectedError||"Connect your own residence email above to send from that mailbox")}</p>
     <p className="flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5"/>Server-verified recipients · PDF attached per email</p>
    </div>
-   {mode==="landlord"&&<div className="border-b bg-[#f8fafc] p-4 sm:p-5">
+   {mode==="landlord"&&<details className="border-b bg-muted/25 px-5 py-2"><summary className="cursor-pointer text-xs font-semibold text-primary">Gmail setup guide</summary><div className="pt-3">
      <LandlordGmailGuide connected={!!connection?.connected} email={connection?.email||null} busy={!!busy}
        onConnect={()=>void connectionAction("connect")} onRefresh={()=>void loadConnection()}/>
-    </div>}
-    <ContactActivityDashboard mode={mode} invoke={premium} refreshKey={activityRevision}
+    </div></details>}
+    <nav className="sticky top-0 z-20 border-b bg-background/95 px-4 py-3 shadow-sm backdrop-blur sm:px-5" aria-label="Communications workspace">
+     <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap gap-1.5">
+       {(Object.keys(kindLabels) as Kind[]).filter(k=>mode==="admin"||k!=="support_enquiry").map(k=>
+        <Button key={k} type="button" size="sm" className="h-9 rounded-lg px-3 text-xs"
+         variant={workspace==="cases"&&kind===k?"default":"ghost"}
+         aria-current={workspace==="cases"&&kind===k?"page":undefined}
+         onClick={()=>{if(kind!==k||workspace!=="cases")selectKind(k);}}>{kindLabels[k]}</Button>)}
+      </div>
+      <Button type="button" size="sm" className="h-9 gap-1.5 rounded-lg" variant={workspace==="activity"?"default":"outline"}
+       onClick={()=>{setWorkspace("activity");const next=new URLSearchParams(params);next.set("view","activity");setParams(next,{replace:true});}}>
+       <Users className="h-4 w-4"/>Contact activity
+      </Button>
+     </div>
+     {workspace==="cases"&&<>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+       <div className="relative min-w-[190px] flex-1">
+        <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"/>
+        <Input value={search} onChange={e=>setSearch(e.target.value)} aria-label="Find student or reservation"
+         placeholder="Search student, residence, reference…" className="h-9 rounded-lg pl-9"/>
+       </div>
+       {(kind==="application"||kind==="reservation")&&
+        <Select value={academicYear} onValueChange={v=>{setAcademicYear(v);setSelected("");setChecked(new Set());resetPreview();}}>
+         <SelectTrigger className="h-9 w-[122px] rounded-lg" aria-label="Academic year"><SelectValue/></SelectTrigger>
+         <SelectContent><SelectItem value="2026">2026</SelectItem><SelectItem value="2027">2027</SelectItem></SelectContent>
+        </Select>}
+       <Select value={sortBy} onValueChange={v=>setSortBy(v as typeof sortBy)}>
+        <SelectTrigger className="h-9 w-[154px] rounded-lg" aria-label="Sort student cases"><ArrowUpDown className="mr-1 h-3.5 w-3.5"/><SelectValue/></SelectTrigger>
+        <SelectContent><SelectItem value="needs_action">Needs action first</SelectItem><SelectItem value="newest">Newest first</SelectItem><SelectItem value="oldest">Oldest first</SelectItem></SelectContent>
+       </Select>
+       <Button type="button" size="sm" variant={advancedFilters?"secondary":"outline"} className="h-9 gap-1.5" onClick={()=>setAdvancedFilters(v=>!v)}>
+        <SlidersHorizontal className="h-3.5 w-3.5"/>More filters
+       </Button>
+      </div>
+      <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filter by student progress">
+       {([
+        ["all","All cases",totalCases],["uploaded","Docs uploaded",queueStats.uploaded],
+        ["missing","Missing docs",queueStats.missing],["received","Ready to review",queueStats.review],
+        ["not_contacted","No email yet",queueStats.unemailed],["followup_due","Follow-up due",queueStats.followup]
+       ] as const).map(([key,label,count])=><Button key={key} type="button" size="sm" variant={filter===key?"default":"outline"}
+         className="h-8 shrink-0 gap-1.5 rounded-full px-3 text-xs" onClick={()=>setFilter(key)}>
+         {label}<span className="text-[11px] opacity-70">{count}</span></Button>)}
+      </div>
+      {advancedFilters&&<div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border bg-muted/30 p-3">
+       <span className="text-xs font-semibold text-muted-foreground">More ways to filter</span>
+       <Select value={filter} onValueChange={v=>setFilter(v as typeof filter)}>
+        <SelectTrigger className="h-9 w-full max-w-[280px] bg-background" aria-label="Detailed workflow filter"><SelectValue/></SelectTrigger>
+        <SelectContent>
+         <SelectItem value="all">All cases</SelectItem><SelectItem value="uploaded">Any documents uploaded</SelectItem>
+         <SelectItem value="no_uploads">No documents uploaded</SelectItem><SelectItem value="missing">Missing required documents</SelectItem>
+         <SelectItem value="received">Documents awaiting review</SelectItem><SelectItem value="decision">Decisions and confirmations</SelectItem>
+         <SelectItem value="not_contacted">No email sent yet</SelectItem><SelectItem value="followup_due">Follow-up due</SelectItem>
+         <SelectItem value="student_acted">Student uploaded after email</SelectItem><SelectItem value="awaiting_review">Awaiting verification</SelectItem>
+         <SelectItem value="decision_changed">Status changed since email</SelectItem><SelectItem value="approved">Approved / confirmed</SelectItem>
+         <SelectItem value="rejected">Rejected</SelectItem>
+        </SelectContent>
+       </Select>
+       <Button variant="ghost" size="sm" onClick={()=>{setFilter("all");setSearch("");}}>Clear filters</Button>
+      </div>}
+      <p className="mt-1 text-[11px] text-muted-foreground">
+       {items.length} of {totalCases} cases loaded · filters and counts use loaded records
+       {nextOffset!==null&&<span> · <button type="button" className="font-semibold text-primary underline underline-offset-2" disabled={loadingMore}
+        onClick={()=>void loadRemaining(true)}>Load all for complete filtering</button></span>}
+      </p>
+     </>}
+    </nav>
+    {workspace==="activity"?<ContactActivityDashboard mode={mode} invoke={premium} refreshKey={activityRevision}
      onOpenCase={(targetKind,id)=>{
-      setKind(targetKind);
-      setSelected(id);
-      setPane("compose");
-      resetPreview();
-      setChecked(new Set());
-      const next=new URLSearchParams(params);
-      next.set("kind",targetKind);next.set("target",id);
-      setParams(next,{replace:true});
-     }}/>
-    <div className="grid min-h-[640px] grid-cols-1 divide-y xl:grid-cols-[310px_minmax(330px,1fr)_minmax(360px,1.13fr)] xl:divide-x xl:divide-y-0">
+      deepLinkedIdRef.current=id;setWorkspace("cases");setKind(targetKind);setSelected(id);setPane("compose");resetPreview();setChecked(new Set());
+      const next=new URLSearchParams(params);next.delete("view");next.set("kind",targetKind);next.set("target",id);setParams(next,{replace:true});
+     }}/>:
+    <>
+    <div className="grid min-w-0 grid-cols-1 divide-y lg:grid-cols-[minmax(285px,0.82fr)_minmax(0,1.9fr)] lg:divide-x lg:divide-y-0">
     {/* Inbox / queue */}
     <aside className="flex min-w-0 flex-col">
      <div className="space-y-3 border-b p-4">
@@ -629,6 +690,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
      </Tabs>
     </section>
    </div>
+   </>}
   </div>
   <div className="flex items-start gap-2 text-xs text-muted-foreground">
    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0"/>
