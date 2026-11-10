@@ -1,30 +1,37 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// v2.0.1 - Supabase Edge Function: generate-booking-slip
+// Notes:
+// - Uses Deno.serve (built-in) instead of importing serve from std
+// - Uses npm:@supabase/supabase-js with pinned version per best practices
+// - Reads EXTERNAL_* secrets via Supabase-provided env support
+// - Handles CORS preflight and errors consistently
+// - Avoids atob/btoa cross-runtime issues by using Buffer from node:buffer
 
-const VERSION = "v2.0.0-external";
+import { createClient } from "npm:@supabase/supabase-js@2.45.4";
+import { Buffer } from "node:buffer";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const VERSION = "v2.0.1";
+
+const corsHeaders: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Simple QR Code generator using text-based SVG
+// Simple QR Code-like SVG generator (visual placeholder, not a spec-compliant QR)
 function generateQRCodeSVG(data: string): string {
-  // Create a simple visual representation for the reference code
   const size = 100;
-  const chars = data.split('');
+  const chars = data.split("");
   const gridSize = Math.ceil(Math.sqrt(chars.length));
   const cellSize = size / gridSize;
-  
-  let rects = '';
+
+  let rects = "";
   chars.forEach((char, i) => {
     const x = (i % gridSize) * cellSize;
     const y = Math.floor(i / gridSize) * cellSize;
     const charCode = char.charCodeAt(0);
-    const fill = charCode % 2 === 0 ? '#000' : '#fff';
+    const fill = charCode % 2 === 0 ? "#000" : "#fff";
     rects += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${fill}" />`;
   });
-  
+
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
     <rect width="${size}" height="${size}" fill="#fff"/>
     ${rects}
@@ -33,119 +40,121 @@ function generateQRCodeSVG(data: string): string {
 }
 
 function generateRefCode(appId: string): string {
-  return appId.replace(/-/g, '').substring(0, 8).toUpperCase();
+  return appId.replace(/-/g, "").substring(0, 8).toUpperCase();
 }
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-ZA', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  return date.toLocaleDateString("en-ZA", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 function formatCurrency(amount: number): string {
-  return `R${amount.toLocaleString('en-ZA')}`;
+  return `R${amount.toLocaleString("en-ZA")}`;
 }
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
   console.log(`[${VERSION}] generate-booking-slip request`);
-  
-  if (req.method === 'OPTIONS') {
+
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Use EXTERNAL Supabase credentials
-    const supabaseUrl = Deno.env.get('EXTERNAL_SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_ROLE_KEY');
-    const supabaseAnonKey = Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY');
+    const supabaseUrl = Deno.env.get("EXTERNAL_SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseAnonKey = Deno.env.get("EXTERNAL_SUPABASE_ANON_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
-      console.error(`[${VERSION}] Missing external Supabase credentials`);
+      console.error(`[${VERSION}] Missing EXTERNAL_* Supabase credentials`);
       return new Response(
-        JSON.stringify({ error: 'Server configuration error', _version: VERSION }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Server configuration error", _version: VERSION }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const authHeader = req.headers.get('Authorization');
+    const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Missing authorization header', _version: VERSION }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Missing authorization header", _version: VERSION }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
+      global: { headers: { Authorization: authHeader } },
     });
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseUser.auth.getUser();
     if (userError || !user) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized', _version: VERSION }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Unauthorized", _version: VERSION }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const { application_id } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const application_id: string | undefined = body?.application_id;
     if (!application_id) {
       return new Response(
-        JSON.stringify({ error: 'Missing application_id', _version: VERSION }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Missing application_id", _version: VERSION }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Fetch application with residence data
+    // Fetch application with residence relation
     const { data: application, error: appError } = await supabaseAdmin
-      .from('applications')
-      .select('*, residence:residences(*)')
-      .eq('id', application_id)
+      .from("applications")
+      .select("*, residence:residences(*)")
+      .eq("id", application_id)
       .single();
 
     if (appError || !application) {
       return new Response(
-        JSON.stringify({ error: 'Application not found', _version: VERSION }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Application not found", _version: VERSION }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Verify ownership (user must own this application)
+    // Ownership or admin check
     if (application.user_id !== user.id) {
-      // Check if admin
-      const { data: isAdmin } = await supabaseAdmin
-        .rpc('has_role', { _user_id: user.id, _role: 'admin' });
-      
-      if (!isAdmin) {
+      const { data: isAdmin, error: roleErr } = await supabaseAdmin.rpc("has_role", {
+        _user_id: user.id,
+        _role: "admin",
+      });
+
+      if (roleErr || !isAdmin) {
         return new Response(
-          JSON.stringify({ error: 'Not authorized to access this application', _version: VERSION }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: "Not authorized to access this application", _version: VERSION }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
     }
 
-    // Fetch student profile
+    // Fetch profile (best-effort)
     const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('*')
-      .eq('id', application.user_id)
+      .from("profiles")
+      .select("*")
+      .eq("id", application.user_id)
       .single();
 
     const refCode = generateRefCode(application.id);
     const qrSvg = generateQRCodeSVG(refCode);
-    const qrBase64 = btoa(qrSvg);
+    const qrBase64 = Buffer.from(qrSvg, "utf8").toString("base64");
 
-    // Generate HTML for the booking slip
-    const html = `
-<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Booking Slip - ${refCode}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -159,7 +168,6 @@ serve(async (req) => {
     .section { margin-bottom: 20px; }
     .section-title { font-size: 12px; text-transform: uppercase; color: #666; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600; }
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .info-item { }
     .info-label { font-size: 11px; color: #888; text-transform: uppercase; }
     .info-value { font-size: 15px; font-weight: 500; color: #333; margin-top: 2px; }
     .residence-card { background: #f8f9fa; border-radius: 8px; padding: 16px; border-left: 4px solid #3b82f6; }
@@ -184,26 +192,26 @@ serve(async (req) => {
       <p>Student Accommodation Platform</p>
       <span class="badge">Application Booking Slip</span>
     </div>
-    
+
     <div class="content">
       <div class="section">
         <div class="section-title">Student Information</div>
         <div class="info-grid">
-          <div class="info-item">
+          <div>
             <div class="info-label">Full Name</div>
-            <div class="info-value">${profile?.full_name || 'N/A'}</div>
+            <div class="info-value">${profile?.full_name ?? "N/A"}</div>
           </div>
-          <div class="info-item">
+          <div>
             <div class="info-label">Student Number</div>
-            <div class="info-value">${profile?.student_number || 'N/A'}</div>
+            <div class="info-value">${profile?.student_number ?? "N/A"}</div>
           </div>
-          <div class="info-item">
+          <div>
             <div class="info-label">Email</div>
-            <div class="info-value">${profile?.email || 'N/A'}</div>
+            <div class="info-value">${profile?.email ?? "N/A"}</div>
           </div>
-          <div class="info-item">
+          <div>
             <div class="info-label">Phone</div>
-            <div class="info-value">${profile?.phone || 'N/A'}</div>
+            <div class="info-value">${profile?.phone ?? "N/A"}</div>
           </div>
         </div>
       </div>
@@ -211,15 +219,15 @@ serve(async (req) => {
       <div class="section">
         <div class="section-title">Accommodation Details</div>
         <div class="residence-card">
-          <div class="residence-name">${application.residence?.name || 'Unknown Residence'}</div>
-          <div class="residence-address">${application.residence?.address || ''}</div>
+          <div class="residence-name">${application.residence?.name ?? "Unknown Residence"}</div>
+          <div class="residence-address">${application.residence?.address ?? ""}</div>
           <div class="residence-details">
-            <span class="detail-badge">${application.residence?.room_type || 'Standard'}</span>
-            <span class="detail-badge">${application.residence?.campus || 'TUT'}</span>
+            <span class="detail-badge">${application.residence?.room_type ?? "Standard"}</span>
+            <span class="detail-badge">${application.residence?.campus ?? "TUT"}</span>
           </div>
           <div style="margin-top: 16px;">
             <div class="info-label">Monthly Rent</div>
-            <div class="price-highlight">${formatCurrency(application.residence?.price || 0)}</div>
+            <div class="price-highlight">${formatCurrency(application.residence?.price ?? 0)}</div>
           </div>
         </div>
       </div>
@@ -227,13 +235,13 @@ serve(async (req) => {
       <div class="section">
         <div class="section-title">Application Details</div>
         <div class="info-grid">
-          <div class="info-item">
+          <div>
             <div class="info-label">Applied On</div>
             <div class="info-value">${formatDate(application.application_date)}</div>
           </div>
-          <div class="info-item">
+          <div>
             <div class="info-label">Status</div>
-            <div class="info-value" style="text-transform: capitalize;">${application.status.replace(/_/g, ' ')}</div>
+            <div class="info-value" style="text-transform: capitalize;">${String(application.status).replace(/_/g, " ")}</div>
           </div>
         </div>
       </div>
@@ -248,36 +256,34 @@ serve(async (req) => {
       </div>
 
       <div class="disclaimer">
-        <strong>⚠️ Important:</strong> This slip confirms your application was submitted to ResKonnect. 
+        <strong>Important:</strong> This slip confirms your application was submitted to ResKonnect.
         It does not guarantee accommodation. Final approval is subject to verification and availability.
       </div>
     </div>
 
     <div class="footer">
       <p>ResKonnect • South Africa's Premier Student Accommodation Platform</p>
-      <p style="margin-top: 4px;">Generated on ${new Date().toLocaleDateString('en-ZA')} • reskonnect@gmail.com</p>
+      <p style="margin-top: 4px;">Generated on ${new Date().toLocaleDateString("en-ZA")} • support@reskonnect.co.za</p>
     </div>
   </div>
 </body>
-</html>
-`;
+</html>`;
 
     console.log(`[${VERSION}] Booking slip generated for ${application.id}`);
 
     return new Response(html, {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'text/html',
-        'Content-Disposition': `attachment; filename="BookingSlip_${refCode}.html"`
-      }
+        "Content-Type": "text/html",
+        "Content-Disposition": `attachment; filename="BookingSlip_${refCode}.html"`,
+      },
     });
-
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
-    console.error(`[${VERSION}] Error:`, errorMessage);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Internal Server Error";
+    console.error(`[${VERSION}] Error:`, message);
     return new Response(
-      JSON.stringify({ error: errorMessage, _version: VERSION }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: message, _version: VERSION }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
