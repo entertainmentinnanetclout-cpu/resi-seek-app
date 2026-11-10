@@ -31,7 +31,7 @@ export async function loadCaseDocuments(s:EmailSession,kind:Kind,id:string){
   ...(global.data||[]).map((r:any)=>({
    id:r.id,source:"global" as Source,type:small(r.document_type,70),name:small(r.file_name||r.document_type,160),
    status:small(r.status||"pending",32),uploaded_at:r.uploaded_at||null,verified_at:r.verified_at||null,
-   path:String(r.file_path||""),owner_id:String(r.user_id),rejection_reason:small(r.admin_notes,240)||null
+   path:String(r.file_path||""),owner_id:String(r.user_id),rejection_reason:null
   })),
   ...(application.data||[]).map((r:any)=>({
    id:r.id,source:"application" as Source,type:small(r.doc_type,70),name:small(r.original_filename||r.doc_type,160),
@@ -41,7 +41,8 @@ export async function loadCaseDocuments(s:EmailSession,kind:Kind,id:string){
  ];
  // A global document path is user-prefixed in the private bucket. Never allow the client to
  // choose a storage object or use an untrusted URL as a path.
- const permittedDocs=docs.filter(d=>d.source!=="global"||d.path.startsWith(c.userId+"/"));
+ const permittedDocs=docs.filter(d=>d.path.startsWith(c.userId+"/")&&
+  !d.path.includes("..")&&!/^https?:/i.test(d.path));
  const signature=await hash({
   case_id:c.id,status:c.status,funding:c.fundingType,
   docs:permittedDocs.map(d=>({source:d.source,id:d.id,type:d.type,status:d.status,
@@ -71,7 +72,7 @@ export async function documentPreview(s:EmailSession,kind:Kind,id:string,source:
  const bucket=d.source==="global"?"documents":"application-documents";
  const {data,error}=await s.db.storage.from(bucket).createSignedUrl(d.path,90);
  if(error||!data?.signedUrl)throw Error("A private document preview could not be generated");
- const ext=d.name.toLowerCase().split(".").pop()||d.path.toLowerCase().split(".").pop();
+ const ext=d.path.toLowerCase().split(".").pop()||d.name.toLowerCase().split(".").pop();
  const media=ext==="pdf"?"pdf":["png","jpg","jpeg","webp"].includes(ext||"")?"image":"download";
  return {id:d.id,source:d.source,name:d.name,url:data.signedUrl,media,expires_in_seconds:90};
 }
