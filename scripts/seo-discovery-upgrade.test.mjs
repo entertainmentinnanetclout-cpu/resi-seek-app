@@ -41,7 +41,8 @@ test("No fabricated price, first-place rank, NSFAS accreditation or no-top-up pr
  assert.ok(!noTopUp.listings,"unverified no-top-up inventory must not be advertised");
  assert.match(cards,/\.eq\("is_visible", true\)/);
  assert.match(cards,/\.eq\("city", query.city\)/);
- assert.match(cards,/monthly > 0/);
+ assert.match(cards,/monthly !== null && monthly >=/);
+ assert.match(cards,/publicPrivateMonthlyRent/);
  assert.match(cards,/query.singlesOnly/);
  assert.match(filters,/searchParams\.get\("minPrice"\)/);
  assert.match(filters,/searchParams\.get\("maxPrice"\)/);
