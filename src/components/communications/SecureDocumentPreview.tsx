@@ -1,5 +1,5 @@
 import {useEffect,useState} from "react";
-import {AlertTriangle,ExternalLink,FileText,Image as ImageIcon} from "lucide-react";
+import {AlertTriangle,ExternalLink,FileText} from "lucide-react";
 import {Button} from "@/components/ui/button";
 
 type Props={
