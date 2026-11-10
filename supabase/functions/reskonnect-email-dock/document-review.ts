@@ -42,7 +42,7 @@ export async function loadCaseDocuments(s:EmailSession,kind:Kind,id:string){
  // A global document path is user-prefixed in the private bucket. Never allow the client to
  // choose a storage object or use an untrusted URL as a path.
  const permittedDocs=docs.filter(d=>
-  (d.source==="global"?d.path.startsWith(c.userId+"/"):d.path.startsWith(id+"/"))&&
+  (d.source==="global"?d.path.startsWith(c.userId+"/"):!!d.path)&&
   !d.path.includes("..")&&!/^https?:/i.test(d.path));
  const signature=await hash({
   case_id:c.id,status:c.status,funding:c.fundingType,
