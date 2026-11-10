@@ -147,7 +147,7 @@ Deno.serve(async (req: Request) => {
             break;
           case "residence":
             title = entity.name;
-            subtitle = entity.campus || "Verified student residence";
+            subtitle = entity.campus || "Student accommodation listing";
             imageUrl = entity.images?.[0];
             badge = "RESIDENCE";
             break;
