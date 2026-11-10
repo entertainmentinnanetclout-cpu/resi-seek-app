@@ -10,7 +10,9 @@ test("navigation to Applications and Reservations comes before the contact track
  const nav=ui.indexOf('aria-label="Communications workspace"');
  const apps=ui.indexOf('Object.keys(kindLabels)',nav);
  const activity=ui.indexOf('workspace==="activity"?<ContactActivityDashboard',nav);
- const queue=ui.indexOf('Student queue',nav);
+ const queue=ui.indexOf('Application pipeline',nav);
+ const reservation=ui.indexOf('Reservation pipeline',nav);
+ assert.ok(reservation>queue,"Both case types need visible workflow identities");
  assert.ok(nav>0&&apps>nav&&activity>apps&&queue>activity,"Cases must be visible without passing through the contact tracker");
  assert.match(ui,/setWorkspace\("cases"\)/);
  assert.match(ui,/setWorkspace\("activity"\)/);
