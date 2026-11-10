@@ -7,6 +7,7 @@ import {previewPacket,makePreviewPdf,sendOne} from "./send.ts";
 import {whatsappClickToChat,whatsappMessage} from "./whatsapp.ts";
 import {readPublishedPhotoBytes} from "./residence-media.ts";
 import {pdfAsBase64} from "./pdf.ts";
+import {contactActivity} from "./contact-activity.ts";
 
 const HEAD={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type",
  "Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};
@@ -54,6 +55,10 @@ Deno.serve(async(req:Request)=>{
  const note=messageText(input.message);
  if(note.length>2500)return res({error:"Message note exceeds 2,500 characters"},400);
 
+ if(action==="contact_activity"){
+  try{return res(await contactActivity(s,input));}
+  catch(e){console.error("Contact activity load failed",e instanceof Error?e.message:"unknown");return res({error:"Contact activity temporarily unavailable. Retry shortly."},503);}
+ }
  if(action==="history"){
   const {data,error}=await db.from("reskonnect_outbound_emails").select("id,target_kind,target_id,template_key,recipient_email,subject,delivery_status,created_at,sent_at,failure_code,pdf_attached,batch_id")
    .eq("actor_user_id",actor).order("created_at",{ascending:false}).limit(100);

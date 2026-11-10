@@ -2,6 +2,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {useSearchParams} from "react-router-dom";
 import {AlertTriangle,CheckCircle2,CheckCheck,ChevronRight,Clock3,Download,FileCheck2,FileText,Inbox,Layers,Loader2,Mail,MailCheck,MessageCircle,Paperclip,RefreshCw,Search,Send,Settings2,ShieldCheck,Sparkles,Unplug,Users,WalletCards} from "lucide-react";
 import ManualWhatsAppPanel from "./ManualWhatsAppPanel";
+import ContactActivityDashboard from "./ContactActivityDashboard";
 import LandlordGmailGuide from "./LandlordGmailGuide";
 import {supabase} from "@/integrations/supabase/client";
 import {toast} from "sonner";
@@ -84,6 +85,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [queueError,setQueueError]=useState("");
  const loadedQueueKeyRef=useRef("");
  const [history,setHistory]=useState<History[]>([]);
+ const [activityRevision,setActivityRevision]=useState(0);
  const [defaults,setDefaults]=useState<Record<string,DocTemplate>>({});
  const [overrides,setOverrides]=useState<Override[]>([]);
  const [placeholders,setPlaceholders]=useState<string[]>([]);
@@ -270,7 +272,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    if(!result.sent)throw Error(result.error||"Gmail did not accept the message");
    toast.success("Gmail accepted your email and branded PDF attachment");
    resetPreview();setNote("");
-   await Promise.all([loadHistory(),loadItems(),loadConnection()]);
+   await Promise.all([loadHistory(),loadItems(),loadConnection()]);setActivityRevision(v=>v+1);
   }catch(e){showError(e);}finally{setBusy(null);}
  };
  const previewBulk=async()=>{
@@ -301,7 +303,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    }
    toast.success(ok+" messages accepted by Gmail"+(failed?", "+failed+" not sent":""));
    setBulkPreview([]);setBulkApproval(false);setChecked(new Set());
-   await Promise.all([loadHistory(),loadItems()]);
+   await Promise.all([loadHistory(),loadItems()]);setActivityRevision(v=>v+1);
   }catch(e){showError(e);setBatchSummary({ok,failed});}
   finally{setBusy(null);}
  };
@@ -330,7 +332,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    const updatedIds=(response.results||[]).filter((r:{updated:boolean})=>r.updated).map((r:{id:string})=>r.id);
    setStatusPreview([]);setStatusApproved(false);setChecked(new Set(updatedIds));
    setTemplate("smart");setNote("");setBulkPreview([]);setBulkApproval(false);
-   await Promise.all([loadItems(),loadCase(),loadHistory()]);
+   await Promise.all([loadItems(),loadCase(),loadHistory()]);setActivityRevision(v=>v+1);
    if(updatedIds.length)toast.info("Updated records remain selected. Review smart emails before sending their decisions.");
   }catch(e){showError(e);}finally{setBusy(null);}
  };
@@ -389,6 +391,17 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
      <LandlordGmailGuide connected={!!connection?.connected} email={connection?.email||null} busy={!!busy}
        onConnect={()=>void connectionAction("connect")} onRefresh={()=>void loadConnection()}/>
     </div>}
+    <ContactActivityDashboard mode={mode} invoke={premium} refreshKey={activityRevision}
+     onOpenCase={(targetKind,id)=>{
+      setKind(targetKind);
+      setSelected(id);
+      setPane("compose");
+      resetPreview();
+      setChecked(new Set());
+      const next=new URLSearchParams(params);
+      next.set("kind",targetKind);next.set("target",id);
+      setParams(next,{replace:true});
+     }}/>
     <div className="grid min-h-[640px] grid-cols-1 divide-y xl:grid-cols-[310px_minmax(330px,1fr)_minmax(360px,1.13fr)] xl:divide-x xl:divide-y-0">
     {/* Inbox / queue */}
     <aside className="flex min-w-0 flex-col">
@@ -516,7 +529,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        </div>}
       </TabsContent>
       <TabsContent value="whatsapp" className="m-0 space-y-4 px-4 pb-5">
-       <ManualWhatsAppPanel key={kind+":"+selected+":"+template+":"+note} kind={kind} targetId={selected} templateKey={template} note={note} invoke={premium}/>
+       <ManualWhatsAppPanel key={kind+":"+selected+":"+template+":"+note} kind={kind} targetId={selected} templateKey={template} note={note} invoke={premium} onActivityChange={()=>setActivityRevision(v=>v+1)}/>
       </TabsContent>
       <TabsContent value="bulk" className="m-0 space-y-4 px-4 pb-5">
        <div className="rounded-xl border bg-card p-4"><p className="flex items-center gap-2 font-semibold"><Users className="h-4 w-4 text-primary"/>Bulk communication</p>
