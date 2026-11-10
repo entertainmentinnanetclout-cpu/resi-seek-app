@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "io:check": "node scripts/io-write-amplification.test.mjs",
+    "io:check": "node --check scripts/production-health-probe.mjs && node scripts/io-write-amplification.test.mjs",
     "auth:check": "node scripts/auth-service-outage.test.mjs && node scripts/auth-backend-resilience.test.mjs && node scripts/cron-schedule-budget.test.mjs",
     "marketplace:check": "node scripts/marketplace-quality.test.mjs",
     "p4-p6:check": "node scripts/phase4-room-integrity.test.mjs && node scripts/phase5-seo-evidence.test.mjs && node scripts/phase6-match-truth.test.mjs",
