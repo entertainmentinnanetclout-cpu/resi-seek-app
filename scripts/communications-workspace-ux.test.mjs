@@ -40,7 +40,8 @@ test("queue shows trustworthy progress badges and actionable next steps",()=>{
  assert.match(ui,/void loadRemaining\(true\)/);
  assert.match(ui,/id="rk-case-detail-panel"/);
  assert.match(ui,/scrollIntoView/);
- assert.match(context,/uploaded_count:signal\.uploaded/);
+ assert.match(context,/uploaded_count:submittedDocs\.length/);
+ assert.match(context,/const submittedDocs=/);
  assert.match(context,/workflow_bucket:journey\.bucket/);
 });
 
