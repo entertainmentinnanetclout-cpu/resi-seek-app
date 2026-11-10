@@ -38,11 +38,19 @@ test("email and WhatsApp sends require a recent audited document review",()=>{
 });
 
 test("premium in-dock review supports actual file viewing and authorized decisions",()=>{
- for(const label of ["Step 1 · Review documents","View file","Request correction",
+ for(const label of ["Step 1 · Review documents","Preview file","Request correction",
   "Confirm document review · Continue","No files uploaded yet","90-second previews"]){
   assert.ok(panel.includes(label),label);
  }
- assert.match(panel,/iframe title=\{"Document preview: "\+preview\.name\} sandbox=""/);
+ const viewer=read("src/components/communications/SecureDocumentPreview.tsx");
+ assert.match(panel,/SecureDocumentPreview/);
+ assert.match(viewer,/iframe key=\{url\} title=\{"Document preview: "\+name\} src=\{url\}/);
+ assert.doesNotMatch(viewer,/sandbox=/);
+ assert.match(viewer,/Open file in new tab/);
+ assert.match(docs,/if\(source==="global"\)\{/);
+ assert.match(docs,/data\.admin_notes=reason/);
+ assert.match(docs,/\}else\{\s*data\.rejection_reason=/);
+ assert.doesNotMatch(docs,/if\(source==="global"&&decision==="rejected"\)data\.admin_notes=reason;\s*else data\.rejection_reason=/);
  assert.match(panel,/Verify/);
  assert.match(panel,/!opened\.has\(doc\.source\+":"\+doc\.id\)/);
  assert.match(docs,/if\(source==="global"&&!s\.isAdmin\)/);
