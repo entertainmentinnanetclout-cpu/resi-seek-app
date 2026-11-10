@@ -23,7 +23,7 @@ export async function loadCaseDocuments(s:EmailSession,kind:Kind,id:string){
    .eq("user_id",c.userId).order("uploaded_at",{ascending:false}).limit(150),
   kind==="application"?s.db.from("application_documents")
    .select("id,application_id,doc_type,original_filename,file_path,status,rejection_reason,uploaded_at,verified_at")
-   .eq("application_id",id).order("uploaded_at",{ascending:false}).limit(150):
+   .eq("application_id",id).eq("residence_id",c.residenceId).order("uploaded_at",{ascending:false}).limit(150):
    Promise.resolve({data:[],error:null})
  ]);
  if(global.error||application.error)throw Error("Student document records cannot be loaded");
@@ -41,7 +41,8 @@ export async function loadCaseDocuments(s:EmailSession,kind:Kind,id:string){
  ];
  // A global document path is user-prefixed in the private bucket. Never allow the client to
  // choose a storage object or use an untrusted URL as a path.
- const permittedDocs=docs.filter(d=>d.path.startsWith(c.userId+"/")&&
+ const permittedDocs=docs.filter(d=>
+  (d.source==="global"?d.path.startsWith(c.userId+"/"):d.path.startsWith(id+"/"))&&
   !d.path.includes("..")&&!/^https?:/i.test(d.path));
  const signature=await hash({
   case_id:c.id,status:c.status,funding:c.fundingType,
@@ -116,7 +117,7 @@ export async function setDocumentDecision(s:EmailSession,kind:Kind,id:string,inp
  const data:Record<string,unknown>={
   status:decision,verified_by:s.actor,verified_at:new Date().toISOString()
  };
- if(source==="global")data.admin_notes=decision==="rejected"?reason:"";
+ if(source==="global"&&decision==="rejected")data.admin_notes=reason;
  else data.rejection_reason=decision==="rejected"?reason:null;
  let query=s.db.from(table).update(data).eq("id",doc.id).eq("status",expected);
  if(source==="global")query=query.eq("user_id",c.userId);
