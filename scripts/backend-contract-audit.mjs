@@ -114,6 +114,19 @@ const live = {
 };
 const issues = [];
 const warnings = [];
+// Reject accidentally reintroducing Lovable/another Supabase backend URL into
+// runtime source. Auth, RLS and Edge gateways must share the production project.
+// This checks configured string URLs; dynamic hostnames still need review.
+for (const { relative, loc } of sourceFiles) {
+  if (!relative.startsWith("src/")) continue;
+  const content = fs.readFileSync(loc, "utf8");
+  const urls = content.matchAll(/https:\/\/([a-z0-9]{20})\.supabase\.co\b/g);
+  for (const match of urls) {
+    if (match[1] !== snapshot.project_id) {
+      issues.push({ code: "FOREIGN_SUPABASE_BACKEND", projectId: match[1], locations: [{ file: relative, line: content.slice(0, match.index).split("\n").length }] });
+    }
+  }
+}
 for (const [kind, names] of Object.entries(refs)) {
   for (const [name, locations] of names) {
     if (!live[kind].has(name) && !(kind === "rpc" && live.serverRpc.has(name) && locations.every(x => x.file.startsWith("supabase/functions/")))) {
