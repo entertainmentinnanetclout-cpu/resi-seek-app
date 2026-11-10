@@ -1,4 +1,4 @@
-name: ResKonnect phone OTP security-event regression
+name: ResKonnect runtime Edge regression
 on:
   pull_request:
   push:
@@ -15,4 +15,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: node --test scripts/phone-verification-security-event.test.mjs
+      - run: node --test scripts/phone-verification-security-event.test.mjs scripts/luna-demand-snapshot-status.test.mjs
