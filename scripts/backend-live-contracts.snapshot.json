@@ -2566,6 +2566,12 @@
       "status": "ACTIVE"
     },
     {
+      "slug": "og-image",
+      "version": 1,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
       "slug": "phone-whatsapp-verification",
       "version": 4,
       "verify_jwt": true,
