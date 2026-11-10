@@ -2,6 +2,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {useSearchParams} from "react-router-dom";
 import {AlertTriangle,CheckCircle2,CheckCheck,ChevronRight,Clock3,Download,FileCheck2,FileText,Inbox,Layers,Loader2,Mail,MailCheck,MessageCircle,Paperclip,RefreshCw,Search,Send,Settings2,ShieldCheck,Sparkles,Unplug,Users,WalletCards,LayoutList,SlidersHorizontal,ArrowUpDown} from "lucide-react";
 import ManualWhatsAppPanel from "./ManualWhatsAppPanel";
+import DocumentReviewPanel,{type DocumentReviewReceipt} from "./DocumentReviewPanel";
 import ContactActivityDashboard from "./ContactActivityDashboard";
 import LandlordGmailGuide from "./LandlordGmailGuide";
 import {supabase} from "@/integrations/supabase/client";
@@ -75,7 +76,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [workspace,setWorkspace]=useState<"cases"|"activity">(params.get("view")==="activity"?"activity":"cases");
  const [advancedFilters,setAdvancedFilters]=useState(false);
  const [sortBy,setSortBy]=useState<"newest"|"oldest"|"needs_action">("needs_action");
- const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision"|"not_contacted"|"followup_due"|"student_acted"|"awaiting_review"|"decision_changed"|"approved"|"rejected"|"uploaded"|"no_uploads">("all");
+ const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision"|"not_contacted"|"followup_due"|"student_acted"|"awaiting_review"|"decision_changed"|"approved"|"rejected"|"uploaded"|"no_uploads"|"submitted"|"under_review"|"reserved"|"confirmed">("all");
  const [caseInfo,setCaseInfo]=useState<CaseInfo|null>(null);
  const [template,setTemplate]=useState<Template>("smart");
  const [note,setNote]=useState("");
@@ -89,13 +90,14 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const loadedQueueKeyRef=useRef("");
  const [history,setHistory]=useState<History[]>([]);
  const [activityRevision,setActivityRevision]=useState(0);
+ const [reviewReceipts,setReviewReceipts]=useState<Map<string,DocumentReviewReceipt>>(()=>new Map());
  const [defaults,setDefaults]=useState<Record<string,DocTemplate>>({});
  const [overrides,setOverrides]=useState<Override[]>([]);
  const [placeholders,setPlaceholders]=useState<string[]>([]);
  const [studioKey,setStudioKey]=useState<Template>("documents_needed");
  const [studioSubject,setStudioSubject]=useState("");
  const [studioBody,setStudioBody]=useState("");
- const [pane,setPane]=useState<"compose"|"whatsapp"|"bulk"|"templates"|"history">(params.get("channel")==="whatsapp"?"whatsapp":"compose");
+ const [pane,setPane]=useState<"documents"|"compose"|"whatsapp"|"bulk"|"templates"|"history">(params.get("channel")==="whatsapp"?"whatsapp":(initialKind==="application"||initialKind==="reservation")?"documents":"compose");
  const [bulkPreview,setBulkPreview]=useState<BulkResult[]>([]);
  const [bulkApproval,setBulkApproval]=useState(false);
  const [newStatus,setNewStatus]=useState("");
@@ -207,10 +209,15 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   }
  },[params,setParams,loadConnection]);
  const active=items.find(x=>x.id===selected)||null;
+ const needsReview=kind==="application"||kind==="reservation";
+ const selectedReceipt=reviewReceipts.get(kind+":"+selected)||null;
+ const reviewedNow=!needsReview||!!selectedReceipt&&Date.now()-new Date(selectedReceipt.at).getTime()<20*60*1000;
+ const reviewReceiptFor=(id:string)=>reviewReceipts.get(kind+":"+id)||null;
  const visible=useMemo(()=>items.filter(x=>{
   const match=(x.label+" "+x.status+" "+x.property+" "+x.reference).toLowerCase().includes(search.toLowerCase().trim());
   if(!match)return false;
   if(filter==="missing")return x.missing_count>0;
+  if(["submitted","under_review","reserved","confirmed"].includes(filter))return x.status===filter;
   if(filter==="uploaded")return (x.uploaded_count||0)>0;
   if(filter==="no_uploads")return (x.uploaded_count||0)===0;
   if(filter==="received")return x.pending_review>0||x.document_stage==="received";
@@ -237,7 +244,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   missing:items.filter(x=>x.missing_count>0).length,
   review:items.filter(x=>x.pending_review>0||x.document_stage==="received").length,
   unemailed:items.filter(x=>!x.email_sent).length,
-  followup:items.filter(x=>x.workflow_bucket==="followup_due").length
+  followup:items.filter(x=>x.workflow_bucket==="followup_due").length,
+  submitted:items.filter(x=>x.status==="submitted").length,
+  underReview:items.filter(x=>x.status==="under_review").length,
+  reserved:items.filter(x=>x.status==="reserved").length,
+  confirmed:items.filter(x=>x.status==="confirmed").length
  }),[items]);
  const templatesForKind=useMemo(()=>{
   const base:(Template)[]=["smart","acknowledgement","documents_needed","documents_received","status_update","feedback","next_steps","follow_up"];
@@ -251,11 +262,12 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const selectedCount=checked.size;
  const resetPreview=()=>{setPreview(null);setApproved(false);setBulkPreview([]);setBulkApproval(false);setStatusPreview([]);setStatusApproved(false);setBatchSummary(null);};
  const selectKind=(k:Kind)=>{
-  setKind(k);setWorkspace("cases");setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setChecked(new Set());setNote("");resetPreview();
+  setKind(k);setWorkspace("cases");setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setChecked(new Set());setNote("");setPane(k==="application"||k==="reservation"?"documents":"compose");resetPreview();
   const next=new URLSearchParams(params);next.set("kind",k);next.delete("target");next.delete("view");setParams(next,{replace:true});
  };
  const selectRecord=(id:string)=>{
   setSelected(id);setTemplate(items.find(x=>x.id===id)?.suggested_template||"smart");setNote("");resetPreview();
+  setPane(needsReview?"documents":"compose");
   const next=new URLSearchParams(params);next.set("kind",kind);next.set("target",id);next.delete("view");setParams(next,{replace:true});
   if(window.innerWidth<1024)window.requestAnimationFrame(()=>document.getElementById("rk-case-detail-panel")?.scrollIntoView({behavior:"smooth",block:"start"}));
  };
@@ -302,12 +314,13 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  };
  const sendOne=async()=>{
   if(!preview||!selected||!approved||!connection?.connected)return;
+  if(needsReview&&!reviewedNow)return toast.error("Review this student’s documents before sending");
   if(lastPreviewRef.current!==selected+":"+template+":"+note)return toast.error("Refresh your preview before sending");
   if(!window.confirm("Send this official ResKonnect email and branded PDF using your connected Gmail?"))return;
   setBusy("send");
   try{
    const result=await premium({action:"send",kind,target_id:selected,template_key:template,
-    message:note,confirmed:true,request_id:crypto.randomUUID(),expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage,preview_hash:preview.preview_hash});
+    message:note,confirmed:true,request_id:crypto.randomUUID(),expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage,preview_hash:preview.preview_hash,document_review_id:selectedReceipt?.id||null});
    if(!result.sent)throw Error(result.error||"Gmail did not accept the message");
    toast.success("Gmail accepted your email and branded PDF attachment");
    resetPreview();setNote("");
@@ -326,6 +339,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  };
  const sendBulk=async()=>{
   if(!connection?.connected||!bulkApproval||!bulkPreview.length)return;
+  if(needsReview&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))return toast.error("Review every selected student’s documents before a bulk send");
   const ids=bulkPreview.filter(x=>x.ok).map(x=>x.id);
   if(!ids.length)return toast.error("No eligible case emails");
   if(!window.confirm("Send "+ids.length+" individualized Gmail messages, each with its own ResKonnect PDF?"))return;
@@ -334,7 +348,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   try{
    for(let i=0;i<ids.length;i+=5){
     const slice=ids.slice(i,i+5);
-    const requests=slice.map(id=>{const info=bulkPreview.find(p=>p.id===id);return {id,request_id:crypto.randomUUID(),expected_status:info?.status,expected_document_stage:info?.document_signal?.stage,preview_hash:info?.preview_hash};});
+    const requests=slice.map(id=>{const info=bulkPreview.find(p=>p.id===id);return {id,request_id:crypto.randomUUID(),expected_status:info?.status,expected_document_stage:info?.document_signal?.stage,preview_hash:info?.preview_hash,document_review_id:reviewReceiptFor(id)?.id||null};});
     const response=await premium({action:"bulk_send",kind,ids:slice,requests,confirmed:true,
      batch_id:batchId,template_key:"smart",message:note});
     ok+=response.succeeded||0;failed+=response.failed||0;
@@ -464,7 +478,26 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
         <SlidersHorizontal className="h-3.5 w-3.5"/>More filters
        </Button>
       </div>
-      <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filter by student progress">
+      {(kind==="application"||kind==="reservation")&&<div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4" aria-label={kind==="application"?"Applications overview":"Reservations overview"}>
+        {(kind==="application"?([
+         ["submitted","Submitted",queueStats.submitted,"New cases"],
+         ["uploaded","Docs uploaded",queueStats.uploaded,"Files received"],
+         ["received","Ready to review",queueStats.review,"Verify submissions"],
+         ["decision","Decisions",items.filter(x=>["approved","rejected","conditionally_approved"].includes(x.status)).length,"Recorded outcomes"]
+        ] as const):([
+         ["reserved","Reserved",queueStats.reserved,"Awaiting next steps"],
+         ["uploaded","Docs uploaded",queueStats.uploaded,"Files received"],
+         ["received","Ready to review",queueStats.review,"Verify submissions"],
+         ["confirmed","Confirmed",queueStats.confirmed,"Placement status"]
+        ] as const)).map(([key,label,count,description])=>
+         <button key={key} type="button" onClick={()=>setFilter(key)} aria-pressed={filter===key}
+          className={cn("rounded-xl border px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+           filter===key?"border-primary bg-primary/[0.06] shadow-sm":"border-border bg-card")}>
+          <span className="flex items-center justify-between gap-2"><span className="text-xs font-bold">{label}</span><span className="text-lg font-black tabular-nums">{count}</span></span>
+          <span className="text-[11px] text-muted-foreground">{description}</span>
+         </button>)}
+       </div>}
+       <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filter by student progress">
        {([
         ["all","All cases",totalCases],["uploaded","Docs uploaded",queueStats.uploaded],
         ["missing","Missing docs",queueStats.missing],["received","Ready to review",queueStats.review],
@@ -485,6 +518,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
          <SelectItem value="student_acted">Student uploaded after email</SelectItem><SelectItem value="awaiting_review">Awaiting verification</SelectItem>
          <SelectItem value="decision_changed">Status changed since email</SelectItem><SelectItem value="approved">Approved / confirmed</SelectItem>
          <SelectItem value="rejected">Rejected</SelectItem>
+         {kind==="application"&&<><SelectItem value="submitted">Submitted applications</SelectItem><SelectItem value="under_review">Applications under review</SelectItem></>}
+         {kind==="reservation"&&<><SelectItem value="reserved">Reserved rooms</SelectItem><SelectItem value="confirmed">Confirmed reservations</SelectItem></>}
         </SelectContent>
        </Select>
        <Button variant="ghost" size="sm" onClick={()=>{setFilter("all");setSearch("");}}>Clear filters</Button>
@@ -498,7 +533,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     </nav>
     {workspace==="activity"?<ContactActivityDashboard mode={mode} invoke={premium} refreshKey={activityRevision}
      onOpenCase={(targetKind,id)=>{
-      deepLinkedIdRef.current=id;setWorkspace("cases");setKind(targetKind);setSelected(id);setPane("compose");resetPreview();setChecked(new Set());
+      deepLinkedIdRef.current=id;setWorkspace("cases");setKind(targetKind);setSelected(id);setPane(targetKind==="application"||targetKind==="reservation"?"documents":"compose");resetPreview();setChecked(new Set());
       const next=new URLSearchParams(params);next.delete("view");next.set("kind",targetKind);next.set("target",id);setParams(next,{replace:true});
      }}/>:
     <>
@@ -507,9 +542,9 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     <aside className="flex min-w-0 flex-col">
      <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/15 px-4 py-3">
       <div>
-       <p className="flex items-center gap-2 text-sm font-bold"><LayoutList className="h-4 w-4 text-primary"/>Student queue
+       <p className="flex items-center gap-2 text-sm font-bold"><LayoutList className="h-4 w-4 text-primary"/>{kind==="application"?"Application pipeline":kind==="reservation"?"Reservation pipeline":kind==="housing_lead"?"Housing enquiries":"Support enquiries"}
         <Badge variant="secondary">{visible.length} shown</Badge></p>
-       <p className="mt-0.5 text-[11px] text-muted-foreground">Choose a student to see progress and the next step</p>
+       <p className="mt-0.5 text-[11px] text-muted-foreground">{kind==="application"?"Review student documents → Decide → Notify":kind==="reservation"?"Check documents → Confirm details → Contact":"Choose a student to see progress and the next step"}</p>
       </div>
       <Button type="button" variant="ghost" size="icon" aria-label="Refresh student queue" disabled={loading} onClick={()=>void loadItems()}>
        <RefreshCw className={cn("h-4 w-4",loading&&"animate-spin")}/>
@@ -556,7 +591,12 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           <span className="font-semibold text-foreground">Next:</span> {item.service_action||pretty(item.workflow_bucket||"awaiting_action")}
          </p>
          {item.student_uploaded_after_email&&<p className="mt-1 text-[11px] font-semibold text-blue-600">New upload since last email</p>}
-        </button>
+         </button>
+         {needsReview&&<Button size="sm" variant="outline" className="mt-1 h-8 shrink-0 rounded-lg px-2 text-[10px]"
+          onClick={()=>{selectRecord(item.id);setPane("documents");}}
+          aria-label={"Review student documents for "+item.label}>
+          <FileCheck2 className="mr-1 h-3.5 w-3.5"/>Files
+         </Button>}
        </div>)}
      </ScrollArea>
     </aside>
@@ -569,11 +609,21 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        <div className="rounded-xl border p-4">
         <p className="text-lg font-black">{caseInfo.label}</p>
         <p className="mt-1 text-xs text-muted-foreground">{caseInfo.property} · Ref {caseInfo.reference}</p>
+        {needsReview&&<div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-500/20 bg-blue-50/50 p-2.5 dark:bg-blue-950/20">
+         <span className="text-xs font-semibold">{reviewedNow?"Documents reviewed · Ready to communicate":"Review documents before contacting"}</span>
+         <Button size="sm" variant={reviewedNow?"outline":"default"} className="h-8 text-xs" onClick={()=>setPane("documents")}>
+          <FileCheck2 className="mr-1.5 h-3.5 w-3.5"/>{reviewedNow?"Open files":"Review files"}
+         </Button>
+        </div>}
         {caseInfo.residence_image_url&&<img src={caseInfo.residence_image_url} alt={"Real listing photo: "+caseInfo.property} className="mt-3 max-h-32 w-full rounded-lg object-cover"/>}
         <div className="mt-3 grid grid-cols-2 gap-2">
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recorded status</p><p className="mt-1 text-xs font-bold">{pretty(caseInfo.status)}</p></div>
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recipient</p><p className="mt-1 text-xs font-bold">{caseInfo.recipient_hint||"No valid email"}</p></div>
         </div>
+        {needsReview&&<div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+         <span className="text-[11px] text-muted-foreground">Record the next application or reservation decision when ready.</span>
+         <Button size="sm" variant="outline" className="h-8 text-xs" onClick={()=>{setChecked(new Set([selected]));setPane("bulk");}}><CheckCheck className="mr-1.5 h-3.5 w-3.5"/>Update status</Button>
+        </div>}
        </div>
        <div className="rounded-xl border border-blue-500/20 bg-blue-500/[.035] p-4">
         <p className="flex items-center gap-2 text-sm font-bold"><Sparkles className="h-4 w-4 text-blue-600"/>Documents & next step</p>
@@ -595,10 +645,10 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           placeholder="Optional practical details: viewing date and time, move-in instructions, what to submit, or the next step. Avoid repeating the case status."
           onChange={e=>{setNote(e.target.value);resetPreview();}}/>
         <p className="mt-1 text-[11px] text-muted-foreground">{note.length}/2500 · Only recorded decisions appear as formal approvals or rejections.</p></div>
-       <Button className="w-full" variant="secondary" disabled={!caseInfo.can_email||!!busy} onClick={()=>void previewOne()}>
+       <Button className="w-full" variant="secondary" disabled={!caseInfo.can_email||!!busy} onClick={()=>{if(needsReview&&!reviewedNow){setPane("documents");toast.info("First review the uploaded documents and confirm readiness");return;}void previewOne();}}>
         {busy==="preview"?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<Sparkles className="mr-2 h-4 w-4"/>}Generate smart email preview
        </Button>
-       <Button className="w-full" variant="outline" onClick={()=>setPane("whatsapp")} disabled={!selected}>
+       <Button className="w-full" variant="outline" onClick={()=>{if(needsReview&&!reviewedNow){setPane("documents");toast.info("Review documents before opening WhatsApp");}else setPane("whatsapp");}} disabled={!selected}>
         <MessageCircle className="mr-2 h-4 w-4 text-emerald-700"/>Open manual WhatsApp handoff {caseInfo.has_whatsapp?"":"(check phone)"}
        </Button>
       </div>}
@@ -607,12 +657,23 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     <section className="min-w-0 border-t bg-muted/10 xl:border-l xl:border-t-0">
      <Tabs value={pane} onValueChange={v=>setPane(v as typeof pane)} className="min-w-0">
       <TabsList className="m-3 flex h-auto flex-wrap justify-start gap-1 bg-transparent p-0">
-       <TabsTrigger value="compose"><Mail className="mr-1 h-3.5 w-3.5"/>Email</TabsTrigger>
+       {needsReview&&<TabsTrigger value="documents"><FileCheck2 className="mr-1 h-3.5 w-3.5"/>1 · Documents</TabsTrigger>}
+       <TabsTrigger value="compose"><Mail className="mr-1 h-3.5 w-3.5"/>2 · Email</TabsTrigger>
        <TabsTrigger value="whatsapp"><MessageCircle className="mr-1 h-3.5 w-3.5"/>WhatsApp</TabsTrigger>
        <TabsTrigger value="bulk"><Layers className="mr-1 h-3.5 w-3.5"/>Bulk</TabsTrigger>
        <TabsTrigger value="templates"><Settings2 className="mr-1 h-3.5 w-3.5"/>Templates</TabsTrigger>
        <TabsTrigger value="history"><Clock3 className="mr-1 h-3.5 w-3.5"/>History</TabsTrigger>
       </TabsList>
+      {needsReview&&<TabsContent value="documents" className="m-0 space-y-4 px-4 pb-5">
+       {selected?<DocumentReviewPanel key={kind+":"+selected} kind={kind} targetId={selected} invoke={premium}
+        receipt={selectedReceipt}
+        onReviewed={value=>{
+         setReviewReceipts(old=>{const next=new Map(old);const key=kind+":"+selected;if(value)next.set(key,value);else next.delete(key);return next;});
+         if(value)setPane("compose");
+        }}
+        onDocumentsChanged={()=>{resetPreview();void Promise.all([loadCase(),loadItems()]);}}/>:
+       <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Select a student to review their private uploads.</div>}
+      </TabsContent>}
       <TabsContent value="compose" className="m-0 space-y-4 px-4 pb-5">
        <div><p className="text-base font-bold">Premium correspondence</p>
         <p className="text-xs text-muted-foreground">White and gold branded emails, accurate case details and an individual PDF letter.</p></div>
@@ -627,7 +688,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
          <Checkbox checked={approved} onCheckedChange={v=>setApproved(v===true)}/>
          <span>I reviewed the recipient, current status, decision wording and PDF attachment. I authorize this service email.</span>
         </label>
-        <Button className="w-full" disabled={!approved||!connection?.connected||!!busy} onClick={()=>void sendOne()}>
+        <Button className="w-full" disabled={!approved||!connection?.connected||!!busy||!reviewedNow} onClick={()=>void sendOne()}>
          {busy==="send"?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<Send className="mr-2 h-4 w-4"/>}Send official email + PDF
         </Button>
        </div>:<div className="rounded-xl border border-dashed bg-card p-8 text-center">
@@ -636,7 +697,10 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        </div>}
       </TabsContent>
       <TabsContent value="whatsapp" className="m-0 space-y-4 px-4 pb-5">
-       <ManualWhatsAppPanel key={kind+":"+selected+":"+template+":"+note} kind={kind} targetId={selected} templateKey={template} note={note} invoke={premium} onActivityChange={()=>setActivityRevision(v=>v+1)}/>
+       {needsReview&&!reviewedNow&&<div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950">
+        Review this student's uploaded documents before opening a WhatsApp handoff. <Button size="sm" variant="outline" className="ml-2" onClick={()=>setPane("documents")}>Review now</Button>
+       </div>}
+       <ManualWhatsAppPanel key={kind+":"+selected+":"+template+":"+note} kind={kind} targetId={selected} templateKey={template} note={note} invoke={premium} reviewId={selectedReceipt?.id||null} needsReview={needsReview} onActivityChange={()=>setActivityRevision(v=>v+1)}/>
       </TabsContent>
       <TabsContent value="bulk" className="m-0 space-y-4 px-4 pb-5">
        <div className="rounded-xl border bg-card p-4"><p className="flex items-center gap-2 font-semibold"><Users className="h-4 w-4 text-primary"/>Bulk communication</p>
@@ -644,11 +708,17 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
         <p className="mt-1 text-xs font-semibold text-primary">Bulk emails always use each student’s own Smart template, not the single-case template selection.</p>
         <Button className="mt-3 w-full" variant="secondary" onClick={()=>void previewBulk()} disabled={!selectedCount||!!busy}><FileCheck2 className="mr-2 h-4 w-4"/>Review selected messages</Button>
         {bulkPreview.length>0&&<div className="mt-3 space-y-2">{bulkPreview.map(messageCard)}
+         {needsReview&&bulkPreview.some(x=>x.ok&&!reviewReceiptFor(x.id))&&<div className="rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-950">
+          <p className="font-bold">Document review needed before bulk sending</p>
+          <p className="mt-1">Review each recipient's files individually. Your reviewed cases will stay recorded while you move between students.</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">{bulkPreview.filter(x=>x.ok&&!reviewReceiptFor(x.id)).map(x=>
+           <Button key={x.id} size="sm" variant="outline" onClick={()=>{setSelected(x.id);setPane("documents");}}>{x.label||x.id.slice(0,8)} · Review</Button>)}</div>
+         </div>}
          <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs">
           <Checkbox checked={bulkApproval} onCheckedChange={v=>setBulkApproval(v===true)}/>
           <span>I reviewed these recipients and understand each will get an individualized Gmail email and PDF.</span>
          </label>
-         <Button className="w-full" disabled={!bulkApproval||!connection?.connected||!!busy||!bulkPreview.some(x=>x.ok)} onClick={()=>void sendBulk()}>
+         <Button className="w-full" disabled={!bulkApproval||!connection?.connected||!!busy||!bulkPreview.some(x=>x.ok)||(needsReview&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))} onClick={()=>void sendBulk()}>
           <Send className="mr-2 h-4 w-4"/>{busy==="bulk-send"?"Sending approved batches…":"Send reviewed emails"}
          </Button>
         </div>}
