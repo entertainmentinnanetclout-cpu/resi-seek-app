@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {useSearchParams} from "react-router-dom";
-import {AlertTriangle,CheckCircle2,CheckCheck,ChevronRight,Clock3,Download,FileCheck2,FileText,Inbox,Layers,Loader2,Mail,MailCheck,MessageCircle,Paperclip,RefreshCw,Search,Send,Settings2,ShieldCheck,Sparkles,Unplug,Users,WalletCards} from "lucide-react";
+import {AlertTriangle,CheckCircle2,CheckCheck,ChevronRight,Clock3,Download,FileCheck2,FileText,Inbox,Layers,Loader2,Mail,MailCheck,MessageCircle,Paperclip,RefreshCw,Search,Send,Settings2,ShieldCheck,Sparkles,Unplug,Users,WalletCards,LayoutList,SlidersHorizontal,ArrowUpDown} from "lucide-react";
 import ManualWhatsAppPanel from "./ManualWhatsAppPanel";
 import ContactActivityDashboard from "./ContactActivityDashboard";
 import LandlordGmailGuide from "./LandlordGmailGuide";
@@ -23,7 +23,7 @@ type Mode="admin"|"landlord";
 type Signal={stage:string;missing:string[];uploaded:number;pendingReview:number;summary:string};
 type CaseItem={
  id:string;kind:Kind;label:string;status:string;property:string;reference:string;
- created_at:string;document_stage:string;missing_count:number;pending_review:number;
+ created_at:string;document_stage:string;missing_count:number;pending_review:number;uploaded_count?:number;
  recommended_template:Template;recipient_hint:string|null;can_email:boolean;
  workflow_bucket?:string;service_action?:string;last_email_at?:string|null;last_email_template?:string|null;
  email_sent?:boolean;email_status?:string|null;student_uploaded_after_email?:boolean;
@@ -72,7 +72,10 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [selected,setSelected]=useState(params.get("target")||"");
  const [checked,setChecked]=useState<Set<string>>(new Set());
  const [search,setSearch]=useState("");
- const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision"|"not_contacted"|"followup_due"|"student_acted"|"awaiting_review"|"decision_changed"|"approved"|"rejected">("all");
+ const [workspace,setWorkspace]=useState<"cases"|"activity">(params.get("view")==="activity"?"activity":"cases");
+ const [advancedFilters,setAdvancedFilters]=useState(false);
+ const [sortBy,setSortBy]=useState<"newest"|"oldest"|"needs_action">("needs_action");
+ const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision"|"not_contacted"|"followup_due"|"student_acted"|"awaiting_review"|"decision_changed"|"approved"|"rejected"|"uploaded"|"no_uploads">("all");
  const [caseInfo,setCaseInfo]=useState<CaseInfo|null>(null);
  const [template,setTemplate]=useState<Template>("smart");
  const [note,setNote]=useState("");
@@ -151,6 +154,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  },[premium,kind,academicYear]);
  const loadRemaining=async(all=false)=>{
   if(nextOffset===null||loadingMore)return;
+  const queueKey=kind+":"+academicYear;
+  if(loadedQueueKeyRef.current!==queueKey)return;
   setLoadingMore(true);
   try{
    let offset=nextOffset,pages=0;
@@ -163,6 +168,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     pages++;
     if(!all||pages>=75)break;
    }
+   if(loadedQueueKeyRef.current!==queueKey)return;
    setItems(current=>{
     const seen=new Set(current.map(i=>i.id));
     return [...current,...appended.filter(i=>{if(seen.has(i.id))return false;seen.add(i.id);return true;})];
@@ -182,6 +188,16 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  useEffect(()=>{void loadConnection();void loadHistory();void loadTemplates();},[loadConnection,loadHistory,loadTemplates]);
  useEffect(()=>{void loadItems();setChecked(new Set());},[loadItems]);
  useEffect(()=>{const interval=window.setInterval(()=>{if(document.visibilityState==="visible")void loadItems({preserveLoaded:true});},45000);return ()=>window.clearInterval(interval);},[loadItems]);
+ useEffect(()=>{
+  // Typical residence queues fit into a few pages. Load them automatically so
+  // searching or filtering doesn't silently hide students outside page one.
+  if(workspace!=="cases"||totalCases===0||totalCases>600||nextOffset===null||
+     loading||loadingMore||queueError||loadedQueueKeyRef.current!==kind+":"+academicYear)return;
+  void loadRemaining(true);
+ // loadRemaining is intentionally invoked only for the current case/year snapshot.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[workspace,kind,academicYear,totalCases,nextOffset,loading,loadingMore,queueError]);
+
  useEffect(()=>{void loadCase();setPreview(null);setApproved(false);},[loadCase]);
  useEffect(()=>{
   if(params.get("gmail")==="connected"){
@@ -194,13 +210,35 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const visible=useMemo(()=>items.filter(x=>{
   const match=(x.label+" "+x.status+" "+x.property+" "+x.reference).toLowerCase().includes(search.toLowerCase().trim());
   if(!match)return false;
-  if(filter==="missing")return x.document_stage==="missing"||x.document_stage==="incomplete";
-  if(filter==="received")return x.document_stage==="received"||x.document_stage==="complete";
+  if(filter==="missing")return x.missing_count>0;
+  if(filter==="uploaded")return (x.uploaded_count||0)>0;
+  if(filter==="no_uploads")return (x.uploaded_count||0)===0;
+  if(filter==="received")return x.pending_review>0||x.document_stage==="received";
   if(filter==="decision")return ["approved","conditionally_approved","rejected","confirmed","cancelled"].includes(x.status);
   if(filter==="not_contacted")return !x.email_sent;
   if(filter!=="all")return x.workflow_bucket===filter;
   return true;
- }),[items,filter,search]);
+ }).sort((a,b)=>{
+  if(sortBy==="oldest")return a.created_at.localeCompare(b.created_at);
+  if(sortBy==="newest")return b.created_at.localeCompare(a.created_at);
+  const priority=(item:CaseItem)=>{
+   if(item.workflow_bucket==="decision_changed"||item.workflow_bucket==="student_acted")return 0;
+   if(item.pending_review>0||item.workflow_bucket==="awaiting_review")return 1;
+   if(item.workflow_bucket==="followup_due")return 2;
+   if(item.missing_count>0&&!item.email_sent)return 3;
+   if(!item.email_sent)return 4;
+   if(["approved","confirmed"].includes(item.status))return 7;
+   return 5;
+  };
+  return priority(a)-priority(b)||b.created_at.localeCompare(a.created_at);
+ }),[items,filter,search,sortBy]);
+ const queueStats=useMemo(()=>({
+  uploaded:items.filter(x=>(x.uploaded_count||0)>0).length,
+  missing:items.filter(x=>x.missing_count>0).length,
+  review:items.filter(x=>x.pending_review>0||x.document_stage==="received").length,
+  unemailed:items.filter(x=>!x.email_sent).length,
+  followup:items.filter(x=>x.workflow_bucket==="followup_due").length
+ }),[items]);
  const templatesForKind=useMemo(()=>{
   const base:(Template)[]=["smart","acknowledgement","documents_needed","documents_received","status_update","feedback","next_steps","follow_up"];
   if(kind==="application")base.push("approved","rejected","conditionally_approved");
@@ -213,12 +251,13 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const selectedCount=checked.size;
  const resetPreview=()=>{setPreview(null);setApproved(false);setBulkPreview([]);setBulkApproval(false);setStatusPreview([]);setStatusApproved(false);setBatchSummary(null);};
  const selectKind=(k:Kind)=>{
-  setKind(k);setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setChecked(new Set());setNote("");resetPreview();
-  const next=new URLSearchParams(params);next.set("kind",k);next.delete("target");setParams(next,{replace:true});
+  setKind(k);setWorkspace("cases");setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setChecked(new Set());setNote("");resetPreview();
+  const next=new URLSearchParams(params);next.set("kind",k);next.delete("target");next.delete("view");setParams(next,{replace:true});
  };
  const selectRecord=(id:string)=>{
   setSelected(id);setTemplate(items.find(x=>x.id===id)?.suggested_template||"smart");setNote("");resetPreview();
-  const next=new URLSearchParams(params);next.set("kind",kind);next.set("target",id);setParams(next,{replace:true});
+  const next=new URLSearchParams(params);next.set("kind",kind);next.set("target",id);next.delete("view");setParams(next,{replace:true});
+  if(window.innerWidth<1024)window.requestAnimationFrame(()=>document.getElementById("rk-case-detail-panel")?.scrollIntoView({behavior:"smooth",block:"start"}));
  };
  const toggleSelected=(id:string,checkedNow:boolean)=>{
   setChecked(old=>{const next=new Set(old);if(checkedNow)next.add(id);else next.delete(id);return next;});
@@ -368,13 +407,13 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    <Badge variant={message.ok?"secondary":"outline"}>{message.ok?"Ready":"Review"}</Badge>
   </div>;
  return <div className="space-y-4">
-  <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+  <div className="overflow-visible rounded-2xl border bg-card shadow-sm">
    <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-slate-950 px-5 py-4 text-white">
     <div className="flex items-center gap-3">
      <div className="rounded-xl bg-blue-600 p-2.5"><MailCheck className="h-6 w-6"/></div>
      <div><p className="text-xs font-bold uppercase tracking-[.19em] text-amber-300">ResKonnect Communications OS</p>
-       <h2 className="text-xl font-black">Premium Communications Dock</h2>
-       <p className="text-xs text-slate-300">Case intelligence · branded PDF letters · Gmail operations</p></div>
+       <h2 className="text-xl font-black">Student communications</h2>
+       <p className="text-xs text-slate-300">Manage applications, reservations and next steps</p></div>
     </div>
     <div className="flex items-center gap-2">
      <Badge className="border-white/20 bg-white/10 text-white">{connection?.connected?"Gmail connected":"Gmail not connected"}</Badge>
@@ -387,45 +426,101 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     <p>{connection?.connected?"Authorized sender: "+connection.email:(connectedError||"Connect your own residence email above to send from that mailbox")}</p>
     <p className="flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5"/>Server-verified recipients · PDF attached per email</p>
    </div>
-   {mode==="landlord"&&<div className="border-b bg-[#f8fafc] p-4 sm:p-5">
+   {mode==="landlord"&&<details className="border-b bg-muted/25 px-5 py-2"><summary className="cursor-pointer text-xs font-semibold text-primary">Gmail setup guide</summary><div className="pt-3">
      <LandlordGmailGuide connected={!!connection?.connected} email={connection?.email||null} busy={!!busy}
        onConnect={()=>void connectionAction("connect")} onRefresh={()=>void loadConnection()}/>
-    </div>}
-    <ContactActivityDashboard mode={mode} invoke={premium} refreshKey={activityRevision}
+    </div></details>}
+    <nav className="sticky top-0 z-20 border-b bg-background/95 px-4 py-3 shadow-sm backdrop-blur sm:px-5" aria-label="Communications workspace">
+     <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap gap-1.5">
+       {(Object.keys(kindLabels) as Kind[]).filter(k=>mode==="admin"||k!=="support_enquiry").map(k=>
+        <Button key={k} type="button" size="sm" className="h-9 rounded-lg px-3 text-xs"
+         variant={workspace==="cases"&&kind===k?"default":"ghost"}
+         aria-current={workspace==="cases"&&kind===k?"page":undefined}
+         onClick={()=>{if(kind!==k||workspace!=="cases")selectKind(k);}}>{kindLabels[k]}</Button>)}
+      </div>
+      <Button type="button" size="sm" className="h-9 gap-1.5 rounded-lg" variant={workspace==="activity"?"default":"outline"}
+       onClick={()=>{setWorkspace("activity");const next=new URLSearchParams(params);next.set("view","activity");setParams(next,{replace:true});}}>
+       <Users className="h-4 w-4"/>Contact activity
+      </Button>
+     </div>
+     {workspace==="cases"&&<>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+       <div className="relative min-w-[190px] flex-1">
+        <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"/>
+        <Input value={search} onChange={e=>setSearch(e.target.value)} aria-label="Find student or reservation"
+         placeholder="Search student, residence, reference…" className="h-9 rounded-lg pl-9"/>
+       </div>
+       {(kind==="application"||kind==="reservation")&&
+        <Select value={academicYear} onValueChange={v=>{setAcademicYear(v);setSelected("");setChecked(new Set());resetPreview();}}>
+         <SelectTrigger className="h-9 w-[122px] rounded-lg" aria-label="Academic year"><SelectValue/></SelectTrigger>
+         <SelectContent><SelectItem value="2026">2026</SelectItem><SelectItem value="2027">2027</SelectItem></SelectContent>
+        </Select>}
+       <Select value={sortBy} onValueChange={v=>setSortBy(v as typeof sortBy)}>
+        <SelectTrigger className="h-9 w-[154px] rounded-lg" aria-label="Sort student cases"><ArrowUpDown className="mr-1 h-3.5 w-3.5"/><SelectValue/></SelectTrigger>
+        <SelectContent><SelectItem value="needs_action">Needs action first</SelectItem><SelectItem value="newest">Newest first</SelectItem><SelectItem value="oldest">Oldest first</SelectItem></SelectContent>
+       </Select>
+       <Button type="button" size="sm" variant={advancedFilters?"secondary":"outline"} className="h-9 gap-1.5" onClick={()=>setAdvancedFilters(v=>!v)}>
+        <SlidersHorizontal className="h-3.5 w-3.5"/>More filters
+       </Button>
+      </div>
+      <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filter by student progress">
+       {([
+        ["all","All cases",totalCases],["uploaded","Docs uploaded",queueStats.uploaded],
+        ["missing","Missing docs",queueStats.missing],["received","Ready to review",queueStats.review],
+        ["not_contacted","No email yet",queueStats.unemailed],["followup_due","Follow-up due",queueStats.followup]
+       ] as const).map(([key,label,count])=><Button key={key} type="button" size="sm" variant={filter===key?"default":"outline"}
+         className="h-8 shrink-0 gap-1.5 rounded-full px-3 text-xs" onClick={()=>setFilter(key)}>
+         {label}<span className="text-[11px] opacity-70">{count}</span></Button>)}
+      </div>
+      {advancedFilters&&<div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border bg-muted/30 p-3">
+       <span className="text-xs font-semibold text-muted-foreground">More ways to filter</span>
+       <Select value={filter} onValueChange={v=>setFilter(v as typeof filter)}>
+        <SelectTrigger className="h-9 w-full max-w-[280px] bg-background" aria-label="Detailed workflow filter"><SelectValue/></SelectTrigger>
+        <SelectContent>
+         <SelectItem value="all">All cases</SelectItem><SelectItem value="uploaded">Any documents uploaded</SelectItem>
+         <SelectItem value="no_uploads">No documents uploaded</SelectItem><SelectItem value="missing">Missing required documents</SelectItem>
+         <SelectItem value="received">Documents awaiting review</SelectItem><SelectItem value="decision">Decisions and confirmations</SelectItem>
+         <SelectItem value="not_contacted">No email sent yet</SelectItem><SelectItem value="followup_due">Follow-up due</SelectItem>
+         <SelectItem value="student_acted">Student uploaded after email</SelectItem><SelectItem value="awaiting_review">Awaiting verification</SelectItem>
+         <SelectItem value="decision_changed">Status changed since email</SelectItem><SelectItem value="approved">Approved / confirmed</SelectItem>
+         <SelectItem value="rejected">Rejected</SelectItem>
+        </SelectContent>
+       </Select>
+       <Button variant="ghost" size="sm" onClick={()=>{setFilter("all");setSearch("");}}>Clear filters</Button>
+      </div>}
+      <p className="mt-1 text-[11px] text-muted-foreground">
+       {items.length} of {totalCases} cases loaded · filters and counts use loaded records
+       {nextOffset!==null&&<span> · <button type="button" className="font-semibold text-primary underline underline-offset-2" disabled={loadingMore}
+        onClick={()=>void loadRemaining(true)}>Load all for complete filtering</button></span>}
+      </p>
+     </>}
+    </nav>
+    {workspace==="activity"?<ContactActivityDashboard mode={mode} invoke={premium} refreshKey={activityRevision}
      onOpenCase={(targetKind,id)=>{
-      setKind(targetKind);
-      setSelected(id);
-      setPane("compose");
-      resetPreview();
-      setChecked(new Set());
-      const next=new URLSearchParams(params);
-      next.set("kind",targetKind);next.set("target",id);
-      setParams(next,{replace:true});
-     }}/>
-    <div className="grid min-h-[640px] grid-cols-1 divide-y xl:grid-cols-[310px_minmax(330px,1fr)_minmax(360px,1.13fr)] xl:divide-x xl:divide-y-0">
+      deepLinkedIdRef.current=id;setWorkspace("cases");setKind(targetKind);setSelected(id);setPane("compose");resetPreview();setChecked(new Set());
+      const next=new URLSearchParams(params);next.delete("view");next.set("kind",targetKind);next.set("target",id);setParams(next,{replace:true});
+     }}/>:
+    <>
+    <div className="grid min-w-0 grid-cols-1 divide-y lg:grid-cols-[minmax(285px,0.82fr)_minmax(0,1.9fr)] lg:divide-x lg:divide-y-0">
     {/* Inbox / queue */}
     <aside className="flex min-w-0 flex-col">
-     <div className="space-y-3 border-b p-4">
-      <p className="flex items-center gap-2 text-sm font-bold"><Inbox className="h-4 w-4 text-primary"/> Case inbox <Badge variant="secondary">{items.length} / {totalCases}</Badge></p>
-      <div className="flex flex-wrap gap-1.5">{(Object.keys(kindLabels) as Kind[]).filter(k=>mode==="admin"||k!=="support_enquiry").map(k=>
-       <Button key={k} size="sm" className="h-7 px-2.5 text-[11px]" variant={kind===k?"default":"outline"} onClick={()=>selectKind(k)}>{kindLabels[k]}</Button>)}</div>
-      {(kind==="application"||kind==="reservation")&&<Select value={academicYear} onValueChange={v=>{setAcademicYear(v);setSelected("");setChecked(new Set());resetPreview();}}><SelectTrigger><SelectValue placeholder="Academic year"/></SelectTrigger><SelectContent><SelectItem value="2026">2026 · Historical cases</SelectItem><SelectItem value="2027">2027 · {kind==="application"?"Applications not open":"Reservations"}</SelectItem></SelectContent></Select>}
-      <div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/>
-       <Input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search applicants, references..." className="pl-8" aria-label="Search case inbox"/></div>
-      <Select value={filter} onValueChange={v=>setFilter(v as typeof filter)}>
-       <SelectTrigger><SelectValue/></SelectTrigger><SelectContent>
-        <SelectItem value="all">All cases</SelectItem><SelectItem value="missing">Missing documents</SelectItem>
-        <SelectItem value="received">Documents received</SelectItem><SelectItem value="decision">Decisions and confirmations</SelectItem>
-        <SelectItem value="not_contacted">Not contacted yet</SelectItem><SelectItem value="followup_due">Follow-up due</SelectItem>
-        <SelectItem value="student_acted">Uploaded after outreach</SelectItem><SelectItem value="awaiting_review">Awaiting document review</SelectItem>
-        <SelectItem value="decision_changed">Status changed since email</SelectItem><SelectItem value="approved">Approved / confirmed</SelectItem>
-        <SelectItem value="rejected">Rejected</SelectItem>
-       </SelectContent></Select>
-      <div className="flex items-center justify-between"><p className="text-xs font-semibold text-muted-foreground">{selectedCount} selected for bulk actions</p>
-       <Button size="sm" variant="ghost" className="h-7" onClick={()=>void loadItems()}><RefreshCw className="h-3.5 w-3.5"/></Button></div>
-      <div className="flex gap-2">
-       <Button size="sm" variant="outline" className="h-8 flex-1 text-xs" onClick={()=>setChecked(new Set(visible.filter(x=>x.can_email).slice(0,25).map(x=>x.id)))}>Select next 25 eligible</Button>
-       <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={()=>setChecked(new Set())}>Clear</Button>
+     <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/15 px-4 py-3">
+      <div>
+       <p className="flex items-center gap-2 text-sm font-bold"><LayoutList className="h-4 w-4 text-primary"/>Student queue
+        <Badge variant="secondary">{visible.length} shown</Badge></p>
+       <p className="mt-0.5 text-[11px] text-muted-foreground">Choose a student to see progress and the next step</p>
+      </div>
+      <Button type="button" variant="ghost" size="icon" aria-label="Refresh student queue" disabled={loading} onClick={()=>void loadItems()}>
+       <RefreshCw className={cn("h-4 w-4",loading&&"animate-spin")}/>
+      </Button>
+     </div>
+     <div className="flex items-center justify-between gap-2 border-b px-4 py-2">
+      <p className="text-[11px] text-muted-foreground">{selectedCount} selected</p>
+      <div className="flex gap-1">
+       <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={()=>setChecked(new Set(visible.filter(x=>x.can_email).slice(0,25).map(x=>x.id)))}>Select 25</Button>
+       <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={()=>setChecked(new Set())}>Clear</Button>
+       {selectedCount>0&&<Button size="sm" className="h-8 text-[11px]" onClick={()=>setPane("bulk")}>Bulk actions</Button>}
       </div>
      </div>
      {queueError&&<div role="alert" className="mx-3 mb-3 rounded-xl border border-amber-400/50 bg-amber-50 p-3 text-amber-950 dark:bg-amber-950/25 dark:text-amber-100">
@@ -434,45 +529,57 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       {items.length>0&&<p className="mt-1 text-xs">Previously loaded records are shown until the connection recovers.</p>}
       <Button type="button" size="sm" variant="outline" className="mt-2" disabled={loading} onClick={()=>void loadItems()}><RefreshCw className="mr-1.5 h-3.5 w-3.5"/>Retry loading</Button>
      </div>}
-     <p className="px-4 py-2 text-[11px] text-muted-foreground">{queueError&&items.length===0?"Case counts unavailable until the connection recovers.":`${items.length} cases loaded of ${totalCases}. Sort and filter the loaded queue, or load the remaining pages.`}</p>
+     <p className="px-4 py-2 text-[11px] text-muted-foreground">{queueError&&items.length===0?"Case counts unavailable until the connection recovers.":`${visible.length} matching · ${items.length}/${totalCases} loaded`}</p>
      {nextOffset!==null&&<div className="flex gap-2 px-4 pb-2"><Button variant="outline" size="sm" disabled={loadingMore} onClick={()=>void loadRemaining(false)}>Load next 100</Button><Button variant="secondary" size="sm" disabled={loadingMore} onClick={()=>void loadRemaining(true)}>{loadingMore?"Loading…":"Load all remaining"}</Button></div>}
-     <ScrollArea className="h-[360px] xl:h-[650px]">
+     <ScrollArea className="h-[min(68vh,710px)] min-h-[320px]">
       {loading?<p className="p-6 text-center text-sm text-muted-foreground">Loading case intelligence…</p>:
        visible.length===0?<p className="p-6 text-center text-sm text-muted-foreground">{queueError?"The case queue could not be loaded. Use Retry above.":kind==="application"&&academicYear==="2027"?"2027 applications are not open yet. Existing reservations are managed under Reservations.":"No matching cases in this view."}</p>:
-       visible.map(item=><div key={item.id} className={cn("flex items-start gap-2 border-b px-3 py-3 transition-colors",selected===item.id?"bg-primary/10":"hover:bg-muted/40")}>
+       visible.map(item=><div key={item.id} className={cn("flex items-start gap-2 border-b px-3 py-3 transition-colors",selected===item.id?"border-l-2 border-l-primary bg-primary/[0.06]":"hover:bg-muted/40")}>
         <Checkbox className="mt-2" checked={checked.has(item.id)} onCheckedChange={v=>toggleSelected(item.id,v===true)} aria-label={"Select "+item.label}/>
         <button type="button" className="min-w-0 flex-1 text-left" onClick={()=>selectRecord(item.id)}>
-         <div className="flex items-start justify-between gap-2"><p className="truncate text-sm font-bold">{item.label}</p><ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground"/></div>
+         <div className="flex items-start justify-between gap-2">
+          <p className="truncate text-sm font-bold">{item.label}</p>
+          <Badge variant="outline" className="max-w-[116px] shrink-0 truncate rounded-full px-2 py-0 text-[10px]">{pretty(item.status)}</Badge>
+         </div>
          <p className="mt-1 truncate text-xs text-muted-foreground">{item.property} · {item.reference}</p>
-         <p className="mt-1 text-xs">{pretty(item.status)}</p>
-         <p className="mt-1 text-[11px] font-semibold text-primary">{pretty(item.workflow_bucket||"not_contacted")}</p>
-         {item.email_sent&&<p className="mt-1 text-[10px] text-muted-foreground">Email sent {item.last_email_at?new Date(item.last_email_at).toLocaleDateString("en-ZA"):""} · {pretty(item.last_email_template||"status_update")}</p>}
-         {item.student_uploaded_after_email&&<Badge variant="secondary" className="mt-1 text-[10px]">Applicant uploaded after email</Badge>}
-         <div className="mt-2 flex flex-wrap gap-1.5"><Badge variant="outline" className={cn("text-[10px]",signalStyle(item.document_stage))}>
-           {formattedSignal(item.document_stage)}</Badge>{!item.can_email&&<Badge variant="destructive" className="text-[10px]">No contact</Badge>}</div>
+         <div className="mt-2 flex flex-wrap gap-1">
+          {(item.uploaded_count||0)>0
+           ?<Badge variant="secondary" className="text-[10px]">{item.uploaded_count} uploaded</Badge>
+           :<Badge variant="outline" className="text-[10px] text-muted-foreground">No uploads</Badge>}
+          {item.missing_count>0&&<Badge variant="outline" className="border-amber-400/50 bg-amber-50 text-[10px] text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">{item.missing_count} missing</Badge>}
+          {item.pending_review>0&&<Badge variant="outline" className="border-blue-400/50 bg-blue-50 text-[10px] text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">{item.pending_review} to review</Badge>}
+          {item.email_sent
+           ?<Badge variant="outline" className="border-emerald-500/30 text-[10px] text-emerald-700 dark:text-emerald-300">Email sent</Badge>
+           :<Badge variant="outline" className="text-[10px]">No email yet</Badge>}
+         </div>
+         <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+          <span className="font-semibold text-foreground">Next:</span> {item.service_action||pretty(item.workflow_bucket||"awaiting_action")}
+         </p>
+         {item.student_uploaded_after_email&&<p className="mt-1 text-[11px] font-semibold text-blue-600">New upload since last email</p>}
         </button>
        </div>)}
      </ScrollArea>
     </aside>
-    {/* Intelligence and case drafting */}
-    <section className="min-w-0 space-y-4 p-4">
+    {/* Selected student details and communication actions */}
+    <div className="grid min-w-0 grid-cols-1 divide-y 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] 2xl:divide-x 2xl:divide-y-0">
+    <section id="rk-case-detail-panel" className="min-w-0 scroll-mt-32 space-y-4 p-4">
      <div className="flex items-center justify-between"><p className="font-bold">Case intelligence</p><Badge variant="outline">{active?pretty(active.status):"No case"}</Badge></div>
      {!caseInfo?<div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Select a case to view its document readiness and recommended correspondence.</div>:
       <div className="space-y-3">
        <div className="rounded-xl border p-4">
         <p className="text-lg font-black">{caseInfo.label}</p>
         <p className="mt-1 text-xs text-muted-foreground">{caseInfo.property} · Ref {caseInfo.reference}</p>
-        {caseInfo.residence_image_url&&<img src={caseInfo.residence_image_url} alt={"Real listing photo: "+caseInfo.property} className="mt-3 max-h-44 w-full rounded-lg object-cover"/>}
+        {caseInfo.residence_image_url&&<img src={caseInfo.residence_image_url} alt={"Real listing photo: "+caseInfo.property} className="mt-3 max-h-32 w-full rounded-lg object-cover"/>}
         <div className="mt-3 grid grid-cols-2 gap-2">
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recorded status</p><p className="mt-1 text-xs font-bold">{pretty(caseInfo.status)}</p></div>
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recipient</p><p className="mt-1 text-xs font-bold">{caseInfo.recipient_hint||"No valid email"}</p></div>
         </div>
        </div>
        <div className="rounded-xl border border-blue-500/20 bg-blue-500/[.035] p-4">
-        <p className="flex items-center gap-2 text-sm font-bold"><Sparkles className="h-4 w-4 text-blue-600"/>Smart case assessment</p>
+        <p className="flex items-center gap-2 text-sm font-bold"><Sparkles className="h-4 w-4 text-blue-600"/>Documents & next step</p>
         <p className={cn("mt-2 text-sm font-semibold",signalStyle(caseInfo.document_signal.stage))}>{caseInfo.document_signal.summary}</p>
-        {caseInfo.document_signal.missing.length>0&&<div className="mt-2"><p className="text-xs font-bold">Outstanding requirements:</p>
-          <ul className="mt-1 list-inside list-disc space-y-1 text-xs">{caseInfo.document_signal.missing.map(d=><li key={d}>{d}</li>)}</ul></div>}
+        {caseInfo.document_signal.missing.length>0&&<details className="mt-2"><summary className="cursor-pointer text-xs font-bold">{caseInfo.document_signal.missing.length} outstanding requirements · View list</summary>
+          <ul className="mt-1 list-inside list-disc space-y-1 text-xs">{caseInfo.document_signal.missing.map(d=><li key={d}>{d}</li>)}</ul></details>}
         {caseInfo.document_signal.uploaded>0&&<p className="mt-2 text-xs text-muted-foreground">{caseInfo.document_signal.uploaded} uploaded · {caseInfo.document_signal.pendingReview} awaiting verification</p>}
         <p className="mt-3 text-xs font-medium">Recommended: {pretty(active?.suggested_template||caseInfo.recommended_template)}</p>
         {active?.service_action&&<p className="mt-2 rounded-lg bg-background p-2 text-xs font-semibold">{active.service_action}</p>}
@@ -484,7 +591,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           {templatesForKind.map(t=><SelectItem key={t} value={t}>{t==="smart"?"✨ Smart recommended for this case":defaults[t]?.name||pretty(t)}</SelectItem>)}
          </SelectContent></Select></div>
        <div><Label htmlFor="premium-email-note">Personalized message / decision details</Label>
-        <Textarea id="premium-email-note" rows={6} value={note} maxLength={2500}
+        <Textarea id="premium-email-note" rows={3} value={note} maxLength={2500}
           placeholder="Optional practical details: viewing date and time, move-in instructions, what to submit, or the next step. Avoid repeating the case status."
           onChange={e=>{setNote(e.target.value);resetPreview();}}/>
         <p className="mt-1 text-[11px] text-muted-foreground">{note.length}/2500 · Only recorded decisions appear as formal approvals or rejections.</p></div>
@@ -602,7 +709,9 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       </TabsContent>
      </Tabs>
     </section>
+    </div>
    </div>
+   </>}
   </div>
   <div className="flex items-start gap-2 text-xs text-muted-foreground">
    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0"/>
