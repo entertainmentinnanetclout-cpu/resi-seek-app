@@ -76,7 +76,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [workspace,setWorkspace]=useState<"cases"|"activity">(params.get("view")==="activity"?"activity":"cases");
  const [advancedFilters,setAdvancedFilters]=useState(false);
  const [sortBy,setSortBy]=useState<"newest"|"oldest"|"needs_action">("needs_action");
- const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision"|"not_contacted"|"followup_due"|"student_acted"|"awaiting_review"|"decision_changed"|"approved"|"rejected"|"uploaded"|"no_uploads">("all");
+ const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision"|"not_contacted"|"followup_due"|"student_acted"|"awaiting_review"|"decision_changed"|"approved"|"rejected"|"uploaded"|"no_uploads"|"submitted"|"under_review"|"reserved"|"confirmed">("all");
  const [caseInfo,setCaseInfo]=useState<CaseInfo|null>(null);
  const [template,setTemplate]=useState<Template>("smart");
  const [note,setNote]=useState("");
@@ -217,6 +217,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   const match=(x.label+" "+x.status+" "+x.property+" "+x.reference).toLowerCase().includes(search.toLowerCase().trim());
   if(!match)return false;
   if(filter==="missing")return x.missing_count>0;
+  if(["submitted","under_review","reserved","confirmed"].includes(filter))return x.status===filter;
   if(filter==="uploaded")return (x.uploaded_count||0)>0;
   if(filter==="no_uploads")return (x.uploaded_count||0)===0;
   if(filter==="received")return x.pending_review>0||x.document_stage==="received";
@@ -243,7 +244,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   missing:items.filter(x=>x.missing_count>0).length,
   review:items.filter(x=>x.pending_review>0||x.document_stage==="received").length,
   unemailed:items.filter(x=>!x.email_sent).length,
-  followup:items.filter(x=>x.workflow_bucket==="followup_due").length
+  followup:items.filter(x=>x.workflow_bucket==="followup_due").length,
+  submitted:items.filter(x=>x.status==="submitted").length,
+  underReview:items.filter(x=>x.status==="under_review").length,
+  reserved:items.filter(x=>x.status==="reserved").length,
+  confirmed:items.filter(x=>x.status==="confirmed").length
  }),[items]);
  const templatesForKind=useMemo(()=>{
   const base:(Template)[]=["smart","acknowledgement","documents_needed","documents_received","status_update","feedback","next_steps","follow_up"];
@@ -257,7 +262,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const selectedCount=checked.size;
  const resetPreview=()=>{setPreview(null);setApproved(false);setBulkPreview([]);setBulkApproval(false);setStatusPreview([]);setStatusApproved(false);setBatchSummary(null);};
  const selectKind=(k:Kind)=>{
-  setKind(k);setWorkspace("cases");setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setChecked(new Set());setNote("");resetPreview();
+  setKind(k);setWorkspace("cases");setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setChecked(new Set());setNote("");setPane(k==="application"||k==="reservation"?"documents":"compose");resetPreview();
   const next=new URLSearchParams(params);next.set("kind",k);next.delete("target");next.delete("view");setParams(next,{replace:true});
  };
  const selectRecord=(id:string)=>{
@@ -473,7 +478,26 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
         <SlidersHorizontal className="h-3.5 w-3.5"/>More filters
        </Button>
       </div>
-      <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filter by student progress">
+      {(kind==="application"||kind==="reservation")&&<div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4" aria-label={kind==="application"?"Applications overview":"Reservations overview"}>
+        {(kind==="application"?([
+         ["submitted","Submitted",queueStats.submitted,"New cases"],
+         ["uploaded","Docs uploaded",queueStats.uploaded,"Files received"],
+         ["received","Ready to review",queueStats.review,"Verify submissions"],
+         ["decision","Decisions",items.filter(x=>["approved","rejected","conditionally_approved"].includes(x.status)).length,"Recorded outcomes"]
+        ] as const):([
+         ["reserved","Reserved",queueStats.reserved,"Awaiting next steps"],
+         ["uploaded","Docs uploaded",queueStats.uploaded,"Files received"],
+         ["received","Ready to review",queueStats.review,"Verify submissions"],
+         ["confirmed","Confirmed",queueStats.confirmed,"Placement status"]
+        ] as const)).map(([key,label,count,description])=>
+         <button key={key} type="button" onClick={()=>setFilter(key)} aria-pressed={filter===key}
+          className={cn("rounded-xl border px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+           filter===key?"border-primary bg-primary/[0.06] shadow-sm":"border-border bg-card")}>
+          <span className="flex items-center justify-between gap-2"><span className="text-xs font-bold">{label}</span><span className="text-lg font-black tabular-nums">{count}</span></span>
+          <span className="text-[11px] text-muted-foreground">{description}</span>
+         </button>)}
+       </div>}
+       <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filter by student progress">
        {([
         ["all","All cases",totalCases],["uploaded","Docs uploaded",queueStats.uploaded],
         ["missing","Missing docs",queueStats.missing],["received","Ready to review",queueStats.review],
@@ -494,6 +518,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
          <SelectItem value="student_acted">Student uploaded after email</SelectItem><SelectItem value="awaiting_review">Awaiting verification</SelectItem>
          <SelectItem value="decision_changed">Status changed since email</SelectItem><SelectItem value="approved">Approved / confirmed</SelectItem>
          <SelectItem value="rejected">Rejected</SelectItem>
+         {kind==="application"&&<><SelectItem value="submitted">Submitted applications</SelectItem><SelectItem value="under_review">Applications under review</SelectItem></>}
+         {kind==="reservation"&&<><SelectItem value="reserved">Reserved rooms</SelectItem><SelectItem value="confirmed">Confirmed reservations</SelectItem></>}
         </SelectContent>
        </Select>
        <Button variant="ghost" size="sm" onClick={()=>{setFilter("all");setSearch("");}}>Clear filters</Button>
@@ -589,6 +615,10 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recorded status</p><p className="mt-1 text-xs font-bold">{pretty(caseInfo.status)}</p></div>
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recipient</p><p className="mt-1 text-xs font-bold">{caseInfo.recipient_hint||"No valid email"}</p></div>
         </div>
+        {needsReview&&<div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+         <span className="text-[11px] text-muted-foreground">Record the next application or reservation decision when ready.</span>
+         <Button size="sm" variant="outline" className="h-8 text-xs" onClick={()=>{setChecked(new Set([selected]));setPane("bulk");}}><CheckCheck className="mr-1.5 h-3.5 w-3.5"/>Update status</Button>
+        </div>}
        </div>
        <div className="rounded-xl border border-blue-500/20 bg-blue-500/[.035] p-4">
         <p className="flex items-center gap-2 text-sm font-bold"><Sparkles className="h-4 w-4 text-blue-600"/>Documents & next step</p>
