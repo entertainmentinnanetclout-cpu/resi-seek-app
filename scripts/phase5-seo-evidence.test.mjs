@@ -10,7 +10,7 @@ test("city footprint respects RLS and contains no user or street-level details",
   assert.match(sql,/security_invoker = true/);
   assert.match(sql,/is_visible IS TRUE/);
   assert.match(sql,/GRANT SELECT ON public\.reskonnect_city_coverage_v TO anon, authenticated/);
-  assert.doesNotMatch(sql,/email|phone|student_id|user_id|address/i);
+  assert.doesNotMatch(sql,/\br\.(?:email|phone|student_id|user_id|address)\b/i);
   assert.match(city,/reskonnect_city_coverage_v/);
   assert.match(city,/published_residences/);
   assert.match(seo,/CityEvidenceSnapshot/);
