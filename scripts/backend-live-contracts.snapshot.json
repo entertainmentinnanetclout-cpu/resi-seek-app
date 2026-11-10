@@ -2691,5 +2691,2810 @@
       "verify_jwt": true,
       "status": "ACTIVE"
     }
+  ],
+  "server_routines": [
+    {
+      "name": "admin_approve_recruiter_application",
+      "args": [
+        "_app_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_assign_partnership_member_by_email",
+      "args": [
+        "p_partner_slug",
+        "p_email",
+        "p_role"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_bulk_update_residence_audience",
+      "args": [
+        "_residence_ids",
+        "_mode",
+        "_audiences"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_create_residence_portal",
+      "args": [
+        "_residence_id",
+        "_user_id",
+        "_email"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_dashboard_counts",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_dashboard_overview",
+      "args": [
+        "p_academic_year",
+        "p_academic_cycle",
+        "p_academic_period",
+        "p_study_level",
+        "p_student_stage"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_delete_listing",
+      "args": [
+        "_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_delete_residence_portal",
+      "args": [
+        "_residence_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "admin_delete_residence_portal_account",
+      "args": [
+        "_account_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_effective_departments",
+      "args": [
+        "p_user_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "admin_growth_command_centre",
+      "args": [
+        "_days"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_list_staff_accounts",
+      "args": [
+        "p_search"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_mark_referral_status",
+      "args": [
+        "_application_id",
+        "_status"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_partnership_command_center",
+      "args": [
+        "p_days"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_recent_activity",
+      "args": [
+        "_limit"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_reject_recruiter_application",
+      "args": [
+        "_app_id",
+        "_reason"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_set_application_status",
+      "args": [
+        "_id",
+        "_status",
+        "_note"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_set_department_assignments",
+      "args": [
+        "p_user_id",
+        "p_departments"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_set_residence_portal_active",
+      "args": [
+        "_residence_id",
+        "_active"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_set_staff_role",
+      "args": [
+        "p_user_id",
+        "p_role"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "admin_toggle_store_verified",
+      "args": [
+        "_id",
+        "_v"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_approve_corporate_affairs_draft",
+      "args": [
+        "p_id",
+        "p_approve"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_approve_partnership_draft",
+      "args": [
+        "p_id",
+        "p_approve"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_approve_site_announcement",
+      "args": [
+        "p_id",
+        "p_approve",
+        "p_activate"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_build_landlord_campaign_recipients",
+      "args": [
+        "p_campaign_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_complete_next_best_action",
+      "args": [
+        "p_action_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_contact_id_for_user",
+      "args": [
+        "p_user_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_customer_360",
+      "args": [
+        "p_contact_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_decide_approval",
+      "args": [
+        "p_approval_id",
+        "p_decision",
+        "p_note"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_detect_language",
+      "args": [
+        "p_text"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "adminos_dispatch_event",
+      "args": [
+        "p_event_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_enqueue_whatsapp_site_event",
+      "args": [
+        "p_event_type",
+        "p_source_table",
+        "p_source_id",
+        "p_user_id",
+        "p_phone",
+        "p_payload",
+        "p_idempotency_suffix"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_generate_conversion_followups",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_generate_executive_brief",
+      "args": [
+        "p_date"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_generate_proactive_notifications",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_global_search",
+      "args": [
+        "p_query",
+        "p_limit"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_gold_security_summary",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_is_admin",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_is_staff",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_queue_landlord_campaign",
+      "args": [
+        "p_campaign_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_recalculate_all_prospects",
+      "args": [
+        "p_limit"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_recalculate_application_health",
+      "args": [
+        "p_application_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_recalculate_prospect_score",
+      "args": [
+        "p_prospect_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_record_agent_feedback",
+      "args": [
+        "p_thread_id",
+        "p_contact_id",
+        "p_source_message_id",
+        "p_context_key",
+        "p_satisfied",
+        "p_score",
+        "p_feedback_text",
+        "p_language_code",
+        "p_metadata"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_record_csat",
+      "args": [
+        "p_thread_id",
+        "p_score",
+        "p_source_message_id",
+        "p_comment",
+        "p_language"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_record_customer_event",
+      "args": [
+        "p_contact_id",
+        "p_user_id",
+        "p_category",
+        "p_event_type",
+        "p_source_table",
+        "p_source_id",
+        "p_title",
+        "p_summary",
+        "p_status",
+        "p_metadata",
+        "p_occurred_at",
+        "p_idempotency_key"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_record_learning_gap",
+      "args": [
+        "p_question",
+        "p_thread_id",
+        "p_contact_id",
+        "p_reason",
+        "p_category",
+        "p_metadata"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_refresh_executive_alerts",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_refresh_next_best_actions",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_refresh_service_metrics",
+      "args": [
+        "p_date"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_refresh_service_recovery",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_resolve_contact",
+      "args": [
+        "p_full_name",
+        "p_email",
+        "p_phone",
+        "p_profile_user_id",
+        "p_source_type",
+        "p_source_id",
+        "p_metadata"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_resolve_service_recovery",
+      "args": [
+        "p_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg10_partnerships_cycle",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg10_prepare_drafts",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg10_reconcile_tasks",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg10_refresh_relationships",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg10_sync_partner_lead",
+      "args": [
+        "p_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg11_prepare_drafts",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg11_reconcile_tasks",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg11_refresh_briefs",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg11_refresh_signals",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg11_reputation_cycle",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg11_statement_risk",
+      "args": [
+        "p_text"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "adminos_rg12_normalize_path",
+      "args": [
+        "p_url"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "adminos_rg12_reconcile_tasks",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg12_refresh_page_metrics",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg12_refresh_signals",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg12_safe_metadata_hygiene",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg12_seo_cycle",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg12_upsert_signal",
+      "args": [
+        "p_key",
+        "p_path",
+        "p_type",
+        "p_priority",
+        "p_score",
+        "p_state",
+        "p_evidence",
+        "p_action"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg13_decide_payout_approval",
+      "args": [
+        "p_approval_id",
+        "p_approve",
+        "p_note"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg13_finance_cycle",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg13_reconcile_tasks",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg13_refresh_anomalies",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg13_upsert_anomaly",
+      "args": [
+        "p_key",
+        "p_type",
+        "p_severity",
+        "p_amount_zar",
+        "p_amount_usd",
+        "p_entity_type",
+        "p_entity_id",
+        "p_requires_approval",
+        "p_evidence",
+        "p_action"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg14_reconcile_tasks",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg14_refresh_incidents",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg14_reliability_cycle",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg14_upsert_incident",
+      "args": [
+        "p_key",
+        "p_subsystem",
+        "p_type",
+        "p_severity",
+        "p_count",
+        "p_evidence",
+        "p_action"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg15_executive_cycle",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg15_generate_operating_snapshot",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg15_reconcile_tasks",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg15_refresh_executive_alerts",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg15_refresh_priorities",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg15_upsert_priority",
+      "args": [
+        "p_key",
+        "p_area",
+        "p_department",
+        "p_priority",
+        "p_risk",
+        "p_title",
+        "p_rationale",
+        "p_source_type",
+        "p_source_id",
+        "p_count",
+        "p_requires_approval",
+        "p_url",
+        "p_evidence"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg6_conversion_cycle",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg6_normalize_intent",
+      "args": [
+        "p_intent"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "adminos_rg7_application_operations_cycle",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg8_occupancy_cycle",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg8_refresh_occupancy_year",
+      "args": [
+        "p_academic_year"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg9_reconcile_tasks",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg9_refresh_catalog",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg9_refresh_matches",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg9_refresh_support_case",
+      "args": [
+        "p_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg9_refresh_wil_case",
+      "args": [
+        "p_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_rg9_student_opportunities_cycle",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "adminos_run_rg10_now",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_run_rg11_now",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_run_rg12_now",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_run_rg13_now",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_run_rg14_now",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_run_rg15_now",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_run_rg6_now",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_run_rg7_now",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_run_rg8_now",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_run_rg9_now",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_set_contact_language",
+      "args": [
+        "p_contact_id",
+        "p_language_code",
+        "p_source",
+        "p_confidence"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_staff_build_landlord_campaign_recipients",
+      "args": [
+        "p_campaign_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_staff_queue_landlord_campaign",
+      "args": [
+        "p_campaign_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "adminos_touch_whatsapp_conversion",
+      "args": [
+        "p_thread_id",
+        "p_contact_id",
+        "p_user_id",
+        "p_intent",
+        "p_stage",
+        "p_patch"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "attach_referral_to_user",
+      "args": [
+        "_session_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "attribute_creator",
+      "args": [
+        "_creator_id",
+        "_referral_code",
+        "_session_id",
+        "_source"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "attribute_partnership",
+      "args": [
+        "p_partner_slug",
+        "p_session_id",
+        "p_source"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "automation_command_center",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "can_access_partnership",
+      "args": [
+        "p_slug"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "can_manage_accommodation_reservations",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "can_manage_growth",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "can_manage_handover_export",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "can_manage_partnership",
+      "args": [
+        "p_slug"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "can_manage_site_content",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "cancel_account_deletion_request",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "capture_application_referral",
+      "args": [
+        "_application_id",
+        "_code",
+        "_session_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "capture_referral",
+      "args": [
+        "_code",
+        "_referred"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "capture_referral_click",
+      "args": [
+        "_code",
+        "_visitor_id",
+        "_landing_url",
+        "_user_agent"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "capture_referral_for_current_user",
+      "args": [
+        "_code"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "capture_referral_sale",
+      "args": [
+        "_order_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "capture_residence_referral_click",
+      "args": [
+        "_link_key",
+        "_visitor_id",
+        "_landing_url",
+        "_user_agent"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "claim_residence_portal_account",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "consume_edge_rate_limit",
+      "args": [
+        "_scope",
+        "_subject_hash",
+        "_request_limit",
+        "_window_seconds"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "course_match_tut",
+      "args": [
+        "p_student_aps",
+        "p_subjects",
+        "p_include_non_matches"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "course_match_unisa",
+      "args": [
+        "p_student_aps",
+        "p_subjects",
+        "p_include_non_matches"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "course_match_up",
+      "args": [
+        "p_student_aps",
+        "p_subjects",
+        "p_include_non_matches"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "create_my_reskonnect_request",
+      "args": [
+        "p_request_type",
+        "p_subject",
+        "p_description",
+        "p_related_entity_type",
+        "p_related_entity_id",
+        "p_source_surface"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "creator_update_assistance_case",
+      "args": [
+        "p_case_id",
+        "p_status",
+        "p_notes",
+        "p_reference"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "dimpho_compile_persona",
+      "args": [
+        "p_version_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "dimpho_create_dataset_release",
+      "args": [
+        "p_name"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "dimpho_customer_context_snapshot",
+      "args": [
+        "p_user_id",
+        "p_contact_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "dimpho_intelligence_overview",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "dimpho_latest_eval_gate",
+      "args": [
+        "p_suite_key"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "dimpho_model_router_snapshot",
+      "args": [
+        "p_route_key"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "dimpho_promote_lesson",
+      "args": [
+        "p_candidate_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "dimpho_publish_persona_version",
+      "args": [
+        "p_version_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "dimpho_queue_full_reindex",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "dimpho_search_knowledge",
+      "args": [
+        "p_query",
+        "p_embedding_text",
+        "p_limit",
+        "p_min_confidence"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "dimpho_upsert_safe_memory",
+      "args": [
+        "p_memory_key",
+        "p_value",
+        "p_confidence",
+        "p_source",
+        "p_source_ref",
+        "p_expires_at"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "generate_ref_code",
+      "args": [
+        "app_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "get_creator_public",
+      "args": [
+        "_slug"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "get_my_access_context",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "get_my_admin_departments",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "get_my_partnership_role",
+      "args": [
+        "p_slug"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "get_my_role",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "get_or_create_referral_code",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "get_public_accreditation_residences",
+      "args": [
+        "p_residence_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "get_push_targets",
+      "args": [
+        "p_user_ids"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "get_referral_public",
+      "args": [
+        "_code"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "get_residence_demand_summary",
+      "args": [
+        "_residence_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "get_residence_portal_reservations",
+      "args": [
+        "p_residence_id",
+        "p_year"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "get_residence_poster_marketing_config",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "get_student_activity",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "get_user_residence_id",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "get_user_staff_role",
+      "args": [
+        "_user_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "gmail_consume_oauth_state",
+      "args": [
+        "p_state_hash"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "gmail_delete_connection",
+      "args": [
+        "p_user_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "gmail_get_connection_secret",
+      "args": [
+        "p_user_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "gmail_store_connection",
+      "args": [
+        "p_user_id",
+        "p_google_subject",
+        "p_gmail_address",
+        "p_refresh_token"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "grant_specialist_role",
+      "args": [
+        "_email",
+        "_role"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "handover_bulk_set_funding",
+      "args": [
+        "_application_ids",
+        "_funding_type"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "handover_get_record",
+      "args": [
+        "_application_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "handover_integrity_issue_rows_internal",
+      "args": [
+        "_residence_id",
+        "_mode"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "handover_integrity_issue_rows_internal_v1",
+      "args": [
+        "_residence_id",
+        "_mode"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "handover_integrity_scan",
+      "args": [
+        "_residence_id",
+        "_mode"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "handover_quarantine_summary",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "handover_release_quarantine",
+      "args": [
+        "_application_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "handover_safe_auto_repair",
+      "args": [
+        "_residence_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "handover_update_record",
+      "args": [
+        "_application_id",
+        "_patch"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "has_admin_department_access",
+      "args": [
+        "p_department_key"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "has_role",
+      "args": [
+        "_user_id",
+        "_role"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "housing_intel_campus_key",
+      "args": [
+        "p_campus"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "housing_intel_demand_heat",
+      "args": [
+        "p_days"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "housing_intel_institution_snapshot",
+      "args": [
+        "p_days"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "housing_intel_opportunities",
+      "args": [
+        "p_days"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "housing_intel_property_partner",
+      "args": [
+        "p_residence_id",
+        "p_days"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "housing_intel_property_partner_service",
+      "args": [
+        "p_residence_id",
+        "p_user_id",
+        "p_days"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "housing_intel_supply_live",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "is_admin",
+      "args": [
+        "user_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "is_application_owner",
+      "args": [
+        "_application_id",
+        "_user_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "is_authorized_residence_user",
+      "args": [
+        "target_residence_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "is_platform_staff",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "is_reskonnect_admin",
+      "args": [
+        "_user_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "luna_academic_demand_heat",
+      "args": [
+        "p_academic_year",
+        "p_days"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "luna_academic_supply_live",
+      "args": [
+        "p_academic_year"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "luna_capture_attribution",
+      "args": [
+        "p_visitor_hash",
+        "p_session_id",
+        "p_landing_path",
+        "p_campaign_code",
+        "p_utm_source",
+        "p_utm_medium",
+        "p_utm_campaign",
+        "p_utm_content",
+        "p_utm_term",
+        "p_referrer_host"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "luna_demand_event_summary",
+      "args": [
+        "p_days"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "luna_growth_overview",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "luna_import_social_demand",
+      "args": [
+        "p_brand_id",
+        "p_network",
+        "p_period_start",
+        "p_period_end",
+        "p_metrics",
+        "p_top_content",
+        "p_best_times",
+        "p_source",
+        "p_metadata"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "luna_log_demand_event",
+      "args": [
+        "p_event_type",
+        "p_visitor_hash",
+        "p_session_id",
+        "p_payload"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "luna_mark_social_post_published",
+      "args": [
+        "p_social_post_id",
+        "p_external_url",
+        "p_external_post_id",
+        "p_published_at"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "luna_social_demand_overview",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "luna_social_demand_score",
+      "args": [
+        "p_metrics"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "match_accommodation_demand",
+      "args": [
+        "_demand_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "my_reskonnect_command_centre",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "my_reskonnect_service_centre",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "normalize_referral_code",
+      "args": [
+        "_code"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "portal_lookup_login_email",
+      "args": [
+        "p_email"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "portal_prepare_orphan_profile_email",
+      "args": [
+        "p_email",
+        "p_admin_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "portal_replace_residence_login",
+      "args": [
+        "p_account_id",
+        "p_new_user_id",
+        "p_email",
+        "p_admin_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "portal_restore_orphan_profile_email",
+      "args": [
+        "p_email",
+        "p_legacy_profile_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "prepare_handover_export",
+      "args": [
+        "_residence_id",
+        "_mode"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "profile_has_required_contact",
+      "args": [
+        "_user_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "record_mobile_runtime_event",
+      "args": [
+        "p_event_type",
+        "p_platform",
+        "p_release",
+        "p_version_code",
+        "p_stage",
+        "p_message",
+        "p_metadata"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "record_virtual_tour_event",
+      "args": [
+        "p_tour_id",
+        "p_scene_id",
+        "p_event_type",
+        "p_viewer_session",
+        "p_anonymous_id",
+        "p_metadata"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "recruiter_select_residence",
+      "args": [
+        "p_residence_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "refresh_residence_data_quality",
+      "args": [
+        "p_residence_id"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "request_account_deletion",
+      "args": [
+        "p_reason"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "residence_portal_set_recruitment",
+      "args": [
+        "p_residence_id",
+        "p_enabled",
+        "p_message"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "residence_portal_update_lead",
+      "args": [
+        "p_lead_id",
+        "p_patch"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "residence_portal_update_profile",
+      "args": [
+        "p_residence_id",
+        "p_patch"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "residence_portal_update_reservation",
+      "args": [
+        "p_reservation_id",
+        "p_status",
+        "p_note"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "residence_recruitment_summary",
+      "args": [
+        "p_residence_id",
+        "p_days"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_confirm_verified_room",
+      "args": [
+        "p_reservation_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_hold_verified_room",
+      "args": [
+        "p_reservation_id",
+        "p_room_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_issue_invoice",
+      "args": [
+        "p_residence_id",
+        "p_product_code",
+        "p_quantity",
+        "p_due_date"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_listing_submit_errors",
+      "args": [
+        "p",
+        "rid"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_opportunity_feed",
+      "args": [
+        "p_query",
+        "p_type",
+        "p_limit"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "reskonnect_progress_viewing",
+      "args": [
+        "p_viewing_id",
+        "p_status",
+        "p_confirmed_at"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_public_sponsored_residences",
+      "args": [
+        "p_placement"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "reskonnect_reconcile_invoice",
+      "args": [
+        "p_invoice_id",
+        "p_action",
+        "p_bank_reference",
+        "p_reconciliation_note",
+        "p_verified_from_bank"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_record_case_action",
+      "args": [
+        "p_kind",
+        "p_id",
+        "p_action",
+        "p_channel",
+        "p_note",
+        "p_followup_at",
+        "p_confirm_sent"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_release_verified_room_hold",
+      "args": [
+        "p_reservation_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_request_property_viewing",
+      "args": [
+        "p_residence_id",
+        "p_date",
+        "p_window",
+        "p_note",
+        "p_consent"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_review_listing",
+      "args": [
+        "p_residence_id",
+        "p_approve",
+        "p_note"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_save_reservation_interest",
+      "args": [
+        "p_residence_id",
+        "p_funding_type",
+        "p_room_preference",
+        "p_notes"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_submit_invoice_payment_reference",
+      "args": [
+        "p_invoice_id",
+        "p_reference"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "reskonnect_viewing_summary",
+      "args": [
+        "p_viewing_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "resmap_canonical_city_for_campus",
+      "args": [
+        "p_campus",
+        "p_address"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "resmap_canonical_province_for_campus",
+      "args": [
+        "p_campus",
+        "p_address"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "resmap_clean_address_text",
+      "args": [
+        "p"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "resmap_hold_room",
+      "args": [
+        "p_room_id",
+        "p_academic_year",
+        "p_funding_type"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "resmap_join_group",
+      "args": [
+        "p_invite_code"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "resmap_log_feed_event",
+      "args": [
+        "p_residence_id",
+        "p_event_type",
+        "p_visitor_hash",
+        "p_metadata"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "resmap_nearby_residences",
+      "args": [
+        "p_lat",
+        "p_lng",
+        "p_radius_m",
+        "p_limit"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "revoke_specialist_role",
+      "args": [
+        "_email",
+        "_role"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_admin_assign_partner_scope",
+      "args": [
+        "p_profile_id",
+        "p_kind",
+        "p_value",
+        "p_state"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_admin_review_partner_account",
+      "args": [
+        "p_kind",
+        "p_user_id",
+        "p_status"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_admin_set_partner_staff_role",
+      "args": [
+        "p_user_id",
+        "p_kind",
+        "p_enabled"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_brain_overview",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_can_access_assistance",
+      "args": [
+        "p_case_id",
+        "p_manage"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_can_write_assistance_file",
+      "args": [
+        "p_name"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_claim_student_followup",
+      "args": [
+        "p_phone",
+        "p_user_id",
+        "p_contact_id",
+        "p_key",
+        "p_purpose"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "rk_export_contacts",
+      "args": [
+        "p_offset",
+        "p_limit"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_issue_background_notification_token",
+      "args": [
+        "p_device_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_join_single_room_waitlist",
+      "args": [
+        "p_request"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_my_security_status",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_normalize_phone",
+      "args": [
+        "p_phone"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "rk_normalize_za_phone",
+      "args": [
+        "p_value"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "rk_partner_staff",
+      "args": [
+        "p_kind"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_partner_verified_analytics",
+      "args": [
+        "p_profile_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_poll_background_notifications",
+      "args": [
+        "p_token"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "rk_priority_for_onboarding",
+      "args": [
+        "p_persona",
+        "p_need"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "rk_register_native_push_token",
+      "args": [
+        "p_token",
+        "p_platform"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_request_bio_review",
+      "args": [
+        "p_profile_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_request_partner_scope",
+      "args": [
+        "p_profile_id",
+        "p_kind",
+        "p_value"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_review_partner",
+      "args": [
+        "p_profile_id",
+        "p_status",
+        "p_bio_review",
+        "p_bio_expiry"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_review_partner_scope",
+      "args": [
+        "p_scope_id",
+        "p_state"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_revoke_background_notification_token",
+      "args": [
+        "p_device_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_save_partner_profile",
+      "args": [
+        "p_kind",
+        "p_slug",
+        "p_name",
+        "p_bio",
+        "p_campus",
+        "p_tiktok_url"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_security_level",
+      "args": [
+        "p_email_verified_at",
+        "p_phone_verified_at",
+        "p_is_privileged"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "rk_single_room_waitlist_count",
+      "args": [
+        "p_year"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "rk_student_is_placed",
+      "args": [
+        "p_user_id",
+        "p_phone"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "rk_submit_residence_feedback",
+      "args": [
+        "p_campaign_id",
+        "p_feedback"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_unregister_native_push_token",
+      "args": [
+        "p_token"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_withdraw_single_room",
+      "args": [
+        "p_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "save_tut_course_match",
+      "args": [
+        "p_student_aps",
+        "p_subjects",
+        "p_full_name"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "save_unisa_course_match",
+      "args": [
+        "p_student_aps",
+        "p_subjects",
+        "p_full_name"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "save_up_course_match",
+      "args": [
+        "p_student_aps",
+        "p_subjects",
+        "p_full_name"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "seo_command_center_summary",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "seo_enqueue_index",
+      "args": [
+        "p_path",
+        "p_action"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "set_student_opportunity_action",
+      "args": [
+        "p_source_type",
+        "p_source_id",
+        "p_action"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "submit_recruiter_application",
+      "args": [
+        "payload"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "tumelo_intelligence_summary",
+      "args": [
+        "p_days"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "validate_discount_code",
+      "args": [
+        "_code",
+        "_store_id",
+        "_order_total"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "validate_handover_pack",
+      "args": [
+        "_residence_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "virtual_tour_admin_set_entitlement",
+      "args": [
+        "p_residence_id",
+        "p_plan"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "virtual_tour_admin_summary",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "virtual_tour_can_manage",
+      "args": [
+        "p_residence_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "virtual_tour_can_manage_residence",
+      "args": [
+        "p_residence_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "virtual_tour_can_manage_storage_scope",
+      "args": [
+        "p_scope"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "virtual_tour_can_manage_tour",
+      "args": [
+        "p_tour_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "virtual_tour_can_view_studio",
+      "args": [
+        "p_residence_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "virtual_tour_is_admin",
+      "args": [],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "virtual_tour_marketplace_index",
+      "args": [
+        "p_residence_ids"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "virtual_tour_public_snapshot",
+      "args": [
+        "p_public_token"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": true
+    },
+    {
+      "name": "virtual_tour_publish_readiness",
+      "args": [
+        "p_tour_id"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "virtual_tour_publish_snapshot",
+      "args": [
+        "p_tour_id",
+        "p_published_by"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "virtual_tour_scene_quality_upsert",
+      "args": [
+        "p_scene_id",
+        "p_metrics",
+        "p_privacy_issues"
+      ],
+      "service_role": true,
+      "authenticated": true,
+      "anon": false
+    }
   ]
 }
