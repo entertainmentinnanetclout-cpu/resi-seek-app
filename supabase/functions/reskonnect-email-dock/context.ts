@@ -105,7 +105,8 @@ export async function listCases(s:EmailSession,kind:Kind,options:{offset:number;
   const latestUpload=[lastUpload.get(r.id),lastUpload.get(r.user_id)].filter(Boolean).sort().reverse()[0]||null;
   const journey=deriveCaseJourney(c,lastSent.get(r.id)||lastMail.get(r.id)||null,latestUpload,r.created_at);
   return {...publicCase(s,c),created_at:r.created_at,document_stage:signal.stage,
-   missing_count:signal.missing.length,pending_review:signal.pendingReview,...journey};
+   missing_count:signal.missing.length,pending_review:signal.pendingReview,uploaded_count:signal.uploaded,
+   workflow_bucket:journey.bucket,...journey};
  });
  return {items,total:count||0,has_more:offset+rows.length<(count||0),next_offset:offset+rows.length};
 }
