@@ -492,27 +492,22 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     <div className="grid min-w-0 grid-cols-1 divide-y lg:grid-cols-[minmax(285px,0.82fr)_minmax(0,1.9fr)] lg:divide-x lg:divide-y-0">
     {/* Inbox / queue */}
     <aside className="flex min-w-0 flex-col">
-     <div className="space-y-3 border-b p-4">
-      <p className="flex items-center gap-2 text-sm font-bold"><Inbox className="h-4 w-4 text-primary"/> Case inbox <Badge variant="secondary">{items.length} / {totalCases}</Badge></p>
-      <div className="flex flex-wrap gap-1.5">{(Object.keys(kindLabels) as Kind[]).filter(k=>mode==="admin"||k!=="support_enquiry").map(k=>
-       <Button key={k} size="sm" className="h-7 px-2.5 text-[11px]" variant={kind===k?"default":"outline"} onClick={()=>selectKind(k)}>{kindLabels[k]}</Button>)}</div>
-      {(kind==="application"||kind==="reservation")&&<Select value={academicYear} onValueChange={v=>{setAcademicYear(v);setSelected("");setChecked(new Set());resetPreview();}}><SelectTrigger><SelectValue placeholder="Academic year"/></SelectTrigger><SelectContent><SelectItem value="2026">2026 · Historical cases</SelectItem><SelectItem value="2027">2027 · {kind==="application"?"Applications not open":"Reservations"}</SelectItem></SelectContent></Select>}
-      <div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/>
-       <Input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search applicants, references..." className="pl-8" aria-label="Search case inbox"/></div>
-      <Select value={filter} onValueChange={v=>setFilter(v as typeof filter)}>
-       <SelectTrigger><SelectValue/></SelectTrigger><SelectContent>
-        <SelectItem value="all">All cases</SelectItem><SelectItem value="missing">Missing documents</SelectItem>
-        <SelectItem value="received">Documents received</SelectItem><SelectItem value="decision">Decisions and confirmations</SelectItem>
-        <SelectItem value="not_contacted">Not contacted yet</SelectItem><SelectItem value="followup_due">Follow-up due</SelectItem>
-        <SelectItem value="student_acted">Uploaded after outreach</SelectItem><SelectItem value="awaiting_review">Awaiting document review</SelectItem>
-        <SelectItem value="decision_changed">Status changed since email</SelectItem><SelectItem value="approved">Approved / confirmed</SelectItem>
-        <SelectItem value="rejected">Rejected</SelectItem>
-       </SelectContent></Select>
-      <div className="flex items-center justify-between"><p className="text-xs font-semibold text-muted-foreground">{selectedCount} selected for bulk actions</p>
-       <Button size="sm" variant="ghost" className="h-7" onClick={()=>void loadItems()}><RefreshCw className="h-3.5 w-3.5"/></Button></div>
-      <div className="flex gap-2">
-       <Button size="sm" variant="outline" className="h-8 flex-1 text-xs" onClick={()=>setChecked(new Set(visible.filter(x=>x.can_email).slice(0,25).map(x=>x.id)))}>Select next 25 eligible</Button>
-       <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={()=>setChecked(new Set())}>Clear</Button>
+     <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/15 px-4 py-3">
+      <div>
+       <p className="flex items-center gap-2 text-sm font-bold"><LayoutList className="h-4 w-4 text-primary"/>Student queue
+        <Badge variant="secondary">{visible.length} shown</Badge></p>
+       <p className="mt-0.5 text-[11px] text-muted-foreground">Choose a student to see progress and the next step</p>
+      </div>
+      <Button type="button" variant="ghost" size="icon" aria-label="Refresh student queue" disabled={loading} onClick={()=>void loadItems()}>
+       <RefreshCw className={cn("h-4 w-4",loading&&"animate-spin")}/>
+      </Button>
+     </div>
+     <div className="flex items-center justify-between gap-2 border-b px-4 py-2">
+      <p className="text-[11px] text-muted-foreground">{selectedCount} selected</p>
+      <div className="flex gap-1">
+       <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={()=>setChecked(new Set(visible.filter(x=>x.can_email).slice(0,25).map(x=>x.id)))}>Select 25</Button>
+       <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={()=>setChecked(new Set())}>Clear</Button>
+       {selectedCount>0&&<Button size="sm" className="h-8 text-[11px]" onClick={()=>setPane("bulk")}>Bulk actions</Button>}
       </div>
      </div>
      {queueError&&<div role="alert" className="mx-3 mb-3 rounded-xl border border-amber-400/50 bg-amber-50 p-3 text-amber-950 dark:bg-amber-950/25 dark:text-amber-100">
@@ -521,9 +516,9 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       {items.length>0&&<p className="mt-1 text-xs">Previously loaded records are shown until the connection recovers.</p>}
       <Button type="button" size="sm" variant="outline" className="mt-2" disabled={loading} onClick={()=>void loadItems()}><RefreshCw className="mr-1.5 h-3.5 w-3.5"/>Retry loading</Button>
      </div>}
-     <p className="px-4 py-2 text-[11px] text-muted-foreground">{queueError&&items.length===0?"Case counts unavailable until the connection recovers.":`${items.length} cases loaded of ${totalCases}. Sort and filter the loaded queue, or load the remaining pages.`}</p>
+     <p className="px-4 py-2 text-[11px] text-muted-foreground">{queueError&&items.length===0?"Case counts unavailable until the connection recovers.":`${visible.length} matching · ${items.length}/${totalCases} loaded`}</p>
      {nextOffset!==null&&<div className="flex gap-2 px-4 pb-2"><Button variant="outline" size="sm" disabled={loadingMore} onClick={()=>void loadRemaining(false)}>Load next 100</Button><Button variant="secondary" size="sm" disabled={loadingMore} onClick={()=>void loadRemaining(true)}>{loadingMore?"Loading…":"Load all remaining"}</Button></div>}
-     <ScrollArea className="h-[360px] xl:h-[650px]">
+     <ScrollArea className="h-[min(68vh,710px)] min-h-[320px]">
       {loading?<p className="p-6 text-center text-sm text-muted-foreground">Loading case intelligence…</p>:
        visible.length===0?<p className="p-6 text-center text-sm text-muted-foreground">{queueError?"The case queue could not be loaded. Use Retry above.":kind==="application"&&academicYear==="2027"?"2027 applications are not open yet. Existing reservations are managed under Reservations.":"No matching cases in this view."}</p>:
        visible.map(item=><div key={item.id} className={cn("flex items-start gap-2 border-b px-3 py-3 transition-colors",selected===item.id?"bg-primary/10":"hover:bg-muted/40")}>
@@ -541,8 +536,9 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        </div>)}
      </ScrollArea>
     </aside>
-    {/* Intelligence and case drafting */}
-    <section className="min-w-0 space-y-4 p-4">
+    {/* Selected student details and communication actions */}
+    <div className="grid min-w-0 grid-cols-1 divide-y 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] 2xl:divide-x 2xl:divide-y-0">
+    <section id="rk-case-detail-panel" className="min-w-0 scroll-mt-32 space-y-4 p-4">
      <div className="flex items-center justify-between"><p className="font-bold">Case intelligence</p><Badge variant="outline">{active?pretty(active.status):"No case"}</Badge></div>
      {!caseInfo?<div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Select a case to view its document readiness and recommended correspondence.</div>:
       <div className="space-y-3">
@@ -689,6 +685,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       </TabsContent>
      </Tabs>
     </section>
+    </div>
    </div>
    </>}
   </div>
