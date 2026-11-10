@@ -39,6 +39,8 @@ export default function DocumentReviewPanel({kind,targetId,invoke,receipt,onRevi
  const [preview,setPreview]=useState<{url:string;name:string;media:string}|null>(null);
  const [rejecting,setRejecting]=useState<string|null>(null);
  const [reason,setReason]=useState("");
+ const [now,setNow]=useState(Date.now());
+ useEffect(()=>{const timer=window.setInterval(()=>setNow(Date.now()),30_000);return()=>window.clearInterval(timer);},[]);
  const available=kind==="application"||kind==="reservation";
  const load=useCallback(async()=>{
   if(!targetId||!available){setRecord(null);return;}
@@ -56,7 +58,7 @@ export default function DocumentReviewPanel({kind,targetId,invoke,receipt,onRevi
  },[load]);
  if(!available)return null;
  const current=!!record&&!!receipt&&receipt.signature===record.document_snapshot_sha256&&
-  Date.now()-new Date(receipt.at).getTime()<20*60*1000;
+  now-new Date(receipt.at).getTime()<20*60*1000;
  const view=async(doc:DocumentItem)=>{
   if(!doc.can_open)return toast.error("This file cannot be previewed");
   setBusy(doc.id);
@@ -95,6 +97,7 @@ export default function DocumentReviewPanel({kind,targetId,invoke,receipt,onRevi
  const verified=record?.items.filter(d=>stateType(d.status)==="verified").length||0;
  const pending=record?.items.filter(d=>stateType(d.status)==="pending").length||0;
  const rejected=record?.items.filter(d=>stateType(d.status)==="rejected").length||0;
+ const unviewedPending=record?.items.filter(d=>stateType(d.status)==="pending"&&d.can_open&&!opened.has(d.source+":"+d.id))||[];
  return <section className="overflow-hidden rounded-2xl border border-blue-200/70 bg-card shadow-sm dark:border-blue-800/50" aria-label="Review student documents">
   <div className="flex flex-wrap items-start justify-between gap-2 border-b bg-gradient-to-r from-blue-50 to-white px-4 py-3 dark:from-blue-950/30 dark:to-background">
    <div><p className="flex items-center gap-2 text-sm font-extrabold"><FileCheck2 className="h-4 w-4 text-blue-600"/>Step 1 · Review documents</p>
@@ -154,11 +157,12 @@ export default function DocumentReviewPanel({kind,targetId,invoke,receipt,onRevi
    {current?<div className="flex items-start gap-2 rounded-xl border border-emerald-400/40 bg-emerald-50/60 p-3 text-xs text-emerald-950 dark:bg-emerald-950/20 dark:text-emerald-100">
     <CheckCircle2 className="h-4 w-4 shrink-0"/>Readiness reviewed. You can preview and send an accurate message for this case. A status or file change will require another review.
    </div>:<div className="space-y-2 rounded-xl border bg-muted/20 p-3">
+    {unviewedPending.length>0&&<p className="mb-2 text-xs font-semibold text-amber-800 dark:text-amber-200">Open {unviewedPending.length} pending uploaded {unviewedPending.length===1?"file":"files"} to inspect their contents before confirming readiness.</p>}
     <label className="flex cursor-pointer items-start gap-2 text-xs">
      <Checkbox checked={ack} onCheckedChange={v=>setAck(v===true)}/>
      <span>I reviewed this student's available uploads, document statuses and outstanding requirements. This acknowledgement does not approve the application or confirm funding.</span>
     </label>
-    <Button className="w-full" size="sm" disabled={!ack||!!busy} onClick={()=>void confirmReview()}>
+    <Button className="w-full" size="sm" disabled={!ack||!!busy||unviewedPending.length>0} onClick={()=>void confirmReview()}>
      {busy==="review"?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<ShieldCheck className="mr-2 h-4 w-4"/>Confirm document review · Continue
     </Button>
    </div>}
