@@ -130,6 +130,7 @@ const NationalLanding = lazy(() => import("./pages/seo/NationalLanding"));
 const NsfAsLanding = lazy(() => import("./pages/seo/NsfAsLanding"));
 const SeoLandingPage = lazy(() => import("./pages/seo/SeoLandingPage"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminVisualStudio = lazy(() => import("./pages/admin/AdminVisualStudio"));
 const AdminResidences = lazy(() => import("./pages/admin/AdminResidences"));
 const AdminApplications = lazy(() => import("./pages/admin/AdminApplications"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
@@ -708,6 +709,7 @@ const App = () => {
                         </StudentRoute>
                       }
                     />
+                    <Route path="/admin/studio" element={<ProtectedRoute><AdminRoute><AdminVisualStudio/></AdminRoute></ProtectedRoute>}/>
                     <Route
                       path="/admin/career-education"
                       element={
