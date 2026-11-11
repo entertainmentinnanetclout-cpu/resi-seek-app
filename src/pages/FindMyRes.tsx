@@ -36,6 +36,7 @@ import VisualPageBlock from "@/components/admin/VisualPageBlock";
 import {useVisualPageSections} from "@/hooks/useVisualPageSections";
 import {usePublicLivingSignals} from "@/hooks/usePublicLivingSignals";
 import NearbySuggestedResidences from "@/components/findmyres/NearbySuggestedResidences";
+import {runRkLayoutTransition} from "@/lib/reskonnectMotion";
 import CompareDrawer from "@/components/CompareDrawer";
 import { ReferralBanner } from "@/components/referrals/ReferralBanner";
 import { IntentNotice } from "@/components/findmyres/IntentNotice";
@@ -244,7 +245,7 @@ const FindMyRes = () => {
         description="Explore student accommodation by area, campus, room type and price. Listing evidence, funding acceptance and verification status are shown separately."
         keywords="TVET accommodation, university student accommodation, private student rentals, NSFAS residence, Pretoria accommodation"
       />
-      <div className="min-h-screen bg-background">
+      <div className="rk-motion rk-living-surface min-h-screen bg-background">
         {/* Breadcrumb */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
           <Breadcrumb>
@@ -345,13 +346,13 @@ const FindMyRes = () => {
 
             {/* Results Area */}
             <div className="flex-1 min-w-0">
-              <div className="mb-5 flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-[#173b70]/10 bg-gradient-to-r from-[#102d57]/[0.06] to-background p-4 sm:p-5">
+              <div className="rk-neo-panel mb-5 flex flex-wrap items-end justify-between gap-3 p-4 sm:p-5">
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">Find My Res · Explore</p>
                   <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">{byKey.results?.headline||"Discover student living the ResKonnect way"}</h2>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">{byKey.results?.subtitle||"Your filters shape these results. Residence-reported availability is not a booking guarantee."}</p>
                 </div>
-                <span className="rounded-full border bg-background px-3 py-1.5 text-xs font-bold">{filteredResidences.length} matching residences</span>
+                <span className="rk-neo-stat rounded-full px-3 py-1.5 text-xs font-bold">{filteredResidences.length} matching residences</span>
               </div>
                             {/* Top bar: chips + sort */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -383,7 +384,7 @@ const FindMyRes = () => {
               <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Residence card display style">
                 {([["photo","Photo cards"],["list","Compact list"],["details","Detailed cards"]] as const).map(([key,label])=>(
                   <Button key={key} size="sm" type="button" variant={listingStyle===key?"default":"outline"}
-                   className="rounded-full" onClick={()=>setListingStyle(key)} aria-pressed={listingStyle===key}>{label}</Button>
+                   className="rounded-full" onClick={()=>runRkLayoutTransition(()=>setListingStyle(key))} aria-pressed={listingStyle===key}>{label}</Button>
                 ))}
               </div>
 
