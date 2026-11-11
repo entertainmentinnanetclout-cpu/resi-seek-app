@@ -24,7 +24,7 @@ export default function MonthlyTopThree({residences=NO_RESIDENCES,signals,surfac
    .in("id",missing).eq("is_visible",true)
    .then(({data,error}:any)=>{if(active&&!error)setLoaded(data||[]);});
   return()=>{active=false;};
- },[keys,residences]);
+ },[keys]);
  const all=useMemo(()=>new Map([...residences,...loaded].filter(r=>r?.id&&r.is_visible!==false).map(r=>[r.id,r])),[residences,loaded]);
  const winners=signals.top3.flatMap(rank=>{const residence=all.get(rank.residence_id);return residence?[{rank,residence}]:[];});
  if(!winners.length)return null;
