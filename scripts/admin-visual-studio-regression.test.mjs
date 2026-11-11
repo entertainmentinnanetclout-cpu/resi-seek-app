@@ -22,6 +22,9 @@ const panels=[
  "src/components/findmyres/ResidenceSpotlightSlider.tsx",
  "src/components/findmyres/ResidenceBrandStudioCard.tsx",
  "src/components/findmyres/NearbySuggestedResidences.tsx",
+ "src/components/ResidenceCard.tsx",
+ "src/components/ResidenceSectionGrid.tsx",
+ "src/components/resmap/ResMapResidenceCard.tsx",
 ].map(read);
 const dataPlaces=[
  "src/hooks/useLandingSpotlightResidences.ts",
