@@ -394,7 +394,6 @@ const ResidenceDetail = () => {
                   <p className="mt-4 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">{residence.brand_subheadline || residence.description || "Student accommodation, connected."}</p>
                   <div className="mt-5 flex flex-wrap gap-2">
                     {residence.is_trusted || residence.trusted ? <Badge className="bg-white/10 text-white hover:bg-white/10"><ShieldCheck className="mr-1 h-3.5 w-3.5 text-[#F2AE28]" />Trusted listing</Badge> : null}
-                    {residence.is_tut_accredited && <Badge className="bg-white/10 text-white hover:bg-white/10"><GraduationCap className="mr-1 h-3.5 w-3.5 text-[#F2AE28]" />TUT accredited</Badge>}
                     {livingSignals.nsfasAccreditedIds.has(residence.id)?<Badge className="border border-emerald-400/40 bg-emerald-600 text-white hover:bg-emerald-600">✓ NSFAS accredited (evidence verified)</Badge>:
                     livingSignals.accreditedIds.has(residence.id)?<Badge className="bg-emerald-600 text-white">Accredited (evidence verified)</Badge>:
                     residence.accepts_nsfas?<Badge className="bg-white/10 text-white hover:bg-white/10">Accepts NSFAS funding · not accreditation</Badge>:null}
