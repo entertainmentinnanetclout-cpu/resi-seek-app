@@ -20,6 +20,8 @@ import {Switch} from "@/components/ui/switch";
 import {Label} from "@/components/ui/label";
 import {supabase} from "@/integrations/supabase/client";
 import type {VisualPageKey,VisualPageSection,VisualSectionDraft} from "@/hooks/useVisualPageSections";
+import {runRkLayoutTransition,indicateRkBoundary} from "@/lib/reskonnectMotion";
+import {RkMorphIcon} from "@/components/ui/RkMorphIcon";
 
 type Revision={id:string;revision:number;state:string;created_at:string;published_at:string|null;note:string|null;snapshot:VisualSectionDraft[]};
 const mapSnapshot=(sections:VisualPageSection[]):VisualSectionDraft[]=>sections.map(s=>({
@@ -54,6 +56,7 @@ export default function AdminVisualStudio(){
  const [redo,setRedo]=useState<VisualSectionDraft[][]>([]);
  const [loading,setLoading]=useState(true);
  const [saving,setSaving]=useState(false);
+ const [publishedSuccess,setPublishedSuccess]=useState(false);
  const [note,setNote]=useState("");
  const [restoring,setRestoring]=useState(false);
  const [viewport,setViewport]=useState<"desktop"|"tablet"|"mobile">("desktop");
@@ -68,6 +71,7 @@ export default function AdminVisualStudio(){
  const edit=draft.find(row=>row.section_key===selected)||null;
  const sorted=useMemo(()=>normalized(draft),[draft]);
  const dirty=useMemo(()=>JSON.stringify(normalized(mapSnapshot(source)))!==JSON.stringify(sorted),[source,sorted]);
+ const studioMetrics=[["Published residences",residences.filter(r=>r.is_visible===true).length],["Spotlight properties",residences.filter(r=>r.is_visible===true&&r.is_spotlight===true).length],["Recent page revisions",history.length]] as const;
  const loadResidences=useCallback(async()=>{
   const {data,error}=await (supabase as any).from("residences").select("*").order("name");
   if(error)toast.error("Could not load property studio: "+error.message);
@@ -111,6 +115,7 @@ export default function AdminVisualStudio(){
  },[page,sendPreview]);
 
  const mutate=(transform:(current:VisualSectionDraft[])=>VisualSectionDraft[])=>{
+  setPublishedSuccess(false);
   setUndo(items=>[...items.slice(-24),clone(draft)]);
   setRedo([]);setDraft(transform(clone(draft)));
  };
@@ -122,6 +127,11 @@ export default function AdminVisualStudio(){
   if(from<0||to<0)return;
   const next=[...items];const [item]=next.splice(from,1);next.splice(to,0,item);
   mutate(()=>next.map((row,i)=>({...row,position:(i+1)*10})));setSelected(key);
+ };
+ const moveStep=(key:string,index:number,direction:-1|1,el:HTMLElement)=>{
+  const candidate=sorted[index+direction];
+  if(page!=="landing" || !candidate){indicateRkBoundary(el);return;}
+  move(key,candidate.section_key);
  };
  const stepUndo=()=>{if(!undo.length)return;setRedo(r=>[...r,clone(draft)]);setDraft(clone(undo[undo.length-1]));setUndo(u=>u.slice(0,-1));};
  const stepRedo=()=>{if(!redo.length)return;setUndo(u=>[...u,clone(draft)]);setDraft(clone(redo[redo.length-1]));setRedo(r=>r.slice(0,-1));};
@@ -137,7 +147,7 @@ export default function AdminVisualStudio(){
   if(error||!data){toast.error(error?.message||"Visual editor save was not confirmed");return;}
   toast.success(publish?"Live page published and version saved":"Draft revision saved privately");
   setNote("");
-  if(publish){await loadPage();}
+  if(publish){await loadPage();setPublishedSuccess(true);}
   else{
    const {data:versions}=await (supabase as any).from("rk_visual_page_revisions")
     .select("*").eq("page_key",page).order("revision",{ascending:false}).limit(20);
@@ -163,6 +173,12 @@ export default function AdminVisualStudio(){
       <Button asChild variant="outline" className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"><Link to="/" target="_blank"><ExternalLink className="mr-2 h-4 w-4"/>Public site</Link></Button></div>
     </div>
    </div>
+   <div className="rk-stagger-list grid gap-3 sm:grid-cols-3">
+    {studioMetrics.map(([label,value])=><div key={label} className="rk-neo-stat flex min-h-20 flex-col justify-center px-5 py-3">
+     <p className="text-[11px] font-black uppercase tracking-widest text-[#5d708a]">{label}</p>
+     <p className="mt-1 text-2xl font-black text-[#071326]">{value.toLocaleString("en-ZA")}</p>
+    </div>)}
+   </div>
    <Tabs value={tab} onValueChange={setTab}>
     <TabsList className="flex h-auto flex-wrap gap-1 bg-muted/60 p-1">
      <TabsTrigger value="pages"><Layers className="mr-1.5 h-4 w-4"/>Visual pages</TabsTrigger>
@@ -171,7 +187,7 @@ export default function AdminVisualStudio(){
      <TabsTrigger value="media"><Image className="mr-1.5 h-4 w-4"/>Media & cards</TabsTrigger>
     </TabsList>
     <TabsContent value="pages" className="mt-5 space-y-4">
-     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-3 sm:p-4">
+     <div className="rk-neo-panel flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4">
       <div className="flex flex-wrap items-center gap-2"><Label htmlFor="rk-editor-page">Editing</Label>
        <select id="rk-editor-page" value={page} onChange={e=>setPage(e.target.value as VisualPageKey)}
         className="h-10 rounded-xl border bg-background px-3 text-sm font-black">
@@ -184,45 +200,56 @@ export default function AdminVisualStudio(){
        <Button size="sm" variant="outline" disabled={!redo.length} onClick={stepRedo} aria-label="Redo"><Redo2 className="h-4 w-4"/></Button>
        <Button size="sm" variant="outline" onClick={()=>void loadPage()} disabled={loading||saving}><RefreshCw className="mr-1.5 h-4 w-4"/>Discard / refresh</Button>
        <Button size="sm" variant="outline" disabled={saving||loading||!draft.length} onClick={()=>void save(false)}><Save className="mr-1.5 h-4 w-4"/>Save draft</Button>
-       <Button size="sm" disabled={saving||loading||!draft.length||!dirty} onClick={()=>void save(true)}><CheckCircle2 className="mr-1.5 h-4 w-4"/>{saving?"Saving…":"Publish live"}</Button>
+       <Button size="sm" disabled={saving||loading||!draft.length||!dirty} className={"rk-clay-action "+(publishedSuccess?"rk-success-pulse":"")} onClick={()=>void save(true)}>
+        <RkMorphIcon idle={Save} active={CheckCircle2} isActive={publishedSuccess}/>{saving?"Saving…":publishedSuccess?"Published":"Publish live"}
+       </Button>
+       <span role="status" aria-live="polite" className="sr-only">{publishedSuccess?"Page published successfully":""}</span>
       </div>
      </div>
      {editorError&&<div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800">{editorError}. The public website stays on its existing layout.</div>}
      <div className="grid min-w-0 gap-3 xl:grid-cols-[240px_minmax(0,1fr)_280px]">
-      <Card className="min-w-0 overflow-hidden"><CardContent className="p-3">
+      <Card className="rk-neo-panel min-w-0 overflow-hidden"><CardContent className="p-3">
        <div className="mb-3 flex items-center justify-between"><p className="font-black">Page navigator</p><Badge variant="secondary">{draft.length} blocks</Badge></div>
        <div className="max-h-[72vh] space-y-1 overflow-y-auto">
         {sorted.map((row,i)=>{
          const slot=source.find(s=>s.section_key===row.section_key);
-         return <button type="button" key={row.section_key}
+         return <div role="button" tabIndex={0} key={row.section_key}
+          aria-pressed={selected===row.section_key} aria-label={"Inspect "+(slot?.title||row.section_key)}
           draggable={!loading&&page==="landing"} onDragStart={()=>{if(page==="landing")dragging.current=row.section_key;}}
           onDragOver={e=>{if(page==="landing")e.preventDefault();}} onDrop={e=>{e.preventDefault();if(page==="landing"&&dragging.current)move(dragging.current,row.section_key);dragging.current=null;}}
           onClick={()=>setSelected(row.section_key)}
-          className={"flex w-full items-center gap-2 rounded-xl border px-2.5 py-2.5 text-left transition "+(selected===row.section_key?"border-[#2563eb] bg-[#eef4ff]":"border-transparent hover:border-border hover:bg-muted/60")}>
+          onKeyDown={e=>{if(e.target!==e.currentTarget)return;if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelected(row.section_key);}}}
+          className={"rk-pressable flex w-full cursor-pointer items-center gap-2 rounded-xl border px-2.5 py-2.5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 "+(selected===row.section_key?"border-[#2563eb] bg-[#eef4ff]":"border-transparent hover:border-border hover:bg-muted/60")}>
           <Move className="h-3.5 w-3.5 shrink-0 text-muted-foreground"/><span className="min-w-0 flex-1 truncate text-xs font-bold">{slot?.title||row.section_key}</span>
           {!row.visible?<EyeOff className="h-3.5 w-3.5 text-amber-600"/>:<Eye className="h-3.5 w-3.5 text-muted-foreground"/>}
-          <span className="flex flex-col gap-0.5"><span role="button" tabIndex={0} aria-label="Move up" onClick={e=>{e.stopPropagation();if(page==="landing"&&i>0)move(row.section_key,sorted[i-1].section_key);}} className="rounded p-0.5 hover:bg-white"><ArrowUp className="h-3 w-3"/></span><span role="button" tabIndex={0} aria-label="Move down" onClick={e=>{e.stopPropagation();if(page==="landing"&&i<sorted.length-1)move(row.section_key,sorted[i+1].section_key);}} className="rounded p-0.5 hover:bg-white"><ArrowDown className="h-3 w-3"/></span></span>
-         </button>;
+          <span className="flex flex-col gap-0.5">
+           <button type="button" aria-label={"Move "+(slot?.title||row.section_key)+" up"} disabled={page!=="landing"} onClick={e=>{e.stopPropagation();moveStep(row.section_key,i,-1,e.currentTarget);}} className="rounded p-1 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"><ArrowUp className="h-3 w-3"/></button>
+           <button type="button" aria-label={"Move "+(slot?.title||row.section_key)+" down"} disabled={page!=="landing"} onClick={e=>{e.stopPropagation();moveStep(row.section_key,i,1,e.currentTarget);}} className="rounded p-1 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"><ArrowDown className="h-3 w-3"/></button>
+          </span>
+         </div>;
         })}
        </div>
        <p className="mt-3 text-[11px] leading-5 text-muted-foreground">{page==="landing"?"Drag homepage blocks to reorder them. Required sections cannot be hidden. Use the canvas buttons to select blocks visually.":"Find My Res keeps its search-to-application journey in a fixed sequence; visibility and approved copy are editable without disrupting that flow."}</p>
       </CardContent></Card>
       <div className="min-w-0 space-y-3">
-       <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border bg-card p-3">
+       <div className="rk-neo-panel flex flex-wrap items-center justify-between gap-2 p-3">
         <span className="text-xs font-black">Real page preview · unpublished edits</span>
         <div className="flex gap-1" role="group" aria-label="Preview device width">
          {([["desktop",Monitor],["tablet",Tablet],["mobile",Smartphone]] as const).map(([v,Icon])=>
-          <Button key={v} type="button" size="sm" variant={viewport===v?"default":"outline"} aria-label={v+" preview"} aria-pressed={viewport===v} onClick={()=>setViewport(v)} className="h-8"><Icon className="h-4 w-4"/></Button>)}
+          <Button key={v} type="button" size="sm" variant={viewport===v?"default":"outline"} aria-label={v+" preview"} aria-pressed={viewport===v} onClick={()=>runRkLayoutTransition(()=>setViewport(v))} className="h-8"><Icon className="h-4 w-4"/></Button>)}
         </div>
        </div>
        <div className="flex min-h-[650px] justify-center overflow-hidden rounded-2xl border border-[#cbd7e8] bg-[#eef2f7] p-1.5 sm:p-3">
-        <iframe ref={frame} title={"Visual preview of "+page} onLoad={sendPreview} src={previewUrl}
-         className="h-[830px] shrink-0 rounded-xl border border-[#cbd5e1] bg-white shadow-[0_15px_45px_rgba(12,30,59,.15)]"
-         style={{width:currentPreviewWidth,maxWidth:"100%"}}/>
+        <div className="rk-device-shell rk-layout-morph shrink-0 self-start" data-device={viewport} style={{width:currentPreviewWidth,maxWidth:"100%"}}>
+         <div className="rk-device-glass">
+          <iframe ref={frame} title={"Visual preview of "+page+" on "+viewport} onLoad={sendPreview} src={previewUrl}
+           className="block h-[830px] w-full border-0 bg-white" loading="lazy"/>
+         </div>
+        </div>
        </div>
       </div>
       <div className="min-w-0 space-y-3">
-       <Card><CardContent className="space-y-4 p-4">
+       <Card className="rk-neo-panel"><CardContent className="space-y-4 p-4">
         <div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#2563eb]">Block inspector</p><h3 className="mt-1 text-lg font-black">{active?.title||"Select a section"}</h3></div>
         {active&&edit?<><p className="text-xs text-muted-foreground">The properties below are reflected in the preview immediately. Changes reach visitors only after publishing.</p>
          <label className="flex items-center justify-between gap-3 rounded-xl border p-3"><span className="text-xs font-bold">Show this section</span><Switch checked={edit.visible} disabled={active.required} onCheckedChange={v=>patch({visible:v})}/></label>
@@ -235,7 +262,7 @@ export default function AdminVisualStudio(){
          <Label htmlFor="rk-vs-note">Change note (optional)</Label><Input id="rk-vs-note" maxLength={500} value={note} onChange={e=>setNote(e.target.value)} placeholder="Why this layout was updated"/>
         </>:<p className="text-xs text-muted-foreground">Choose a block on the left or click an Edit button in the page preview.</p>}
        </CardContent></Card>
-       <Card><CardContent className="space-y-3 p-4">
+       <Card className="rk-neo-panel"><CardContent className="space-y-3 p-4">
         <div className="flex items-center gap-2"><History className="h-4 w-4"/><h3 className="font-black">Versions & rollback</h3></div>
         {history.length===0?<p className="text-xs text-muted-foreground">No previous saved editor revisions.</p>:
          <div className="max-h-64 space-y-2 overflow-auto">
