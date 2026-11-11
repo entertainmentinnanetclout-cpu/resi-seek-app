@@ -145,7 +145,7 @@ const FindMyRes = () => {
   useEffect(() => {
     if (!user) {
       const visited = localStorage.getItem("reskonnect_visited");
-      if (!visited) {
+      if (!visited && !searchParams.has("query") && !searchParams.has("discovery")) {
         const timer = setTimeout(() => setShowFirstVisitModal(true), 2000);
         return () => clearTimeout(timer);
       }
