@@ -3,8 +3,6 @@
   "captured_date": "2026-11-11",
   "purpose": "Read-only public API contract snapshot; names and signatures only; no row data, user IDs or secrets. Must be refreshed against Supabase when backend is changed.",
   "public_relations": [
-    "Bookings",
-    "Users",
     "academic_periods",
     "accommodation_compliance_cases",
     "accommodation_compliance_evidence",
@@ -156,6 +154,7 @@
     "assistance_document_requests",
     "assistance_submissions",
     "balances",
+    "Bookings",
     "bursaries",
     "call_logs",
     "campaigns",
@@ -317,6 +316,7 @@
     "residence_room_pricing_public_v",
     "residence_room_types",
     "residence_sections",
+    "residence_slug_aliases",
     "residence_stay_feedback",
     "residences",
     "residences_public",
@@ -375,6 +375,9 @@
     "rk_partner_profiles",
     "rk_partner_scopes",
     "rk_partner_staff_roles",
+    "rk_visual_page_audit",
+    "rk_visual_page_revisions",
+    "rk_visual_page_sections",
     "roommate_profiles",
     "roommate_profiles_public_v",
     "roommates",
@@ -425,6 +428,7 @@
     "user_phone_verification_attempts",
     "user_roles",
     "user_security_events",
+    "Users",
     "v_daily_operations_summary",
     "v_onboarding_command_center",
     "viewing_requests",
@@ -1923,6 +1927,14 @@
       "authenticated": true
     },
     {
+      "name": "rk_admin_set_trusted_residences",
+      "args": [
+        "p_ids"
+      ],
+      "authenticated": true,
+      "anon": false
+    },
+    {
       "anon": false,
       "args": [],
       "name": "rk_brain_overview",
@@ -2119,6 +2131,18 @@
       ],
       "name": "rk_unregister_native_push_token",
       "authenticated": true
+    },
+    {
+      "name": "rk_visual_save_page",
+      "args": [
+        "p_page",
+        "p_snapshot",
+        "p_publish",
+        "p_note",
+        "p_rollback"
+      ],
+      "authenticated": true,
+      "anon": false
     },
     {
       "anon": false,
@@ -5088,6 +5112,15 @@
       "anon": false
     },
     {
+      "name": "rk_admin_set_trusted_residences",
+      "args": [
+        "p_ids"
+      ],
+      "authenticated": true,
+      "anon": false,
+      "service_role": true
+    },
+    {
       "name": "rk_brain_overview",
       "args": [],
       "service_role": true,
@@ -5339,6 +5372,19 @@
       "service_role": true,
       "authenticated": true,
       "anon": false
+    },
+    {
+      "name": "rk_visual_save_page",
+      "args": [
+        "p_page",
+        "p_snapshot",
+        "p_publish",
+        "p_note",
+        "p_rollback"
+      ],
+      "authenticated": true,
+      "anon": false,
+      "service_role": true
     },
     {
       "name": "rk_withdraw_single_room",
