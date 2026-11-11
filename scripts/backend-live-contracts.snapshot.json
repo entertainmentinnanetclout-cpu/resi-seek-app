@@ -3,6 +3,8 @@
   "captured_date": "2026-11-11",
   "purpose": "Read-only public API contract snapshot; names and signatures only; no row data, user IDs or secrets. Must be refreshed against Supabase when backend is changed.",
   "public_relations": [
+    "Bookings",
+    "Users",
     "academic_periods",
     "accommodation_compliance_cases",
     "accommodation_compliance_evidence",
@@ -154,7 +156,6 @@
     "assistance_document_requests",
     "assistance_submissions",
     "balances",
-    "Bookings",
     "bursaries",
     "call_logs",
     "campaigns",
@@ -334,6 +335,7 @@
     "reskonnect_email_templates",
     "reskonnect_listing_studio_drafts",
     "reskonnect_marketplace_readiness_v",
+    "reskonnect_monthly_top3_editorial",
     "reskonnect_outbound_emails",
     "reskonnect_portal_account_audit",
     "reskonnect_residence_service_targets",
@@ -423,7 +425,6 @@
     "user_phone_verification_attempts",
     "user_roles",
     "user_security_events",
-    "Users",
     "v_daily_operations_summary",
     "v_onboarding_command_center",
     "viewing_requests",
@@ -1695,6 +1696,12 @@
         "p_confirmed_at"
       ],
       "name": "reskonnect_progress_viewing",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [],
+      "name": "reskonnect_public_monthly_showcase",
       "authenticated": true
     },
     {
