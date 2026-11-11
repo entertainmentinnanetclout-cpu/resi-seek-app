@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {useAuth} from "@/contexts/AuthContext";
+import {isVisualPreviewAuthorized} from "@/lib/adminVisualPreview";
 
 export type VisualPageKey = "landing" | "findmyres";
 export type VisualPageSection = {
@@ -39,6 +41,7 @@ const pageDefaults: Record<VisualPageKey, Array<[string,string,number,boolean]>>
 export const VISUAL_PAGE_DEFAULTS = pageDefaults;
 
 export function useVisualPageSections(page:VisualPageKey) {
+ const {isGodMode,session}=useAuth();
  const {data=[],isLoading,error,refetch}=useQuery({
   queryKey:["rk-visual-sections",page],
   queryFn:async()=>{
@@ -49,7 +52,7 @@ export function useVisualPageSections(page:VisualPageKey) {
  });
  const [preview,setPreview]=useState<Record<string,VisualSectionDraft>>({});
  useEffect(()=>{
-  if(typeof window==="undefined" || window.parent===window || new URLSearchParams(window.location.search).get("rk_visual_preview")!=="1")return;
+  if(!isVisualPreviewAuthorized(isGodMode,session?.access_token))return;
   const receive=(event:MessageEvent)=>{
    if(event.origin!==window.location.origin || event.source!==window.parent)return;
    const message=event.data;
@@ -64,7 +67,7 @@ export function useVisualPageSections(page:VisualPageKey) {
   window.addEventListener("message",receive);
   window.parent.postMessage({type:"rk-visual-ready",page},window.location.origin);
   return()=>window.removeEventListener("message",receive);
- },[page]);
+ },[page,isGodMode,session?.access_token]);
  const sections=useMemo(()=>{
   const base=(data.length?data:pageDefaults[page].map(([key,title,position,required])=>({
    page_key:page,section_key:key,title,position,required,visible:true,editable_copy:false,headline:"",subtitle:"",
