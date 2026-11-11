@@ -20,7 +20,8 @@ test("highest-visibility residence showcase is shared across public entry points
  assert.ok(find.indexOf("<PremiumResidenceShowcase")<find.indexOf('id="results"'));
  assert.ok(find.indexOf('id="results"')<find.indexOf("Broader editorial discovery"));
  assert.match(showcase,/LeadResidence residence=\{lead\}/);
- assert.match(showcase,/SupportingResidence key=\{residence\.id\}/);
+ assert.match(showcase,/SupportingResidence residence=\{residence\} index=\{index\}/);
+ assert.match(showcase,/key=\{residence\.id\} className="min-w-\[245px\]/);
 });
 
 test("editorial prominence is opt-in, photo-backed, visible and stable, not a popularity score",()=>{
