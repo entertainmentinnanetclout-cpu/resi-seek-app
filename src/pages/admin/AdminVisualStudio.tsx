@@ -116,7 +116,7 @@ export default function AdminVisualStudio(){
  };
  const patch=(p:Partial<VisualSectionDraft>)=>mutate(rows=>rows.map(row=>row.section_key===selected?{...row,...p}:row));
  const move=(key:string,target:string)=>{
-  if(key===target)return;
+  if(page!=="landing" || key===target)return;
   const items=normalized(draft);
   const from=items.findIndex(row=>row.section_key===key),to=items.findIndex(row=>row.section_key===target);
   if(from<0||to<0)return;
@@ -195,17 +195,17 @@ export default function AdminVisualStudio(){
         {sorted.map((row,i)=>{
          const slot=source.find(s=>s.section_key===row.section_key);
          return <button type="button" key={row.section_key}
-          draggable={!loading} onDragStart={()=>{dragging.current=row.section_key;}}
-          onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();if(dragging.current)move(dragging.current,row.section_key);dragging.current=null;}}
+          draggable={!loading&&page==="landing"} onDragStart={()=>{if(page==="landing")dragging.current=row.section_key;}}
+          onDragOver={e=>{if(page==="landing")e.preventDefault();}} onDrop={e=>{e.preventDefault();if(page==="landing"&&dragging.current)move(dragging.current,row.section_key);dragging.current=null;}}
           onClick={()=>setSelected(row.section_key)}
           className={"flex w-full items-center gap-2 rounded-xl border px-2.5 py-2.5 text-left transition "+(selected===row.section_key?"border-[#2563eb] bg-[#eef4ff]":"border-transparent hover:border-border hover:bg-muted/60")}>
           <Move className="h-3.5 w-3.5 shrink-0 text-muted-foreground"/><span className="min-w-0 flex-1 truncate text-xs font-bold">{slot?.title||row.section_key}</span>
           {!row.visible?<EyeOff className="h-3.5 w-3.5 text-amber-600"/>:<Eye className="h-3.5 w-3.5 text-muted-foreground"/>}
-          <span className="flex flex-col gap-0.5"><span role="button" tabIndex={0} aria-label="Move up" onClick={e=>{e.stopPropagation();if(i>0)move(row.section_key,sorted[i-1].section_key);}} className="rounded p-0.5 hover:bg-white"><ArrowUp className="h-3 w-3"/></span><span role="button" tabIndex={0} aria-label="Move down" onClick={e=>{e.stopPropagation();if(i<sorted.length-1)move(row.section_key,sorted[i+1].section_key);}} className="rounded p-0.5 hover:bg-white"><ArrowDown className="h-3 w-3"/></span></span>
+          <span className="flex flex-col gap-0.5"><span role="button" tabIndex={0} aria-label="Move up" onClick={e=>{e.stopPropagation();if(page==="landing"&&i>0)move(row.section_key,sorted[i-1].section_key);}} className="rounded p-0.5 hover:bg-white"><ArrowUp className="h-3 w-3"/></span><span role="button" tabIndex={0} aria-label="Move down" onClick={e=>{e.stopPropagation();if(page==="landing"&&i<sorted.length-1)move(row.section_key,sorted[i+1].section_key);}} className="rounded p-0.5 hover:bg-white"><ArrowDown className="h-3 w-3"/></span></span>
          </button>;
         })}
        </div>
-       <p className="mt-3 text-[11px] leading-5 text-muted-foreground">Drag blocks to reorder the homepage. Required sections cannot be hidden. Use the canvas buttons to select blocks visually.</p>
+       <p className="mt-3 text-[11px] leading-5 text-muted-foreground">{page==="landing"?"Drag homepage blocks to reorder them. Required sections cannot be hidden. Use the canvas buttons to select blocks visually.":"Find My Res keeps its search-to-application journey in a fixed sequence; visibility and approved copy are editable without disrupting that flow."}</p>
       </CardContent></Card>
       <div className="min-w-0 space-y-3">
        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border bg-card p-3">
