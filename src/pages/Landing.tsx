@@ -12,6 +12,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
+import VisualPageBlock from "@/components/admin/VisualPageBlock";
+import {useVisualPageSections} from "@/hooks/useVisualPageSections";
 import PremiumResidenceShowcase from "@/components/findmyres/PremiumResidenceShowcase";
 import LivingSearchDock from "@/components/findmyres/LivingSearchDock";
  import MonthlyTopThree from "@/components/findmyres/MonthlyTopThree";
@@ -68,6 +70,7 @@ function DeferredSection({ children, minHeight = 220 }: { children: React.ReactN
 const Landing = () => {
   const navigate = useNavigate();
   const livingSignals=usePublicLivingSignals();
+  const {byKey}=useVisualPageSections("landing");
   const {residences:spotlightResidences,loading:spotlightLoading}=useLandingSpotlightResidences();
   const landlordRef = useRef<HTMLDivElement>(null);
 
@@ -183,17 +186,11 @@ const Landing = () => {
 
       <SiteHeader />
 
-      <main>
-        <section>
+      <main className="flex flex-col">
+        \n        <VisualPageBlock page="landing" sectionKey="hero">\n        <section>
           <HeroCarousel slides={fallbackSlides} autoPlay interval={6000} useDatabase={true} location="landing" />
-        </section>
-
-        <LivingSearchDock/>
-        {/* Highest-visibility accommodation placement immediately after the homepage hero. */}
-        <PremiumResidenceShowcase residences={spotlightResidences} loading={spotlightLoading} surface="landing"/>
-        <MonthlyTopThree signals={livingSignals} surface="landing"/>
-
-        <section className="border-b bg-background py-9 md:py-14">
+        </section>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="search">\n        <LivingSearchDock/>
+        {/* Highest-visibility accommodation placement immediately after the homepage hero. */}\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="spotlight">\n        <PremiumResidenceShowcase residences={spotlightResidences} loading={spotlightLoading} surface="landing" headline={byKey.spotlight?.headline} subtitle={byKey.spotlight?.subtitle}/>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="top3">\n        <MonthlyTopThree signals={livingSignals} surface="landing" headline={byKey.top3?.headline} subtitle={byKey.top3?.subtitle}/>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="vision">\n        <section className="border-b bg-background py-9 md:py-14">
           <div className="container mx-auto px-4 text-center">
             <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-primary">OUR VISION · AFRICA'S FIRST AI/SI-POWERED STUDENT PLATFORM</p>
             <h1 className="mx-auto max-w-5xl text-3xl font-black leading-tight md:text-5xl lg:text-6xl">
@@ -207,9 +204,7 @@ const Landing = () => {
               <Button size="lg" variant="outline" onClick={() => navigate("/ai")}>Ask ResKonnect AI</Button>
             </div>
           </div>
-        </section>
-
-        <section aria-labelledby="discover-reskonnect" className="border-b bg-background py-11 md:py-14">
+        </section>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="cities">\n        <section aria-labelledby="discover-reskonnect" className="border-b bg-background py-11 md:py-14">
           <div className="container mx-auto max-w-6xl px-4">
             <div className="max-w-3xl">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Student accommodation in South Africa</p>
@@ -253,9 +248,7 @@ const Landing = () => {
               <Link className="font-semibold text-primary underline underline-offset-4" to="/properties">Student housing property intelligence</Link>
             </div>
           </div>
-        </section>
-
-        <section className="border-b bg-gradient-to-b from-[#fff9e7] via-background to-background py-10 md:py-14 dark:from-[#171b21]">
+        </section>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="pillars">\n        <section className="border-b bg-gradient-to-b from-[#fff9e7] via-background to-background py-10 md:py-14 dark:from-[#171b21]">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-5xl text-center">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">One ResKonnect journey</p>
@@ -268,9 +261,7 @@ const Landing = () => {
               <GoldTiltCard><Card className="border-amber-500/15 bg-card shadow-sm"><CardContent className="p-6"><Award className="h-8 w-8 text-amber-600" /><h3 className="mt-4 text-xl font-black">Opportunity</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Move into applications, education pathways, bursaries, WIL, careers and verified student opportunities.</p><Button variant="link" className="mt-3 p-0" onClick={() => navigate("/opportunities")}>Explore Opportunity →</Button></CardContent></Card></GoldTiltCard>
             </div>
           </div>
-        </section>
-
-        <section aria-label="ResKonnect Gmail integration and privacy" className="border-y border-slate-200 bg-slate-50 py-8 text-slate-800">
+        </section>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="gmail-privacy">\n        <section aria-label="ResKonnect Gmail integration and privacy" className="border-y border-slate-200 bg-slate-50 py-8 text-slate-800">
           <div className="container mx-auto flex max-w-6xl flex-col items-start justify-between gap-5 px-4 md:flex-row md:items-center">
             <div className="max-w-3xl">
               <h2 className="text-xl font-bold text-[#10213a]">Public information about ResKonnect and Google Gmail</h2>
@@ -290,16 +281,7 @@ const Landing = () => {
               Contact ResKonnect
             </a>
           </div>
-        </section>
-
-        <StudentCareLinks />
-        <InteractiveNeedSection />
-
-        <DeferredSection minHeight={420}><AutomationAdvantageSection /></DeferredSection>
-
-        <DeferredSection minHeight={520}><LandingResMap3DPreview /></DeferredSection>
-
-        <section className="py-8 md:py-10 bg-gradient-to-b from-primary/5 to-background">
+        </section>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="student-care">\n        <StudentCareLinks />\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="intake">\n        <InteractiveNeedSection />\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="automation">\n        <DeferredSection minHeight={420}><AutomationAdvantageSection /></DeferredSection>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="resmap">\n        <DeferredSection minHeight={520}><LandingResMap3DPreview /></DeferredSection>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="audience">\n        <section className="py-8 md:py-10 bg-gradient-to-b from-primary/5 to-background">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-5">
               <h2 className="text-2xl md:text-3xl font-bold">Who are you looking for?</h2>
@@ -317,19 +299,11 @@ const Landing = () => {
               />
             </div>
           </div>
-        </section>
-
-        <section className="py-12 md:py-20 bg-card/30">
+        </section>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="trusted">\n        <section className="py-12 md:py-20 bg-card/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <DeferredSection minHeight={520}><TrustedLivingShowcase signals={livingSignals}/></DeferredSection>
+            <DeferredSection minHeight={520}><TrustedLivingShowcase signals={livingSignals} headline={byKey.trusted?.headline} subtitle={byKey.trusted?.subtitle}/></DeferredSection>
           </div>
-        </section>
-
-        <DeferredSection minHeight={280}><CategoryHeroSelector /></DeferredSection>
-
-        <DeferredSection minHeight={220}><AccreditationCTA /></DeferredSection>
-
-        <section className="py-12 md:py-20 bg-card/50 relative overflow-hidden">
+        </section>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="categories">\n        <DeferredSection minHeight={280}><CategoryHeroSelector /></DeferredSection>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="accreditation">\n        <DeferredSection minHeight={220}><AccreditationCTA /></DeferredSection>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="about">\n        <section className="py-12 md:py-20 bg-card/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center max-w-6xl mx-auto">
@@ -353,9 +327,7 @@ const Landing = () => {
               </div>
             </div>
           </div>
-        </section>
-
-        <section ref={landlordRef} id="landlord" className="py-12 md:py-20 relative overflow-hidden">
+        </section>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="landlord">\n        <section ref={landlordRef} id="landlord" className="py-12 md:py-20 relative overflow-hidden">
           <FloatingShapes className="opacity-50" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center mb-10">
@@ -369,9 +341,7 @@ const Landing = () => {
             </div>
             <DeferredSection minHeight={420}><LandlordApplicationTabs /></DeferredSection>
           </div>
-        </section>
-
-        <section className="py-12 md:py-20 relative overflow-hidden">
+        </section>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="benefits">\n        <section className="py-12 md:py-20 relative overflow-hidden">
           <FloatingShapes />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">Why Choose ResKonnect?</h2>
@@ -390,9 +360,7 @@ const Landing = () => {
               ))}
             </div>
           </div>
-        </section>
-
-        <section className="border-y bg-card/50 py-12 md:py-16">
+        </section>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="faq">\n        <section className="border-y bg-card/50 py-12 md:py-16">
           <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
             <div className="text-center"><h2 className="text-3xl font-black">ResKonnect, answered clearly</h2><p className="mt-2 text-sm text-muted-foreground">Canonical facts for students, partners, search engines and AI answer systems.</p></div>
             <div className="mt-7 space-y-4">
@@ -401,9 +369,7 @@ const Landing = () => {
               <div className="rounded-2xl border bg-background p-5"><h3 className="font-black">Is ResKonnect only for South Africa?</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">ResKonnect's current live accommodation inventory is concentrated in South Africa, while the technology and growth strategy are built around transforming student accommodation discovery and placement across African markets.</p></div>
             </div>
           </div>
-        </section>
-
-        <section className="py-12 md:py-16">
+        </section>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="contact">\n        <section className="py-12 md:py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-xl mx-auto">
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-2">Get in Touch</h2>
@@ -422,9 +388,7 @@ const Landing = () => {
               </Card>
             </div>
           </div>
-        </section>
-
-        <section className="container mx-auto max-w-5xl px-4 pb-16 sm:px-6 lg:px-8">
+        </section>\n        </VisualPageBlock>\n\n        <VisualPageBlock page="landing" sectionKey="seo-links">\n        <section className="container mx-auto max-w-5xl px-4 pb-16 sm:px-6 lg:px-8">
           <SeoInternalLinks
             heading="Explore ResKonnect"
             links={[
@@ -438,8 +402,7 @@ const Landing = () => {
               { label: "Landlord partners", to: "/partners/landlords", description: "List your property and reach students." },
             ]}
           />
-        </section>
-      </main>
+        </section>\n        </VisualPageBlock>\n      </main>
 
       <SiteFooter />
     </div>
