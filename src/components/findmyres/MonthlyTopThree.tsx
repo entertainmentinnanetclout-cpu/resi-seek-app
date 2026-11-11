@@ -6,10 +6,10 @@ import {usePublicLivingSignals,type MonthlyWinner} from "@/hooks/usePublicLiving
 import ResidenceDiscoveryCard from "./ResidenceDiscoveryCard";
 
 type Signals=ReturnType<typeof usePublicLivingSignals>;
-type Props={residences?:any[];signals:Signals;surface:"landing"|"find"};
+type Props={residences?:any[];signals:Signals;surface:"landing"|"find";headline?:string;subtitle?:string};
 
 const NO_RESIDENCES:any[]=[];
-export default function MonthlyTopThree({residences=NO_RESIDENCES,signals,surface}:Props){
+export default function MonthlyTopThree({residences=NO_RESIDENCES,signals,surface,headline,subtitle}:Props){
  const [loaded,setLoaded]=useState<any[]>([]);
  const keys=signals.top3.map(item=>item.residence_id).join(",");
  useEffect(()=>{
@@ -44,8 +44,8 @@ export default function MonthlyTopThree({residences=NO_RESIDENCES,signals,surfac
    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
     <div>
      <p className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#2563eb]"><ChartNoAxesCombined className="h-4 w-4"/> Organic student demand & ResKonnect selections · {label}</p>
-     <h2 id={`rk-monthly-top3-${surface}`} className="mt-2 text-3xl font-black leading-tight tracking-tight sm:text-4xl">ResKonnect Top 3 <span className="text-[#2563eb]">of the month.</span></h2>
-     <p className="mt-2 max-w-2xl text-sm leading-6 text-[#657184]">{hasEditorial?"A ResKonnect-curated monthly showcase. Editorial choices are labelled individually; remaining places follow measured student interest.":"Ordered by unique student applications and reservation interest during the current calendar month. Not based on advertising or star ratings."}</p>
+     <h2 id={`rk-monthly-top3-${surface}`} className="mt-2 text-3xl font-black leading-tight tracking-tight sm:text-4xl">{headline||<>ResKonnect Top 3 <span className="text-[#2563eb]">of the month.</span></>}</h2>
+     <p className="mt-2 max-w-2xl text-sm leading-6 text-[#657184]">{subtitle||(hasEditorial?"A ResKonnect-curated monthly showcase. Editorial choices are labelled individually; remaining places follow measured student interest.":"Ordered by unique student applications and reservation interest during the current calendar month. Not based on advertising or star ratings.")}</p>
     </div>
     <Link className="inline-flex items-center gap-1.5 text-sm font-black text-[#2563eb] hover:underline" to="/findmyres#results">Explore all residences <ArrowRight className="h-4 w-4"/></Link>
    </div>
