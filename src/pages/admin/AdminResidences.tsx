@@ -814,7 +814,7 @@ export const AdminResidencesContent = () => {
               <div className="flex flex-wrap gap-2">
                 {[
                   { key: "all", label: "All", color: "bg-primary text-white" },
-                  { key: "university", label: "TUT / University", color: "bg-sky text-white" },
+                  { key: "university", label: "University", color: "bg-sky text-white" },
                   { key: "tvet", label: "TVET / College", color: "bg-amber text-white" },
                   { key: "private", label: "Private", color: "bg-violet text-white" },
                   { key: "spotlight", label: "Spotlight", color: "bg-gradient-spotlight text-white" },
@@ -893,7 +893,7 @@ export const AdminResidencesContent = () => {
                                   ? "bg-sky/15 text-sky border-sky/40"
                                   : "bg-muted text-muted-foreground border-border opacity-50")
                               }
-                            >TUT</button>
+                            >University</button>
                             <button
                               type="button"
                               onClick={() => toggleAudience(residence, "accepts_tvet")}
