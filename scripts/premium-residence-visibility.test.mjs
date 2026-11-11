@@ -41,7 +41,9 @@ test("reported availability, funding and pricing are not invented",()=>{
  assert.match(ranking,/No confirmed monthly rent supplied/);
  assert.match(showcase,/reported spaces/);
  assert.match(showcase,/residence\.accepts_nsfas===true/);
- assert.match(showcase,/residence\.is_tut_accredited===true/);
+ assert.doesNotMatch(showcase,/residence\.is_tut_accredited===true/);
+ assert.match(showcase,/ResidenceInstitutionBadges/);
+ assert.match(hook,/institution_tags/);
  assert.match(showcase,/Spotlight is a ResKonnect editorial placement/);
  assert.match(pricing,/hasVerifiedPrivateRent/);
  assert.doesNotMatch(showcase,/guaranteed vacancy|100% verified/);
