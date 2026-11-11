@@ -536,9 +536,9 @@ const FindMyRes = () => {
             </CardContent>
           </Card>
         </div>
+        </VisualPageBlock>
       </div>
 
-        </VisualPageBlock>
       {/* Mobile Filter Bottom Sheet */}
       <FilterBottomSheet
         filters={filters}
