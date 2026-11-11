@@ -16,11 +16,15 @@ import {usePublicLivingSignals} from "@/hooks/usePublicLivingSignals";
 
 type Row=Record<string,any>&{id:string;name:string;slug?:string;institution_tags?:string[]};
 const FIELDS=["name","address","place_label","city","campus","province","description","cover_image_url","image_url",
- "accepts_university","accepts_tvet","accepts_private","accepts_nsfas","institution_tags","is_visible","is_spotlight"] as const;
+ "accepts_university","accepts_tvet","accepts_private","accepts_nsfas","institution_tags","is_visible","is_spotlight",
+ "price","private_price","nsfas_price","capacity","available_spots","room_types","has_wifi","has_parking","is_furnished","utilities_included","images"] as const;
 const flags=["accepts_university","accepts_tvet","accepts_private","accepts_nsfas"] as const;
+const amenityFlags=["has_wifi","has_parking","is_furnished","utilities_included"] as const;
+const roomTypes=["single","sharing","bachelor","commune","studio","flat"] as const;
 const fieldLabel:Record<string,string>={
  accepts_university:"University students",accepts_tvet:"TVET college students",
  accepts_private:"Private-paying tenants",accepts_nsfas:"Accepts NSFAS funding (not accreditation)",
+ has_wifi:"Wi-Fi",has_parking:"Parking",is_furnished:"Furnished",utilities_included:"Utilities included",
 };
 export default function ResidenceVisualManager({rows,onRefresh}:{rows:Row[];onRefresh:()=>Promise<void>}){
  const [selectedId,setSelectedId]=useState<string|null>(null);
@@ -55,6 +59,16 @@ export default function ResidenceVisualManager({rows,onRefresh}:{rows:Row[];onRe
   if(!String(draft.name||"").trim()||!String(draft.address||"").trim())return toast.error("Residence name and address are required");
   if((payload.institution_tags as string[]||[]).length>30)return toast.error("Select no more than 30 institutions");
   if(payload.institution_tags)payload.institution_tags=normalizeInstitutionTags(payload.institution_tags);
+  if(!Number.isFinite(Number(draft.capacity))||Number(draft.capacity)<0||!Number.isInteger(Number(draft.capacity)) ||
+    !Number.isFinite(Number(draft.available_spots))||Number(draft.available_spots)<0||
+    !Number.isInteger(Number(draft.available_spots))||Number(draft.available_spots)>Number(draft.capacity))
+    return toast.error("Available spots cannot exceed residence capacity and both must be nonnegative whole numbers.");
+  if(["price","private_price","nsfas_price"].some(key=>draft[key]!==null&&draft[key]!==undefined&&(!Number.isFinite(Number(draft[key]))||Number(draft[key])<0)))
+    return toast.error("Rent amounts must be nonnegative numbers.");
+  // Editing reported rents is not price verification. Clear stale evidence-based price flags.
+  if(["price","private_price","nsfas_price"].some(key=>key in payload)){
+    payload.price_verified_at=null;payload.price_verified_by=null;
+  }
   setSaving(true);
   const {data,error}=await (supabase as any).from("residences").update(payload).eq("id",selected.id)
    .select("id,name,slug,updated_at").maybeSingle();
@@ -99,10 +113,38 @@ export default function ResidenceVisualManager({rows,onRefresh}:{rows:Row[];onRe
      <div key={key} className={key==="address"?"sm:col-span-2":""}><Label htmlFor={"rk-edit-"+key}>{label}</Label><Input id={"rk-edit-"+key} className="mt-1" value={draft[key]||""} onChange={e=>set(key,e.target.value)}/></div>)}
     <div className="sm:col-span-2"><Label htmlFor="rk-edit-description">Public description</Label><Textarea id="rk-edit-description" className="mt-1 min-h-24" value={draft.description||""} onChange={e=>set("description",e.target.value)}/></div>
    </div>
+   <section className="space-y-3 rounded-2xl border border-[#dce4f0] bg-[#f8fafc] p-4">
+    <h3 className="text-sm font-black">Rent, room availability and amenities</h3>
+    <p className="text-xs text-muted-foreground">Rent figures are landlord/admin reported until separately verified. Updating rent removes prior price-verification status automatically.</p>
+    <div className="grid gap-3 sm:grid-cols-2">
+     {([["Base monthly rent","price"],["Private monthly rent","private_price"],["NSFAS funding-context rent","nsfas_price"],["Total capacity","capacity"],["Reported available beds","available_spots"]] as const).map(([label,key])=>
+      <div key={key}><Label htmlFor={"rk-edit-"+key}>{label}</Label><Input id={"rk-edit-"+key} className="mt-1" type="number" min="0"
+       step={key==="capacity"||key==="available_spots"?"1":"0.01"} value={draft[key]??""}
+       onChange={e=>set(key,e.target.value===""?null:Number(e.target.value))}/></div>)}
+    </div>
+    <Label>Available room types</Label>
+    <div className="flex flex-wrap gap-1.5">{roomTypes.map(type=>{
+     const selected=(draft.room_types||[]).includes(type);
+     return <Button key={type} type="button" size="sm" variant={selected?"default":"outline"} aria-pressed={selected}
+      className="h-8 rounded-full text-xs capitalize" onClick={()=>{
+       const current=Array.isArray(draft.room_types)?draft.room_types:[];
+       set("room_types",selected?current.filter((x:string)=>x!==type):[...current,type]);
+      }}>{type}</Button>;
+    })}</div>
+    <div className="grid gap-2 sm:grid-cols-2">{amenityFlags.map(key=>
+     <label key={key} className="flex items-center justify-between gap-2 rounded-lg border bg-white p-2.5"><span className="text-xs font-semibold">{fieldLabel[key]}</span>
+      <Switch checked={draft[key]===true} onCheckedChange={value=>set(key,value)}/></label>)}</div>
+   </section>
    <section className="rounded-2xl border p-4">
     <h3 className="flex items-center gap-2 text-sm font-black"><ImagePlus className="h-4 w-4"/>Public listing photograph</h3>
     <label className="mt-3 flex cursor-pointer items-center justify-center rounded-xl border border-dashed p-4 text-xs font-bold hover:bg-muted">{uploading?"Uploading…":"Upload listing cover photo"}<input type="file" className="sr-only" accept="image/png,image/jpeg,image/webp" disabled={uploading} onChange={e=>void upload(e.target.files?.[0])}/></label>
     <Label htmlFor="rk-edit-cover" className="mt-3 block">Or use an approved image URL</Label><Input id="rk-edit-cover" value={draft.cover_image_url||""} onChange={e=>set("cover_image_url",e.target.value)}/>
+    <Label htmlFor="rk-edit-gallery" className="mt-3 block">Additional gallery image URLs (one per line)</Label>
+    <Textarea id="rk-edit-gallery" rows={3} value={(Array.isArray(draft.images)?draft.images:[]).join("\n")}
+     onChange={e=>set("images",e.target.value.split("\n").map(url=>url.trim()).filter(Boolean))}/>
+    {Array.isArray(draft.images)&&draft.images.length>0&&<div className="flex max-w-full gap-2 overflow-x-auto">
+     {draft.images.slice(0,12).map((url:string,i:number)=><img key={url+"-"+i} src={url} alt={"Gallery "+(i+1)} className="h-14 w-20 shrink-0 rounded-md object-cover"/>)}
+    </div>}
    </section>
    <section className="space-y-3 rounded-2xl border border-[#dce4f0] bg-[#f8fafc] p-4">
     <h3 className="text-sm font-black">Student audience and accepted institutions</h3>
