@@ -18,7 +18,7 @@ export default function TrustedLivingShowcase({signals}:{signals:Signals}){
     "id,slug,name,address,city,place_label,campus,cover_image_url,image_url,images,room_type,room_types,is_visible,is_trusted,verification_level,available_spots,private_price,price,price_verified_at,accepts_nsfas,accepts_private,promo_active,promo_price,promo_starts_at,promo_ends_at"
    ).eq("is_visible",true).eq("is_trusted",true).order("display_order",{ascending:true}).limit(12);
    if(!active)return;
-   if(!error)setRows(data||[]);
+   if(!error)setRows(Array.isArray(data)?data:[]);
    setLoading(false);
   };
   void load();
