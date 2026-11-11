@@ -1,5 +1,5 @@
 import {useMemo,useState} from "react";
-import {ArrowDown,ArrowRight,ArrowUp,ImageOff,MapPin,Sparkles} from "lucide-react";
+import {ArrowDown,ArrowRight,ArrowUp,ImageOff,Sparkles} from "lucide-react";
 import {Link} from "react-router-dom";
 import {toast} from "sonner";
 import {Button} from "@/components/ui/button";
