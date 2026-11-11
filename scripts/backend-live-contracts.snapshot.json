@@ -1634,6 +1634,12 @@
       "authenticated": true
     },
     {
+      "name": "reskonnect_admin_top3_monthly",
+      "args": [],
+      "anon": false,
+      "authenticated": true
+    },
+    {
       "anon": false,
       "args": [
         "p_residence_id"
@@ -1699,9 +1705,9 @@
       "authenticated": true
     },
     {
-      "anon": true,
+      "name": "reskonnect_public_monthly_showcase_safe",
       "args": [],
-      "name": "reskonnect_public_monthly_showcase",
+      "anon": true,
       "authenticated": true
     },
     {
@@ -1724,12 +1730,6 @@
         "p_placement"
       ],
       "name": "reskonnect_public_sponsored_residences",
-      "authenticated": true
-    },
-    {
-      "anon": true,
-      "args": [],
-      "name": "reskonnect_public_top3_monthly",
       "authenticated": true
     },
     {

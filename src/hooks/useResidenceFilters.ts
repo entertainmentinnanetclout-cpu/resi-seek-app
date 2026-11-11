@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { residenceMatchesCampus, type InstitutionTypeKey } from "@/constants/institutionOptions";
+import {residenceMatchesHousingSearch} from "@/lib/resmap/housingSearchIntent";
 import { captureLunaDemandEvent } from "@/lib/lunaGrowth";
 import { publicPrivateMonthlyRent, hasVerifiedPrivateRent, hasPropertyPhotoReference, reportedCampusDistanceKm } from "@/lib/residenceListingEvidence";
 
@@ -214,19 +215,9 @@ export function useResidenceFilters(residences: any[]) {
     if(filters.photoOnly)filtered=filtered.filter(r=>hasPropertyPhotoReference(r));
     if(filters.priceVerifiedOnly)filtered=filtered.filter(r=>hasVerifiedPrivateRent(r));
 
-    // Search
-    if (filters.searchQuery) {
-      const q = filters.searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (r) =>
-          r.name?.toLowerCase().includes(q) ||
-          r.city?.toLowerCase().includes(q) ||
-          r.canonical_city?.toLowerCase().includes(q) ||
-          r.place_label?.toLowerCase().includes(q) ||
-          r.campus?.toLowerCase().includes(q) ||
-          r.description?.toLowerCase().includes(q)
-      );
-    }
+    // Home search and Find My Res use the same grounded matcher.
+    // Supports split location terms, landlord address, real room attributes and safe budget terms.
+    if(filters.searchQuery.trim())filtered=filtered.filter(r=>residenceMatchesHousingSearch(r,filters.searchQuery));
 
     // Campus (fuzzy: backend labels drift, e.g. "Pretoria West (Main Campus)")
     if (filters.campus && filters.campus !== "all") {

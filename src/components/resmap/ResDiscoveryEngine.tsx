@@ -13,12 +13,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeResidences } from "@/hooks/useRealtimeResidences";
 import { useResPreferenceDNA } from "@/hooks/useResPreferenceDNA";
 import { DNAFromFilters, scoreResidenceForDNA, type PreferenceDNA } from "@/lib/resmap/match";
+import {interpretHousingSearch,residenceMatchesHousingSearch} from "@/lib/resmap/housingSearchIntent";
 import { publicPrivateMonthlyRent } from "@/lib/residenceListingEvidence";
 import type { ResidenceFilters } from "@/hooks/useResidenceFilters";
 import { toast } from "sonner";
 
 interface Props {
   filters: ResidenceFilters;
+  initialQuery?: string;
   onClose: () => void;
 }
 type Tab = "discover" | "dna" | "visual" | "friends";
@@ -42,16 +44,30 @@ function FeedSlide({ residence, score, confidence, reasons, onMap, onImmersive, 
   </article>;
 }
 
-export default function ResDiscoveryEngine({ filters, onClose }: Props) {
+export default function ResDiscoveryEngine({ filters, initialQuery="", onClose }: Props) {
   const navigate=useNavigate(); const {user}=useAuth(); const {residences,loading}=useRealtimeResidences(); const {dna,save}=useResPreferenceDNA();
   const [tab,setTab]=useState<Tab>("discover"); const [localDNA,setLocalDNA]=useState<PreferenceDNA>(()=>({...DNAFromFilters(filters),...dna}));
+  const [searchText,setSearchText]=useState(initialQuery);
+  useEffect(()=>setSearchText(initialQuery),[initialQuery]);
+  const searchIntent=useMemo(()=>interpretHousingSearch(searchText),[searchText]);
   const [visual,setVisual]=useState<any>(null); const [visualLoading,setVisualLoading]=useState(false); const [groupSize,setGroupSize]=useState(Math.max(2,dna.groupSize||2));
   const [groupBudget,setGroupBudget]=useState(dna.budgetMax||4000); const [groupCampus,setGroupCampus]=useState(dna.campus||filters.campus||""); const [inviteCode,setInviteCode]=useState(""); const [createdGroup,setCreatedGroup]=useState<any>(null);
   const fileRef=useRef<HTMLInputElement|null>(null);
   useEffect(()=>{const prev=document.body.style.overflow;document.body.style.overflow="hidden";return()=>{document.body.style.overflow=prev;};},[]);
 
-  const effectiveDNA=useMemo(()=>visual?{...localDNA,styleTags:Array.from(new Set([...(localDNA.styleTags||[]),...(visual.style_tags||[]),...(visual.features||[])])),roomTypes:Array.from(new Set([...(localDNA.roomTypes||[]),...(visual.room_types||[])])),amenities:Array.from(new Set([...(localDNA.amenities||[]),...(visual.amenities||[])]))}:localDNA,[localDNA,visual]);
-  const ranked=useMemo(()=>residences.filter((r:any)=>r.is_visible!==false).map((residence:any)=>({residence,score:scoreResidenceForDNA(residence,effectiveDNA)})).sort((a,b)=>b.score.score-a.score.score||b.score.evidenceCount-a.score.evidenceCount||Number(b.residence.available_spots||0)-Number(a.residence.available_spots||0)),[residences,effectiveDNA]);
+  const effectiveDNA=useMemo(()=>{
+    const base=visual?{...localDNA,styleTags:Array.from(new Set([...(localDNA.styleTags||[]),...(visual.style_tags||[]),...(visual.features||[])])),roomTypes:Array.from(new Set([...(localDNA.roomTypes||[]),...(visual.room_types||[])])),amenities:Array.from(new Set([...(localDNA.amenities||[]),...(visual.amenities||[])]))}:localDNA;
+    return {...base,
+      budgetMax:searchIntent.budgetMax??base.budgetMax,
+      fundingType:searchIntent.funding??base.fundingType,
+      roomTypes:searchIntent.roomTypes.length?searchIntent.roomTypes:base.roomTypes,
+      amenities:Array.from(new Set([...(base.amenities||[]),...searchIntent.amenities]))
+    };
+  },[localDNA,visual,searchIntent]);
+  const ranked=useMemo(()=>residences.filter((r:any)=>r.is_visible!==false&&
+    (!searchText.trim()||residenceMatchesHousingSearch(r,searchIntent)))
+    .map((residence:any)=>({residence,score:scoreResidenceForDNA(residence,effectiveDNA)}))
+    .sort((a,b)=>b.score.score-a.score.score||b.score.evidenceCount-a.score.evidenceCount||Number(b.residence.available_spots||0)-Number(a.residence.available_spots||0)),[residences,effectiveDNA,searchIntent,searchText]);
   const groupMatches=useMemo(()=>ranked.filter(({residence})=>{
     const rent=publicPrivateMonthlyRent(residence);
     const hasReportedCapacity=Number(residence.available_spots||0)>=groupSize;
@@ -92,8 +108,14 @@ export default function ResDiscoveryEngine({ filters, onClose }: Props) {
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {tab==="discover"&&<div className="mx-auto max-w-3xl snap-y snap-mandatory space-y-4 p-3 sm:p-5">
+          <div className="rounded-xl border border-[#f5b32f]/25 bg-white/[.07] p-3">
+            <label htmlFor="rk-ai-home-search" className="mb-2 block text-xs font-bold text-[#f5b32f]">Describe your ideal accommodation</label>
+            <div className="flex gap-2"><Input id="rk-ai-home-search" value={searchText} onChange={e=>setSearchText(e.target.value.slice(0,150))} placeholder="e.g. single room in Pretoria under R3500 with WiFi" className="h-11 border-white/25 bg-[#071326] text-white placeholder:text-white/45"/>
+             {searchText&&<Button type="button" variant="outline" onClick={()=>setSearchText("")} className="border-white/25 bg-white/10 text-white hover:bg-white/20">Clear</Button>}</div>
+            <p className="mt-2 text-xs text-white/65">Smart matching interprets your words, checks published listing data and ranks relevant properties. Prices, funding eligibility and availability still require provider confirmation.</p>
+          </div>
           <p className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/70">Dimpho uses an explainable preference score. It is not a probability of acceptance, proof of accreditation, verified route time or a reserved bed. Confirm price and space with the provider.</p>
-          {loading?<div className="grid h-[70vh] place-items-center"><div className="text-center"><div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent"/><p className="mt-3">Building your discovery feed…</p></div></div>:ranked.length===0?<p className="p-8 text-center text-white/70">No published residences could be retrieved. Try the main search or retry when the live service is available.</p>:ranked.map(({residence,score})=><FeedSlide key={residence.id} residence={residence} score={score.score} confidence={score.confidence} reasons={score.reasons} onMap={()=>{void log(residence.id,"map");onClose();navigate(`/findmyres?view=map&residence=${residence.id}`);}} onImmersive={()=>{void log(residence.id,"tour");onClose();navigate(`/find-my-res/${residence.slug||residence.id}/immersive`);}} onDetails={()=>{onClose();navigate(`/find-my-res/${residence.slug||residence.id}`);}} onSave={()=>saveLocalResidence(residence)}/> )}
+          {loading?<div className="grid h-[70vh] place-items-center"><div className="text-center"><div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent"/><p className="mt-3">Building your discovery feed…</p></div></div>:ranked.length===0?<p className="p-8 text-center text-white/70">{searchText.trim()?"No published residences match that request. Try another area, room type or budget.":"No published residences could be retrieved. Try the main search or retry when the live service is available."}</p>:ranked.map(({residence,score})=><FeedSlide key={residence.id} residence={residence} score={score.score} confidence={score.confidence} reasons={score.reasons} onMap={()=>{void log(residence.id,"map");onClose();navigate(`/findmyres?view=map&residence=${residence.id}`);}} onImmersive={()=>{void log(residence.id,"tour");onClose();navigate(`/find-my-res/${residence.slug||residence.id}/immersive`);}} onDetails={()=>{onClose();navigate(`/find-my-res/${residence.slug||residence.id}`);}} onSave={()=>saveLocalResidence(residence)}/> )}
         </div>}
 
         {tab==="dna"&&<div className="mx-auto max-w-4xl p-4 sm:p-8"><div className="rounded-[30px] border border-white/10 bg-white/[.06] p-5 sm:p-7"><div className="mb-6"><Badge className="bg-cyan-500 text-slate-950"><Sparkles className="mr-1 h-3 w-3"/>Zero-AI matching</Badge><h2 className="mt-3 text-3xl font-black">My Res DNA</h2><p className="mt-2 max-w-2xl text-sm text-white/60">Your housing preferences are stored as structured data. Dimpho Match recalculates instantly without spending AI credits.</p></div><div className="grid gap-5 md:grid-cols-2"><div><Label className="text-white">Campus / area</Label><Input value={localDNA.campus||""} onChange={(e)=>setLocalDNA((d)=>({...d,campus:e.target.value||undefined}))} placeholder="e.g. Soshanguve North" className="mt-2 border-white/15 bg-white/10"/></div><div><Label className="text-white">Funding</Label><Select value={localDNA.fundingType||"undecided"} onValueChange={(v)=>setLocalDNA((d)=>({...d,fundingType:v}))}><SelectTrigger className="mt-2 border-white/15 bg-white/10"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="undecided">Not sure yet</SelectItem><SelectItem value="nsfas">NSFAS</SelectItem><SelectItem value="private">Private funded</SelectItem><SelectItem value="other">Bursary / other</SelectItem></SelectContent></Select></div><div className="md:col-span-2"><div className="flex justify-between text-sm"><Label className="text-white">Maximum monthly budget</Label><span className="font-black">R{localDNA.budgetMax.toLocaleString("en-ZA")}</span></div><Slider className="mt-4" min={1000} max={10000} step={250} value={[localDNA.budgetMax]} onValueChange={([v])=>setLocalDNA((d)=>({...d,budgetMax:v}))}/></div><div><Label className="text-white">Room types</Label><div className="mt-2 flex flex-wrap gap-2">{['single','sharing','studio','bachelor'].map((x)=><button key={x} onClick={()=>toggleRoom(x)} className={`rounded-full border px-3 py-2 text-sm font-bold capitalize ${localDNA.roomTypes.includes(x)?'border-cyan-400 bg-cyan-400 text-slate-950':'border-white/15 bg-white/5'}`}>{x}</button>)}</div></div><div><Label className="text-white">Priorities & amenities</Label><div className="mt-2 flex flex-wrap gap-2">{['WiFi','Parking','Furnished','Study area','Laundry'].map((x)=><button key={x} onClick={()=>toggleAmenity(x)} className={`rounded-full border px-3 py-2 text-sm font-bold ${localDNA.amenities.includes(x)?'border-cyan-400 bg-cyan-400 text-slate-950':'border-white/15 bg-white/5'}`}>{x}</button>)}</div></div><div><Label className="text-white">Group size</Label><div className="mt-2 flex items-center gap-3"><Button variant="outline" className="border-white/15 bg-white/10 text-white" onClick={()=>setLocalDNA((d)=>({...d,groupSize:Math.max(1,d.groupSize-1)}))}>−</Button><span className="w-12 text-center text-xl font-black">{localDNA.groupSize}</span><Button variant="outline" className="border-white/15 bg-white/10 text-white" onClick={()=>setLocalDNA((d)=>({...d,groupSize:Math.min(20,d.groupSize+1)}))}>+</Button></div></div><div><Label className="text-white">Travel mode</Label><Select value={localDNA.travelMode} onValueChange={(v:any)=>setLocalDNA((d)=>({...d,travelMode:v}))}><SelectTrigger className="mt-2 border-white/15 bg-white/10"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="walk">Walk</SelectItem><SelectItem value="bike">Bike</SelectItem><SelectItem value="transport">Public transport</SelectItem><SelectItem value="drive">Drive</SelectItem></SelectContent></Select></div></div><div className="mt-7 flex flex-col gap-2 sm:flex-row"><Button onClick={saveDNA} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"><Check className="mr-2 h-4 w-4"/>Save Res DNA</Button><Button variant="outline" className="border-white/15 bg-white/10 text-white" onClick={()=>setTab("discover")}>See {ranked.length} ranked residences</Button></div></div></div>}

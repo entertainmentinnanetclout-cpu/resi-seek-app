@@ -37,7 +37,7 @@ export default function MonthlyTopThree({residences=NO_RESIDENCES,signals,surfac
    rating={signals.ratings[item.rank.residence_id]}
    accredited={signals.accreditedIds.has(item.rank.residence_id)}
    nsfasAccredited={signals.nsfasAccreditedIds.has(item.rank.residence_id)} className="h-full"/>
-  {item.rank.selection_type==="editorial"?<p className="mt-2 text-[11px] text-[#64748b]">Selected by the ResKonnect team for this month · Not an organic performance ranking</p>:<p className="mt-2 text-[11px] text-[#64748b]">{item.rank.reservations_count} unique reservation interests · {item.rank.applications_count} applicants this month</p>}
+  {item.rank.selection_type==="editorial"&&<p className="mt-2 text-[11px] text-[#64748b]">ResKonnect editorial selection</p>}
  </div>;
  return <section aria-labelledby={`rk-monthly-top3-${surface}`} className="bg-[#f8fafc] py-11 text-[#071326] md:py-16">
   <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -56,7 +56,7 @@ export default function MonthlyTopThree({residences=NO_RESIDENCES,signals,surfac
     </div>
    </div>
    <p className="mt-5 rounded-xl border border-[#dce4f0] bg-white px-4 py-3 text-xs leading-5 text-[#475569]">
-    Organic ranking method: two points per unique reservation-interest account plus one per unique applicant account recorded during {label}. Editorial selections are separate, not scored as organic winners. A reservation is not a confirmed tenancy; accommodation terms remain residence-reported unless separately verified.
+    Top 3 placements reflect student-interest trends or clearly labelled ResKonnect editorial selections. Individual reservation and application totals are private to ResKonnect and authorised residence teams. Confirm availability and pricing with the accommodation provider.
    </p>
   </div>
  </section>;

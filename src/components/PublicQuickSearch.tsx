@@ -14,6 +14,7 @@ import {
   Newspaper,
   Percent,
   Search,
+  Sparkles,
   Users,
 } from "lucide-react";
 
@@ -403,6 +404,16 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
     };
   }, [query]);
 
+  const openResidenceSearch = (ai: boolean) => {
+    const value=query.trim().slice(0,100);
+    const params=new URLSearchParams();
+    if(value)params.set("query",value);
+    if(ai)params.set("discovery","discover");
+    setOpen(false);
+    setQuery("");
+    navigate("/findmyres"+(params.size?"?"+params.toString():"")+(ai?"":"#results"));
+  };
+
   const choose = (result: SearchResult) => {
     setOpen(false);
     setQuery("");
@@ -441,6 +452,10 @@ const PublicQuickSearch = ({ className, label = "Quick Search" }: PublicQuickSea
           placeholder="Search accommodation, courses, bursaries, opportunities, services or ResKonnect AI..."
         />
         <CommandList className="max-h-[65vh]">
+          {query.trim()&&<CommandGroup heading="Find student accommodation">
+            <CommandItem value={`${query} find rooms listings search student accommodation`} onSelect={()=>openResidenceSearch(false)} className="cursor-pointer gap-3 py-3"><Search className="h-4 w-4 text-primary"/>Search published residences for “{query.trim().slice(0,70)}”</CommandItem>
+            <CommandItem value={`${query} AI assisted smart residence matching`} onSelect={()=>openResidenceSearch(true)} className="cursor-pointer gap-3 py-3"><Sparkles className="h-4 w-4 text-primary"/>Open smart accommodation matching</CommandItem>
+          </CommandGroup>}
           {loading && (
             <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />

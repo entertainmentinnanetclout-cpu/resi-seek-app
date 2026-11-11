@@ -31,7 +31,7 @@ export default function MonthlyTopThreeManager({residences}:{residences:Residenc
   const db=supabase as any;
   const [selections,performance]=await Promise.all([
    db.from("reskonnect_monthly_top3_editorial").select("position,residence_id").eq("month_start",monthStart).order("position"),
-   db.rpc("reskonnect_public_top3_monthly")
+   db.rpc("reskonnect_admin_top3_monthly")
   ]);
   if(selections.error)toast.error("Cannot load admin Top 3 selections: "+selections.error.message);
   else setRows(Array.isArray(selections.data)?selections.data:[]);

@@ -32,7 +32,7 @@ test("organic Top 3 uses monthly distinct-account activity and excludes paid pla
  assert.match(landing,/MonthlyTopThree signals=\{livingSignals\} surface="landing"/);
  assert.match(find,/MonthlyTopThree residences=\{realResidences\} signals=\{livingSignals\} surface="find"/);
  assert.match(monthly,/Organic student demand/);
- assert.match(monthly,/two points per unique reservation-interest account plus one per unique applicant account/);
+ assert.doesNotMatch(monthly,/reservations_count|applications_count|activity_score/);
 });
 
 test("student ratings are one approved-applicant vote per property with no seed/fake average",()=>{
@@ -46,7 +46,7 @@ test("student ratings are one approved-applicant vote per property with no seed/
  assert.match(review,/reskonnect_student_residence_reviews/);
  assert.match(review,/onConflict:"residence_id,user_id"/);
  assert.match(card,/rating&&rating.count>0/);
- assert.match(card,/No student ratings yet/);
+ assert.doesNotMatch(card,/No student ratings yet/);
  assert.match(detail,/reskonnect_public_residence_review_excerpts/);
  assert.doesNotMatch(detail,/from\("reviews"\)/);
 });
@@ -107,11 +107,12 @@ test("monthly editorial selection is admin-only, isolated from organic analytics
  assert.match(editorialSql,/from generate_series\(1,3\)/);
  assert.match(admin,/MonthlyTopThreeManager residences=\{residences\}/);
  assert.match(manager,/onConflict:"month_start,position"/);
+ assert.match(manager,/reskonnect_admin_top3_monthly/);
  assert.match(manager,/Automatic · student demand/);
  assert.match(manager,/reset\(\)/);
- assert.match(signals,/reskonnect_public_monthly_showcase/);
+ assert.match(signals,/reskonnect_public_monthly_showcase_safe/);
  assert.match(monthly,/rankLabel=\{item.rank.selection_type==="editorial"/);
- assert.match(monthly,/Selected by the ResKonnect team/);
+ assert.match(monthly,/ResKonnect editorial selection/);
  assert.match(card,/rankLabel/);
 });
 test("monthly showcase and search use ResKonnect navy, blue and gold instead of imported competitor accents",()=>{
@@ -125,4 +126,44 @@ test("monthly showcase and search use ResKonnect navy, blue and gold instead of 
  assert.match(spotlight,/ResKonnect Living/);
  assert.match(finder,/Search student living with ResKonnect/);
  assert.match(monthly,/ResKonnect Top 3/);
+});
+
+
+test("reservation and application counts are inaccessible to public Top 3 consumers",()=>{
+ const migration=read("supabase/migrations/20261111082000_top3_privacy_scoped_metrics.sql");
+ const property=read("src/components/findmyres/ResidencePropertyCard.tsx");
+ const detail=read("src/pages/ResidenceDetail.tsx");
+ const privatePortal=read("src/pages/residence/ResidenceDashboard.tsx");
+ assert.match(migration,/reskonnect_public_monthly_showcase_safe/);
+ assert.match(migration,/returns table\(residence_id uuid, rank_position bigint, month_start date, selection_type text\)/);
+ assert.match(migration,/revoke all on function public.reskonnect_public_top3_monthly\(\) from public,anon,authenticated/);
+ assert.match(migration,/revoke all on function public.reskonnect_public_monthly_showcase\(\) from public,anon,authenticated/);
+ assert.match(migration,/if \(select auth.uid\(\)\) is null/);
+ assert.match(migration,/has_role/);
+ assert.doesNotMatch(monthly,/reservations_count|applications_count|activity_score/);
+ assert.doesNotMatch(signals,/reservations_count|applications_count|activity_score/);
+ assert.doesNotMatch(property,/No student ratings yet/);
+ assert.doesNotMatch(card,/No student ratings yet/);
+ assert.doesNotMatch(detail,/No eligible student ratings yet/);
+ assert.match(privatePortal,/reservations2027/);
+ assert.match(privatePortal,/get_residence_portal_reservations/);
+});
+test("landing regular and AI-assisted searches pass typed text into matching listings",()=>{
+ const pub=read("src/components/PublicQuickSearch.tsx");
+ const engine=read("src/components/resmap/ResDiscoveryEngine.tsx");
+ const intent=read("src/lib/resmap/housingSearchIntent.ts");
+ const filters=read("src/hooks/useResidenceFilters.ts");
+ assert.match(finder,/navigate\("\/findmyres"/);
+ assert.match(finder,/params.set\("query"/);
+ assert.match(finder,/discovery:"discover"/);
+ assert.match(smart,/initialQuery=\{query.get\("query"\)\|\|filters.searchQuery\}/);
+ assert.match(engine,/initialQuery=""/);
+ assert.match(engine,/interpretHousingSearch\(searchText\)/);
+ assert.match(engine,/residenceMatchesHousingSearch\(r,searchIntent\)/);
+ assert.match(engine,/setSearchText\(e.target.value.slice\(0,150\)\)/);
+ assert.match(filters,/residenceMatchesHousingSearch\(r,filters.searchQuery\)/);
+ assert.match(intent,/publicPrivateMonthlyRent\(residence\)/);
+ assert.match(intent,/residence.address/);
+ assert.match(pub,/openResidenceSearch/);
+ assert.match(pub,/Open smart accommodation matching/);
 });
