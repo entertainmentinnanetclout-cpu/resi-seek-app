@@ -264,6 +264,7 @@ const FindMyRes = () => {
         {/* Editorial premium placements are visible only until a student applies filters. */}
         {!hasActiveFilters&&<PremiumResidenceShowcase residences={realResidences} loading={loading} surface="find"/>}
         <NearbySuggestedResidences residences={residences}/>
+        {!hasActiveFilters&&!loading&&<SponsoredResidenceRail residences={realResidences} onApply={handleApply}/>}
         <ReferralBanner />
         {residenceError && (
           <div className="mx-auto mt-4 flex max-w-7xl flex-col gap-3 px-4 sm:px-6 lg:px-8">
