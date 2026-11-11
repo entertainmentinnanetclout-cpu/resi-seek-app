@@ -112,7 +112,7 @@ const AdminSidebar=({
 const AdminLayout=({children}:AdminLayoutProps)=>{
   const {staffRole,isGodMode,adminDepartments}=useAuth();
   return <SidebarProvider>
-    <div className="flex min-h-screen min-w-0 w-full overflow-x-hidden">
+    <div className="rk-motion flex min-h-screen min-w-0 w-full overflow-x-hidden">
       <AdminSidebar staffRole={staffRole} isGodMode={isGodMode} departments={adminDepartments}/>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b bg-card/95 px-3 backdrop-blur-xl sm:px-4">
