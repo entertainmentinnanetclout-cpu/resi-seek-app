@@ -432,7 +432,7 @@ const ResidenceDetail = () => {
  </div>
  {review.title&&review.title!=="Student rating"&&<h3 className="mt-2 font-bold">{review.title}</h3>}
  {review.comment&&<p className="mt-2 text-sm leading-6 text-muted-foreground">{review.comment}</p>}
- </article>):<div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">No eligible student ratings yet. Ratings appear only after approved students submit real votes.</div>}</div></CardContent></Card>
+ </article>):null}</div></CardContent></Card>
             </div>
 
             <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
