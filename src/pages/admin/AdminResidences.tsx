@@ -24,6 +24,7 @@ import AdminListingReview from "@/components/admin/AdminListingReview";
 import AdminMarketplaceReadiness from "@/components/admin/AdminMarketplaceReadiness";
 import AdminResidenceReviewModeration from "@/components/admin/residences/AdminResidenceReviewModeration";
 import SpotlightPlacementManager from "@/components/admin/residences/SpotlightPlacementManager";
+import MonthlyTopThreeManager from "@/components/admin/residences/MonthlyTopThreeManager";
 
 interface Residence {
   id: string;
@@ -52,6 +53,9 @@ interface Residence {
   accepts_private?: boolean | null;
   accepts_nsfas?: boolean | null;
   institution_tags?: string[] | null;
+  is_visible?: boolean | null;
+  cover_image_url?: string | null;
+  city?: string | null;
   is_spotlight?: boolean | null;
   spotlight_rank?: number | null;
 }
@@ -776,6 +780,7 @@ export const AdminResidencesContent = () => {
         </div>
 
         <SpotlightPlacementManager residences={residences} onRefresh={()=>{void fetchResidences();}}/>
+        <MonthlyTopThreeManager residences={residences}/>
 
         <Card>
           <CardHeader>
