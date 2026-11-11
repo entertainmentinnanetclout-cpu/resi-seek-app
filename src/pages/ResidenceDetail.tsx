@@ -425,14 +425,14 @@ const ResidenceDetail = () => {
 
               <Card><CardContent className="p-5 sm:p-6"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Location</p><h2 className="mt-1 text-2xl font-black">Find the residence</h2></div><div className="mt-4"><ResidenceMapPreview name={residence.name} address={residence.address} latitude={residence.latitude} longitude={residence.longitude} compact={false} /></div></CardContent></Card>
 
-              <Card><CardContent className="p-5 sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Student experience</p><h2 className="mt-1 text-2xl font-black">Reviews</h2></div>{user && <Button variant="outline" onClick={() => setShowReview(!showReview)}>Write a review</Button>}</div>{showReview && user && <div className="mt-5"><ReviewForm residenceId={residence.id} onSuccess={() => { setShowReview(false); setLoadAttempt(v=>v+1);livingSignals.refresh(); }} onCancel={() => setShowReview(false)} /></div>}<div className="mt-5 space-y-3">{reviews.length?reviews.map((review,index)=><article key={index} className="rounded-2xl border border-[#e6e9ee] bg-[#fbfaf7] p-4">
+              {(reviews.length>0||!!user)&&<Card><CardContent className="p-5 sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Student experience</p><h2 className="mt-1 text-2xl font-black">Reviews</h2></div>{user && <Button variant="outline" onClick={() => setShowReview(!showReview)}>Write a review</Button>}</div>{showReview && user && <div className="mt-5"><ReviewForm residenceId={residence.id} onSuccess={() => { setShowReview(false); setLoadAttempt(v=>v+1);livingSignals.refresh(); }} onCancel={() => setShowReview(false)} /></div>}<div className="mt-5 space-y-3">{reviews.length?reviews.map((review,index)=><article key={index} className="rounded-2xl border border-[#e6e9ee] bg-[#fbfaf7] p-4">
  <div className="flex flex-wrap items-center gap-2 text-sm">
   <span className="font-black text-[#16345c]">★ {Number(review.rating).toFixed(1)} / 5</span>
   <span className="text-xs text-muted-foreground">Student rating · {new Date(review.created_at).toLocaleDateString("en-ZA")}</span>
  </div>
  {review.title&&review.title!=="Student rating"&&<h3 className="mt-2 font-bold">{review.title}</h3>}
  {review.comment&&<p className="mt-2 text-sm leading-6 text-muted-foreground">{review.comment}</p>}
- </article>):null}</div></CardContent></Card>
+ </article>):null}</div></CardContent></Card>}
             </div>
 
             <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
