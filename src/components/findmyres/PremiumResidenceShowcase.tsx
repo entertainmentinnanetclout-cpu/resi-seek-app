@@ -113,8 +113,10 @@ export default function PremiumResidenceShowcase({residences,loading=false,surfa
    </div>
    <div className="grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-4">
     <LeadResidence residence={lead}/>
-    {support.length>0&&<div className="grid grid-cols-2 gap-3 lg:grid-rows-2 lg:gap-4">
-     {support.map((residence,index)=><SupportingResidence key={residence.id} residence={residence} index={index}/>)}
+    {support.length>0&&<div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [-webkit-overflow-scrolling:touch] lg:grid lg:grid-cols-2 lg:grid-rows-2 lg:gap-4 lg:overflow-visible lg:pb-0">
+     {support.map((residence,index)=><div key={residence.id} className="min-w-[245px] max-w-[290px] flex-1 shrink-0 snap-start lg:min-w-0 lg:max-w-none lg:shrink">
+       <SupportingResidence residence={residence} index={index}/>
+      </div>)}
     </div>}
    </div>
    <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-[#e4d9cf] pt-4 text-[11px] text-[#747f8c]">
