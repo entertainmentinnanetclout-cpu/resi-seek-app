@@ -30,7 +30,7 @@ const iconLogo = BRAND.logos.icon;
 import inclusivePathwaysHero from "@/assets/hero-inclusive-pathways.jpg";
 import applicationsFundingHero from "@/assets/hero-applications-funding.jpg";
 
-const TrustedResidencesGrid = lazy(() => import("@/components/TrustedResidencesGrid"));
+const TrustedLivingShowcase = lazy(() => import("@/components/landing/TrustedLivingShowcase"));
 const LandlordApplicationTabs = lazy(() => import("@/components/LandlordApplicationTabs"));
 const AutomationAdvantageSection = lazy(() => import("@/components/AutomationAdvantageSection"));
 const LandingResMap3DPreview = lazy(() => import("@/components/resmap/LandingResMap3DPreview"));
@@ -321,7 +321,7 @@ const Landing = () => {
 
         <section className="py-12 md:py-20 bg-card/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <DeferredSection minHeight={520}><TrustedResidencesGrid /></DeferredSection>
+            <DeferredSection minHeight={520}><TrustedLivingShowcase signals={livingSignals}/></DeferredSection>
           </div>
         </section>
 
