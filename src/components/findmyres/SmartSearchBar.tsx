@@ -97,7 +97,7 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount,
     </div>
     <Suspense fallback={<div role="status" className="fixed inset-0 z-[240] grid place-items-center bg-slate-950 text-sm font-semibold text-white">Opening ResKonnect Finder…</div>}>
       {mapOpen && <ResMapExperience filters={filters} updateFilter={updateFilter} resetFilters={resetMapFilters} onClose={() => navigateOverlay("close")} />}
-      {discoveryOpen && <ResDiscoveryEngine filters={filters} onClose={() => navigateOverlay("close")} />}
+      {discoveryOpen && <ResDiscoveryEngine filters={filters} initialQuery={query.get("query")||filters.searchQuery} onClose={() => navigateOverlay("close")} />}
     </Suspense>
   </>;
 }
