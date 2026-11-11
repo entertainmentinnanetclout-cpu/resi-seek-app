@@ -131,34 +131,10 @@ const TrustedResidencesEditor = () => {
 
     setSaving(true);
     try {
-      // Get all current trusted IDs to compare
-      const trustedIds = trustedList.map(r => r.id);
-      
-      // First, reset ALL residences that are currently trusted but NOT in our new list
-      const currentlyTrusted = allResidences.filter(r => r.is_trusted && !trustedIds.includes(r.id));
-      for (const res of currentlyTrusted) {
-        const { error } = await supabase
-          .from("residences")
-          .update({ is_trusted: false, display_order: null })
-          .eq("id", res.id);
-        if (error) {
-          console.error("Error resetting residence:", res.id, error);
-          throw error;
-        }
-      }
-
-      // Then mark selected as trusted with their order
-      for (const res of trustedList) {
-        const { error } = await supabase
-          .from("residences")
-          .update({ is_trusted: true, display_order: res.display_order })
-          .eq("id", res.id);
-        if (error) {
-          console.error("Error updating trusted residence:", res.id, error);
-          throw error;
-        }
-      }
-
+      // Single MFA-protected database transaction; partial ranking saves are impossible.
+      const ids=trustedList.map(r=>r.id);
+      const {data,error}=await (supabase as any).rpc("rk_admin_set_trusted_residences",{p_ids:ids});
+      if(error||Number(data)!==ids.length)throw error||new Error("The trusted ranking update was not confirmed.");
       toast.success(`Saved ${trustedList.length} trusted residences`);
       setHasChanges(false);
       await fetchResidences();
