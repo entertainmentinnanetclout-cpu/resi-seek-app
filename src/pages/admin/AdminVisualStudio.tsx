@@ -76,7 +76,7 @@ export default function AdminVisualStudio(){
  const loadPage=useCallback(async()=>{
   setLoading(true);setEditorError(null);
   const [published,rev]=await Promise.all([
-   (supabase as any).from("rk_visual_page_sections").select("*").eq("page_key",page).order("position"),
+   (supabase as any).from("rk_visual_page_sections").select("page_key,section_key,title,position,visible,required,editable_copy,headline,subtitle,updated_at").eq("page_key",page).order("position"),
    (supabase as any).from("rk_visual_page_revisions").select("*").eq("page_key",page).order("revision",{ascending:false}).limit(20),
   ]);
   if(published.error||!Array.isArray(published.data)||!published.data.length){
