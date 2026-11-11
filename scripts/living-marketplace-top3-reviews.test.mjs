@@ -81,7 +81,7 @@ test("premium mobile search, display modes and landlord pathways retain function
  assert.match(find,/Photo cards/);
  assert.match(find,/Compact list/);
  assert.match(find,/Detailed cards/);
- assert.match(spotlight,/bg-\[linear-gradient\(130deg,#fff6ef/);
+ assert.match(spotlight,/bg-\[linear-gradient\(130deg,#f8fafc/);
  assert.match(portal,/Residence quick navigation/);
  assert.match(portal,/mobileQuickNav/);
  assert.match(dashboard,/Everything connected/);
