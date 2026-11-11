@@ -29,6 +29,7 @@ import TrustScore from "@/components/TrustScore";
 import {usePublicLivingSignals} from "@/hooks/usePublicLivingSignals";
 import ReviewForm from "@/components/ReviewForm";
 import ResidenceBrandStudioCard from "@/components/findmyres/ResidenceBrandStudioCard";
+import ResidenceInstitutionBadges from "@/components/findmyres/ResidenceInstitutionBadges";
 import ResidenceMapPreview from "@/components/findmyres/ResidenceMapPreview";
 import ResidenceJourneyPanel from "@/components/conversion/ResidenceJourneyPanel";
 import { ReferralBanner } from "@/components/referrals/ReferralBanner";
@@ -153,8 +154,19 @@ const ResidenceDetail = () => {
             : await supabase.from("residences").select("*").eq("id", routeKey).maybeSingle();
           row = fallback.data as any;
         }
+        if(!row && !isUuid){
+          const {data: alias}=await (supabase as any).from("residence_slug_aliases")
+           .select("residence_id").eq("old_slug",routeKey.toLowerCase()).maybeSingle();
+          if(alias?.residence_id){
+           const canonical=await supabase.from("residences").select("*").eq("id",alias.residence_id).maybeSingle();
+           row=canonical.data as any;
+          }
+        }
         setResidence(row || null);
         if (!row) return;
+        if(row.slug && routeKey!==row.slug){
+          navigate("/find-my-res/"+encodeURIComponent(row.slug),{replace:true});
+        }
         setIntakeRule(await getResidenceIntake(row.id));
 
         const [pricingResult, relatedResult, reviewResult] = await Promise.all([
@@ -176,7 +188,7 @@ const ResidenceDetail = () => {
       }
     };
     void load();
-  }, [routeKey, loadAttempt]);
+  }, [routeKey, loadAttempt, navigate]);
 
   useEffect(() => {
     if (!user || !residenceId) return setHasApplied(false);
@@ -388,6 +400,7 @@ const ResidenceDetail = () => {
                     residence.accepts_nsfas?<Badge className="bg-white/10 text-white hover:bg-white/10">Accepts NSFAS funding · not accreditation</Badge>:null}
                     {residence.gender && <Badge className="bg-white/10 text-white hover:bg-white/10">{residence.gender}</Badge>}
                   </div>
+                  <ResidenceInstitutionBadges residence={residence} light className="mt-4" maxVisible={30}/>
                 </div>
 
                 <div className="mt-7 flex flex-wrap items-center gap-2">
