@@ -49,7 +49,7 @@ export default function MonthlyTopThree({residences=NO_RESIDENCES,signals,surfac
     </div>
     <Link className="inline-flex items-center gap-1.5 text-sm font-black text-[#2563eb] hover:underline" to="/findmyres#results">Explore all residences <ArrowRight className="h-4 w-4"/></Link>
    </div>
-   <div className="grid gap-5 md:grid-cols-[1.05fr_.95fr]">
+   <div className="rk-stagger-list grid gap-5 md:grid-cols-[1.05fr_.95fr]">
     {winners[0]&&render(winners[0],"editorial")}
     <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-1">
      {winners.slice(1).map(item=>render(item,"compact"))}
