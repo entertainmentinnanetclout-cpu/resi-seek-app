@@ -29,9 +29,10 @@ export default function SpotlightPlacementManager({residences,onRefresh}:Props){
    // permission to mutate editorial placement order.
    // Persist a complete 1..N sequence so existing null/duplicate ranks converge.
    for(let i=0;i<next.length;i++){
-    const {error}=await (supabase as any).from("residences")
-     .update({spotlight_rank:i+1}).eq("id",next[i].id);
-    if(error)throw error;
+    const {data,error}=await (supabase as any).from("residences")
+     .update({spotlight_rank:i+1}).eq("id",next[i].id)
+     .select("id,spotlight_rank").maybeSingle();
+    if(error||!data||Number(data.spotlight_rank)!==i+1)throw error||new Error("The placement was not saved. Check your admin permissions.");
    }
    toast.success("Spotlight order saved on the homepage and Find My Res");
   }catch(e){
