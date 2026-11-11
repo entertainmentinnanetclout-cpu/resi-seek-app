@@ -1,12 +1,14 @@
 import type {ReactNode} from "react";
 import {Pencil} from "lucide-react";
 import {useVisualPageSections,type VisualPageKey} from "@/hooks/useVisualPageSections";
+import {useAuth} from "@/contexts/AuthContext";
+import {isVisualPreviewAuthorized} from "@/lib/adminVisualPreview";
 
 export default function VisualPageBlock({page,sectionKey,children}:{page:VisualPageKey;sectionKey:string;children:ReactNode}){
  const {byKey}=useVisualPageSections(page);
+ const {isGodMode,session}=useAuth();
  const slot=byKey[sectionKey];
- const preview=typeof window!=="undefined" && window.parent!==window &&
-  new URLSearchParams(window.location.search).get("rk_visual_preview")==="1";
+ const preview=isVisualPreviewAuthorized(isGodMode,session?.access_token);
  const hidden=slot?.visible===false&&!slot.required;
  if(hidden&&!preview)return null;
  return <div data-rk-visual-section={sectionKey}
