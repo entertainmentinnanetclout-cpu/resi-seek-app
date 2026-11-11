@@ -3,7 +3,7 @@ import {ArrowRight,Building2,CalendarDays,MapPin,ShieldCheck,Sparkles} from "luc
 import {rankSpotlightResidences,spotlightLocation,spotlightPhoto,spotlightPrice} from "@/lib/residenceSpotlight";
 import ResidenceInstitutionBadges from "./ResidenceInstitutionBadges";
 
-type Props={residences:any[];loading?:boolean;surface:"landing"|"find"};
+type Props={residences:any[];loading?:boolean;surface:"landing"|"find";headline?:string;subtitle?:string};
 
 function FeatureBadges({residence}:{residence:any}){
  return <div className="flex flex-wrap gap-1.5 text-[10px] font-bold uppercase tracking-wide">
@@ -88,7 +88,7 @@ function SupportingResidence({residence,index}:{residence:any;index:number}){
  * and at the top of Find My Res, but disappear when students use search filters.
  * Paid sponsored listings are a separate, disclosed placement system.
  */
-export default function PremiumResidenceShowcase({residences,loading=false,surface}:Props){
+export default function PremiumResidenceShowcase({residences,loading=false,surface,headline,subtitle}:Props){
  const items=rankSpotlightResidences(residences,5);
  if(loading&&!items.length)return <section aria-label="Featured residences loading" className="mx-auto max-w-7xl px-4 py-9 sm:px-6 lg:px-8">
   <div className="h-24 animate-pulse rounded-2xl bg-muted"/><div className="mt-4 h-80 animate-pulse rounded-3xl bg-muted"/>
@@ -104,10 +104,10 @@ export default function PremiumResidenceShowcase({residences,loading=false,surfa
       <Sparkles className="h-3.5 w-3.5"/> ResKonnect Spotlight
      </span>
      <h2 id={`premium-living-${surface}`} className="mt-3 text-3xl font-black leading-tight tracking-tight text-[#152744] sm:text-4xl lg:text-[42px]">
-      Find your next address through <span className="text-[#2563eb]">ResKonnect Living.</span>
+      {headline||<>Find your next address through <span className="text-[#2563eb]">ResKonnect Living.</span></>}
      </h2>
      <p className="mt-3 max-w-2xl text-sm leading-6 text-[#475569] sm:text-base">
-      Our ResKonnect Spotlight puts selected accommodation upfront. Compare authentic listing photos, landlord-reported rents and neighbourhood details, then open the residence page to take the next step.
+      {subtitle||"Our ResKonnect Spotlight puts selected accommodation upfront. Compare authentic listing photos, landlord-reported rents and neighbourhood details, then open the residence page to take the next step."}
      </p>
     </div>
     <Link to="/findmyres#results" className="inline-flex h-11 items-center gap-2 rounded-full border border-[#dce4f0] bg-white px-5 text-sm font-bold text-[#071326] transition hover:border-[#2563eb] hover:bg-[#eff6ff]">
