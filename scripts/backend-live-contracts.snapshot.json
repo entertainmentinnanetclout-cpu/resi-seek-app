@@ -1907,6 +1907,14 @@
       "authenticated": true
     },
     {
+      "name": "rk_admin_reorder_spotlight",
+      "args": [
+        "p_ids"
+      ],
+      "authenticated": true,
+      "anon": false
+    },
+    {
       "anon": false,
       "args": [
         "p_kind",
@@ -5088,6 +5096,15 @@
       "service_role": true,
       "authenticated": true,
       "anon": false
+    },
+    {
+      "name": "rk_admin_reorder_spotlight",
+      "args": [
+        "p_ids"
+      ],
+      "authenticated": true,
+      "anon": false,
+      "service_role": true
     },
     {
       "name": "rk_admin_review_partner_account",
