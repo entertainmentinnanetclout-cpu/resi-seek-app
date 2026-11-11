@@ -367,14 +367,14 @@ const ResidenceDetail = () => {
   return (
     <DashboardLayout>
       <SEO title={`${residence.name}${residence.city ? ` · ${residence.city}` : ""} | Student Accommodation | ResKonnect`} description={residence.description || `View published room details, photos, funding acceptance and reservation information for ${residence.name}${residence.city ? ` in ${residence.city}` : ""}. Confirm current availability and pricing with the residence.`} canonicalPath={canonicalPath} noIndex={residence.is_visible === false} imageUrl={schemaImage} jsonLd={jsonLd} />
-      <div className="min-w-0 max-w-full overflow-x-hidden">
+      <div className="rk-motion rk-living-surface min-w-0 max-w-full overflow-x-hidden">
         <div className="mx-auto max-w-7xl space-y-5 px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
           <ReferralBanner />
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Link to="/" className="hover:text-foreground">Home</Link><span>/</span><Link to="/find" className="hover:text-foreground">Accommodation</Link><span>/</span><span className="max-w-[55vw] truncate font-semibold text-foreground">{residence.name}</span>
           </div>
 
-          <section className="relative isolate overflow-hidden rounded-[28px] bg-[#000F2F] text-white shadow-2xl">
+          <section className="rk-skeuo-frame relative isolate overflow-hidden rounded-[28px] bg-[#000F2F] text-white shadow-2xl">
             <div className="absolute inset-0 bg-[linear-gradient(145deg,#000F2F_0%,#000F2F_52%,#06285a_100%)]" />
             <div className="absolute -right-[10%] top-0 h-full w-[55%] bg-[#082f68]/65 [clip-path:polygon(32%_0,100%_0,100%_100%,0_100%)]" />
             <div className="absolute -right-[5%] bottom-0 h-[36%] w-[48%] bg-[#E09008] [clip-path:polygon(100%_0,100%_100%,0_100%)]" />
