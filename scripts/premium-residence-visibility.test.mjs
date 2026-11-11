@@ -68,5 +68,5 @@ test("featured placement always routes to a real residence detail page",()=>{
  assert.match(showcase,/\/find-my-res\/\$\{encodeURIComponent\(slug\)\}/);
  assert.match(manager,/\/find-my-res\/\$\{encodeURIComponent\(r\.slug\|\|r\.id\)\}/);
  assert.match(showcase,/Browse every residence/);
- assert.match(find,/Discover accommodation that fits you/);
+ assert.match(find,/Discover student living the ResKonnect way/);
 });
