@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { AlertCircle, ArrowRight, CalendarDays, CheckCircle2, Clock3, FileText, Inbox, RefreshCw, Users } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarDays, CheckCircle2, Clock3, ExternalLink, FileText, ImagePlus, Inbox, Mail, MapPin, RefreshCw, Sparkles, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,6 +109,33 @@ const ResidenceDashboard = () => {
     <>
       <SEO noIndex title={`${residence.name} Residence Portal | ResKonnect`} description={`Manage accommodation applications and 2027 reservations for ${residence.name}.`} />
       <div className="mx-auto max-w-7xl space-y-6">
+        <section className="relative isolate overflow-hidden rounded-[26px] bg-[linear-gradient(125deg,#182d4b,#123d64)] text-white shadow-[0_22px_52px_rgba(8,28,49,.18)]">
+          {residence.cover_image_url||residence.image_url?<img src={residence.cover_image_url||residence.image_url||""} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30"/>:null}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0b1e37]/95 via-[#0b1e37]/85 to-[#0b1e37]/30"/>
+          <div className="relative z-10 flex flex-col gap-4 p-6 sm:p-8 lg:p-10">
+           <p className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-[#f1c08b]"><Sparkles className="h-4 w-4"/>ResKonnect Property OS</p>
+           <div className="max-w-xl"><h1 className="text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl">Your property. <span className="text-[#f3c18d]">Everything connected.</span></h1>
+           <p className="mt-3 text-sm leading-6 text-white/80">See your student enquiries, review applications, manage inventory and shape how {residence.name} appears to students — from one workspace.</p></div>
+           <div className="flex flex-wrap gap-2">
+            <Button onClick={()=>navigate("/residence/inbox?status=new")} className="bg-white text-[#172d49] hover:bg-[#faf4ed]"><Inbox className="mr-2 h-4 w-4"/>Review applications</Button>
+            <Button onClick={()=>navigate("/residence/listing/wizard")} className="border border-white/25 bg-white/10 text-white hover:bg-white/20"><ImagePlus className="mr-2 h-4 w-4"/>Improve listing</Button>
+            <Button asChild className="border border-white/25 bg-white/10 text-white hover:bg-white/20"><a href={`/find-my-res/${residence.id}`} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 h-4 w-4"/>Public view</a></Button>
+           </div>
+          </div>
+        </section>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+           {label:"Applications",detail:"Review student documents and decisions",to:"/residence/inbox",icon:Inbox},
+           {label:"Reservations",detail:"Manage the 2027 interest pipeline",to:"/residence/reservations-2027",icon:CalendarDays},
+           {label:"Listing studio",detail:"Edit photos, room options and profile",to:"/residence/listing/wizard",icon:ImagePlus},
+           {label:"Communications",detail:"Reach applicants from the email desk",to:"/residence/communications",icon:Mail},
+          ].map(item=><button type="button" key={item.label} onClick={()=>navigate(item.to)}
+           className="flex items-start gap-3 rounded-[18px] border border-[#e7e8ea] bg-card p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#aebfd0] hover:shadow-md">
+           <span className="rounded-xl bg-[#f8ecde] p-2.5 text-[#a56d35]"><item.icon className="h-5 w-5"/></span>
+           <span className="min-w-0"><span className="block text-sm font-black">{item.label}</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">{item.detail}</span></span>
+           <ArrowRight className="ml-auto mt-1 h-4 w-4 shrink-0 text-muted-foreground"/>
+          </button>)}
+        </div>
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div><p className="text-sm font-semibold text-primary">ResKonnect Property OS</p><h1 className="mt-1 text-3xl font-black tracking-tight">{residence.name}</h1><p className="mt-2 text-sm text-muted-foreground">Manage applications, funding mix and 2027 reservation demand for this accommodation.</p></div>
           <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void load()} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} /> Refresh</Button><Button variant="outline" onClick={() => navigate("/residence/reservations-2027")}><CalendarDays className="mr-2 h-4 w-4" /> 2027 Reservations</Button><Button onClick={() => navigate("/residence/inbox?status=new")}><Inbox className="mr-2 h-4 w-4" /> Review applications{needsAttention > 0 ? ` (${needsAttention})` : ""}</Button></div>
