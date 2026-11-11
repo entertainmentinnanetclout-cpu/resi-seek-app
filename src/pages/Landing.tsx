@@ -12,6 +12,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
+import PremiumResidenceShowcase from "@/components/findmyres/PremiumResidenceShowcase";
+import {useLandingSpotlightResidences} from "@/hooks/useLandingSpotlightResidences";
 import FloatingShapes from "@/components/FloatingShapes";
 import GoldTiltCard from "@/components/premium/GoldTiltCard";
 import "@/styles/premium-gold-depth.css";
@@ -62,6 +64,7 @@ function DeferredSection({ children, minHeight = 220 }: { children: React.ReactN
 
 const Landing = () => {
   const navigate = useNavigate();
+  const {residences:spotlightResidences,loading:spotlightLoading}=useLandingSpotlightResidences();
   const landlordRef = useRef<HTMLDivElement>(null);
 
   const handleContactSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -180,6 +183,9 @@ const Landing = () => {
         <section>
           <HeroCarousel slides={fallbackSlides} autoPlay interval={6000} useDatabase={true} location="landing" />
         </section>
+
+        {/* Highest-visibility accommodation placement immediately after the homepage hero. */}
+        <PremiumResidenceShowcase residences={spotlightResidences} loading={spotlightLoading} surface="landing"/>
 
         <section className="border-b bg-background py-9 md:py-14">
           <div className="container mx-auto px-4 text-center">

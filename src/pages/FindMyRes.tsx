@@ -29,7 +29,8 @@ import SponsoredResidenceRail from "@/components/findmyres/SponsoredResidenceRai
 import { CategoryRail } from "@/components/findmyres/CategoryRail";
 import { AccreditationCTA } from "@/components/findmyres/AccreditationCTA";
 import { AudienceSelector, type AudienceKey } from "@/components/findmyres/AudienceSelector";
-import { ResidenceSpotlightSlider } from "@/components/findmyres/ResidenceSpotlightSlider";
+import PremiumResidenceShowcase from "@/components/findmyres/PremiumResidenceShowcase";
+import NearbySuggestedResidences from "@/components/findmyres/NearbySuggestedResidences";
 import CompareDrawer from "@/components/CompareDrawer";
 import { ReferralBanner } from "@/components/referrals/ReferralBanner";
 import { IntentNotice } from "@/components/findmyres/IntentNotice";
@@ -217,14 +218,12 @@ const FindMyRes = () => {
     items: realResidences.filter((r: any) => r.category === s.key).slice(0, 10),
     total: realResidences.filter((r: any) => r.category === s.key).length,
   }));
+  // A separate, explicitly curated rail; never secretly select every property
+  // by views/applications or duplicate the higher-priority Spotlight block.
   const featured = [...realResidences]
-    .filter((r: any) => (r.available_spots ?? 0) > 0)
-    .sort((a: any, b: any) => {
-      const aScore = (a.is_featured ? 1000 : 0) + (a.featured_rank || 0) + (a.application_count || 0) + (a.view_count || 0) / 10;
-      const bScore = (b.is_featured ? 1000 : 0) + (b.featured_rank || 0) + (b.application_count || 0) + (b.view_count || 0) / 10;
-      return bScore - aScore;
-    })
-    .slice(0, 10);
+    .filter((r:any)=>r.is_visible!==false&&(r.is_featured===true||r.featured===true)&&r.is_spotlight!==true)
+    .sort((a:any,b:any)=>Number(b.featured_rank||0)-Number(a.featured_rank||0)||String(a.name||"").localeCompare(String(b.name||"")))
+    .slice(0,6);
 
   const showRails = !hasActiveFilters && !loading && realResidences.length > 0;
 
@@ -262,8 +261,10 @@ const FindMyRes = () => {
           totalCount={residences.length}
         />
 
-        {/* Marketing Spotlight Slider */}
-        <ResidenceSpotlightSlider residences={residences} loading={loading} />
+        {/* Editorial premium placements are visible only until a student applies filters. */}
+        {!hasActiveFilters&&<PremiumResidenceShowcase residences={realResidences} loading={loading} surface="find"/>}
+        <NearbySuggestedResidences residences={residences}/>
+        {!hasActiveFilters&&!loading&&<SponsoredResidenceRail residences={realResidences} onApply={handleApply}/>}
         <ReferralBanner />
         {residenceError && (
           <div className="mx-auto mt-4 flex max-w-7xl flex-col gap-3 px-4 sm:px-6 lg:px-8">
@@ -306,39 +307,7 @@ const FindMyRes = () => {
           />
         </div>
 
-        {/* Category Rails (Property24-style discovery) */}
-        {showRails && (
-          <div className="max-w-7xl mx-auto py-8 space-y-10">
-            {byCategory.filter((s) => s.items.length > 0).map((s) => (
-              <CategoryRail
-                key={s.key}
-                title={s.title}
-                subtitle={s.subtitle}
-                viewAllHref={`/find?category=${s.key}`}
-                viewAllLabel={`View All ${s.title}`}
-                count={s.total}
-              >
-                {s.items.map((r: any) => (
-                  <div key={r.id} className="min-w-[280px] sm:min-w-[320px] snap-start">
-                    <ResidencePropertyCard residence={r} onApply={handleApply} />
-                  </div>
-                ))}
-              </CategoryRail>
-            ))}
-            {featured.length > 0 && (
-              <CategoryRail title="Featured Accommodation" subtitle="Featured listings selected by ResKonnect — verify room availability and pricing with the residence" count={featured.length}>
-                {featured.map((r: any) => (
-                  <div key={r.id} className="min-w-[280px] sm:min-w-[320px] snap-start">
-                    <ResidencePropertyCard residence={r} onApply={handleApply} />
-                  </div>
-                ))}
-              </CategoryRail>
-            )}
-            <AccreditationCTA />
-          </div>
-        )}
 
-        {!hasActiveFilters&&!loading&&<SponsoredResidenceRail residences={realResidences} onApply={handleApply}/>}
 
         {/* Main Content: Sidebar + Grid */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" id="results">
@@ -356,7 +325,15 @@ const FindMyRes = () => {
 
             {/* Results Area */}
             <div className="flex-1 min-w-0">
-              {/* Top bar: chips + sort */}
+              <div className="mb-5 flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-[#173b70]/10 bg-gradient-to-r from-[#102d57]/[0.06] to-background p-4 sm:p-5">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">Find My Res · Explore</p>
+                  <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Discover accommodation that fits you</h2>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Your filters shape these results. Residence-reported availability is not a booking guarantee.</p>
+                </div>
+                <span className="rounded-full border bg-background px-3 py-1.5 text-xs font-bold">{filteredResidences.length} matching residences</span>
+              </div>
+                            {/* Top bar: chips + sort */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <ActiveFilterChips
                   filters={filters}
@@ -476,13 +453,48 @@ const FindMyRes = () => {
           </div>
         </div>
 
-        {/* SEO Text */}
+
+        {/* Broader editorial discovery comes AFTER primary search results. */}
+                {/* Category Rails (Property24-style discovery) */}
+        {showRails && (
+          <div className="max-w-7xl mx-auto py-8 space-y-10">
+            {byCategory.filter((s) => s.items.length > 0).map((s) => (
+              <CategoryRail
+                key={s.key}
+                title={s.title}
+                subtitle={s.subtitle}
+                viewAllHref={`/find?category=${s.key}`}
+                viewAllLabel={`View All ${s.title}`}
+                count={s.total}
+              >
+                {s.items.map((r: any) => (
+                  <div key={r.id} className="min-w-[280px] sm:min-w-[320px] snap-start">
+                    <ResidencePropertyCard residence={r} onApply={handleApply} />
+                  </div>
+                ))}
+              </CategoryRail>
+            ))}
+            {featured.length > 0 && (
+              <CategoryRail title="More selected residences" subtitle="Other curated listings. Listing visibility does not establish accreditation or availability" count={featured.length}>
+                {featured.map((r: any) => (
+                  <div key={r.id} className="min-w-[280px] sm:min-w-[320px] snap-start">
+                    <ResidencePropertyCard residence={r} onApply={handleApply} />
+                  </div>
+                ))}
+              </CategoryRail>
+            )}
+            <AccreditationCTA />
+          </div>
+        )}
+
+
+                {/* SEO Text */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
           <Card className="bg-card/50">
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-2">Find Your Ideal Student Home</h3>
               <p className="text-muted-foreground text-sm">
-                Search verified student residences across Pretoria, Soshanguve, Ga-Rankuwa, and more. Each listing includes amenities, images, and real-time availability. ResKonnect is committed to providing a seamless and secure platform for students to find and apply for accommodation. Contact us at 0637323192 or reskonnect@gmail.com for assistance.
+                Search published accommodation across Pretoria, Soshanguve, Ga-Rankuwa and more. Listings display residence-provided images, amenities, reported inventory and relevant verification evidence when available. Confirm current availability and pricing with each residence before applying. Contact us at 0637323192 or reskonnect@gmail.com for assistance.
               </p>
             </CardContent>
           </Card>
