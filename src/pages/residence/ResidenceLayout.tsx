@@ -133,6 +133,18 @@ const navItems = [
   },
 ];
 
+const navSectionLabels:Record<string,string>={
+ "Overview":"WORKSPACE",
+ "Guided Listing Studio":"YOUR PROPERTY",
+ "Applications":"STUDENT JOURNEYS",
+ "Billing & Sponsorships":"GROWTH & PERFORMANCE",
+};
+const mobileQuickNav=[
+ {to:"/residence",label:"Home",icon:Home},
+ {to:"/residence/reservations-2027",label:"Reservations",icon:CalendarDays},
+ {to:"/residence/inbox",label:"Applications",icon:Inbox},
+ {to:"/residence/listing/wizard",label:"Listing",icon:Palette},
+];
 const ResidenceLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -284,8 +296,9 @@ const ResidenceLayout = () => {
                 ? reservationCount
                 : 0;
           return (
+            <div key={item.path}>
+              {navSectionLabels[item.label]&&<p className="px-3 pb-1 pt-4 text-[10px] font-black uppercase tracking-[0.18em] text-[#8896aa]">{navSectionLabels[item.label]}</p>}
             <Link
-              key={item.path}
               to={item.path}
               onClick={() => setIsOpen(false)}
               className={cn(
@@ -324,6 +337,7 @@ const ResidenceLayout = () => {
                 </Badge>
               )}
             </Link>
+            </div>
           );
         })}
       </nav>
@@ -474,7 +488,7 @@ const ResidenceLayout = () => {
             <ThemeToggle />
           </div>
         </div>
-        <div className="min-w-0 max-w-full p-3 pt-20 sm:p-4 sm:pt-20 md:p-6 md:pt-20 lg:p-8">
+        <div className="min-w-0 max-w-full p-3 pb-28 pt-20 sm:p-4 sm:pt-20 md:p-6 md:pt-20 lg:p-8">
           <Outlet context={{ residence }} />
         </div>
         <div className="border-t px-4 py-5 text-center text-[11px] text-muted-foreground lg:px-8">
@@ -482,6 +496,12 @@ const ResidenceLayout = () => {
           {BRAND.descriptor} · Developed by Start To Up Innovations Group
         </div>
       </main>
+      <nav aria-label="Residence quick navigation" className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 gap-1 border-t border-[#dce3ea] bg-white/95 px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(18,32,51,.10)] backdrop-blur lg:hidden">
+        {mobileQuickNav.map(item=>{const active=location.pathname===item.to||item.to!=="/residence"&&location.pathname.startsWith(item.to);
+         return <Link key={item.to} to={item.to} className={cn("flex min-w-0 flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-bold",active?"bg-[#ecf2f7] text-[#103e6b]":"text-[#66788b]")}>
+          <item.icon className={cn("h-5 w-5",active&&"text-[#b86b32]")}/><span className="truncate">{item.label}</span>
+         </Link>})}
+      </nav>
       <div className="lg:hidden">
         <DashboardUserManual role="landlord" residenceName={residence?.name} />
       </div>
