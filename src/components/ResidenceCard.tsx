@@ -1,4 +1,5 @@
 import { MapPin } from "lucide-react";
+import ResidenceInstitutionBadges from "@/components/findmyres/ResidenceInstitutionBadges";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -55,6 +56,7 @@ const ResidenceCard = ({ residence, onViewMore, onApply }) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">{residence.description}</p>
+        <ResidenceInstitutionBadges residence={residence} compact maxVisible={6}/>
 
         <div className="flex flex-wrap gap-2">
           {residence.amenities.map((amenity) => (
