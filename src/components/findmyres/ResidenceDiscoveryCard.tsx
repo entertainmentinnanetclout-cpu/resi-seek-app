@@ -7,11 +7,11 @@ import type {ResidenceRating} from "@/hooks/usePublicLivingSignals";
 type Layout="editorial"|"horizontal"|"compact";
 type Props={
  residence:any;layout?:Layout;rating?:ResidenceRating;
- accredited?:boolean;nsfasAccredited?:boolean;rank?:number;className?:string;
+ accredited?:boolean;nsfasAccredited?:boolean;rank?:number;rankLabel?:string;className?:string;
 };
 const money=(n:number)=>"R"+n.toLocaleString("en-ZA");
 
-export default function ResidenceDiscoveryCard({residence,layout="compact",rating,accredited=false,nsfasAccredited=false,rank,className=""}:Props){
+export default function ResidenceDiscoveryCard({residence,layout="compact",rating,accredited=false,nsfasAccredited=false,rank,rankLabel,className=""}:Props){
  const slug=residence.slug||residence.id;
  const url=`/find-my-res/${encodeURIComponent(slug)}`;
  const photo=spotlightPhoto(residence);
@@ -30,13 +30,13 @@ export default function ResidenceDiscoveryCard({residence,layout="compact",ratin
     <div className="absolute inset-0 flex items-center justify-center bg-[#e8e9e7]"><BedDouble className="h-10 w-10 text-[#acb1b5]"/></div>}
    {rank&&<span className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-xl border border-white/50 bg-[#ecb75d] text-sm font-black text-[#16263c] shadow">#{rank}</span>}
    {(accredited||nsfasAccredited)&&<div className="absolute right-3 top-3 flex flex-col gap-1.5">
-    {nsfasAccredited&&<span title="Current officially verified NSFAS accreditation evidence" className="inline-flex items-center gap-1 rounded-full border border-[#d2e9d9] bg-white px-2.5 py-1 text-[10px] font-extrabold text-[#13613d] shadow-sm"><ShieldCheck className="h-3 w-3"/>NSFAS accredited</span>}
+    {nsfasAccredited&&<span title="Current officially verified NSFAS accreditation evidence" className="inline-flex items-center gap-1 rounded-full border border-[#f5b32f] bg-white px-2.5 py-1 text-[10px] font-extrabold text-[#071326] shadow-sm"><ShieldCheck className="h-3 w-3"/>NSFAS accredited</span>}
     {accredited&&!nsfasAccredited&&<span title="Current official accreditation evidence" className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white px-2.5 py-1 text-[10px] font-extrabold text-[#13613d]"><BadgeCheck className="h-3 w-3"/>Accredited</span>}
    </div>}
    {residence.is_spotlight===true&&!rank&&<span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#9e6511]">Spotlight</span>}
   </div>
   <div className="flex min-w-0 flex-1 flex-col gap-2 p-4 sm:p-5">
-   {rank&&<p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#b1761b]">Top {rank} this month</p>}
+   {rank&&<p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#b1761b]">{rankLabel||`Top ${rank} this month`}</p>}
    <h3 className={`line-clamp-2 font-black leading-tight tracking-tight ${editorial?"text-xl":"text-[15px] sm:text-base"}`}>{residence.name}</h3>
    <p className="flex items-start gap-1.5 text-xs text-[#657184]"><MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0"/><span className="line-clamp-2">{location}</span></p>
    {rating&&rating.count>0?<div className="flex items-center gap-2 text-xs">
@@ -44,7 +44,7 @@ export default function ResidenceDiscoveryCard({residence,layout="compact",ratin
     <span className="text-[#7b8592]">({rating.count} student {rating.count===1?"review":"reviews"})</span>
    </div>:<span className="text-[11px] text-[#87909c]">No student ratings yet</span>}
    <div className="flex flex-wrap gap-1.5">
-    {residence.accepts_nsfas===true&&<span className="inline-flex items-center gap-1 rounded-full bg-[#edf5f1] px-2.5 py-1 text-[10px] font-semibold text-[#286747]"><WalletCards className="h-3 w-3"/>Accepts NSFAS funding</span>}
+    {residence.accepts_nsfas===true&&<span className="inline-flex items-center gap-1 rounded-full bg-[#fff7e4] px-2.5 py-1 text-[10px] font-semibold text-[#071326]"><WalletCards className="h-3 w-3"/>Accepts NSFAS funding</span>}
     {roomTypes.slice(0,2).map((type:string)=><span key={type} className="rounded-full bg-[#f0f2f6] px-2.5 py-1 text-[10px] font-semibold text-[#3b4b61]">{type}</span>)}
    </div>
    <div className="mt-auto flex flex-wrap items-end justify-between gap-2 border-t border-[#edf0f2] pt-3">

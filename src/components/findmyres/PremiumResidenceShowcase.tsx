@@ -92,22 +92,22 @@ export default function PremiumResidenceShowcase({residences,loading=false,surfa
  </section>;
  if(!items.length)return null;
  const [lead,...support]=items;
- return <section aria-labelledby={`premium-living-${surface}`} className="relative overflow-hidden border-y border-[#f1e9df] bg-[linear-gradient(130deg,#fff6ef_0%,#fdfaf7_45%,#f3f2f5_100%)] py-9 text-[#152744] md:py-14">
-  <div aria-hidden="true" className="pointer-events-none absolute -right-40 -top-64 h-[520px] w-[520px] rounded-full bg-[#f4bdaa]/30 blur-[95px]"/>
+ return <section aria-labelledby={`premium-living-${surface}`} className="relative overflow-hidden border-y border-[#dce4f0] bg-[linear-gradient(130deg,#f8fafc_0%,#ffffff_55%,#eff6ff_100%)] py-9 text-[#071326] md:py-14">
+  <div aria-hidden="true" className="pointer-events-none absolute -right-40 -top-64 h-[520px] w-[520px] rounded-full bg-[#f5b32f]/10 blur-[95px]"/>
   <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
    <div className="mb-6 flex flex-wrap items-end justify-between gap-5">
     <div className="max-w-3xl">
-     <span className="inline-flex items-center gap-2 rounded-full border border-[#eac9b5] bg-[#fff1e8] px-3 py-1 text-[11px] font-black uppercase tracking-[0.15em] text-[#b85a46]">
+     <span className="inline-flex items-center gap-2 rounded-full border border-[#f5b32f]/40 bg-[#fff7e4] px-3 py-1 text-[11px] font-black uppercase tracking-[0.15em] text-[#071326]">
       <Sparkles className="h-3.5 w-3.5"/> ResKonnect Spotlight
      </span>
      <h2 id={`premium-living-${surface}`} className="mt-3 text-3xl font-black leading-tight tracking-tight text-[#152744] sm:text-4xl lg:text-[42px]">
-      Discover a place that feels like <span className="text-[#e6786a]">your next chapter.</span>
+      Find your next address through <span className="text-[#2563eb]">ResKonnect Living.</span>
      </h2>
-     <p className="mt-3 max-w-2xl text-sm leading-6 text-[#697689] sm:text-base">
-      High-visibility residence selections, brought forward so you can explore the photos, pricing and location in one look.
+     <p className="mt-3 max-w-2xl text-sm leading-6 text-[#475569] sm:text-base">
+      Our ResKonnect Spotlight puts selected accommodation upfront. Compare authentic listing photos, landlord-reported rents and neighbourhood details, then open the residence page to take the next step.
      </p>
     </div>
-    <Link to="/findmyres#results" className="inline-flex h-11 items-center gap-2 rounded-full border border-[#ead6c5] bg-white px-5 text-sm font-bold text-[#192e49] transition hover:border-[#ea8574] hover:bg-[#fff0e8]">
+    <Link to="/findmyres#results" className="inline-flex h-11 items-center gap-2 rounded-full border border-[#dce4f0] bg-white px-5 text-sm font-bold text-[#071326] transition hover:border-[#2563eb] hover:bg-[#eff6ff]">
      Browse every residence <ArrowRight className="h-4 w-4"/>
     </Link>
    </div>
@@ -119,7 +119,7 @@ export default function PremiumResidenceShowcase({residences,loading=false,surfa
       </div>)}
     </div>}
    </div>
-   <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-[#e4d9cf] pt-4 text-[11px] text-[#747f8c]">
+   <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-[#dce4f0] pt-4 text-[11px] text-[#64748b]">
     <p className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5"/> Spotlight is a ResKonnect editorial placement, not independent accreditation or a live room guarantee.</p>
     <p className="flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5"/> Check reported availability and funding terms on each listing.</p>
    </div>

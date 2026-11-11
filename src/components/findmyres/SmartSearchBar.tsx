@@ -56,19 +56,19 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount,
             <button type="button" onClick={() => navigateOverlay("discovery")} className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-black text-white transition hover:bg-white/20"><WandSparkles className="h-3.5 w-3.5" />Smart matching</button>
             <button type="button" onClick={() => navigateOverlay("map")} className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-black text-white transition hover:bg-white/20"><MapPinned className="h-3.5 w-3.5" />Map & 3D tools</button>
           </div>
-          <h1 className="mb-2 text-4xl font-black tracking-tight text-white sm:text-5xl">Find your next home. <span className="text-[#ffd792]">Without the guesswork.</span></h1>
-          <p className="mx-auto mt-3 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">Search accommodation by campus, area, budget, funding and room type. Discover priority residence showcases, then compare genuine listings using smart matching and ResMap.</p>
+          <h1 className="mb-2 text-4xl font-black tracking-tight text-white sm:text-5xl">Find your student space. <span className="text-[#f5b32f]">Powered by ResKonnect.</span></h1>
+          <p className="mx-auto mt-3 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">ResKonnect Living connects campus-area accommodation searches with real listing details, budget filters, ResMap and our AI-assisted finder. Compare options and move forward from one place.</p>
         </div>
         <div className="space-y-4 rounded-[24px] border border-white/30 bg-card p-4 text-foreground shadow-[0_25px_70px_rgba(2,10,27,.32)] sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Search by residence, city, neighbourhood or campus…" className="h-12 pl-10 text-base" value={filters.searchQuery} onChange={(e) => updateFilter("searchQuery", e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter")document.getElementById("results")?.scrollIntoView({behavior:"smooth"});}} /></div>
             <div className="grid grid-cols-2 gap-2 sm:order-last sm:ml-auto">
               <Button type="button" onClick={()=>document.getElementById("results")?.scrollIntoView({behavior:"smooth"})}
-                className="h-12 rounded-xl bg-[#e94578] px-5 font-black text-white shadow-sm hover:bg-[#ce2d64]">
+                className="h-12 rounded-xl bg-[#2563eb] px-5 font-black text-white shadow-sm hover:bg-[#1d4ed8]">
                 <Search className="mr-1.5 h-4 w-4"/>Search
               </Button>
               <Button type="button" onClick={()=>navigateOverlay("discovery")}
-                className="h-12 rounded-xl border border-[#d8c3ed] bg-[#f1e9ff] px-4 font-black text-[#5c3297] shadow-sm hover:bg-[#e7d9f8]">
+                className="h-12 rounded-xl border border-[#f5b32f] bg-[#fff7e4] px-4 font-black text-[#071326] shadow-sm hover:bg-[#ffedbb]">
                 <Sparkles className="mr-1.5 h-4 w-4"/>AI Finder
               </Button>
             </div>
@@ -90,7 +90,7 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount,
           {filters.nsfasOnly && <p className="text-xs leading-5 text-muted-foreground">This filter uses funding/accreditation context in listing data. It does not by itself prove current official accreditation; verify the status shown on the residence or NSFAS status page.</p>}
           <div className="flex flex-col gap-3 border-t border-border/50 pt-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">{resultCount}</span> of {totalCount} residences{resultCount === 0 && totalCount > 0 ? " · Try another campus or clear filters" : ""}</p>
-            <div className="grid grid-cols-2 gap-2 sm:flex"><Button type="button" onClick={() => navigateOverlay("discovery")} variant="outline" className="h-10 rounded-full px-4"><Sparkles className="mr-2 h-4 w-4 text-violet-500" />Smart Finder</Button><Button type="button" onClick={() => navigateOverlay("map")} className="h-10 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 px-5 text-white shadow-lg"><MapPinned className="mr-2 h-4 w-4" />Map & 3D</Button></div>
+            <div className="grid grid-cols-2 gap-2 sm:flex"><Button type="button" onClick={() => navigateOverlay("discovery")} variant="outline" className="h-10 rounded-full px-4"><Sparkles className="mr-2 h-4 w-4 text-[#f5b32f]" />Smart Finder</Button><Button type="button" onClick={() => navigateOverlay("map")} className="h-10 rounded-full bg-[#2563eb] hover:bg-[#1d4ed8] px-5 text-white shadow-lg"><MapPinned className="mr-2 h-4 w-4" />Map & 3D</Button></div>
           </div>
         </div>
       </div>

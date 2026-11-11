@@ -31,8 +31,8 @@ export default function TrustedLivingShowcase({signals}:{signals:Signals}){
   <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
     <div className="max-w-2xl">
-     <p className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#b66b46]"><ShieldCheck className="h-4 w-4"/> ResKonnect curated network</p>
-     <h2 id="rk-trusted-living" className="mt-2 text-3xl font-black tracking-tight text-[#132744] sm:text-4xl">Explore our residence partners.</h2>
+     <p className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#2563eb]"><ShieldCheck className="h-4 w-4"/> ResKonnect curated network</p>
+     <h2 id="rk-trusted-living" className="mt-2 text-3xl font-black tracking-tight text-[#132744] sm:text-4xl">Explore ResKonnect's curated residence network.</h2>
      <p className="mt-3 text-sm leading-6 text-[#68778a]">Clear photos, student feedback where available, and property information that helps you make a confident comparison. Partner selection is not official accommodation accreditation.</p>
     </div>
     <Link to="/findmyres#results" className="inline-flex items-center gap-2 rounded-full border border-[#d9dee5] px-4 py-2 text-sm font-bold text-[#15345c] hover:bg-[#f8f9fb]">Browse every listing <ArrowRight className="h-4 w-4"/></Link>

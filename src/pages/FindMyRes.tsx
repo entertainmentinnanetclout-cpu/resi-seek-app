@@ -336,7 +336,7 @@ const FindMyRes = () => {
               <div className="mb-5 flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-[#173b70]/10 bg-gradient-to-r from-[#102d57]/[0.06] to-background p-4 sm:p-5">
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">Find My Res · Explore</p>
-                  <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Discover accommodation that fits you</h2>
+                  <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Discover student living the ResKonnect way</h2>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">Your filters shape these results. Residence-reported availability is not a booking guarantee.</p>
                 </div>
                 <span className="rounded-full border bg-background px-3 py-1.5 text-xs font-bold">{filteredResidences.length} matching residences</span>

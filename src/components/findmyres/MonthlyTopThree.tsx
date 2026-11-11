@@ -28,24 +28,26 @@ export default function MonthlyTopThree({residences=NO_RESIDENCES,signals,surfac
  const all=useMemo(()=>new Map([...residences,...loaded].filter(r=>r?.id&&r.is_visible!==false).map(r=>[r.id,r])),[residences,loaded]);
  const winners=signals.top3.flatMap(rank=>{const residence=all.get(rank.residence_id);return residence?[{rank,residence}]:[];});
  if(!winners.length)return null;
+ const hasEditorial=winners.some(item=>item.rank.selection_type==="editorial");
  const month=signals.top3[0]?.month_start;
  const label=month?new Date(month+"T12:00:00").toLocaleDateString("en-ZA",{month:"long",year:"numeric"}):"This month";
  const render=(item:{rank:MonthlyWinner;residence:any},layout:"editorial"|"compact")=><div key={item.rank.residence_id} className="min-w-0">
   <ResidenceDiscoveryCard residence={item.residence} layout={layout} rank={item.rank.rank_position}
+   rankLabel={item.rank.selection_type==="editorial"?"ResKonnect monthly selection":undefined}
    rating={signals.ratings[item.rank.residence_id]}
    accredited={signals.accreditedIds.has(item.rank.residence_id)}
    nsfasAccredited={signals.nsfasAccreditedIds.has(item.rank.residence_id)} className="h-full"/>
-  <p className="mt-2 text-[11px] text-[#7a8491]">{item.rank.reservations_count} unique reservation interests · {item.rank.applications_count} applicants this month</p>
+  {item.rank.selection_type==="editorial"?<p className="mt-2 text-[11px] text-[#64748b]">Selected by the ResKonnect team for this month · Not an organic performance ranking</p>:<p className="mt-2 text-[11px] text-[#64748b]">{item.rank.reservations_count} unique reservation interests · {item.rank.applications_count} applicants this month</p>}
  </div>;
- return <section aria-labelledby={`rk-monthly-top3-${surface}`} className="bg-[#faf7f1] py-11 text-[#16243d] md:py-16">
+ return <section aria-labelledby={`rk-monthly-top3-${surface}`} className="bg-[#f8fafc] py-11 text-[#071326] md:py-16">
   <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
     <div>
-     <p className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#a86b20]"><ChartNoAxesCombined className="h-4 w-4"/> Organic student demand · {label}</p>
-     <h2 id={`rk-monthly-top3-${surface}`} className="mt-2 text-3xl font-black leading-tight tracking-tight sm:text-4xl">Top 3 residences <span className="text-[#d77858]">this month.</span></h2>
-     <p className="mt-2 max-w-2xl text-sm leading-6 text-[#657184]">Ranked by real applicant and reservation interest this calendar month. This is activity, not a student star rating or paid promotion.</p>
+     <p className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#2563eb]"><ChartNoAxesCombined className="h-4 w-4"/> Organic student demand & ResKonnect selections · {label}</p>
+     <h2 id={`rk-monthly-top3-${surface}`} className="mt-2 text-3xl font-black leading-tight tracking-tight sm:text-4xl">ResKonnect Top 3 <span className="text-[#2563eb]">of the month.</span></h2>
+     <p className="mt-2 max-w-2xl text-sm leading-6 text-[#657184]">{hasEditorial?"A ResKonnect-curated monthly showcase. Editorial choices are labelled individually; remaining places follow measured student interest.":"Ordered by unique student applications and reservation interest during the current calendar month. Not based on advertising or star ratings."}</p>
     </div>
-    <Link className="inline-flex items-center gap-1.5 text-sm font-black text-[#0b3b70] hover:underline" to="/findmyres#results">Explore all residences <ArrowRight className="h-4 w-4"/></Link>
+    <Link className="inline-flex items-center gap-1.5 text-sm font-black text-[#2563eb] hover:underline" to="/findmyres#results">Explore all residences <ArrowRight className="h-4 w-4"/></Link>
    </div>
    <div className="grid gap-5 md:grid-cols-[1.05fr_.95fr]">
     {winners[0]&&render(winners[0],"editorial")}
@@ -53,8 +55,8 @@ export default function MonthlyTopThree({residences=NO_RESIDENCES,signals,surfac
      {winners.slice(1).map(item=>render(item,"compact"))}
     </div>
    </div>
-   <p className="mt-5 rounded-xl border border-[#ebdfca] bg-white/60 px-4 py-3 text-xs leading-5 text-[#776c5e]">
-    Ranking method: two points per unique reservation-interest account plus one per unique applicant account recorded during {label}. A reservation is not a confirmed tenancy, and accommodation prices and inventory remain residence-reported unless separately verified.
+   <p className="mt-5 rounded-xl border border-[#dce4f0] bg-white px-4 py-3 text-xs leading-5 text-[#475569]">
+    Organic ranking method: two points per unique reservation-interest account plus one per unique applicant account recorded during {label}. Editorial selections are separate, not scored as organic winners. A reservation is not a confirmed tenancy; accommodation terms remain residence-reported unless separately verified.
    </p>
   </div>
  </section>;

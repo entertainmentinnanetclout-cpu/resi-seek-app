@@ -81,7 +81,7 @@ test("premium mobile search, display modes and landlord pathways retain function
  assert.match(find,/Photo cards/);
  assert.match(find,/Compact list/);
  assert.match(find,/Detailed cards/);
- assert.match(spotlight,/bg-\[linear-gradient\(130deg,#fff6ef/);
+ assert.match(spotlight,/bg-\[linear-gradient\(130deg,#f8fafc/);
  assert.match(portal,/Residence quick navigation/);
  assert.match(portal,/mobileQuickNav/);
  assert.match(dashboard,/Everything connected/);
@@ -89,4 +89,40 @@ test("premium mobile search, display modes and landlord pathways retain function
  assert.match(profile,/ResidenceDiscoveryCard/);
  assert.match(trusted,/ResKonnect curated network/);
  assert.match(trusted,/\.eq\("is_trusted",true\)/);
+});
+
+
+test("monthly editorial selection is admin-only, isolated from organic analytics and truthfully labelled",()=>{
+ const editorialSql=read("supabase/migrations/20261111061500_monthly_top3_admin_curation.sql");
+ const manager=read("src/components/admin/residences/MonthlyTopThreeManager.tsx");
+ const card=read("src/components/findmyres/ResidenceDiscoveryCard.tsx");
+ assert.match(editorialSql,/reskonnect_monthly_top3_editorial enable row level security/);
+ assert.match(editorialSql,/revoke all on public.reskonnect_monthly_top3_editorial from public,anon,authenticated/);
+ assert.match(editorialSql,/has_role\(\(select auth.uid\(\)\),'admin'/);
+ assert.match(editorialSql,/updated_by=\(select auth.uid\(\)\)/);
+ assert.match(editorialSql,/unique \(month_start,residence_id\)/);
+ assert.match(editorialSql,/reskonnect_public_monthly_showcase/);
+ assert.match(editorialSql,/from public.reskonnect_public_top3_monthly\(\)/);
+ assert.match(editorialSql,/'editorial'::text/);
+ assert.match(editorialSql,/from generate_series\(1,3\)/);
+ assert.match(admin,/MonthlyTopThreeManager residences=\{residences\}/);
+ assert.match(manager,/onConflict:"month_start,position"/);
+ assert.match(manager,/Automatic · student demand/);
+ assert.match(manager,/reset\(\)/);
+ assert.match(signals,/reskonnect_public_monthly_showcase/);
+ assert.match(monthly,/rankLabel=\{item.rank.selection_type==="editorial"/);
+ assert.match(monthly,/Selected by the ResKonnect team/);
+ assert.match(card,/rankLabel/);
+});
+test("monthly showcase and search use ResKonnect navy, blue and gold instead of imported competitor accents",()=>{
+ const finder=read("src/components/findmyres/LivingSearchDock.tsx");
+ const spotlight=read("src/components/findmyres/PremiumResidenceShowcase.tsx");
+ const smart=read("src/components/findmyres/SmartSearchBar.tsx");
+ const branded=[finder,spotlight,monthly,smart];
+ for(const body of branded){
+  assert.doesNotMatch(body,/#e94478|#e94578|#ce2d64|#c62c62|#f6f0ff|#f1e9ff|#61379a|#5c3297|#e6786a|#d77858|#fff6ef/i);
+ }
+ assert.match(spotlight,/ResKonnect Living/);
+ assert.match(finder,/Search student living with ResKonnect/);
+ assert.match(monthly,/ResKonnect Top 3/);
 });

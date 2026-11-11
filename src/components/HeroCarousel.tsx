@@ -116,7 +116,7 @@ const HeroCarousel = ({ slides: propSlides, autoPlay = true, interval = 5000, cl
           </div>
           <div className="rk-hero-copy relative flex h-full items-end px-6 pb-20 md:px-12 lg:px-20">
             <div className="max-w-4xl border-l-4 border-[#F5B32F] pl-5 md:pl-7">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#F5B32F]/60 bg-[#071326]/80 px-3 py-1 text-xs font-bold uppercase tracking-[.16em] text-[#FFE1A0] backdrop-blur-sm"><span className="h-1.5 w-1.5 rounded-full bg-[#F5B32F] shadow-[0_0_12px_#F5B32F]" />ResKonnect · Your next chapter</div>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#F5B32F]/60 bg-[#071326]/80 px-3 py-1 text-xs font-bold uppercase tracking-[.16em] text-[#FFE1A0] backdrop-blur-sm"><span className="h-1.5 w-1.5 rounded-full bg-[#F5B32F] shadow-[0_0_12px_#F5B32F]" />ResKonnect · Living • AI • Opportunity</div>
               <h2 className={cn("mb-4 text-4xl font-black leading-[0.95] text-white drop-shadow-2xl transition-all duration-700 delay-100 md:text-5xl lg:text-7xl", index === currentSlide ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0")}>{slide.title}</h2>
               <p className={cn("mb-6 max-w-3xl text-base leading-relaxed text-white/95 drop-shadow transition-all duration-700 delay-200 md:text-xl lg:text-2xl", index === currentSlide ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0")}>{slide.description}</p>
               <div className={cn("flex flex-wrap items-center gap-3 transition-all duration-700 delay-300", index === currentSlide ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0")}>
