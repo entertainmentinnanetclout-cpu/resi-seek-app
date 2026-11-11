@@ -29,13 +29,13 @@ export function usePublicLivingSignals():Signals{
    if(!active)return;
    if(ratingsResult.status==="fulfilled"&&!ratingsResult.value.error){
     const map:Record<string,ResidenceRating>={};
-    (ratingsResult.value.data||[]).forEach((row:any)=>{
+    (Array.isArray(ratingsResult.value.data)?ratingsResult.value.data:[]).forEach((row:any)=>{
      const count=Number(row.rating_count),average=Number(row.rating_average);
      if(row.residence_id&&count>0&&average>=1&&average<=5)map[row.residence_id]={count,average};
     });setRatings(map);
    }
    if(accreditResult.status==="fulfilled"&&!accreditResult.value.error){
-    const current=(accreditResult.value.data||[]).filter((row:any)=>
+    const current=(Array.isArray(accreditResult.value.data)?accreditResult.value.data:[]).filter((row:any)=>
      row.accreditation_verified===true
      &&row.accreditation_status==="accredited_active"
      &&row.accreditation_valid_until>=new Date().toISOString().slice(0,10));
@@ -44,7 +44,7 @@ export function usePublicLivingSignals():Signals{
      .map((row:any)=>String(row.residence_id)));
    }
    if(topResult.status==="fulfilled"&&!topResult.value.error)
-    setTop3((topResult.value.data||[]).filter((row:any)=>
+    setTop3((Array.isArray(topResult.value.data)?topResult.value.data:[]).filter((row:any)=>
      row.residence_id&&Number(row.activity_score)>0).sort((a:any,b:any)=>
      Number(a.rank_position)-Number(b.rank_position)).slice(0,3));
    setLoading(false);
