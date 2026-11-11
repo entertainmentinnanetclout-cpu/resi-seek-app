@@ -20,7 +20,7 @@ export default function MonthlyTopThree({residences=NO_RESIDENCES,signals,surfac
   const missing=ids.filter(id=>!residences.some(r=>r.id===id));
   if(!missing.length){setLoaded([]);return;}
   void (supabase as any).from("residences")
-   .select("id,name,slug,address,city,campus,place_label,cover_image_url,image_url,images,private_price,price,promo_price,promo_active,promo_starts_at,promo_ends_at,price_verified_at,available_spots,accepts_nsfas,is_spotlight,is_visible,room_types,room_type")
+   .select("id,name,slug,address,city,campus,place_label,cover_image_url,image_url,images,private_price,price,promo_price,promo_active,promo_starts_at,promo_ends_at,price_verified_at,available_spots,accepts_nsfas,accepts_university,accepts_tvet,institution_tags,is_spotlight,is_visible,room_types,room_type")
    .in("id",missing).eq("is_visible",true)
    .then(({data,error}:any)=>{if(active&&!error)setLoaded(Array.isArray(data)?data:[]);});
   return()=>{active=false;};
