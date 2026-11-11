@@ -381,7 +381,7 @@ const FindMyRes = () => {
                 </div>
               </div>
 
-              <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Residence card display style">
+              <div className="rk-neo-panel mb-4 flex flex-wrap items-center gap-2 p-3" role="group" aria-label="Residence card display style">
                 {([["photo","Photo cards"],["list","Compact list"],["details","Detailed cards"]] as const).map(([key,label])=>(
                   <Button key={key} size="sm" type="button" variant={listingStyle===key?"default":"outline"}
                    className="rounded-full" onClick={()=>runRkLayoutTransition(()=>setListingStyle(key))} aria-pressed={listingStyle===key}>{label}</Button>
@@ -453,7 +453,7 @@ const FindMyRes = () => {
                 </div>
               ) : (
                 <>
-                  <div className={listingStyle==="list"?"grid grid-cols-1 gap-3":"grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"}>
+                  <div className={"rk-stagger-list rk-layout-morph "+(listingStyle==="list"?"grid grid-cols-1 gap-3":"grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4")}>
                     {visibleResidences.map((residence) => (
                       listingStyle==="details"?<ResidencePropertyCard key={residence.id} residence={residence} onApply={handleApply}
                         rating={livingSignals.ratings[residence.id]} accredited={livingSignals.accreditedIds.has(residence.id)}
