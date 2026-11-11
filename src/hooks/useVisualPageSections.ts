@@ -45,7 +45,7 @@ export function useVisualPageSections(page:VisualPageKey) {
  const {data=[],isLoading,error,refetch}=useQuery({
   queryKey:["rk-visual-sections",page],
   queryFn:async()=>{
-   const {data,error}=await (supabase as any).from("rk_visual_page_sections").select("*").eq("page_key",page).order("position");
+   const {data,error}=await (supabase as any).from("rk_visual_page_sections").select("page_key,section_key,title,position,visible,required,editable_copy,headline,subtitle,updated_at").eq("page_key",page).order("position");
    if(error)throw error;
    return (data||[]) as VisualPageSection[];
   },staleTime:60_000,retry:1,
