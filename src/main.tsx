@@ -6,6 +6,7 @@ import App from "./App.tsx";
 import { initLunaAttribution } from "@/lib/lunaGrowth";
 import "./index.css";
 import "./styles/mobile-foundation.css";
+import "./styles/reskonnect-tactile-motion.css";
 import { isNativeApp } from "@/lib/accountRouting";
 import { recordMobileRuntime } from "@/lib/runtimeTelemetry";
 
