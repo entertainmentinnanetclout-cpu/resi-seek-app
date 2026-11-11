@@ -1,10 +1,8 @@
 {
   "project_id": "mefjzkhobkltlbmhusdh",
-  "captured_date": "2026-11-10",
+  "captured_date": "2026-11-11",
   "purpose": "Read-only public API contract snapshot; names and signatures only; no row data, user IDs or secrets. Must be refreshed against Supabase when backend is changed.",
   "public_relations": [
-    "Bookings",
-    "Users",
     "academic_periods",
     "accommodation_compliance_cases",
     "accommodation_compliance_evidence",
@@ -156,6 +154,7 @@
     "assistance_document_requests",
     "assistance_submissions",
     "balances",
+    "Bookings",
     "bursaries",
     "call_logs",
     "campaigns",
@@ -339,6 +338,7 @@
     "reskonnect_portal_account_audit",
     "reskonnect_residence_service_targets",
     "reskonnect_service_events",
+    "reskonnect_student_residence_reviews",
     "reskonnect_whatsapp_handoffs",
     "resmap_ai_usage",
     "resmap_campuses",
@@ -423,6 +423,7 @@
     "user_phone_verification_attempts",
     "user_roles",
     "user_security_events",
+    "Users",
     "v_daily_operations_summary",
     "v_onboarding_command_center",
     "viewing_requests",
@@ -1634,6 +1635,14 @@
     {
       "anon": false,
       "args": [
+        "p_residence_id"
+      ],
+      "name": "reskonnect_can_student_rate_residence",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
         "p_reservation_id"
       ],
       "name": "reskonnect_confirm_verified_room",
@@ -1691,9 +1700,29 @@
     {
       "anon": true,
       "args": [
+        "p_residence_id"
+      ],
+      "name": "reskonnect_public_residence_review_excerpts",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [],
+      "name": "reskonnect_public_residence_review_scores",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [
         "p_placement"
       ],
       "name": "reskonnect_public_sponsored_residences",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "args": [],
+      "name": "reskonnect_public_top3_monthly",
       "authenticated": true
     },
     {
@@ -4739,6 +4768,15 @@
       "anon": false
     },
     {
+      "anon": false,
+      "args": [
+        "p_residence_id"
+      ],
+      "name": "reskonnect_can_student_rate_residence",
+      "authenticated": true,
+      "service_role": true
+    },
+    {
       "name": "reskonnect_confirm_verified_room",
       "args": [
         "p_reservation_id"
@@ -4802,6 +4840,22 @@
       "anon": false
     },
     {
+      "anon": true,
+      "args": [
+        "p_residence_id"
+      ],
+      "name": "reskonnect_public_residence_review_excerpts",
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "anon": true,
+      "args": [],
+      "name": "reskonnect_public_residence_review_scores",
+      "authenticated": true,
+      "service_role": true
+    },
+    {
       "name": "reskonnect_public_sponsored_residences",
       "args": [
         "p_placement"
@@ -4809,6 +4863,13 @@
       "service_role": true,
       "authenticated": true,
       "anon": true
+    },
+    {
+      "anon": true,
+      "args": [],
+      "name": "reskonnect_public_top3_monthly",
+      "authenticated": true,
+      "service_role": true
     },
     {
       "name": "reskonnect_reconcile_invoice",
