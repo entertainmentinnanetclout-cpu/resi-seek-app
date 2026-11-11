@@ -494,7 +494,7 @@ const FindMyRes = () => {
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-2">Find Your Ideal Student Home</h3>
               <p className="text-muted-foreground text-sm">
-                Search verified student residences across Pretoria, Soshanguve, Ga-Rankuwa, and more. Each listing includes amenities, images, and real-time availability. ResKonnect is committed to providing a seamless and secure platform for students to find and apply for accommodation. Contact us at 0637323192 or reskonnect@gmail.com for assistance.
+                Search published accommodation across Pretoria, Soshanguve, Ga-Rankuwa and more. Listings display residence-provided images, amenities, reported inventory and relevant verification evidence when available. Confirm current availability and pricing with each residence before applying. Contact us at 0637323192 or reskonnect@gmail.com for assistance.
               </p>
             </CardContent>
           </Card>
