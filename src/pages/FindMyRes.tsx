@@ -30,6 +30,9 @@ import { CategoryRail } from "@/components/findmyres/CategoryRail";
 import { AccreditationCTA } from "@/components/findmyres/AccreditationCTA";
 import { AudienceSelector, type AudienceKey } from "@/components/findmyres/AudienceSelector";
 import PremiumResidenceShowcase from "@/components/findmyres/PremiumResidenceShowcase";
+import MonthlyTopThree from "@/components/findmyres/MonthlyTopThree";
+import ResidenceDiscoveryCard from "@/components/findmyres/ResidenceDiscoveryCard";
+import {usePublicLivingSignals} from "@/hooks/usePublicLivingSignals";
 import NearbySuggestedResidences from "@/components/findmyres/NearbySuggestedResidences";
 import CompareDrawer from "@/components/CompareDrawer";
 import { ReferralBanner } from "@/components/referrals/ReferralBanner";
@@ -56,6 +59,8 @@ const FindMyRes = () => {
   const { residences, loading, error: residenceError, refresh: refreshResidences } = useRealtimeResidences();
   const { sections } = useResidenceSections("findmyres");
   const { intent } = useUserIntent();
+  const livingSignals=usePublicLivingSignals();
+  const [listingStyle,setListingStyle]=useState<"photo"|"list"|"details">("photo");
   const {
     filters,
     cityOptions,
@@ -95,6 +100,8 @@ const FindMyRes = () => {
 
   // Deep-link category support: /find?category=flats
   useEffect(() => {
+    const searchTerm=searchParams.get("query");
+    if(searchTerm&&searchTerm.length<=100&&searchTerm!==filters.searchQuery)updateFilter("searchQuery",searchTerm);
     const city = searchParams.get("city");
     if(city && city!==filters.city)updateFilter("city",city);
     const cat = searchParams.get("category");
@@ -263,6 +270,7 @@ const FindMyRes = () => {
 
         {/* Editorial premium placements are visible only until a student applies filters. */}
         {!hasActiveFilters&&<PremiumResidenceShowcase residences={realResidences} loading={loading} surface="find"/>}
+        {!hasActiveFilters&&!loading&&<MonthlyTopThree residences={realResidences} signals={livingSignals} surface="find"/>}
         <NearbySuggestedResidences residences={residences}/>
         {!hasActiveFilters&&!loading&&<SponsoredResidenceRail residences={realResidences} onApply={handleApply}/>}
         <ReferralBanner />
@@ -360,6 +368,13 @@ const FindMyRes = () => {
                 </div>
               </div>
 
+              <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Residence card display style">
+                {([["photo","Photo cards"],["list","Compact list"],["details","Detailed cards"]] as const).map(([key,label])=>(
+                  <Button key={key} size="sm" type="button" variant={listingStyle===key?"default":"outline"}
+                   className="rounded-full" onClick={()=>setListingStyle(key)} aria-pressed={listingStyle===key}>{label}</Button>
+                ))}
+              </div>
+
               {/* Results Grid */}
               {loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -425,14 +440,16 @@ const FindMyRes = () => {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className={listingStyle==="list"?"grid grid-cols-1 gap-3":"grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"}>
                     {visibleResidences.map((residence) => (
-                      <ResidencePropertyCard
-                        key={residence.id}
-                        residence={residence}
-                        onApply={handleApply}
-                        matchScore={hasActiveFilters ? residence._matchScore : undefined}
-                      />
+                      listingStyle==="details"?<ResidencePropertyCard key={residence.id} residence={residence} onApply={handleApply}
+                        rating={livingSignals.ratings[residence.id]} accredited={livingSignals.accreditedIds.has(residence.id)}
+                        nsfasAccredited={livingSignals.nsfasAccreditedIds.has(residence.id)}
+                        matchScore={hasActiveFilters ? residence._matchScore : undefined}/>:
+                      <ResidenceDiscoveryCard key={residence.id} residence={residence} layout={listingStyle==="list"?"horizontal":"compact"}
+                        rating={livingSignals.ratings[residence.id]}
+                        accredited={livingSignals.accreditedIds.has(residence.id)}
+                        nsfasAccredited={livingSignals.nsfasAccreditedIds.has(residence.id)}/>
                     ))}
                   </div>
 
@@ -469,7 +486,9 @@ const FindMyRes = () => {
               >
                 {s.items.map((r: any) => (
                   <div key={r.id} className="min-w-[280px] sm:min-w-[320px] snap-start">
-                    <ResidencePropertyCard residence={r} onApply={handleApply} />
+                    <ResidenceDiscoveryCard residence={r} rating={livingSignals.ratings[r.id]}
+                      accredited={livingSignals.accreditedIds.has(r.id)}
+                      nsfasAccredited={livingSignals.nsfasAccreditedIds.has(r.id)}/>
                   </div>
                 ))}
               </CategoryRail>
@@ -478,7 +497,9 @@ const FindMyRes = () => {
               <CategoryRail title="More selected residences" subtitle="Other curated listings. Listing visibility does not establish accreditation or availability" count={featured.length}>
                 {featured.map((r: any) => (
                   <div key={r.id} className="min-w-[280px] sm:min-w-[320px] snap-start">
-                    <ResidencePropertyCard residence={r} onApply={handleApply} />
+                    <ResidenceDiscoveryCard residence={r} rating={livingSignals.ratings[r.id]}
+                      accredited={livingSignals.accreditedIds.has(r.id)}
+                      nsfasAccredited={livingSignals.nsfasAccreditedIds.has(r.id)}/>
                   </div>
                 ))}
               </CategoryRail>

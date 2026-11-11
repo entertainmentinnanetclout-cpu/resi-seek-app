@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ResidenceBrandStudioCard from "@/components/findmyres/ResidenceBrandStudioCard";
+import ResidenceDiscoveryCard from "@/components/findmyres/ResidenceDiscoveryCard";
+import {usePublicLivingSignals} from "@/hooks/usePublicLivingSignals";
 import type { ResidencePortalContext } from "./ResidenceLayout";
 
 const EDITABLE = [
@@ -33,6 +35,8 @@ export default function ResidenceListingProfile() {
   const [loading,setLoading] = useState(true);
   const [saving,setSaving] = useState(false);
   const [uploading,setUploading] = useState<string | null>(null);
+  const [previewStyle,setPreviewStyle]=useState<"photo"|"list"|"poster">("photo");
+  const livingSignals=usePublicLivingSignals();
 
   const load = useCallback(async () => {
     if (!residence?.id) return;
@@ -120,7 +124,22 @@ export default function ResidenceListingProfile() {
           </CardContent></Card>
         </div>
 
-        <div className="space-y-4 lg:sticky lg:top-24 lg:self-start"><Card className="overflow-hidden"><CardHeader><CardTitle className="text-base">Live branded card preview</CardTitle></CardHeader><CardContent className="p-3"><ResidenceBrandStudioCard residence={{...record,...draft}}/><p className="mt-3 text-xs leading-5 text-muted-foreground">Preview follows the same deep-navy, gold strap, bold white headline and studio/cover-image system used for ResKonnect strategic collaboration visuals.</p></CardContent></Card><Card><CardContent className="p-4 text-xs leading-5 text-muted-foreground"><div className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary"/><p>Residence users can edit property facts and marketing presentation, but cannot self-assign trust, accreditation or verified-price status.</p></div></CardContent></Card></div>
+        <div className="space-y-4 lg:sticky lg:top-24 lg:self-start"><Card className="overflow-hidden"><CardHeader><CardTitle className="text-base">Your live property presentation</CardTitle></CardHeader>
+ <CardContent className="space-y-3 p-3">
+  <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Listing design preview">
+   {([["photo","Photo card"],["list","List card"],["poster","Brand poster"]] as const).map(([value,label])=>
+    <Button key={value} size="sm" type="button" variant={previewStyle===value?"default":"outline"}
+     className="h-auto min-h-9 whitespace-normal px-2 py-2 text-[11px]" aria-pressed={previewStyle===value}
+     onClick={()=>setPreviewStyle(value)}>{label}</Button>)}
+  </div>
+  {previewStyle==="poster"?<ResidenceBrandStudioCard residence={{...record,...draft}}/>:
+   <ResidenceDiscoveryCard residence={{...record,...draft}}
+    layout={previewStyle==="list"?"horizontal":"compact"}
+    rating={livingSignals.ratings[residence.id]}
+    accredited={livingSignals.accreditedIds.has(residence.id)}
+    nsfasAccredited={livingSignals.nsfasAccreditedIds.has(residence.id)}/>}
+  <p className="text-xs leading-5 text-muted-foreground">Preview uses your unsaved edits. Save to update the public listing; official accreditation and student ratings can only come from independent evidence and student votes.</p>
+ </CardContent></Card><Card><CardContent className="p-4 text-xs leading-5 text-muted-foreground"><div className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary"/><p>Residence users can edit property facts and marketing presentation, but cannot self-assign trust, accreditation or verified-price status.</p></div></CardContent></Card></div>
       </div>
     </div>
   </>;

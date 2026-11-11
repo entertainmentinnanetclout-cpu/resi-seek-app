@@ -61,7 +61,17 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount,
         </div>
         <div className="space-y-4 rounded-[24px] border border-white/30 bg-card p-4 text-foreground shadow-[0_25px_70px_rgba(2,10,27,.32)] sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Search by residence, city, neighbourhood or campus…" className="h-12 pl-10 text-base" value={filters.searchQuery} onChange={(e) => updateFilter("searchQuery", e.target.value)} /></div>
+            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Search by residence, city, neighbourhood or campus…" className="h-12 pl-10 text-base" value={filters.searchQuery} onChange={(e) => updateFilter("searchQuery", e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter")document.getElementById("results")?.scrollIntoView({behavior:"smooth"});}} /></div>
+            <div className="grid grid-cols-2 gap-2 sm:order-last sm:ml-auto">
+              <Button type="button" onClick={()=>document.getElementById("results")?.scrollIntoView({behavior:"smooth"})}
+                className="h-12 rounded-xl bg-[#e94578] px-5 font-black text-white shadow-sm hover:bg-[#ce2d64]">
+                <Search className="mr-1.5 h-4 w-4"/>Search
+              </Button>
+              <Button type="button" onClick={()=>navigateOverlay("discovery")}
+                className="h-12 rounded-xl border border-[#d8c3ed] bg-[#f1e9ff] px-4 font-black text-[#5c3297] shadow-sm hover:bg-[#e7d9f8]">
+                <Sparkles className="mr-1.5 h-4 w-4"/>AI Finder
+              </Button>
+            </div>
             <Select value={filters.city} onValueChange={v=>updateFilter("city",v)}><SelectTrigger className="h-12 sm:w-48" aria-label="Filter by city"><SelectValue placeholder="All cities"/></SelectTrigger><SelectContent><SelectItem value="all">All cities</SelectItem>{cityOptions.map(city=><SelectItem key={city} value={city}>{city}</SelectItem>)}</SelectContent></Select>
             <Select value={filters.campus} onValueChange={(v) => updateFilter("campus", v)}><SelectTrigger className="h-12 sm:w-56"><SelectValue placeholder="Area / campus" /></SelectTrigger><SelectContent><SelectItem value="all">All Areas</SelectItem>{getCampusOptions(filters.institutionType ?? (filters.audience === "tvet" ? "tvet" : filters.audience === "university" ? "university" : undefined)).map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select>
           </div>

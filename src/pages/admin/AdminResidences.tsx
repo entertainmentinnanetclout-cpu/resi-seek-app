@@ -22,6 +22,7 @@ import { useResidenceSections } from "@/hooks/useResidenceSections";
 import { BulkAudienceActions } from "@/components/admin/residences/BulkAudienceActions";
 import AdminListingReview from "@/components/admin/AdminListingReview";
 import AdminMarketplaceReadiness from "@/components/admin/AdminMarketplaceReadiness";
+import AdminResidenceReviewModeration from "@/components/admin/residences/AdminResidenceReviewModeration";
 import SpotlightPlacementManager from "@/components/admin/residences/SpotlightPlacementManager";
 
 interface Residence {
@@ -310,6 +311,7 @@ export const AdminResidencesContent = () => {
           <TabsList>
             <TabsTrigger value="all">All Residences</TabsTrigger>
             <TabsTrigger value="listing-review" className="gap-2"><Sparkles className="h-4 w-4"/>Listing reviews</TabsTrigger>
+            <TabsTrigger value="student-reviews">Student ratings</TabsTrigger>
             <TabsTrigger value="readiness">Listing readiness</TabsTrigger>
             <TabsTrigger value="trusted" className="gap-2">
               <Grid3X3 className="w-4 h-4" />
@@ -322,6 +324,7 @@ export const AdminResidencesContent = () => {
           </TabsList>
 
           <TabsContent value="listing-review" className="space-y-4"><AdminListingReview/></TabsContent>
+          <TabsContent value="student-reviews" className="space-y-4"><AdminResidenceReviewModeration/></TabsContent>
           <TabsContent value="readiness" className="space-y-4"><AdminMarketplaceReadiness residences={residences}/></TabsContent>
           <TabsContent value="all" className="space-y-4">
             <div className="flex justify-end">

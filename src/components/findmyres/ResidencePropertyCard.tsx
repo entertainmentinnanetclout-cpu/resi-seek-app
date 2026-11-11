@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import FavoriteButton from "@/components/FavoriteButton";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ResidenceMapPreview from "./ResidenceMapPreview";
-import ResidenceBrandStudioCard from "./ResidenceBrandStudioCard";
+import {spotlightPhoto} from "@/lib/residenceSpotlight";
+import type {ResidenceRating} from "@/hooks/usePublicLivingSignals";
 import { RESKONNECT_WHATSAPP } from "@/lib/constants";
 import { StatusBadge, residenceStatus } from "./StatusBadge";
 import { cn } from "@/lib/utils";
@@ -24,12 +25,15 @@ interface ResidencePropertyCardProps {
   residence: any;
   onApply: (residence: any) => void;
   matchScore?: number;
+  rating?:ResidenceRating;
+  accredited?:boolean;
+  nsfasAccredited?:boolean;
 }
 
 const money = (value: number) => `R${Number(value || 0).toLocaleString("en-ZA")}`;
 const feeText = (value: any) => Number(value) > 0 ? money(Number(value)) : null;
 
-export function ResidencePropertyCard({ residence, onApply, matchScore }: ResidencePropertyCardProps) {
+export function ResidencePropertyCard({ residence, onApply, matchScore, rating, accredited=false, nsfasAccredited=false }: ResidencePropertyCardProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [reservationOpen, setReservationOpen] = useState(false);
@@ -56,6 +60,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
   const singlesAvailable = Number(residence.singles_available) || 0;
   const verifiedPricing = hasVerifiedPrivateRent(residence);
   const contactPhone = residence.whatsapp_phone || residence.contact_phone || RESKONNECT_WHATSAPP;
+  const heroPhoto=spotlightPhoto(residence);
 
   const promoLive = useMemo(() => {
     if (residence.promo_active !== true) return false;
@@ -108,14 +113,18 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
       onKeyDown={(event) => { if (event.key === "Enter") navigate(`/find-my-res/${slug}`); }}
       className={cn("group w-full min-w-0 cursor-pointer overflow-hidden rounded-[22px] border-border/50 bg-card transition-all duration-300", "hover:-translate-y-1 hover:border-transparent hover:shadow-premium")}
     >
-      <div className="relative isolate bg-[#000F2F]">
-        <ResidenceBrandStudioCard residence={residence} className="rounded-none shadow-none" />
+      <div className="relative isolate aspect-[16/11] overflow-hidden bg-[#e9e9e7]">
+        {heroPhoto?<img src={heroPhoto} loading="lazy" alt={`Photo of ${residence.name}`} className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.06]" onError={e=>{e.currentTarget.src="/placeholder.svg";}}/>:
+          <div className="flex h-full items-center justify-center text-sm text-[#6d7888]">Property photo pending</div>}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/20"/>
         <div className="absolute right-3 top-3 z-30 flex max-w-[48%] flex-col items-end gap-1.5">
           <StatusBadge variant={status} label={isFull ? "CHECK AVAILABILITY" : status === "limited" ? `${spots} REPORTED` : status === "available" ? "REPORTED SPACES" : undefined} />
           {reservations2027 && <Badge className="border-0 bg-primary text-primary-foreground shadow-md"><CalendarDays className="mr-1 h-3 w-3" />2027 OPEN</Badge>}
           {promoLive && <Badge className="border-0 bg-amber-500 text-white shadow-md"><Tag className="mr-1 h-3 w-3" />{residence.promo_badge || "PROMO"}</Badge>}
           {verifiedPricing && <Badge className="border-0 bg-emerald-600 text-white shadow-md"><BadgeCheck className="mr-1 h-3 w-3" />PRICE VERIFIED</Badge>}
           {isSpotlight && <Badge className="border-0 bg-gradient-spotlight text-white shadow-md"><Sparkles className="mr-1 h-3 w-3" />Spotlight</Badge>}
+          {nsfasAccredited&&<Badge className="border border-emerald-500/25 bg-white text-[10px] font-black text-emerald-800">✓ NSFAS accredited</Badge>}
+          {accredited&&!nsfasAccredited&&<Badge className="border border-emerald-500/25 bg-white text-[10px] font-black text-emerald-800">Verified accreditation</Badge>}
         </div>
         {matchScore !== undefined && matchScore > 0 && <div className="absolute left-3 top-3 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-[#000F2F]/90 text-xs font-black text-white shadow-lg backdrop-blur">{matchScore}%</div>}
         <div className="absolute bottom-3 right-3 z-30 flex gap-1.5" onClick={(event) => event.stopPropagation()}>
@@ -127,14 +136,16 @@ export function ResidencePropertyCard({ residence, onApply, matchScore }: Reside
       <CardContent className="min-w-0 space-y-3 p-4">
         <div className="flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0"><span className="inline-flex max-w-full items-baseline gap-0.5 rounded-full bg-gradient-price px-3 py-1 text-white shadow-sm"><span className="truncate text-lg font-bold">{displayPrivate !== null ? money(displayPrivate) : "Price on request"}</span>{displayPrivate !== null && <span className="shrink-0 text-xs opacity-90">/mo</span>}</span><p className="mt-1 text-[10px] font-medium text-muted-foreground">{displayPrivate === null ? "No confirmed monthly rent supplied" : verifiedPricing ? "Monthly price verified" : "Landlord-reported price · not verified"} · {inventoryLabel}</p></div>
-          <div className="flex min-w-0 shrink-0 flex-wrap justify-end gap-1">{residence.accepts_nsfas && <Badge className="border border-mint/40 bg-mint/15 text-[10px] text-mint">NSFAS</Badge>}{residence.is_tut_accredited && <Badge className="border border-sky/40 bg-sky/15 text-[10px] text-sky">TUT ✓</Badge>}{residence.accepts_tvet && <Badge className="border border-amber/40 bg-amber/15 text-[10px] text-amber">TVET</Badge>}{residence.accepts_private && <Badge className="border border-violet/40 bg-violet/15 text-[10px] text-violet">Private</Badge>}</div>
+          <div className="flex min-w-0 shrink-0 flex-wrap justify-end gap-1">{residence.accepts_nsfas && <Badge className="border border-mint/40 bg-mint/15 text-[10px] text-mint">Accepts NSFAS funding</Badge>}{residence.is_tut_accredited && <Badge className="border border-sky/40 bg-sky/15 text-[10px] text-sky">TUT ✓</Badge>}{residence.accepts_tvet && <Badge className="border border-amber/40 bg-amber/15 text-[10px] text-amber">TVET</Badge>}{residence.accepts_private && <Badge className="border border-violet/40 bg-violet/15 text-[10px] text-violet">Private</Badge>}</div>
         </div>
 
         {roomPricing.length > 0 ? <div className="space-y-2 rounded-xl border bg-muted/25 p-2.5"><div className="flex items-center justify-between gap-2"><p className="text-[11px] font-bold uppercase tracking-wide">Room options</p><span className="shrink-0 text-[10px] text-muted-foreground">{residence.pricing_year || 2027} pricing</span></div>{pricedRooms.slice(0, 3).map((room: any) => <div key={room.id || room.name} className="grid min-w-0 grid-cols-[minmax(0,1fr),auto] gap-2 rounded-lg bg-background p-2 text-xs"><div className="min-w-0"><p className="truncate font-semibold">{room.name}</p><p className="mt-0.5 text-[10px] text-muted-foreground">{Number(room.available_beds || 0)} beds available{feeText(room.deposit) ? ` · Deposit ${feeText(room.deposit)}` : ""}</p></div><div className="text-right"><p className="font-bold">Private {Number(room.promo_price || room.private_price || 0) > 0 ? money(Number(room.promo_price || room.private_price)) : "—"}</p><p className="mt-0.5 text-[10px] text-muted-foreground">NSFAS {Number(room.nsfas_price || 0) > 0 ? money(Number(room.nsfas_price)) : "funded rate"}</p></div></div>)}</div> : (residence.accepts_nsfas || residence.accepts_private) && <div className="grid grid-cols-2 gap-2 rounded-xl border bg-muted/30 p-2.5 text-xs"><div className="min-w-0"><p className="font-semibold">Private</p><p className="mt-0.5 truncate text-muted-foreground">{privatePrice > 0 ? `${money(privatePrice)}/mo` : "Ask residence"}</p></div><div className="min-w-0 border-l pl-2"><p className="font-semibold">NSFAS-funded</p><p className="mt-0.5 truncate text-muted-foreground">{nsfasPrice > 0 ? `${money(nsfasPrice)}/mo` : "Separate funded rate"}</p></div><p className="col-span-2 text-[10px] leading-relaxed text-muted-foreground">Private and NSFAS-funded rates are separate commercial arrangements.</p></div>}
 
         {promoLive && <div className="rounded-xl border border-amber-300/60 bg-amber-50/70 p-3 text-amber-950 dark:bg-amber-950/20 dark:text-amber-100"><div className="flex items-center gap-2 text-xs font-bold"><Tag className="h-3.5 w-3.5" />{residence.promo_title || "Accommodation promotion"}</div>{residence.promo_description && <p className="mt-1 text-[11px] leading-relaxed opacity-80">{residence.promo_description}</p>}</div>}
 
-        <h3 className="line-clamp-1 text-base font-semibold">{residence.name}</h3>
+        <h3 className="line-clamp-2 text-lg font-black tracking-tight">{residence.name}</h3>
+        {rating&&rating.count>0?<p className="flex items-center gap-1.5 text-xs"><span className="font-black text-amber-700">★ {rating.average.toFixed(1)}</span><span className="text-muted-foreground">({rating.count} student {rating.count===1?"review":"reviews"})</span></p>:
+        <p className="text-xs text-muted-foreground">No student ratings yet</p>}
         <div className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-3.5 w-3.5 shrink-0" /><span className="line-clamp-1 min-w-0">{residence.place_label || residence.address || residence.campus}</span>{distance !== null && <span className="ml-auto shrink-0 text-xs font-medium text-coral">{distance}km</span>}</div>
         <div onClick={(event) => event.stopPropagation()} className="min-w-0 overflow-hidden rounded-xl"><ResidenceMapPreview name={residence.name} address={residence.address} latitude={residence.latitude} longitude={residence.longitude} /></div>
         <div className="flex flex-wrap gap-1.5">{roomTypes.slice(0, 4).map((type) => <Badge key={type} className="border border-violet/30 bg-violet/10 text-xs capitalize text-violet"><Bed className="mr-1 h-3 w-3" />{type}</Badge>)}{(singlesAvailable > 0 || hasSingles) && <Badge className="border border-mint/40 bg-mint/15 text-xs text-mint">{singlesAvailable > 0 ? `${singlesAvailable} Singles` : "Singles"}</Badge>}{residence.gender && <Badge className="border border-pink/30 bg-pink/10 text-xs capitalize text-pink">{residence.gender}</Badge>}</div>

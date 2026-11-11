@@ -26,7 +26,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import ShareButton from "@/components/ShareButton";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import TrustScore from "@/components/TrustScore";
-import ReviewCard from "@/components/ReviewCard";
+import {usePublicLivingSignals} from "@/hooks/usePublicLivingSignals";
 import ReviewForm from "@/components/ReviewForm";
 import ResidenceBrandStudioCard from "@/components/findmyres/ResidenceBrandStudioCard";
 import ResidenceMapPreview from "@/components/findmyres/ResidenceMapPreview";
@@ -102,6 +102,7 @@ const ResidenceDetail = () => {
   const [roomPrices, setRoomPrices] = useState<RoomPrice[]>([]);
   const [related, setRelated] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
+  const livingSignals=usePublicLivingSignals();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -160,7 +161,7 @@ const ResidenceDetail = () => {
           (supabase as any).from("residence_room_pricing_public_v").select("*").eq("residence_id", row.id).order("academic_year", { ascending: false }).order("name"),
           // Avoid recursive legacy/delta type expansion for the full branding row.
           (supabase as any).from("residences").select("*").eq("campus", String(row.campus || "")).neq("id", String(row.id)).eq("is_visible", true).limit(4),
-          supabase.from("reviews").select("*, user:profiles(full_name)").eq("residence_id", String(row.id)).order("created_at", { ascending: false }),
+          (supabase as any).rpc("reskonnect_public_residence_review_excerpts",{p_residence_id:row.id}),
         ]);
         setRoomPrices(pricingResult.data || []);
         setRelated(relatedResult.data || []);
@@ -298,7 +299,8 @@ const ResidenceDetail = () => {
   if (loadError && !residence) return <DashboardLayout><div className="mx-auto max-w-xl px-6 py-24 text-center"><AlertTriangle className="mx-auto h-10 w-10 text-amber-600" /><h1 className="mt-4 text-2xl font-black">Residence could not be refreshed</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">{loadError}</p><div className="mt-5 flex flex-wrap justify-center gap-2"><Button onClick={() => setLoadAttempt((value) => value + 1)}><RefreshCw className="mr-2 h-4 w-4" />Try again</Button><Button asChild variant="outline"><Link to="/find">Back to accommodation</Link></Button></div></div></DashboardLayout>;
   if (!residence) return <DashboardLayout><div className="mx-auto max-w-xl px-6 py-24 text-center"><Building2 className="mx-auto h-10 w-10 text-muted-foreground" /><h1 className="mt-4 text-2xl font-black">Residence not found</h1><Button asChild className="mt-5"><Link to="/find">Back to accommodation</Link></Button></div></DashboardLayout>;
 
-  const averageRating = reviews.length ? reviews.reduce((sum, row) => sum + Number(row.rating || 0), 0) / reviews.length : 0;
+  const currentReview=livingSignals.ratings[residence.id];
+  const averageRating=currentReview?.average||0;
   const schemaImage = heroImage || residence.image_url || undefined;
   // Canonical URLs follow the public sitemap; old /res/:id links remain usable
   // but must not compete with a published property's human-readable slug.
@@ -381,7 +383,9 @@ const ResidenceDetail = () => {
                   <div className="mt-5 flex flex-wrap gap-2">
                     {residence.is_trusted || residence.trusted ? <Badge className="bg-white/10 text-white hover:bg-white/10"><ShieldCheck className="mr-1 h-3.5 w-3.5 text-[#F2AE28]" />Trusted listing</Badge> : null}
                     {residence.is_tut_accredited && <Badge className="bg-white/10 text-white hover:bg-white/10"><GraduationCap className="mr-1 h-3.5 w-3.5 text-[#F2AE28]" />TUT accredited</Badge>}
-                    {residence.accepts_nsfas && <Badge className="bg-white/10 text-white hover:bg-white/10">NSFAS context</Badge>}
+                    {livingSignals.nsfasAccreditedIds.has(residence.id)?<Badge className="border border-emerald-400/40 bg-emerald-600 text-white hover:bg-emerald-600">✓ NSFAS accredited (evidence verified)</Badge>:
+                    livingSignals.accreditedIds.has(residence.id)?<Badge className="bg-emerald-600 text-white">Accredited (evidence verified)</Badge>:
+                    residence.accepts_nsfas?<Badge className="bg-white/10 text-white hover:bg-white/10">Accepts NSFAS funding · not accreditation</Badge>:null}
                     {residence.gender && <Badge className="bg-white/10 text-white hover:bg-white/10">{residence.gender}</Badge>}
                   </div>
                 </div>
@@ -412,7 +416,7 @@ const ResidenceDetail = () => {
             <div className="min-w-0 space-y-5">
               {isPublishedPromotionCurrent(residence) && <Card className="overflow-hidden border-[#E09008]/30 bg-[#E09008]/[0.06]"><CardContent className="p-5"><div className="flex items-start gap-3"><Sparkles className="mt-1 h-5 w-5 shrink-0 text-[#E09008]" /><div><p className="font-black">{residence.promo_title || "Residence promotion"}</p><p className="mt-1 text-sm text-muted-foreground">{residence.promo_description || "A promotional accommodation offer is currently available."}</p>{residence.promo_room_type && <Badge variant="outline" className="mt-3">{residence.promo_room_type}</Badge>}</div></div></CardContent></Card>}
 
-              <Card><CardContent className="p-5 sm:p-6"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">About this residence</p><h2 className="mt-1 text-2xl font-black">Living details</h2></div><TrustScore verificationLevel={residence.verification_level || "basic"} averageRating={averageRating} reviewCount={reviews.length} /></div><p className="mt-4 text-sm leading-7 text-muted-foreground">{residence.description || "Property information is being completed by the residence through the ResKonnect Property OS."}</p><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Info icon={MapPin} label="Location" value={residence.address || locationLabel} /><Info icon={Users} label="Available spots" value={capacity > 0 ? `${available} / ${capacity}` : `${available}`} /><Info icon={BedDouble} label="Room types" value={roomTypes.length ? roomTypes.join(", ") : "Contact ResKonnect"} /><Info icon={Clock3} label="Distance" value={residence.distance_from_campus || "Map available"} /></div></CardContent></Card>
+              <Card><CardContent className="p-5 sm:p-6"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">About this residence</p><h2 className="mt-1 text-2xl font-black">Living details</h2></div><TrustScore verificationLevel={residence.verification_level || "basic"} averageRating={averageRating} reviewCount={currentReview?.count||0} /></div><p className="mt-4 text-sm leading-7 text-muted-foreground">{residence.description || "Property information is being completed by the residence through the ResKonnect Property OS."}</p><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Info icon={MapPin} label="Location" value={residence.address || locationLabel} /><Info icon={Users} label="Available spots" value={capacity > 0 ? `${available} / ${capacity}` : `${available}`} /><Info icon={BedDouble} label="Room types" value={roomTypes.length ? roomTypes.join(", ") : "Contact ResKonnect"} /><Info icon={Clock3} label="Distance" value={residence.distance_from_campus || "Map available"} /></div></CardContent></Card>
 
               <ResidenceJourneyPanel residenceId={residence.id} residenceName={residence.name}/>
                {roomPrices.length > 0 && <Card><CardContent className="p-5 sm:p-6"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Room-level pricing</p><h2 className="mt-1 text-2xl font-black">Choose the right room</h2><p className="mt-1 text-sm text-muted-foreground">Private and NSFAS-funded prices are stored separately and are never assumed to be equal.</p></div><div className="mt-5 grid gap-3 md:grid-cols-2">{roomPrices.map((room) => <div key={room.id} className="rounded-2xl border p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-black">{room.name}</p><p className="mt-1 text-xs text-muted-foreground">{room.academic_year || 2027} pricing · {room.available_beds ?? 0} bed(s) available</p></div>{room.price_verified_at && <Badge variant="outline" className="border-emerald-500/30 text-emerald-700">Verified</Badge>}</div><div className="mt-4 grid grid-cols-2 gap-2"><PriceTile label="Private" value={money(room.promo_price || room.private_price) || "Not listed"} /><PriceTile label="NSFAS" value={money(room.nsfas_price) || "Funded rate separate"} /></div>{(room.deposit || room.admin_fee || room.reservation_fee) && <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs"><MiniFee label="Deposit" value={money(room.deposit)} /><MiniFee label="Admin" value={money(room.admin_fee)} /><MiniFee label="Reserve" value={money(room.reservation_fee)} /></div>}{room.description && <p className="mt-3 text-xs leading-5 text-muted-foreground">{room.description}</p>}</div>)}</div></CardContent></Card>}
@@ -421,7 +425,14 @@ const ResidenceDetail = () => {
 
               <Card><CardContent className="p-5 sm:p-6"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Location</p><h2 className="mt-1 text-2xl font-black">Find the residence</h2></div><div className="mt-4"><ResidenceMapPreview name={residence.name} address={residence.address} latitude={residence.latitude} longitude={residence.longitude} compact={false} /></div></CardContent></Card>
 
-              <Card><CardContent className="p-5 sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Student experience</p><h2 className="mt-1 text-2xl font-black">Reviews</h2></div>{user && <Button variant="outline" onClick={() => setShowReview(!showReview)}>Write a review</Button>}</div>{showReview && user && <div className="mt-5"><ReviewForm residenceId={residence.id} onSuccess={() => { setShowReview(false); window.location.reload(); }} onCancel={() => setShowReview(false)} /></div>}<div className="mt-5 space-y-3">{reviews.length ? reviews.map((review) => <ReviewCard key={review.id} review={review} onHelpful={async (reviewId) => { const current = reviews.find((r) => r.id === reviewId); await supabase.from("reviews").update({ helpful_count: Number(current?.helpful_count || 0) + 1 }).eq("id", reviewId); setReviews((prev) => prev.map((r) => r.id === reviewId ? { ...r, helpful_count: Number(r.helpful_count || 0) + 1 } : r)); }} />) : <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">No reviews yet.</div>}</div></CardContent></Card>
+              <Card><CardContent className="p-5 sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Student experience</p><h2 className="mt-1 text-2xl font-black">Reviews</h2></div>{user && <Button variant="outline" onClick={() => setShowReview(!showReview)}>Write a review</Button>}</div>{showReview && user && <div className="mt-5"><ReviewForm residenceId={residence.id} onSuccess={() => { setShowReview(false); setLoadAttempt(v=>v+1);livingSignals.refresh(); }} onCancel={() => setShowReview(false)} /></div>}<div className="mt-5 space-y-3">{reviews.length?reviews.map((review,index)=><article key={index} className="rounded-2xl border border-[#e6e9ee] bg-[#fbfaf7] p-4">
+ <div className="flex flex-wrap items-center gap-2 text-sm">
+  <span className="font-black text-[#16345c]">★ {Number(review.rating).toFixed(1)} / 5</span>
+  <span className="text-xs text-muted-foreground">Student rating · {new Date(review.created_at).toLocaleDateString("en-ZA")}</span>
+ </div>
+ {review.title&&review.title!=="Student rating"&&<h3 className="mt-2 font-bold">{review.title}</h3>}
+ {review.comment&&<p className="mt-2 text-sm leading-6 text-muted-foreground">{review.comment}</p>}
+ </article>):<div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">No eligible student ratings yet. Ratings appear only after approved students submit real votes.</div>}</div></CardContent></Card>
             </div>
 
             <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
