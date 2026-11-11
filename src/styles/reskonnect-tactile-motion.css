@@ -47,6 +47,8 @@
   outline-offset: 2px;
   box-shadow: inset 2px 2px 5px rgba(13,40,78,.075), 0 0 0 4px rgba(37,99,235,.12);
 }
+.dark .rk-neo-stat {background:linear-gradient(145deg,#1f3653,#152b47);border-color:#37516f;box-shadow:inset 1px 1px #385575,5px 6px 12px -8px #010817;color:#f1f5fb;}
+.dark .rk-neo-stat p {color:#dce7f6;}
 .dark .rk-neo-panel {
   color: hsl(var(--foreground));
   background: linear-gradient(148deg,#1d344f,#10233d);
@@ -88,6 +90,19 @@
 .rk-clay-action:hover:not(:disabled) {
   filter: brightness(1.03);
   box-shadow: 5px 9px 16px -6px rgba(100,65,14,.52),inset 1px 2px 2px rgba(255,255,255,.75);
+}
+.rk-clay-action:hover:not(:disabled),.rk-clay-action:focus-visible {
+  background: linear-gradient(145deg,#ffe4a0,#ffc551 70%,#eba126);
+  color:#071326;
+}
+.rk-blue-action {
+  border:1px solid #204b9d;
+  background:linear-gradient(145deg,#3980f1,#2563eb 70%,#1b4cb9);
+  color:#fff;
+  box-shadow:5px 7px 14px -6px rgba(18,64,151,.48),inset 1px 2px 2px rgba(255,255,255,.35),inset -2px -3px 4px rgba(3,39,107,.18);
+}
+.rk-blue-action:hover:not(:disabled){
+  background:linear-gradient(145deg,#4c93ff,#2c6eed 70%,#1b4cb9);
 }
 .rk-clay-action:active:not(:disabled) {
   transform: scale(.97) translateY(1px);
@@ -163,11 +178,12 @@
 @keyframes rk-fade-in{from{opacity:0}to{opacity:1}}
 @keyframes rk-fade-out{from{opacity:1}to{opacity:0}}
 /* 05 12% stretched moving toggle knobs */
-.rk-tactile-switch [data-state="checked"] > span,
-.rk-tactile-switch [data-state="unchecked"] > span {
-  transition: transform var(--rk-time-move) var(--rk-ease-move);
+.rk-tactile-switch[data-state="checked"] > span,
+.rk-tactile-switch[data-state="unchecked"] > span {
+  animation:rk-switch-stretch var(--rk-time-move) var(--rk-ease-move) both;
 }
-.rk-tactile-switch:active > span {scale:1.12 1; transition:none;}
+@keyframes rk-switch-stretch {0%{scale:1 1}50%{scale:1.12 1}100%{scale:1 1}}
+.rk-tactile-switch:active > span {animation:none;scale:1.12 1;transition:none;}
 /* 01 and 03 staggered row arrivals, 06 secondary details settle last */
 .rk-enter {animation:rk-soft-enter var(--rk-time-enter) var(--rk-ease-enter) both;}
 @keyframes rk-soft-enter{from{opacity:0;transform:translateY(9px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -184,6 +200,7 @@
 .rk-details-settle > *:nth-child(n+3){animation:rk-soft-enter 260ms var(--rk-ease-enter) 90ms both}
 /* 07 curved travel instead of linear pop; used by highlights and action indicators */
 .rk-motion-arc {animation:rk-motion-arc 370ms var(--rk-ease-move) both;}
+.rk-motion-card:hover .rk-arc-on-hover,.rk-motion-card:focus-visible .rk-arc-on-hover {animation:rk-motion-arc 370ms var(--rk-ease-move) both;}
 @keyframes rk-motion-arc {
   0% {transform:translate(-8px,5px) rotate(-11deg);opacity:0}
   48%{transform:translate(2px,-5px) rotate(4deg);opacity:1}
@@ -225,6 +242,7 @@
  .rk-motion-menu,.rk-motion-dialog,.rk-motion-overlay,.rk-enter,.rk-stagger-list > *,
  .rk-details-settle > *,.rk-motion-arc,.rk-success-pulse,.rk-mask-reveal,.rk-rubber-hit {animation:none!important;filter:none!important}
  .rk-icon-morph > svg,.rk-motion .rk-motion-card,.rk-pressable,.rk-motion button,.rk-motion a[data-rk-press]{transition:none!important;animation:none!important}
+ .rk-tactile-switch > span,.rk-arc-on-hover {animation:none!important;transition:none!important}
  ::view-transition-old(rk-active-view),::view-transition-new(rk-active-view){animation-duration:0.001ms!important}
  .rk-glass-panel {backdrop-filter:none;-webkit-backdrop-filter:none;background:#fff}
 }
@@ -232,4 +250,10 @@
  .rk-glass-panel {background:#fff;border-color:#071326;backdrop-filter:none}
  .rk-neo-panel,.rk-neo-inset,.rk-clay-card {border:2px solid currentColor;box-shadow:none}
  .rk-clay-action {outline:2px solid #071326}
+}
+
+/* Preserve a single stable label while status icons move along the pointer arc. */
+@media (max-width:720px){
+  .rk-glass-panel{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  .rk-clay-card,.rk-neo-panel{box-shadow:5px 7px 16px -11px rgba(12,36,71,.3),inset 1px 1px #fff}
 }
