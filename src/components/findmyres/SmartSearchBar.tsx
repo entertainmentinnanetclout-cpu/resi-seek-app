@@ -59,16 +59,16 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount,
           <h1 className="mb-2 text-4xl font-black tracking-tight text-white sm:text-5xl">Find your student space. <span className="text-[#f5b32f]">Powered by ResKonnect.</span></h1>
           <p className="mx-auto mt-3 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">ResKonnect Living connects campus-area accommodation searches with real listing details, budget filters, ResMap and our AI-assisted finder. Compare options and move forward from one place.</p>
         </div>
-        <div className="space-y-4 rounded-[24px] border border-white/30 bg-card p-4 text-foreground shadow-[0_25px_70px_rgba(2,10,27,.32)] sm:p-6">
+        <div className="rk-glass-panel space-y-4 rounded-[24px] p-4 text-[#071326] sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Search by residence, city, neighbourhood or campus…" className="h-12 pl-10 text-base" value={filters.searchQuery} onChange={(e) => updateFilter("searchQuery", e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter")document.getElementById("results")?.scrollIntoView({behavior:"smooth"});}} /></div>
+            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Search by residence, city, neighbourhood or campus…" className="rk-neo-inset h-12 pl-10 text-base" value={filters.searchQuery} onChange={(e) => updateFilter("searchQuery", e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter")document.getElementById("results")?.scrollIntoView({behavior:"smooth"});}} /></div>
             <div className="grid grid-cols-2 gap-2 sm:order-last sm:ml-auto">
               <Button type="button" onClick={()=>document.getElementById("results")?.scrollIntoView({behavior:"smooth"})}
-                className="h-12 rounded-xl bg-[#2563eb] px-5 font-black text-white shadow-sm hover:bg-[#1d4ed8]">
+                className="rk-blue-action h-12 rounded-xl px-5 font-black text-white">
                 <Search className="mr-1.5 h-4 w-4"/>Search
               </Button>
               <Button type="button" onClick={()=>navigateOverlay("discovery")}
-                className="h-12 rounded-xl border border-[#f5b32f] bg-[#fff7e4] px-4 font-black text-[#071326] shadow-sm hover:bg-[#ffedbb]">
+                className="rk-clay-action h-12 rounded-xl px-4 font-black text-[#071326]">
                 <Sparkles className="mr-1.5 h-4 w-4"/>AI Finder
               </Button>
             </div>

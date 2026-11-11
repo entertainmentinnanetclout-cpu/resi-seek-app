@@ -12,6 +12,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import HeroCarousel from "@/components/HeroCarousel";
+import VisualPageBlock from "@/components/admin/VisualPageBlock";
+import {useVisualPageSections} from "@/hooks/useVisualPageSections";
 import PremiumResidenceShowcase from "@/components/findmyres/PremiumResidenceShowcase";
 import LivingSearchDock from "@/components/findmyres/LivingSearchDock";
  import MonthlyTopThree from "@/components/findmyres/MonthlyTopThree";
@@ -68,6 +70,7 @@ function DeferredSection({ children, minHeight = 220 }: { children: React.ReactN
 const Landing = () => {
   const navigate = useNavigate();
   const livingSignals=usePublicLivingSignals();
+  const {byKey}=useVisualPageSections("landing");
   const {residences:spotlightResidences,loading:spotlightLoading}=useLandingSpotlightResidences();
   const landlordRef = useRef<HTMLDivElement>(null);
 
@@ -172,7 +175,7 @@ const Landing = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="rk-motion rk-living-surface flex min-h-screen flex-col bg-background text-foreground">
       <SEO
         title="Student Accommodation, Applications & WIL | ResKonnect"
         description="Search student accommodation in Pretoria, Soshanguve, Ga-Rankuwa, Mbombela and Polokwane. Explore single rooms, NSFAS funding checks, applications, bursaries and WIL with ResKonnect AI/SI."
@@ -183,16 +186,28 @@ const Landing = () => {
 
       <SiteHeader />
 
-      <main>
+      <main className="flex flex-col">
+        
+        <VisualPageBlock page="landing" sectionKey="hero">
         <section>
           <HeroCarousel slides={fallbackSlides} autoPlay interval={6000} useDatabase={true} location="landing" />
         </section>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="search">
         <LivingSearchDock/>
         {/* Highest-visibility accommodation placement immediately after the homepage hero. */}
-        <PremiumResidenceShowcase residences={spotlightResidences} loading={spotlightLoading} surface="landing"/>
-        <MonthlyTopThree signals={livingSignals} surface="landing"/>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="spotlight">
+        <PremiumResidenceShowcase residences={spotlightResidences} loading={spotlightLoading} surface="landing" headline={byKey.spotlight?.headline} subtitle={byKey.spotlight?.subtitle}/>
+        </VisualPageBlock>
+
+        <VisualPageBlock page="landing" sectionKey="top3">
+        <MonthlyTopThree signals={livingSignals} surface="landing" headline={byKey.top3?.headline} subtitle={byKey.top3?.subtitle}/>
+        </VisualPageBlock>
+
+        <VisualPageBlock page="landing" sectionKey="vision">
         <section className="border-b bg-background py-9 md:py-14">
           <div className="container mx-auto px-4 text-center">
             <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-primary">OUR VISION · AFRICA'S FIRST AI/SI-POWERED STUDENT PLATFORM</p>
@@ -208,7 +223,9 @@ const Landing = () => {
             </div>
           </div>
         </section>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="cities">
         <section aria-labelledby="discover-reskonnect" className="border-b bg-background py-11 md:py-14">
           <div className="container mx-auto max-w-6xl px-4">
             <div className="max-w-3xl">
@@ -224,7 +241,7 @@ const Landing = () => {
                 ["Mbombela", "/student-accommodation/mbombela"],
                 ["Polokwane", "/student-accommodation/polokwane"]
               ].map(([city, url]) => (
-                <Link key={url} to={url} className="group rounded-xl border border-border bg-card px-4 py-5 shadow-sm transition hover:border-primary/60 hover:bg-primary/5">
+                <Link key={url} to={url} className="group rk-neo-panel rk-motion-card px-4 py-5 transition hover:border-primary/60 hover:bg-primary/5">
                   <MapPin className="mb-3 h-5 w-5 text-primary" aria-hidden="true" />
                   <span className="block text-base font-bold">{city}</span>
                   <span className="mt-1 block text-xs text-muted-foreground">Student rooms & residences →</span>
@@ -240,7 +257,7 @@ const Landing = () => {
                 ["All room and property types", "/student-accommodation/room-types", "Shared rooms, communes, residences and flats"],
                 ["NSFAS funding acceptance", "/student-accommodation/nsfas-accredited", "Separate acceptance from official accreditation"]
               ].map(([label, to, desc]) => (
-                <Link key={to} to={to} className="rounded-xl border border-border/80 bg-card p-4 transition hover:border-primary/60 hover:shadow-sm">
+                <Link key={to} to={to} className="rk-neo-panel rk-motion-card p-4 transition hover:border-primary/60 hover:shadow-sm">
                   <span className="block text-sm font-bold text-foreground">{label} →</span>
                   <span className="mt-1 block text-xs text-muted-foreground">{desc}</span>
                 </Link>
@@ -254,7 +271,9 @@ const Landing = () => {
             </div>
           </div>
         </section>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="pillars">
         <section className="border-b bg-gradient-to-b from-[#fff9e7] via-background to-background py-10 md:py-14 dark:from-[#171b21]">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-5xl text-center">
@@ -269,7 +288,9 @@ const Landing = () => {
             </div>
           </div>
         </section>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="gmail-privacy">
         <section aria-label="ResKonnect Gmail integration and privacy" className="border-y border-slate-200 bg-slate-50 py-8 text-slate-800">
           <div className="container mx-auto flex max-w-6xl flex-col items-start justify-between gap-5 px-4 md:flex-row md:items-center">
             <div className="max-w-3xl">
@@ -291,14 +312,25 @@ const Landing = () => {
             </a>
           </div>
         </section>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="student-care">
         <StudentCareLinks />
+        </VisualPageBlock>
+
+        <VisualPageBlock page="landing" sectionKey="intake">
         <InteractiveNeedSection />
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="automation">
         <DeferredSection minHeight={420}><AutomationAdvantageSection /></DeferredSection>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="resmap">
         <DeferredSection minHeight={520}><LandingResMap3DPreview /></DeferredSection>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="audience">
         <section className="py-8 md:py-10 bg-gradient-to-b from-primary/5 to-background">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-5">
@@ -318,17 +350,25 @@ const Landing = () => {
             </div>
           </div>
         </section>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="trusted">
         <section className="py-12 md:py-20 bg-card/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <DeferredSection minHeight={520}><TrustedLivingShowcase signals={livingSignals}/></DeferredSection>
+            <DeferredSection minHeight={520}><TrustedLivingShowcase signals={livingSignals} headline={byKey.trusted?.headline} subtitle={byKey.trusted?.subtitle}/></DeferredSection>
           </div>
         </section>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="categories">
         <DeferredSection minHeight={280}><CategoryHeroSelector /></DeferredSection>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="accreditation">
         <DeferredSection minHeight={220}><AccreditationCTA /></DeferredSection>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="about">
         <section className="py-12 md:py-20 bg-card/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -354,7 +394,9 @@ const Landing = () => {
             </div>
           </div>
         </section>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="landlord">
         <section ref={landlordRef} id="landlord" className="py-12 md:py-20 relative overflow-hidden">
           <FloatingShapes className="opacity-50" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -370,7 +412,9 @@ const Landing = () => {
             <DeferredSection minHeight={420}><LandlordApplicationTabs /></DeferredSection>
           </div>
         </section>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="benefits">
         <section className="py-12 md:py-20 relative overflow-hidden">
           <FloatingShapes />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -391,7 +435,9 @@ const Landing = () => {
             </div>
           </div>
         </section>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="faq">
         <section className="border-y bg-card/50 py-12 md:py-16">
           <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
             <div className="text-center"><h2 className="text-3xl font-black">ResKonnect, answered clearly</h2><p className="mt-2 text-sm text-muted-foreground">Canonical facts for students, partners, search engines and AI answer systems.</p></div>
@@ -402,7 +448,9 @@ const Landing = () => {
             </div>
           </div>
         </section>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="contact">
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-xl mx-auto">
@@ -423,7 +471,9 @@ const Landing = () => {
             </div>
           </div>
         </section>
+        </VisualPageBlock>
 
+        <VisualPageBlock page="landing" sectionKey="seo-links">
         <section className="container mx-auto max-w-5xl px-4 pb-16 sm:px-6 lg:px-8">
           <SeoInternalLinks
             heading="Explore ResKonnect"
@@ -439,6 +489,7 @@ const Landing = () => {
             ]}
           />
         </section>
+        </VisualPageBlock>
       </main>
 
       <SiteFooter />

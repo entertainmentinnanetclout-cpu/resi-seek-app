@@ -29,6 +29,7 @@ import TrustScore from "@/components/TrustScore";
 import {usePublicLivingSignals} from "@/hooks/usePublicLivingSignals";
 import ReviewForm from "@/components/ReviewForm";
 import ResidenceBrandStudioCard from "@/components/findmyres/ResidenceBrandStudioCard";
+import ResidenceInstitutionBadges from "@/components/findmyres/ResidenceInstitutionBadges";
 import ResidenceMapPreview from "@/components/findmyres/ResidenceMapPreview";
 import ResidenceJourneyPanel from "@/components/conversion/ResidenceJourneyPanel";
 import { ReferralBanner } from "@/components/referrals/ReferralBanner";
@@ -153,8 +154,19 @@ const ResidenceDetail = () => {
             : await supabase.from("residences").select("*").eq("id", routeKey).maybeSingle();
           row = fallback.data as any;
         }
+        if(!row && !isUuid){
+          const {data: alias}=await (supabase as any).from("residence_slug_aliases")
+           .select("residence_id").eq("old_slug",routeKey.toLowerCase()).maybeSingle();
+          if(alias?.residence_id){
+           const canonical=await supabase.from("residences").select("*").eq("id",alias.residence_id).maybeSingle();
+           row=canonical.data as any;
+          }
+        }
         setResidence(row || null);
         if (!row) return;
+        if(row.slug && routeKey!==row.slug){
+          navigate("/find-my-res/"+encodeURIComponent(row.slug),{replace:true});
+        }
         setIntakeRule(await getResidenceIntake(row.id));
 
         const [pricingResult, relatedResult, reviewResult] = await Promise.all([
@@ -176,7 +188,7 @@ const ResidenceDetail = () => {
       }
     };
     void load();
-  }, [routeKey, loadAttempt]);
+  }, [routeKey, loadAttempt, navigate]);
 
   useEffect(() => {
     if (!user || !residenceId) return setHasApplied(false);
@@ -355,14 +367,14 @@ const ResidenceDetail = () => {
   return (
     <DashboardLayout>
       <SEO title={`${residence.name}${residence.city ? ` · ${residence.city}` : ""} | Student Accommodation | ResKonnect`} description={residence.description || `View published room details, photos, funding acceptance and reservation information for ${residence.name}${residence.city ? ` in ${residence.city}` : ""}. Confirm current availability and pricing with the residence.`} canonicalPath={canonicalPath} noIndex={residence.is_visible === false} imageUrl={schemaImage} jsonLd={jsonLd} />
-      <div className="min-w-0 max-w-full overflow-x-hidden">
+      <div className="rk-motion rk-living-surface min-w-0 max-w-full overflow-x-hidden">
         <div className="mx-auto max-w-7xl space-y-5 px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
           <ReferralBanner />
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Link to="/" className="hover:text-foreground">Home</Link><span>/</span><Link to="/find" className="hover:text-foreground">Accommodation</Link><span>/</span><span className="max-w-[55vw] truncate font-semibold text-foreground">{residence.name}</span>
           </div>
 
-          <section className="relative isolate overflow-hidden rounded-[28px] bg-[#000F2F] text-white shadow-2xl">
+          <section className="rk-skeuo-frame relative isolate overflow-hidden rounded-[28px] bg-[#000F2F] text-white shadow-2xl">
             <div className="absolute inset-0 bg-[linear-gradient(145deg,#000F2F_0%,#000F2F_52%,#06285a_100%)]" />
             <div className="absolute -right-[10%] top-0 h-full w-[55%] bg-[#082f68]/65 [clip-path:polygon(32%_0,100%_0,100%_100%,0_100%)]" />
             <div className="absolute -right-[5%] bottom-0 h-[36%] w-[48%] bg-[#E09008] [clip-path:polygon(100%_0,100%_100%,0_100%)]" />
@@ -382,12 +394,12 @@ const ResidenceDetail = () => {
                   <p className="mt-4 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">{residence.brand_subheadline || residence.description || "Student accommodation, connected."}</p>
                   <div className="mt-5 flex flex-wrap gap-2">
                     {residence.is_trusted || residence.trusted ? <Badge className="bg-white/10 text-white hover:bg-white/10"><ShieldCheck className="mr-1 h-3.5 w-3.5 text-[#F2AE28]" />Trusted listing</Badge> : null}
-                    {residence.is_tut_accredited && <Badge className="bg-white/10 text-white hover:bg-white/10"><GraduationCap className="mr-1 h-3.5 w-3.5 text-[#F2AE28]" />TUT accredited</Badge>}
                     {livingSignals.nsfasAccreditedIds.has(residence.id)?<Badge className="border border-emerald-400/40 bg-emerald-600 text-white hover:bg-emerald-600">✓ NSFAS accredited (evidence verified)</Badge>:
                     livingSignals.accreditedIds.has(residence.id)?<Badge className="bg-emerald-600 text-white">Accredited (evidence verified)</Badge>:
                     residence.accepts_nsfas?<Badge className="bg-white/10 text-white hover:bg-white/10">Accepts NSFAS funding · not accreditation</Badge>:null}
                     {residence.gender && <Badge className="bg-white/10 text-white hover:bg-white/10">{residence.gender}</Badge>}
                   </div>
+                  <ResidenceInstitutionBadges residence={residence} light className="mt-4" maxVisible={30}/>
                 </div>
 
                 <div className="mt-7 flex flex-wrap items-center gap-2">
@@ -401,7 +413,7 @@ const ResidenceDetail = () => {
               </div>
 
               <div className="min-w-0">
-                <div className="relative aspect-[16/10] overflow-hidden rounded-[22px] border border-white/15 bg-[#041a40] shadow-2xl" onClick={() => heroImage && setShowLightbox(true)}>
+                <div className="rk-portrait-frame relative aspect-[16/10] overflow-hidden rounded-[22px] border border-white/15 bg-[#041a40] shadow-2xl" onClick={() => heroImage && setShowLightbox(true)}>
                   {heroImage ? <img src={heroImage} alt={`${residence.name} accommodation`} className="h-full w-full cursor-zoom-in object-cover" /> : <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_65%_25%,rgba(224,144,8,.24),transparent_35%),linear-gradient(135deg,#06285a,#00102f)]"><Building2 className="h-20 w-20 text-white/20" /></div>}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#00102f]/80 via-transparent to-transparent" />
                   <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full border border-white/15 bg-[#00102f]/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em]"><Camera className="h-3.5 w-3.5 text-[#E09008]" />{images.length ? `${images.length} ${images.length === 1 ? "photo" : "photos"}` : "Photos pending"}</div>
@@ -416,7 +428,7 @@ const ResidenceDetail = () => {
             <div className="min-w-0 space-y-5">
               {isPublishedPromotionCurrent(residence) && <Card className="overflow-hidden border-[#E09008]/30 bg-[#E09008]/[0.06]"><CardContent className="p-5"><div className="flex items-start gap-3"><Sparkles className="mt-1 h-5 w-5 shrink-0 text-[#E09008]" /><div><p className="font-black">{residence.promo_title || "Residence promotion"}</p><p className="mt-1 text-sm text-muted-foreground">{residence.promo_description || "A promotional accommodation offer is currently available."}</p>{residence.promo_room_type && <Badge variant="outline" className="mt-3">{residence.promo_room_type}</Badge>}</div></div></CardContent></Card>}
 
-              <Card><CardContent className="p-5 sm:p-6"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">About this residence</p><h2 className="mt-1 text-2xl font-black">Living details</h2></div><TrustScore verificationLevel={residence.verification_level || "basic"} averageRating={averageRating} reviewCount={currentReview?.count||0} /></div><p className="mt-4 text-sm leading-7 text-muted-foreground">{residence.description || "Property information is being completed by the residence through the ResKonnect Property OS."}</p><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Info icon={MapPin} label="Location" value={residence.address || locationLabel} /><Info icon={Users} label="Available spots" value={capacity > 0 ? `${available} / ${capacity}` : `${available}`} /><Info icon={BedDouble} label="Room types" value={roomTypes.length ? roomTypes.join(", ") : "Contact ResKonnect"} /><Info icon={Clock3} label="Distance" value={residence.distance_from_campus || "Map available"} /></div></CardContent></Card>
+              <Card className="rk-neo-panel"><CardContent className="p-5 sm:p-6"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">About this residence</p><h2 className="mt-1 text-2xl font-black">Living details</h2></div><TrustScore verificationLevel={residence.verification_level || "basic"} averageRating={averageRating} reviewCount={currentReview?.count||0} /></div><p className="mt-4 text-sm leading-7 text-muted-foreground">{residence.description || "Property information is being completed by the residence through the ResKonnect Property OS."}</p><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Info icon={MapPin} label="Location" value={residence.address || locationLabel} /><Info icon={Users} label="Available spots" value={capacity > 0 ? `${available} / ${capacity}` : `${available}`} /><Info icon={BedDouble} label="Room types" value={roomTypes.length ? roomTypes.join(", ") : "Contact ResKonnect"} /><Info icon={Clock3} label="Distance" value={residence.distance_from_campus || "Map available"} /></div></CardContent></Card>
 
               <ResidenceJourneyPanel residenceId={residence.id} residenceName={residence.name}/>
                {roomPrices.length > 0 && <Card><CardContent className="p-5 sm:p-6"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#E09008]">Room-level pricing</p><h2 className="mt-1 text-2xl font-black">Choose the right room</h2><p className="mt-1 text-sm text-muted-foreground">Private and NSFAS-funded prices are stored separately and are never assumed to be equal.</p></div><div className="mt-5 grid gap-3 md:grid-cols-2">{roomPrices.map((room) => <div key={room.id} className="rounded-2xl border p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-black">{room.name}</p><p className="mt-1 text-xs text-muted-foreground">{room.academic_year || 2027} pricing · {room.available_beds ?? 0} bed(s) available</p></div>{room.price_verified_at && <Badge variant="outline" className="border-emerald-500/30 text-emerald-700">Verified</Badge>}</div><div className="mt-4 grid grid-cols-2 gap-2"><PriceTile label="Private" value={money(room.promo_price || room.private_price) || "Not listed"} /><PriceTile label="NSFAS" value={money(room.nsfas_price) || "Funded rate separate"} /></div>{(room.deposit || room.admin_fee || room.reservation_fee) && <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs"><MiniFee label="Deposit" value={money(room.deposit)} /><MiniFee label="Admin" value={money(room.admin_fee)} /><MiniFee label="Reserve" value={money(room.reservation_fee)} /></div>}{room.description && <p className="mt-3 text-xs leading-5 text-muted-foreground">{room.description}</p>}</div>)}</div></CardContent></Card>}

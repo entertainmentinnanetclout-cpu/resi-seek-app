@@ -229,6 +229,8 @@ try {
 
       const connectivityPage = await context.newPage();
       await connectivityPage.goto(origin + "/about", { waitUntil: "domcontentloaded" });
+      // Wait for the real listener, not merely the HTML shell or deferred React bundle.
+      await connectivityPage.waitForFunction(() => document.documentElement.dataset.rkConnectivityReady === "true", null, { timeout: 12_000 });
       await connectivityPage.evaluate(() => window.dispatchEvent(new Event("offline")));
       await connectivityPage.getByText(/You're offline/).waitFor({ timeout: 5_000 });
       await connectivityPage.evaluate(() => window.dispatchEvent(new Event("online")));

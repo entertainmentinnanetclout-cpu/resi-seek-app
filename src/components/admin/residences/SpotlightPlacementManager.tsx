@@ -25,15 +25,10 @@ export default function SpotlightPlacementManager({residences,onRefresh}:Props){
   [next[index],next[target]]=[next[target],next[index]];
   setSaving(true);
   try{
-   // Existing admin-only residence write policies apply. Never grant public
-   // permission to mutate editorial placement order.
-   // Persist a complete 1..N sequence so existing null/duplicate ranks converge.
-   for(let i=0;i<next.length;i++){
-    const {data,error}=await (supabase as any).from("residences")
-     .update({spotlight_rank:i+1}).eq("id",next[i].id)
-     .select("id,spotlight_rank").maybeSingle();
-    if(error||!data||Number(data.spotlight_rank)!==i+1)throw error||new Error("The placement was not saved. Check your admin permissions.");
-   }
+   // All-or-nothing placement order. Never leave a half-reordered homepage.
+   const ids=next.map(item=>item.id);
+   const {data,error}=await (supabase as any).rpc("rk_admin_reorder_spotlight",{p_ids:ids});
+   if(error||Number(data)!==ids.length)throw error||new Error("Spotlight ranking update was not confirmed.");
    toast.success("Spotlight order saved on the homepage and Find My Res");
   }catch(e){
    toast.error(e instanceof Error?e.message:"Could not reorder Spotlight; refresh and retry");

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BedDouble, Bike, Building2, Bus, Car, CheckCircle2, Clock3, ExternalLink, Footprints, MapPin, Route, ShieldCheck, Sparkles, View, Wifi, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import ResidenceInstitutionBadges from "@/components/findmyres/ResidenceInstitutionBadges";
 import { Button } from "@/components/ui/button";
 import type { TravelMode } from "@/lib/resmap/spatial";
 import { hasVerifiedLocation, publicPrivateMonthlyRent } from "@/lib/residenceListingEvidence";
@@ -70,12 +71,13 @@ export default function ResMapResidenceCard({ residence, routeInfo, nearby = [],
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3 sm:px-4 sm:pb-4 sm:pt-4">
         <div className="space-y-3 sm:space-y-4">
           <div className="flex flex-wrap gap-1.5">
-            {residence.accepts_nsfas && <Badge className="bg-emerald-600 text-white">NSFAS</Badge>}
-            {residence.is_tut_accredited && <Badge className="bg-blue-600 text-white">TUT verified</Badge>}
+            {residence.accepts_nsfas && <Badge className="bg-emerald-600 text-white">Accepts NSFAS funding</Badge>}
             {residence.has_wifi && <Badge variant="outline"><Wifi className="mr-1 h-3 w-3" />Wi-Fi</Badge>}
             {roomTypes.slice(0, 2).map((room) => <Badge key={room} variant="outline"><BedDouble className="mr-1 h-3 w-3" />{room}</Badge>)}
             <Badge variant="outline" className={spots > 5 ? "border-emerald-300 text-emerald-700" : spots > 0 ? "border-amber-300 text-amber-700" : "border-slate-300"}>{spots > 0 ? `${spots} spaces` : "Check availability"}</Badge>
           </div>
+
+          <ResidenceInstitutionBadges residence={residence} compact maxVisible={8}/>
 
           {approximate && <div className="rounded-2xl border border-amber-300/70 bg-amber-50 p-3 text-xs leading-relaxed text-amber-950">This map pin has not been independently confirmed as the property entrance. Directions remain disabled until the location is verified.</div>}
           {routeInfo && !approximate && <div className="grid grid-cols-2 gap-2 rounded-2xl border bg-slate-50 p-3 text-sm dark:bg-slate-900"><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground sm:text-[11px]">Travel time</p><p className="mt-1 flex items-center gap-1 font-bold"><ModeIcon className="h-4 w-4" />{Math.max(1, Math.round(routeInfo.duration_s / 60))} min</p></div><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground sm:text-[11px]">Route distance</p><p className="mt-1 font-bold">{(routeInfo.distance_m / 1000).toFixed(1)} km</p></div></div>}

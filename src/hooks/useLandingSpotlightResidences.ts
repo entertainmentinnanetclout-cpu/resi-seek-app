@@ -13,7 +13,7 @@ export function useLandingSpotlightResidences(){
   const load=async()=>{
    try{
     const {data,error}=await (supabase as any).from("residences").select(
-     "id,name,slug,is_visible,is_spotlight,spotlight_rank,cover_image_url,image_url,images,city,province,campus,address,available_spots,private_price,price,price_verified_at,pricing_year,promo_active,promo_price,promo_starts_at,promo_ends_at,accepts_nsfas,is_tut_accredited,reservations_2027_open"
+     "id,name,slug,is_visible,is_spotlight,spotlight_rank,cover_image_url,image_url,images,city,province,campus,address,available_spots,private_price,price,price_verified_at,pricing_year,promo_active,promo_price,promo_starts_at,promo_ends_at,accepts_nsfas,accepts_university,accepts_tvet,institution_tags,is_tut_accredited,reservations_2027_open"
     ).eq("is_visible",true).eq("is_spotlight",true)
     .order("spotlight_rank",{ascending:true,nullsFirst:false})
     .order("name",{ascending:true}).limit(20);

@@ -32,8 +32,11 @@ import { AudienceSelector, type AudienceKey } from "@/components/findmyres/Audie
 import PremiumResidenceShowcase from "@/components/findmyres/PremiumResidenceShowcase";
 import MonthlyTopThree from "@/components/findmyres/MonthlyTopThree";
 import ResidenceDiscoveryCard from "@/components/findmyres/ResidenceDiscoveryCard";
+import VisualPageBlock from "@/components/admin/VisualPageBlock";
+import {useVisualPageSections} from "@/hooks/useVisualPageSections";
 import {usePublicLivingSignals} from "@/hooks/usePublicLivingSignals";
 import NearbySuggestedResidences from "@/components/findmyres/NearbySuggestedResidences";
+import {runRkLayoutTransition} from "@/lib/reskonnectMotion";
 import CompareDrawer from "@/components/CompareDrawer";
 import { ReferralBanner } from "@/components/referrals/ReferralBanner";
 import { IntentNotice } from "@/components/findmyres/IntentNotice";
@@ -60,6 +63,7 @@ const FindMyRes = () => {
   const { sections } = useResidenceSections("findmyres");
   const { intent } = useUserIntent();
   const livingSignals=usePublicLivingSignals();
+  const {byKey}=useVisualPageSections("findmyres");
   const [listingStyle,setListingStyle]=useState<"photo"|"list"|"details">("photo");
   const {
     filters,
@@ -241,7 +245,7 @@ const FindMyRes = () => {
         description="Explore student accommodation by area, campus, room type and price. Listing evidence, funding acceptance and verification status are shown separately."
         keywords="TVET accommodation, university student accommodation, private student rentals, NSFAS residence, Pretoria accommodation"
       />
-      <div className="min-h-screen bg-background">
+      <div className="rk-motion rk-living-surface min-h-screen bg-background">
         {/* Breadcrumb */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
           <Breadcrumb>
@@ -260,6 +264,7 @@ const FindMyRes = () => {
         </div>
 
         {/* Smart Search Hero */}
+        <VisualPageBlock page="findmyres" sectionKey="search">
         <SmartSearchBar
             cityOptions={cityOptions}
           filters={filters}
@@ -267,13 +272,18 @@ const FindMyRes = () => {
           resultCount={filteredResidences.length}
           totalCount={residences.length}
         />
+        </VisualPageBlock>
 
         {/* Editorial premium placements are visible only until a student applies filters. */}
-        {!hasActiveFilters&&<PremiumResidenceShowcase residences={realResidences} loading={loading} surface="find"/>}
-        {!hasActiveFilters&&!loading&&<MonthlyTopThree residences={realResidences} signals={livingSignals} surface="find"/>}
-        <NearbySuggestedResidences residences={residences}/>
-        {!hasActiveFilters&&!loading&&<SponsoredResidenceRail residences={realResidences} onApply={handleApply}/>}
-        <ReferralBanner />
+        <VisualPageBlock page="findmyres" sectionKey="spotlight">
+        {!hasActiveFilters&&<PremiumResidenceShowcase residences={realResidences} loading={loading} surface="find" headline={byKey.spotlight?.headline} subtitle={byKey.spotlight?.subtitle}/>}
+        </VisualPageBlock>
+        <VisualPageBlock page="findmyres" sectionKey="top3">
+        {!hasActiveFilters&&!loading&&<MonthlyTopThree residences={realResidences} signals={livingSignals} surface="find" headline={byKey.top3?.headline} subtitle={byKey.top3?.subtitle}/>}
+        </VisualPageBlock>
+        <VisualPageBlock page="findmyres" sectionKey="nearby"><NearbySuggestedResidences residences={residences}/></VisualPageBlock>
+        <VisualPageBlock page="findmyres" sectionKey="sponsored">{!hasActiveFilters&&!loading&&<SponsoredResidenceRail residences={realResidences} onApply={handleApply}/>}</VisualPageBlock>
+        <VisualPageBlock page="findmyres" sectionKey="referral"><ReferralBanner /></VisualPageBlock>
         {residenceError && (
           <div className="mx-auto mt-4 flex max-w-7xl flex-col gap-3 px-4 sm:px-6 lg:px-8">
             <Card className="border-amber-500/30 bg-amber-500/5">
@@ -306,6 +316,7 @@ const FindMyRes = () => {
         </div>
 
         {/* Audience Selector — University / TVET / Private */}
+        <VisualPageBlock page="findmyres" sectionKey="audience">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
           <AudienceSelector
             audience={filters.audience}
@@ -314,10 +325,12 @@ const FindMyRes = () => {
             onInstitutionChange={(v) => updateFilter("institutionTag", v)}
           />
         </div>
+        </VisualPageBlock>
 
 
 
         {/* Main Content: Sidebar + Grid */}
+        <VisualPageBlock page="findmyres" sectionKey="results">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" id="results">
           <div className="flex gap-6">
             {/* Desktop Sidebar */}
@@ -333,13 +346,13 @@ const FindMyRes = () => {
 
             {/* Results Area */}
             <div className="flex-1 min-w-0">
-              <div className="mb-5 flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-[#173b70]/10 bg-gradient-to-r from-[#102d57]/[0.06] to-background p-4 sm:p-5">
+              <div className="rk-neo-panel mb-5 flex flex-wrap items-end justify-between gap-3 p-4 sm:p-5">
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">Find My Res · Explore</p>
-                  <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Discover student living the ResKonnect way</h2>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Your filters shape these results. Residence-reported availability is not a booking guarantee.</p>
+                  <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">{byKey.results?.headline||"Discover student living the ResKonnect way"}</h2>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{byKey.results?.subtitle||"Your filters shape these results. Residence-reported availability is not a booking guarantee."}</p>
                 </div>
-                <span className="rounded-full border bg-background px-3 py-1.5 text-xs font-bold">{filteredResidences.length} matching residences</span>
+                <span className="rk-neo-stat rounded-full px-3 py-1.5 text-xs font-bold">{filteredResidences.length} matching residences</span>
               </div>
                             {/* Top bar: chips + sort */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -368,10 +381,10 @@ const FindMyRes = () => {
                 </div>
               </div>
 
-              <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Residence card display style">
+              <div className="rk-neo-panel mb-4 flex flex-wrap items-center gap-2 p-3" role="group" aria-label="Residence card display style">
                 {([["photo","Photo cards"],["list","Compact list"],["details","Detailed cards"]] as const).map(([key,label])=>(
                   <Button key={key} size="sm" type="button" variant={listingStyle===key?"default":"outline"}
-                   className="rounded-full" onClick={()=>setListingStyle(key)} aria-pressed={listingStyle===key}>{label}</Button>
+                   className="rounded-full" onClick={()=>runRkLayoutTransition(()=>setListingStyle(key))} aria-pressed={listingStyle===key}>{label}</Button>
                 ))}
               </div>
 
@@ -440,7 +453,7 @@ const FindMyRes = () => {
                 </div>
               ) : (
                 <>
-                  <div className={listingStyle==="list"?"grid grid-cols-1 gap-3":"grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"}>
+                  <div className={"rk-stagger-list rk-layout-morph "+(listingStyle==="list"?"grid grid-cols-1 gap-3":"grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4")}>
                     {visibleResidences.map((residence) => (
                       listingStyle==="details"?<ResidencePropertyCard key={residence.id} residence={residence} onApply={handleApply}
                         rating={livingSignals.ratings[residence.id]} accredited={livingSignals.accreditedIds.has(residence.id)}
@@ -471,8 +484,10 @@ const FindMyRes = () => {
         </div>
 
 
+        </VisualPageBlock>
         {/* Broader editorial discovery comes AFTER primary search results. */}
                 {/* Category Rails (Property24-style discovery) */}
+        <VisualPageBlock page="findmyres" sectionKey="category-rails">
         {showRails && (
           <div className="max-w-7xl mx-auto py-8 space-y-10">
             {byCategory.filter((s) => s.items.length > 0).map((s) => (
@@ -509,7 +524,9 @@ const FindMyRes = () => {
         )}
 
 
+        </VisualPageBlock>
                 {/* SEO Text */}
+        <VisualPageBlock page="findmyres" sectionKey="seo-info">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
           <Card className="bg-card/50">
             <CardContent className="p-6">
@@ -520,6 +537,7 @@ const FindMyRes = () => {
             </CardContent>
           </Card>
         </div>
+        </VisualPageBlock>
       </div>
 
       {/* Mobile Filter Bottom Sheet */}

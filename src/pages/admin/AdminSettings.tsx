@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, Banknote, ExternalLink, Building2, Loader2 } from "lucide-react";
+import { CreditCard, Banknote, ExternalLink, Building2, Loader2, LockKeyhole } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const AdminSettingsContent = () => {
   const [bankDetails, setBankDetails] = useState({
@@ -29,20 +30,20 @@ export const AdminSettingsContent = () => {
   const handleSaveBankDetails = async () => {
     setSavingBank(true);
     try {
-      const { data: existing } = await supabase.from("platform_settings").select("id").eq("key", "eft_bank_details").maybeSingle();
+      const { data: existing, error: readError } = await supabase.from("platform_settings").select("id").eq("key", "eft_bank_details").maybeSingle();
+      if (readError) throw readError;
       if (existing) {
-        await supabase.from("platform_settings").update({ value: bankDetails as any, updated_at: new Date().toISOString() }).eq("key", "eft_bank_details");
+        const { data, error } = await supabase.from("platform_settings").update({ value: bankDetails as any, updated_at: new Date().toISOString() }).eq("key", "eft_bank_details").select("id").maybeSingle();
+        if (error || !data) throw error || new Error("Bank details were not persisted.");
       } else {
-        await supabase.from("platform_settings").insert({ key: "eft_bank_details", value: bankDetails as any, description: "EFT banking details for checkout" } as any);
+        const { data, error } = await supabase.from("platform_settings").insert({ key: "eft_bank_details", value: bankDetails as any, description: "EFT banking details for checkout" } as any).select("id").maybeSingle();
+        if (error || !data) throw error || new Error("Bank details were not persisted.");
       }
       toast.success("Banking details saved");
-    } catch { toast.error("Failed to save banking details"); }
+    } catch (error: any) { toast.error(error?.message || "Failed to save banking details"); }
     finally { setSavingBank(false); }
   };
 
-  const handleSave = () => {
-    toast.success("Settings saved successfully");
-  };
 
   return (
     <>
@@ -51,7 +52,8 @@ export const AdminSettingsContent = () => {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Configure platform settings and preferences</p>
+          <p className="text-muted-foreground">Manage verified payment configuration. Reference-only platform settings cannot be changed here until their respective services expose a working configuration API.</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2"><LockKeyhole className="h-4 w-4 text-amber-600"/><span className="text-xs text-muted-foreground">Only controls connected to live saving are enabled.</span><Button size="sm" asChild variant="outline"><Link to="/admin/studio">Open Visual Studio</Link></Button></div>
         </div>
 
         <div className="grid gap-6">
@@ -76,24 +78,24 @@ export const AdminSettingsContent = () => {
           <Card>
             <CardHeader>
               <CardTitle>General Settings</CardTitle>
-              <CardDescription>Basic platform configuration</CardDescription>
+              <CardDescription>Reference values only · update canonical brand and support integration configuration through an approved publishing workflow.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Platform Name</Label>
-                <Input defaultValue="ResKonnect" />
+                <Input readOnly defaultValue="ResKonnect" />
               </div>
               <div className="space-y-2">
                 <Label>Support Email</Label>
-                <Input defaultValue="Reskonnect@gmail.com" type="email" />
+                <Input readOnly defaultValue="Reskonnect@gmail.com" type="email" />
               </div>
               <div className="space-y-2">
                 <Label>Support Phone</Label>
-                <Input defaultValue="063 732 3192" />
+                <Input readOnly defaultValue="063 732 3192" />
               </div>
               <div className="space-y-2">
                 <Label>WhatsApp Number (for integrations)</Label>
-                <Input defaultValue="27637323192" />
+                <Input readOnly defaultValue="27637323192" />
               </div>
             </CardContent>
           </Card>
@@ -105,7 +107,7 @@ export const AdminSettingsContent = () => {
                 <CreditCard className="w-5 h-5" />
                 Payment Gateways
               </CardTitle>
-              <CardDescription>Configure payment methods for the marketplace</CardDescription>
+              <CardDescription>Live payment integration states are controlled in the payment provider and checkout service. These switches are read-only.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Yoco */}
@@ -125,7 +127,7 @@ export const AdminSettingsContent = () => {
                     </p>
                   </div>
                 </div>
-                <Switch defaultChecked />
+                <Switch checked disabled />
               </div>
 
               {/* COD */}
@@ -142,7 +144,7 @@ export const AdminSettingsContent = () => {
                     </p>
                   </div>
                 </div>
-                <Switch defaultChecked />
+                <Switch checked disabled />
               </div>
 
               {/* Checkout Links */}
@@ -159,7 +161,7 @@ export const AdminSettingsContent = () => {
                     </p>
                   </div>
                 </div>
-                <Switch defaultChecked />
+                <Switch checked disabled />
               </div>
 
               {/* Future Gateways */}
@@ -184,7 +186,7 @@ export const AdminSettingsContent = () => {
           <Card>
             <CardHeader>
               <CardTitle>Feature Toggles</CardTitle>
-              <CardDescription>Enable or disable platform features</CardDescription>
+              <CardDescription>Read-only reference. Feature switches do not modify production services.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {[
@@ -199,7 +201,7 @@ export const AdminSettingsContent = () => {
                     <Label>{feature.label}</Label>
                     <p className="text-sm text-muted-foreground">{feature.desc}</p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch checked disabled />
                 </div>
               ))}
             </CardContent>
@@ -208,23 +210,23 @@ export const AdminSettingsContent = () => {
           <Card>
             <CardHeader>
               <CardTitle>SEO Settings</CardTitle>
-              <CardDescription>Search engine optimization configuration</CardDescription>
+              <CardDescription>Read-only reference. Manage live page metadata through approved SEO publishing workflows.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Default Meta Title</Label>
-                <Input defaultValue="Find Student Accommodation in South Africa | ResKonnect" />
+                <Input readOnly defaultValue="Find Student Accommodation in South Africa | ResKonnect" />
               </div>
               <div className="space-y-2">
                 <Label>Default Meta Description</Label>
-                <Textarea 
+                <Textarea readOnly 
                   defaultValue="ResKonnect helps South African students find verified, affordable student accommodation near universities in Pretoria, Tshwane & Gauteng."
                   rows={3}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Default Keywords</Label>
-                <Input defaultValue="student accommodation, Pretoria, TUT residence, NSFAS approved" />
+                <Input readOnly defaultValue="student accommodation, Pretoria, TUT residence, NSFAS approved" />
               </div>
             </CardContent>
           </Card>
@@ -232,23 +234,21 @@ export const AdminSettingsContent = () => {
           <Card>
             <CardHeader>
               <CardTitle>Analytics & Tracking</CardTitle>
-              <CardDescription>Configure analytics integrations</CardDescription>
+              <CardDescription>Read-only reference. Analytics integrations require verified provider credentials and deployment configuration.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Google Analytics ID</Label>
-                <Input placeholder="G-XXXXXXXXXX" />
+                <Input disabled placeholder="G-XXXXXXXXXX" />
               </div>
               <div className="space-y-2">
                 <Label>Facebook Pixel ID</Label>
-                <Input placeholder="1234567890" />
+                <Input disabled placeholder="1234567890" />
               </div>
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
-            <Button onClick={handleSave}>Save Settings</Button>
-          </div>
+
         </div>
       </div>
     </>

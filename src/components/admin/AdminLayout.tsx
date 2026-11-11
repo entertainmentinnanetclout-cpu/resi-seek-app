@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3, BriefcaseBusiness, Building2, Cpu, Handshake, Home, Landmark, LayoutDashboard,
-  LogOut, Megaphone, MessageCircle, RefreshCw, Settings2, UsersRound
+  LogOut, Megaphone, MessageCircle, RefreshCw, Settings2, UsersRound, Paintbrush
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import DashboardUserManual from "@/components/manuals/DashboardUserManual";
@@ -69,6 +69,14 @@ const AdminSidebar=({
     </SidebarHeader>
 
     <SidebarContent className="min-h-0 overflow-y-auto overscroll-contain">
+      {isGodMode&&<SidebarGroup>
+        {!collapsed&&<SidebarGroupLabel>Visual control room</SidebarGroupLabel>}
+        <SidebarGroupContent><SidebarMenu><SidebarMenuItem>
+          <SidebarMenuButton asChild isActive={location.pathname==="/admin/studio"} tooltip="God Mode Visual Studio">
+            <Link to="/admin/studio"><Paintbrush className="h-4 w-4"/><span className="font-bold">Visual Studio</span></Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem></SidebarMenu></SidebarGroupContent>
+      </SidebarGroup>}
       <SidebarGroup>
         {!collapsed&&<SidebarGroupLabel>Departments & Offices</SidebarGroupLabel>}
         <SidebarGroupContent>
@@ -104,7 +112,7 @@ const AdminSidebar=({
 const AdminLayout=({children}:AdminLayoutProps)=>{
   const {staffRole,isGodMode,adminDepartments}=useAuth();
   return <SidebarProvider>
-    <div className="flex min-h-screen min-w-0 w-full overflow-x-hidden">
+    <div className="rk-motion flex min-h-screen min-w-0 w-full overflow-x-hidden">
       <AdminSidebar staffRole={staffRole} isGodMode={isGodMode} departments={adminDepartments}/>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b bg-card/95 px-3 backdrop-blur-xl sm:px-4">

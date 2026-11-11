@@ -1,0 +1,259 @@
+/* ResKonnect Living / God Mode: tactile motion system, phases 4–6.
+   Brand tokens are inherited from index.css. No external motion library, GIF, or layout shifts. */
+
+/* 01 ease-out entrances; 09 ease-in-out movement; 13 no default bounce; 15 exits 20% faster */
+:root {
+  --rk-ease-enter: cubic-bezier(.16,1,.3,1);
+  --rk-ease-move: cubic-bezier(.4,0,.2,1);
+  --rk-ease-exit: cubic-bezier(.4,0,1,1);
+  --rk-time-enter: 220ms;
+  --rk-time-dropdown: 200ms;
+  --rk-time-move: 250ms;
+  --rk-time-exit: 176ms;
+  --rk-depth-light: #ffffff;
+  --rk-depth-shadow: #cbd6e4;
+  --rk-depth-surface: #eef3f9;
+}
+.dark {
+  --rk-depth-light: #223856;
+  --rk-depth-shadow: #030a17;
+  --rk-depth-surface: #13263d;
+}
+.rk-motion {
+  --rk-panel-radius: 24px;
+  --rk-panel-edge: hsl(var(--brand-border));
+  font-synthesis: none;
+}
+.rk-motion .rk-neo-panel, .rk-neo-panel {
+  border: 1px solid hsl(var(--brand-border) / .88);
+  background: linear-gradient(145deg, #fff 4%, #f2f6fc 100%);
+  border-radius: var(--rk-panel-radius, 22px);
+  box-shadow: 11px 11px 24px -12px rgba(12,36,71,.32), -7px -7px 20px -10px rgba(255,255,255,1), inset 1px 1px 0 rgba(255,255,255,.96);
+}
+.rk-motion .rk-neo-inset, .rk-neo-inset {
+  border-radius: 14px;
+  border: 1px solid #c9d7e9;
+  background: #f1f5fb;
+  box-shadow: inset 4px 4px 9px rgba(16,41,80,.12), inset -4px -4px 10px rgba(255,255,255,.95);
+}
+.rk-motion :is(input:not([type=checkbox]):not([type=radio]),textarea,select):not(.rk-plain-input) {
+  border-color: #cbd9ea;
+  background: #f5f8fd;
+  box-shadow: inset 2px 2px 5px rgba(13,40,78,.075), inset -2px -2px 5px rgba(255,255,255,.84);
+  transition: border-color var(--rk-time-dropdown) var(--rk-ease-move), box-shadow var(--rk-time-dropdown) var(--rk-ease-move);
+}
+.rk-motion :is(input:not([type=checkbox]):not([type=radio]),textarea,select):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  box-shadow: inset 2px 2px 5px rgba(13,40,78,.075), 0 0 0 4px rgba(37,99,235,.12);
+}
+.dark .rk-neo-stat {background:linear-gradient(145deg,#1f3653,#152b47);border-color:#37516f;box-shadow:inset 1px 1px #385575,5px 6px 12px -8px #010817;color:#f1f5fb;}
+.dark .rk-neo-stat p {color:#dce7f6;}
+.dark .rk-neo-panel {
+  color: hsl(var(--foreground));
+  background: linear-gradient(148deg,#1d344f,#10233d);
+  border-color: #304965;
+  box-shadow: 9px 9px 24px -10px #030a17,-6px -6px 16px -10px #2a4868,inset 1px 1px #324b67;
+}
+.dark .rk-motion :is(input,textarea,select):not(.rk-plain-input), .dark .rk-neo-inset {
+  background: #12243c;
+  border-color: #385271;
+  box-shadow: inset 3px 3px 6px #081528,inset -2px -2px 6px #27405e;
+}
+.rk-neo-stat {
+  border: 1px solid #d8e2ee;
+  border-radius: 18px;
+  background: linear-gradient(150deg,#f8fbff,#edf4fc);
+  box-shadow: inset 1px 1px 0 #fff,6px 7px 14px -10px #7895ba;
+  font-variant-numeric: tabular-nums;
+}
+.rk-glass-panel {
+  border: 1px solid rgba(255,255,255,.48);
+  background: rgba(255,255,255,.73);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  box-shadow: 0 16px 38px rgba(8,29,59,.13),inset 0 1px rgba(255,255,255,.9);
+}
+.rk-clay-card {
+  border: 1px solid rgba(255,255,255,.84);
+  border-radius: 25px;
+  background: linear-gradient(145deg,#fffaf0 0%,#fce5ad 100%);
+  box-shadow: 8px 10px 17px -9px rgba(126,81,16,.4),inset 3px 3px 6px rgba(255,255,255,.97),inset -4px -4px 8px rgba(177,118,24,.12);
+}
+.rk-clay-action {
+  border-radius: 18px;
+  border: 1px solid #e7af39;
+  background: linear-gradient(145deg,#ffd67b,#f5b32f 70%,#e99d23);
+  color: #071326;
+  box-shadow: 5px 7px 12px -6px rgba(100,65,14,.52),inset 1px 2px 2px rgba(255,255,255,.72),inset -2px -3px 5px rgba(115,70,10,.12);
+}
+.rk-clay-action:hover:not(:disabled) {
+  filter: brightness(1.03);
+  box-shadow: 5px 9px 16px -6px rgba(100,65,14,.52),inset 1px 2px 2px rgba(255,255,255,.75);
+}
+.rk-clay-action:hover:not(:disabled),.rk-clay-action:focus-visible {
+  background: linear-gradient(145deg,#ffe4a0,#ffc551 70%,#eba126);
+  color:#071326;
+}
+.rk-blue-action {
+  border:1px solid #204b9d;
+  background:linear-gradient(145deg,#3980f1,#2563eb 70%,#1b4cb9);
+  color:#fff;
+  box-shadow:5px 7px 14px -6px rgba(18,64,151,.48),inset 1px 2px 2px rgba(255,255,255,.35),inset -2px -3px 4px rgba(3,39,107,.18);
+}
+.rk-blue-action:hover:not(:disabled){
+  background:linear-gradient(145deg,#4c93ff,#2c6eed 70%,#1b4cb9);
+}
+.rk-clay-action:active:not(:disabled) {
+  transform: scale(.97) translateY(1px);
+  box-shadow: inset 3px 4px 7px rgba(107,63,8,.2),inset -2px -2px 5px rgba(255,255,255,.58);
+}
+.rk-skeuo-frame, .rk-physical-card {
+  position: relative;
+  border: 1px solid rgba(221,230,242,.95);
+  box-shadow: 0 14px 32px -13px rgba(4,28,63,.35),inset 0 2px rgba(255,255,255,.76);
+}
+.rk-skeuo-frame::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.23);
+  z-index: 2;
+}
+.rk-portrait-frame {
+  padding: 5px;
+  border-radius: 20px;
+  background: linear-gradient(135deg,#fdfefe,#bccde1,#fff);
+  box-shadow: 5px 8px 20px rgba(10,31,60,.2), inset 0 1px 0 white;
+}
+.rk-device-shell {
+  border: 7px solid #182d49;
+  border-radius: 26px;
+  background: #081426;
+  box-shadow: 0 22px 50px -22px rgba(1,11,28,.45),inset 0 0 0 1px #536d8e;
+  overflow: hidden;
+}
+.rk-device-shell[data-device="mobile"] {
+  border-width: 8px;
+  border-radius: 36px;
+}
+.rk-device-shell[data-device="tablet"] { border-radius: 27px; }
+.rk-device-shell[data-device="desktop"] { border-width: 5px; border-radius: 18px; }
+.rk-device-glass { border-radius: 12px; background: #fff; overflow: hidden; }
+.rk-scanner-frame { border: 2px solid rgba(255,255,255,.8); border-radius: 20px; box-shadow: inset 0 0 25px rgba(28,105,199,.15),0 0 0 5px rgba(37,99,235,.1); }
+.rk-scanner-frame::before { content:""; position:absolute; inset:0; pointer-events:none; border: 8px solid transparent; border-image: linear-gradient(135deg,#f5b32f,#2563eb) 1; opacity:.6; }
+
+/* 04 press 0.97; 14 held interactions are instantaneous */
+.rk-pressable, .rk-motion button:not(:disabled):not([role="tab"]), .rk-motion a[data-rk-press] {
+  transition: transform var(--rk-time-dropdown) var(--rk-ease-move),box-shadow var(--rk-time-dropdown) var(--rk-ease-move),background-color var(--rk-time-dropdown) var(--rk-ease-move);
+  touch-action: manipulation;
+}
+.rk-pressable:active:not(:disabled), .rk-motion button:active:not(:disabled):not([role="tab"]),.rk-motion a[data-rk-press]:active {
+  transition-duration: 0ms;
+  transform: scale(.97);
+}
+/* 02 menus at 150–250ms; 10 begin at .95; 11–12 enter and exit towards trigger */
+.rk-motion-menu {
+  transform-origin: var(--radix-popover-content-transform-origin,var(--radix-dropdown-menu-content-transform-origin,var(--radix-select-content-transform-origin,top center)));
+  will-change: opacity,transform;
+}
+.rk-motion-menu[data-state="open"] { animation: rk-menu-enter var(--rk-time-dropdown) var(--rk-ease-enter) both; }
+.rk-motion-menu[data-state="closed"] { animation: rk-menu-exit var(--rk-time-exit) var(--rk-ease-exit) both; }
+@keyframes rk-menu-enter {
+  from {opacity:0;transform: translateY(-5px) scale(.95);filter:blur(2px);}
+  to {opacity:1;transform: translateY(0) scale(1);filter:blur(0);}
+}
+@keyframes rk-menu-exit {
+  from {opacity:1;transform:translateY(0) scale(1);filter:blur(0);}
+  to {opacity:0;transform:translateY(-3px) scale(.95);filter:blur(2px);}
+}
+.rk-motion-dialog[data-state="open"] { animation: rk-dialog-in var(--rk-time-enter) var(--rk-ease-enter) both; }
+.rk-motion-dialog[data-state="closed"] { animation: rk-dialog-out var(--rk-time-exit) var(--rk-ease-exit) both; }
+@keyframes rk-dialog-in {from{opacity:0;transform:translate(-50%,-49%) scale(.95);filter:blur(2px)}to{opacity:1;transform:translate(-50%,-50%) scale(1);filter:blur(0)}}
+@keyframes rk-dialog-out {to{opacity:0;transform:translate(-50%,-49%) scale(.95);filter:blur(2px)}}
+.rk-motion-overlay[data-state="open"] {animation:rk-fade-in 220ms ease-out both;}
+.rk-motion-overlay[data-state="closed"] {animation:rk-fade-out 176ms ease-in both;}
+@keyframes rk-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes rk-fade-out{from{opacity:1}to{opacity:0}}
+/* 05 12% stretched moving toggle knobs */
+.rk-tactile-switch[data-state="checked"] > span,
+.rk-tactile-switch[data-state="unchecked"] > span {
+  animation:rk-switch-stretch var(--rk-time-move) var(--rk-ease-move) both;
+}
+@keyframes rk-switch-stretch {0%{scale:1 1}50%{scale:1.12 1}100%{scale:1 1}}
+.rk-tactile-switch:active > span {animation:none;scale:1.12 1;transition:none;}
+/* 01 and 03 staggered row arrivals, 06 secondary details settle last */
+.rk-enter {animation:rk-soft-enter var(--rk-time-enter) var(--rk-ease-enter) both;}
+@keyframes rk-soft-enter{from{opacity:0;transform:translateY(9px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+.rk-stagger-list > * { animation:rk-soft-enter 260ms var(--rk-ease-enter) both; }
+.rk-stagger-list > :nth-child(1){animation-delay:0ms}
+.rk-stagger-list > :nth-child(2){animation-delay:30ms}
+.rk-stagger-list > :nth-child(3){animation-delay:60ms}
+.rk-stagger-list > :nth-child(4){animation-delay:90ms}
+.rk-stagger-list > :nth-child(5){animation-delay:120ms}
+.rk-stagger-list > :nth-child(6){animation-delay:150ms}
+.rk-stagger-list > :nth-child(n+7){animation-delay:180ms}
+.rk-details-settle > *:nth-child(1){animation:rk-soft-enter 220ms var(--rk-ease-enter) both}
+.rk-details-settle > *:nth-child(2){animation:rk-soft-enter 240ms var(--rk-ease-enter) 45ms both}
+.rk-details-settle > *:nth-child(n+3){animation:rk-soft-enter 260ms var(--rk-ease-enter) 90ms both}
+/* 07 curved travel instead of linear pop; used by highlights and action indicators */
+.rk-motion-arc {animation:rk-motion-arc 370ms var(--rk-ease-move) both;}
+.rk-motion-card:hover .rk-arc-on-hover,.rk-motion-card:focus-visible .rk-arc-on-hover {animation:rk-motion-arc 370ms var(--rk-ease-move) both;}
+@keyframes rk-motion-arc {
+  0% {transform:translate(-8px,5px) rotate(-11deg);opacity:0}
+  48%{transform:translate(2px,-5px) rotate(4deg);opacity:1}
+  100%{transform:translate(0,0) rotate(0);opacity:1}
+}
+/* 08 one-shot success feedback */
+.rk-success-pulse {animation:rk-success-pulse 380ms var(--rk-ease-enter) both;}
+@keyframes rk-success-pulse {0%,100%{transform:scale(1)}45%{transform:scale(1.045);box-shadow:0 0 0 5px rgba(18,168,112,.15)}}
+/* 16 overlapping old/new state snapshots; 20 preserve shared layout ID */
+.rk-layout-morph {view-transition-name:rk-active-view;}
+::view-transition-old(rk-active-view){animation:rk-old-state var(--rk-time-exit) ease-in both;}
+::view-transition-new(rk-active-view){animation:rk-new-state var(--rk-time-enter) ease-out both;}
+@keyframes rk-old-state{from{opacity:1;filter:blur(0)}to{opacity:0;filter:blur(4px)}}
+@keyframes rk-new-state{from{opacity:0;filter:blur(4px)}to{opacity:1;filter:blur(0)}}
+/* 17 physical mask / colour reveal for spotlight tags */
+.rk-mask-reveal {animation:rk-mask-reveal 390ms var(--rk-ease-enter) both;}
+@keyframes rk-mask-reveal{from{clip-path:inset(0 100% 0 0 round 12px);filter:saturate(.7)}to{clip-path:inset(0 0 0 0 round 12px);filter:saturate(1)}}
+/* 18 two icons occupy the same slot; blur across swap without resizing the button */
+.rk-icon-morph {position:relative;display:inline-grid;place-items:center;width:1rem;height:1rem;flex:none;}
+.rk-icon-morph > svg {grid-area:1/1;width:1rem;height:1rem;transition:opacity var(--rk-time-dropdown) ease-in-out,filter var(--rk-time-dropdown) ease-in-out,transform var(--rk-time-dropdown) ease-in-out;}
+.rk-icon-morph > svg:nth-child(2),.rk-icon-morph[data-active="true"] > svg:nth-child(1){opacity:0;filter:blur(4px);transform:scale(.88)}
+.rk-icon-morph[data-active="true"] > svg:nth-child(2){opacity:1;filter:blur(0);transform:scale(1)}
+/* 19 tactile elastic feedback at editor/card boundaries (no infinite bouncing) */
+.rk-rubber-hit {animation:rk-rubber-hit 260ms var(--rk-ease-move) both;}
+@keyframes rk-rubber-hit{0%,100%{transform:translateX(0)}40%{transform:translateX(-5px) scaleX(.985)}70%{transform:translateX(3px) scaleX(1.008)}}
+.rk-motion .rk-scroll-rail {scroll-snap-type:x mandatory;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;}
+.rk-motion .rk-scroll-rail > * {scroll-snap-align:start;scroll-snap-stop:normal;}
+.rk-motion .rk-motion-card {transition:transform var(--rk-time-move) var(--rk-ease-move),box-shadow var(--rk-time-move) var(--rk-ease-move);}
+.rk-motion .rk-motion-card:hover {transform:translateY(-3px);box-shadow:0 20px 38px -20px rgba(6,34,76,.35);}
+.rk-motion .rk-motion-card:active {transform:scale(.97);transition-duration:0ms;}
+.rk-motion .rk-neo-panel:focus-within {outline-offset:2px;}
+@media (max-width:640px){
+ .rk-motion {--rk-panel-radius:19px}
+ .rk-device-shell {border-width:5px}
+ .rk-motion .rk-motion-card:hover {transform:none}
+}
+/* No forced motion, no blurred text, no translucent low-contrast inputs in accessibility modes. */
+@media (prefers-reduced-motion:reduce) {
+ .rk-motion-menu,.rk-motion-dialog,.rk-motion-overlay,.rk-enter,.rk-stagger-list > *,
+ .rk-details-settle > *,.rk-motion-arc,.rk-success-pulse,.rk-mask-reveal,.rk-rubber-hit {animation:none!important;filter:none!important}
+ .rk-icon-morph > svg,.rk-motion .rk-motion-card,.rk-pressable,.rk-motion button,.rk-motion a[data-rk-press]{transition:none!important;animation:none!important}
+ .rk-tactile-switch > span,.rk-arc-on-hover {animation:none!important;transition:none!important}
+ ::view-transition-old(rk-active-view),::view-transition-new(rk-active-view){animation-duration:0.001ms!important}
+ .rk-glass-panel {backdrop-filter:none;-webkit-backdrop-filter:none;background:#fff}
+}
+@media (prefers-contrast:more) {
+ .rk-glass-panel {background:#fff;border-color:#071326;backdrop-filter:none}
+ .rk-neo-panel,.rk-neo-inset,.rk-clay-card {border:2px solid currentColor;box-shadow:none}
+ .rk-clay-action {outline:2px solid #071326}
+}
+
+/* Preserve a single stable label while status icons move along the pointer arc. */
+@media (max-width:720px){
+  .rk-glass-panel{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  .rk-clay-card,.rk-neo-panel{box-shadow:5px 7px 16px -11px rgba(12,36,71,.3),inset 1px 1px #fff}
+}

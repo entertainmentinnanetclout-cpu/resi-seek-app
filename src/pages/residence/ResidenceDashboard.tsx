@@ -109,7 +109,7 @@ const ResidenceDashboard = () => {
     <>
       <SEO noIndex title={`${residence.name} Residence Portal | ResKonnect`} description={`Manage accommodation applications and 2027 reservations for ${residence.name}.`} />
       <div className="mx-auto max-w-7xl space-y-6">
-        <section className="relative isolate overflow-hidden rounded-[26px] bg-[linear-gradient(125deg,#182d4b,#123d64)] text-white shadow-[0_22px_52px_rgba(8,28,49,.18)]">
+        <section className="rk-skeuo-frame relative isolate overflow-hidden rounded-[26px] bg-[linear-gradient(125deg,#182d4b,#123d64)] text-white shadow-[0_22px_52px_rgba(8,28,49,.18)]">
           {residence.cover_image_url||residence.image_url?<img src={residence.cover_image_url||residence.image_url||""} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30"/>:null}
           <div className="absolute inset-0 bg-gradient-to-r from-[#0b1e37]/95 via-[#0b1e37]/85 to-[#0b1e37]/30"/>
           <div className="relative z-10 flex flex-col gap-4 p-6 sm:p-8 lg:p-10">
@@ -117,20 +117,20 @@ const ResidenceDashboard = () => {
            <div className="max-w-xl"><h1 className="text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl">Your property. <span className="text-[#f3c18d]">Everything connected.</span></h1>
            <p className="mt-3 text-sm leading-6 text-white/80">See your student enquiries, review applications, manage inventory and shape how {residence.name} appears to students — from one workspace.</p></div>
            <div className="flex flex-wrap gap-2">
-            <Button onClick={()=>navigate("/residence/inbox?status=new")} className="bg-white text-[#172d49] hover:bg-[#faf4ed]"><Inbox className="mr-2 h-4 w-4"/>Review applications</Button>
+            <Button onClick={()=>navigate("/residence/inbox?status=new")} className="rk-clay-action"><Inbox className="mr-2 h-4 w-4"/>Review applications</Button>
             <Button onClick={()=>navigate("/residence/listing/wizard")} className="border border-white/25 bg-white/10 text-white hover:bg-white/20"><ImagePlus className="mr-2 h-4 w-4"/>Improve listing</Button>
             <Button asChild className="border border-white/25 bg-white/10 text-white hover:bg-white/20"><a href={`/find-my-res/${residence.id}`} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 h-4 w-4"/>Public view</a></Button>
            </div>
           </div>
         </section>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rk-stagger-list grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
            {label:"Applications",detail:"Review student documents and decisions",to:"/residence/inbox",icon:Inbox},
            {label:"Reservations",detail:"Manage the 2027 interest pipeline",to:"/residence/reservations-2027",icon:CalendarDays},
            {label:"Listing studio",detail:"Edit photos, room options and profile",to:"/residence/listing/wizard",icon:ImagePlus},
            {label:"Communications",detail:"Reach applicants from the email desk",to:"/residence/communications",icon:Mail},
           ].map(item=><button type="button" key={item.label} onClick={()=>navigate(item.to)}
-           className="flex items-start gap-3 rounded-[18px] border border-[#e7e8ea] bg-card p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#aebfd0] hover:shadow-md">
+           className="rk-neo-panel rk-motion-card flex items-start gap-3 rounded-[18px] p-4 text-left transition hover:-translate-y-0.5 hover:border-[#aebfd0] hover:shadow-md">
            <span className="rounded-xl bg-[#f8ecde] p-2.5 text-[#a56d35]"><item.icon className="h-5 w-5"/></span>
            <span className="min-w-0"><span className="block text-sm font-black">{item.label}</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">{item.detail}</span></span>
            <ArrowRight className="ml-auto mt-1 h-4 w-4 shrink-0 text-muted-foreground"/>
@@ -147,7 +147,7 @@ const ResidenceDashboard = () => {
 
         {error && <Card className="border-destructive/30 bg-destructive/5"><CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-destructive">{error}</p><Button size="sm" variant="outline" onClick={() => void load()}>Try again</Button></CardContent></Card>}
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{statCards.map((item) => <Card key={item.label} className="cursor-pointer transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md" onClick={() => navigate(item.target)}><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">{item.label}</p><p className="mt-2 text-3xl font-black">{isLoading ? "—" : item.value}</p><p className="mt-1 text-xs text-muted-foreground">{item.note}</p></div><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><item.icon className="h-5 w-5" /></div></div></CardContent></Card>)}</div>
+        <div className="rk-stagger-list grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{statCards.map((item) => <Card key={item.label} role="button" tabIndex={0} aria-label={`${item.label}: ${isLoading?"loading":item.value}. Open detail`} className="rk-neo-stat rk-motion-card cursor-pointer transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md" onClick={() => navigate(item.target)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();navigate(item.target);}}}><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-muted-foreground">{item.label}</p><p className="mt-2 text-3xl font-black">{isLoading ? "—" : item.value}</p><p className="mt-1 text-xs text-muted-foreground">{item.note}</p></div><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><item.icon className="h-5 w-5" /></div></div></CardContent></Card>)}</div>
 
         <Card><CardHeader className="flex flex-row items-center justify-between gap-4"><div><CardTitle>Recent applications</CardTitle><CardDescription>Newest submissions for {residence.name}</CardDescription></div><Button variant="outline" size="sm" onClick={() => navigate("/residence/inbox")}>View all <ArrowRight className="ml-2 h-4 w-4" /></Button></CardHeader><CardContent>{isLoading ? <div className="py-10 text-center text-sm text-muted-foreground">Loading applications...</div> : recent.length === 0 ? <div className="rounded-xl border border-dashed p-8 text-center"><Inbox className="mx-auto h-8 w-8 text-muted-foreground" /><p className="mt-3 font-semibold">No applications yet</p><p className="mx-auto mt-1 max-w-md text-sm leading-6 text-muted-foreground">When a student applies to this residence, their application will appear here automatically.</p></div> : <div className="divide-y">{recent.map((app) => <button key={app.id} type="button" onClick={() => navigate(`/residence/application/${app.id}`)} className="flex w-full items-center gap-3 px-1 py-4 text-left transition hover:bg-muted/40 sm:px-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Users className="h-5 w-5" /></div><div className="min-w-0 flex-1"><p className="truncate font-semibold">{app.full_name || "Applicant"}</p><p className="mt-0.5 text-xs text-muted-foreground">Ref {getResidenceApplicationRef(app.id)} · {app.created_at ? new Date(app.created_at).toLocaleDateString("en-ZA") : "Date unavailable"}</p></div>{app.funding_type && <Badge variant="outline" className="hidden uppercase sm:inline-flex">{app.funding_type}</Badge>}<Badge variant={app.status === "rejected" ? "destructive" : app.status === "approved" ? "default" : "secondary"}>{getResidenceApplicationStatusLabel(app.status)}</Badge></button>)}</div>}</CardContent></Card>
       </div>

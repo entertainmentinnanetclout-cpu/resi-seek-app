@@ -25,6 +25,7 @@ import AdminMarketplaceReadiness from "@/components/admin/AdminMarketplaceReadin
 import AdminResidenceReviewModeration from "@/components/admin/residences/AdminResidenceReviewModeration";
 import SpotlightPlacementManager from "@/components/admin/residences/SpotlightPlacementManager";
 import MonthlyTopThreeManager from "@/components/admin/residences/MonthlyTopThreeManager";
+import {INSTITUTION_SUGGESTIONS,normalizeInstitutionTags} from "@/components/findmyres/ResidenceInstitutionBadges";
 
 interface Residence {
   id: string;
@@ -557,6 +558,20 @@ export const AdminResidencesContent = () => {
                         }
                       />
                     </div>
+                    <div className="space-y-2 rounded-xl border border-[#dce4f0] bg-[#f8fafc] p-3">
+                      <p className="text-xs font-black">Which institutions does this residence accept?</p>
+                      <p className="text-[11px] text-muted-foreground">Select only confirmed institutions. These badges appear on every accommodation card; acceptance is not official accreditation.</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {INSTITUTION_SUGGESTIONS.filter(item=>item.code!=="TSC COLLEGE").map(item=>{
+                          const selected=normalizeInstitutionTags(editingResidence.institution_tags).includes(item.code);
+                          return <Button type="button" key={item.code} size="sm" variant={selected?"default":"outline"} className="h-8 rounded-full text-xs"
+                            aria-pressed={selected} title={item.label} onClick={()=>{
+                              const current=normalizeInstitutionTags(editingResidence.institution_tags);
+                              setEditingResidence({...editingResidence,institution_tags:selected?current.filter(tag=>tag!==item.code):[...current,item.code]});
+                            }}>{item.code}</Button>;
+                        })}
+                      </div>
+                    </div>
                     <label className="flex items-center justify-between gap-2 rounded-lg border-2 border-transparent bg-gradient-spotlight/5 p-3 cursor-pointer bg-[length:200%_100%]"
                       style={{ background: "linear-gradient(90deg, hsl(var(--accent-violet)/0.08), hsl(var(--accent-coral)/0.08))" }}>
                       <span className="flex items-center gap-2 text-sm font-medium">
@@ -799,7 +814,7 @@ export const AdminResidencesContent = () => {
               <div className="flex flex-wrap gap-2">
                 {[
                   { key: "all", label: "All", color: "bg-primary text-white" },
-                  { key: "university", label: "TUT / University", color: "bg-sky text-white" },
+                  { key: "university", label: "University", color: "bg-sky text-white" },
                   { key: "tvet", label: "TVET / College", color: "bg-amber text-white" },
                   { key: "private", label: "Private", color: "bg-violet text-white" },
                   { key: "spotlight", label: "Spotlight", color: "bg-gradient-spotlight text-white" },
@@ -878,7 +893,7 @@ export const AdminResidencesContent = () => {
                                   ? "bg-sky/15 text-sky border-sky/40"
                                   : "bg-muted text-muted-foreground border-border opacity-50")
                               }
-                            >TUT</button>
+                            >University</button>
                             <button
                               type="button"
                               onClick={() => toggleAudience(residence, "accepts_tvet")}

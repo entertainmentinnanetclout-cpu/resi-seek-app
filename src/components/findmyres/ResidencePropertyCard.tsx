@@ -12,6 +12,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ResidenceMapPreview from "./ResidenceMapPreview";
 import {spotlightPhoto} from "@/lib/residenceSpotlight";
+import ResidenceInstitutionBadges from "./ResidenceInstitutionBadges";
 import type {ResidenceRating} from "@/hooks/usePublicLivingSignals";
 import { RESKONNECT_WHATSAPP } from "@/lib/constants";
 import { StatusBadge, residenceStatus } from "./StatusBadge";
@@ -111,9 +112,9 @@ export function ResidencePropertyCard({ residence, onApply, matchScore, rating, 
       tabIndex={0}
       onClick={() => navigate(`/find-my-res/${slug}`)}
       onKeyDown={(event) => { if (event.key === "Enter") navigate(`/find-my-res/${slug}`); }}
-      className={cn("group w-full min-w-0 cursor-pointer overflow-hidden rounded-[22px] border-border/50 bg-card transition-all duration-300", "hover:-translate-y-1 hover:border-transparent hover:shadow-premium")}
+      className={cn("rk-physical-card rk-motion-card group w-full min-w-0 cursor-pointer overflow-hidden rounded-[22px] border-border/50 bg-card transition-all duration-300", "hover:-translate-y-1 hover:border-transparent hover:shadow-premium")}
     >
-      <div className="relative isolate aspect-[16/11] overflow-hidden bg-[#e9e9e7]">
+      <div className="rk-portrait-frame relative isolate aspect-[16/11] overflow-hidden bg-[#e9e9e7]">
         {heroPhoto?<img src={heroPhoto} loading="lazy" alt={`Photo of ${residence.name}`} className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.06]" onError={e=>{e.currentTarget.src="/placeholder.svg";}}/>:
           <div className="flex h-full items-center justify-center text-sm text-[#6d7888]">Property photo pending</div>}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/20"/>
@@ -133,10 +134,10 @@ export function ResidencePropertyCard({ residence, onApply, matchScore, rating, 
         </div>
       </div>
 
-      <CardContent className="min-w-0 space-y-3 p-4">
+      <CardContent className="rk-details-settle min-w-0 space-y-3 p-4">
         <div className="flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0"><span className="inline-flex max-w-full items-baseline gap-0.5 rounded-full bg-gradient-price px-3 py-1 text-white shadow-sm"><span className="truncate text-lg font-bold">{displayPrivate !== null ? money(displayPrivate) : "Price on request"}</span>{displayPrivate !== null && <span className="shrink-0 text-xs opacity-90">/mo</span>}</span><p className="mt-1 text-[10px] font-medium text-muted-foreground">{displayPrivate === null ? "No confirmed monthly rent supplied" : verifiedPricing ? "Monthly price verified" : "Landlord-reported price · not verified"} · {inventoryLabel}</p></div>
-          <div className="flex min-w-0 shrink-0 flex-wrap justify-end gap-1">{residence.accepts_nsfas && <Badge className="border border-mint/40 bg-mint/15 text-[10px] text-mint">Accepts NSFAS funding</Badge>}{residence.is_tut_accredited && <Badge className="border border-sky/40 bg-sky/15 text-[10px] text-sky">TUT ✓</Badge>}{residence.accepts_tvet && <Badge className="border border-amber/40 bg-amber/15 text-[10px] text-amber">TVET</Badge>}{residence.accepts_private && <Badge className="border border-violet/40 bg-violet/15 text-[10px] text-violet">Private</Badge>}</div>
+          <div className="flex min-w-0 shrink-0 flex-wrap justify-end gap-1">{residence.accepts_nsfas && <Badge className="border border-mint/40 bg-mint/15 text-[10px] text-mint">Accepts NSFAS funding</Badge>}{residence.accepts_private && <Badge className="border border-violet/40 bg-violet/15 text-[10px] text-violet">Private</Badge>}</div>
         </div>
 
         {roomPricing.length > 0 ? <div className="space-y-2 rounded-xl border bg-muted/25 p-2.5"><div className="flex items-center justify-between gap-2"><p className="text-[11px] font-bold uppercase tracking-wide">Room options</p><span className="shrink-0 text-[10px] text-muted-foreground">{residence.pricing_year || 2027} pricing</span></div>{pricedRooms.slice(0, 3).map((room: any) => <div key={room.id || room.name} className="grid min-w-0 grid-cols-[minmax(0,1fr),auto] gap-2 rounded-lg bg-background p-2 text-xs"><div className="min-w-0"><p className="truncate font-semibold">{room.name}</p><p className="mt-0.5 text-[10px] text-muted-foreground">{Number(room.available_beds || 0)} beds available{feeText(room.deposit) ? ` · Deposit ${feeText(room.deposit)}` : ""}</p></div><div className="text-right"><p className="font-bold">Private {Number(room.promo_price || room.private_price || 0) > 0 ? money(Number(room.promo_price || room.private_price)) : "—"}</p><p className="mt-0.5 text-[10px] text-muted-foreground">NSFAS {Number(room.nsfas_price || 0) > 0 ? money(Number(room.nsfas_price)) : "funded rate"}</p></div></div>)}</div> : (residence.accepts_nsfas || residence.accepts_private) && <div className="grid grid-cols-2 gap-2 rounded-xl border bg-muted/30 p-2.5 text-xs"><div className="min-w-0"><p className="font-semibold">Private</p><p className="mt-0.5 truncate text-muted-foreground">{privatePrice > 0 ? `${money(privatePrice)}/mo` : "Ask residence"}</p></div><div className="min-w-0 border-l pl-2"><p className="font-semibold">NSFAS-funded</p><p className="mt-0.5 truncate text-muted-foreground">{nsfasPrice > 0 ? `${money(nsfasPrice)}/mo` : "Separate funded rate"}</p></div><p className="col-span-2 text-[10px] leading-relaxed text-muted-foreground">Private and NSFAS-funded rates are separate commercial arrangements.</p></div>}
@@ -144,6 +145,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore, rating, 
         {promoLive && <div className="rounded-xl border border-amber-300/60 bg-amber-50/70 p-3 text-amber-950 dark:bg-amber-950/20 dark:text-amber-100"><div className="flex items-center gap-2 text-xs font-bold"><Tag className="h-3.5 w-3.5" />{residence.promo_title || "Accommodation promotion"}</div>{residence.promo_description && <p className="mt-1 text-[11px] leading-relaxed opacity-80">{residence.promo_description}</p>}</div>}
 
         <h3 className="line-clamp-2 text-lg font-black tracking-tight">{residence.name}</h3>
+        <ResidenceInstitutionBadges residence={residence} compact maxVisible={6}/>
         {rating&&rating.count>0?<p className="flex items-center gap-1.5 text-xs"><span className="font-black text-amber-700">★ {rating.average.toFixed(1)}</span><span className="text-muted-foreground">({rating.count} student {rating.count===1?"review":"reviews"})</span></p>:null}
         <div className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-3.5 w-3.5 shrink-0" /><span className="line-clamp-1 min-w-0">{residence.place_label || residence.address || residence.campus}</span>{distance !== null && <span className="ml-auto shrink-0 text-xs font-medium text-coral">{distance}km</span>}</div>
         <div onClick={(event) => event.stopPropagation()} className="min-w-0 overflow-hidden rounded-xl"><ResidenceMapPreview name={residence.name} address={residence.address} latitude={residence.latitude} longitude={residence.longitude} /></div>
@@ -153,7 +155,7 @@ export function ResidencePropertyCard({ residence, onApply, matchScore, rating, 
 
         {reservations2027 && <div className="rounded-xl border border-primary/25 bg-primary/5 p-3"><div className="flex items-center gap-2 text-xs font-bold"><CalendarDays className="h-4 w-4 text-primary" />2027 reservations now open</div><p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">Reserve your interest now. A reservation is not a final lease until confirmed.</p><Button className="mt-2 w-full" size="sm" onClick={openReservation}>Reserve for 2027</Button></div>}
 
-        <div className="grid grid-cols-2 gap-2"><Button variant="outline" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/find-my-res/${slug}`); }}>View Residence</Button><Button className={!isFull ? "bg-gradient-vibrant text-white" : ""} variant={isFull ? "outline" : "default"} disabled={isFull} onClick={(event) => { event.preventDefault(); event.stopPropagation(); onApply(residence); }}>{isFull ? "Check availability" : "Apply Now"}</Button></div>
+        <div className="grid grid-cols-2 gap-2"><Button variant="outline" onClick={(event) => { event.preventDefault(); event.stopPropagation(); navigate(`/find-my-res/${slug}`); }}>View Residence</Button><Button className={!isFull ? "rk-clay-action" : ""} variant={isFull ? "outline" : "default"} disabled={isFull} onClick={(event) => { event.preventDefault(); event.stopPropagation(); onApply(residence); }}>{isFull ? "Check availability" : "Apply Now"}</Button></div>
       </CardContent>
     </Card>
 

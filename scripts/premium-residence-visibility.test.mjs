@@ -41,7 +41,9 @@ test("reported availability, funding and pricing are not invented",()=>{
  assert.match(ranking,/No confirmed monthly rent supplied/);
  assert.match(showcase,/reported spaces/);
  assert.match(showcase,/residence\.accepts_nsfas===true/);
- assert.match(showcase,/residence\.is_tut_accredited===true/);
+ assert.doesNotMatch(showcase,/residence\.is_tut_accredited===true/);
+ assert.match(showcase,/ResidenceInstitutionBadges/);
+ assert.match(hook,/institution_tags/);
  assert.match(showcase,/Spotlight is a ResKonnect editorial placement/);
  assert.match(pricing,/hasVerifiedPrivateRent/);
  assert.doesNotMatch(showcase,/guaranteed vacancy|100% verified/);
@@ -58,7 +60,7 @@ test("admin can select and reorder editorial hero placements without new public 
  assert.match(admin,/SpotlightPlacementManager residences=\{residences\}/);
  assert.match(admin,/toggleSpotlight/);
  assert.match(admin,/spotlight_rank: null/);
- assert.match(manager,/\.update\(\{spotlight_rank:i\+1\}\)\.eq\("id",next\[i\]\.id\)/);
+ assert.match(manager,/\.rpc\("rk_admin_reorder_spotlight",\{p_ids:ids\}\)/);
  assert.match(manager,/Priority #1 gets the large hero card/);
  assert.match(manager,/Paid sponsorships are managed separately/);
  assert.doesNotMatch(manager,/service.role|SUPABASE_SERVICE_ROLE_KEY|getPublicUrl\(/i);

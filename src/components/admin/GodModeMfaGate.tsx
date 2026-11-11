@@ -191,7 +191,7 @@ export default function GodModeMfaGate({ children }: Props) {
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="mb-3 flex items-center gap-2"><Smartphone className="h-5 w-5 text-cyan-300" /><p className="font-bold">1. Add ResKonnect to your authenticator</p></div>
                 <p className="mb-4 text-sm text-slate-300">Scan the QR code using Google Authenticator, Microsoft Authenticator, Authy, 1Password or another TOTP app.</p>
-                {qrCode && <div className="mx-auto w-fit rounded-2xl bg-white p-3"><img src={qrCode} alt="ResKonnect God Mode authenticator QR code" className="h-52 w-52" /></div>}
+                {qrCode && <div className="rk-portrait-frame mx-auto w-fit rounded-2xl bg-white p-3"><img src={qrCode} alt="ResKonnect God Mode authenticator QR code" className="h-52 w-52" /></div>}
                 {secret && (
                   <div className="mt-4 rounded-xl bg-slate-950 p-3">
                     <p className="text-[11px] uppercase tracking-wide text-slate-400">Manual setup secret</p>

@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import FavoriteButton from "@/components/FavoriteButton";
 import CompareButton from "@/components/CompareButton";
 import ResidenceBrandStudioCard from "@/components/findmyres/ResidenceBrandStudioCard";
+import ResidenceInstitutionBadges from "@/components/findmyres/ResidenceInstitutionBadges";
 import { useResidenceSections } from "@/hooks/useResidenceSections";
 
 interface Residence {
@@ -112,6 +113,7 @@ export default function ResidenceSectionGrid({
         <CardContent className="min-w-0 space-y-3 p-4">
           <div className="min-w-0">
             <h3 className="line-clamp-1 font-semibold text-foreground">{residence.name}</h3>
+            <ResidenceInstitutionBadges residence={residence} compact maxVisible={6} className="mt-2"/>
             <p className="mt-1 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
               <MapPin className="h-3 w-3 shrink-0" />
               <span className="truncate">{residence.place_label || residence.address || residence.campus}</span>
