@@ -59,9 +59,9 @@ language sql stable security definer set search_path=public,pg_temp as $$
   from public.reskonnect_public_top3_monthly() o
   where not exists(select 1 from manual m where m.residence_id=o.residence_id)
  ), open_slots as (
-  select slot::bigint,row_number() over(order by slot)::bigint as available_rank
-  from generate_series(1,3) as slot
-  where not exists(select 1 from manual m where m.slot=slot)
+  select s.slot::bigint,row_number() over(order by s.slot)::bigint as available_rank
+  from generate_series(1,3) as s(slot)
+  where not exists(select 1 from manual m where m.slot=s.slot)
  ), showcase as (
   select m.residence_id,m.slot,null::bigint as applications_count,
    null::bigint as reservations_count,null::bigint as activity_score,
