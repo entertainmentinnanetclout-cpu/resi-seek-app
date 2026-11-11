@@ -1,6 +1,7 @@
 import {Link} from "react-router-dom";
 import {ArrowRight,Building2,CalendarDays,MapPin,ShieldCheck,Sparkles} from "lucide-react";
 import {rankSpotlightResidences,spotlightLocation,spotlightPhoto,spotlightPrice} from "@/lib/residenceSpotlight";
+import ResidenceInstitutionBadges from "./ResidenceInstitutionBadges";
 
 type Props={residences:any[];loading?:boolean;surface:"landing"|"find"};
 
@@ -42,6 +43,7 @@ function LeadResidence({residence}:{residence:any}){
   </div>
   <div className="relative z-10 mt-auto w-full space-y-3 p-5 sm:p-7 lg:p-8">
    <FeatureBadges residence={residence}/>
+   <ResidenceInstitutionBadges residence={residence} light compact maxVisible={6}/>
    <div className="flex flex-wrap items-end justify-between gap-4">
     <div className="min-w-0 max-w-[450px]">
      <h3 className="text-3xl font-black tracking-tight text-white sm:text-4xl">{residence.name}</h3>
@@ -71,6 +73,7 @@ function SupportingResidence({residence,index}:{residence:any;index:number}){
   </span>
   <div className="relative z-10 mt-auto min-w-0 space-y-1 p-3.5 sm:p-4">
    <h3 className="line-clamp-2 text-base font-black leading-tight text-white sm:text-lg">{residence.name}</h3>
+   <ResidenceInstitutionBadges residence={residence} light compact maxVisible={4}/>
    <p className="line-clamp-1 text-[11px] text-white/80">{spotlightLocation(residence)}</p>
    <div className="flex flex-wrap items-end justify-between gap-1 pt-1">
     <div><p className="text-sm font-black text-white sm:text-base">{price.price}</p><p className="text-[10px] text-white/75">{price.label}</p></div>
