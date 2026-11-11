@@ -13,6 +13,9 @@ import {supabase} from "@/integrations/supabase/client";
 import ResidenceDiscoveryCard from "@/components/findmyres/ResidenceDiscoveryCard";
 import ResidenceInstitutionBadges,{INSTITUTION_SUGGESTIONS,normalizeInstitutionTags} from "@/components/findmyres/ResidenceInstitutionBadges";
 import {usePublicLivingSignals} from "@/hooks/usePublicLivingSignals";
+import {runRkLayoutTransition} from "@/lib/reskonnectMotion";
+import {RkMorphIcon} from "@/components/ui/RkMorphIcon";
+import {CheckCircle2} from "lucide-react";
 
 type Row=Record<string,any>&{id:string;name:string;slug?:string;institution_tags?:string[]};
 const FIELDS=["name","address","place_label","city","campus","province","description","cover_image_url","image_url",
@@ -32,6 +35,7 @@ export default function ResidenceVisualManager({rows,onRefresh}:{rows:Row[];onRe
  const [query,setQuery]=useState("");
  const [uploading,setUploading]=useState(false);
  const [saving,setSaving]=useState(false);
+ const [published,setPublished]=useState(false);
  const [previewStyle,setPreviewStyle]=useState<"compact"|"editorial"|"horizontal">("compact");
  const livingSignals=usePublicLivingSignals();
  const selected=rows.find(r=>r.id===selectedId)||null;
@@ -46,7 +50,7 @@ export default function ResidenceVisualManager({rows,onRefresh}:{rows:Row[];onRe
   return rows.filter(r=>!q||[r.name,r.city,r.campus,r.address,...(r.institution_tags||[])].join(" ").toLowerCase().includes(q))
    .sort((a,b)=>a.name.localeCompare(b.name));
  },[rows,query]);
- const set=(key:string,value:unknown)=>setDraft(current=>current?{...current,[key]:value}:current);
+ const set=(key:string,value:unknown)=>{setPublished(false);setDraft(current=>current?{...current,[key]:value}:current);};
  const toggleTag=(code:string)=>{
   if(!draft)return;
   const tags=normalizeInstitutionTags(draft.institution_tags);
@@ -74,6 +78,7 @@ export default function ResidenceVisualManager({rows,onRefresh}:{rows:Row[];onRe
    .select("id,name,slug,updated_at").maybeSingle();
   setSaving(false);
   if(error||!data)return toast.error(error?.message||"Property update was not confirmed");
+  setPublished(true);
   toast.success("Residence saved. Public cards and name-based URL are refreshed.");
   await onRefresh();
  };
@@ -91,11 +96,11 @@ export default function ResidenceVisualManager({rows,onRefresh}:{rows:Row[];onRe
   setUploading(false);
   toast.success("Photo uploaded. Click Publish changes to update the listing.");
  };
- return <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(235px,.7fr)_minmax(0,1.25fr)_minmax(260px,.8fr)]">
-  <Card className="min-w-0 overflow-hidden"><CardContent className="p-4">
+ return <div className="rk-motion grid min-w-0 gap-4 xl:grid-cols-[minmax(235px,.7fr)_minmax(0,1.25fr)_minmax(260px,.8fr)]">
+  <Card className="rk-neo-panel min-w-0 overflow-hidden"><CardContent className="p-4">
    <div className="mb-3 flex items-center justify-between gap-2"><p className="font-black">Property gallery</p><Badge variant="secondary">{rows.length}</Badge></div>
    <div className="relative mb-3"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground"/><Input className="pl-9" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Name, area, TUT, UP, TNC..."/></div>
-   <div className="max-h-[75vh] space-y-1.5 overflow-auto pr-1">
+   <div className="rk-stagger-list max-h-[75vh] space-y-1.5 overflow-auto pr-1">
     {filtered.map(r=><button type="button" key={r.id} onClick={()=>{if(dirty&&!window.confirm("Discard unsaved property changes?"))return;setSelectedId(r.id);}}
      className={"flex w-full items-center gap-3 rounded-xl border p-2 text-left transition "+(r.id===selectedId?"border-[#2563eb] bg-[#eef4ff]":"border-transparent hover:border-[#dce4f0]")}>
      <div className="h-12 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100">
@@ -106,8 +111,15 @@ export default function ResidenceVisualManager({rows,onRefresh}:{rows:Row[];onRe
    </div>
   </CardContent></Card>
   {!draft?<Card><CardContent className="p-10 text-center text-sm text-muted-foreground">Choose a residence to edit.</CardContent></Card>:
-  <Card className="min-w-0 overflow-hidden"><CardContent className="space-y-5 p-4 sm:p-5">
-   <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-[11px] font-black uppercase tracking-widest text-[#2563eb]">Property editor</p><h2 className="mt-1 text-xl font-black">{draft.name}</h2><p className="mt-1 text-xs text-muted-foreground">Public URL: /find-my-res/{draft.slug||draft.id}</p></div><Button disabled={saving||!dirty} onClick={()=>void save()}><Save className="mr-2 h-4 w-4"/>{saving?"Publishing…":"Publish changes"}</Button></div>
+  <Card className="rk-neo-panel min-w-0 overflow-hidden"><CardContent className="space-y-5 p-4 sm:p-5">
+   <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-[11px] font-black uppercase tracking-widest text-[#2563eb]">Property editor</p><h2 className="mt-1 text-xl font-black">{draft.name}</h2><p className="mt-1 text-xs text-muted-foreground">Public URL: /find-my-res/{draft.slug||draft.id}</p></div><Button disabled={saving||!dirty} className={"rk-clay-action "+(published?"rk-success-pulse":"")} onClick={()=>void save()}>
+    <RkMorphIcon idle={Save} active={CheckCircle2} isActive={published}/>{saving?"Publishing…":published?"Published":"Publish changes"}
+   </Button></div>
+   <div className="rk-stagger-list grid gap-2 sm:grid-cols-3">
+    {([["Beds reported",draft.available_spots??0],["Total capacity",draft.capacity??0],["Institutions",normalizeInstitutionTags(draft.institution_tags).length]] as const).map(([label,value])=>
+     <div className="rk-neo-stat p-3" key={label}><p className="text-[10px] font-black uppercase tracking-wide text-[#536985]">{label}</p><p className="mt-1 text-xl font-black text-[#071326]">{value}</p></div>)}
+   </div>
+   <span role="status" aria-live="polite" className="sr-only">{published?"Residence changes published":""}</span>
    <div className="grid gap-3 sm:grid-cols-2">
     {([["Residence name","name"],["Street address","address"],["Public location","place_label"],["City","city"],["Campus reference","campus"],["Province","province"]] as const).map(([label,key])=>
      <div key={key} className={key==="address"?"sm:col-span-2":""}><Label htmlFor={"rk-edit-"+key}>{label}</Label><Input id={"rk-edit-"+key} className="mt-1" value={draft[key]||""} onChange={e=>set(key,e.target.value)}/></div>)}
@@ -165,11 +177,11 @@ export default function ResidenceVisualManager({rows,onRefresh}:{rows:Row[];onRe
    <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0"/>Official NSFAS accreditation, verification evidence, student ratings and placement decisions are never editable here.</p>
   </CardContent></Card>}
   <div className="min-w-0 space-y-3">
-   <Card className="overflow-hidden"><CardContent className="space-y-3 p-4">
+   <Card className="rk-neo-panel overflow-hidden"><CardContent className="space-y-3 p-4">
     <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-black">Live card preview</p><Badge variant="outline">Unpublished draft</Badge></div>
-    <div className="flex flex-wrap gap-1">{(["compact","editorial","horizontal"] as const).map(key=><Button key={key} size="sm" variant={previewStyle===key?"default":"outline"} onClick={()=>setPreviewStyle(key)} className="h-8 text-xs">{key}</Button>)}</div>
-    {draft&&<ResidenceDiscoveryCard residence={draft} layout={previewStyle} rating={livingSignals.ratings[draft.id]}
-      accredited={livingSignals.accreditedIds.has(draft.id)} nsfasAccredited={livingSignals.nsfasAccreditedIds.has(draft.id)}/>}
+    <div className="flex flex-wrap gap-1">{(["compact","editorial","horizontal"] as const).map(key=><Button key={key} size="sm" variant={previewStyle===key?"default":"outline"} onClick={()=>runRkLayoutTransition(()=>setPreviewStyle(key))} className="h-8 text-xs">{key}</Button>)}</div>
+    {draft&&<div className="rk-layout-morph"><ResidenceDiscoveryCard residence={draft} layout={previewStyle} rating={livingSignals.ratings[draft.id]}
+      accredited={livingSignals.accreditedIds.has(draft.id)} nsfasAccredited={livingSignals.nsfasAccreditedIds.has(draft.id)}/></div>}
     {draft&&<ResidenceInstitutionBadges residence={draft} maxVisible={30}/>}
     {draft&&<Link to={"/find-my-res/"+encodeURIComponent(selected?.slug||selected?.id||"")} target="_blank" rel="noopener noreferrer"
       className="inline-flex items-center gap-1 text-xs font-bold text-[#2563eb]">Open published property <ExternalLink className="h-3.5 w-3.5"/></Link>}
