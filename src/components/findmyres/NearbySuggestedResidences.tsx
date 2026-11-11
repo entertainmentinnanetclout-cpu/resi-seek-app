@@ -6,6 +6,7 @@ import { useRealtimeProfile } from "@/hooks/useRealtimeProfile";
 import { useLiveLocation, distanceKm } from "@/lib/resmap/liveLocation";
 import { isMockResidence } from "@/hooks/useResidenceFilters";
 import { residenceMatchesCampus } from "@/constants/institutionOptions";
+import ResidenceInstitutionBadges from "@/components/findmyres/ResidenceInstitutionBadges";
 
 const hasPhoto = (residence: any) => [residence.cover_image_url, ...(Array.isArray(residence.images) ? residence.images : []), residence.image_url]
   .some(image => typeof image === "string" && /^https?:\/\//i.test(image.trim()) && !/placeholder|default-image|no-image/i.test(image));
@@ -47,7 +48,7 @@ export default function NearbySuggestedResidences({ residences }: { residences: 
     <div className="flex snap-x gap-3 overflow-x-auto pb-3">
       {items.map(r => <Link key={r.id} to={`/find-my-res/${r.slug || r.id}`} className="group min-w-[225px] max-w-[250px] flex-[0_0_72%] snap-start overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:shadow-md sm:flex-[0_0_250px]">
         <div className="relative h-36 bg-muted">{photo(r) ? <img src={photo(r)} loading="lazy" alt={r.name} className="h-full w-full object-cover" onError={event => { event.currentTarget.style.display = "none"; }} /> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Photo not available</div>}{r._nearbyKm !== null && <span className="absolute bottom-2 left-2 rounded-full bg-card/90 px-2 py-1 text-[11px] font-bold text-foreground"><MapPin className="mr-1 inline h-3 w-3" />{r._nearbyKm.toFixed(1)} km away</span>}</div>
-        <div className="space-y-1 p-3"><h3 className="line-clamp-1 text-sm font-bold text-foreground">{r.name}</h3><p className="line-clamp-1 text-xs text-muted-foreground">{r.address || r.campus}</p><div className="flex items-center justify-between"><span className="text-sm font-black text-primary">{Number(r.price) > 0 ? `R${Number(r.price).toLocaleString()}/mo` : "Ask for price"}</span><span className="text-[11px] font-bold text-primary">View</span></div></div>
+        <div className="space-y-1 p-3"><h3 className="line-clamp-1 text-sm font-bold text-foreground">{r.name}</h3><p className="line-clamp-1 text-xs text-muted-foreground">{r.address || r.campus}</p><ResidenceInstitutionBadges residence={r} compact maxVisible={3}/><div className="flex items-center justify-between"><span className="text-sm font-black text-primary">{Number(r.price) > 0 ? `R${Number(r.price).toLocaleString()}/mo` : "Ask for price"}</span><span className="text-[11px] font-bold text-primary">View</span></div></div>
       </Link>)}
     </div>
   </section>;
