@@ -443,6 +443,8 @@ const FindMyRes = () => {
                   <div className={listingStyle==="list"?"grid grid-cols-1 gap-3":"grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"}>
                     {visibleResidences.map((residence) => (
                       listingStyle==="details"?<ResidencePropertyCard key={residence.id} residence={residence} onApply={handleApply}
+                        rating={livingSignals.ratings[residence.id]} accredited={livingSignals.accreditedIds.has(residence.id)}
+                        nsfasAccredited={livingSignals.nsfasAccreditedIds.has(residence.id)}
                         matchScore={hasActiveFilters ? residence._matchScore : undefined}/>:
                       <ResidenceDiscoveryCard key={residence.id} residence={residence} layout={listingStyle==="list"?"horizontal":"compact"}
                         rating={livingSignals.ratings[residence.id]}
@@ -484,7 +486,9 @@ const FindMyRes = () => {
               >
                 {s.items.map((r: any) => (
                   <div key={r.id} className="min-w-[280px] sm:min-w-[320px] snap-start">
-                    <ResidencePropertyCard residence={r} onApply={handleApply} />
+                    <ResidenceDiscoveryCard residence={r} rating={livingSignals.ratings[r.id]}
+                      accredited={livingSignals.accreditedIds.has(r.id)}
+                      nsfasAccredited={livingSignals.nsfasAccreditedIds.has(r.id)}/>
                   </div>
                 ))}
               </CategoryRail>
@@ -493,7 +497,9 @@ const FindMyRes = () => {
               <CategoryRail title="More selected residences" subtitle="Other curated listings. Listing visibility does not establish accreditation or availability" count={featured.length}>
                 {featured.map((r: any) => (
                   <div key={r.id} className="min-w-[280px] sm:min-w-[320px] snap-start">
-                    <ResidencePropertyCard residence={r} onApply={handleApply} />
+                    <ResidenceDiscoveryCard residence={r} rating={livingSignals.ratings[r.id]}
+                      accredited={livingSignals.accreditedIds.has(r.id)}
+                      nsfasAccredited={livingSignals.nsfasAccreditedIds.has(r.id)}/>
                   </div>
                 ))}
               </CategoryRail>
