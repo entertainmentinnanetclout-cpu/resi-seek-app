@@ -60,7 +60,7 @@ test("admin can select and reorder editorial hero placements without new public 
  assert.match(admin,/SpotlightPlacementManager residences=\{residences\}/);
  assert.match(admin,/toggleSpotlight/);
  assert.match(admin,/spotlight_rank: null/);
- assert.match(manager,/\.update\(\{spotlight_rank:i\+1\}\)\.eq\("id",next\[i\]\.id\)/);
+ assert.match(manager,/\.rpc\("rk_admin_reorder_spotlight",\{p_ids:ids\}\)/);
  assert.match(manager,/Priority #1 gets the large hero card/);
  assert.match(manager,/Paid sponsorships are managed separately/);
  assert.doesNotMatch(manager,/service.role|SUPABASE_SERVICE_ROLE_KEY|getPublicUrl\(/i);
