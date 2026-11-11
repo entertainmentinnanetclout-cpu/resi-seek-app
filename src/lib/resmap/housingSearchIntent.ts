@@ -1,7 +1,7 @@
 import {publicPrivateMonthlyRent} from "@/lib/residenceListingEvidence";
 
 /** Strictly local, explainable interpretation of a housing query; no speculative AI output. */
-const STOP=new Set(["a","an","the","find","show","me","i","need","looking","for","to","in","at","on","by","with","near","around","close","my","of","and","or","student","students","accommodation","housing","residence","residences","room","rooms","place","places","please","best","good","available","under","below","less","than","maximum","max","budget","up","from","per","month","monthly","rent","rental","between","price","not","more","single","singles","sharing","shared","studio","bachelor","nsfas","funding","private","wifi","wi","fi","parking","furnished","internet","rands"]);
+const STOP=new Set(["a","an","the","find","show","me","i","need","looking","for","to","in","at","on","by","with","near","around","close","my","of","and","or","student","students","accommodation","housing","residence","residences","room","rooms","place","places","please","best","good","available","under","below","less","than","maximum","max","budget","from","per","month","monthly","rent","rental","between","price","not","more","single","singles","sharing","shared","studio","bachelor","nsfas","funding","private","wifi","wi","fi","parking","furnished","internet","rands","campus"]);
 const normal=(v:unknown)=>String(v??"").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
 
 export type HousingSearchIntent={
