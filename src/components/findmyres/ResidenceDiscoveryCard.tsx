@@ -2,6 +2,7 @@ import {Link} from "react-router-dom";
 import {ArrowUpRight,BadgeCheck,BedDouble,MapPin,ShieldCheck,Star,WalletCards} from "lucide-react";
 import {publicPrivateMonthlyRent,hasVerifiedPrivateRent} from "@/lib/residenceListingEvidence";
 import {spotlightPhoto} from "@/lib/residenceSpotlight";
+import ResidenceInstitutionBadges from "./ResidenceInstitutionBadges";
 import type {ResidenceRating} from "@/hooks/usePublicLivingSignals";
 
 type Layout="editorial"|"horizontal"|"compact";
@@ -43,6 +44,7 @@ export default function ResidenceDiscoveryCard({residence,layout="compact",ratin
     <span className="inline-flex items-center gap-1 font-black text-[#182b48]"><Star className="h-4 w-4 fill-[#f3b435] text-[#f3b435]"/>{rating.average.toFixed(1)}</span>
     <span className="text-[#7b8592]">({rating.count} student {rating.count===1?"review":"reviews"})</span>
    </div>:null}
+   <ResidenceInstitutionBadges residence={residence} compact maxVisible={5}/>
    <div className="flex flex-wrap gap-1.5">
     {residence.accepts_nsfas===true&&<span className="inline-flex items-center gap-1 rounded-full bg-[#fff7e4] px-2.5 py-1 text-[10px] font-semibold text-[#071326]"><WalletCards className="h-3 w-3"/>Accepts NSFAS funding</span>}
     {roomTypes.slice(0,2).map((type:string)=><span key={type} className="rounded-full bg-[#f0f2f6] px-2.5 py-1 text-[10px] font-semibold text-[#3b4b61]">{type}</span>)}
