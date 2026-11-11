@@ -14,7 +14,9 @@ export function useLandingSpotlightResidences(){
    try{
     const {data,error}=await (supabase as any).from("residences").select(
      "id,name,slug,is_visible,is_spotlight,spotlight_rank,cover_image_url,image_url,images,city,province,campus,address,available_spots,private_price,price,price_verified_at,pricing_year,promo_active,promo_price,promo_starts_at,promo_ends_at,accepts_nsfas,is_tut_accredited,reservations_2027_open"
-    ).eq("is_visible",true).eq("is_spotlight",true).limit(20);
+    ).eq("is_visible",true).eq("is_spotlight",true)
+    .order("spotlight_rank",{ascending:true,nullsFirst:false})
+    .order("name",{ascending:true}).limit(20);
     if(error)throw error;
     if(mounted)setResidences(rankSpotlightResidences(data||[],5));
    }catch(error){
