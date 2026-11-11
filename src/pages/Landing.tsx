@@ -84,14 +84,14 @@ const Landing = () => {
   const fallbackSlides = [
     {
       image: inclusivePathwaysHero,
-      title: "Everything students need to move forward. Connected.",
-      description: "Living, intelligent guidance and real opportunities through one ResKonnect journey — from finding a place to understanding your next step and accessing what comes next.",
+      title: "From your campus search to your next opportunity — ResKonnect.",
+      description: "Find a place to live, navigate applications and discover work-integrated learning opportunities with ResKonnect Living, AI and Opportunity working together.",
       cta: { text: "Explore ResKonnect", action: () => navigate("/get-started") }
     },
     {
       image: applicationsFundingHero,
-      title: "One account. One journey. Smarter next steps.",
-      description: "Find accommodation, prepare applications, ask ResKonnect AI and discover verified bursaries, WIL and student opportunities without stitching together unrelated services.",
+      title: "Your studies. Your accommodation. Your future. Konnected.",
+      description: "Discover property listings, prepare student applications, check funding requirements and use ResKonnect AI to understand what comes next.",
       cta: { text: "Ask ResKonnect AI", action: () => navigate("/ai") }
     }
   ];
@@ -213,7 +213,7 @@ const Landing = () => {
           <div className="container mx-auto max-w-6xl px-4">
             <div className="max-w-3xl">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Student accommodation in South Africa</p>
-              <h2 id="discover-reskonnect" className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-4xl">Find a room near your campus, in the city that actually suits you.</h2>
+              <h2 id="discover-reskonnect" className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-4xl">A campus nearby. A place that works for you. Found on ResKonnect.</h2>
               <p className="mt-3 text-sm leading-7 text-muted-foreground md:text-base">Explore the areas where ResKonnect has published residence records. Check property addresses, funding acceptance, room types and real provider prices when supplied. Missing prices are not advertised as budget offers.</p>
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
