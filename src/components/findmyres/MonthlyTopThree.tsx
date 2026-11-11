@@ -1,14 +1,15 @@
 import {useEffect,useMemo,useState} from "react";
-import {ArrowRight,ChartNoAxesCombined,ChevronRight,Sparkles} from "lucide-react";
+import {ArrowRight,ChartNoAxesCombined} from "lucide-react";
 import {Link} from "react-router-dom";
 import {supabase} from "@/integrations/supabase/client";
-import {usePublicLivingSignals,type ResidenceRating,type MonthlyWinner} from "@/hooks/usePublicLivingSignals";
+import {usePublicLivingSignals,type MonthlyWinner} from "@/hooks/usePublicLivingSignals";
 import ResidenceDiscoveryCard from "./ResidenceDiscoveryCard";
 
 type Signals=ReturnType<typeof usePublicLivingSignals>;
 type Props={residences?:any[];signals:Signals;surface:"landing"|"find"};
 
-export default function MonthlyTopThree({residences=[],signals,surface}:Props){
+const NO_RESIDENCES:any[]=[];
+export default function MonthlyTopThree({residences=NO_RESIDENCES,signals,surface}:Props){
  const [loaded,setLoaded]=useState<any[]>([]);
  const keys=signals.top3.map(item=>item.residence_id).join(",");
  useEffect(()=>{
