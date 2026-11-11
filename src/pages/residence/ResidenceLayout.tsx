@@ -364,7 +364,7 @@ const ResidenceLayout = () => {
   );
 
   return (
-    <div className="flex min-h-[100dvh] w-full max-w-full min-w-0 overflow-x-hidden bg-muted/20">
+    <div className="rk-motion flex min-h-[100dvh] w-full max-w-full min-w-0 overflow-x-hidden bg-muted/20">
       <aside className="fixed inset-y-0 left-0 z-40 hidden h-[100dvh] max-h-[100dvh] w-72 overflow-hidden border-r bg-card lg:block">
         <NavContent />
       </aside>
