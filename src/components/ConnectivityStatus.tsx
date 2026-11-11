@@ -41,7 +41,10 @@ export default function ConnectivityStatus() {
     window.addEventListener("rk-network-recovered", onRecovered as EventListener);
     window.addEventListener("rk-auth-service-degraded", onAuthServiceDown as EventListener);
     window.addEventListener("rk-auth-service-recovered", onAuthServiceRecovered as EventListener);
+    // Used by the responsive browser gate to avoid racing a simulated offline event with hydration.
+    document.documentElement.dataset.rkConnectivityReady = "true";
     return () => {
+      delete document.documentElement.dataset.rkConnectivityReady;
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
       window.removeEventListener("rk-network-degraded", onDegraded as EventListener);
