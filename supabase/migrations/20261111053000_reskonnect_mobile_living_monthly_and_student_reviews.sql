@@ -19,7 +19,7 @@ create index if not exists reskonnect_student_residence_reviews_residence_idx
 
 alter table public.reskonnect_student_residence_reviews enable row level security;
 revoke all on public.reskonnect_student_residence_reviews from public,anon,authenticated;
-grant select,insert,update on public.reskonnect_student_residence_reviews to authenticated;
+grant select,insert,update,delete on public.reskonnect_student_residence_reviews to authenticated;
 
 create or replace function public.reskonnect_can_student_rate_residence(p_residence_id uuid)
 returns boolean language sql stable security definer set search_path=public,pg_temp as $$
@@ -45,6 +45,9 @@ create policy rk_student_reviews_update_eligible on public.reskonnect_student_re
        or public.has_role((select auth.uid()),'admin'::public.app_role))
  with check(user_id=(select auth.uid()) and public.reskonnect_can_student_rate_residence(residence_id)
        or public.has_role((select auth.uid()),'admin'::public.app_role));
+drop policy if exists rk_student_reviews_delete_own on public.reskonnect_student_residence_reviews;
+create policy rk_student_reviews_delete_own on public.reskonnect_student_residence_reviews
+ for delete to authenticated using(user_id=(select auth.uid()));
 -- Admin staff can see all review feedback for moderation; students see only their own.
 -- Public visitors only receive aggregates and explicitly approved text via safe RPCs.
 
@@ -84,7 +87,7 @@ grant execute on function public.reskonnect_public_residence_review_scores() to 
 create or replace function public.reskonnect_public_residence_review_excerpts(p_residence_id uuid)
 returns table(rating smallint,title text,comment text,created_at timestamptz)
 language sql stable security definer set search_path=public,pg_temp as $$
- select rv.rating,rv.title,
+ select rv.rating,case when rv.comment_public then rv.title else 'Student rating' end,
  case when rv.comment_public then rv.comment else null end,
  rv.created_at
  from public.reskonnect_student_residence_reviews rv
