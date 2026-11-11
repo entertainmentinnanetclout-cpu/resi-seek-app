@@ -8,7 +8,6 @@ type Props={residences:any[];loading?:boolean;surface:"landing"|"find";headline?
 function FeatureBadges({residence}:{residence:any}){
  return <div className="flex flex-wrap gap-1.5 text-[10px] font-bold uppercase tracking-wide">
   {residence.accepts_nsfas===true&&<span className="rounded-full border border-white/30 bg-white/15 px-2.5 py-1 text-white backdrop-blur">NSFAS accepted</span>}
-  {residence.is_tut_accredited===true&&<span className="rounded-full border border-white/30 bg-white/15 px-2.5 py-1 text-white backdrop-blur">TUT accredited</span>}
   {residence.reservations_2027_open===true&&<span className="rounded-full border border-white/30 bg-white/15 px-2.5 py-1 text-white backdrop-blur">2027 reservations open</span>}
  </div>;
 }
