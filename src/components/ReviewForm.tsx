@@ -1,229 +1,74 @@
-import { useState } from "react";
-import { Star, Plus, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import {useEffect,useState} from "react";
+import {ShieldCheck,Star} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
+import {Label} from "@/components/ui/label";
+import {supabase} from "@/integrations/supabase/client";
+import {useAuth} from "@/contexts/AuthContext";
+import {toast} from "sonner";
 
-interface ReviewFormProps {
-  residenceId: string;
-  onSuccess: () => void;
-  onCancel: () => void;
+interface ReviewFormProps{residenceId:string;onSuccess:()=>void;onCancel:()=>void;}
+
+/** One genuine approved applicant vote per residence, with comment text
+ * withheld from public view until independently moderated. */
+export default function ReviewForm({residenceId,onSuccess,onCancel}:ReviewFormProps){
+ const {user}=useAuth();
+ const [eligible,setEligible]=useState<boolean|null>(null);
+ const [rating,setRating]=useState(0);
+ const [title,setTitle]=useState("");
+ const [comment,setComment]=useState("");
+ const [busy,setBusy]=useState(false);
+ useEffect(()=>{
+  if(!user){setEligible(false);return;}
+  let active=true;
+  void (supabase as any).rpc("reskonnect_can_student_rate_residence",{p_residence_id:residenceId})
+   .then(({data,error}:any)=>{if(active)setEligible(!error&&data===true);});
+  return()=>{active=false;};
+ },[user?.id,residenceId]);
+ const submit=async(event:React.FormEvent)=>{
+  event.preventDefault();
+  if(!user||eligible!==true)return toast.error("Only approved residence applicants can submit a rating.");
+  if(rating<1||rating>5)return toast.error("Choose a rating from one to five stars.");
+  if(title.trim().length<3)return toast.error("Write a short review title.");
+  setBusy(true);
+  try{
+   const {error}=await (supabase as any).from("reskonnect_student_residence_reviews")
+    .upsert({user_id:user.id,residence_id:residenceId,rating,
+      title:title.trim().slice(0,100),comment:comment.trim().slice(0,1200)||null,
+      comment_public:false},{onConflict:"residence_id,user_id"});
+   if(error)throw error;
+   toast.success("Student rating saved. Your written feedback is awaiting review.");
+   onSuccess();
+  }catch(error:any){
+   toast.error(error?.code==="23505"?"You already rated this residence. Edit your existing rating instead.":error?.message||"Could not save rating.");
+  }finally{setBusy(false);}
+ };
+ return <form onSubmit={submit} className="space-y-4 rounded-[20px] border border-[#efe3d2] bg-[#fffaf2] p-4 sm:p-5">
+  <div className="flex items-start gap-2 text-xs text-[#677387]"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#ae7e2b]"/>
+   <p>Only approved applicants can rate their residence. One vote per student per property; updating a vote replaces the previous one. Written feedback is screened before publication.</p>
+  </div>
+  {eligible===null&&<p className="text-xs text-[#697a8d]">Checking review eligibility…</p>}
+  {eligible===false&&<p className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">Only students with an approved application to this residence can leave a rating. The system has not confirmed your eligibility.</p>}
+  <div><Label className="text-sm font-bold">Your student rating</Label>
+   <div className="mt-2 flex items-center gap-1" role="group" aria-label="Choose a rating">
+    {[1,2,3,4,5].map(n=><button key={n} type="button" disabled={eligible!==true}
+      aria-label={`${n} star${n!==1?"s":""}`} aria-pressed={rating===n} onClick={()=>setRating(n)}
+      className="rounded-lg p-1.5 transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e4ac43] disabled:opacity-50">
+      <Star className={`h-7 w-7 ${n<=rating?"fill-[#f0b439] text-[#f0b439]":"text-[#b3bdc9]"}`}/>
+    </button>)}
+    <span className="ml-2 text-sm font-black text-[#1d3553]">{rating||"—"} / 5</span>
+   </div>
+  </div>
+  <div className="space-y-1.5"><Label htmlFor="student-review-title">Short title</Label>
+   <Input id="student-review-title" value={title} maxLength={100} onChange={e=>setTitle(e.target.value)} disabled={eligible!==true}
+    placeholder="What stood out about your experience?"/>
+  </div>
+  <div className="space-y-1.5"><Label htmlFor="student-review-comment">Your experience (optional)</Label>
+   <Textarea id="student-review-comment" value={comment} maxLength={1200} rows={3} onChange={e=>setComment(e.target.value)} disabled={eligible!==true}
+    placeholder="What would other students find useful to know?"/>
+  </div>
+  <div className="grid grid-cols-2 gap-2"><Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+   <Button type="submit" disabled={busy||eligible!==true||rating===0||title.trim().length<3} className="bg-[#133763] text-white hover:bg-[#0d2441]">{busy?"Saving…":"Submit student rating"}</Button></div>
+ </form>;
 }
-
-const ReviewForm = ({ residenceId, onSuccess, onCancel }: ReviewFormProps) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [pros, setPros] = useState<string[]>([]);
-  const [cons, setCons] = useState<string[]>([]);
-  const [newPro, setNewPro] = useState("");
-  const [newCon, setNewCon] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to submit a review",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (rating === 0) {
-      toast({
-        title: "Rating required",
-        description: "Please select a star rating",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!title.trim()) {
-      toast({
-        title: "Title required",
-        description: "Please add a title for your review",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const { error } = await supabase.from("reviews").insert({
-        user_id: user.id,
-        residence_id: residenceId,
-        rating,
-        title: title.trim(),
-        content: content.trim() || null,
-        pros: pros.length > 0 ? pros : null,
-        cons: cons.length > 0 ? cons : null,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Review submitted",
-        description: "Thank you for your feedback!",
-      });
-      onSuccess();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Could not submit review. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const addPro = () => {
-    if (newPro.trim() && pros.length < 5) {
-      setPros([...pros, newPro.trim()]);
-      setNewPro("");
-    }
-  };
-
-  const addCon = () => {
-    if (newCon.trim() && cons.length < 5) {
-      setCons([...cons, newCon.trim()]);
-      setNewCon("");
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Star Rating */}
-      <div>
-        <Label className="mb-2 block">Your Rating *</Label>
-        <div className="flex gap-1">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              type="button"
-              onClick={() => setRating(star)}
-              onMouseEnter={() => setHoverRating(star)}
-              onMouseLeave={() => setHoverRating(0)}
-              className="p-1 transition-transform hover:scale-110"
-            >
-              <Star
-                className={cn(
-                  "w-8 h-8 transition-colors",
-                  star <= (hoverRating || rating)
-                    ? "fill-warning text-warning"
-                    : "text-muted-foreground/30"
-                )}
-              />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Title */}
-      <div>
-        <Label htmlFor="title">Review Title *</Label>
-        <Input
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Summarize your experience"
-          maxLength={100}
-        />
-      </div>
-
-      {/* Content */}
-      <div>
-        <Label htmlFor="content">Your Review</Label>
-        <Textarea
-          id="content"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Share more details about your stay..."
-          rows={4}
-        />
-      </div>
-
-      {/* Pros */}
-      <div>
-        <Label>Pros (optional)</Label>
-        <div className="flex gap-2 mb-2">
-          <Input
-            value={newPro}
-            onChange={(e) => setNewPro(e.target.value)}
-            placeholder="What did you like?"
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addPro())}
-          />
-          <Button type="button" size="icon" variant="outline" onClick={addPro}>
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {pros.map((pro, i) => (
-            <span
-              key={i}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-success/10 text-success text-xs rounded-full"
-            >
-              {pro}
-              <button type="button" onClick={() => setPros(pros.filter((_, j) => j !== i))}>
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Cons */}
-      <div>
-        <Label>Cons (optional)</Label>
-        <div className="flex gap-2 mb-2">
-          <Input
-            value={newCon}
-            onChange={(e) => setNewCon(e.target.value)}
-            placeholder="What could be improved?"
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCon())}
-          />
-          <Button type="button" size="icon" variant="outline" onClick={addCon}>
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {cons.map((con, i) => (
-            <span
-              key={i}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-destructive/10 text-destructive text-xs rounded-full"
-            >
-              {con}
-              <button type="button" onClick={() => setCons(cons.filter((_, j) => j !== i))}>
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting} className="flex-1">
-          {isSubmitting ? "Submitting..." : "Submit Review"}
-        </Button>
-      </div>
-    </form>
-  );
-};
-
-export default ReviewForm;
