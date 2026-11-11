@@ -53,7 +53,7 @@ export default function ResidenceDiscoveryCard({residence,layout="compact",ratin
     <div><p className="text-[10px] font-medium text-[#8c96a1]">{amount===null?"Monthly price not provided":verifiedPrice?"Verified private monthly rent":"Landlord-reported private rent"}</p>
      <p className="text-lg font-black tracking-tight text-[#102a4b]">{amount===null?"Ask for rent":money(amount)}{amount!==null&&<span className="ml-1 text-[11px] font-medium text-[#798390]">/mo</span>}</p>
     </div>
-    <span className="rk-clay-action inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#fff0ce] text-[#925e12] transition group-hover:bg-[#eeb347] group-hover:text-white"><ArrowUpRight className="h-4 w-4"/></span>
+    <span className="rk-clay-action inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#fff0ce] text-[#925e12] transition group-hover:bg-[#eeb347] group-hover:text-white"><ArrowUpRight className="rk-arc-on-hover h-4 w-4"/></span>
    </div>
   </div>
  </Link>;
