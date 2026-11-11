@@ -117,9 +117,10 @@ test("monthly editorial selection is admin-only, isolated from organic analytics
 test("monthly showcase and search use ResKonnect navy, blue and gold instead of imported competitor accents",()=>{
  const finder=read("src/components/findmyres/LivingSearchDock.tsx");
  const spotlight=read("src/components/findmyres/PremiumResidenceShowcase.tsx");
- const branded=[finder,spotlight,monthly];
+ const smart=read("src/components/findmyres/SmartSearchBar.tsx");
+ const branded=[finder,spotlight,monthly,smart];
  for(const body of branded){
-  assert.doesNotMatch(body,/#e94478|#c62c62|#f6f0ff|#61379a|#e6786a|#d77858|#fff6ef/i);
+  assert.doesNotMatch(body,/#e94478|#e94578|#ce2d64|#c62c62|#f6f0ff|#f1e9ff|#61379a|#5c3297|#e6786a|#d77858|#fff6ef/i);
  }
  assert.match(spotlight,/ResKonnect Living/);
  assert.match(finder,/Search student living with ResKonnect/);
