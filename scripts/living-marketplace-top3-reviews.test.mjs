@@ -26,7 +26,8 @@ test("organic Top 3 uses monthly distinct-account activity and excludes paid pla
  assert.match(sql,/count\(distinct a.user_id\)/);
  assert.match(sql,/count\(distinct b.user_id\)/);
  assert.match(sql,/coalesce\(a.n,0\)\+2\*coalesce\(b.n,0\)/);
- assert.doesNotMatch(sql.slice(sql.indexOf("create or replace function public.reskonnect_public_top3_monthly")),/sponsor|featured_rank|is_spotlight|view_count/);
+ const leaderboardBody=sql.slice(sql.indexOf("create or replace function public.reskonnect_public_top3_monthly")).split("$;")[0];
+ assert.doesNotMatch(leaderboardBody,/sponsor|featured_rank|is_spotlight|view_count/);
  assert.match(sql,/limit 3;/);
  assert.match(landing,/MonthlyTopThree signals=\{livingSignals\} surface="landing"/);
  assert.match(find,/MonthlyTopThree residences=\{realResidences\} signals=\{livingSignals\} surface="find"/);
