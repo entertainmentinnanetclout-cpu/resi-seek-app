@@ -98,7 +98,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   );
 
   return (
-    <div className="flex min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-background">
+    <div className="rk-motion flex min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-background">
       <aside className="sticky top-0 hidden h-[100dvh] max-h-[100dvh] w-64 shrink-0 overflow-hidden border-r border-border md:block">
         <SidebarContent />
       </aside>
