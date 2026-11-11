@@ -47,18 +47,19 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount,
 
   return <>
     <FindMyResLocationPrompt />
-    <div className="border-b bg-gradient-to-br from-primary/10 via-accent/5 to-background">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+    <div className="relative isolate overflow-hidden border-b border-[#163d6f] bg-[linear-gradient(125deg,#081b37_0%,#113b70_62%,#091a35_100%)] text-white">
+      <div aria-hidden="true" className="pointer-events-none absolute -right-28 -top-48 h-96 w-96 rounded-full bg-blue-400/15 blur-[85px]"/>
+      <div className="relative mx-auto max-w-7xl px-4 py-9 sm:px-6 sm:py-14 lg:px-8">
         <div className="mb-6 text-center">
           <div className="mb-3 flex flex-wrap justify-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-black text-emerald-700 dark:text-emerald-300"><Building2 className="h-3.5 w-3.5" />ResKonnect Living</span>
-            <button type="button" onClick={() => navigateOverlay("discovery")} className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1.5 text-xs font-black text-violet-700 transition hover:bg-violet-500/15 dark:text-violet-300"><WandSparkles className="h-3.5 w-3.5" />Smart matching</button>
-            <button type="button" onClick={() => navigateOverlay("map")} className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-500/15 dark:text-blue-300"><MapPinned className="h-3.5 w-3.5" />Map & 3D tools</button>
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#f7d28c]/40 bg-[#f7d28c]/15 px-3.5 py-1.5 text-xs font-black text-[#ffdfa4]"><Building2 className="h-3.5 w-3.5" />ResKonnect Living</span>
+            <button type="button" onClick={() => navigateOverlay("discovery")} className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-black text-white transition hover:bg-white/20"><WandSparkles className="h-3.5 w-3.5" />Smart matching</button>
+            <button type="button" onClick={() => navigateOverlay("map")} className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-black text-white transition hover:bg-white/20"><MapPinned className="h-3.5 w-3.5" />Map & 3D tools</button>
           </div>
-          <h1 className="mb-2 text-3xl font-bold sm:text-4xl">Find the right place to live. Faster.</h1>
-          <p className="mx-auto max-w-3xl text-sm text-muted-foreground sm:text-base">Search accommodation by campus, area, budget, funding, room type and published availability. Smart matching and maps are optional tools for comparing suitable residences.</p>
+          <h1 className="mb-2 text-4xl font-black tracking-tight text-white sm:text-5xl">Find your next home. <span className="text-[#ffd792]">Without the guesswork.</span></h1>
+          <p className="mx-auto mt-3 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">Search accommodation by campus, area, budget, funding and room type. Discover priority residence showcases, then compare genuine listings using smart matching and ResMap.</p>
         </div>
-        <div className="space-y-4 rounded-xl border bg-card/80 p-4 shadow-lg backdrop-blur-lg sm:p-6">
+        <div className="space-y-4 rounded-[24px] border border-white/30 bg-card p-4 text-foreground shadow-[0_25px_70px_rgba(2,10,27,.32)] sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Search by residence, city, neighbourhood or campus…" className="h-12 pl-10 text-base" value={filters.searchQuery} onChange={(e) => updateFilter("searchQuery", e.target.value)} /></div>
             <Select value={filters.city} onValueChange={v=>updateFilter("city",v)}><SelectTrigger className="h-12 sm:w-48" aria-label="Filter by city"><SelectValue placeholder="All cities"/></SelectTrigger><SelectContent><SelectItem value="all">All cities</SelectItem>{cityOptions.map(city=><SelectItem key={city} value={city}>{city}</SelectItem>)}</SelectContent></Select>
