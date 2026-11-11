@@ -153,7 +153,7 @@ export default function AdminVisualStudio(){
  const currentPreviewWidth=viewport==="mobile"?"390px":viewport==="tablet"?"820px":"100%";
  return <AdminLayout>
   <SEO noIndex title="God Mode Visual Studio | ResKonnect" description="Secure visual editor, residence management, public page content and revisions"/>
-  <div className="min-w-0 space-y-5">
+  <div className="rk-motion rk-visual-studio min-w-0 space-y-5">
    <div className="overflow-hidden rounded-[24px] border border-[#173b70]/25 bg-[linear-gradient(120deg,#071326,#153c75)] px-5 py-6 text-white sm:px-7">
     <div className="flex flex-wrap items-start justify-between gap-4">
      <div><p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-[#f5b32f]"><Layers className="h-4 w-4"/> ResKonnect · God Mode</p>
