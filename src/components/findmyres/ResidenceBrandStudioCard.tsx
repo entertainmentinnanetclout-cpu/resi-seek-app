@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { Building2, Camera, MapPin, ShieldCheck } from "lucide-react";
 import { BRAND } from "@/constants/brand";
 import ResidencePosterDownloadButton from "@/components/findmyres/ResidencePosterDownloadButton";
+import ResidenceInstitutionBadges from "@/components/findmyres/ResidenceInstitutionBadges";
 import VirtualTourMarketBadge from "@/components/virtualTours/VirtualTourMarketBadge";
 import { publicPrivateMonthlyRent } from "@/lib/residenceListingEvidence";
 
@@ -132,6 +133,7 @@ export default function ResidenceBrandStudioCard({ residence, className = "", sh
         <p className="mt-3 max-w-[19rem] text-[10px] font-black uppercase leading-tight tracking-wide text-white/95 sm:text-xs">
           {subheadline}
         </p>
+        <ResidenceInstitutionBadges residence={residence} compact light maxVisible={4} className="mt-2" />
       </div>
 
       {studio && preview && studio !== preview && (
