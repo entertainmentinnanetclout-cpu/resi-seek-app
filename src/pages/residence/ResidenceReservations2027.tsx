@@ -64,6 +64,8 @@ const ResidenceReservations2027 = () => {
   }), [rows]);
 
   const updateReservation = async (row: any, patch: { status?: string; residence_notes?: string }) => {
+    if(patch.status && !["reserved","contacted","provisional_hold"].includes(patch.status))
+      return toast.error("Final status changes are controlled by ResKonnect after eligibility, document verification and handover. Use Eligibility Tasks.");
     setSavingId(row.id);
     const { error } = await (supabase as any).rpc("residence_portal_update_reservation", {
       p_reservation_id: row.id,
@@ -106,6 +108,7 @@ const ResidenceReservations2027 = () => {
               <Select value={status} onValueChange={setStatus}><SelectTrigger className="w-full md:w-56"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{Object.entries(STATUS_LABELS).map(([value,label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select>
             </div>
 
+            <p className="text-xs leading-5 text-muted-foreground">Use <a className="font-bold text-primary underline" href="/residence/eligibility">Eligibility Tasks</a> to review assigned student profiles. Room confirmation requires verified evidence and ResKonnect handover.</p>
             {loading ? <div className="py-16 text-center text-sm text-muted-foreground">Loading reservations...</div> : filtered.length === 0 ? <div className="rounded-2xl border border-dashed p-10 text-center"><CalendarDays className="mx-auto h-9 w-9 text-muted-foreground" /><p className="mt-3 font-bold">No matching 2027 reservations</p><p className="mt-1 text-sm text-muted-foreground">New reservations will appear here automatically.</p></div> : <div className="space-y-3">{filtered.map((row) => <ReservationRow key={row.id} row={row} saving={savingId === row.id} onSave={updateReservation} onEmail={(id) => navigate(`/residence/communications?kind=reservation&target=${id}`)} onWhatsApp={(id) => navigate(`/residence/communications?kind=reservation&target=${id}&channel=whatsapp`)} />)}</div>}
           </CardContent>
         </Card>
@@ -116,9 +119,10 @@ const ResidenceReservations2027 = () => {
 
 function ReservationRow({ row, saving, onSave, onEmail, onWhatsApp }: { row: any; saving: boolean; onSave: (row: any, patch: any) => Promise<void>; onEmail: (id: string) => void; onWhatsApp: (id: string) => void }) {
   const [note, setNote] = useState(row.residence_notes || "");
+  const landlordStatuses = ["reserved","contacted","provisional_hold"];
   return <div className="rounded-2xl border bg-card p-4 md:p-5"><div className="grid gap-4 lg:grid-cols-[1.2fr,.8fr,.8fr,1fr] lg:items-start">
     <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="truncate font-black">{row.applicant_name || "Applicant"}</p><Badge variant="outline">{row.funding_type || "Funding undecided"}</Badge></div><p className="mt-1 text-xs text-muted-foreground">Reserved {row.created_at ? new Date(row.created_at).toLocaleDateString("en-ZA") : "—"}</p><p className="mt-2 text-sm"><span className="text-muted-foreground">Room preference:</span> {row.room_preference || "Not specified"}</p></div>
-    <div><p className="mb-1.5 text-xs font-semibold text-muted-foreground">Status</p><Select value={row.status || "reserved"} onValueChange={(value) => void onSave(row,{status:value,residence_notes:note})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(STATUS_LABELS).map(([value,label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div>
+    <div><p className="mb-1.5 text-xs font-semibold text-muted-foreground">Status</p><Select value={row.status || "reserved"} onValueChange={(value) => void onSave(row,{status:value,residence_notes:note})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(STATUS_LABELS).map(([value,label]) => <SelectItem key={value} value={value} disabled={!landlordStatuses.includes(value)}>{label}{!landlordStatuses.includes(value)?" · ResKonnect":""}</SelectItem>)}</SelectContent></Select></div>
     <div><p className="mb-1.5 text-xs font-semibold text-muted-foreground">Last contacted</p><p className="rounded-lg bg-muted/50 px-3 py-2 text-sm">{row.last_contacted_at ? new Date(row.last_contacted_at).toLocaleDateString("en-ZA") : "Not yet"}</p><Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => onEmail(row.id)}><Mail className="mr-2 h-3.5 w-3.5"/>Email update</Button><Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => onWhatsApp(row.id)}><MessageCircle className="mr-2 h-3.5 w-3.5"/>WhatsApp confirmation</Button></div>
     <div><p className="mb-1.5 text-xs font-semibold text-muted-foreground">Residence notes</p><Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Internal follow-up note" className="min-h-[76px]" /><Button size="sm" className="mt-2 w-full" disabled={saving || note === (row.residence_notes || "")} onClick={() => void onSave(row,{residence_notes:note})}>{saving ? "Saving..." : "Save note"}</Button></div>
   </div></div>;
