@@ -26,7 +26,8 @@ test("case workflow tables are private and God Mode commands require MFA",()=>{
   assert.ok(snapshot.public_relations.includes(name));
  }
  assert.match(foundation,/revoke all on public\.rk_case_workflows,public\.rk_case_tasks,public\.rk_case_operation_audit,public\.rk_case_collaboration from public,anon,authenticated/);
- assert.match(foundation,/auth\.jwt\(\)->>'aal'\),' '\)='aal2'/);
+ assert.match(foundation,/auth\.jwt\(\)->>\x27aal\x27/);
+ assert.match(foundation,/=\x27aal2\x27/);
  assert.match(operations,/reskonnect_internal\.rk_godmode_authorized\(\)/);
  assert.match(operations,/revoke all on function public\.rk_case_bulk_apply\(text,uuid\[\],text,text,jsonb,uuid\) from public,anon,authenticated/);
  assert.doesNotMatch(operations,/grant all on public\.rk_case_(?:workflows|tasks)/);
