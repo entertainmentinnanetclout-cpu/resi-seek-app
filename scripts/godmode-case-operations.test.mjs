@@ -6,6 +6,7 @@ const foundation=read("supabase/migrations/20261113191500_rk_case_operations_fou
 const operations=read("supabase/migrations/20261113192500_rk_case_command_and_delegation_rpcs.sql");
 const final=read("supabase/migrations/20261113195000_rk_final_case_actions_and_landlord_alerts.sql");
 const verificationGuard=read("supabase/migrations/20261113195700_rk_document_verification_intake_guard.sql");
+const eligibilityGuard=read("supabase/migrations/20261113202500_rk_explicit_ineligible_assessment.sql");
 const mailMigration=read("supabase/migrations/20261113193500_rk_safe_triage_correspondence.sql");
 const app=read("src/App.tsx");
 const adminNav=read("src/components/admin/AdminLayout.tsx");
@@ -65,6 +66,10 @@ test("audited bulk operations are versioned and cannot silently send an external
  assert.match(operations,/operation_id=p_operation_id/);
  assert.match(foundation,/unique\(actor_user_id,operation_id,kind,case_id\)/);
  assert.match(operations,/emails_sent',0/);
+ assert.match(eligibilityGuard,/p_action=\x27mark_ineligible\x27/);
+ assert.match(eligibilityGuard,/eligibility_decision=\x27ineligible\x27/);
+ assert.match(eligibilityGuard,/Eligibility assessment:/);
+ assert.match(admin,/mark_ineligible/);
  assert.match(admin,/rk_case_bulk_preview/);
  assert.match(admin,/rk_case_bulk_apply/);
  assert.match(admin,/Type CONFIRM/);
@@ -78,6 +83,7 @@ test("landlord work is delegated and cannot approve student placement",()=>{
  assert.match(operations,/only ResKonnect|Only ResKonnect/);
  assert.match(landlord,/rk_landlord_review_task/);
  assert.match(landlord,/rk_case_profile_packet/);
+ assert.match(landlord,/residence\/communications\?kind=/);
  assert.match(landlord,/rk_case_collaboration_post/);
  assert.doesNotMatch(landlord,/\.update\(\{status:\s*["'](?:approved|confirmed)/);
  assert.doesNotMatch(landlordDetail,/value:"approved",label:"Approve"/);
