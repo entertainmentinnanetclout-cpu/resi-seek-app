@@ -87,7 +87,7 @@ export default function AdminCaseCommandCenter(){
  const chosen=useMemo(()=>[...selected].slice(0,75),[selected]);
  const selectAll=()=>setSelected(prev=>new Set(filtered.slice(0,75).map(r=>r.id)));
  const toggle=(id:string)=>setSelected(prev=>{const next=new Set(prev);next.has(id)?next.delete(id):next.add(id);return next;});
- const changeKind=(next:Kind)=>{setKind(next);setOffset(0);setStage("all");setSelected(new Set());setView(null);};
+ const changeKind=(next:Kind)=>{setKind(next);setOffset(0);setStage("all");setAction("acknowledge_received");setSelected(new Set());setView(null);};
  const previewAction=async()=>{
   if(!chosen.length)return toast.error("Select cases first");
   setBusy(true);setPreview(null);setResult(null);
