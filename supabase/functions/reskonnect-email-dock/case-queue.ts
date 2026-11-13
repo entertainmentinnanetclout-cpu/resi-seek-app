@@ -55,7 +55,7 @@ export function deriveCaseJourney(c:CaseContext,last:OutboundEmail|null,lastUplo
 /** A case snapshot must match at final send, not merely its status label. */
 export async function caseFingerprint(c:CaseContext):Promise<string>{
  const payload=JSON.stringify({
-  id:c.id,kind:c.kind,status:c.status,residence:c.residenceId,
+  id:c.id,kind:c.kind,status:c.status,reviewStage:c.reviewStage||null,residence:c.residenceId,
   email:c.email,contactAllowed:c.contactAllowed,funding:c.fundingType,
   docs:c.documents.stage,uploaded:c.documents.uploaded,pending:c.documents.pendingReview,
   missing:[...c.documents.missing].sort()
