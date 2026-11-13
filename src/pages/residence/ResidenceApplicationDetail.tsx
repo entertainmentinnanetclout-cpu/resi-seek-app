@@ -25,14 +25,12 @@ interface DocumentRow { id:string; doc_type:string; original_filename:string|nul
 const STATUS_OPTIONS=[
   {value:"documents_required",label:"Request documents",icon:FileText},
   {value:"under_review",label:"Mark under review",icon:Clock3},
-  {value:"conditionally_approved",label:"Conditionally approve",icon:CheckCircle2},
-  {value:"approved",label:"Approve",icon:CheckCircle2},
-  {value:"rejected",label:"Reject",icon:XCircle},
+
 ] as const;
 const TEMPLATES=[
   "Thank you for your application. We need additional documents before we can continue reviewing it. Please upload the requested documents in ResKonnect.",
   "Your accommodation application is now under review. We will update you in ResKonnect as soon as a decision is available.",
-  "Your application has been conditionally approved. Please review the remaining requirements in ResKonnect and complete them as soon as possible.",
+  "Your application is under review. Eligibility recommendations and final approval remain with ResKonnect.",
 ];
 const statusVariant=(status:string):"default"|"secondary"|"destructive"|"outline"=>status==="approved"?"default":status==="rejected"?"destructive":status==="withdrawn"?"outline":"secondary";
 
@@ -77,7 +75,9 @@ export default function ResidenceApplicationDetail(){
   };
 
   const updateStatus=async()=>{
-    if(!selectedStatus||!application||!residence)return;setUpdating(true);
+    if(!selectedStatus||!application||!residence)return;
+    if(!["under_review","documents_required"].includes(selectedStatus))return toast.error("Landlords submit eligibility recommendations. Only ResKonnect finalises approvals or rejections.");
+    setUpdating(true);
     try{const label=getResidenceApplicationStatusLabel(selectedStatus);const note=statusNote.trim();const timestamp=new Date().toLocaleString("en-ZA");const notes=note?`${application.notes?`${application.notes}\n`:""}[${timestamp}] ${label}: ${note}`:application.notes;const {error:updateError}=await supabase.from("applications").update({status:selectedStatus,...(note?{notes}:{})}).eq("id",application.id).eq("residence_id",residence.id);if(updateError)throw updateError;const {data:{user}}=await supabase.auth.getUser();if(user)await supabase.from("application_activity_log").insert({application_id:application.id,residence_id:residence.id,actor_user_id:user.id,actor_type:"residence",action_type:"status_updated",metadata:{previous_status:application.status,new_status:selectedStatus,note:note||null}});await supabase.from("notifications").insert({user_id:application.user_id,type:"application_status",title:`${residence.name}: ${label}`,message:note?`Your accommodation application is now ${label.toLowerCase()}. ${note}`:`Your accommodation application is now ${label.toLowerCase()}.`,metadata:{application_id:application.id,residence_id:residence.id,status:selectedStatus}});toast.success(`Application updated to ${label}.`);setStatusDialog(false);setSelectedStatus("");setStatusNote("");await load();}catch(err){console.error(err);toast.error("Application status could not be updated.");}finally{setUpdating(false);}
   };
 
@@ -87,7 +87,7 @@ export default function ResidenceApplicationDetail(){
   const appliedAt=application.application_date||application.created_at;
 
   return <><SEO noIndex title={`Application ${getResidenceApplicationRef(application.id)} | ${residence.name} | ResKonnect`} description="Review a residence application."/><div className="mx-auto max-w-7xl space-y-6">
-    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"><div className="flex items-start gap-3"><Button variant="outline" size="icon" onClick={()=>navigate("/residence/inbox")}><ArrowLeft className="h-4 w-4"/></Button><div><div className="flex flex-wrap items-center gap-2"><h1 className="text-2xl font-black sm:text-3xl">{application.applicant_name||"Applicant"}</h1><Badge variant={statusVariant(application.status)}>{getResidenceApplicationStatusLabel(application.status)}</Badge></div><p className="mt-1 text-sm text-muted-foreground">Ref {getResidenceApplicationRef(application.id)} · {appliedAt?`Applied ${new Date(appliedAt).toLocaleDateString("en-ZA")}`:"Application date unavailable"}</p></div></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={()=>navigate(`/residence/communications?kind=application&target=${application.id}`)}><Mail className="mr-2 h-4 w-4"/>Email feedback</Button><Button variant="outline" onClick={()=>navigate(`/residence/communications?kind=application&target=${application.id}&channel=whatsapp`)}><MessageSquare className="mr-2 h-4 w-4"/>WhatsApp confirmation</Button><Button onClick={()=>setStatusDialog(true)}>Update application status</Button></div></div>
+    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"><div className="flex items-start gap-3"><Button variant="outline" size="icon" onClick={()=>navigate("/residence/inbox")}><ArrowLeft className="h-4 w-4"/></Button><div><div className="flex flex-wrap items-center gap-2"><h1 className="text-2xl font-black sm:text-3xl">{application.applicant_name||"Applicant"}</h1><Badge variant={statusVariant(application.status)}>{getResidenceApplicationStatusLabel(application.status)}</Badge></div><p className="mt-1 text-sm text-muted-foreground">Ref {getResidenceApplicationRef(application.id)} · {appliedAt?`Applied ${new Date(appliedAt).toLocaleDateString("en-ZA")}`:"Application date unavailable"}</p></div></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={()=>navigate(`/residence/communications?kind=application&target=${application.id}`)}><Mail className="mr-2 h-4 w-4"/>Email feedback</Button><Button variant="outline" onClick={()=>navigate(`/residence/communications?kind=application&target=${application.id}&channel=whatsapp`)}><MessageSquare className="mr-2 h-4 w-4"/>WhatsApp confirmation</Button><Button variant="outline" onClick={()=>navigate("/residence/eligibility")}>Eligibility Tasks</Button><Button onClick={()=>setStatusDialog(true)}>Update review status</Button></div></div>
 
     <Card className="border-emerald-500/20 bg-emerald-500/[0.035]"><CardContent className="flex items-start gap-3 p-4"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600"/><div><p className="text-sm font-bold">Protected communication</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Student phone numbers and email addresses are intentionally hidden from the residence portal. Use ResKonnect messaging, status notifications and the protected Gmail email workspace to communicate. The recipient address remains hidden.</p></div></CardContent></Card>
 
