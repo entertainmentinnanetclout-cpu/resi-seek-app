@@ -81,7 +81,7 @@ export default function AdminCaseCommandCenter(){
   finally{setLoading(false);}
  },[kind,stage,offset]);
  useEffect(()=>{void load();},[load]);
- useEffect(()=>{setPreview(null);setResult(null);setEmailDrafts([]);setWhatsapp(null);setHandoff("");setTyped("");},[selected,action,note,emailMode,kind]);
+ useEffect(()=>{setPreview(null);setEmailDrafts([]);setWhatsapp(null);setHandoff("");setTyped("");},[selected,action,note,emailMode,kind]);
  const filtered=useMemo(()=>rows.filter(r=>[r.student_name,r.student_number,r.residence_name,r.campus,r.status,r.stage,r.id].join(" ").toLowerCase().includes(query.toLowerCase())),[rows,query]);
  const chosen=useMemo(()=>[...selected].slice(0,75),[selected]);
  const selectAll=()=>setSelected(prev=>new Set(filtered.slice(0,75).map(r=>r.id)));
@@ -107,7 +107,14 @@ export default function AdminCaseCommandCenter(){
    const response=await rpc("rk_case_bulk_apply",{p_kind:kind,p_ids:ids,p_action:action,p_note:note,p_expected:expected,p_operation_id:crypto.randomUUID()});
    setResult(response);setPreview(null);
    toast.success(response.applied+" operations saved"+(response.skipped?" · "+response.skipped+" skipped":""));
-   if(response.applied) {setSelected(new Set());await load();}
+   if(response.applied) {
+    // Retain successfully processed records so staff can send factual batch notices
+    // without hunting for and reselecting the same student cases.
+    setSelected(new Set((response.items||[]).filter((item:OperationResult)=>item.ok).map((item:OperationResult)=>item.id)));
+    if(action==="start_review")setEmailMode("triage_under_review");
+    if(action==="acknowledge_received")setEmailMode("triage_received");
+    await load();
+   }
   }catch(e){toast.error(e instanceof Error?e.message:"Bulk operation failed");}
   finally{setBusy(false);}
  };
