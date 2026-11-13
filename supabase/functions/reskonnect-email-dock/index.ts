@@ -149,7 +149,7 @@ Deno.serve(async(req:Request)=>{
    if(input.operator_confirmed!==true||!validUuid(input.request_id)||input.preview_hash!==fingerprint||
       input.expected_status!==c.status||input.expected_document_stage!==c.documents.stage)
     return res({error:"Case changed or manual WhatsApp handoff was not confirmed. Refresh the preview."},409);
-   if(!fixedTriage)if(!fixedTriage)await assertReviewed(s,c,input.document_review_id);
+   if(!fixedTriage)await assertReviewed(s,c,input.document_review_id);
    const {data:log,error:logErr}=await db.from("reskonnect_whatsapp_handoffs").insert({
     actor_user_id:actor,target_kind:kind,target_id:c.id,template_key:packet.resolved_key,
     request_id:input.request_id,phone_last4:c.phoneE164.slice(-4),
