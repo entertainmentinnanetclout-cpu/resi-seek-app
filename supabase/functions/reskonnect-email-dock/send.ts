@@ -5,6 +5,15 @@ import {type EmailSession,validEmail,recipientHint} from "./context.ts";
 const statusIs=(value:string,wanted:string)=>value.toLowerCase().replace(/[^a-z0-9]+/g,"_")===wanted;
 export function assertTemplateIsFactual(ctx:CaseContext,key:TemplateKey){
  const selected=key==="smart"?smartTemplate(ctx):key;
+ if(selected==="triage_received"||selected==="triage_under_review"){
+  if(ctx.kind!=="application"&&ctx.kind!=="reservation")throw Error("Triage messages are for applications and reservations only");
+  if(["approved","rejected","withdrawn","confirmed","cancelled"].some(s=>statusIs(ctx.status,s)))
+   throw Error("A finalised case cannot receive a receipt or review-start message");
+  if(selected==="triage_under_review" && ctx.reviewStage!=="under_review"&&
+     !(ctx.kind==="application"&&ctx.status==="under_review"))
+   throw Error("This case is not marked under review by ResKonnect");
+  return selected;
+ }
  if(selected==="approved"&&!statusIs(ctx.status,"approved"))throw Error("An approval letter requires a recorded approved decision");
  if(selected==="rejected"&&!statusIs(ctx.status,"rejected"))throw Error("A rejection letter requires a recorded rejected decision");
  if(selected==="conditionally_approved"&&!statusIs(ctx.status,"conditionally_approved"))throw Error("Conditional acceptance requires a recorded conditional approval");
@@ -27,7 +36,9 @@ export function assertTemplateIsFactual(ctx:CaseContext,key:TemplateKey){
 }
 export async function previewPacket(s:EmailSession,ctx:CaseContext,key:TemplateKey,note:string){
  const resolved=assertTemplateIsFactual(ctx,key);
- const {data:custom,error}=await s.db.from("reskonnect_email_templates")
+ const fixedTriage=["triage_received","triage_under_review"].includes(resolved);
+ if(fixedTriage&&note.trim())throw Error("Receipt/review-start templates are fixed wording: no unverified decision notes");
+ const {data:custom,error}=fixedTriage?{data:null,error:null}:await s.db.from("reskonnect_email_templates")
   .select("subject_template,body_template").eq("owner_user_id",s.actor)
   .eq("target_kind",ctx.kind).eq("template_key",resolved).maybeSingle();
  if(error)throw Error("Saved template could not be loaded");
