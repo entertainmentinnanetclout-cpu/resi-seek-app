@@ -212,7 +212,10 @@ export const AdminApplicationsContent = () => {
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div><h1 className="text-3xl font-black">Applications & Academic Cohorts</h1><p className="text-muted-foreground">Review applications by academic year, annual/semester/trimester cycle, study level and institutional context. Handover exports are available only through GOD MODE OS above.</p></div>
-          <Badge variant="outline" className="w-fit gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Legacy handover export disabled</Badge>
+          <div className="flex flex-wrap items-center gap-2">
+           <Button asChild className="rk-clay-action"><Link to="/admin/cases"><CheckCheck className="mr-1.5 h-4 w-4"/>God Mode bulk case actions</Link></Button>
+           <Badge variant="outline" className="w-fit gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Legacy handover export disabled</Badge>
+          </div>
         </div>
 
         <SemesterSummary rows={applications.filter(app => academicYearFilter === "all" || app.academic_year === Number(academicYearFilter))} value={semesterFilter} onChange={setSemesterFilter}/>
@@ -230,7 +233,7 @@ export const AdminApplicationsContent = () => {
           onSelectResidence={setResidenceFilter}
         />
 
-        {selectedIds.size > 0 && <Card className="border-primary/50 bg-primary/5"><CardContent className="flex flex-wrap items-center gap-3 py-3"><span className="font-medium">{selectedIds.size} selected</span><Button size="sm" asChild><Link to="/admin/communications?tab=email&kind=application">Review verified cases in Email Dock</Link></Button><Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>Clear Selection</Button><p className="w-full text-xs text-muted-foreground">Bulk approvals and rejections must pass the Email Dock document and status checks; direct blind approvals are disabled.</p></CardContent></Card>}
+        {selectedIds.size > 0 && <Card className="border-primary/50 bg-primary/5"><CardContent className="flex flex-wrap items-center gap-3 py-3"><span className="font-medium">{selectedIds.size} selected</span><Button size="sm" asChild><Link to="/admin/cases">Bulk triage & delegated eligibility</Link></Button><Button size="sm" variant="outline" asChild><Link to="/admin/communications?tab=email&kind=application">Formal document-reviewed email</Link></Button><Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>Clear Selection</Button><p className="w-full text-xs text-muted-foreground">Bulk final decisions require God Mode preflight, verified documents when approving, and an audited ResKonnect handover. Receipt and review-start notices do not mean approval.</p></CardContent></Card>}
 
         <Card>
           <CardHeader><div className="flex flex-col gap-3 lg:flex-row">
