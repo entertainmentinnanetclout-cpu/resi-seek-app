@@ -22,6 +22,7 @@ type Action="acknowledge_received"|"start_review"|"request_documents"|"delegate_
 type OperationResult={id:string;ok:boolean;reason?:string;status?:string;stage?:string;document_readiness?:Docs};
 type EmailItem={id:string;ok:boolean;label?:string;subject?:string;body?:string;status?:string;document_signal?:{stage:string};preview_hash?:string;error?:string};
 type Thread={id:string;message:string;visibility:string;created_at:string;sender_id:string};
+type WaDraft={id:string;ok:boolean;message?:string;preview_hash?:string;case?:{status:string;document_signal:{stage:string}};can_open?:boolean;phone_hint?:string;error?:string};
 const OPTIONS:{id:Action;label:string;hint:string}[]=[
  {id:"acknowledge_received",label:"Mark received",hint:"Bulk receipt: records the case and notifies the student in-app. No document verification or booking decision."},
  {id:"start_review",label:"Start review",hint:"Moves the operations stage to Under Review. An application may also change to under_review; reservations stay unconfirmed."},
@@ -65,8 +66,8 @@ export default function AdminCaseCommandCenter(){
  const [result,setResult]=useState<{applied:number;skipped:number;items:OperationResult[]}|null>(null);
  const [emailMode,setEmailMode]=useState<"triage_received"|"triage_under_review">("triage_received");
  const [emailDrafts,setEmailDrafts]=useState<EmailItem[]>([]);
- const [whatsapp,setWhatsapp]=useState<{id:string;message:string;preview_hash:string;case:{status:string;document_signal:{stage:string}};can_open:boolean;phone_hint?:string}|null>(null);
- const [handoff,setHandoff]=useState("");
+ const [whatsappDrafts,setWhatsappDrafts]=useState<WaDraft[]>([]);
+ const [handoffs,setHandoffs]=useState<Record<string,{id:string;url:string;reported?:boolean}>>({});
  const [view,setView]=useState<CaseRow|null>(null);
  const [packet,setPacket]=useState<any>(null);
  const [thread,setThread]=useState<Thread[]>([]);
@@ -81,7 +82,7 @@ export default function AdminCaseCommandCenter(){
   finally{setLoading(false);}
  },[kind,stage,offset]);
  useEffect(()=>{void load();},[load]);
- useEffect(()=>{setPreview(null);setEmailDrafts([]);setWhatsapp(null);setHandoff("");setTyped("");},[selected,action,note,emailMode,kind]);
+ useEffect(()=>{setPreview(null);setEmailDrafts([]);setWhatsappDrafts([]);setHandoffs({});setTyped("");},[selected,action,note,emailMode,kind]);
  const filtered=useMemo(()=>rows.filter(r=>[r.student_name,r.student_number,r.residence_name,r.campus,r.status,r.stage,r.id].join(" ").toLowerCase().includes(query.toLowerCase())),[rows,query]);
  const chosen=useMemo(()=>[...selected].slice(0,75),[selected]);
  const selectAll=()=>setSelected(prev=>new Set(filtered.slice(0,75).map(r=>r.id)));
@@ -162,29 +163,44 @@ export default function AdminCaseCommandCenter(){
  };
  const whatsappPreview=async()=>{
   if(kind==="wil")return toast.error("WIL contacts use their own departmental desk");
-  if(chosen.length!==1)return toast.error("Select exactly one case for the manual WhatsApp handoff");
-  setBusy(true);setWhatsapp(null);setHandoff("");
-  try{const d=await edge({action:"whatsapp_preview",kind,target_id:chosen[0],template_key:emailMode,message:""});setWhatsapp({id:chosen[0],...d});}
-  catch(e){toast.error(e instanceof Error?e.message:"WhatsApp preview failed");}
-  finally{setBusy(false);}
+  if(!chosen.length)return toast.error("Select one or more cases to prepare manual WhatsApp drafts");
+  setBusy(true);setWhatsappDrafts([]);setHandoffs({});
+  try{
+   const ids=chosen.slice(0,5);
+   // Batch preparation only. Every external send is explicitly handled by an operator.
+   const prepared=await Promise.all(ids.map(async id=>{
+    try{
+     const d=await edge({action:"whatsapp_preview",kind,target_id:id,template_key:emailMode,message:""});
+     return {id,ok:true,...d} as WaDraft;
+    }catch(e){return {id,ok:false,error:e instanceof Error?e.message:"Unavailable"} as WaDraft;}
+   }));
+   setWhatsappDrafts(prepared);
+   toast.info(prepared.filter(x=>x.ok&&x.can_open).length+" WhatsApp draft(s) ready. Each requires a separate manual Send.");
+  }finally{setBusy(false);}
  };
- const openWhatsapp=async()=>{
-  if(!whatsapp?.can_open)return toast.error("This case has no contactable WhatsApp number");
-  if(!window.confirm("Open WhatsApp Business for this single student with the reviewed service message? You must press Send manually."))return;
+ const prepareWhatsapp=async(draft:WaDraft)=>{
+  if(!draft.ok||!draft.can_open||!draft.case||!draft.preview_hash)return toast.error("No contactable, verified preview for this case");
+  if(!window.confirm("Create an audited WhatsApp draft for this student? No message is sent automatically."))return;
   setBusy(true);
   try{
-   const d=await edge({action:"whatsapp_handoff",kind,target_id:whatsapp.id,template_key:emailMode,message:"",
-    operator_confirmed:true,request_id:crypto.randomUUID(),expected_status:whatsapp.case.status,
-    expected_document_stage:whatsapp.case.document_signal.stage,preview_hash:whatsapp.preview_hash});
-   setHandoff(d.handoff_id);window.open(d.url,"_blank","noopener,noreferrer");
-   toast.info("Draft opened; not sent automatically. Press Send in WhatsApp Business.");
-  }catch(e){toast.error(e instanceof Error?e.message:"Could not open WhatsApp handoff");}
+   const d=await edge({action:"whatsapp_handoff",kind,target_id:draft.id,template_key:emailMode,message:"",
+    operator_confirmed:true,request_id:crypto.randomUUID(),expected_status:draft.case.status,
+    expected_document_stage:draft.case.document_signal.stage,preview_hash:draft.preview_hash});
+   setHandoffs(old=>({...old,[draft.id]:{id:d.handoff_id,url:d.url}}));
+   toast.info("Handoff recorded. Use Open WhatsApp below and manually press Send.");
+  }catch(e){toast.error(e instanceof Error?e.message:"WhatsApp handoff failed");}
   finally{setBusy(false);}
  };
- const markWhatsappSent=async()=>{
-  if(!handoff||!window.confirm("Did you actually press Send in WhatsApp Business? This records your report, not delivery."))return;
-  try{await edge({action:"whatsapp_mark_sent",handoff_id:handoff,operator_confirmed:true});setHandoff("");setWhatsapp(null);toast.success("Operator-reported WhatsApp send recorded");}
-  catch(e){toast.error(e instanceof Error?e.message:"Handoff log failed");}
+ const markWhatsappSent=async(id:string)=>{
+  const prepared=handoffs[id];
+  if(!prepared||!window.confirm("Did you actually press Send in WhatsApp Business for this student? This records an operator report, not delivery."))return;
+  setBusy(true);
+  try{
+   await edge({action:"whatsapp_mark_sent",handoff_id:prepared.id,operator_confirmed:true});
+   setHandoffs(prev=>({...prev,[id]:{...prepared,reported:true}}));
+   toast.success("Operator-reported WhatsApp send recorded. No delivery receipt was implied.");
+  }catch(e){toast.error(e instanceof Error?e.message:"Handoff audit failed");}
+  finally{setBusy(false);}
  };
  const summary=OPTIONS.find(x=>x.id===action)!;
  return <AdminLayout>
@@ -261,9 +277,21 @@ export default function AdminCaseCommandCenter(){
       </div>}
       <div className="border-t pt-4">
        <h3 className="flex items-center gap-2 text-sm font-black"><MessageCircle className="h-4 w-4 text-emerald-600"/>Manual WhatsApp batch handoff</h3>
-       <p className="mt-1 text-xs text-muted-foreground">Select one student at a time. Preview and open a prepared message, then send it yourself in WhatsApp Business. No bot or mass-spam dispatch.</p>
-       <Button className="mt-3 w-full" variant="outline" disabled={busy||chosen.length!==1} onClick={()=>void whatsappPreview()}>Preview selected WhatsApp</Button>
-       {whatsapp&&<div className="mt-2 space-y-2 rounded-xl border p-3"><p className="text-xs font-semibold">Contact: {whatsapp.phone_hint||"Not available"}</p><Textarea readOnly value={whatsapp.message} rows={7} className="text-xs"/><Button className="w-full" disabled={!whatsapp.can_open||busy} onClick={()=>void openWhatsapp()}>Open manual WhatsApp draft</Button>{handoff&&<Button variant="outline" className="w-full" onClick={()=>void markWhatsappSent()}>I pressed Send · record operator report</Button>}</div>}
+       <p className="mt-1 text-xs text-muted-foreground">Prepare up to five individual WhatsApp service messages in one batch. You must open each draft and press Send separately in WhatsApp Business. No automatic mass-spam dispatch.</p>
+       <Button className="mt-3 w-full" variant="outline" disabled={busy||!chosen.length} onClick={()=>void whatsappPreview()}>Preview up to 5 selected WhatsApp messages</Button>
+       {whatsappDrafts.length>0&&<div className="mt-2 max-h-[500px] space-y-3 overflow-y-auto">
+        {whatsappDrafts.map(draft=><div key={draft.id} className="space-y-2 rounded-xl border p-3">
+         <p className="text-xs font-semibold">Case {draft.id.slice(0,8)} · {draft.ok?draft.phone_hint||"Contact not provided":"Cannot prepare"}</p>
+         {!draft.ok?<p className="text-xs text-amber-700">{draft.error}</p>:
+          <><Textarea readOnly value={draft.message||""} rows={5} className="text-xs"/>
+          {!handoffs[draft.id]&&<Button className="w-full" variant="outline" disabled={busy||!draft.can_open} onClick={()=>void prepareWhatsapp(draft)}>Prepare audited WhatsApp link</Button>}
+          {handoffs[draft.id]&&<div className="grid gap-2 sm:grid-cols-2">
+           <Button asChild variant="outline"><a href={handoffs[draft.id].url} target="_blank" rel="noopener noreferrer">Open WhatsApp to send</a></Button>
+           <Button variant={handoffs[draft.id].reported?"secondary":"default"} disabled={busy||handoffs[draft.id].reported===true} onClick={()=>void markWhatsappSent(draft.id)}>{handoffs[draft.id].reported?"Operator marked sent":"I pressed Send · record"}</Button>
+          </div>}</>}
+        </div>)}
+       </div>}
+       {chosen.length>5&&<p className="text-xs text-muted-foreground">Five drafts per preparation batch. Complete this batch, then adjust the selection for the remaining students.</p>}
       </div>
       <Button asChild variant="link" className="w-full"><Link to={"/admin/communications?tab=email&kind="+kind}>Open full document-reviewed communications <ArrowRight className="ml-1 h-4 w-4"/></Link></Button>
      </>}
