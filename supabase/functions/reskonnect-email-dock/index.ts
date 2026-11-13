@@ -56,6 +56,17 @@ Deno.serve(async(req:Request)=>{
  const note=messageText(input.message);
  if(note.length>2500)return res({error:"Message note exceeds 2,500 characters"},400);
  const fixedTriage=key==="triage_received"||key==="triage_under_review";
+ if(fixedTriage){
+  // Only the MFA-verified God Mode admin can bypass document review for a factual
+  // receipt/update. This token has already been validated with auth.getUser above.
+  let verifiedAal=false;
+  try{
+   const segment=(bearer.split(".")[1]||"").replace(/-/g,"+").replace(/_/g,"/");
+   const claims=JSON.parse(atob(segment.padEnd(Math.ceil(segment.length/4)*4,"=")));
+   verifiedAal=claims?.sub===actor&&claims?.aal==="aal2";
+  }catch{/* Invalid token shape cannot grant a triage exception. */}
+  if(!isAdmin||!verifiedAal)return res({error:"MFA-verified ResKonnect God Mode is required for unreviewed triage correspondence"},403);
+ }
  if(fixedTriage&&(note.length>0||!["application","reservation"].includes(kind)))return res({error:"Triage correspondence must use the fixed factual template without a custom note"},400);
 
  if(action==="contact_activity"){
