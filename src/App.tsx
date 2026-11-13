@@ -131,6 +131,8 @@ const NsfAsLanding = lazy(() => import("./pages/seo/NsfAsLanding"));
 const SeoLandingPage = lazy(() => import("./pages/seo/SeoLandingPage"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminVisualStudio = lazy(() => import("./pages/admin/AdminVisualStudio"));
+const AdminCaseCommandCenter = lazy(() => import("./pages/admin/AdminCaseCommandCenter"));
+const ResidenceEligibilityDesk = lazy(() => import("./pages/residence/ResidenceEligibilityDesk"));
 const AdminResidences = lazy(() => import("./pages/admin/AdminResidences"));
 const AdminApplications = lazy(() => import("./pages/admin/AdminApplications"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
@@ -710,6 +712,7 @@ const App = () => {
                       }
                     />
                     <Route path="/admin/studio" element={<ProtectedRoute><AdminRoute><AdminVisualStudio/></AdminRoute></ProtectedRoute>}/>
+                    <Route path="/admin/cases" element={<ProtectedRoute><AdminRoute><AdminCaseCommandCenter/></AdminRoute></ProtectedRoute>}/>
                     <Route
                       path="/admin/career-education"
                       element={
@@ -1191,6 +1194,7 @@ const App = () => {
                         path="reservations-2027"
                         element={<ResidenceReservations2027 />}
                       />
+                      <Route path="eligibility" element={<ResidenceEligibilityDesk />} />
                       <Route
                         path="listing"
                         element={<ResidenceListingProfile />}
