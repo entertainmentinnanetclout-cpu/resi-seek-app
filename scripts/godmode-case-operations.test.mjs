@@ -5,6 +5,7 @@ const read=p=>readFileSync(p,"utf8");
 const foundation=read("supabase/migrations/20261113191500_rk_case_operations_foundation.sql");
 const operations=read("supabase/migrations/20261113192500_rk_case_command_and_delegation_rpcs.sql");
 const final=read("supabase/migrations/20261113195000_rk_final_case_actions_and_landlord_alerts.sql");
+const verificationGuard=read("supabase/migrations/20261113195700_rk_document_verification_intake_guard.sql");
 const mailMigration=read("supabase/migrations/20261113193500_rk_safe_triage_correspondence.sql");
 const app=read("src/App.tsx");
 const adminNav=read("src/components/admin/AdminLayout.tsx");
@@ -31,6 +32,14 @@ test("case workflow tables are private and God Mode commands require MFA",()=>{
  assert.match(operations,/reskonnect_internal\.rk_godmode_authorized\(\)/);
  assert.match(operations,/revoke all on function public\.rk_case_bulk_apply\(text,uuid\[\],text,text,jsonb,uuid\) from public,anon,authenticated/);
  assert.doesNotMatch(operations,/grant all on public\.rk_case_(?:workflows|tasks)/);
+});
+test("students cannot forge verified document metadata at intake",()=>{
+ assert.match(verificationGuard,/create trigger aa_rk_document_verification_guard before insert or update/);
+ assert.match(verificationGuard,/create trigger aa_rk_application_document_verification_guard before insert or update/);
+ assert.match(verificationGuard,/Uploaded documents cannot be pre-verified/);
+ assert.match(verificationGuard,/Verified documents require reviewer and verification timestamp/);
+ assert.match(verificationGuard,/public\.is_authorized_residence_user\(new\.residence_id\)/);
+ assert.match(verificationGuard,/public\.has_admin_department_access\('accommodation'\)/);
 });
 test("verified evidence and ResKonnect handover block new final approvals at the database",()=>{
  assert.match(foundation,/v_w?.*handover_approved_at|v_workflow\.handover_approved_at/s);
@@ -87,11 +96,15 @@ test("fixed receipt and review-start messages may be sent without document-revie
  assert.match(communications,/if\(!fixedTriage\)await assertReviewed\(s,c,input\.document_review_id\)/);
  assert.match(communications,/if\(!fixedTriage\)await assertReviewed\(s,c,item\.document_review_id\)/);
  assert.match(communications,/if\(fixedTriage&&\(note\.length>0/);
+ assert.match(communications,/claims\?\.aal==="aal2"/);
+ assert.match(communications,/if\(!isAdmin\|\|!verifiedAal\)/);
  assert.match(context,/rk_case_workflows/);
  assert.match(fingerprint,/reviewStage:c\.reviewStage/);
  assert.match(admin,/bulk_preview/);
  assert.match(admin,/bulk_send/);
  assert.match(admin,/whatsapp_handoff/);
+ assert.match(admin,/Preview up to 5 selected WhatsApp messages/);
+ assert.match(admin,/Open WhatsApp to send/);
  assert.match(admin,/operator_confirmed:true/);
  assert.doesNotMatch(admin,/sendGrid|massWhatsappAutomation/);
 });
