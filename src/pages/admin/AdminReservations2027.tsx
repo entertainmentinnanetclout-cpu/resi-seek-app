@@ -38,6 +38,7 @@ type Reservation = {
 };
 
 const statuses = ["reserved", "contacted", "provisional_hold", "confirmed", "cancelled"];
+const editableTriageStatuses = ["reserved", "contacted", "provisional_hold"];
 const cycles = ["annual", "semester", "trimester", "unspecified"] as const;
 const studyLevels = ["undergraduate", "postgraduate", "advanced", "other", "unspecified"] as const;
 const currentYear = new Date().getFullYear();
@@ -111,6 +112,7 @@ export const AdminReservations2027Content = () => {
   const cohortKnown = rows.filter((r) => r.academic_cycle !== "unspecified").length;
 
   const updateStatus = async (row: Reservation, next: string) => {
+    if(!editableTriageStatuses.includes(next))return toast.error("Final confirmations and cancellations must use the audited God Mode Case Command Center.");
     const payload: any = { status: next };
     if (next === "contacted") payload.last_contacted_at = new Date().toISOString();
     const { error } = await db.from("accommodation_reservations").update(payload).eq("id", row.id);
@@ -147,7 +149,7 @@ export const AdminReservations2027Content = () => {
           <div className="flex items-center gap-2"><CalendarDays className="h-6 w-6 text-primary" /><h2 className="text-2xl font-black">Academic Reservations & Intake</h2></div>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">Manage annual, semester and trimester accommodation cohorts independently by academic year. A 2027 intake never changes 2026 occupancy.</p>
         </div>
-        <Button variant="outline" onClick={() => void load()}>Refresh</Button>
+<div className="flex flex-wrap gap-2"><Button asChild className="rk-clay-action"><Link to="/admin/cases"><CheckCircle2 className="mr-1 h-4 w-4"/>God Mode bulk reservations</Link></Button><Button variant="outline" onClick={() => void load()}>Refresh</Button></div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -214,7 +216,7 @@ export const AdminReservations2027Content = () => {
                   </div>
                   <Select value={row.study_level} onValueChange={(value) => void updateAcademicContext(row, { study_level: value as Reservation["study_level"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{studyLevels.map((value) => <SelectItem key={value} value={value}>{label(value)}</SelectItem>)}</SelectContent></Select>
                   <p className="pt-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">Reservation action</p>
-                  <Select value={row.status} onValueChange={(value) => void updateStatus(row, value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{statuses.map((x) => <SelectItem key={x} value={x}>{label(x)}</SelectItem>)}</SelectContent></Select>
+                  <Select value={row.status} onValueChange={(value) => void updateStatus(row, value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Array.from(new Set([row.status,...editableTriageStatuses])).map((x) => <SelectItem key={x} value={x} disabled={!editableTriageStatuses.includes(x)}>{label(x)}{!editableTriageStatuses.includes(x)?" · God Mode only":""}</SelectItem>)}</SelectContent></Select>
                   <Textarea rows={3} value={notes[row.id] || ""} onChange={(e) => setNotes((p) => ({ ...p, [row.id]: e.target.value }))} placeholder="Internal follow-up note" />
                   <Button size="sm" variant="outline" className="w-full" onClick={() => void saveNotes(row)}>Save note</Button>
                   <Button size="sm" variant="outline" className="w-full" asChild><Link to={`/admin/communications?tab=email&kind=reservation&target=${row.id}`}><Mail className="mr-2 h-4 w-4"/>Email reservation update</Link></Button><Button size="sm" variant="outline" className="w-full" asChild><Link to={`/admin/communications?tab=email&kind=reservation&target=${row.id}&channel=whatsapp`}><MessageCircle className="mr-2 h-4 w-4"/>WhatsApp confirmation</Link></Button>

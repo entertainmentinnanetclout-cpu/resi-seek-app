@@ -57,6 +57,7 @@ const navItems = [
     path: "/residence/reservations-2027",
     match: (path: string) => path.startsWith("/residence/reservations-2027"),
   },
+  { icon: FileCheck2, label: "Eligibility Tasks", path: "/residence/eligibility", match: (path: string) => path.startsWith("/residence/eligibility") },
   {
     icon: Sparkles,
     label: "Guided Listing Studio",

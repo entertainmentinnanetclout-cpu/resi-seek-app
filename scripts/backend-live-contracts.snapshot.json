@@ -1,6 +1,6 @@
 {
   "project_id": "mefjzkhobkltlbmhusdh",
-  "captured_date": "2026-11-11",
+  "captured_date": "2026-11-13",
   "purpose": "Read-only public API contract snapshot; names and signatures only; no row data, user IDs or secrets. Must be refreshed against Supabase when backend is changed.",
   "public_relations": [
     "academic_periods",
@@ -369,6 +369,10 @@
     "rk_brain_intent_catalog",
     "rk_brain_interactions",
     "rk_brain_memory",
+    "rk_case_collaboration",
+    "rk_case_operation_audit",
+    "rk_case_tasks",
+    "rk_case_workflows",
     "rk_native_device_tokens",
     "rk_partner_account_audit",
     "rk_partner_decision_audit",
@@ -1966,6 +1970,71 @@
       "authenticated": true
     },
     {
+      "name": "rk_case_bulk_apply",
+      "args": [
+        "p_kind",
+        "p_ids",
+        "p_action",
+        "p_note",
+        "p_expected",
+        "p_operation_id"
+      ],
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "name": "rk_case_bulk_preview",
+      "args": [
+        "p_kind",
+        "p_ids",
+        "p_action",
+        "p_note"
+      ],
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "name": "rk_case_collaboration_list",
+      "args": [
+        "p_kind",
+        "p_case_id"
+      ],
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "name": "rk_case_collaboration_post",
+      "args": [
+        "p_kind",
+        "p_case_id",
+        "p_message",
+        "p_shared"
+      ],
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "name": "rk_case_profile_packet",
+      "args": [
+        "p_kind",
+        "p_case_id"
+      ],
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "name": "rk_case_queue",
+      "args": [
+        "p_kind",
+        "p_scope",
+        "p_limit",
+        "p_offset",
+        "p_stage"
+      ],
+      "anon": false,
+      "authenticated": true
+    },
+    {
       "anon": false,
       "args": [
         "p_offset",
@@ -1988,6 +2057,16 @@
         "p_request"
       ],
       "name": "rk_join_single_room_waitlist",
+      "authenticated": true
+    },
+    {
+      "name": "rk_landlord_review_task",
+      "args": [
+        "p_task_id",
+        "p_decision",
+        "p_note"
+      ],
+      "anon": false,
       "authenticated": true
     },
     {
@@ -5164,6 +5243,77 @@
       "anon": false
     },
     {
+      "name": "rk_case_bulk_apply",
+      "args": [
+        "p_kind",
+        "p_ids",
+        "p_action",
+        "p_note",
+        "p_expected",
+        "p_operation_id"
+      ],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "name": "rk_case_bulk_preview",
+      "args": [
+        "p_kind",
+        "p_ids",
+        "p_action",
+        "p_note"
+      ],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "name": "rk_case_collaboration_list",
+      "args": [
+        "p_kind",
+        "p_case_id"
+      ],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "name": "rk_case_collaboration_post",
+      "args": [
+        "p_kind",
+        "p_case_id",
+        "p_message",
+        "p_shared"
+      ],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "name": "rk_case_profile_packet",
+      "args": [
+        "p_kind",
+        "p_case_id"
+      ],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "name": "rk_case_queue",
+      "args": [
+        "p_kind",
+        "p_scope",
+        "p_limit",
+        "p_offset",
+        "p_stage"
+      ],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
       "name": "rk_claim_student_followup",
       "args": [
         "p_phone",
@@ -5203,6 +5353,17 @@
       "service_role": true,
       "authenticated": true,
       "anon": false
+    },
+    {
+      "name": "rk_landlord_review_task",
+      "args": [
+        "p_task_id",
+        "p_decision",
+        "p_note"
+      ],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
     },
     {
       "name": "rk_my_security_status",

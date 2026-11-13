@@ -27,13 +27,14 @@ export async function readCase(s:EmailSession,kind:Kind,id:string):Promise<CaseC
  if(!canView(s,row.residence_id||null))throw Error("Case belongs to another residence");
  if(kind==="support_enquiry"&&row.consent_to_be_contacted!==true)throw Error("Applicant did not consent to contact");
  const userId=validUuid(row.user_id)?row.user_id:null;
- const [profile,property,docs,caseDocs]=await Promise.all([
+ const [profile,property,docs,caseDocs,workflow]=await Promise.all([
   userId?db.from("profiles").select("email,full_name,phone,phone_number,phone_e164").eq("id",userId).maybeSingle():Promise.resolve({data:null,error:null}),
   row.residence_id?db.from("residences").select("name,image_url,cover_image_url,images").eq("id",row.residence_id).maybeSingle():Promise.resolve({data:null,error:null}),
   userId&&(kind==="application"||kind==="reservation")?db.from("documents").select("document_type,status").eq("user_id",userId).limit(150):Promise.resolve({data:[],error:null}),
-  kind==="application"?db.from("application_documents").select("doc_type,status").eq("application_id",id).limit(150):Promise.resolve({data:[],error:null})
+  kind==="application"?db.from("application_documents").select("doc_type,status").eq("application_id",id).limit(150):Promise.resolve({data:[],error:null}),
+  (kind==="application"||kind==="reservation")?db.from("rk_case_workflows").select("stage").eq("kind",kind).eq("case_id",id).maybeSingle():Promise.resolve({data:null,error:null})
  ]);
- if(profile.error||property.error||docs.error||caseDocs.error)throw Error("Cannot check applicant documents");
+ if(profile.error||property.error||docs.error||caseDocs.error||workflow.error)throw Error("Cannot check applicant documents and review stage");
  const address=kind==="support_enquiry"?row.email:kind==="housing_lead"?(row.contact_email||profile.data?.email):profile.data?.email;
  const image=await residencePhoto(db,row.residence_id||null,[property.data?.cover_image_url,property.data?.image_url,property.data?.images]);
  const phoneCandidate=kind==="support_enquiry"?(row.whatsapp_number||row.phone):kind==="housing_lead"?(row.contact_phone||profile.data?.phone_e164||profile.data?.phone):
@@ -47,7 +48,7 @@ export async function readCase(s:EmailSession,kind:Kind,id:string):Promise<CaseC
   kind,id,userId,residenceId:row.residence_id||null,
   studentName:safe(row.applicant_name||row.contact_name||row.full_name||profile.data?.full_name||"Student",95),
   property:safe(property.data?.name||"ResKonnect",130),year:String(row.academic_year||""),
-  status:String(row.status||row.stage||"new"),email:validEmail(address)?address:"",
+  status:String(row.status||row.stage||"new"),reviewStage:workflow.data?.stage||null,email:validEmail(address)?address:"",
   reference:id.split("-")[0].toUpperCase(),fundingType:row.funding_type||null,
   documents:documentSignal(kind,files,row.funding_type||null),
   residenceImageUrl:image?.url||null,phoneE164,

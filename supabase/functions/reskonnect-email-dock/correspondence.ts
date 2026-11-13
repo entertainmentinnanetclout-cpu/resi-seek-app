@@ -3,11 +3,15 @@
  * document uploads do NOT constitute an acceptance/rejection decision.
  */
 export type Kind = "application"|"reservation"|"housing_lead"|"support_enquiry";
-export type TemplateKey = "smart"|"acknowledgement"|"documents_needed"|"documents_received"|"approved"|"rejected"|"conditionally_approved"|"status_update"|"feedback"|"next_steps"|"enquiry_response"|"viewing_invite"|"follow_up"|"reservation_confirmed"|"move_in_arrangements";
+export type TemplateKey = "smart"|"acknowledgement"|"documents_needed"|"documents_received"|"approved"|"rejected"|"conditionally_approved"|"status_update"|"feedback"|"next_steps"|"enquiry_response"|"viewing_invite"|"follow_up"|"reservation_confirmed"|"move_in_arrangements"|"triage_received"|"triage_under_review";
 export const KINDS:Kind[]=["application","reservation","housing_lead","support_enquiry"];
 export const APPLICATION_STATUSES=["submitted","under_review","documents_required","interview_scheduled","waitlisted","conditionally_approved","approved","rejected","withdrawn"];
 export const RESERVATION_STATUSES=["reserved","contacted","provisional_hold","confirmed","cancelled"];
 export const TEMPLATES:Record<Exclude<TemplateKey,"smart">,{name:string;subject:string;body:string}>={
+ triage_received:{name:"Reservation or application received",subject:"{{property}} | We received your submission | {{reference}}",
+  body:"We have recorded your {{kind_label}} for {{property}}. This message only acknowledges receipt. Your documents and eligibility have not yet been approved, and no accommodation placement or booking is confirmed. Check your ResKonnect account for further instructions."},
+ triage_under_review:{name:"Case under review",subject:"{{property}} | Review started | {{reference}}",
+  body:"Your {{kind_label}} for {{property}} is now in the review queue. Your identity, academic and funding evidence may still need verification. This is not a reservation confirmation, acceptance or funding decision. We will let you know what is required next."},
  acknowledgement:{name:"Received",subject:"{{property}} | Submission received | {{reference}}",
   body:"We received your {{kind_label}} for {{property}}.\nNext step: {{next_step}}\n{{custom_note}}"},
  documents_needed:{name:"Documents needed",subject:"{{property}} | Documents needed | {{reference}}",
@@ -43,7 +47,7 @@ export type DocumentRow={type:string;status?:string|null};
 export type DocumentSignal={stage:"missing"|"incomplete"|"received"|"complete"|"not_applicable";missing:string[];uploaded:number;pendingReview:number;summary:string};
 export type CaseContext={
   kind:Kind; id:string; userId:string|null; residenceId:string|null;
-  studentName:string; property:string; year:string; status:string;
+  studentName:string; property:string; year:string; status:string; reviewStage?:string|null;
   email:string; documents:DocumentSignal; reference:string;
   fundingType:string|null; contactAllowed:boolean;
   residenceImageUrl?:string|null; phoneE164?:string|null;
