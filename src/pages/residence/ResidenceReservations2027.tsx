@@ -64,8 +64,10 @@ const ResidenceReservations2027 = () => {
   }), [rows]);
 
   const updateReservation = async (row: any, patch: { status?: string; residence_notes?: string }) => {
-    if(patch.status && !["reserved","contacted","provisional_hold"].includes(patch.status))
-      return toast.error("Final status changes are controlled by ResKonnect after eligibility, document verification and handover. Use Eligibility Tasks.");
+    if(patch.status && !["reserved","contacted","provisional_hold"].includes(patch.status)){
+      toast.error("Final status changes are controlled by ResKonnect after eligibility, document verification and handover. Use Eligibility Tasks.");
+      return;
+    }
     setSavingId(row.id);
     const { error } = await (supabase as any).rpc("residence_portal_update_reservation", {
       p_reservation_id: row.id,
