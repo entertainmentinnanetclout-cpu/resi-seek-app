@@ -55,6 +55,8 @@ Deno.serve(async(req:Request)=>{
  const key:TemplateKey=isTemplate(input.template_key)?input.template_key:"smart";
  const note=messageText(input.message);
  if(note.length>2500)return res({error:"Message note exceeds 2,500 characters"},400);
+ const fixedTriage=key==="triage_received"||key==="triage_under_review";
+ if(fixedTriage&&(note.length>0||!["application","reservation"].includes(kind)))return res({error:"Triage correspondence must use the fixed factual template without a custom note"},400);
 
  if(action==="contact_activity"){
   try{return res(await contactActivity(s,input));}
@@ -73,7 +75,7 @@ Deno.serve(async(req:Request)=>{
   return res({defaults:TEMPLATES,overrides:data||[],placeholders:["student_name","property","reference","status","document_list","next_step","custom_note","kind_label","year","contact_email"]});
  }
  if(action==="save_template"||action==="reset_template"){
-  if(!kindOK||!isTemplate(input.template_key)||input.template_key==="smart")
+  if(!kindOK||!isTemplate(input.template_key)||input.template_key==="smart"||fixedTriage)
    return res({error:"Invalid template category"},400);
   if(action==="reset_template"){
    const {error}=await db.from("reskonnect_email_templates").delete()
@@ -147,7 +149,7 @@ Deno.serve(async(req:Request)=>{
    if(input.operator_confirmed!==true||!validUuid(input.request_id)||input.preview_hash!==fingerprint||
       input.expected_status!==c.status||input.expected_document_stage!==c.documents.stage)
     return res({error:"Case changed or manual WhatsApp handoff was not confirmed. Refresh the preview."},409);
-   await assertReviewed(s,c,input.document_review_id);
+   if(!fixedTriage)if(!fixedTriage)await assertReviewed(s,c,input.document_review_id);
    const {data:log,error:logErr}=await db.from("reskonnect_whatsapp_handoffs").insert({
     actor_user_id:actor,target_kind:kind,target_id:c.id,template_key:packet.resolved_key,
     request_id:input.request_id,phone_last4:c.phoneE164.slice(-4),
@@ -171,7 +173,7 @@ Deno.serve(async(req:Request)=>{
    if(action==="pdf_preview")return res(await makePreviewPdf(s,c,key,note));
    if(input.confirmed!==true||!validUuid(input.request_id))return res({error:"Send confirmation and request ID required"},400);
    if(input.expected_status!==c.status||input.expected_document_stage!==c.documents.stage||(typeof input.preview_hash==="string"&&input.preview_hash!==await reviewedHash(c,packet)))return res({error:"Case details, documents or reviewed email content changed since preview; regenerate the email"},409);
-   await assertReviewed(s,c,input.document_review_id);
+   if(!fixedTriage)await assertReviewed(s,c,input.document_review_id);
    const result=await sendOne(s,c,key,note,input.request_id,null);
    return res(result,result.sent?200:result.status||502);
   }catch(e){return failure(e);}
@@ -195,7 +197,7 @@ Deno.serve(async(req:Request)=>{
     return res({error:"Review and explicitly approve each batch of up to five emails"},400);
    const results:any[]=[];
    for(const item of input.requests){
-    try{const c=await readCase(s,kind,item.id);const reviewed=await previewPacket(s,c,key,note);if(item.expected_status!==c.status||item.expected_document_stage!==c.documents.stage||(typeof item.preview_hash==="string"&&item.preview_hash!==await reviewedHash(c,reviewed)))throw Error("Case content changed since bulk preview; review again");await assertReviewed(s,c,item.document_review_id);const result=await sendOne(s,c,key,note,item.request_id,input.batch_id);
+    try{const c=await readCase(s,kind,item.id);const reviewed=await previewPacket(s,c,key,note);if(item.expected_status!==c.status||item.expected_document_stage!==c.documents.stage||(typeof item.preview_hash==="string"&&item.preview_hash!==await reviewedHash(c,reviewed)))throw Error("Case content changed since bulk preview; review again");if(!fixedTriage)await assertReviewed(s,c,item.document_review_id);const result=await sendOne(s,c,key,note,item.request_id,input.batch_id);
       results.push({id:item.id,...result});}
     catch(e){results.push({id:item.id,sent:false,error:e instanceof Error?e.message:"Send failed"});}
    }
