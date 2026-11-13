@@ -18,7 +18,7 @@ import {supabase} from "@/integrations/supabase/client";
 type Kind="application"|"reservation"|"wil";
 type Docs={ready?:boolean;identity_verified?:boolean;academic_verified?:boolean;funding_verified?:boolean;funding_type_known?:boolean;missing?:string[];uploaded?:number;reason?:string};
 type CaseRow={id:string;kind:Kind;status:string;stage:string;student_name:string|null;student_number:string|null;campus:string|null;course:string|null;residence_name:string|null;funding_type:string|null;created_at:string;document_readiness:Docs;eligibility_decision:string|null;task_id:string|null;task_status:string|null};
-type Action="acknowledge_received"|"start_review"|"request_documents"|"delegate_review"|"mark_eligible"|"approve_handover"|"confirm_reservation"|"internal_note"|"mark_follow_up";
+type Action="acknowledge_received"|"start_review"|"request_documents"|"delegate_review"|"mark_eligible"|"approve_handover"|"confirm_reservation"|"approve_application"|"reject_application"|"cancel_reservation"|"internal_note"|"mark_follow_up";
 type OperationResult={id:string;ok:boolean;reason?:string;status?:string;stage?:string;document_readiness?:Docs};
 type EmailItem={id:string;ok:boolean;label?:string;subject?:string;body?:string;status?:string;document_signal?:{stage:string};preview_hash?:string;error?:string};
 type Thread={id:string;message:string;visibility:string;created_at:string;sender_id:string};
@@ -30,10 +30,13 @@ const OPTIONS:{id:Action;label:string;hint:string}[]=[
  {id:"mark_eligible",label:"ResKonnect recommends eligible",hint:"Preliminary eligibility recommendation, not placement approval. Evidence still must be verified."},
  {id:"approve_handover",label:"Approve handover",hint:"Requires eligible assessment, finished landlord task and verified identity, academic and funding evidence."},
  {id:"confirm_reservation",label:"Confirm physical reservation",hint:"Requires approved handover, verified documents and a genuine active physical-room hold."},
+ {id:"approve_application",label:"Approve application",hint:"Final application approval only after ResKonnect handover sign-off and verified ID, academic and funding documents."},
+ {id:"reject_application",label:"Reject ineligible application",hint:"A documented ineligible eligibility decision and factual reason are compulsory; this action is audited."},
+ {id:"cancel_reservation",label:"Cancel reservation",hint:"Closes the selected non-final reservation with a reason and triggers existing room-hold release controls."},
  {id:"mark_follow_up",label:"Create follow-up task",hint:"Creates an internal follow-up task for this case, without messaging anyone externally."},
  {id:"internal_note",label:"Add private notes",hint:"Adds a ResKonnect-only note to every selected case, without altering its status."},
 ];
-const risky=new Set<Action>(["delegate_review","approve_handover","confirm_reservation"]);
+const risky=new Set<Action>(["delegate_review","approve_handover","confirm_reservation","approve_application","reject_application","cancel_reservation"]);
 const readable=(s?:string|null)=>String(s||"Not set").replaceAll("_"," ");
 const rpc=async(action:string,params:Record<string,unknown>)=>{
  const {data,error}=await (supabase as any).rpc(action,params);
@@ -227,7 +230,7 @@ export default function AdminCaseCommandCenter(){
    <div className="grid gap-4 lg:grid-cols-2">
     <Card className="rk-neo-panel"><CardContent className="space-y-4 p-5">
      <div><h2 className="flex items-center gap-2 text-lg font-black"><Workflow className="h-5 w-5 text-[#2563eb]"/>Bulk operations</h2><p className="mt-1 text-xs text-muted-foreground">Safe preflight and per-case audit. A review stage is not a verified decision.</p></div>
-     <div><Label>Operation</Label><Select value={action} onValueChange={v=>setAction(v as Action)}><SelectTrigger className="mt-1"><SelectValue/></SelectTrigger><SelectContent>{OPTIONS.filter(x=>kind!=="wil"||!["delegate_review","mark_eligible","approve_handover","confirm_reservation"].includes(x.id)).filter(x=>kind==="reservation"||x.id!=="confirm_reservation").map(x=><SelectItem key={x.id} value={x.id}>{x.label}</SelectItem>)}</SelectContent></Select></div>
+     <div><Label>Operation</Label><Select value={action} onValueChange={v=>setAction(v as Action)}><SelectTrigger className="mt-1"><SelectValue/></SelectTrigger><SelectContent>{OPTIONS.filter(x=>kind!=="wil"||!["delegate_review","mark_eligible","approve_handover","confirm_reservation","approve_application","reject_application","cancel_reservation"].includes(x.id)).filter(x=>(kind==="reservation"||!["confirm_reservation","cancel_reservation"].includes(x.id))&&(kind==="application"||!["approve_application","reject_application"].includes(x.id))).map(x=><SelectItem key={x.id} value={x.id}>{x.label}</SelectItem>)}</SelectContent></Select></div>
      <p className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-[#174171]">{summary.hint}</p>
      <div><Label htmlFor="rk-bulk-note">Operational reason / internal note</Label><Textarea id="rk-bulk-note" rows={3} maxLength={500} value={note} onChange={e=>setNote(e.target.value)} placeholder="Optional for receipt/review; required for evidence requests, private notes and follow-ups"/></div>
      <Button onClick={()=>void previewAction()} disabled={busy||!chosen.length} className="w-full"><FileCheck2 className="mr-2 h-4 w-4"/>Preview {chosen.length} selected</Button>
