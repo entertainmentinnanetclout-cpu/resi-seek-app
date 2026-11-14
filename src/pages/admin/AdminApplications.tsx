@@ -85,6 +85,9 @@ export const AdminApplicationsContent = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [params,setParams] = useSearchParams();
   const [batchAction,setBatchAction] = useState("start_review");
+  const [batchConfirmation,setBatchConfirmation] = useState("");
+  const sensitiveBatchActions=new Set(["delegate_review","mark_eligible","mark_ineligible",
+   "approve_handover","approve_application","reject_application"]);
   const [batchNote,setBatchNote] = useState("");
   const [batchPreview,setBatchPreview] = useState<Array<{id:string;ok:boolean;reason?:string;status?:string;stage?:string}>|null>(null);
   const [batchResult,setBatchResult] = useState<{applied:number;skipped:number;items:Array<{id:string;ok:boolean;reason?:string}>}|null>(null);
@@ -127,7 +130,7 @@ export const AdminApplicationsContent = () => {
     }
   },[applications,params,setParams]);
 
-  useEffect(()=>{setBatchPreview(null);},[selectedIds,batchAction,batchNote]);
+  useEffect(()=>{setBatchPreview(null);setBatchConfirmation("");},[selectedIds,batchAction,batchNote]);
   useEffect(()=>{setSelectedIds(new Set());},[searchQuery,statusFilter,semesterFilter,institutionFilter,
     academicYearFilter,academicCycleFilter,studyLevelFilter,residenceFilter]);
   useEffect(() => {
@@ -204,7 +207,7 @@ export const AdminApplicationsContent = () => {
   }), [applications, searchQuery, statusFilter, institutionFilter, academicYearFilter, academicCycleFilter, studyLevelFilter, residenceFilter, semesterFilter]);
 
   const pendingIds = useMemo(() => filteredApplications.filter((app) =>
-    ["submitted","pending","under_review","documents_required","waitlisted"].includes(app.application_status))
+    !["approved","rejected","withdrawn"].includes(app.application_status))
     .map((app) => app.application_id), [filteredApplications]);
   const pendingCount = pendingIds.length;
 
@@ -219,6 +222,8 @@ export const AdminApplicationsContent = () => {
   const previewBulk=async()=>{
     const ids=[...selectedIds].filter(id=>applications.some(a=>a.application_id===id));
     if(ids.length<1||ids.length>25)return toast.error("Select between 1 and 25 open applications.");
+    if(sensitiveBatchActions.has(batchAction)&&batchNote.trim().length<8)
+     return toast.error("Verified eligibility and final decisions require a factual reason of at least eight characters.");
     setBulkProcessing(true);setBatchPreview(null);setBatchResult(null);
     try{
       const {data,error}=await (supabase as any).rpc("rk_case_bulk_preview",{
@@ -236,7 +241,9 @@ export const AdminApplicationsContent = () => {
     if(!batchPreview?.length||bulkProcessing)return;
     const eligible=batchPreview.filter(x=>x.ok);
     if(!eligible.length)return toast.error("No eligible applications were approved by the preflight.");
-    if(!window.confirm("Record "+batchAction.replaceAll("_"," ")+" for "+eligible.length+" applications? This is internal-only. No external messages, eligibility approval or room confirmation."))return;
+    if(sensitiveBatchActions.has(batchAction)&&batchConfirmation!=="CONFIRM")
+     return toast.error("Type CONFIRM before applying a sensitive decision.");
+    if(!window.confirm("Apply "+batchAction.replaceAll("_"," ")+" to "+eligible.length+" individually preflighted applications? This changes real business records only when their existing eligibility, verified document and handover gates pass. No external email or WhatsApp is sent."))return;
     setBulkProcessing(true);setBatchResult(null);
     try{
       const expected:Record<string,{status?:string;stage?:string}>={};
@@ -301,7 +308,13 @@ export const AdminApplicationsContent = () => {
             <div><Label>Internal bulk operation</Label><Select value={batchAction} onValueChange={setBatchAction}><SelectTrigger className="mt-1.5"><SelectValue/></SelectTrigger>
               <SelectContent><SelectItem value="acknowledge_received">Record received</SelectItem><SelectItem value="start_review">Start review</SelectItem>
                <SelectItem value="request_documents">Request missing evidence</SelectItem><SelectItem value="mark_follow_up">Schedule follow-up</SelectItem>
-               <SelectItem value="internal_note">Add private case note</SelectItem></SelectContent></Select></div>
+               <SelectItem value="internal_note">Add private case note</SelectItem>
+               <SelectItem value="delegate_review">Delegate review to residence</SelectItem>
+               <SelectItem value="mark_eligible">Mark eligible (evidence review)</SelectItem>
+               <SelectItem value="mark_ineligible">Mark ineligible (reason required)</SelectItem>
+               <SelectItem value="approve_handover">Approve verified handover</SelectItem>
+               <SelectItem value="approve_application">Approve verified application</SelectItem>
+               <SelectItem value="reject_application">Reject ineligible application</SelectItem></SelectContent></Select></div>
             <div><Label htmlFor="application-batch-note">Factual context / instruction</Label><Textarea id="application-batch-note" value={batchNote} onChange={e=>setBatchNote(e.target.value)}
               rows={2} maxLength={500} placeholder="Why these cases need this next step; compulsory for evidence requests and notes"/></div>
             <Button disabled={bulkProcessing||selectedIds.size>25} onClick={()=>void previewBulk()}><FileText className="mr-1.5 h-4 w-4"/>Preview {Math.min(selectedIds.size,25)}</Button>
@@ -309,7 +322,10 @@ export const AdminApplicationsContent = () => {
           {batchPreview&&<div className="rounded-xl border bg-background p-3" role="status">
             <p className="text-sm font-black">{batchPreview.filter(x=>x.ok).length} eligible · {batchPreview.filter(x=>!x.ok).length} blocked · no changes yet</p>
             <div className="mt-2 max-h-40 space-y-1 overflow-y-auto">{batchPreview.map(x=><p key={x.id} className={"text-xs "+(x.ok?"text-emerald-700":"text-amber-700")}>{x.ok?"✓":"Blocked"} {x.id.slice(0,8)} · {x.reason||"Ready for audited update"}</p>)}</div>
-            <Button className="rk-clay-action mt-3" disabled={bulkProcessing||!batchPreview.some(x=>x.ok)} onClick={()=>void applyBulk()}>
+            {sensitiveBatchActions.has(batchAction)&&<div className="mt-3 space-y-1"><Label htmlFor="application-sensitive-confirm">Type CONFIRM for this sensitive decision</Label>
+             <Input id="application-sensitive-confirm" value={batchConfirmation} onChange={e=>setBatchConfirmation(e.target.value)} autoComplete="off" placeholder="CONFIRM"/>
+             <p className="text-xs text-muted-foreground">Every selected case has its own protected eligibility, document and handover gates. No blanket approvals.</p></div>}
+            <Button className="rk-clay-action mt-3" disabled={bulkProcessing||!batchPreview.some(x=>x.ok)||(sensitiveBatchActions.has(batchAction)&&batchConfirmation!=="CONFIRM")} onClick={()=>void applyBulk()}>
              Apply to {batchPreview.filter(x=>x.ok).length} verified-preflight cases</Button>
           </div>}
           {batchResult&&<p role="status" className="text-xs font-semibold">{batchResult.applied} applied · {batchResult.skipped} skipped. Examine each item before external correspondence.</p>}
@@ -328,7 +344,7 @@ export const AdminApplicationsContent = () => {
             {pendingCount > 0 && <Button variant="outline" onClick={() => {
               setSelectedIds(new Set(pendingIds.slice(0,25)));
               if(pendingIds.length>25)toast.info("Selected the first 25 eligible review cases. Use another batch for the remainder.");
-            }}>Select up to 25 for review ({pendingCount})</Button>}
+            }}>Select up to 25 actionable ({pendingCount})</Button>}
           </div></CardHeader>
           <CardContent>
             {loading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> : error ? <div className="py-10 text-center text-destructive"><p className="font-semibold">{error}</p><Button variant="outline" className="mt-4" onClick={() => void fetchApplications()}>Retry</Button></div> : filteredApplications.length === 0 ? <p className="py-10 text-center text-muted-foreground">No applications found</p> : <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead className="w-12"><Checkbox checked={selectedIds.size > 0 && selectedIds.size === Math.min(25,pendingIds.length)} onCheckedChange={(checked) => setSelectedIds(checked ? new Set(pendingIds.slice(0,25)) : new Set())} /></TableHead><TableHead>Student</TableHead><TableHead>Residence</TableHead><TableHead>Academic Context</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{filteredApplications.map((app) => <TableRow key={app.application_id} className={selectedIds.has(app.application_id) ? "bg-primary/5" : ""}><TableCell>{pendingIds.includes(app.application_id) && <Checkbox checked={selectedIds.has(app.application_id)} onCheckedChange={() => toggleSelection(app.application_id)} />}</TableCell><TableCell><p className="font-medium">{app.student_name || "Unknown"}</p><p className="text-sm text-muted-foreground">{app.student_email}</p>{app.user_id&&<Link className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-primary underline" to={"/admin/students/"+app.user_id}>Student 360 <ArrowRight className="h-3 w-3"/></Link>}</TableCell><TableCell>{app.residence_name || "Unknown"}</TableCell><TableCell><div className="space-y-1"><Badge variant="outline">{app.academic_year} · {academicLabel(app.academic_cycle)}{app.academic_period > 0 ? ` ${app.academic_period}` : ""}</Badge><p className="text-xs text-muted-foreground">{academicLabel(app.study_level)} · {academicLabel(app.student_stage)}</p></div></TableCell><TableCell>{safeFormatDate(app.application_date)}</TableCell><TableCell>{getStatusBadge(app.application_status)}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => setSelectedApplication(app)}><Eye className="h-4 w-4" /></Button></TableCell></TableRow>)}</TableBody></Table></div>}
