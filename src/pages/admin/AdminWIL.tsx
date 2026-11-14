@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSignedUrl } from "@/lib/storage/signedUrl";
 import { useAuth } from "@/contexts/AuthContext";
@@ -223,7 +224,7 @@ export const AdminWILContent = () => {
                   <TableBody>
                     {filtered.map(app => (
                       <TableRow key={app.id}>
-                        <TableCell className="font-medium">{app.full_name}</TableCell>
+                        <TableCell className="font-medium"><p>{app.full_name}</p>{app.student_id&&<Link className="text-xs font-bold text-primary underline" to={"/admin/students/"+app.student_id}>Student 360</Link>}</TableCell>
                         <TableCell>{app.student_number}</TableCell>
                         <TableCell className="max-w-[150px] truncate">{app.course}</TableCell>
                         <TableCell>{app.year_level}</TableCell>
@@ -259,6 +260,7 @@ export const AdminWILContent = () => {
             <ScrollArea className="max-h-[70vh] pr-4">
               <div className="space-y-6">
                 {/* Student Info */}
+                {selectedApp.student_id&&<Button asChild size="sm" variant="outline"><Link to={"/admin/students/"+selectedApp.student_id}>Open linked Student 360 journey</Link></Button>}
                 <Card>
                   <CardHeader className="pb-2"><CardTitle className="text-base">Student Information</CardTitle></CardHeader>
                   <CardContent className="grid grid-cols-2 gap-3 text-sm">
