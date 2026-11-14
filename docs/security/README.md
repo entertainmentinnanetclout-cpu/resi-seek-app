@@ -90,3 +90,12 @@ No production payment, login, document upload, database privileges or DNS settin
 - **SEC-05:** **218** authenticated-executable privileged functions remain for manual, scope-aware review. No broad revoke has been performed.
 - **SEC-06:** residence-application field guards and real tenant-isolation SELECT tests implemented; authenticated multi-role business UAT remains outstanding.
 - The previous line about no production changes describes only the initial *inventory sprint*. Later dedicated SEC remediation releases explicitly include live database migrations. Never treat that initial statement as current deployment status.
+
+
+## Remediation log — SEC-04/05 internal RPC boundaries (14 November 2026)
+- [Service-only AdminOS/WhatsApp/AI permission boundaries and staff-MFA / tour-owner guards](SEC04_SEC05_INTERNAL_RPC_HARDENING_20261114.md)
+- **12** operational privileged RPCs now reject both anonymous and ordinary signed-in browser requests while retaining service-role execution.
+- **3** sensitive browser RPCs enforce staff AAL2 or actual tour-owner/residence authorization inside their function body.
+- Supabase authenticated-executable privileged-function Advisor count **218 → 206**; anonymous-executable count remains **24**. **SEC-04 and SEC-05 stay open** for per-function review.
+- Actual role-negative tests, one staff-MFA positive test and owner-scoped tour test passed; known AdminOS cron workers still run under postgres.
+- Existing SEC-03/06 roles and projection protections remain in place. All remaining privileged functions require individual risk review rather than broad grant removal.
