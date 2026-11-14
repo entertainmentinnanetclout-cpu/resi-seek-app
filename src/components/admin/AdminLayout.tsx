@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3, BriefcaseBusiness, Building2, Cpu, Handshake, Home, Landmark, LayoutDashboard,
-  LogOut, Megaphone, MessageCircle, RefreshCw, Settings2, UsersRound, Paintbrush, ClipboardCheck
+  LogOut, Megaphone, MessageCircle, RefreshCw, Settings2, UsersRound, Paintbrush, ClipboardCheck, Sparkles
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import DashboardUserManual from "@/components/manuals/DashboardUserManual";
@@ -79,6 +79,10 @@ const AdminSidebar=({
           <SidebarMenuButton asChild isActive={location.pathname==="/admin/cases"} tooltip="God Mode Case Command Center">
             <Link to="/admin/cases"><ClipboardCheck className="h-4 w-4"/><span className="font-bold">Case Command Center</span></Link>
           </SidebarMenuButton>
+        </SidebarMenuItem><SidebarMenuItem>
+         <SidebarMenuButton asChild isActive={location.pathname==="/admin/golden-cycle"} tooltip="Golden Service Cycle">
+          <Link to="/admin/golden-cycle"><Sparkles className="h-4 w-4"/><span className="font-bold">Golden Service Cycle</span></Link>
+         </SidebarMenuButton>
         </SidebarMenuItem></SidebarMenu></SidebarGroupContent>
       </SidebarGroup>}
       <SidebarGroup>

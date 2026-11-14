@@ -1,6 +1,6 @@
 {
   "project_id": "mefjzkhobkltlbmhusdh",
-  "captured_date": "2026-11-13",
+  "captured_date": "2026-11-14",
   "purpose": "Read-only public API contract snapshot; names and signatures only; no row data, user IDs or secrets. Must be refreshed against Supabase when backend is changed.",
   "public_relations": [
     "academic_periods",
@@ -373,6 +373,12 @@
     "rk_case_operation_audit",
     "rk_case_tasks",
     "rk_case_workflows",
+    "rk_golden_digest_receipts",
+    "rk_golden_service_cases",
+    "rk_golden_service_events",
+    "rk_golden_service_feedback",
+    "rk_golden_service_rule_audit",
+    "rk_golden_service_rules",
     "rk_native_device_tokens",
     "rk_partner_account_audit",
     "rk_partner_decision_audit",
@@ -2042,6 +2048,74 @@
       ],
       "name": "rk_export_contacts",
       "authenticated": true
+    },
+    {
+      "name": "rk_golden_case_history",
+      "args": [
+        "p_kind",
+        "p_id"
+      ],
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "name": "rk_golden_my_service",
+      "args": [],
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "name": "rk_golden_service_action",
+      "args": [
+        "p_kind",
+        "p_id",
+        "p_action",
+        "p_note",
+        "p_due_at",
+        "p_channel",
+        "p_confirm_sent",
+        "p_expected_status"
+      ],
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "name": "rk_golden_service_feedback_submit",
+      "args": [
+        "p_kind",
+        "p_id",
+        "p_rating",
+        "p_comment"
+      ],
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "name": "rk_golden_service_queue",
+      "args": [
+        "p_filter",
+        "p_kind",
+        "p_limit",
+        "p_offset"
+      ],
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "name": "rk_golden_service_rule_update",
+      "args": [
+        "p_kind",
+        "p_first_minutes",
+        "p_followup_minutes"
+      ],
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_golden_service_rules_list",
+      "args": [],
+      "authenticated": true,
+      "anon": false
     },
     {
       "anon": false,
@@ -5335,6 +5409,81 @@
       "service_role": true,
       "authenticated": true,
       "anon": false
+    },
+    {
+      "name": "rk_golden_case_history",
+      "args": [
+        "p_kind",
+        "p_id"
+      ],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "name": "rk_golden_my_service",
+      "args": [],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "name": "rk_golden_service_action",
+      "args": [
+        "p_kind",
+        "p_id",
+        "p_action",
+        "p_note",
+        "p_due_at",
+        "p_channel",
+        "p_confirm_sent",
+        "p_expected_status"
+      ],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "name": "rk_golden_service_feedback_submit",
+      "args": [
+        "p_kind",
+        "p_id",
+        "p_rating",
+        "p_comment"
+      ],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "name": "rk_golden_service_queue",
+      "args": [
+        "p_filter",
+        "p_kind",
+        "p_limit",
+        "p_offset"
+      ],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "name": "rk_golden_service_rule_update",
+      "args": [
+        "p_kind",
+        "p_first_minutes",
+        "p_followup_minutes"
+      ],
+      "authenticated": true,
+      "anon": false,
+      "service_role": true
+    },
+    {
+      "name": "rk_golden_service_rules_list",
+      "args": [],
+      "authenticated": true,
+      "anon": false,
+      "service_role": true
     },
     {
       "name": "rk_issue_background_notification_token",

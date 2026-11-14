@@ -264,6 +264,9 @@ const FindMyRes = () => {
           </Breadcrumb>
         </div>
 
+        <div className="mx-auto flex max-w-7xl justify-end px-4 pb-1 pt-2 text-xs sm:px-6 lg:px-8">
+         <Link className="font-bold text-primary underline underline-offset-4" to="/dashboard/services">Already submitted a request? Track your journey</Link>
+        </div>
         {/* Smart Search Hero */}
         <VisualPageBlock page="findmyres" sectionKey="search" slot={byKey["search"]} preview={isPreview}>
         <SmartSearchBar
