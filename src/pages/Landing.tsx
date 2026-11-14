@@ -196,6 +196,10 @@ const Landing = () => {
 
         <VisualPageBlock page="landing" sectionKey="search" slot={byKey["search"]} preview={isPreview}>
         <LivingSearchDock/>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-2 px-4 pb-4 text-xs text-muted-foreground">
+         <span>Already applied, reserved or requested help?</span>
+         <Link to="/dashboard/services" className="font-black text-primary underline underline-offset-4">Track your ResKonnect service journey</Link>
+        </div>
         {/* Highest-visibility accommodation placement immediately after the homepage hero. */}
         </VisualPageBlock>
 
