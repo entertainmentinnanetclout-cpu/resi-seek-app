@@ -227,13 +227,48 @@ export default function AdminGoldenServiceCycle(){
     <Button variant="outline" onClick={()=>void load()} disabled={loading} size="sm"><RefreshCw className={"mr-1.5 h-4 w-4 "+(loading?"animate-spin":"")}/>Refresh</Button>
    </div>
    {error&&<div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{error}</div>}
+   <section className="rk-neo-panel space-y-3 p-3 sm:p-4" aria-label="Safe bulk internal coordination">
+    <div className="flex flex-wrap items-start justify-between gap-2">
+     <div><h2 className="text-sm font-black">Safe bulk internal coordination</h2>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">Select up to 20 cases to start internal review, record private notes, or schedule follow-ups together. No external messages or business decisions are made here.</p></div>
+     <Badge variant="outline">{batchSelected.length} / 20 selected</Badge>
+    </div>
+    <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold">
+     <Checkbox aria-label="Select first 20 open cases on this page" checked={batchAllChecked} disabled={batchBusy||!firstTwenty.length}
+      onCheckedChange={v=>setBatchKeys(v===true?firstTwenty.map(caseKey):[])}/>
+     {batchAllChecked?"Clear page selection":"Select first 20 open cases on this page"}
+    </label>
+    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto]">
+     <div><Label htmlFor="golden-batch-action">Internal action</Label>
+      <Select value={batchAction} onValueChange={v=>setBatchAction(v as BatchAction)}>
+       <SelectTrigger id="golden-batch-action" className="mt-1"><SelectValue/></SelectTrigger>
+       <SelectContent><SelectItem value="begin_review">Begin review</SelectItem>
+        <SelectItem value="set_followup">Schedule follow-up</SelectItem>
+        <SelectItem value="private_note">Record private note</SelectItem></SelectContent>
+      </Select></div>
+     <div>{batchAction==="set_followup"?<>
+       <Label htmlFor="golden-batch-due">Follow-up date and time</Label>
+       <Input className="mt-1" id="golden-batch-due" type="datetime-local" value={batchDue} onChange={e=>setBatchDue(e.target.value)}/>
+      </>:<>
+       <Label htmlFor="golden-batch-note">Internal note</Label>
+       <Input className="mt-1" id="golden-batch-note" value={batchNote} maxLength={1500} onChange={e=>setBatchNote(e.target.value)} placeholder="Reason or next operator action"/>
+      </>}</div>
+     <div className="self-end"><Button className="w-full" disabled={batchBusy||!batchSelected.length}
+      onClick={()=>void applyBatch()}><ClipboardCheck className="mr-1.5 h-4 w-4"/>{batchBusy?"Applying…":`Apply to ${batchSelected.length}`}</Button></div>
+    </div>
+    <p className="text-[11px] leading-5 text-muted-foreground">Each case receives an audited event. The batch is all-or-nothing if anything changed. Unanswered cases remain unanswered until actual contact is confirmed.</p>
+   </section>
    <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(320px,.96fr)_minmax(0,1.04fr)]">
     <Card className="rk-neo-panel min-w-0"><CardContent className="p-3 sm:p-4">
      <div className="mb-3 flex items-center justify-between"><h2 className="font-black">Service attention queue</h2><Badge variant="outline">{filtered.length} loaded</Badge></div>
      {loading&&!items.length&&<p className="p-7 text-sm text-muted-foreground">Loading secured service cases…</p>}
      <div className="rk-stagger-list max-h-[780px] space-y-2 overflow-y-auto">
-      {filtered.map(row=><button key={row.kind+row.id} type="button" onClick={()=>void open(row)}
-       className={"rk-pressable w-full rounded-2xl border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 "+(selected?.id===row.id&&selected?.kind===row.kind?"border-blue-500 bg-blue-50":"border-border bg-card hover:border-blue-200 hover:bg-muted/40")}>
+      {filtered.map(row=><div key={caseKey(row)} className="relative">
+       <Checkbox aria-label={`Select ${pretty(row.kind)} case ${row.id.slice(0,8)}`}
+        checked={batchKeys.includes(caseKey(row))} disabled={Boolean(row.closed_at)||batchBusy}
+        onCheckedChange={v=>toggleBatch(row,v===true)} className="absolute left-3 top-5 z-10"/>
+       <button type="button" onClick={()=>void open(row)}
+       className={"rk-pressable w-full rounded-2xl border p-4 pl-12 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 "+(selected?.id===row.id&&selected?.kind===row.kind?"border-blue-500 bg-blue-50":"border-border bg-card hover:border-blue-200 hover:bg-muted/40")}>
        <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-[10px] font-black uppercase tracking-wide text-[#55729a]">{pretty(row.kind)}</span><div className="flex gap-1">{row.overdue&&<Badge variant="destructive">Overdue</Badge>}{row.needs_reply&&<Badge variant="outline">No verified reply</Badge>}</div></div>
        <p className="mt-1 text-sm font-black">{row.customer||"Service customer"}</p>
        <p className="mt-1 text-xs text-muted-foreground">{row.residence_name||pretty(row.status)} · {pretty(row.next_action)}</p>
@@ -241,7 +276,7 @@ export default function AdminGoldenServiceCycle(){
         <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><Clock3 className="h-3 w-3"/> {date(row.needs_reply?row.first_response_due_at:row.next_action_due_at)}</span></div>
        {row.delegated_review_open&&<p className="mt-2 text-[11px] font-semibold text-amber-700">Residence eligibility task is open</p>}
        {row.feedback_rating&&<p className="mt-1 text-[11px] font-bold text-[#385778]">Customer service rating: {row.feedback_rating}/5</p>}
-      </button>)}
+      </button></div>)}
       {!loading&&!filtered.length&&!error&&<div className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">No cases match this view. Try a different service category or status.</div>}
      </div>
      <div className="mt-3 flex items-center justify-between gap-2 border-t pt-3">
