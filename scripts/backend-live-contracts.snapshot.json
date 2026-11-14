@@ -377,6 +377,7 @@
     "rk_golden_service_cases",
     "rk_golden_service_events",
     "rk_golden_service_feedback",
+    "rk_golden_service_rule_audit",
     "rk_golden_service_rules",
     "rk_native_device_tokens",
     "rk_partner_account_audit",
@@ -2099,6 +2100,22 @@
       ],
       "anon": false,
       "authenticated": true
+    },
+    {
+      "name": "rk_golden_service_rule_update",
+      "args": [
+        "p_kind",
+        "p_first_minutes",
+        "p_followup_minutes"
+      ],
+      "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_golden_service_rules_list",
+      "args": [],
+      "authenticated": true,
+      "anon": false
     },
     {
       "anon": false,
@@ -5448,6 +5465,24 @@
       ],
       "anon": false,
       "authenticated": true,
+      "service_role": true
+    },
+    {
+      "name": "rk_golden_service_rule_update",
+      "args": [
+        "p_kind",
+        "p_first_minutes",
+        "p_followup_minutes"
+      ],
+      "authenticated": true,
+      "anon": false,
+      "service_role": true
+    },
+    {
+      "name": "rk_golden_service_rules_list",
+      "args": [],
+      "authenticated": true,
+      "anon": false,
       "service_role": true
     },
     {
