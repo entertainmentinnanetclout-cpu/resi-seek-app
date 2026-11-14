@@ -251,9 +251,17 @@ export default function AdminGoldenServiceCycle(){
       <p className="mt-2 text-2xl font-black tabular-nums text-[#071326]">{Number(card.count).toLocaleString("en-ZA")}</p>
       <p className="mt-1 text-[11px] font-semibold leading-4">{card.descriptor}</p>
       <p className="mt-2 flex-1 text-[11px] leading-5 text-muted-foreground">{card.detail}</p>
-      <Button asChild size="sm" variant="outline" className="mt-3 w-full">
-       <Link to={card.route}>{card.action}<ArrowRight className="ml-1.5 h-3.5 w-3.5"/></Link>
-      </Button>
+      {card.id==="05"
+       ?<Button size="sm" variant="outline" className="mt-3 w-full"
+         onClick={()=>{
+          setFilter("post_service");setKind("all");setOffset(0);setSelected(null);
+          document.getElementById("golden-filter")?.scrollIntoView({behavior:"smooth",block:"start"});
+         }}>
+         {card.action}<ArrowRight className="ml-1.5 h-3.5 w-3.5"/>
+        </Button>
+       :<Button asChild size="sm" variant="outline" className="mt-3 w-full">
+         <Link to={card.route}>{card.action}<ArrowRight className="ml-1.5 h-3.5 w-3.5"/></Link>
+        </Button>}
      </div>)}
     </div>
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-3 text-xs">
