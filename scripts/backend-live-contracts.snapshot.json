@@ -2735,7 +2735,7 @@
     },
     {
       "slug": "create-payment",
-      "version": 10,
+      "version": 11,
       "verify_jwt": true,
       "status": "ACTIVE"
     },
@@ -2968,15 +2968,21 @@
       "status": "ACTIVE"
     },
     {
+      "slug": "yoco-checkout",
+      "version": 1,
+      "verify_jwt": true,
+      "status": "ACTIVE"
+    },
+    {
       "slug": "yoco-verify-payment",
-      "version": 12,
+      "version": 13,
       "verify_jwt": true,
       "status": "ACTIVE"
     },
     {
       "slug": "yoco-webhook",
-      "version": 11,
-      "verify_jwt": true,
+      "version": 12,
+      "verify_jwt": false,
       "status": "ACTIVE"
     }
   ],
