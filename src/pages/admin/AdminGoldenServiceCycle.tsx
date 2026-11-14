@@ -18,7 +18,7 @@ type Kind="application"|"reservation"|"viewing"|"enquiry"|"onboarding"|"applicat
 type FlowAction="begin_review"|"request_info"|"waiting_residence"|"waiting_partner"|"set_followup"|"contact_confirmed"|"complete_cycle"|"reopen"|"private_note";
 type BatchAction="begin_review"|"set_followup"|"private_note";
 type Metric={total:number;open:number;overdue:number;unanswered:number;waiting:number;post_service:number;replied_today:number;recent_open?:number;recent_unanswered?:number;pending_documents?:number;pending_documents_older_48h?:number;pending_application_documents?:number;delegated_residence_open?:number;residence_recommendations_pending?:number;wil_open?:number;partner_open?:number;feedback_count?:number;feedback_average?:number|null;needs_recovery?:number};
-type Item={id:string;kind:Kind;customer:string;residence_name:string;status:string;step:string;next_action:string;priority:string;
+type Item={id:string;kind:Kind;student_user_id?:string|null;customer:string;residence_name:string;status:string;step:string;next_action:string;priority:string;
  first_response_due_at:string;next_action_due_at:string;last_human_response_at:string|null;last_human_channel:string|null;
  receipt_issued_at:string|null;feedback_rating?:number|null;overdue:boolean;needs_reply:boolean;delegated_review_open:boolean;source_created_at:string;closed_at:string|null};
 type Event={event_type:string;note:string|null;channel:string|null;created_at:string};
@@ -358,6 +358,7 @@ export default function AdminGoldenServiceCycle(){
        <div className="grid gap-2 sm:grid-cols-2"><div className="rk-neo-stat p-3"><p className="text-[10px] font-black uppercase text-muted-foreground">Next action</p><p className="mt-1 text-sm font-black">{pretty(selected.next_action)}</p></div><div className="rk-neo-stat p-3"><p className="text-[10px] font-black uppercase text-muted-foreground">Operator deadline</p><p className="mt-1 text-sm font-black">{date(selected.needs_reply?selected.first_response_due_at:selected.next_action_due_at)}</p></div></div>
        <div className="rounded-xl border bg-muted/20 p-3 text-xs leading-5"><p><strong>In-app receipt:</strong> {selected.receipt_issued_at?"Recorded":"Not recorded (historical cases were not auto-contacted)"}</p><p><strong>Confirmed human contact:</strong> {date(selected.last_human_response_at)} {selected.last_human_channel?"· "+pretty(selected.last_human_channel):""}</p><p className="mt-1 text-muted-foreground">A task status or automated receipt is never proof of a sent email, WhatsApp or finished eligibility assessment.</p></div>
        <div className="grid gap-2 sm:grid-cols-2">
+        {selected.student_user_id&&<Button asChild size="sm" variant="outline"><Link to={"/admin/students/"+selected.student_user_id}><UsersRound className="mr-1.5 h-4 w-4"/>Student 360 journey</Link></Button>}
         <Button asChild size="sm" variant="outline"><Link to={detailsUrl(selected.kind)}><FileCheck2 className="mr-1.5 h-4 w-4"/>Official case workspace</Link></Button>
         <Button asChild size="sm" variant="outline"><Link to={"/admin/communications?tab=email"+(["application","reservation"].includes(selected.kind)?"&kind="+selected.kind:"")}><Mail className="mr-1.5 h-4 w-4"/>Communication dock</Link></Button>
        </div>
