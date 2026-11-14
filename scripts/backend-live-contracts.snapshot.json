@@ -3,6 +3,8 @@
   "captured_date": "2026-11-14",
   "purpose": "Read-only public API contract snapshot; names and signatures only; no row data, user IDs or secrets. Must be refreshed against Supabase when backend is changed.",
   "public_relations": [
+    "Bookings",
+    "Users",
     "academic_periods",
     "accommodation_compliance_cases",
     "accommodation_compliance_evidence",
@@ -154,7 +156,6 @@
     "assistance_document_requests",
     "assistance_submissions",
     "balances",
-    "Bookings",
     "bursaries",
     "call_logs",
     "campaigns",
@@ -385,6 +386,8 @@
     "rk_partner_profiles",
     "rk_partner_scopes",
     "rk_partner_staff_roles",
+    "rk_student_journey_audit",
+    "rk_student_journey_milestones",
     "rk_visual_page_audit",
     "rk_visual_page_revisions",
     "rk_visual_page_sections",
@@ -438,7 +441,6 @@
     "user_phone_verification_attempts",
     "user_roles",
     "user_security_events",
-    "Users",
     "v_daily_operations_summary",
     "v_onboarding_command_center",
     "viewing_requests",
@@ -2274,6 +2276,36 @@
         "p_year"
       ],
       "name": "rk_single_room_waitlist_count",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_user_id",
+        "p_milestone",
+        "p_status",
+        "p_note",
+        "p_evidence_reference",
+        "p_expected_updated_at"
+      ],
+      "name": "rk_student_360_milestone_set",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_query",
+        "p_limit"
+      ],
+      "name": "rk_student_360_search",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "args": [
+        "p_user_id"
+      ],
+      "name": "rk_student_360_snapshot",
       "authenticated": true
     },
     {
