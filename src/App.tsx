@@ -738,7 +738,7 @@ const App = () => {
                       element={
                         <ProtectedRoute>
                           <DepartmentRoute department="executive">
-                            <AdminExecutiveOffice />
+                            <AdminHomeSwitch />
                           </DepartmentRoute>
                         </ProtectedRoute>
                       }
