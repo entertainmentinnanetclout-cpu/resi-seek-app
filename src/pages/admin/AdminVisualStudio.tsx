@@ -63,6 +63,10 @@ export default function AdminVisualStudio(){
  const [residences,setResidences]=useState<any[]>([]);
  const [search,setSearch]=useState("");
  const [editorError,setEditorError]=useState<string|null>(null);
+ const [previewState,setPreviewState]=useState<"loading"|"syncing"|"ready"|"error">("loading");
+ const [previewNonce,setPreviewNonce]=useState(0);
+ const previewRequest=useRef(0);
+ const [savedDraftSignature,setSavedDraftSignature]=useState<string|null>(null);
  const frame=useRef<HTMLIFrameElement|null>(null);
  const dragging=useRef<string|null>(null);
  const pageUrl=page==="landing"?"/":"/findmyres";
@@ -70,7 +74,11 @@ export default function AdminVisualStudio(){
  const active=source.find(row=>row.section_key===selected)||null;
  const edit=draft.find(row=>row.section_key===selected)||null;
  const sorted=useMemo(()=>normalized(draft),[draft]);
- const dirty=useMemo(()=>JSON.stringify(normalized(mapSnapshot(source)))!==JSON.stringify(sorted),[source,sorted]);
+ const draftSignature=useMemo(()=>JSON.stringify(sorted),[sorted]);
+ const dirty=useMemo(()=>JSON.stringify(normalized(mapSnapshot(source)))!==draftSignature,[source,draftSignature]);
+ const unsavedLocal=dirty&&savedDraftSignature!==draftSignature;
+ const latestDraft=history[0]?.state==="draft" ? history[0] : null;
+ const canResumeDraft=!!latestDraft&&JSON.stringify(normalized(latestDraft.snapshot))!==draftSignature;
  const studioMetrics=[["Published residences",residences.filter(r=>r.is_visible===true).length],["Spotlight properties",residences.filter(r=>r.is_visible===true&&r.is_spotlight===true).length],["Recent page revisions",history.length]] as const;
  const loadResidences=useCallback(async()=>{
   const {data,error}=await (supabase as any).from("residences").select("*").order("name");
@@ -78,7 +86,7 @@ export default function AdminVisualStudio(){
   else setResidences(Array.isArray(data)?data:[]);
  },[]);
  const loadPage=useCallback(async()=>{
-  setLoading(true);setEditorError(null);
+  setLoading(true);setEditorError(null);setSavedDraftSignature(null);
   const [published,rev]=await Promise.all([
    (supabase as any).from("rk_visual_page_sections").select("page_key,section_key,title,position,visible,required,editable_copy,headline,subtitle,updated_at").eq("page_key",page).order("position"),
    (supabase as any).from("rk_visual_page_revisions").select("*").eq("page_key",page).order("revision",{ascending:false}).limit(20),
@@ -97,22 +105,54 @@ export default function AdminVisualStudio(){
  useEffect(()=>{void loadResidences();},[loadResidences]);
 
  const sendPreview=useCallback(()=>{
-  frame.current?.contentWindow?.postMessage({type:"rk-visual-preview",page,sections:draft},window.location.origin);
+  if(!frame.current?.contentWindow||!draft.length)return;
+  const requestId=++previewRequest.current;
+  frame.current.contentWindow.postMessage(
+   {type:"rk-visual-preview",page,sections:normalized(draft),requestId},window.location.origin);
+  setPreviewState("syncing");
  },[page,draft]);
  useEffect(()=>{sendPreview();},[sendPreview]);
  useEffect(()=>{
   const listener=(event:MessageEvent)=>{
-   if(event.origin!==window.location.origin || event.source!==frame.current?.contentWindow)return;
+   if(event.origin!==window.location.origin||event.source!==frame.current?.contentWindow)return;
    if(event.data?.page!==page)return;
-   if(event.data?.type==="rk-visual-select"&&typeof event.data.sectionKey==="string"){
-    setSelected(event.data.sectionKey);
-    setTab("pages");
+   if(event.data?.type==="rk-visual-select"&&typeof event.data.sectionKey==="string"&&
+      source.some(row=>row.section_key===event.data.sectionKey)){
+    setSelected(event.data.sectionKey);setTab("pages");
    }
    if(event.data?.type==="rk-visual-ready")sendPreview();
+   if(event.data?.type==="rk-visual-applied"&&event.data.requestId===previewRequest.current)
+    setPreviewState("ready");
   };
   window.addEventListener("message",listener);
   return()=>window.removeEventListener("message",listener);
- },[page,sendPreview]);
+ },[page,sendPreview,source]);
+ // Report a blocked, stale or unmounted frame instead of displaying a permanent blank panel.
+ useEffect(()=>{
+  if(previewState==="ready"||previewState==="error"||!draft.length||tab!=="pages")return;
+  const timeout=window.setTimeout(()=>setPreviewState(state=>state==="ready"?state:"error"),12000);
+  return()=>window.clearTimeout(timeout);
+ },[previewState,page,previewNonce,draft.length,tab]);
+ useEffect(()=>{
+  if(previewState!=="ready"||!selected)return;
+  frame.current?.contentWindow?.postMessage({type:"rk-visual-focus",page,sectionKey:selected},window.location.origin);
+ },[page,selected,previewState]);
+ useEffect(()=>{
+  if(!unsavedLocal)return;
+  const onLeave=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};
+  window.addEventListener("beforeunload",onLeave);
+  return()=>window.removeEventListener("beforeunload",onLeave);
+ },[unsavedLocal]);
+ const reloadPreview=()=>{setPreviewState("loading");setPreviewNonce(n=>n+1);};
+ const switchPage=(next:VisualPageKey)=>{
+  if(next===page)return;
+  if(unsavedLocal&&!window.confirm("Your current page has edits not saved as a draft. Switch pages and discard those changes?"))return;
+  setPage(next);setPreviewState("loading");setPublishedSuccess(false);setPreviewNonce(n=>n+1);
+ };
+ const discard=()=>{
+  if(unsavedLocal&&!window.confirm("Discard unsaved changes to this page and reload its published layout?"))return;
+  void loadPage();
+ };
 
  const mutate=(transform:(current:VisualSectionDraft[])=>VisualSectionDraft[])=>{
   setPublishedSuccess(false);
@@ -148,6 +188,7 @@ export default function AdminVisualStudio(){
   toast.success(publish?"Live page published and version saved":"Draft revision saved privately");
   setNote("");
   if(publish){await loadPage();setPublishedSuccess(true);}
+  else setSavedDraftSignature(draftSignature);
   else{
    const {data:versions}=await (supabase as any).from("rk_visual_page_revisions")
     .select("*").eq("page_key",page).order("revision",{ascending:false}).limit(20);
@@ -157,7 +198,7 @@ export default function AdminVisualStudio(){
  const restore=(revision:Revision)=>{
   if(!Array.isArray(revision.snapshot)||!window.confirm("Load revision "+revision.revision+" into the editor? Nothing is published until you select Publish live."))return;
   setUndo(items=>[...items,clone(draft)]);setRedo([]);
-  setDraft(clone(revision.snapshot));setRestoring(true);setSelected(revision.snapshot[0]?.section_key||selected);
+  setDraft(clone(revision.snapshot));setRestoring(true);setSavedDraftSignature(JSON.stringify(normalized(revision.snapshot)));setSelected(revision.snapshot[0]?.section_key||selected);
   toast.info("Version loaded for preview. Review before publishing.");
  };
  const currentPreviewWidth=viewport==="mobile"?"390px":viewport==="tablet"?"820px":"100%";
@@ -189,17 +230,18 @@ export default function AdminVisualStudio(){
     <TabsContent value="pages" className="mt-5 space-y-4">
      <div className="rk-neo-panel flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4">
       <div className="flex flex-wrap items-center gap-2"><Label htmlFor="rk-editor-page">Editing</Label>
-       <select id="rk-editor-page" value={page} onChange={e=>setPage(e.target.value as VisualPageKey)}
+       <select id="rk-editor-page" value={page} onChange={e=>switchPage(e.target.value as VisualPageKey)}
         className="h-10 rounded-xl border bg-background px-3 text-sm font-black">
         <option value="landing">Homepage</option><option value="findmyres">Find My Res</option>
        </select>
-       <Badge variant={dirty?"secondary":"outline"}>{dirty?"Unpublished changes":"Matching published version"}</Badge>
+       <Badge variant={dirty?"secondary":"outline"}>{dirty?(unsavedLocal?"Unsaved changes":"Saved draft · not live"):"Matching published version"}</Badge>
+       {canResumeDraft&&<Button type="button" size="sm" variant="outline" disabled={loading||saving} onClick={()=>restore(latestDraft!)}><History className="mr-1.5 h-4 w-4"/>Resume saved draft</Button>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
        <Button size="sm" variant="outline" disabled={!undo.length} onClick={stepUndo} aria-label="Undo"><Undo2 className="h-4 w-4"/></Button>
        <Button size="sm" variant="outline" disabled={!redo.length} onClick={stepRedo} aria-label="Redo"><Redo2 className="h-4 w-4"/></Button>
-       <Button size="sm" variant="outline" onClick={()=>void loadPage()} disabled={loading||saving}><RefreshCw className="mr-1.5 h-4 w-4"/>Discard / refresh</Button>
-       <Button size="sm" variant="outline" disabled={saving||loading||!draft.length} onClick={()=>void save(false)}><Save className="mr-1.5 h-4 w-4"/>Save draft</Button>
+       <Button size="sm" variant="outline" onClick={discard} disabled={loading||saving}><RefreshCw className="mr-1.5 h-4 w-4"/>Discard / refresh</Button>
+       <Button size="sm" variant="outline" disabled={saving||loading||!draft.length||!unsavedLocal} onClick={()=>void save(false)}><Save className="mr-1.5 h-4 w-4"/>Save draft</Button>
        <Button size="sm" disabled={saving||loading||!draft.length||!dirty} className={"rk-clay-action "+(publishedSuccess?"rk-success-pulse":"")} onClick={()=>void save(true)}>
         <RkMorphIcon idle={Save} active={CheckCircle2} isActive={publishedSuccess}/>{saving?"Saving…":publishedSuccess?"Published":"Publish live"}
        </Button>
