@@ -80,7 +80,7 @@ const AdminSidebar=({
            ["/admin/communications","Communication Centre",MessageCircle]
          ] as const).map(([path,label,Icon])=><SidebarMenuItem key={path}>
           <SidebarMenuButton asChild isActive={location.pathname===path||(path==="/admin/brain"&&location.pathname==="/admin")
-           ||(path==="/admin/users"&&location.pathname.startsWith("/admin/students/"))} tooltip={label}>
+           ||(path==="/admin/users"&&location.pathname.startsWith("/admin/students/"))} tooltip={path==="/admin/golden-cycle"?"Golden Service Cycle":label}>
            <Link to={path}><Icon className="h-4 w-4"/><span className="font-bold">{label}</span></Link>
           </SidebarMenuButton>
          </SidebarMenuItem>)}
