@@ -42,7 +42,7 @@ const nowPlus=()=>asDateTimeLocal(new Date(Date.now()+24*3600000));
 const detailsUrl=(kind:Kind)=>{
  if(kind==="reservation"||kind==="application")return "/admin/cases";
  if(kind==="wil")return "/admin/wil";
- if(kind==="landlord")return "/admin/landlord-applications";
+ if(kind==="landlord")return "/admin/onboarding";
  if(kind==="partner")return "/admin/partnerships";
  if(kind==="student_support")return "/admin/operations-office?tab=service";
  if(kind==="application_support")return "/admin/student-care";
