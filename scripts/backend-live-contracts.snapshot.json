@@ -1,7 +1,7 @@
 {
   "project_id": "mefjzkhobkltlbmhusdh",
   "captured_date": "2026-11-14",
-  "purpose": "Read-only public API contract snapshot; names and signatures only; no row data, user IDs or secrets. Must be refreshed against Supabase when backend is changed.",
+  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles",
   "public_relations": [
     "Bookings",
     "Users",
@@ -710,13 +710,13 @@
         "p_date"
       ],
       "name": "adminos_generate_executive_brief",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
       "args": [],
       "name": "adminos_generate_proactive_notifications",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
@@ -761,7 +761,7 @@
         "p_metadata"
       ],
       "name": "adminos_record_agent_feedback",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
@@ -773,7 +773,7 @@
         "p_language"
       ],
       "name": "adminos_record_csat",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
@@ -786,13 +786,13 @@
         "p_metadata"
       ],
       "name": "adminos_record_learning_gap",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
       "args": [],
       "name": "adminos_refresh_next_best_actions",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
@@ -800,13 +800,13 @@
         "p_date"
       ],
       "name": "adminos_refresh_service_metrics",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
       "args": [],
       "name": "adminos_refresh_service_recovery",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
@@ -909,7 +909,7 @@
         "p_confidence"
       ],
       "name": "adminos_set_contact_language",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
@@ -938,7 +938,7 @@
         "p_patch"
       ],
       "name": "adminos_touch_whatsapp_conversion",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
@@ -1135,7 +1135,7 @@
         "p_version_id"
       ],
       "name": "dimpho_compile_persona",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
@@ -1191,7 +1191,7 @@
         "p_min_confidence"
       ],
       "name": "dimpho_search_knowledge",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
