@@ -9,7 +9,7 @@ const check=(condition,why)=>{assert.ok(condition,why);console.log("PASS",why);}
 const sql=read("supabase/migrations/20261114142000_rk_golden_solo_operator_workload_pulse.sql");
 const admin=read("src/pages/admin/AdminGoldenServiceCycle.tsx");
 check(sql.includes("rk_godmode_authorized()")
- &&sql.includes("security definer")&&sql.includes("revoke all on function public.rk_golden_service_queue")
+ &&sql.toLowerCase().includes("security definer")&&sql.includes("revoke all on function public.rk_golden_service_queue")
  &&sql.includes("to authenticated"),"Existing queue MFA and direct-data denial remain intact");
 for(const field of ["pending_documents","pending_documents_older_48h","pending_application_documents",
  "delegated_residence_open","residence_recommendations_pending","wil_open","partner_open"])
