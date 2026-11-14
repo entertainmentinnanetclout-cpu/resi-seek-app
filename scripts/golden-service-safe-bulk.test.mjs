@@ -45,4 +45,13 @@ check(admin.includes('useState("recent")')
  &&admin.includes('<SelectItem value="recent">New requests')
  &&admin.includes("metrics.recent_unanswered"),
  "Operator landing defaults to new requests and shows missing confirmed replies");
-console.log("Golden Service safe-bulk and fresh-intake regression checks passed.");
+const watchdog=read("supabase/migrations/20261114135000_rk_golden_watchdog_per_admin_dedupe.sql");
+check(watchdog.includes("rk_golden_watch_")
+ &&watchdog.includes("||'_'||u.user_id::text")
+ &&watchdog.includes("on conflict (event_key) do nothing"),
+ "Watchdog daily internal digest keys are unique per admin and conflict-safe");
+check(watchdog.includes("rk_golden_digest_receipts")
+ &&watchdog.includes("on conflict do nothing returning admin_user_id")
+ &&watchdog.includes("rk_golden_service_cases"),
+ "Watchdog retains receipt idempotency and real overdue case checks");
+console.log("Golden Service safe-bulk, fresh-intake and watchdog regression checks passed.");
