@@ -17,7 +17,7 @@ import {supabase} from "@/integrations/supabase/client";
 
 type Kind="application"|"reservation"|"wil";
 type Docs={ready?:boolean;identity_verified?:boolean;academic_verified?:boolean;funding_verified?:boolean;funding_type_known?:boolean;missing?:string[];uploaded?:number;reason?:string};
-type CaseRow={id:string;kind:Kind;status:string;stage:string;student_name:string|null;student_number:string|null;campus:string|null;course:string|null;residence_name:string|null;funding_type:string|null;created_at:string;document_readiness:Docs;eligibility_decision:string|null;task_id:string|null;task_status:string|null};
+type CaseRow={id:string;kind:Kind;student_user_id?:string|null;status:string;stage:string;student_name:string|null;student_number:string|null;campus:string|null;course:string|null;residence_name:string|null;funding_type:string|null;created_at:string;document_readiness:Docs;eligibility_decision:string|null;task_id:string|null;task_status:string|null};
 type Action="acknowledge_received"|"start_review"|"request_documents"|"delegate_review"|"mark_eligible"|"mark_ineligible"|"approve_handover"|"confirm_reservation"|"approve_application"|"reject_application"|"cancel_reservation"|"internal_note"|"mark_follow_up";
 type OperationResult={id:string;ok:boolean;reason?:string;status?:string;stage?:string;document_readiness?:Docs};
 type EmailItem={id:string;ok:boolean;label?:string;subject?:string;body?:string;status?:string;document_signal?:{stage:string};preview_hash?:string;error?:string};
@@ -245,7 +245,10 @@ export default function AdminCaseCommandCenter(){
         {r.task_id&&<Badge variant="secondary" className="text-[10px]">Residence: {readable(r.task_status)}</Badge>}
        </div>
       </div>
-      <Button size="sm" variant="outline" onClick={()=>void viewCase(r)}>Profile</Button>
+      <div className="flex shrink-0 flex-col gap-2">
+       <Button size="sm" variant="outline" onClick={()=>void viewCase(r)}>Case</Button>
+       {r.student_user_id&&<Button size="sm" variant="outline" asChild><Link to={"/admin/students/"+r.student_user_id}>Student 360</Link></Button>}
+      </div>
      </div>)}
      {!loading&&!filtered.length&&!error&&<p className="col-span-full py-9 text-center text-sm text-muted-foreground">No cases in this queue. Change filters or select another page.</p>}
     </div>
@@ -300,6 +303,7 @@ export default function AdminCaseCommandCenter(){
    </div>
   </div>
   <Dialog open={!!view} onOpenChange={v=>{if(!v)setView(null);}}><DialogContent className="max-h-[92dvh] max-w-2xl overflow-auto"><DialogHeader><DialogTitle>Student eligibility workspace</DialogTitle><DialogDescription>Internal private profile summary and case history. No identity file paths are shared here.</DialogDescription></DialogHeader>{view&&<div className="space-y-4">
+   {view.student_user_id&&<Button asChild variant="outline" size="sm"><Link to={"/admin/students/"+view.student_user_id}>Open complete Student 360 journey<ArrowRight className="ml-1.5 h-4 w-4"/></Link></Button>}
    <div className="grid gap-2 sm:grid-cols-2">{([["Student",view.student_name],["Residence",view.residence_name],["Status",readable(view.status)],["Review",readable(view.stage)],["Campus",view.campus],["Funding",view.funding_type]] as const).map(([key,value])=><div key={key} className="rk-neo-stat p-3"><p className="text-[10px] uppercase tracking-wider text-muted-foreground">{key}</p><p className="mt-1 text-sm font-black">{value||"Not recorded"}</p></div>)}</div>
    {packet&&<div className="space-y-2 rounded-xl border p-3"><p className="text-sm font-black">Profile for eligibility</p><p className="text-xs">Student number: {packet.student?.student_number||"Not supplied"} · Course: {packet.student?.course||"Not supplied"}</p><p className="text-xs">Academic year: {packet.student?.academic_year||"Unknown"} · Funding: {packet.student?.funding_type||"Not supplied"}</p><p className="text-xs font-bold">{packet.document_readiness?.ready?"Required evidence verified":"Required document verification pending"}</p>{(packet.document_readiness?.missing||[]).map((msg:string)=><p key={msg} className="text-xs text-amber-700">• {msg}</p>)}</div>}
    <h3 className="text-sm font-black">Private operations discussion</h3>
