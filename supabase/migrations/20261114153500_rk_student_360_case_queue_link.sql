@@ -54,7 +54,7 @@ begin
  ) order by created_at desc,id desc),'[]'::jsonb),coalesce(max(total),0)
  into v_rows,v_total from allowed where rn>p_offset and rn<=p_offset+p_limit;
  return jsonb_build_object('items',v_rows,'total',v_total,'offset',p_offset,'limit',p_limit);
-end $function$
+end $function$;
 
 revoke all on function public.rk_case_queue(text,text,integer,integer,text) from public,anon,authenticated;
 grant execute on function public.rk_case_queue(text,text,integer,integer,text) to authenticated;
