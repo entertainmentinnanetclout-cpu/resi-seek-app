@@ -63,6 +63,10 @@ export default function AdminVisualStudio(){
  const [residences,setResidences]=useState<any[]>([]);
  const [search,setSearch]=useState("");
  const [editorError,setEditorError]=useState<string|null>(null);
+ const [previewState,setPreviewState]=useState<"loading"|"syncing"|"ready"|"error">("loading");
+ const [previewNonce,setPreviewNonce]=useState(0);
+ const previewRequest=useRef(0);
+ const [savedDraftSignature,setSavedDraftSignature]=useState<string|null>(null);
  const frame=useRef<HTMLIFrameElement|null>(null);
  const dragging=useRef<string|null>(null);
  const pageUrl=page==="landing"?"/":"/findmyres";
@@ -70,7 +74,15 @@ export default function AdminVisualStudio(){
  const active=source.find(row=>row.section_key===selected)||null;
  const edit=draft.find(row=>row.section_key===selected)||null;
  const sorted=useMemo(()=>normalized(draft),[draft]);
- const dirty=useMemo(()=>JSON.stringify(normalized(mapSnapshot(source)))!==JSON.stringify(sorted),[source,sorted]);
+ const draftSignature=useMemo(()=>JSON.stringify(sorted),[sorted]);
+ const dirty=useMemo(()=>JSON.stringify(normalized(mapSnapshot(source)))!==draftSignature,[source,draftSignature]);
+ const unsavedLocal=dirty&&savedDraftSignature!==draftSignature;
+ const changedBlocks=useMemo(()=>sorted.filter(row=>{
+  const published=source.find(item=>item.section_key===row.section_key);
+  return !!published&&JSON.stringify(mapSnapshot([published])[0])!==JSON.stringify(row);
+ }).length,[sorted,source]);
+ const latestDraft=history[0]?.state==="draft" ? history[0] : null;
+ const canResumeDraft=!!latestDraft&&JSON.stringify(normalized(latestDraft.snapshot))!==draftSignature;
  const studioMetrics=[["Published residences",residences.filter(r=>r.is_visible===true).length],["Spotlight properties",residences.filter(r=>r.is_visible===true&&r.is_spotlight===true).length],["Recent page revisions",history.length]] as const;
  const loadResidences=useCallback(async()=>{
   const {data,error}=await (supabase as any).from("residences").select("*").order("name");
@@ -78,7 +90,7 @@ export default function AdminVisualStudio(){
   else setResidences(Array.isArray(data)?data:[]);
  },[]);
  const loadPage=useCallback(async()=>{
-  setLoading(true);setEditorError(null);
+  setLoading(true);setEditorError(null);setSavedDraftSignature(null);
   const [published,rev]=await Promise.all([
    (supabase as any).from("rk_visual_page_sections").select("page_key,section_key,title,position,visible,required,editable_copy,headline,subtitle,updated_at").eq("page_key",page).order("position"),
    (supabase as any).from("rk_visual_page_revisions").select("*").eq("page_key",page).order("revision",{ascending:false}).limit(20),
@@ -97,22 +109,54 @@ export default function AdminVisualStudio(){
  useEffect(()=>{void loadResidences();},[loadResidences]);
 
  const sendPreview=useCallback(()=>{
-  frame.current?.contentWindow?.postMessage({type:"rk-visual-preview",page,sections:draft},window.location.origin);
+  if(!frame.current?.contentWindow||!draft.length)return;
+  const requestId=++previewRequest.current;
+  frame.current.contentWindow.postMessage(
+   {type:"rk-visual-preview",page,sections:normalized(draft),requestId},window.location.origin);
+  setPreviewState("syncing");
  },[page,draft]);
  useEffect(()=>{sendPreview();},[sendPreview]);
  useEffect(()=>{
   const listener=(event:MessageEvent)=>{
-   if(event.origin!==window.location.origin || event.source!==frame.current?.contentWindow)return;
+   if(event.origin!==window.location.origin||event.source!==frame.current?.contentWindow)return;
    if(event.data?.page!==page)return;
-   if(event.data?.type==="rk-visual-select"&&typeof event.data.sectionKey==="string"){
-    setSelected(event.data.sectionKey);
-    setTab("pages");
+   if(event.data?.type==="rk-visual-select"&&typeof event.data.sectionKey==="string"&&
+      source.some(row=>row.section_key===event.data.sectionKey)){
+    setSelected(event.data.sectionKey);setTab("pages");
    }
    if(event.data?.type==="rk-visual-ready")sendPreview();
+   if(event.data?.type==="rk-visual-applied"&&event.data.requestId===previewRequest.current)
+    setPreviewState("ready");
   };
   window.addEventListener("message",listener);
   return()=>window.removeEventListener("message",listener);
- },[page,sendPreview]);
+ },[page,sendPreview,source]);
+ // Report a blocked, stale or unmounted frame instead of displaying a permanent blank panel.
+ useEffect(()=>{
+  if(previewState==="ready"||previewState==="error"||!draft.length||tab!=="pages")return;
+  const timeout=window.setTimeout(()=>setPreviewState(state=>state==="ready"?state:"error"),12000);
+  return()=>window.clearTimeout(timeout);
+ },[previewState,page,previewNonce,draft.length,tab]);
+ useEffect(()=>{
+  if(previewState!=="ready"||!selected)return;
+  frame.current?.contentWindow?.postMessage({type:"rk-visual-focus",page,sectionKey:selected},window.location.origin);
+ },[page,selected,previewState]);
+ useEffect(()=>{
+  if(!unsavedLocal)return;
+  const onLeave=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};
+  window.addEventListener("beforeunload",onLeave);
+  return()=>window.removeEventListener("beforeunload",onLeave);
+ },[unsavedLocal]);
+ const reloadPreview=()=>{setPreviewState("loading");setPreviewNonce(n=>n+1);};
+ const switchPage=(next:VisualPageKey)=>{
+  if(next===page)return;
+  if(unsavedLocal&&!window.confirm("Your current page has edits not saved as a draft. Switch pages and discard those changes?"))return;
+  setPage(next);setPreviewState("loading");setPublishedSuccess(false);setPreviewNonce(n=>n+1);
+ };
+ const discard=()=>{
+  if(unsavedLocal&&!window.confirm("Discard unsaved changes to this page and reload its published layout?"))return;
+  void loadPage();
+ };
 
  const mutate=(transform:(current:VisualSectionDraft[])=>VisualSectionDraft[])=>{
   setPublishedSuccess(false);
@@ -120,6 +164,7 @@ export default function AdminVisualStudio(){
   setRedo([]);setDraft(transform(clone(draft)));
  };
  const patch=(p:Partial<VisualSectionDraft>)=>mutate(rows=>rows.map(row=>row.section_key===selected?{...row,...p}:row));
+ const patchByKey=(key:string,p:Partial<VisualSectionDraft>)=>mutate(rows=>rows.map(row=>row.section_key===key?{...row,...p}:row));
  const move=(key:string,target:string)=>{
   if(page!=="landing" || key===target)return;
   const items=normalized(draft);
@@ -149,6 +194,7 @@ export default function AdminVisualStudio(){
   setNote("");
   if(publish){await loadPage();setPublishedSuccess(true);}
   else{
+   setSavedDraftSignature(draftSignature);
    const {data:versions}=await (supabase as any).from("rk_visual_page_revisions")
     .select("*").eq("page_key",page).order("revision",{ascending:false}).limit(20);
    setHistory((versions||[]) as Revision[]);
@@ -157,7 +203,7 @@ export default function AdminVisualStudio(){
  const restore=(revision:Revision)=>{
   if(!Array.isArray(revision.snapshot)||!window.confirm("Load revision "+revision.revision+" into the editor? Nothing is published until you select Publish live."))return;
   setUndo(items=>[...items,clone(draft)]);setRedo([]);
-  setDraft(clone(revision.snapshot));setRestoring(true);setSelected(revision.snapshot[0]?.section_key||selected);
+  setDraft(clone(revision.snapshot));setRestoring(revision.state==="published");setSavedDraftSignature(JSON.stringify(normalized(revision.snapshot)));setSelected(revision.snapshot[0]?.section_key||selected);
   toast.info("Version loaded for preview. Review before publishing.");
  };
  const currentPreviewWidth=viewport==="mobile"?"390px":viewport==="tablet"?"820px":"100%";
@@ -189,17 +235,19 @@ export default function AdminVisualStudio(){
     <TabsContent value="pages" className="mt-5 space-y-4">
      <div className="rk-neo-panel flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4">
       <div className="flex flex-wrap items-center gap-2"><Label htmlFor="rk-editor-page">Editing</Label>
-       <select id="rk-editor-page" value={page} onChange={e=>setPage(e.target.value as VisualPageKey)}
+       <select id="rk-editor-page" value={page} onChange={e=>switchPage(e.target.value as VisualPageKey)}
         className="h-10 rounded-xl border bg-background px-3 text-sm font-black">
         <option value="landing">Homepage</option><option value="findmyres">Find My Res</option>
        </select>
-       <Badge variant={dirty?"secondary":"outline"}>{dirty?"Unpublished changes":"Matching published version"}</Badge>
+       <Badge variant={dirty?"secondary":"outline"}>{dirty?(unsavedLocal?"Unsaved changes":"Saved draft · not live"):"Matching published version"}</Badge>
+       <Badge variant="outline">{changedBlocks} changed block{changedBlocks===1?"":"s"}</Badge>
+       {canResumeDraft&&<Button type="button" size="sm" variant="outline" disabled={loading||saving} onClick={()=>restore(latestDraft!)}><History className="mr-1.5 h-4 w-4"/>Resume saved draft</Button>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
        <Button size="sm" variant="outline" disabled={!undo.length} onClick={stepUndo} aria-label="Undo"><Undo2 className="h-4 w-4"/></Button>
        <Button size="sm" variant="outline" disabled={!redo.length} onClick={stepRedo} aria-label="Redo"><Redo2 className="h-4 w-4"/></Button>
-       <Button size="sm" variant="outline" onClick={()=>void loadPage()} disabled={loading||saving}><RefreshCw className="mr-1.5 h-4 w-4"/>Discard / refresh</Button>
-       <Button size="sm" variant="outline" disabled={saving||loading||!draft.length} onClick={()=>void save(false)}><Save className="mr-1.5 h-4 w-4"/>Save draft</Button>
+       <Button size="sm" variant="outline" onClick={discard} disabled={loading||saving}><RefreshCw className="mr-1.5 h-4 w-4"/>Discard / refresh</Button>
+       <Button size="sm" variant="outline" disabled={saving||loading||!draft.length||!unsavedLocal} onClick={()=>void save(false)}><Save className="mr-1.5 h-4 w-4"/>Save draft</Button>
        <Button size="sm" disabled={saving||loading||!draft.length||!dirty} className={"rk-clay-action "+(publishedSuccess?"rk-success-pulse":"")} onClick={()=>void save(true)}>
         <RkMorphIcon idle={Save} active={CheckCircle2} isActive={publishedSuccess}/>{saving?"Saving…":publishedSuccess?"Published":"Publish live"}
        </Button>
@@ -221,7 +269,12 @@ export default function AdminVisualStudio(){
           onKeyDown={e=>{if(e.target!==e.currentTarget)return;if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelected(row.section_key);}}}
           className={"rk-pressable flex w-full cursor-pointer items-center gap-2 rounded-xl border px-2.5 py-2.5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 "+(selected===row.section_key?"border-[#2563eb] bg-[#eef4ff]":"border-transparent hover:border-border hover:bg-muted/60")}>
           <Move className="h-3.5 w-3.5 shrink-0 text-muted-foreground"/><span className="min-w-0 flex-1 truncate text-xs font-bold">{slot?.title||row.section_key}</span>
-          {!row.visible?<EyeOff className="h-3.5 w-3.5 text-amber-600"/>:<Eye className="h-3.5 w-3.5 text-muted-foreground"/>}
+          <button type="button" disabled={slot?.required} aria-label={(row.visible?"Hide ":"Show ")+(slot?.title||row.section_key)}
+           title={slot?.required?"Required section cannot be hidden":"Toggle section visibility"}
+           onClick={e=>{e.stopPropagation();patchByKey(row.section_key,{visible:!row.visible});}}
+           className="rounded p-1.5 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">
+           {!row.visible?<EyeOff className="h-3.5 w-3.5 text-amber-600"/>:<Eye className="h-3.5 w-3.5 text-muted-foreground"/>}
+          </button>
           <span className="flex flex-col gap-0.5">
            <button type="button" aria-label={"Move "+(slot?.title||row.section_key)+" up"} disabled={page!=="landing"} onClick={e=>{e.stopPropagation();moveStep(row.section_key,i,-1,e.currentTarget);}} className="rounded p-1 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"><ArrowUp className="h-3 w-3"/></button>
            <button type="button" aria-label={"Move "+(slot?.title||row.section_key)+" down"} disabled={page!=="landing"} onClick={e=>{e.stopPropagation();moveStep(row.section_key,i,1,e.currentTarget);}} className="rounded p-1 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"><ArrowDown className="h-3 w-3"/></button>
@@ -233,8 +286,17 @@ export default function AdminVisualStudio(){
       </CardContent></Card>
       <div className="min-w-0 space-y-3">
        <div className="rk-neo-panel flex flex-wrap items-center justify-between gap-2 p-3">
-        <span className="text-xs font-black">Real page preview · unpublished edits</span>
-        <div className="flex gap-1" role="group" aria-label="Preview device width">
+        <div className="min-w-0">
+         <p className="text-xs font-black">Real page preview · unpublished edits</p>
+         <p role="status" aria-live="polite" className={"mt-1 text-[11px] "+(previewState==="ready"?"text-emerald-700":previewState==="error"?"text-red-700":"text-muted-foreground")}>
+          {previewState==="ready"?"Canvas connected · edits synced":
+           previewState==="error"?"Canvas unavailable · try Reload preview":
+           previewState==="syncing"?"Applying draft to live preview…":"Loading live website…"}
+         </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Preview device width">
+         <Button type="button" size="sm" variant="outline" className="h-8" onClick={reloadPreview} aria-label="Reload preview"><RefreshCw className="h-4 w-4"/></Button>
+         <Button type="button" size="sm" variant="outline" className="h-8" asChild><a href={pageUrl} target="_blank" rel="noopener noreferrer" aria-label="Open published website in new tab"><ExternalLink className="h-4 w-4"/></a></Button>
          {([["desktop",Monitor],["tablet",Tablet],["mobile",Smartphone]] as const).map(([v,Icon])=>
           <Button key={v} type="button" size="sm" variant={viewport===v?"default":"outline"} aria-label={v+" preview"} aria-pressed={viewport===v} onClick={()=>runRkLayoutTransition(()=>setViewport(v))} className="h-8"><Icon className="h-4 w-4"/></Button>)}
         </div>
@@ -242,11 +304,16 @@ export default function AdminVisualStudio(){
        <div className="flex min-h-[650px] justify-center overflow-hidden rounded-2xl border border-[#cbd7e8] bg-[#eef2f7] p-1.5 sm:p-3">
         <div className="rk-device-shell rk-layout-morph shrink-0 self-start" data-device={viewport} style={{width:currentPreviewWidth,maxWidth:"100%"}}>
          <div className="rk-device-glass">
-          <iframe ref={frame} title={"Visual preview of "+page+" on "+viewport} onLoad={sendPreview} src={previewUrl}
-           className="block h-[830px] w-full border-0 bg-white" loading="lazy"/>
+          <iframe key={page+":"+previewNonce} ref={frame} title={"Visual preview of "+page+" on "+viewport}
+           onLoad={()=>{setPreviewState("loading");sendPreview();}} onError={()=>setPreviewState("error")} src={previewUrl}
+           className="block h-[830px] w-full border-0 bg-white" loading="eager"/>
          </div>
         </div>
        </div>
+       {previewState==="error"&&<div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+        <p>Preview did not connect. Your draft is safe. Reload the preview, or open the public page in a separate tab to check connectivity.</p>
+        <Button size="sm" variant="outline" onClick={reloadPreview}><RefreshCw className="mr-1.5 h-4 w-4"/>Retry preview</Button>
+       </div>}
       </div>
       <div className="min-w-0 space-y-3">
        <Card className="rk-neo-panel"><CardContent className="space-y-4 p-4">
@@ -257,8 +324,9 @@ export default function AdminVisualStudio(){
          {active.editable_copy?<><div><Label htmlFor="rk-vs-headline">Section heading</Label><Textarea id="rk-vs-headline" maxLength={180} className="mt-1" rows={3} value={edit.headline} onChange={e=>patch({headline:e.target.value})}/></div>
           <div><Label htmlFor="rk-vs-subtitle">Supporting text</Label><Textarea id="rk-vs-subtitle" maxLength={450} className="mt-1" rows={5} value={edit.subtitle} onChange={e=>patch({subtitle:e.target.value})}/></div></>:
           <p className="rounded-lg bg-[#f8fafc] p-3 text-xs leading-5 text-muted-foreground">This is a registered functional component. Manage its content with the linked editor; its application, search and compliance logic stays protected.</p>}
-         {TARGETS[selected]&&<Button size="sm" variant="outline" className="w-full" onClick={()=>{const t=TARGETS[selected];if(!t.url)setTab(t.tab);}}>
-          {TARGETS[selected].url?<Link to={TARGETS[selected].url}>{TARGETS[selected].label}</Link>:TARGETS[selected].label}</Button>}
+         {TARGETS[selected]&&(TARGETS[selected].url?
+          <Button size="sm" variant="outline" className="w-full" asChild><Link to={TARGETS[selected].url!}>{TARGETS[selected].label}</Link></Button>:
+          <Button size="sm" variant="outline" className="w-full" onClick={()=>setTab(TARGETS[selected].tab)}>{TARGETS[selected].label}</Button>)}
          <Label htmlFor="rk-vs-note">Change note (optional)</Label><Input id="rk-vs-note" maxLength={500} value={note} onChange={e=>setNote(e.target.value)} placeholder="Why this layout was updated"/>
         </>:<p className="text-xs text-muted-foreground">Choose a block on the left or click an Edit button in the page preview.</p>}
        </CardContent></Card>

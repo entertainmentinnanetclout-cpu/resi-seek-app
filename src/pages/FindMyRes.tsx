@@ -63,7 +63,7 @@ const FindMyRes = () => {
   const { sections } = useResidenceSections("findmyres");
   const { intent } = useUserIntent();
   const livingSignals=usePublicLivingSignals();
-  const {byKey}=useVisualPageSections("findmyres");
+  const {byKey,isPreview}=useVisualPageSections("findmyres");
   const [listingStyle,setListingStyle]=useState<"photo"|"list"|"details">("photo");
   const {
     filters,
@@ -145,8 +145,9 @@ const FindMyRes = () => {
     })();
   }, [searchParams]);
 
-  // First-visit CTA modal
+  // The secure editor canvas never opens visitor onboarding or navigates users away.
   useEffect(() => {
+    if (isPreview) { setShowFirstVisitModal(false); return; }
     if (!user) {
       const visited = localStorage.getItem("reskonnect_visited");
       if (!visited && !searchParams.has("query") && !searchParams.has("discovery")) {
@@ -154,7 +155,7 @@ const FindMyRes = () => {
         return () => clearTimeout(timer);
       }
     }
-  }, [user]);
+  }, [user,isPreview]);
 
   // Floating bar on scroll
   useEffect(() => {
@@ -264,7 +265,7 @@ const FindMyRes = () => {
         </div>
 
         {/* Smart Search Hero */}
-        <VisualPageBlock page="findmyres" sectionKey="search">
+        <VisualPageBlock page="findmyres" sectionKey="search" slot={byKey["search"]} preview={isPreview}>
         <SmartSearchBar
             cityOptions={cityOptions}
           filters={filters}
@@ -275,15 +276,15 @@ const FindMyRes = () => {
         </VisualPageBlock>
 
         {/* Editorial premium placements are visible only until a student applies filters. */}
-        <VisualPageBlock page="findmyres" sectionKey="spotlight">
+        <VisualPageBlock page="findmyres" sectionKey="spotlight" slot={byKey["spotlight"]} preview={isPreview}>
         {!hasActiveFilters&&<PremiumResidenceShowcase residences={realResidences} loading={loading} surface="find" headline={byKey.spotlight?.headline} subtitle={byKey.spotlight?.subtitle}/>}
         </VisualPageBlock>
-        <VisualPageBlock page="findmyres" sectionKey="top3">
+        <VisualPageBlock page="findmyres" sectionKey="top3" slot={byKey["top3"]} preview={isPreview}>
         {!hasActiveFilters&&!loading&&<MonthlyTopThree residences={realResidences} signals={livingSignals} surface="find" headline={byKey.top3?.headline} subtitle={byKey.top3?.subtitle}/>}
         </VisualPageBlock>
-        <VisualPageBlock page="findmyres" sectionKey="nearby"><NearbySuggestedResidences residences={residences}/></VisualPageBlock>
-        <VisualPageBlock page="findmyres" sectionKey="sponsored">{!hasActiveFilters&&!loading&&<SponsoredResidenceRail residences={realResidences} onApply={handleApply}/>}</VisualPageBlock>
-        <VisualPageBlock page="findmyres" sectionKey="referral"><ReferralBanner /></VisualPageBlock>
+        <VisualPageBlock page="findmyres" sectionKey="nearby" slot={byKey["nearby"]} preview={isPreview}><NearbySuggestedResidences residences={residences}/></VisualPageBlock>
+        <VisualPageBlock page="findmyres" sectionKey="sponsored" slot={byKey["sponsored"]} preview={isPreview}>{!hasActiveFilters&&!loading&&<SponsoredResidenceRail residences={realResidences} onApply={handleApply}/>}</VisualPageBlock>
+        <VisualPageBlock page="findmyres" sectionKey="referral" slot={byKey["referral"]} preview={isPreview}><ReferralBanner /></VisualPageBlock>
         {residenceError && (
           <div className="mx-auto mt-4 flex max-w-7xl flex-col gap-3 px-4 sm:px-6 lg:px-8">
             <Card className="border-amber-500/30 bg-amber-500/5">
@@ -316,7 +317,7 @@ const FindMyRes = () => {
         </div>
 
         {/* Audience Selector — University / TVET / Private */}
-        <VisualPageBlock page="findmyres" sectionKey="audience">
+        <VisualPageBlock page="findmyres" sectionKey="audience" slot={byKey["audience"]} preview={isPreview}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
           <AudienceSelector
             audience={filters.audience}
@@ -330,7 +331,7 @@ const FindMyRes = () => {
 
 
         {/* Main Content: Sidebar + Grid */}
-        <VisualPageBlock page="findmyres" sectionKey="results">
+        <VisualPageBlock page="findmyres" sectionKey="results" slot={byKey["results"]} preview={isPreview}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" id="results">
           <div className="flex gap-6">
             {/* Desktop Sidebar */}
@@ -487,7 +488,7 @@ const FindMyRes = () => {
         </VisualPageBlock>
         {/* Broader editorial discovery comes AFTER primary search results. */}
                 {/* Category Rails (Property24-style discovery) */}
-        <VisualPageBlock page="findmyres" sectionKey="category-rails">
+        <VisualPageBlock page="findmyres" sectionKey="category-rails" slot={byKey["category-rails"]} preview={isPreview}>
         {showRails && (
           <div className="max-w-7xl mx-auto py-8 space-y-10">
             {byCategory.filter((s) => s.items.length > 0).map((s) => (
@@ -526,7 +527,7 @@ const FindMyRes = () => {
 
         </VisualPageBlock>
                 {/* SEO Text */}
-        <VisualPageBlock page="findmyres" sectionKey="seo-info">
+        <VisualPageBlock page="findmyres" sectionKey="seo-info" slot={byKey["seo-info"]} preview={isPreview}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
           <Card className="bg-card/50">
             <CardContent className="p-6">
@@ -607,7 +608,7 @@ const FindMyRes = () => {
 
       {/* First-Visit CTA Modal */}
       <Dialog
-        open={showFirstVisitModal}
+        open={showFirstVisitModal&&!isPreview}
         onOpenChange={(open) => {
           setShowFirstVisitModal(open);
           if (!open) localStorage.setItem("reskonnect_visited", "true");

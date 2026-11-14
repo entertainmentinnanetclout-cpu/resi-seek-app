@@ -219,6 +219,43 @@ try {
         }
       }
 
+      // A real Chromium/WebKit iframe smoke for the editor's public canvas.
+      // Anonymous visitors must see content but never receive edit controls.
+      // The production-only X-Frame-Options / CSP policy is checked separately
+      // by admin-visual-studio-regression.test.mjs.
+      if (["chromium-windows-desktop","webkit-iphone"].includes(profile.name)) {
+        const previewPage = await context.newPage();
+        try {
+          await previewPage.goto(origin + "/about", { waitUntil: "domcontentloaded", timeout: 30_000 });
+          for (const path of ["/?rk_visual_preview=1", "/findmyres?rk_visual_preview=1"]) {
+            await previewPage.evaluate(src => {
+              const f = document.createElement("iframe");
+              f.setAttribute("data-rk-preview-test", "true");
+              f.src = src;
+              f.style.width = "390px";
+              f.style.height = "500px";
+              document.body.appendChild(f);
+            }, origin + path);
+            await previewPage.waitForFunction(() => {
+              const f = document.querySelector("iframe[data-rk-preview-test]");
+              return Boolean(f?.contentDocument?.querySelector("[data-rk-visual-section]"));
+            }, null, { timeout: 18_000 });
+            const unauthorizedEditors = await previewPage.evaluate(() => {
+              const f = document.querySelector("iframe[data-rk-preview-test]");
+              return f?.contentDocument?.querySelectorAll("[data-rk-visual-edit]").length || 0;
+            });
+            assert.equal(unauthorizedEditors, 0, "Anonymous public iframe must not gain God Mode edit tools");
+            await previewPage.evaluate(() => document.querySelector("iframe[data-rk-preview-test]")?.remove());
+            console.log("PASS", profile.name, "same-origin visual iframe", path);
+          }
+        } catch (error) {
+          failures.push({ profile: profile.name, route: "visual-preview", message: String(error), url: previewPage.url() });
+          console.error("FAIL", profile.name, "visual-preview", error);
+        } finally {
+          await previewPage.close();
+        }
+      }
+
       const installPage = await context.newPage();
       await installPage.goto(origin + "/install", { waitUntil: "domcontentloaded" });
       await installPage.getByRole("heading", { name: "Install ResKonnect" }).waitFor({ timeout: 10_000 });

@@ -18,6 +18,7 @@ export type VisualPageSection = {
  updated_at?: string;
 };
 export type VisualSectionDraft = Pick<VisualPageSection,"section_key"|"position"|"visible"|"headline"|"subtitle">;
+const EMPTY_SECTIONS:VisualPageSection[]=[];
 
 const pageDefaults: Record<VisualPageKey, Array<[string,string,number,boolean]>> = {
  landing: [
@@ -42,7 +43,7 @@ export const VISUAL_PAGE_DEFAULTS = pageDefaults;
 
 export function useVisualPageSections(page:VisualPageKey) {
  const {isGodMode,session}=useAuth();
- const {data=[],isLoading,error,refetch}=useQuery({
+ const {data:sectionRows,isLoading,error,refetch}=useQuery({
   queryKey:["rk-visual-sections",page],
   queryFn:async()=>{
    const {data,error}=await (supabase as any).from("rk_visual_page_sections").select("page_key,section_key,title,position,visible,required,editable_copy,headline,subtitle,updated_at").eq("page_key",page).order("position");
@@ -50,24 +51,69 @@ export function useVisualPageSections(page:VisualPageKey) {
    return (data||[]) as VisualPageSection[];
   },staleTime:60_000,retry:1,
  });
+ const data=sectionRows??EMPTY_SECTIONS;
+ const isPreview=isVisualPreviewAuthorized(isGodMode,session?.access_token);
  const [preview,setPreview]=useState<Record<string,VisualSectionDraft>>({});
  useEffect(()=>{
-  if(!isVisualPreviewAuthorized(isGodMode,session?.access_token))return;
+  if(!isPreview)return;
+  // Exactly one receiver per public page: the page owns this hook and all blocks
+  // consume the same data. Never install one listener/query per visual section.
+  const registered=new Set((data.length?data.map(row=>row.section_key):pageDefaults[page].map(row=>row[0])));
+  const send=(type:string,extra:Record<string,unknown>={})=>{
+   window.parent.postMessage({type,page,...extra},window.location.origin);
+  };
   const receive=(event:MessageEvent)=>{
    if(event.origin!==window.location.origin || event.source!==window.parent)return;
-   const message=event.data;
-   if(message?.type!=="rk-visual-preview" || message.page!==page || !Array.isArray(message.sections))return;
-   const patches:Record<string,VisualSectionDraft>={};
-   for(const item of message.sections)if(item&&typeof item.section_key==="string"){
-    patches[item.section_key]={section_key:item.section_key,position:Number(item.position)||0,
-     visible:item.visible!==false,headline:String(item.headline||""),subtitle:String(item.subtitle||"")};
+   const msg=event.data;
+   if(!msg||msg.page!==page)return;
+   if(msg.type==="rk-visual-preview" && Array.isArray(msg.sections)){
+    const patches:Record<string,VisualSectionDraft>={};
+    for(const item of msg.sections){
+     if(!item||typeof item.section_key!=="string"||!registered.has(item.section_key))continue;
+     const position=Number(item.position);
+     if(!Number.isInteger(position)||position<1||position>10000)continue;
+     patches[item.section_key]={
+      section_key:item.section_key,position,visible:item.visible!==false,
+      headline:typeof item.headline==="string"?item.headline.slice(0,180):"",
+      subtitle:typeof item.subtitle==="string"?item.subtitle.slice(0,450):"",
+     };
+    }
+    setPreview(patches);
+    send("rk-visual-applied",{count:Object.keys(patches).length,requestId:msg.requestId||null});
    }
-   setPreview(patches);
+   if(msg.type==="rk-visual-focus"&&registered.has(msg.sectionKey)){
+    const node=[...document.querySelectorAll<HTMLElement>("[data-rk-visual-section]")]
+     .find(element=>element.dataset.rkVisualSection===msg.sectionKey);
+    document.querySelectorAll<HTMLElement>(".rk-preview-selected").forEach(element=>element.classList.remove("rk-preview-selected"));
+    node?.classList.add("rk-preview-selected");
+    if(msg.scroll!==false)node?.scrollIntoView({block:"center",behavior:"smooth"});
+   }
   };
+  // The inspector's live canvas is deliberately non-interactive: clicking any
+  // public section selects it instead of starting an application or navigating.
+  const select=(event:MouseEvent)=>{
+   const node=(event.target as Element|null)?.closest?.("[data-rk-visual-section]") as HTMLElement|null;
+   const selectedKey=node?.dataset.rkVisualSection;
+   if(selectedKey&&registered.has(selectedKey)){
+    event.preventDefault();event.stopPropagation();
+    send("rk-visual-select",{sectionKey:selectedKey});
+   }else if((event.target as Element|null)?.closest?.("a,button,[role='button']")){
+    event.preventDefault();event.stopPropagation();
+   }
+  };
+  const blockSubmit=(event:Event)=>{event.preventDefault();event.stopPropagation();};
+  document.documentElement.dataset.rkVisualPreview="true";
   window.addEventListener("message",receive);
-  window.parent.postMessage({type:"rk-visual-ready",page},window.location.origin);
-  return()=>window.removeEventListener("message",receive);
- },[page,isGodMode,session?.access_token]);
+  document.addEventListener("click",select,true);
+  document.addEventListener("submit",blockSubmit,true);
+  send("rk-visual-ready",{sectionCount:registered.size});
+  return()=>{
+   window.removeEventListener("message",receive);
+   document.removeEventListener("click",select,true);
+   document.removeEventListener("submit",blockSubmit,true);
+   delete document.documentElement.dataset.rkVisualPreview;
+  };
+ },[page,isPreview,data]);
  const sections=useMemo(()=>{
   const base=(data.length?data:pageDefaults[page].map(([key,title,position,required])=>({
    page_key:page,section_key:key,title,position,required,visible:true,editable_copy:false,headline:"",subtitle:"",
@@ -75,5 +121,5 @@ export function useVisualPageSections(page:VisualPageKey) {
   return base.map(item=>preview[item.section_key]?{...item,...preview[item.section_key]}:item);
  },[data,page,preview]);
  const byKey=useMemo(()=>Object.fromEntries(sections.map(item=>[item.section_key,item])) as Record<string,VisualPageSection>,[sections]);
- return {sections,byKey,isLoading,error,refetch};
+ return {sections,byKey,isLoading,error,refetch,isPreview};
 }
