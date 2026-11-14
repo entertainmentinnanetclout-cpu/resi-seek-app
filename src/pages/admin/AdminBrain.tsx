@@ -72,7 +72,7 @@ export default function AdminBrain(){
   switch(id){
    case "journeys":return null;
    case "service":return metrics.overdue??null;
-   case "applications":return metrics.open??null;
+   case "applications":return null; // A global open-case count is not an application count.
    case "communications":return metrics.recent_unanswered??null;
    case "verification":return (metrics.pending_documents??0)+(metrics.pending_application_documents??0);
    case "opportunities":return (metrics.wil_open??0)+(metrics.partner_open??0);
