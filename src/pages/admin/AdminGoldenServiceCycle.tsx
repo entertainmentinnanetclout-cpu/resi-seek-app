@@ -16,10 +16,10 @@ import {supabase} from "@/integrations/supabase/client";
 
 type Kind="application"|"reservation"|"viewing"|"enquiry"|"onboarding"|"application_support"|"private_rental"|"student_support"|"wil"|"landlord"|"partner";
 type FlowAction="begin_review"|"request_info"|"waiting_residence"|"waiting_partner"|"set_followup"|"contact_confirmed"|"complete_cycle"|"reopen"|"private_note";
-type Metric={total:number;open:number;overdue:number;unanswered:number;waiting:number;post_service:number;replied_today:number};
+type Metric={total:number;open:number;overdue:number;unanswered:number;waiting:number;post_service:number;replied_today:number;feedback_count?:number;feedback_average?:number|null;needs_recovery?:number};
 type Item={id:string;kind:Kind;customer:string;residence_name:string;status:string;step:string;next_action:string;priority:string;
  first_response_due_at:string;next_action_due_at:string;last_human_response_at:string|null;last_human_channel:string|null;
- receipt_issued_at:string|null;overdue:boolean;needs_reply:boolean;delegated_review_open:boolean;source_created_at:string;closed_at:string|null};
+ receipt_issued_at:string|null;feedback_rating?:number|null;overdue:boolean;needs_reply:boolean;delegated_review_open:boolean;source_created_at:string;closed_at:string|null};
 type Event={event_type:string;note:string|null;channel:string|null;created_at:string};
 const KINDS:[Kind,string][]=[["reservation","Reservations"],["application","Housing applications"],["viewing","Property viewings"],["enquiry","Housing enquiries"],["onboarding","New enquiries & onboarding"],["application_support","University/TVET applications"],["private_rental","Private rental requests"],["student_support","Student service desk"],["wil","WIL & placements"],["landlord","Landlord onboarding"],["partner","Partner relationships"]];
 const ACTIONS:[FlowAction,string,string][]=[
@@ -130,6 +130,13 @@ export default function AdminGoldenServiceCycle(){
    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
     {stats.map(([label,n,Icon])=><div key={label} className="rk-neo-stat min-w-0 p-3 sm:p-4"><div className="flex items-center justify-between gap-1 text-[#60738e]"><p className="text-[10px] font-black uppercase tracking-wider">{label}</p><Icon className="h-4 w-4 shrink-0"/></div><p className="mt-2 text-2xl font-black tabular-nums text-[#071326]">{Number(n||0).toLocaleString("en-ZA")}</p></div>)}
    </div>
+   <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-card p-3 text-xs">
+    <span className="font-black">Quality pulse:</span>
+    <Badge variant="outline">{metrics.feedback_count||0} verified service ratings</Badge>
+    <Badge variant="outline">Average {metrics.feedback_average??"—"} / 5</Badge>
+    {(metrics.needs_recovery||0)>0&&<Badge variant="destructive">{metrics.needs_recovery} low ratings · recovery required</Badge>}
+    <span className="text-muted-foreground">Ratings are private to ResKonnect Service; they do not affect public property rankings.</span>
+   </div>
    <section aria-label="Golden customer journey" className="rk-neo-panel p-3 sm:p-4">
     <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-sm font-black">Golden customer journey</h2><span className="text-[11px] text-muted-foreground">Automation prepares · operator verifies · partners deliver</span></div>
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">{journey.map(([i,title,desc])=><div key={i} className="rk-neo-inset min-w-0 p-3"><span className="text-[10px] font-black text-[#2563eb]">{i}</span><p className="mt-1 text-xs font-black">{title}</p><p className="mt-1 text-[10px] leading-4 text-muted-foreground">{desc}</p></div>)}</div>
@@ -164,6 +171,7 @@ export default function AdminGoldenServiceCycle(){
        <div className="mt-2 flex flex-wrap items-center justify-between gap-2"><Badge variant="secondary">{pretty(row.step)}</Badge>
         <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><Clock3 className="h-3 w-3"/> {date(row.needs_reply?row.first_response_due_at:row.next_action_due_at)}</span></div>
        {row.delegated_review_open&&<p className="mt-2 text-[11px] font-semibold text-amber-700">Residence eligibility task is open</p>}
+       {row.feedback_rating&&<p className="mt-1 text-[11px] font-bold text-[#385778]">Customer service rating: {row.feedback_rating}/5</p>}
       </button>)}
       {!loading&&!filtered.length&&!error&&<div className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">No cases match this view. Try a different service category or status.</div>}
      </div>
