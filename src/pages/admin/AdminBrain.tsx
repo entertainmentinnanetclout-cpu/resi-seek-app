@@ -1,6 +1,7 @@
-import {FormEvent,useCallback,useEffect,useState} from "react";
+import {useCallback,useEffect,useState} from "react";
+import type {FormEvent} from "react";
 import {Link,useNavigate} from "react-router-dom";
-import {Activity,ArrowRight,BookOpenCheck,BriefcaseBusiness,ClipboardCheck,FileCheck2,
+import {Activity,ArrowRight,BookOpenCheck,ClipboardCheck,FileCheck2,
  GraduationCap,HeartHandshake,Home,Mail,RefreshCw,Search,ShieldCheck,Sparkles,UsersRound,Workflow} from "lucide-react";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -128,7 +129,7 @@ export default function AdminBrain(){
      <Badge variant="outline"><ShieldCheck className="mr-1 h-3.5 w-3.5"/>No silent approvals or sends</Badge>
     </div>
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-     {work.map((item,i)=><Link to={item.to} key={item.id} className="rk-neo-panel group flex min-h-[210px] flex-col justify-between rounded-[22px] border p-5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
+     {work.map(item=><Link to={item.to} key={item.id} className="rk-neo-panel group flex min-h-[210px] flex-col justify-between rounded-[22px] border p-5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
       <div><div className="flex items-start justify-between gap-3">
        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e7f0ff] text-[#174c93]"><item.Icon className="h-6 w-6"/></div>
        <span className="text-[10px] font-black uppercase tracking-wider text-[#536985]">{item.tag}</span>
