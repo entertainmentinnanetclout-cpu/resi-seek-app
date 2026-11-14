@@ -1,6 +1,7 @@
 # SEC-01 / SEC-02 — Payment Integrity Implementation
 **Scope:** ResKonnect Yoco Checkout API, `create-payment`, `yoco-checkout`, `yoco-webhook`, `yoco-verify-payment`, shop orders and ledger.  
 **Date:** 14 November 2026.  
+**Deployment verified:** SQL migration `sec01_sec02_yoco_payment_guards` applied to live Supabase; Edge versions now `create-payment v11`, `yoco-checkout v1`, `yoco-verify-payment v13`, `yoco-webhook v12` with JWT disabled **only** for the HMAC-protected webhook. **Not activated for customers:** provider `YOCO_WEBHOOK_SECRET`, signed sandbox callback and full payment acceptance were not independently verified. Card choice remains disabled.
 **Important:** card checkout is disabled in the current storefront and the audited connected database had **zero** `shop_orders`, `shop_order_items`, `payments` and `webhook_events` at audit. This is *not* an active payment cutover. Do **not** re-enable until the acceptance checklist below is completed.
 
 ## Findings / fixes
