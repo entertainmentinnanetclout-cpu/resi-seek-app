@@ -16,7 +16,8 @@ import {supabase} from "@/integrations/supabase/client";
 
 type Kind="application"|"reservation"|"viewing"|"enquiry"|"onboarding"|"application_support"|"private_rental"|"student_support"|"wil"|"landlord"|"partner";
 type FlowAction="begin_review"|"request_info"|"waiting_residence"|"waiting_partner"|"set_followup"|"contact_confirmed"|"complete_cycle"|"reopen"|"private_note";
-type Metric={total:number;open:number;overdue:number;unanswered:number;waiting:number;post_service:number;replied_today:number;feedback_count?:number;feedback_average?:number|null;needs_recovery?:number};
+type BatchAction="begin_review"|"set_followup"|"private_note";
+type Metric={total:number;open:number;overdue:number;unanswered:number;waiting:number;post_service:number;replied_today:number;recent_open?:number;recent_unanswered?:number;feedback_count?:number;feedback_average?:number|null;needs_recovery?:number};
 type Item={id:string;kind:Kind;customer:string;residence_name:string;status:string;step:string;next_action:string;priority:string;
  first_response_due_at:string;next_action_due_at:string;last_human_response_at:string|null;last_human_channel:string|null;
  receipt_issued_at:string|null;feedback_rating?:number|null;overdue:boolean;needs_reply:boolean;delegated_review_open:boolean;source_created_at:string;closed_at:string|null};
@@ -39,6 +40,7 @@ const pretty=(v?:string|null)=>String(v||"—").replaceAll("_"," ").replace(/\b\
 const date=(v?:string|null)=>v?new Date(v).toLocaleString("en-ZA",{dateStyle:"medium",timeStyle:"short"}):"Not recorded";
 const asDateTimeLocal=(d:Date)=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
 const nowPlus=()=>asDateTimeLocal(new Date(Date.now()+24*3600000));
+const caseKey=(item:Pick<Item,"kind"|"id">)=>item.kind+":"+item.id;
 const detailsUrl=(kind:Kind)=>{
  if(kind==="reservation"||kind==="application")return "/admin/cases";
  if(kind==="wil")return "/admin/wil";
@@ -54,7 +56,7 @@ const rpc=async(name:string,args:Record<string,unknown>)=>{
  return data;
 };
 export default function AdminGoldenServiceCycle(){
- const [filter,setFilter]=useState("overdue");
+ const [filter,setFilter]=useState("recent");
  const [kind,setKind]=useState("all");
  const [offset,setOffset]=useState(0);
  const [query,setQuery]=useState("");
@@ -68,6 +70,11 @@ export default function AdminGoldenServiceCycle(){
  const [channel,setChannel]=useState("email");
  const [confirmed,setConfirmed]=useState(false);
  const [busy,setBusy]=useState(false);
+ const [batchKeys,setBatchKeys]=useState<string[]>([]);
+ const [batchAction,setBatchAction]=useState<BatchAction>("begin_review");
+ const [batchNote,setBatchNote]=useState("");
+ const [batchDue,setBatchDue]=useState(nowPlus);
+ const [batchBusy,setBatchBusy]=useState(false);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
  const [rules,setRules]=useState<Rule[]>([]);
@@ -80,7 +87,9 @@ export default function AdminGoldenServiceCycle(){
   setError("");
   try{
    const data=await rpc("rk_golden_service_queue",{p_filter:filter,p_kind:kind==="all"?null:kind,p_limit:80,p_offset:offset});
-   setItems(Array.isArray(data?.items)?data.items:[]);
+   const nextItems:Item[]=Array.isArray(data?.items)?data.items:[];
+   setItems(nextItems);
+   setBatchKeys(prev=>prev.filter(key=>nextItems.some(item=>!item.closed_at&&caseKey(item)===key)));
    setMetrics(data?.metrics||{total:0,open:0,overdue:0,unanswered:0,waiting:0,post_service:0,replied_today:0});
   }catch(e){setError(e instanceof Error?e.message:"Service queue could not be loaded");}
   finally{setLoading(false);}
@@ -91,6 +100,7 @@ export default function AdminGoldenServiceCycle(){
   catch(e){toast.error(e instanceof Error?e.message:"Could not load service targets");}
  },[]);
  useEffect(()=>{void loadRules();},[loadRules]);
+ useEffect(()=>{setBatchKeys([]);},[filter,kind,offset,query]);
  useEffect(()=>{const rule=rules.find(r=>r.kind===ruleKind);if(rule){setFirstTarget(rule.first_response_minutes);setFollowTarget(rule.followup_minutes);}},[ruleKind,rules]);
  const saveTargets=async()=>{
   if(savingRules)return;
@@ -133,6 +143,41 @@ export default function AdminGoldenServiceCycle(){
   finally{setBusy(false);}
  };
  const filtered=useMemo(()=>items.filter(x=>[x.customer,x.kind,x.status,x.step,x.next_action,x.residence_name,x.id].join(" ").toLowerCase().includes(query.toLowerCase())),[items,query]);
+ const batchEligible=filtered.filter(item=>!item.closed_at);
+ const batchSelected=batchEligible.filter(item=>batchKeys.includes(caseKey(item)));
+ const firstTwenty=batchEligible.slice(0,20);
+ const batchAllChecked=firstTwenty.length>0&&firstTwenty.every(item=>batchKeys.includes(caseKey(item)));
+ const toggleBatch=(item:Item,checked:boolean)=>{
+  const key=caseKey(item);
+  if(checked&&batchKeys.length>=20&&!batchKeys.includes(key)){
+   toast.error("Only 20 service cases can be coordinated per batch.");return;
+  }
+  setBatchKeys(prev=>checked?[...new Set([...prev,key])]:prev.filter(x=>x!==key));
+ };
+ const applyBatch=async()=>{
+  if(batchBusy||!batchSelected.length)return;
+  if(batchAction==="private_note"&&batchNote.trim().length<8){
+   toast.error("Describe the genuine internal work in at least eight characters.");return;
+  }
+  const due=new Date(batchDue);
+  if(batchAction==="set_followup"&&(!Number.isFinite(due.getTime())
+   ||due.getTime()<Date.now()+5*60000||due.getTime()>Date.now()+90*86400000)){
+   toast.error("Choose a follow-up between five minutes and 90 days.");return;
+  }
+  if(!window.confirm(`Record ${batchAction.replaceAll("_"," ")} for ${batchSelected.length} selected open cases? This is internal only: no email, WhatsApp, eligibility decision or document approval will occur.`))return;
+  setBatchBusy(true);
+  try{
+   const result=await rpc("rk_golden_bulk_triage",{
+    p_items:batchSelected.map(item=>({kind:item.kind,id:item.id,status:item.status,step:item.step})),
+    p_action:batchAction,p_note:batchNote.trim()||null,
+    p_due_at:batchAction==="set_followup"?due.toISOString():null
+   });
+   toast.success(`${result?.processed||batchSelected.length} cases coordinated internally. No messages were sent.`);
+   setBatchKeys([]);setBatchNote("");setSelected(null);
+   await load(true);
+  }catch(e){toast.error(e instanceof Error?e.message:"Batch was not applied; refresh and retry.");}
+  finally{setBatchBusy(false);}
+ };
  const selectedAction=ACTIONS.find(x=>x[0]===action);
  const stats=[["Open cases",metrics.open,UsersRound],["Action overdue",metrics.overdue,AlarmClock],["No confirmed reply",metrics.unanswered,MessageCircle],["Awaiting others",metrics.waiting,Handshake],["Aftercare",metrics.post_service,Home],["Contacted today",metrics.replied_today,CheckCircle2]] as const;
  return <AdminLayout>
@@ -160,6 +205,7 @@ export default function AdminGoldenServiceCycle(){
     <Badge variant="outline">Average {metrics.feedback_average??"—"} / 5</Badge>
     {(metrics.needs_recovery||0)>0&&<Badge variant="destructive">{metrics.needs_recovery} low ratings · recovery required</Badge>}
     <span className="text-muted-foreground">Ratings are private to ResKonnect Service; they do not affect public property rankings.</span>
+    <Badge variant="outline">Last 72h: {metrics.recent_open??0} open · {metrics.recent_unanswered??0} without confirmed reply</Badge>
    </div>
    <section aria-label="Golden customer journey" className="rk-neo-panel p-3 sm:p-4">
     <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-sm font-black">Golden customer journey</h2><span className="text-[11px] text-muted-foreground">Automation prepares · operator verifies · partners deliver</span></div>
@@ -169,7 +215,7 @@ export default function AdminGoldenServiceCycle(){
     <div className="flex flex-wrap items-center gap-2">
      <Label htmlFor="golden-filter">Work to do</Label><Select value={filter} onValueChange={x=>{setFilter(x);setOffset(0);setSelected(null);}}>
       <SelectTrigger id="golden-filter" className="w-[165px]"><SelectValue/></SelectTrigger><SelectContent>
-       <SelectItem value="overdue">Needs attention</SelectItem><SelectItem value="all">All open</SelectItem>
+       <SelectItem value="recent">New requests · last 72 hours</SelectItem><SelectItem value="overdue">Needs attention</SelectItem><SelectItem value="all">All open</SelectItem>
        <SelectItem value="needs_reply">Awaiting first reply</SelectItem><SelectItem value="waiting">Waiting on others</SelectItem>
        <SelectItem value="post_service">Move-in & aftercare</SelectItem><SelectItem value="closed">Closed services</SelectItem>
       </SelectContent></Select>
@@ -182,13 +228,48 @@ export default function AdminGoldenServiceCycle(){
     <Button variant="outline" onClick={()=>void load()} disabled={loading} size="sm"><RefreshCw className={"mr-1.5 h-4 w-4 "+(loading?"animate-spin":"")}/>Refresh</Button>
    </div>
    {error&&<div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{error}</div>}
+   <section className="rk-neo-panel space-y-3 p-3 sm:p-4" aria-label="Safe bulk internal coordination">
+    <div className="flex flex-wrap items-start justify-between gap-2">
+     <div><h2 className="text-sm font-black">Safe bulk internal coordination</h2>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">Select up to 20 cases to start internal review, record private notes, or schedule follow-ups together. No external messages or business decisions are made here.</p></div>
+     <Badge variant="outline">{batchSelected.length} / 20 selected</Badge>
+    </div>
+    <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold">
+     <Checkbox aria-label="Select first 20 open cases on this page" checked={batchAllChecked} disabled={batchBusy||!firstTwenty.length}
+      onCheckedChange={v=>setBatchKeys(v===true?firstTwenty.map(caseKey):[])}/>
+     {batchAllChecked?"Clear page selection":"Select first 20 open cases on this page"}
+    </label>
+    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto]">
+     <div><Label htmlFor="golden-batch-action">Internal action</Label>
+      <Select value={batchAction} onValueChange={v=>setBatchAction(v as BatchAction)}>
+       <SelectTrigger id="golden-batch-action" className="mt-1"><SelectValue/></SelectTrigger>
+       <SelectContent><SelectItem value="begin_review">Begin review</SelectItem>
+        <SelectItem value="set_followup">Schedule follow-up</SelectItem>
+        <SelectItem value="private_note">Record private note</SelectItem></SelectContent>
+      </Select></div>
+     <div>{batchAction==="set_followup"?<>
+       <Label htmlFor="golden-batch-due">Follow-up date and time</Label>
+       <Input className="mt-1" id="golden-batch-due" type="datetime-local" value={batchDue} onChange={e=>setBatchDue(e.target.value)}/>
+      </>:<>
+       <Label htmlFor="golden-batch-note">Internal note</Label>
+       <Input className="mt-1" id="golden-batch-note" value={batchNote} maxLength={1500} onChange={e=>setBatchNote(e.target.value)} placeholder="Reason or next operator action"/>
+      </>}</div>
+     <div className="self-end"><Button className="w-full" disabled={batchBusy||!batchSelected.length}
+      onClick={()=>void applyBatch()}><ClipboardCheck className="mr-1.5 h-4 w-4"/>{batchBusy?"Applying…":`Apply to ${batchSelected.length}`}</Button></div>
+    </div>
+    <p className="text-[11px] leading-5 text-muted-foreground">Each case receives an audited event. The batch is all-or-nothing if anything changed. Unanswered cases remain unanswered until actual contact is confirmed.</p>
+   </section>
    <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(320px,.96fr)_minmax(0,1.04fr)]">
     <Card className="rk-neo-panel min-w-0"><CardContent className="p-3 sm:p-4">
      <div className="mb-3 flex items-center justify-between"><h2 className="font-black">Service attention queue</h2><Badge variant="outline">{filtered.length} loaded</Badge></div>
      {loading&&!items.length&&<p className="p-7 text-sm text-muted-foreground">Loading secured service cases…</p>}
      <div className="rk-stagger-list max-h-[780px] space-y-2 overflow-y-auto">
-      {filtered.map(row=><button key={row.kind+row.id} type="button" onClick={()=>void open(row)}
-       className={"rk-pressable w-full rounded-2xl border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 "+(selected?.id===row.id&&selected?.kind===row.kind?"border-blue-500 bg-blue-50":"border-border bg-card hover:border-blue-200 hover:bg-muted/40")}>
+      {filtered.map(row=><div key={caseKey(row)} className="relative">
+       <Checkbox aria-label={`Select ${pretty(row.kind)} case ${row.id.slice(0,8)}`}
+        checked={batchKeys.includes(caseKey(row))} disabled={Boolean(row.closed_at)||batchBusy}
+        onCheckedChange={v=>toggleBatch(row,v===true)} className="absolute left-3 top-5 z-10"/>
+       <button type="button" onClick={()=>void open(row)}
+       className={"rk-pressable w-full rounded-2xl border p-4 pl-12 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 "+(selected?.id===row.id&&selected?.kind===row.kind?"border-blue-500 bg-blue-50":"border-border bg-card hover:border-blue-200 hover:bg-muted/40")}>
        <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-[10px] font-black uppercase tracking-wide text-[#55729a]">{pretty(row.kind)}</span><div className="flex gap-1">{row.overdue&&<Badge variant="destructive">Overdue</Badge>}{row.needs_reply&&<Badge variant="outline">No verified reply</Badge>}</div></div>
        <p className="mt-1 text-sm font-black">{row.customer||"Service customer"}</p>
        <p className="mt-1 text-xs text-muted-foreground">{row.residence_name||pretty(row.status)} · {pretty(row.next_action)}</p>
@@ -196,7 +277,7 @@ export default function AdminGoldenServiceCycle(){
         <span className="flex items-center gap-1 text-[11px] text-muted-foreground"><Clock3 className="h-3 w-3"/> {date(row.needs_reply?row.first_response_due_at:row.next_action_due_at)}</span></div>
        {row.delegated_review_open&&<p className="mt-2 text-[11px] font-semibold text-amber-700">Residence eligibility task is open</p>}
        {row.feedback_rating&&<p className="mt-1 text-[11px] font-bold text-[#385778]">Customer service rating: {row.feedback_rating}/5</p>}
-      </button>)}
+      </button></div>)}
       {!loading&&!filtered.length&&!error&&<div className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">No cases match this view. Try a different service category or status.</div>}
      </div>
      <div className="mt-3 flex items-center justify-between gap-2 border-t pt-3">
