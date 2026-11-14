@@ -391,6 +391,8 @@
     "rk_visual_page_audit",
     "rk_visual_page_revisions",
     "rk_visual_page_sections",
+    "rk_yoco_payment_intents",
+    "rk_yoco_verified_events",
     "roommate_profiles",
     "roommate_profiles_public_v",
     "roommates",
@@ -2344,6 +2346,38 @@
       ],
       "name": "rk_withdraw_single_room",
       "authenticated": true
+    },
+    {
+      "name": "rk_yoco_apply_verified_event",
+      "args": [
+        "p_event_id",
+        "p_order_id",
+        "p_payment_id",
+        "p_event_type",
+        "p_amount_cents",
+        "p_currency"
+      ],
+      "anon": false,
+      "authenticated": false
+    },
+    {
+      "name": "rk_yoco_checkout_quote",
+      "args": [
+        "p_order_id"
+      ],
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "name": "rk_yoco_register_checkout",
+      "args": [
+        "p_order_id",
+        "p_user_id",
+        "p_checkout_id",
+        "p_amount_cents"
+      ],
+      "anon": false,
+      "authenticated": false
     },
     {
       "anon": false,
