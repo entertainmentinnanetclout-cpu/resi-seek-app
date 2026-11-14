@@ -203,7 +203,7 @@ export default function AdminVisualStudio(){
  const restore=(revision:Revision)=>{
   if(!Array.isArray(revision.snapshot)||!window.confirm("Load revision "+revision.revision+" into the editor? Nothing is published until you select Publish live."))return;
   setUndo(items=>[...items,clone(draft)]);setRedo([]);
-  setDraft(clone(revision.snapshot));setRestoring(true);setSavedDraftSignature(JSON.stringify(normalized(revision.snapshot)));setSelected(revision.snapshot[0]?.section_key||selected);
+  setDraft(clone(revision.snapshot));setRestoring(revision.state==="published");setSavedDraftSignature(JSON.stringify(normalized(revision.snapshot)));setSelected(revision.snapshot[0]?.section_key||selected);
   toast.info("Version loaded for preview. Review before publishing.");
  };
  const currentPreviewWidth=viewport==="mobile"?"390px":viewport==="tablet"?"820px":"100%";
