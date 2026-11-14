@@ -212,10 +212,10 @@ const Landing = () => {
           <div className="container mx-auto px-4 text-center">
             <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-primary">OUR VISION · AFRICA'S FIRST AI/SI-POWERED STUDENT PLATFORM</p>
             <h1 className="mx-auto max-w-5xl text-3xl font-black leading-tight md:text-5xl lg:text-6xl">
-              ResKonnect — <span className="text-primary">Building Africa's First AI/SI-Powered Student Platform.</span>
+              {byKey.vision?.headline||<>ResKonnect — <span className="text-primary">Building Africa's First AI/SI-Powered Student Platform.</span></>}
             </h1>
             <p className="mx-auto mt-4 max-w-3xl text-sm leading-7 text-muted-foreground md:text-lg">
-              From student accommodation and single-room searches to applications, NSFAS funding checks, bursaries and WIL placements — ResKonnect connects Artificial Intelligence (AI) with Service Intelligence (SI) to help students make informed next steps.
+              {byKey.vision?.subtitle||"From student accommodation and single-room searches to applications, NSFAS funding checks, bursaries and WIL placements — ResKonnect connects Artificial Intelligence (AI) with Service Intelligence (SI) to help students make informed next steps."}
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button size="lg" onClick={() => navigate("/findmyres")}>Find Student Accommodation</Button>
@@ -230,8 +230,8 @@ const Landing = () => {
           <div className="container mx-auto max-w-6xl px-4">
             <div className="max-w-3xl">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Student accommodation in South Africa</p>
-              <h2 id="discover-reskonnect" className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-4xl">A campus nearby. A place that works for you. Found on ResKonnect.</h2>
-              <p className="mt-3 text-sm leading-7 text-muted-foreground md:text-base">Explore the areas where ResKonnect has published residence records. Check property addresses, funding acceptance, room types and real provider prices when supplied. Missing prices are not advertised as budget offers.</p>
+              <h2 id="discover-reskonnect" className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-4xl">{byKey.cities?.headline||"A campus nearby. A place that works for you. Found on ResKonnect."}</h2>
+              <p className="mt-3 text-sm leading-7 text-muted-foreground md:text-base">{byKey.cities?.subtitle||"Explore the areas where ResKonnect has published residence records. Check property addresses, funding acceptance, room types and real provider prices when supplied. Missing prices are not advertised as budget offers."}</p>
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               {[
@@ -418,7 +418,9 @@ const Landing = () => {
         <section className="py-12 md:py-20 relative overflow-hidden">
           <FloatingShapes />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">Why Choose ResKonnect?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-3">{byKey.benefits?.headline||"Why Choose ResKonnect?"}</h2>
+            {byKey.benefits?.subtitle&&<p className="mx-auto mb-3 max-w-2xl text-center text-sm text-muted-foreground">{byKey.benefits.subtitle}</p>}
+            <div className="mb-10" aria-hidden="true"/>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {features.map((f, i) => (
                 <Card key={i} className="bg-card shadow-sm hover:shadow-lg transition-all text-center">
@@ -440,7 +442,7 @@ const Landing = () => {
         <VisualPageBlock page="landing" sectionKey="faq" slot={byKey["faq"]} preview={isPreview}>
         <section className="border-y bg-card/50 py-12 md:py-16">
           <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center"><h2 className="text-3xl font-black">ResKonnect, answered clearly</h2><p className="mt-2 text-sm text-muted-foreground">Canonical facts for students, partners, search engines and AI answer systems.</p></div>
+            <div className="text-center"><h2 className="text-3xl font-black">{byKey.faq?.headline||"ResKonnect, answered clearly"}</h2><p className="mt-2 text-sm text-muted-foreground">{byKey.faq?.subtitle||"Canonical facts for students, partners, search engines and AI answer systems."}</p></div>
             <div className="mt-7 space-y-4">
               <div className="rounded-2xl border bg-background p-5"><h3 className="font-black">Does ResKonnect guarantee accommodation placement?</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Yes. ResKonnect guarantees accommodation placement for eligible placement clients who complete the required placement process, provide the required documents and accept an available suitable accommodation match. This guarantee is specifically for accommodation placement and does not promise a specific building or room when live inventory changes.</p></div>
               <div className="rounded-2xl border bg-background p-5"><h3 className="font-black">What makes ResMap different?</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">ResMap connects mapped residence discovery with photorealistic 3D exploration, live GPS routing, arrival states and immersive Street View navigation instead of treating the map as a static pin directory.</p></div>
