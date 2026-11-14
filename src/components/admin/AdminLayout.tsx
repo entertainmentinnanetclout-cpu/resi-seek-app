@@ -70,39 +70,46 @@ const AdminSidebar=({
 
     <SidebarContent className="min-h-0 overflow-y-auto overscroll-contain">
       {isGodMode&&<SidebarGroup>
-        {!collapsed&&<SidebarGroupLabel>Visual control room</SidebarGroupLabel>}
-        <SidebarGroupContent><SidebarMenu><SidebarMenuItem>
-          <SidebarMenuButton asChild isActive={location.pathname==="/admin/studio"} tooltip="God Mode Visual Studio">
-            <Link to="/admin/studio"><Paintbrush className="h-4 w-4"/><span className="font-bold">Visual Studio</span></Link>
+        {!collapsed&&<SidebarGroupLabel>Student 360 · One Brain</SidebarGroupLabel>}
+        <SidebarGroupContent><SidebarMenu>
+         {([
+           ["/admin/brain","One Brain",Sparkles],
+           ["/admin/users","People & Journeys",UsersRound],
+           ["/admin/golden-cycle","Needs My Decision",ClipboardCheck],
+           ["/admin/applications","Bulk Applications",Building2],
+           ["/admin/communications","Communication Centre",MessageCircle]
+         ] as const).map(([path,label,Icon])=><SidebarMenuItem key={path}>
+          <SidebarMenuButton asChild isActive={location.pathname===path||(path==="/admin/brain"&&location.pathname==="/admin")
+           ||(path==="/admin/users"&&location.pathname.startsWith("/admin/students/"))} tooltip={label}>
+           <Link to={path}><Icon className="h-4 w-4"/><span className="font-bold">{label}</span></Link>
           </SidebarMenuButton>
-        </SidebarMenuItem><SidebarMenuItem>
-          <SidebarMenuButton asChild isActive={location.pathname==="/admin/cases"} tooltip="God Mode Case Command Center">
-            <Link to="/admin/cases"><ClipboardCheck className="h-4 w-4"/><span className="font-bold">Case Command Center</span></Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem><SidebarMenuItem>
-         <SidebarMenuButton asChild isActive={location.pathname==="/admin/golden-cycle"} tooltip="Golden Service Cycle">
-          <Link to="/admin/golden-cycle"><Sparkles className="h-4 w-4"/><span className="font-bold">Golden Service Cycle</span></Link>
-         </SidebarMenuButton>
-        </SidebarMenuItem></SidebarMenu></SidebarGroupContent>
-      </SidebarGroup>}
+         </SidebarMenuItem>)}
+        </SidebarMenu></SidebarGroupContent>
+       </SidebarGroup>}
       <SidebarGroup>
-        {!collapsed&&<SidebarGroupLabel>Departments & Offices</SidebarGroupLabel>}
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {visibleDepartments.map((department)=>{
-              const Icon=iconByDepartment[department.key];
-              const isActive=location.pathname===department.path
-                || (department.key==="executive"&&location.pathname==="/admin")
-                || (department.key==="accommodation"&&location.pathname==="/admin/operations")
-                || (department.key==="intelligence_analytics"&&location.pathname==="/admin/analytics");
-              return <SidebarMenuItem key={department.key}>
-                <SidebarMenuButton asChild isActive={isActive} tooltip={department.label}>
-                  <Link to={department.path}><Icon className="h-4 w-4"/><span>{department.shortLabel}</span></Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>;
-            })}
-          </SidebarMenu>
-        </SidebarGroupContent>
+        <details className="w-full" open={!isGodMode}>
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-2 text-xs font-bold text-sidebar-foreground/70 hover:text-sidebar-foreground">
+           <Settings2 className="h-4 w-4"/>{!collapsed&&<span>{isGodMode?"Specialist tools & old departments":"Departments & Offices"}</span>}
+          </summary>
+          <SidebarGroupContent><SidebarMenu>
+           {visibleDepartments.map((department)=>{
+             const Icon=iconByDepartment[department.key];
+             const isActive=location.pathname===department.path
+               || (department.key==="executive"&&location.pathname==="/admin")
+               || (department.key==="accommodation"&&location.pathname==="/admin/operations")
+               || (department.key==="intelligence_analytics"&&location.pathname==="/admin/analytics");
+             return <SidebarMenuItem key={department.key}>
+              <SidebarMenuButton asChild isActive={isActive} tooltip={department.label}>
+               <Link to={department.path}><Icon className="h-4 w-4"/><span>{department.shortLabel}</span></Link>
+              </SidebarMenuButton>
+             </SidebarMenuItem>;
+           })}
+           {isGodMode&&<>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip="Visual Studio"><Link to="/admin/studio"><Paintbrush className="h-4 w-4"/><span>Visual Studio</span></Link></SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton asChild tooltip="Case Command Center"><Link to="/admin/cases"><ClipboardCheck className="h-4 w-4"/><span>Case Command Center</span></Link></SidebarMenuButton></SidebarMenuItem>
+           </>}
+          </SidebarMenu></SidebarGroupContent>
+        </details>
       </SidebarGroup>
     </SidebarContent>
 
