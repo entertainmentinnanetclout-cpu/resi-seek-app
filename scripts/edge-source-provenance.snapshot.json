@@ -1,19 +1,8 @@
 {
   "project_id": "mefjzkhobkltlbmhusdh",
-  "captured_date": "2026-11-10",
-  "purpose": "Exact code copies of 14 existing production Edge Functions: source control only; no deployment",
+  "captured_date": "2026-11-14",
+  "purpose": "Source integrity and transport JWT parity for audited production Edge functions; SEC-01/SEC-02 Yoco functions now deployed with HMAC payment webhook",
   "functions": [
-    {
-      "slug": "NoopCheck",
-      "version": 3,
-      "verify_jwt": true,
-      "files": [
-        {
-          "path": "supabase/functions/NoopCheck/index.ts",
-          "git_blob_sha": "2b320abad9a74768670421c6d7d7d53ccbcbff6c"
-        }
-      ]
-    },
     {
       "slug": "adminos-twilio-diagnostics",
       "version": 8,
@@ -71,12 +60,16 @@
     },
     {
       "slug": "create-payment",
-      "version": 10,
+      "version": 11,
       "verify_jwt": true,
       "files": [
         {
           "path": "supabase/functions/create-payment/index.ts",
-          "git_blob_sha": "13216f7502627c7341e4fe7e7b913b3333c44941"
+          "git_blob_sha": "97f65f485a276e43c34e09f73256fd7ac3f2d532"
+        },
+        {
+          "path": "supabase/functions/_shared/yoco-checkout-secure.mjs",
+          "git_blob_sha": "813ba4c2e699779e8ccd4bf9cbea294aed00a23d"
         }
       ]
     },
@@ -99,6 +92,17 @@
         {
           "path": "supabase/functions/mobile-runtime-report/index.ts",
           "git_blob_sha": "b14b18b042563727d2e302015ce24abc7e4f06d2"
+        }
+      ]
+    },
+    {
+      "slug": "NoopCheck",
+      "version": 3,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/NoopCheck/index.ts",
+          "git_blob_sha": "2b320abad9a74768670421c6d7d7d53ccbcbff6c"
         }
       ]
     },
@@ -158,6 +162,47 @@
         {
           "path": "supabase/functions/seo-search-console-sync/index.ts",
           "git_blob_sha": "ef490565aae6482aa4dcc730d5a7e229bb946d4d"
+        }
+      ]
+    },
+    {
+      "slug": "yoco-checkout",
+      "version": 1,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/yoco-checkout/index.ts",
+          "git_blob_sha": "97f65f485a276e43c34e09f73256fd7ac3f2d532"
+        },
+        {
+          "path": "supabase/functions/_shared/yoco-checkout-secure.mjs",
+          "git_blob_sha": "813ba4c2e699779e8ccd4bf9cbea294aed00a23d"
+        }
+      ]
+    },
+    {
+      "slug": "yoco-verify-payment",
+      "version": 13,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "supabase/functions/yoco-verify-payment/index.ts",
+          "git_blob_sha": "8255dcf9d74054f6f52cb68f7220a51209d93f5d"
+        }
+      ]
+    },
+    {
+      "slug": "yoco-webhook",
+      "version": 12,
+      "verify_jwt": false,
+      "files": [
+        {
+          "path": "supabase/functions/yoco-webhook/index.ts",
+          "git_blob_sha": "0502092f4374cba74b467c0271ed166590e208ca"
+        },
+        {
+          "path": "supabase/functions/_shared/yoco-webhook-security.mjs",
+          "git_blob_sha": "2837ca09d115173efba956c94454f4b58895802b"
         }
       ]
     }

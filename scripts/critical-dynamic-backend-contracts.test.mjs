@@ -59,14 +59,22 @@ test("signed-in application slip, mail and portal functions are deployed to the 
   assert.match(app,/invokeEdgeFunction<string>/);
 });
 
-test("payments webhook must remain closed unless a provider-signature gate is implemented", () => {
+test("payments webhook requires provider HMAC, replay window and server-only atomic settlement", () => {
   const webhook=edge("yoco-webhook");
   const code=read("supabase/functions/yoco-webhook/index.ts");
-  const signatureImplemented=/(?:timingSafeEqual|crypto\.subtle\.verify|createHmac)/.test(code);
-  assert.ok(webhook.verify_jwt===true || signatureImplemented,
-    "CRITICAL: unverified Yoco webhooks must not accept anonymous requests");
-  assert.equal(webhook.verify_jwt,true,
-    "Changing payment callback auth requires a dedicated approved Yoco HMAC/replay-safe implementation and test");
+  const verifier=read("supabase/functions/_shared/yoco-webhook-security.mjs");
+  const migration=read("supabase/migrations/20261114212000_sec01_sec02_yoco_payment_guards.sql");
+  assert.equal(webhook.verify_jwt,false,
+    "Yoco does not provide a Supabase JWT; only the signed provider callback can enter");
+  assert.match(code,/verifyYocoWebhook/);
+  assert.match(code,/YOCO_WEBHOOK_SECRET/);
+  assert.ok(code.indexOf("verifyYocoWebhook")<code.indexOf('service.rpc("rk_yoco_apply_verified_event"'),
+    "HMAC authenticity must precede all financial writes");
+  assert.match(verifier,/crypto\.subtle\.sign/);
+  assert.match(verifier,/Math\.abs\(timestamp-nowSeconds\)>180/);
+  assert.match(verifier,/id\+"\."\+stamp\+"\."\+rawBody/);
+  assert.match(migration,/on conflict \(event_id\) do nothing/);
+  assert.match(migration,/auth\.role\(\)<>'service_role'/);
 });
 
 test("public OG and VAPID functions are active, with intended public access", () => {

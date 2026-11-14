@@ -17,7 +17,8 @@ for (const fn of manifest.functions) {
     const deployed = baseline.edge_functions.find(item => item.slug === fn.slug);
     assert.ok(deployed && deployed.status === "ACTIVE", fn.slug + " absent from captured production inventory");
     assert.equal(deployed.verify_jwt, fn.verify_jwt, fn.slug + " JWT mismatch");
-    assert.ok(config.includes("[functions." + fn.slug + "]\nverify_jwt = " + String(fn.verify_jwt)),
+    const section = config.split("[functions." + fn.slug + "]")[1]?.split("[functions.")[0] || "";
+    assert.match(section,new RegExp("(^|\\n)\\s*verify_jwt\\s*=\\s*"+String(fn.verify_jwt)+"\\s*($|\\n)"),
       fn.slug + " does not explicitly match production JWT configuration");
     for (const file of fn.files) {
       const bytes = readFileSync(file.path);

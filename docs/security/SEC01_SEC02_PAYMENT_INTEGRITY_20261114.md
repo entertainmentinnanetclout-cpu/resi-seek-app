@@ -1,0 +1,35 @@
+# SEC-01 / SEC-02 — Payment Integrity Implementation
+**Scope:** ResKonnect Yoco Checkout API, `create-payment`, `yoco-checkout`, `yoco-webhook`, `yoco-verify-payment`, shop orders and ledger.  
+**Date:** 14 November 2026.  
+**Deployment verified:** SQL migration `sec01_sec02_yoco_payment_guards` applied to live Supabase; Edge versions now `create-payment v11`, `yoco-checkout v1`, `yoco-verify-payment v13`, `yoco-webhook v12` with JWT disabled **only** for the HMAC-protected webhook. **Not activated for customers:** provider `YOCO_WEBHOOK_SECRET`, signed sandbox callback and full payment acceptance were not independently verified. Card choice remains disabled.
+**Important:** card checkout is disabled in the current storefront and the audited connected database had **zero** `shop_orders`, `shop_order_items`, `payments` and `webhook_events` at audit. This is *not* an active payment cutover. Do **not** re-enable until the acceptance checklist below is completed.
+
+## Findings / fixes
+1. **SEC-01 price manipulation:** Old `create-payment` sent a client-provided `amount` directly to Yoco. Both Yoco checkout routes now share a server-side checkout module that only accepts `order_id` and rejects any client amount/currency. A signed-in person must own the order. A protected SQL RPC recalculates line prices from active product variants/products/hamper catalog, applies a verified delivery zone and compares the total; no custom discounts are accepted until a trusted promotion system is integrated. Unsupported or empty order lines fail closed, including incomplete carts.
+2. **SEC-01 database bypass:** Old `users_manage_own_shop_orders` was an unrestricted owner `ALL` policy: clients could set financial statuses and fulfillment fields. Replaced with owner SELECT/INSERT/UPDATE scopes, **no owner DELETE**, plus a BEFORE INSERT/UPDATE trigger that blocks non-finance changes to financial fields. A pending EFT customer may still submit proof metadata and move to `awaiting_verification`, but cannot mark an order paid. Admin and authorized finance actions continue; sensitive admin writes are a separate security gate.
+3. **SEC-01 provider checkout commitment:** Yoco checkout ID, verified integer cents, user and currency are persisted in `rk_yoco_payment_intents` before any redirect is returned. Duplicate checkout registrations are rejected. Server fixed return URLs replace arbitrary callback redirects. Provider response must be an HTTPS `*.yoco.com` URL.
+4. **SEC-02 webhook origin:** New handler requires Yoco Checkout API `webhook-id`, `webhook-timestamp`, `webhook-signature` and secret `YOCO_WEBHOOK_SECRET`. It checks the **raw** JSON body with HMAC-SHA256, base64 secret decoded after `whsec_`, matching any `v1,` signature using constant-time byte comparison and a ±180-second replay window. Without a secret it fails closed.
+5. **SEC-02 transaction:** The webhook validates event ID, supported type, order ID, payment ID, positive integer cents, currency ZAR and consistent status. Server-only `rk_yoco_apply_verified_event` locks the order, checks the original intent, records an immutable unique event ID, updates order, inserts one payment ledger record and history **in one database transaction**. An invalid checkout or amount cannot be settled. Paid orders cannot be reverted by a late failure.
+6. **SEC-02 browser verification:** The old `yoco-verify-payment` endpoint would write `paid` and seller earnings based on a browser-triggered status check. It is now read-only: it only reports `confirmed` once the verified webhook has completed the settlement, otherwise `pending_webhook`. Browser redirects are **never** evidence of payment.
+
+## Required configuration before enabling production Yoco
+- Obtain a Yoco **Checkout API webhook secret** returned when registering the exact HTTPS webhook URL. This is a `whsec_...` value separate from `YOCO_SECRET_KEY`; do not expose it in the frontend, repository or logs.
+- Set `YOCO_WEBHOOK_SECRET` in the Supabase Edge **secrets**, alongside `YOCO_SECRET_KEY`. Confirm sandbox/test and live keys belong to the intended merchant and integration. Never disclose secrets to ChatGPT.
+- Deploy `yoco-webhook` with `verify_jwt=false`: Yoco signs raw webhooks and does **not** supply a Supabase JWT. The handler itself authenticates every request with the HMAC; missing credentials return 503.
+- Deploy `create-payment`, `yoco-checkout` and `yoco-verify-payment` with `verify_jwt=true`, and deploy both `_shared` dependencies with functions.
+- Create and check a low-value **sandbox checkout**, confirm registered intent, signed event, expected cents and currency, paid order and one payment ledger record; replay the same event and assert no duplicate rows; simulate tampered body, old/future timestamp, wrong order, amount mismatch, invalid currency and payment failed after success. Then test the store owner's actual item/cart insert flow before enabling the card choice.
+- The storefront currently creates an order and attempts a direct client insert of `shop_order_items`, but the inspected policies do not grant students `INSERT` on that table; this legacy checkout flow needs a **separate atomic order-creation RPC** before Yoco is advertised to students. Leaving Yoco disabled protects users from an incomplete experience.
+- Verify user's legitimate EFT proof submission remains functional; do not confuse a proof upload with confirmed payment.
+- Current migration history in Supabase and the GitHub filename may differ; reconcile migration versions rather than replay blindly.
+
+## Regression tests and exceptions
+`node scripts/yoco-payment-integrity.test.mjs` checks real HMAC verification (positive, tamper, replay, missing secret, multiple signatures) and static protected payment authorization, dedupe and read-only return. Included in `backend:contracts`.
+
+**Known remaining work:** seller earnings, refunds, disputes/chargebacks, payout reconciliation and referral commissions need an **idempotent finance ledger** after settlement. The previous verification route inserted earnings in multiple non-atomic steps; removing those unsafe browser writes is intentional, not proof all finance accounting is finished. Also not fixed: client-generated EFT reference/fingerprint in the older checkout; identity-aware creation and server-issued transfer references belong in a subsequent SEC-01 extension.
+
+## Official provider evidence
+- Yoco webhook raw-body/HMAC details and 3-minute timestamp: https://developer.yoco.com/guides/online-payments/webhooks/verifying-the-events
+- Yoco provider webhooks/secret registration: https://developer.yoco.com/guides/online-payments/webhooks/listen-for-events
+- Yoco Checkout API server-only checkout: https://developer.yoco.com/guides/online-payments/accepting-a-payment
+
+**Not a claim of production protection:** code, database, provider secret, webhook registration, signed-event acceptance and production role tests must all match the checklist before marking SEC-01 and SEC-02 closed.
