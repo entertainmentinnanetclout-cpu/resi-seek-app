@@ -30,4 +30,6 @@ for(const route of ["/admin/communications?tab=email","/admin/documents","/admin
 check(admin.includes("No external messages or business decisions are made here.")
  &&admin.includes("A draft is not a delivery."),
  "Bulk triage and communication boundaries remain visible");
+check(admin.includes('setFilter("post_service");setKind("all");setOffset(0);setSelected(null);'),
+ "Aftercare action opens the actual post-service queue, not the new intake default");
 console.log("Golden daily mission control guard checks passed.");
