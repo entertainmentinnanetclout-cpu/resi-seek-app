@@ -32,4 +32,7 @@ check(admin.includes("No external messages or business decisions are made here."
  "Bulk triage and communication boundaries remain visible");
 check(admin.includes('setFilter("post_service");setKind("all");setOffset(0);setSelected(null);'),
  "Aftercare action opens the actual post-service queue, not the new intake default");
+check(admin.includes('loading||error?"—":Number(card.count).toLocaleString("en-ZA")')
+ &&admin.includes("Workload data unavailable. Retry the secure queue."),
+ "An unavailable live workload is never misrepresented as zero action required");
 console.log("Golden daily mission control guard checks passed.");
