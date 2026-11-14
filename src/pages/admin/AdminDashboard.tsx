@@ -396,7 +396,8 @@ const AdminDashboard = () => {
                 <div className="space-y-2">{recentApplications.map((app) => (
                   <div key={app.id} className="flex items-center justify-between gap-2 rounded-lg bg-secondary/30 p-3">
                     <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{app.student_name || "Unknown applicant"}</p><p className="truncate text-xs text-muted-foreground">{app.residence_name || "Accommodation"}{app.student_number ? ` · ${app.student_number}` : ""}</p></div>
-                    <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${getStatusBadgeClass(app.status)}`}>{String(app.status || "unknown").replace(/_/g, " ")}</span>
+                    <div className="flex shrink-0 flex-col items-end gap-1"><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${getStatusBadgeClass(app.status)}`}>{String(app.status || "unknown").replace(/_/g, " ")}</span>
+                    {app.id&&<Link className="text-[11px] font-bold text-primary underline" to={"/admin/applications?application="+app.id}>Open case</Link>}</div>
                   </div>
                 ))}</div>
               )}
