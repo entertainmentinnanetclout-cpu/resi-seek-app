@@ -70,7 +70,7 @@ function DeferredSection({ children, minHeight = 220 }: { children: React.ReactN
 const Landing = () => {
   const navigate = useNavigate();
   const livingSignals=usePublicLivingSignals();
-  const {byKey}=useVisualPageSections("landing");
+  const {byKey,isPreview}=useVisualPageSections("landing");
   const {residences:spotlightResidences,loading:spotlightLoading}=useLandingSpotlightResidences();
   const landlordRef = useRef<HTMLDivElement>(null);
 
@@ -188,26 +188,26 @@ const Landing = () => {
 
       <main className="flex flex-col">
         
-        <VisualPageBlock page="landing" sectionKey="hero">
+        <VisualPageBlock page="landing" sectionKey="hero" slot={byKey["hero"]} preview={isPreview}>
         <section>
           <HeroCarousel slides={fallbackSlides} autoPlay interval={6000} useDatabase={true} location="landing" />
         </section>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="search">
+        <VisualPageBlock page="landing" sectionKey="search" slot={byKey["search"]} preview={isPreview}>
         <LivingSearchDock/>
         {/* Highest-visibility accommodation placement immediately after the homepage hero. */}
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="spotlight">
+        <VisualPageBlock page="landing" sectionKey="spotlight" slot={byKey["spotlight"]} preview={isPreview}>
         <PremiumResidenceShowcase residences={spotlightResidences} loading={spotlightLoading} surface="landing" headline={byKey.spotlight?.headline} subtitle={byKey.spotlight?.subtitle}/>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="top3">
+        <VisualPageBlock page="landing" sectionKey="top3" slot={byKey["top3"]} preview={isPreview}>
         <MonthlyTopThree signals={livingSignals} surface="landing" headline={byKey.top3?.headline} subtitle={byKey.top3?.subtitle}/>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="vision">
+        <VisualPageBlock page="landing" sectionKey="vision" slot={byKey["vision"]} preview={isPreview}>
         <section className="border-b bg-background py-9 md:py-14">
           <div className="container mx-auto px-4 text-center">
             <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-primary">OUR VISION · AFRICA'S FIRST AI/SI-POWERED STUDENT PLATFORM</p>
@@ -225,7 +225,7 @@ const Landing = () => {
         </section>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="cities">
+        <VisualPageBlock page="landing" sectionKey="cities" slot={byKey["cities"]} preview={isPreview}>
         <section aria-labelledby="discover-reskonnect" className="border-b bg-background py-11 md:py-14">
           <div className="container mx-auto max-w-6xl px-4">
             <div className="max-w-3xl">
@@ -273,7 +273,7 @@ const Landing = () => {
         </section>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="pillars">
+        <VisualPageBlock page="landing" sectionKey="pillars" slot={byKey["pillars"]} preview={isPreview}>
         <section className="border-b bg-gradient-to-b from-[#fff9e7] via-background to-background py-10 md:py-14 dark:from-[#171b21]">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-5xl text-center">
@@ -290,7 +290,7 @@ const Landing = () => {
         </section>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="gmail-privacy">
+        <VisualPageBlock page="landing" sectionKey="gmail-privacy" slot={byKey["gmail-privacy"]} preview={isPreview}>
         <section aria-label="ResKonnect Gmail integration and privacy" className="border-y border-slate-200 bg-slate-50 py-8 text-slate-800">
           <div className="container mx-auto flex max-w-6xl flex-col items-start justify-between gap-5 px-4 md:flex-row md:items-center">
             <div className="max-w-3xl">
@@ -314,23 +314,23 @@ const Landing = () => {
         </section>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="student-care">
+        <VisualPageBlock page="landing" sectionKey="student-care" slot={byKey["student-care"]} preview={isPreview}>
         <StudentCareLinks />
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="intake">
+        <VisualPageBlock page="landing" sectionKey="intake" slot={byKey["intake"]} preview={isPreview}>
         <InteractiveNeedSection />
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="automation">
+        <VisualPageBlock page="landing" sectionKey="automation" slot={byKey["automation"]} preview={isPreview}>
         <DeferredSection minHeight={420}><AutomationAdvantageSection /></DeferredSection>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="resmap">
+        <VisualPageBlock page="landing" sectionKey="resmap" slot={byKey["resmap"]} preview={isPreview}>
         <DeferredSection minHeight={520}><LandingResMap3DPreview /></DeferredSection>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="audience">
+        <VisualPageBlock page="landing" sectionKey="audience" slot={byKey["audience"]} preview={isPreview}>
         <section className="py-8 md:py-10 bg-gradient-to-b from-primary/5 to-background">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-5">
@@ -352,7 +352,7 @@ const Landing = () => {
         </section>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="trusted">
+        <VisualPageBlock page="landing" sectionKey="trusted" slot={byKey["trusted"]} preview={isPreview}>
         <section className="py-12 md:py-20 bg-card/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <DeferredSection minHeight={520}><TrustedLivingShowcase signals={livingSignals} headline={byKey.trusted?.headline} subtitle={byKey.trusted?.subtitle}/></DeferredSection>
@@ -360,15 +360,15 @@ const Landing = () => {
         </section>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="categories">
+        <VisualPageBlock page="landing" sectionKey="categories" slot={byKey["categories"]} preview={isPreview}>
         <DeferredSection minHeight={280}><CategoryHeroSelector /></DeferredSection>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="accreditation">
+        <VisualPageBlock page="landing" sectionKey="accreditation" slot={byKey["accreditation"]} preview={isPreview}>
         <DeferredSection minHeight={220}><AccreditationCTA /></DeferredSection>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="about">
+        <VisualPageBlock page="landing" sectionKey="about" slot={byKey["about"]} preview={isPreview}>
         <section className="py-12 md:py-20 bg-card/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -396,7 +396,7 @@ const Landing = () => {
         </section>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="landlord">
+        <VisualPageBlock page="landing" sectionKey="landlord" slot={byKey["landlord"]} preview={isPreview}>
         <section ref={landlordRef} id="landlord" className="py-12 md:py-20 relative overflow-hidden">
           <FloatingShapes className="opacity-50" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -414,7 +414,7 @@ const Landing = () => {
         </section>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="benefits">
+        <VisualPageBlock page="landing" sectionKey="benefits" slot={byKey["benefits"]} preview={isPreview}>
         <section className="py-12 md:py-20 relative overflow-hidden">
           <FloatingShapes />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -437,7 +437,7 @@ const Landing = () => {
         </section>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="faq">
+        <VisualPageBlock page="landing" sectionKey="faq" slot={byKey["faq"]} preview={isPreview}>
         <section className="border-y bg-card/50 py-12 md:py-16">
           <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
             <div className="text-center"><h2 className="text-3xl font-black">ResKonnect, answered clearly</h2><p className="mt-2 text-sm text-muted-foreground">Canonical facts for students, partners, search engines and AI answer systems.</p></div>
@@ -450,7 +450,7 @@ const Landing = () => {
         </section>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="contact">
+        <VisualPageBlock page="landing" sectionKey="contact" slot={byKey["contact"]} preview={isPreview}>
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-xl mx-auto">
@@ -473,7 +473,7 @@ const Landing = () => {
         </section>
         </VisualPageBlock>
 
-        <VisualPageBlock page="landing" sectionKey="seo-links">
+        <VisualPageBlock page="landing" sectionKey="seo-links" slot={byKey["seo-links"]} preview={isPreview}>
         <section className="container mx-auto max-w-5xl px-4 pb-16 sm:px-6 lg:px-8">
           <SeoInternalLinks
             heading="Explore ResKonnect"
