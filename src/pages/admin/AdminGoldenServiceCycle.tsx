@@ -21,6 +21,7 @@ type Item={id:string;kind:Kind;customer:string;residence_name:string;status:stri
  first_response_due_at:string;next_action_due_at:string;last_human_response_at:string|null;last_human_channel:string|null;
  receipt_issued_at:string|null;feedback_rating?:number|null;overdue:boolean;needs_reply:boolean;delegated_review_open:boolean;source_created_at:string;closed_at:string|null};
 type Event={event_type:string;note:string|null;channel:string|null;created_at:string};
+type Rule={kind:Kind;first_response_minutes:number;followup_minutes:number};
 const KINDS:[Kind,string][]=[["reservation","Reservations"],["application","Housing applications"],["viewing","Property viewings"],["enquiry","Housing enquiries"],["onboarding","New enquiries & onboarding"],["application_support","University/TVET applications"],["private_rental","Private rental requests"],["student_support","Student service desk"],["wil","WIL & placements"],["landlord","Landlord onboarding"],["partner","Partner relationships"]];
 const ACTIONS:[FlowAction,string,string][]=[
  ["begin_review","Start review","Begin an internal assessment; this is not a customer response."],
@@ -69,6 +70,11 @@ export default function AdminGoldenServiceCycle(){
  const [busy,setBusy]=useState(false);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
+ const [rules,setRules]=useState<Rule[]>([]);
+ const [ruleKind,setRuleKind]=useState<Kind>("reservation");
+ const [firstTarget,setFirstTarget]=useState(120);
+ const [followTarget,setFollowTarget]=useState(720);
+ const [savingRules,setSavingRules]=useState(false);
  const load=useCallback(async(silent=false)=>{
   if(!silent)setLoading(true);
   setError("");
@@ -80,6 +86,22 @@ export default function AdminGoldenServiceCycle(){
   finally{setLoading(false);}
  },[filter,kind,offset]);
  useEffect(()=>{void load();const id=window.setInterval(()=>{if(!document.hidden)void load(true);},60000);return()=>window.clearInterval(id);},[load]);
+ const loadRules=useCallback(async()=>{
+  try{const r=await rpc("rk_golden_service_rules_list",{});setRules(Array.isArray(r)?r:[]);}
+  catch(e){toast.error(e instanceof Error?e.message:"Could not load service targets");}
+ },[]);
+ useEffect(()=>{void loadRules();},[loadRules]);
+ useEffect(()=>{const rule=rules.find(r=>r.kind===ruleKind);if(rule){setFirstTarget(rule.first_response_minutes);setFollowTarget(rule.followup_minutes);}},[ruleKind,rules]);
+ const saveTargets=async()=>{
+  if(savingRules)return;
+  if(!Number.isInteger(firstTarget)||firstTarget<15||firstTarget>4320||!Number.isInteger(followTarget)||followTarget<60||followTarget>20160)
+   return toast.error("Choose a valid first-response and follow-up target.");
+  setSavingRules(true);
+  try{await rpc("rk_golden_service_rule_update",{p_kind:ruleKind,p_first_minutes:firstTarget,p_followup_minutes:followTarget});
+   toast.success("Service targets updated for NEW cases only");await loadRules();
+  }catch(e){toast.error(e instanceof Error?e.message:"Could not save targets");}
+  finally{setSavingRules(false);}
+ };
  const open=async(item:Item)=>{
   setSelected(item);setEvents([]);setNote("");setAction("begin_review");setConfirmed(false);setNextDue(nowPlus());
   try{const h=await rpc("rk_golden_case_history",{p_kind:item.kind,p_id:item.id});setEvents(Array.isArray(h)?h:[]);}
@@ -89,6 +111,8 @@ export default function AdminGoldenServiceCycle(){
   if(!selected||busy)return;
   if(action==="contact_confirmed"&&!confirmed)return toast.error("Only record contact after the message or call truly happened.");
   if(action==="complete_cycle"&&!window.confirm("Confirm that this service is fulfilled and the business outcome is final?"))return;
+  if(action==="set_followup"&&(!nextDue||Number.isNaN(new Date(nextDue).getTime())))
+   return toast.error("Select a valid follow-up date and time.");
   setBusy(true);
   try{
    const params={p_kind:selected.kind,p_id:selected.id,p_action:action,
@@ -219,6 +243,19 @@ export default function AdminGoldenServiceCycle(){
      </CardContent></Card>}
     </div>
    </div>
+   <details className="rk-neo-panel p-4 sm:p-5">
+    <summary className="cursor-pointer text-sm font-black">Set service response targets · one-person capacity planning</summary>
+    <p className="mt-2 text-xs leading-5 text-muted-foreground">Internal operational goals only—not guaranteed customer response times. Changing a target applies to new intakes, never silently erases existing overdue deadlines. Every change is audited.</p>
+    <div className="mt-4 grid gap-3 sm:grid-cols-4">
+     <div><Label htmlFor="golden-rule-kind">Service</Label><Select value={ruleKind} onValueChange={v=>setRuleKind(v as Kind)}>
+      <SelectTrigger id="golden-rule-kind" className="mt-1"><SelectValue/></SelectTrigger>
+      <SelectContent>{KINDS.map(([k,l])=><SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
+     </Select></div>
+     <div><Label htmlFor="golden-first">First-response target (minutes)</Label><Input id="golden-first" type="number" min={15} max={4320} step={15} className="mt-1" value={firstTarget} onChange={e=>setFirstTarget(Number(e.target.value))}/></div>
+     <div><Label htmlFor="golden-follow">Follow-up target (minutes)</Label><Input id="golden-follow" type="number" min={60} max={20160} step={60} className="mt-1" value={followTarget} onChange={e=>setFollowTarget(Number(e.target.value))}/></div>
+     <div className="flex items-end"><Button className="w-full" onClick={()=>void saveTargets()} disabled={savingRules}>{savingRules?"Saving…":"Update targets"}</Button></div>
+    </div>
+   </details>
    <p className="rounded-xl border bg-card p-4 text-xs leading-6 text-muted-foreground">Solo-company service principle: automate logging, reminders and draft preparation; retain human judgement for identity, eligibility, placement, sensitive documents, commitments and final communication delivery. Historical cases remain on the queue until someone actually services them. The watchdog alerts God Mode daily when deadlines are missed.</p>
   </div>
  </AdminLayout>;
