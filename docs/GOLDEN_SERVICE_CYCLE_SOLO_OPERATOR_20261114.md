@@ -66,3 +66,27 @@ The operator's default **New requests · last 72 hours** filter is ordered newes
 Live cron inspection found `rk-golden-service-watch` failing every 15 minutes with `notifications_event_key_unique` because the same date-only event key was used for **two** admin recipients. The fix appends the admin user ID to the daily internal notification event key and retains the existing `rk_golden_digest_receipts(admin_user_id, digest_day)` uniqueness. The notification write is also conflict-tolerant.
 
 Verified against the live Supabase project after migration: the first repair run marked 1,078 overdue cases, created two distinct admin notifications and two digest receipts, and an immediate second execution created no new notifications or receipts. No emails, WhatsApps, eligibility decisions or accommodation placement statuses were changed by these runs. Continue checking `cron.job_run_details` for successful scheduled ticks; a manual invocation does not by itself prove future scheduler reliability.
+
+## 10. Daily mission control (five operator sprints)
+God Mode `/admin/golden-cycle` now shows a **read-only cross-service workload pulse**, refreshed with the existing operator queue. It supplements—not replaces—these protected workspaces:
+
+| Sprint | Customer-facing obligation | Golden cockpit signal | Authorised action | Exit check |
+| --- | --- | --- | --- | --- |
+| 01 · Intake and reply | Acknowledge new requests truthfully and respond when appropriate | New cases in last 72h without proven human reply | Check latest identity/status/consent; use Mail Dock and its audited delivery process | Provider-confirmed send or properly attested conversation; only a system receipt remains labelled automatic |
+| 02 · Verify documents | Compulsory evidence review | Pending general and application file **records**, including older-than-48h backlog | Open Document Review; verify or reject actual evidence using the existing approved tools | Verification recorded by authorised reviewer with timestamp; an upload is not enough |
+| 03 · Residence eligibility | Hand over only an eligible student profile to an authorised residence | Open delegated eligibility tasks and returned recommendations without final sign-off | Case Command Center; landlord sees only delegated/scoped profile | ResKonnect checks evidence, approves handover, checks real room hold and makes final decision |
+| 04 · WIL and partners | Coordinate external services without exposing documents to arbitrary partners | Open WIL and partner Golden Service cases | Official WIL workflow, partner workspace, approved communication | Confirm actual outcome; do not confuse a sent request with a WIL placement |
+| 05 · Aftercare and recovery | Check completion, move-in satisfaction, and unresolved low ratings | Post-service cases and low-rated recovery cases | Golden Service Cycle case history and aftercare actions | True resolution recorded, satisfaction privately collected and poor experience followed up |
+
+### Evidence and scope notes
+- Workload counts are **non-identifying** and available only through the existing God Mode + MFA queue RPC. The normal student portal remains user-scoped.
+- General pending documents are **all** documents in `public.documents` marked `pending` without a verification timestamp, not necessarily documents belonging to live accommodation cases. Application-specific files are counted separately and labelled clearly.
+- Delegated reviews are tasks in the existing scoped case command workflow. A completed recommendation with no ResKonnect sign-off remains work to do, **not a confirmed booking**.
+- Empty queues do not prove customer success. Service feedback, genuine contact history, actual placement and completed documents must be checked separately.
+- No migration in this sprint sends external messages, changes legal eligibility, verifies evidence, allocates rooms, or commits a partner to delivery.
+
+### Suggested operator routine
+**Start:** Open New requests; identify urgent reservations, viewings and fresh unanswered service requests. **Then:** Open the document backlog and review submitted evidence, using the authorisation and audit path. **Next:** Complete eligible residence delegation and returned recommendation sign-offs; check WIL and partner responses. **Close:** Clear overdue follow-ups and customer recovery cases. Each unresolved customer gets a specific next operator action and a realistic deadline. Recheck the queue and the communications receipt logs before ending your shift.
+
+### Live verification on 14 November 2026
+The verified database aggregation found 147 pending general document records, 145 older than 48 hours, 0 pending application-specific document records, 0 currently open delegated residence eligibility tasks, 1 open WIL service case, and 0 open partner service cases. These are an operational snapshot, not immutable fixture values and not a claim that pending documents are linked to an unserved request. A real MFA-protected browser run is still needed for final user acceptance.
