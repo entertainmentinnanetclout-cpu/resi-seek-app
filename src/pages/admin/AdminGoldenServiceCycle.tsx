@@ -16,6 +16,7 @@ import {supabase} from "@/integrations/supabase/client";
 
 type Kind="application"|"reservation"|"viewing"|"enquiry"|"onboarding"|"application_support"|"private_rental"|"student_support"|"wil"|"landlord"|"partner";
 type FlowAction="begin_review"|"request_info"|"waiting_residence"|"waiting_partner"|"set_followup"|"contact_confirmed"|"complete_cycle"|"reopen"|"private_note";
+type BatchAction="begin_review"|"set_followup"|"private_note";
 type Metric={total:number;open:number;overdue:number;unanswered:number;waiting:number;post_service:number;replied_today:number;feedback_count?:number;feedback_average?:number|null;needs_recovery?:number};
 type Item={id:string;kind:Kind;customer:string;residence_name:string;status:string;step:string;next_action:string;priority:string;
  first_response_due_at:string;next_action_due_at:string;last_human_response_at:string|null;last_human_channel:string|null;
@@ -39,6 +40,7 @@ const pretty=(v?:string|null)=>String(v||"—").replaceAll("_"," ").replace(/\b\
 const date=(v?:string|null)=>v?new Date(v).toLocaleString("en-ZA",{dateStyle:"medium",timeStyle:"short"}):"Not recorded";
 const asDateTimeLocal=(d:Date)=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
 const nowPlus=()=>asDateTimeLocal(new Date(Date.now()+24*3600000));
+const caseKey=(item:Pick<Item,"kind"|"id">)=>item.kind+":"+item.id;
 const detailsUrl=(kind:Kind)=>{
  if(kind==="reservation"||kind==="application")return "/admin/cases";
  if(kind==="wil")return "/admin/wil";
@@ -68,6 +70,11 @@ export default function AdminGoldenServiceCycle(){
  const [channel,setChannel]=useState("email");
  const [confirmed,setConfirmed]=useState(false);
  const [busy,setBusy]=useState(false);
+ const [batchKeys,setBatchKeys]=useState<string[]>([]);
+ const [batchAction,setBatchAction]=useState<BatchAction>("begin_review");
+ const [batchNote,setBatchNote]=useState("");
+ const [batchDue,setBatchDue]=useState(nowPlus);
+ const [batchBusy,setBatchBusy]=useState(false);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
  const [rules,setRules]=useState<Rule[]>([]);
@@ -80,7 +87,9 @@ export default function AdminGoldenServiceCycle(){
   setError("");
   try{
    const data=await rpc("rk_golden_service_queue",{p_filter:filter,p_kind:kind==="all"?null:kind,p_limit:80,p_offset:offset});
-   setItems(Array.isArray(data?.items)?data.items:[]);
+   const nextItems:Item[]=Array.isArray(data?.items)?data.items:[];
+   setItems(nextItems);
+   setBatchKeys(prev=>prev.filter(key=>nextItems.some(item=>!item.closed_at&&caseKey(item)===key)));
    setMetrics(data?.metrics||{total:0,open:0,overdue:0,unanswered:0,waiting:0,post_service:0,replied_today:0});
   }catch(e){setError(e instanceof Error?e.message:"Service queue could not be loaded");}
   finally{setLoading(false);}
@@ -91,6 +100,7 @@ export default function AdminGoldenServiceCycle(){
   catch(e){toast.error(e instanceof Error?e.message:"Could not load service targets");}
  },[]);
  useEffect(()=>{void loadRules();},[loadRules]);
+ useEffect(()=>{setBatchKeys([]);},[filter,kind,offset,query]);
  useEffect(()=>{const rule=rules.find(r=>r.kind===ruleKind);if(rule){setFirstTarget(rule.first_response_minutes);setFollowTarget(rule.followup_minutes);}},[ruleKind,rules]);
  const saveTargets=async()=>{
   if(savingRules)return;
@@ -133,6 +143,41 @@ export default function AdminGoldenServiceCycle(){
   finally{setBusy(false);}
  };
  const filtered=useMemo(()=>items.filter(x=>[x.customer,x.kind,x.status,x.step,x.next_action,x.residence_name,x.id].join(" ").toLowerCase().includes(query.toLowerCase())),[items,query]);
+ const batchEligible=filtered.filter(item=>!item.closed_at);
+ const batchSelected=batchEligible.filter(item=>batchKeys.includes(caseKey(item)));
+ const firstTwenty=batchEligible.slice(0,20);
+ const batchAllChecked=firstTwenty.length>0&&firstTwenty.every(item=>batchKeys.includes(caseKey(item)));
+ const toggleBatch=(item:Item,checked:boolean)=>{
+  const key=caseKey(item);
+  if(checked&&batchKeys.length>=20&&!batchKeys.includes(key)){
+   toast.error("Only 20 service cases can be coordinated per batch.");return;
+  }
+  setBatchKeys(prev=>checked?[...new Set([...prev,key])]:prev.filter(x=>x!==key));
+ };
+ const applyBatch=async()=>{
+  if(batchBusy||!batchSelected.length)return;
+  if(batchAction==="private_note"&&batchNote.trim().length<8){
+   toast.error("Describe the genuine internal work in at least eight characters.");return;
+  }
+  const due=new Date(batchDue);
+  if(batchAction==="set_followup"&&(!Number.isFinite(due.getTime())
+   ||due.getTime()<Date.now()+5*60000||due.getTime()>Date.now()+90*86400000)){
+   toast.error("Choose a follow-up between five minutes and 90 days.");return;
+  }
+  if(!window.confirm(`Record ${batchAction.replaceAll("_"," ")} for ${batchSelected.length} selected open cases? This is internal only: no email, WhatsApp, eligibility decision or document approval will occur.`))return;
+  setBatchBusy(true);
+  try{
+   const result=await rpc("rk_golden_bulk_triage",{
+    p_items:batchSelected.map(item=>({kind:item.kind,id:item.id,status:item.status,step:item.step})),
+    p_action:batchAction,p_note:batchNote.trim()||null,
+    p_due_at:batchAction==="set_followup"?due.toISOString():null
+   });
+   toast.success(`${result?.processed||batchSelected.length} cases coordinated internally. No messages were sent.`);
+   setBatchKeys([]);setBatchNote("");setSelected(null);
+   await load(true);
+  }catch(e){toast.error(e instanceof Error?e.message:"Batch was not applied; refresh and retry.");}
+  finally{setBatchBusy(false);}
+ };
  const selectedAction=ACTIONS.find(x=>x[0]===action);
  const stats=[["Open cases",metrics.open,UsersRound],["Action overdue",metrics.overdue,AlarmClock],["No confirmed reply",metrics.unanswered,MessageCircle],["Awaiting others",metrics.waiting,Handshake],["Aftercare",metrics.post_service,Home],["Contacted today",metrics.replied_today,CheckCircle2]] as const;
  return <AdminLayout>
