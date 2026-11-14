@@ -275,8 +275,17 @@ export default function AdminVisualStudio(){
       </CardContent></Card>
       <div className="min-w-0 space-y-3">
        <div className="rk-neo-panel flex flex-wrap items-center justify-between gap-2 p-3">
-        <span className="text-xs font-black">Real page preview · unpublished edits</span>
-        <div className="flex gap-1" role="group" aria-label="Preview device width">
+        <div className="min-w-0">
+         <p className="text-xs font-black">Real page preview · unpublished edits</p>
+         <p role="status" aria-live="polite" className={"mt-1 text-[11px] "+(previewState==="ready"?"text-emerald-700":previewState==="error"?"text-red-700":"text-muted-foreground")}>
+          {previewState==="ready"?"Canvas connected · edits synced":
+           previewState==="error"?"Canvas unavailable · try Reload preview":
+           previewState==="syncing"?"Applying draft to live preview…":"Loading live website…"}
+         </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Preview device width">
+         <Button type="button" size="sm" variant="outline" className="h-8" onClick={reloadPreview} aria-label="Reload preview"><RefreshCw className="h-4 w-4"/></Button>
+         <Button type="button" size="sm" variant="outline" className="h-8" asChild><a href={pageUrl} target="_blank" rel="noopener noreferrer" aria-label="Open published website in new tab"><ExternalLink className="h-4 w-4"/></a></Button>
          {([["desktop",Monitor],["tablet",Tablet],["mobile",Smartphone]] as const).map(([v,Icon])=>
           <Button key={v} type="button" size="sm" variant={viewport===v?"default":"outline"} aria-label={v+" preview"} aria-pressed={viewport===v} onClick={()=>runRkLayoutTransition(()=>setViewport(v))} className="h-8"><Icon className="h-4 w-4"/></Button>)}
         </div>
@@ -284,11 +293,16 @@ export default function AdminVisualStudio(){
        <div className="flex min-h-[650px] justify-center overflow-hidden rounded-2xl border border-[#cbd7e8] bg-[#eef2f7] p-1.5 sm:p-3">
         <div className="rk-device-shell rk-layout-morph shrink-0 self-start" data-device={viewport} style={{width:currentPreviewWidth,maxWidth:"100%"}}>
          <div className="rk-device-glass">
-          <iframe ref={frame} title={"Visual preview of "+page+" on "+viewport} onLoad={sendPreview} src={previewUrl}
-           className="block h-[830px] w-full border-0 bg-white" loading="lazy"/>
+          <iframe key={page+":"+previewNonce} ref={frame} title={"Visual preview of "+page+" on "+viewport}
+           onLoad={()=>{setPreviewState("loading");sendPreview();}} onError={()=>setPreviewState("error")} src={previewUrl}
+           className="block h-[830px] w-full border-0 bg-white" loading="eager"/>
          </div>
         </div>
        </div>
+       {previewState==="error"&&<div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+        <p>Preview did not connect. Your draft is safe. Reload the preview, or open the public page in a separate tab to check connectivity.</p>
+        <Button size="sm" variant="outline" onClick={reloadPreview}><RefreshCw className="mr-1.5 h-4 w-4"/>Retry preview</Button>
+       </div>}
       </div>
       <div className="min-w-0 space-y-3">
        <Card className="rk-neo-panel"><CardContent className="space-y-4 p-4">
@@ -299,8 +313,9 @@ export default function AdminVisualStudio(){
          {active.editable_copy?<><div><Label htmlFor="rk-vs-headline">Section heading</Label><Textarea id="rk-vs-headline" maxLength={180} className="mt-1" rows={3} value={edit.headline} onChange={e=>patch({headline:e.target.value})}/></div>
           <div><Label htmlFor="rk-vs-subtitle">Supporting text</Label><Textarea id="rk-vs-subtitle" maxLength={450} className="mt-1" rows={5} value={edit.subtitle} onChange={e=>patch({subtitle:e.target.value})}/></div></>:
           <p className="rounded-lg bg-[#f8fafc] p-3 text-xs leading-5 text-muted-foreground">This is a registered functional component. Manage its content with the linked editor; its application, search and compliance logic stays protected.</p>}
-         {TARGETS[selected]&&<Button size="sm" variant="outline" className="w-full" onClick={()=>{const t=TARGETS[selected];if(!t.url)setTab(t.tab);}}>
-          {TARGETS[selected].url?<Link to={TARGETS[selected].url}>{TARGETS[selected].label}</Link>:TARGETS[selected].label}</Button>}
+         {TARGETS[selected]&&(TARGETS[selected].url?
+          <Button size="sm" variant="outline" className="w-full" asChild><Link to={TARGETS[selected].url!}>{TARGETS[selected].label}</Link></Button>:
+          <Button size="sm" variant="outline" className="w-full" onClick={()=>setTab(TARGETS[selected].tab)}>{TARGETS[selected].label}</Button>)}
          <Label htmlFor="rk-vs-note">Change note (optional)</Label><Input id="rk-vs-note" maxLength={500} value={note} onChange={e=>setNote(e.target.value)} placeholder="Why this layout was updated"/>
         </>:<p className="text-xs text-muted-foreground">Choose a block on the left or click an Edit button in the page preview.</p>}
        </CardContent></Card>
