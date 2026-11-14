@@ -46,3 +46,15 @@ The first read-only count after deployment indicated 1,119 tracked records, of w
 Sign in with God Mode MFA and open `/admin/golden-cycle`. Verify overdue and unanswered queues, source-specific links, case history, private note, follow-up scheduling, documented human contact, target edits and their audit. Separately use an authorised student account to confirm `/dashboard/services` shows only that student's cases. Submit service feedback only on a completed/outcome case. Confirm that low-rated cases reappear under the operator's recovery queue. Test a genuine delegate task in a residence portal and the corresponding ResKonnect sign-off path.
 
 **Limits:** A queued record or an automated receipt does not guarantee a human response, automatic approval or a successful placement. Full authenticated multi-role UAT is required after release; CI and schema checks are not a substitute for an operator acceptance run.
+
+## 7. Safe bulk triage (next iteration)
+From **/admin/golden-cycle**, filter to an actual service category or deadline, then select up to 20 **open** rows from the currently loaded page. An operator can:
+- **Begin review** of multiple cases without signalling that any document has been verified.
+- **Schedule follow-up** deadlines without claiming anyone received an external message.
+- **Add a factual private note** to each chosen record.
+
+The server function `rk_golden_bulk_triage` requires the same God Mode MFA authorization as single-case actions, rejects changed/closed or duplicated records, records a separate existing audit event for every case and executes as one all-or-nothing transaction. It has no ability to send a WhatsApp or email, attest human delivery, approve funding, approve reservations, confirm a room, close a case or approve WIL placement.
+
+**Recommended first batch:** Start with a specific recent, uncontacted category; reconcile actual customer contact before using Mail Dock. Do not indiscriminately select historical records for external messaging. Use Case Command Center for documents and delegated residence eligibility, Communications for individual audited sends, and Golden Service Cycle for ongoing task prioritisation. The blue-grey queue is coordination only, not a replacement for those workflows.
+
+**Acceptance:** Test an admin with AAL2, an admin without MFA, a student, and an anonymous session; reject unauthorised requests. Test 21 cases, duplicate cases, one stale business status, one stale service step, one closed record, and a valid 2-case batch. Verify every accepted case gets one audit event, rejected batches produce no partial writes, and no external communication status changes. Full authenticated end-to-end acceptance is still required before production UI rollout.
