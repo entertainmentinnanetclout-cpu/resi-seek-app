@@ -81,3 +81,12 @@ A control is not closed until it has: **owner**, source code or service, root ca
 - Supabase Storage buckets: https://supabase.com/docs/guides/storage/buckets/fundamentals
 
 No production payment, login, document upload, database privileges or DNS settings were changed by this inventory sprint.
+
+
+## Remediation log — SEC-03 to SEC-06 (14 November 2026)
+- [Scoped invoker views, owner guard, landlord field restrictions, and live role-negative test results](SEC03_SEC06_RLS_VIEW_HARDENING_20261114.md)
+- **SEC-03:** four flagged owner-privileged public views remediated; security advisor view errors now **0**. Existing roommate/recruitment/landlord view contracts preserved via RLS-filtered projections.
+- **SEC-04:** one anonymous owner-oracle function fixed; anonymous-executable privileged-function warnings reduced from 25 to **24**. The rest remain individual review tasks.
+- **SEC-05:** **218** authenticated-executable privileged functions remain for manual, scope-aware review. No broad revoke has been performed.
+- **SEC-06:** residence-application field guards and real tenant-isolation SELECT tests implemented; authenticated multi-role business UAT remains outstanding.
+- The previous line about no production changes describes only the initial *inventory sprint*. Later dedicated SEC remediation releases explicitly include live database migrations. Never treat that initial statement as current deployment status.
