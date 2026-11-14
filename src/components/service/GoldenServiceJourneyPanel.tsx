@@ -1,11 +1,12 @@
 import {useCallback,useEffect,useState} from "react";
-import {ArrowRight,CheckCircle2,Clock3,Headphones,RefreshCw,ShieldCheck} from "lucide-react";
+import {ArrowRight,CheckCircle2,Clock3,Headphones,RefreshCw,ShieldCheck,Star} from "lucide-react";
+import {Textarea} from "@/components/ui/textarea";
 import {Link} from "react-router-dom";
 import {supabase} from "@/integrations/supabase/client";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card,CardContent} from "@/components/ui/card";
-type Entry={id:string;kind:string;status:string;step:string;next_action:string;received_at:string;last_human_response_at:string|null;receipt_recorded:boolean;closed:boolean};
+type Entry={id:string;kind:string;status:string;step:string;next_action:string;received_at:string;last_human_response_at:string|null;receipt_recorded:boolean;feedback_rating?:number|null;closed:boolean};
 const pretty=(s:string)=>s.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase());
 const label=(s:string)=>({
  application:"Accommodation application",reservation:"Reservation",viewing:"Property viewing",enquiry:"Residence enquiry",
@@ -23,6 +24,8 @@ export default function GoldenServiceJourneyPanel(){
  const [rows,setRows]=useState<Entry[]>([]);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
+ const [feedback,setFeedback]=useState<Record<string,{rating:number;note:string}>>({});
+ const [sending,setSending]=useState<string|null>(null);
  const load=useCallback(async()=>{
   setLoading(true);setError("");
   try{const {data,error}=await (supabase as any).rpc("rk_golden_my_service");
@@ -31,6 +34,20 @@ export default function GoldenServiceJourneyPanel(){
   finally{setLoading(false);}
  },[]);
  useEffect(()=>{void load();},[load]);
+ const submit=async(entry:Entry)=>{
+  const key=entry.kind+":"+entry.id;
+  const value=feedback[key];if(!value?.rating||sending)return;
+  setSending(key);
+  try{
+   const {data,error}=await (supabase as any).rpc("rk_golden_service_feedback_submit",{
+    p_kind:entry.kind,p_id:entry.id,p_rating:value.rating,p_comment:value.note.trim()||null
+   });
+   if(error)throw error;
+   setFeedback(x=>{const next={...x};delete next[key];return next;});
+   await load();
+  }catch(e){setError(e instanceof Error?e.message:"Unable to record service feedback");}
+  finally{setSending(null);}
+ };
  return <Card className="rk-neo-panel overflow-hidden">
   <CardContent className="p-4 sm:p-5">
    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wide text-[#2563eb]"><ShieldCheck className="h-4 w-4"/>Your Golden Service Journey</p>
@@ -53,6 +70,21 @@ export default function GoldenServiceJourneyPanel(){
      <p className="mt-1 text-[11px] text-muted-foreground">{r.last_human_response_at?"Last confirmed human response: "+new Date(r.last_human_response_at).toLocaleDateString("en-ZA"):
       r.receipt_recorded?"Request logged automatically; personal review is still pending.":"This historical request has not had a response confirmed in the new service tracker."}</p>
      {links[r.kind]&&<Link className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary underline" to={links[r.kind]}>View this service <ArrowRight className="h-3 w-3"/></Link>}
+     {(r.closed||r.step==="post_service")&&<div className="mt-3 border-t pt-3">
+      <p className="text-xs font-black">How was your ResKonnect service?</p>
+      {r.feedback_rating?<p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500"/>You rated your experience {r.feedback_rating}/5. Ratings can be updated after 24 hours.</p>:
+       <><div className="mt-2 flex gap-1" role="group" aria-label="Rate your service from one to five">
+        {[1,2,3,4,5].map(star=><button type="button" key={star} aria-label={star+" of 5 stars"}
+         onClick={()=>setFeedback(x=>({...x,[r.kind+":"+r.id]:{rating:star,note:x[r.kind+":"+r.id]?.note||""}}))}
+         className="rounded-lg border p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500">
+         <Star className={"h-4 w-4 "+((feedback[r.kind+":"+r.id]?.rating||0)>=star?"fill-amber-400 text-amber-500":"text-muted-foreground")}/></button>)}
+       </div>
+       {feedback[r.kind+":"+r.id]?.rating>0&&<><Textarea rows={2} maxLength={450} className="mt-2" aria-label="Optional private service feedback" placeholder="What should we improve? (optional)"
+         value={feedback[r.kind+":"+r.id]?.note||""} onChange={e=>setFeedback(x=>({...x,[r.kind+":"+r.id]:{rating:x[r.kind+":"+r.id]?.rating||0,note:e.target.value}}))}/>
+        <Button size="sm" className="mt-2 w-full" disabled={sending===r.kind+":"+r.id} onClick={()=>void submit(r)}>{sending===r.kind+":"+r.id?"Saving feedback…":"Submit private feedback"}</Button></>}
+       </>}
+      <p className="mt-2 text-[10px] text-muted-foreground">Your feedback stays in ResKonnect Service, not public residence reviews. Low ratings create a private recovery task.</p>
+     </div>}
     </div>)}
    </div>}
    <p className="mt-4 text-[11px] leading-5 text-muted-foreground"><Headphones className="mr-1 inline h-3.5 w-3.5"/>Automatic acknowledgement means we have a record of your request; it does not mean an email was sent, supporting documents were verified, funding was awarded or a room was confirmed.</p>
