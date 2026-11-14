@@ -32,4 +32,17 @@ check(admin.includes('rpc("rk_golden_bulk_triage"')
 check(admin.includes("No external messages or business decisions")
  &&admin.includes("Unanswered cases remain unanswered")
  &&admin.includes("window.confirm"),"Batch UX explicitly preserves review, contact and final approval boundaries");
-console.log("Golden Service safe-bulk regression checks passed.");
+const recent=read("supabase/migrations/20261114132000_rk_golden_recent_intake_priority.sql");
+check(recent.includes("p_filter='recent' and closed_at is null")
+ &&recent.includes("source_created_at>=now()-interval '72 hours'")
+ &&recent.includes("case when p_filter='recent' then source_created_at end desc"),
+ "New intakes are selected and prioritised by recency without discarding historic work");
+check(recent.includes("'recent_unanswered',count(*)")
+ &&recent.includes("'feedback_average'")
+ &&recent.includes("rk_godmode_authorized()"),
+ "Recent intake queue retains private MFA guard and customer quality metrics");
+check(admin.includes('useState("recent")')
+ &&admin.includes('<SelectItem value="recent">New requests')
+ &&admin.includes("metrics.recent_unanswered"),
+ "Operator landing defaults to new requests and shows missing confirmed replies");
+console.log("Golden Service safe-bulk and fresh-intake regression checks passed.");
