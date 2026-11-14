@@ -78,6 +78,8 @@ check(client.includes('Preview did not connect')&&client.includes('reloadPreview
  &&client.includes('previewRequest.current')&&client.includes('latestDraft')
  &&client.includes('unsavedLocal')&&client.includes('Resume saved draft'),
  "Editor provides timeout/retry, ACK tracking, unsaved-change protection and revision recovery");
+check(client.includes('setRestoring(revision.state==="published")'),
+ "Resuming a saved draft does not fabricate a rollback audit event");
 check(finder.includes('open={showFirstVisitModal&&!isPreview}')&&finder.includes('if (isPreview) { setShowFirstVisitModal(false); return; }'),
  "Public onboarding cannot obstruct God Mode Find My Res preview");
 
