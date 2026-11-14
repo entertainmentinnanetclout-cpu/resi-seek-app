@@ -8,6 +8,7 @@ const read=p=>readFileSync(resolve(root,p),"utf8");
 const check=(ok,why)=>{assert.ok(ok,why);console.log("PASS",why)};
 const foundation=read("supabase/migrations/20261114115500_rk_golden_service_cycle_foundation.sql");
 const api=read("supabase/migrations/20261114120500_rk_golden_cycle_api_delivery_watch.sql");
+const satisfaction=read("supabase/migrations/20261114121500_rk_golden_cycle_service_satisfaction.sql");
 const admin=read("src/pages/admin/AdminGoldenServiceCycle.tsx");
 const student=read("src/components/service/GoldenServiceJourneyPanel.tsx");
 const centre=read("src/pages/ServiceCentre.tsx");
@@ -50,9 +51,14 @@ check(homepage.includes('to="/dashboard/services"')&&finder.includes('to="/dashb
 check(admin.includes('rk_golden_service_queue')&&admin.includes('rk_golden_service_action')
  &&admin.includes("only")!==false&&admin.includes("Communication dock"),
  "The single-operator dashboard integrates with communications and audited case decisions");
+check(satisfaction.includes("p_rating not between 1 and 5")&&satisfaction.includes("rating<=2")
+ &&satisfaction.includes("recover_unhappy_customer")&&satisfaction.includes("enable row level security"),
+ "Private quality feedback supports five stars and creates a fast service recovery action");
+check(student.includes("rk_golden_service_feedback_submit")&&admin.includes("needs_recovery"),
+ "Aftercare loop is connected across student portal and operator satisfaction dashboard");
 check(student.includes("rk_golden_my_service")&&student.includes("Automatic acknowledgement"),
  "Student timeline distinguishes computer acknowledgements from human servicing");
-check(["rk_golden_service_queue","rk_golden_service_action","rk_golden_case_history","rk_golden_my_service"]
+check(["rk_golden_service_queue","rk_golden_service_action","rk_golden_case_history","rk_golden_my_service","rk_golden_service_feedback_submit"]
  .every(n=>snapshot.callable_routines.some(r=>r.name===n&&r.authenticated&&!r.anon)),
  "Live backend contract snapshot covers each signed-in scoped RPC");
 console.log("Golden Service Cycle source and backend-contract safeguards passed.");
