@@ -9,6 +9,7 @@ const check=(ok,why)=>{assert.ok(ok,why);console.log("PASS",why)};
 const foundation=read("supabase/migrations/20261114115500_rk_golden_service_cycle_foundation.sql");
 const api=read("supabase/migrations/20261114120500_rk_golden_cycle_api_delivery_watch.sql");
 const satisfaction=read("supabase/migrations/20261114121500_rk_golden_cycle_service_satisfaction.sql");
+const controls=read("supabase/migrations/20261114122500_rk_golden_cycle_sla_controls_receipt_safety.sql");
 const admin=read("src/pages/admin/AdminGoldenServiceCycle.tsx");
 const student=read("src/components/service/GoldenServiceJourneyPanel.tsx");
 const centre=read("src/pages/ServiceCentre.tsx");
@@ -54,11 +55,16 @@ check(admin.includes('rk_golden_service_queue')&&admin.includes('rk_golden_servi
 check(satisfaction.includes("p_rating not between 1 and 5")&&satisfaction.includes("rating<=2")
  &&satisfaction.includes("recover_unhappy_customer")&&satisfaction.includes("enable row level security"),
  "Private quality feedback supports five stars and creates a fast service recovery action");
+check(controls.includes("exception when others then")&&controls.includes("receipt_delivery_failed"),
+ "In-app receipt delivery errors create an internal task instead of blocking an intake");
+check(controls.includes("rk_golden_service_rule_audit")&&controls.includes("p_first_minutes not between 15 and 4320")
+ &&admin.includes("rk_golden_service_rule_update"),
+ "God Mode can adjust operator SLAs through a fully audited and bounded control");
 check(student.includes("rk_golden_service_feedback_submit")&&admin.includes("needs_recovery"),
  "Aftercare loop is connected across student portal and operator satisfaction dashboard");
 check(student.includes("rk_golden_my_service")&&student.includes("Automatic acknowledgement"),
  "Student timeline distinguishes computer acknowledgements from human servicing");
-check(["rk_golden_service_queue","rk_golden_service_action","rk_golden_case_history","rk_golden_my_service","rk_golden_service_feedback_submit"]
+check(["rk_golden_service_queue","rk_golden_service_action","rk_golden_case_history","rk_golden_my_service","rk_golden_service_feedback_submit","rk_golden_service_rules_list","rk_golden_service_rule_update"]
  .every(n=>snapshot.callable_routines.some(r=>r.name===n&&r.authenticated&&!r.anon)),
  "Live backend contract snapshot covers each signed-in scoped RPC");
 console.log("Golden Service Cycle source and backend-contract safeguards passed.");
