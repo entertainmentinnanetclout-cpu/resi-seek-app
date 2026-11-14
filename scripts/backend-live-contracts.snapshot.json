@@ -376,6 +376,7 @@
     "rk_golden_digest_receipts",
     "rk_golden_service_cases",
     "rk_golden_service_events",
+    "rk_golden_service_feedback",
     "rk_golden_service_rules",
     "rk_native_device_tokens",
     "rk_partner_account_audit",
@@ -2073,6 +2074,17 @@
         "p_channel",
         "p_confirm_sent",
         "p_expected_status"
+      ],
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "name": "rk_golden_service_feedback_submit",
+      "args": [
+        "p_kind",
+        "p_id",
+        "p_rating",
+        "p_comment"
       ],
       "anon": false,
       "authenticated": true
@@ -5409,6 +5421,18 @@
         "p_channel",
         "p_confirm_sent",
         "p_expected_status"
+      ],
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "name": "rk_golden_service_feedback_submit",
+      "args": [
+        "p_kind",
+        "p_id",
+        "p_rating",
+        "p_comment"
       ],
       "anon": false,
       "authenticated": true,
