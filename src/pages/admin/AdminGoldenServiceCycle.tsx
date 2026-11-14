@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useMemo,useState} from "react";
-import {Link} from "react-router-dom";
+import {Link,useSearchParams} from "react-router-dom";
 import {AlarmClock,ArrowRight,BookOpenCheck,CheckCircle2,ChevronLeft,ChevronRight,ClipboardCheck,Clock3,FileCheck2,Headphones,Handshake,Home,Mail,MessageCircle,RefreshCw,Search,Send,ShieldCheck,Sparkles,UsersRound} from "lucide-react";
 import {toast} from "sonner";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -56,7 +56,11 @@ const rpc=async(name:string,args:Record<string,unknown>)=>{
  return data;
 };
 export default function AdminGoldenServiceCycle(){
- const [filter,setFilter]=useState("recent");
+ const [urlParams]=useSearchParams();
+ const [filter,setFilter]=useState(()=>{
+  const routeFilter=urlParams.get("filter");
+  return routeFilter&&["all","recent","overdue","needs_reply","waiting","post_service","closed"].includes(routeFilter)?routeFilter:"recent";
+ });
  const [kind,setKind]=useState("all");
  const [offset,setOffset]=useState(0);
  const [query,setQuery]=useState("");
