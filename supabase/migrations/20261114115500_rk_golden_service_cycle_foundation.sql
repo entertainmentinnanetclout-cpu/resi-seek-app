@@ -213,7 +213,7 @@ do $fn$
 declare t text;
 begin
  foreach t in array array['applications','accommodation_reservations','viewing_requests',
-  'residence_leads','onboarding_requests','application_support_queries','private_rental_requests',
+  'onboarding_requests','application_support_queries','private_rental_requests',
   'student_requests','wil_applications','landlord_applications','partner_leads']
  loop
   execute format('drop trigger if exists zz_rk_golden_cycle_sync on public.%I',t);
