@@ -41,7 +41,8 @@ check(recent.includes("'recent_unanswered',count(*)")
  &&recent.includes("'feedback_average'")
  &&recent.includes("rk_godmode_authorized()"),
  "Recent intake queue retains private MFA guard and customer quality metrics");
-check(admin.includes('useState("recent")')
+check((admin.includes('useState("recent")')||(
+   admin.includes('urlParams.get("filter")')&&admin.includes(':"recent";')))
  &&admin.includes('<SelectItem value="recent">New requests')
  &&admin.includes("metrics.recent_unanswered"),
  "Operator landing defaults to new requests and shows missing confirmed replies");

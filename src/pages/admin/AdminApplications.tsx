@@ -1,7 +1,7 @@
 import SemesterSummary from "@/components/applications/SemesterSummary";
 import { applicationSemester, readAllPages } from "@/lib/studentCare";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
 import HandoverExportPanel from "@/components/admin/HandoverExportPanel";
@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Eye, Check, X, CheckCheck, XCircle, Clock, FileQuestion, Calendar, Users, MessageSquare, Mail, FileText, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowRight, Search, Eye, Check, X, CheckCheck, XCircle, Clock, FileQuestion, Calendar, Users, MessageSquare, Mail, FileText, Loader2, ShieldCheck } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,6 +83,14 @@ export const AdminApplicationsContent = () => {
   const [residenceFilter, setResidenceFilter] = useState("all");
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [params,setParams] = useSearchParams();
+  const [batchAction,setBatchAction] = useState("start_review");
+  const [batchConfirmation,setBatchConfirmation] = useState("");
+  const sensitiveBatchActions=new Set(["delegate_review","mark_eligible","mark_ineligible",
+   "approve_handover","approve_application","reject_application"]);
+  const [batchNote,setBatchNote] = useState("");
+  const [batchPreview,setBatchPreview] = useState<Array<{id:string;ok:boolean;reason?:string;status?:string;stage?:string}>|null>(null);
+  const [batchResult,setBatchResult] = useState<{applied:number;skipped:number;items:Array<{id:string;ok:boolean;reason?:string}>}|null>(null);
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [statusNote, setStatusNote] = useState("");
   const [userDocuments, setUserDocuments] = useState<UserDocument[]>([]);
@@ -110,6 +118,21 @@ export const AdminApplicationsContent = () => {
     return () => { void supabase.removeChannel(channel); };
   }, []);
 
+  useEffect(()=>{
+    const linkedId=params.get("application");
+    if(!linkedId||!applications.length)return;
+    const linked=applications.find(row=>row.application_id===linkedId);
+    if(linked){
+      setSelectedApplication(linked);
+      const next=new URLSearchParams(params);
+      next.delete("application");
+      setParams(next,{replace:true});
+    }
+  },[applications,params,setParams]);
+
+  useEffect(()=>{setBatchPreview(null);setBatchConfirmation("");},[selectedIds,batchAction,batchNote]);
+  useEffect(()=>{setSelectedIds(new Set());},[searchQuery,statusFilter,semesterFilter,institutionFilter,
+    academicYearFilter,academicCycleFilter,studyLevelFilter,residenceFilter]);
   useEffect(() => {
     const fetchUserDocuments = async () => {
       if (!selectedApplication?.user_id) { setUserDocuments([]); return; }
@@ -183,15 +206,59 @@ export const AdminApplicationsContent = () => {
     return matchesSearch && matchesStatus && matchesInstitution && matchesYear && matchesCycle && matchesStudyLevel && matchesResidence && (semesterFilter === "all" || applicationSemester(app) === Number(semesterFilter));
   }), [applications, searchQuery, statusFilter, institutionFilter, academicYearFilter, academicCycleFilter, studyLevelFilter, residenceFilter, semesterFilter]);
 
-  const pendingIds = useMemo(() => filteredApplications.filter((app) => app.application_status === "submitted" || app.application_status === "pending").map((app) => app.application_id), [filteredApplications]);
+  const pendingIds = useMemo(() => filteredApplications.filter((app) =>
+    !["approved","rejected","withdrawn"].includes(app.application_status))
+    .map((app) => app.application_id), [filteredApplications]);
   const pendingCount = pendingIds.length;
 
   const toggleSelection = (id: string) => setSelectedIds((current) => {
     const next = new Set(current);
-    if (next.has(id)) next.delete(id); else next.add(id);
+    if(next.has(id))next.delete(id);
+    else if(next.size>=25){toast.error("A batch can contain at most 25 applications.");return current;}
+    else next.add(id);
     return next;
   });
 
+  const previewBulk=async()=>{
+    const ids=[...selectedIds].filter(id=>applications.some(a=>a.application_id===id));
+    if(ids.length<1||ids.length>25)return toast.error("Select between 1 and 25 open applications.");
+    if(sensitiveBatchActions.has(batchAction)&&batchNote.trim().length<8)
+     return toast.error("Verified eligibility and final decisions require a factual reason of at least eight characters.");
+    setBulkProcessing(true);setBatchPreview(null);setBatchResult(null);
+    try{
+      const {data,error}=await (supabase as any).rpc("rk_case_bulk_preview",{
+        p_kind:"application",p_ids:ids,p_action:batchAction,p_note:batchNote.trim()
+      });
+      if(error)throw error;
+      const items=Array.isArray(data?.items)?data.items:[];
+      if(items.length!==ids.length)throw new Error("Incomplete bulk preview. Retry without making changes.");
+      setBatchPreview(items);
+      toast.info(items.filter((x:{ok:boolean})=>x.ok).length+" of "+items.length+" applications passed the secured preflight.");
+    }catch(e){toast.error(e instanceof Error?e.message:"Cannot preview the selected applications");}
+    finally{setBulkProcessing(false);}
+  };
+  const applyBulk=async()=>{
+    if(!batchPreview?.length||bulkProcessing)return;
+    const eligible=batchPreview.filter(x=>x.ok);
+    if(!eligible.length)return toast.error("No eligible applications were approved by the preflight.");
+    if(sensitiveBatchActions.has(batchAction)&&batchConfirmation!=="CONFIRM")
+     return toast.error("Type CONFIRM before applying a sensitive decision.");
+    if(!window.confirm("Apply "+batchAction.replaceAll("_"," ")+" to "+eligible.length+" individually preflighted applications? This changes real business records only when their existing eligibility, verified document and handover gates pass. No external email or WhatsApp is sent."))return;
+    setBulkProcessing(true);setBatchResult(null);
+    try{
+      const expected:Record<string,{status?:string;stage?:string}>={};
+      eligible.forEach(x=>{expected[x.id]={status:x.status,stage:x.stage};});
+      const {data,error}=await (supabase as any).rpc("rk_case_bulk_apply",{
+        p_kind:"application",p_ids:eligible.map(x=>x.id),p_action:batchAction,
+        p_note:batchNote.trim(),p_expected:expected,p_operation_id:crypto.randomUUID()
+      });
+      if(error)throw error;
+      setBatchResult(data);setBatchPreview(null);setSelectedIds(new Set());
+      toast.success((data?.applied||0)+" application operations recorded with per-case audit. No email was sent.");
+      await fetchApplications();
+    }catch(e){setBatchPreview(null);toast.error(e instanceof Error?e.message:"Safe bulk update failed; refresh and retry.");}
+    finally{setBulkProcessing(false);}
+  };
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       submitted: "secondary", pending: "secondary", under_review: "default", documents_required: "secondary",
@@ -233,7 +300,38 @@ export const AdminApplicationsContent = () => {
           onSelectResidence={setResidenceFilter}
         />
 
-        {selectedIds.size > 0 && <Card className="border-primary/50 bg-primary/5"><CardContent className="flex flex-wrap items-center gap-3 py-3"><span className="font-medium">{selectedIds.size} selected</span><Button size="sm" asChild><Link to="/admin/cases">Bulk triage & delegated eligibility</Link></Button><Button size="sm" variant="outline" asChild><Link to="/admin/communications?tab=email&kind=application">Formal document-reviewed email</Link></Button><Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>Clear Selection</Button><p className="w-full text-xs text-muted-foreground">Bulk final decisions require God Mode preflight, verified documents when approving, and an audited ResKonnect handover. Receipt and review-start notices do not mean approval.</p></CardContent></Card>}
+        {selectedIds.size > 0 && <Card className="rk-neo-panel border-primary/50"><CardContent className="space-y-3 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="font-black">Connected bulk application operations · {selectedIds.size} selected</p>
+            <p className="mt-1 text-xs text-muted-foreground">Up to 25 open cases per verified batch. Nothing is changed until you preview and confirm. Final accommodation decisions remain in Case Command.</p></div>
+            <Button size="sm" variant="outline" onClick={()=>setSelectedIds(new Set())}>Clear selection</Button></div>
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto] sm:items-end">
+            <div><Label>Internal bulk operation</Label><Select value={batchAction} onValueChange={setBatchAction}><SelectTrigger className="mt-1.5"><SelectValue/></SelectTrigger>
+              <SelectContent><SelectItem value="acknowledge_received">Record received</SelectItem><SelectItem value="start_review">Start review</SelectItem>
+               <SelectItem value="request_documents">Request missing evidence</SelectItem><SelectItem value="mark_follow_up">Schedule follow-up</SelectItem>
+               <SelectItem value="internal_note">Add private case note</SelectItem>
+               <SelectItem value="delegate_review">Delegate review to residence</SelectItem>
+               <SelectItem value="mark_eligible">Mark eligible (evidence review)</SelectItem>
+               <SelectItem value="mark_ineligible">Mark ineligible (reason required)</SelectItem>
+               <SelectItem value="approve_handover">Approve verified handover</SelectItem>
+               <SelectItem value="approve_application">Approve verified application</SelectItem>
+               <SelectItem value="reject_application">Reject ineligible application</SelectItem></SelectContent></Select></div>
+            <div><Label htmlFor="application-batch-note">Factual context / instruction</Label><Textarea id="application-batch-note" value={batchNote} onChange={e=>setBatchNote(e.target.value)}
+              rows={2} maxLength={500} placeholder="Why these cases need this next step; compulsory for evidence requests and notes"/></div>
+            <Button disabled={bulkProcessing||selectedIds.size>25} onClick={()=>void previewBulk()}><FileText className="mr-1.5 h-4 w-4"/>Preview {Math.min(selectedIds.size,25)}</Button>
+          </div>
+          {batchPreview&&<div className="rounded-xl border bg-background p-3" role="status">
+            <p className="text-sm font-black">{batchPreview.filter(x=>x.ok).length} eligible · {batchPreview.filter(x=>!x.ok).length} blocked · no changes yet</p>
+            <div className="mt-2 max-h-40 space-y-1 overflow-y-auto">{batchPreview.map(x=><p key={x.id} className={"text-xs "+(x.ok?"text-emerald-700":"text-amber-700")}>{x.ok?"✓":"Blocked"} {x.id.slice(0,8)} · {x.reason||"Ready for audited update"}</p>)}</div>
+            {sensitiveBatchActions.has(batchAction)&&<div className="mt-3 space-y-1"><Label htmlFor="application-sensitive-confirm">Type CONFIRM for this sensitive decision</Label>
+             <Input id="application-sensitive-confirm" value={batchConfirmation} onChange={e=>setBatchConfirmation(e.target.value)} autoComplete="off" placeholder="CONFIRM"/>
+             <p className="text-xs text-muted-foreground">Every selected case has its own protected eligibility, document and handover gates. No blanket approvals.</p></div>}
+            <Button className="rk-clay-action mt-3" disabled={bulkProcessing||!batchPreview.some(x=>x.ok)||(sensitiveBatchActions.has(batchAction)&&batchConfirmation!=="CONFIRM")} onClick={()=>void applyBulk()}>
+             Apply to {batchPreview.filter(x=>x.ok).length} verified-preflight cases</Button>
+          </div>}
+          {batchResult&&<p role="status" className="text-xs font-semibold">{batchResult.applied} applied · {batchResult.skipped} skipped. Examine each item before external correspondence.</p>}
+          <div className="flex flex-wrap gap-2 border-t pt-3"><Button size="sm" variant="outline" asChild><Link to="/admin/cases">Final eligibility and room handover</Link></Button>
+            <Button size="sm" variant="outline" asChild><Link to="/admin/communications?tab=email&kind=application">Formal document-reviewed communication</Link></Button></div>
+          </CardContent></Card>}
 
         <Card>
           <CardHeader><div className="flex flex-col gap-3 lg:flex-row">
@@ -243,15 +341,20 @@ export const AdminApplicationsContent = () => {
             <Select value={academicYearFilter} onValueChange={setAcademicYearFilter}><SelectTrigger className="lg:w-36"><SelectValue placeholder="Academic year" /></SelectTrigger><SelectContent><SelectItem value="all">All Years</SelectItem>{academicYears.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}</SelectContent></Select>
             <Select value={academicCycleFilter} onValueChange={setAcademicCycleFilter}><SelectTrigger className="lg:w-44"><SelectValue placeholder="Academic cycle" /></SelectTrigger><SelectContent><SelectItem value="all">All Cycles</SelectItem><SelectItem value="annual">Annual</SelectItem><SelectItem value="semester">Semester</SelectItem><SelectItem value="trimester">Trimester</SelectItem><SelectItem value="unspecified">Unspecified</SelectItem></SelectContent></Select>
             <Select value={studyLevelFilter} onValueChange={setStudyLevelFilter}><SelectTrigger className="lg:w-44"><SelectValue placeholder="Study level" /></SelectTrigger><SelectContent><SelectItem value="all">All Levels</SelectItem><SelectItem value="undergraduate">Undergraduate</SelectItem><SelectItem value="postgraduate">Postgraduate</SelectItem><SelectItem value="advanced">Advanced</SelectItem><SelectItem value="other">Other</SelectItem><SelectItem value="unspecified">Unspecified</SelectItem></SelectContent></Select>
-            {pendingCount > 0 && <Button variant="outline" onClick={() => setSelectedIds(new Set(pendingIds))}>Select All Pending ({pendingCount})</Button>}
+            {pendingCount > 0 && <Button variant="outline" onClick={() => {
+              setSelectedIds(new Set(pendingIds.slice(0,25)));
+              if(pendingIds.length>25)toast.info("Selected the first 25 eligible review cases. Use another batch for the remainder.");
+            }}>Select up to 25 actionable ({pendingCount})</Button>}
           </div></CardHeader>
           <CardContent>
-            {loading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> : error ? <div className="py-10 text-center text-destructive"><p className="font-semibold">{error}</p><Button variant="outline" className="mt-4" onClick={() => void fetchApplications()}>Retry</Button></div> : filteredApplications.length === 0 ? <p className="py-10 text-center text-muted-foreground">No applications found</p> : <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead className="w-12"><Checkbox checked={selectedIds.size > 0 && selectedIds.size === pendingIds.length} onCheckedChange={(checked) => setSelectedIds(checked ? new Set(pendingIds) : new Set())} /></TableHead><TableHead>Student</TableHead><TableHead>Residence</TableHead><TableHead>Academic Context</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{filteredApplications.map((app) => <TableRow key={app.application_id} className={selectedIds.has(app.application_id) ? "bg-primary/5" : ""}><TableCell>{(app.application_status === "submitted" || app.application_status === "pending") && <Checkbox checked={selectedIds.has(app.application_id)} onCheckedChange={() => toggleSelection(app.application_id)} />}</TableCell><TableCell><p className="font-medium">{app.student_name || "Unknown"}</p><p className="text-sm text-muted-foreground">{app.student_email}</p></TableCell><TableCell>{app.residence_name || "Unknown"}</TableCell><TableCell><div className="space-y-1"><Badge variant="outline">{app.academic_year} · {academicLabel(app.academic_cycle)}{app.academic_period > 0 ? ` ${app.academic_period}` : ""}</Badge><p className="text-xs text-muted-foreground">{academicLabel(app.study_level)} · {academicLabel(app.student_stage)}</p></div></TableCell><TableCell>{safeFormatDate(app.application_date)}</TableCell><TableCell>{getStatusBadge(app.application_status)}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => setSelectedApplication(app)}><Eye className="h-4 w-4" /></Button></TableCell></TableRow>)}</TableBody></Table></div>}
+            {loading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> : error ? <div className="py-10 text-center text-destructive"><p className="font-semibold">{error}</p><Button variant="outline" className="mt-4" onClick={() => void fetchApplications()}>Retry</Button></div> : filteredApplications.length === 0 ? <p className="py-10 text-center text-muted-foreground">No applications found</p> : <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead className="w-12"><Checkbox checked={selectedIds.size > 0 && selectedIds.size === Math.min(25,pendingIds.length)} onCheckedChange={(checked) => setSelectedIds(checked ? new Set(pendingIds.slice(0,25)) : new Set())} /></TableHead><TableHead>Student</TableHead><TableHead>Residence</TableHead><TableHead>Academic Context</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{filteredApplications.map((app) => <TableRow key={app.application_id} className={selectedIds.has(app.application_id) ? "bg-primary/5" : ""}><TableCell>{pendingIds.includes(app.application_id) && <Checkbox checked={selectedIds.has(app.application_id)} onCheckedChange={() => toggleSelection(app.application_id)} />}</TableCell><TableCell><p className="font-medium">{app.student_name || "Unknown"}</p><p className="text-sm text-muted-foreground">{app.student_email}</p>{app.user_id&&<Link className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-primary underline" to={"/admin/students/"+app.user_id}>Student 360 <ArrowRight className="h-3 w-3"/></Link>}</TableCell><TableCell>{app.residence_name || "Unknown"}</TableCell><TableCell><div className="space-y-1"><Badge variant="outline">{app.academic_year} · {academicLabel(app.academic_cycle)}{app.academic_period > 0 ? ` ${app.academic_period}` : ""}</Badge><p className="text-xs text-muted-foreground">{academicLabel(app.study_level)} · {academicLabel(app.student_stage)}</p></div></TableCell><TableCell>{safeFormatDate(app.application_date)}</TableCell><TableCell>{getStatusBadge(app.application_status)}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => setSelectedApplication(app)}><Eye className="h-4 w-4" /></Button></TableCell></TableRow>)}</TableBody></Table></div>}
           </CardContent>
         </Card>
       </div>
 
-      <Dialog open={!!selectedApplication} onOpenChange={() => setSelectedApplication(null)}><DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto"><DialogHeader><DialogTitle>Application Details</DialogTitle><DialogDescription>Review student application information and source documents.</DialogDescription></DialogHeader>{selectedApplication && <div className="space-y-4"><Button variant="outline" asChild><Link to={`/admin/communications?tab=email&kind=application&target=${selectedApplication.application_id}`}><Mail className="mr-2 h-4 w-4"/>Email applicant feedback</Link></Button><Button variant="outline" asChild><Link to={`/admin/communications?tab=email&kind=application&target=${selectedApplication.application_id}&channel=whatsapp`}><MessageSquare className="mr-2 h-4 w-4"/>WhatsApp confirmation</Link></Button><div className="grid grid-cols-2 gap-4"><Info label="Student Name" value={selectedApplication.student_name || "Unknown"} /><Info label="Student Number" value={selectedApplication.student_number || "N/A"} /><Info label="Email" value={selectedApplication.student_email || "N/A"} /><Info label="Phone" value={selectedApplication.student_phone || "N/A"} /><Info label="Residence" value={selectedApplication.residence_name || "Unknown"} /><Info label="Applied On" value={safeFormatDate(selectedApplication.application_date)} /><Info label="Academic Year" value={String(selectedApplication.academic_year)} /><Info label="Academic Cycle" value={`${academicLabel(selectedApplication.academic_cycle)}${selectedApplication.academic_period > 0 ? ` ${selectedApplication.academic_period}` : ""}`} /><Info label="Study Level" value={academicLabel(selectedApplication.study_level)} /><Info label="Student Stage" value={academicLabel(selectedApplication.student_stage)} /></div><div className="rounded-xl border bg-muted/20 p-3"><p className="mb-3 text-xs font-black uppercase tracking-[0.12em] text-muted-foreground">Institutional Classification</p><div className="grid grid-cols-2 gap-3"><Select value={String(selectedApplication.academic_year)} onValueChange={(value) => void updateAcademicContext(selectedApplication, { academic_year: Number(value) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{academicYears.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}</SelectContent></Select><Select value={selectedApplication.academic_cycle} onValueChange={(value) => void updateAcademicContext(selectedApplication, { academic_cycle: value as Application["academic_cycle"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unspecified">Unspecified</SelectItem><SelectItem value="annual">Annual</SelectItem><SelectItem value="semester">Semester</SelectItem><SelectItem value="trimester">Trimester</SelectItem></SelectContent></Select><Select value={String(selectedApplication.academic_period)} onValueChange={(value) => void updateAcademicContext(selectedApplication, { academic_period: Number(value) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{(selectedApplication.academic_cycle === "semester" ? [1,2] : selectedApplication.academic_cycle === "trimester" ? [1,2,3] : selectedApplication.academic_cycle === "annual" ? [1] : [0]).map((period) => <SelectItem key={period} value={String(period)}>{period === 0 ? "Unspecified" : selectedApplication.academic_cycle === "annual" ? "Annual" : `Period ${period}`}</SelectItem>)}</SelectContent></Select><Select value={selectedApplication.study_level} onValueChange={(value) => void updateAcademicContext(selectedApplication, { study_level: value as Application["study_level"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unspecified">Unspecified</SelectItem><SelectItem value="undergraduate">Undergraduate</SelectItem><SelectItem value="postgraduate">Postgraduate</SelectItem><SelectItem value="advanced">Advanced</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select><div className="col-span-2"><Select value={selectedApplication.student_stage} onValueChange={(value) => void updateAcademicContext(selectedApplication, { student_stage: value as Application["student_stage"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unspecified">Unspecified stage</SelectItem><SelectItem value="first_time">First-time</SelectItem><SelectItem value="continuing">Continuing</SelectItem><SelectItem value="returning">Returning</SelectItem><SelectItem value="advanced">Advanced-stage</SelectItem><SelectItem value="graduating">Final / graduating</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div></div><p className="mt-2 text-[11px] text-muted-foreground">Use verified student/institution information only. Historical records are not auto-guessed.</p></div><div><p className="mb-1 text-sm text-muted-foreground">Status</p>{getStatusBadge(selectedApplication.application_status)}</div>{selectedApplication.notes && <div><p className="mb-1 text-sm text-muted-foreground">Notes</p><p className="text-sm">{selectedApplication.notes}</p></div>}
+      <Dialog open={!!selectedApplication} onOpenChange={() => setSelectedApplication(null)}><DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto"><DialogHeader><DialogTitle>Application Details</DialogTitle><DialogDescription>Review student application information and source documents.</DialogDescription></DialogHeader>{selectedApplication && <div className="space-y-4">{selectedApplication.user_id&&<Button variant="default" asChild>
+        <Link to={"/admin/students/"+selectedApplication.user_id}><Users className="mr-2 h-4 w-4"/>Open full Student 360 journey</Link></Button>}
+        <Button variant="outline" asChild><Link to={`/admin/communications?tab=email&kind=application&target=${selectedApplication.application_id}`}><Mail className="mr-2 h-4 w-4"/>Email applicant feedback</Link></Button><Button variant="outline" asChild><Link to={`/admin/communications?tab=email&kind=application&target=${selectedApplication.application_id}&channel=whatsapp`}><MessageSquare className="mr-2 h-4 w-4"/>WhatsApp confirmation</Link></Button><div className="grid grid-cols-2 gap-4"><Info label="Student Name" value={selectedApplication.student_name || "Unknown"} /><Info label="Student Number" value={selectedApplication.student_number || "N/A"} /><Info label="Email" value={selectedApplication.student_email || "N/A"} /><Info label="Phone" value={selectedApplication.student_phone || "N/A"} /><Info label="Residence" value={selectedApplication.residence_name || "Unknown"} /><Info label="Applied On" value={safeFormatDate(selectedApplication.application_date)} /><Info label="Academic Year" value={String(selectedApplication.academic_year)} /><Info label="Academic Cycle" value={`${academicLabel(selectedApplication.academic_cycle)}${selectedApplication.academic_period > 0 ? ` ${selectedApplication.academic_period}` : ""}`} /><Info label="Study Level" value={academicLabel(selectedApplication.study_level)} /><Info label="Student Stage" value={academicLabel(selectedApplication.student_stage)} /></div><div className="rounded-xl border bg-muted/20 p-3"><p className="mb-3 text-xs font-black uppercase tracking-[0.12em] text-muted-foreground">Institutional Classification</p><div className="grid grid-cols-2 gap-3"><Select value={String(selectedApplication.academic_year)} onValueChange={(value) => void updateAcademicContext(selectedApplication, { academic_year: Number(value) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{academicYears.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}</SelectContent></Select><Select value={selectedApplication.academic_cycle} onValueChange={(value) => void updateAcademicContext(selectedApplication, { academic_cycle: value as Application["academic_cycle"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unspecified">Unspecified</SelectItem><SelectItem value="annual">Annual</SelectItem><SelectItem value="semester">Semester</SelectItem><SelectItem value="trimester">Trimester</SelectItem></SelectContent></Select><Select value={String(selectedApplication.academic_period)} onValueChange={(value) => void updateAcademicContext(selectedApplication, { academic_period: Number(value) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{(selectedApplication.academic_cycle === "semester" ? [1,2] : selectedApplication.academic_cycle === "trimester" ? [1,2,3] : selectedApplication.academic_cycle === "annual" ? [1] : [0]).map((period) => <SelectItem key={period} value={String(period)}>{period === 0 ? "Unspecified" : selectedApplication.academic_cycle === "annual" ? "Annual" : `Period ${period}`}</SelectItem>)}</SelectContent></Select><Select value={selectedApplication.study_level} onValueChange={(value) => void updateAcademicContext(selectedApplication, { study_level: value as Application["study_level"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unspecified">Unspecified</SelectItem><SelectItem value="undergraduate">Undergraduate</SelectItem><SelectItem value="postgraduate">Postgraduate</SelectItem><SelectItem value="advanced">Advanced</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select><div className="col-span-2"><Select value={selectedApplication.student_stage} onValueChange={(value) => void updateAcademicContext(selectedApplication, { student_stage: value as Application["student_stage"] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unspecified">Unspecified stage</SelectItem><SelectItem value="first_time">First-time</SelectItem><SelectItem value="continuing">Continuing</SelectItem><SelectItem value="returning">Returning</SelectItem><SelectItem value="advanced">Advanced-stage</SelectItem><SelectItem value="graduating">Final / graduating</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div></div><p className="mt-2 text-[11px] text-muted-foreground">Use verified student/institution information only. Historical records are not auto-guessed.</p></div><div><p className="mb-1 text-sm text-muted-foreground">Status</p>{getStatusBadge(selectedApplication.application_status)}</div>{selectedApplication.notes && <div><p className="mb-1 text-sm text-muted-foreground">Notes</p><p className="text-sm">{selectedApplication.notes}</p></div>}
         <div className="border-t pt-4"><div className="mb-3 flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /><Label className="text-sm font-semibold">Uploaded Documents</Label></div>{loadingDocuments ? <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading documents...</div> : userDocuments.length === 0 ? <p className="py-2 text-sm text-muted-foreground">No documents uploaded by this student yet.</p> : <div className="max-h-48 space-y-2 overflow-y-auto">{userDocuments.map((doc) => <div key={doc.id} className="flex items-center justify-between rounded-md bg-muted/50 p-2"><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium capitalize">{doc.document_type.replaceAll("_", " ")}</p><p className="truncate text-xs text-muted-foreground">{doc.file_name}</p></div><Button size="sm" variant="ghost" onClick={async () => { try { window.open(await getSignedUrl("documents", doc.file_path, 3600), "_blank"); } catch { toast.error("Failed to open document"); } }}><Eye className="h-4 w-4" /></Button></div>)}</div>}</div>
         <div className="space-y-3 border-t pt-4"><Label>Update Status</Label><Select onValueChange={(value) => void updateStatus(selectedApplication.application_id, value, statusNote)}><SelectTrigger><SelectValue placeholder="Change status..." /></SelectTrigger><SelectContent>{applicationStatuses.map((s) => <SelectItem key={s.value} value={s.value}><span className="flex items-center gap-2"><s.icon className="h-4 w-4" />{s.label}</span></SelectItem>)}</SelectContent></Select><div className="space-y-2"><Label className="flex items-center gap-1"><MessageSquare className="h-3 w-3" />Add Note (optional)</Label><Textarea placeholder="Add a note about this status change..." value={statusNote} onChange={(e) => setStatusNote(e.target.value)} rows={2} /></div></div>
       </div>}</DialogContent></Dialog>

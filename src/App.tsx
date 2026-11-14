@@ -14,7 +14,7 @@ import MetaPixelTracker from "@/components/MetaPixelTracker";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { StudentRoute } from "@/components/StudentRoute";
 import { AdminRoute } from "@/components/AdminRoute";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { UserIntentProvider } from "@/contexts/UserIntentContext";
 import { ResidenceRoute } from "./components/ResidenceRoute";
 import { SpecialistRoute } from "@/components/SpecialistRoute";
@@ -133,6 +133,12 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminVisualStudio = lazy(() => import("./pages/admin/AdminVisualStudio"));
 const AdminCaseCommandCenter = lazy(() => import("./pages/admin/AdminCaseCommandCenter"));
 const AdminGoldenServiceCycle = lazy(() => import("./pages/admin/AdminGoldenServiceCycle"));
+const AdminBrain = lazy(() => import("./pages/admin/AdminBrain"));
+const AdminStudent360 = lazy(() => import("./pages/admin/AdminStudent360"));
+const AdminHomeSwitch = () => {
+ const {isGodMode}=useAuth();
+ return isGodMode?<AdminBrain/>:<AdminExecutiveOffice/>;
+};
 const ResidenceEligibilityDesk = lazy(() => import("./pages/residence/ResidenceEligibilityDesk"));
 const AdminResidences = lazy(() => import("./pages/admin/AdminResidences"));
 const AdminApplications = lazy(() => import("./pages/admin/AdminApplications"));
@@ -715,6 +721,8 @@ const App = () => {
                     <Route path="/admin/studio" element={<ProtectedRoute><AdminRoute><AdminVisualStudio/></AdminRoute></ProtectedRoute>}/>
                     <Route path="/admin/cases" element={<ProtectedRoute><AdminRoute><AdminCaseCommandCenter/></AdminRoute></ProtectedRoute>}/>
                     <Route path="/admin/golden-cycle" element={<ProtectedRoute><AdminRoute><AdminGoldenServiceCycle/></AdminRoute></ProtectedRoute>}/>
+                    <Route path="/admin/brain" element={<ProtectedRoute><AdminRoute><AdminBrain/></AdminRoute></ProtectedRoute>}/>
+                    <Route path="/admin/students/:userId" element={<ProtectedRoute><AdminRoute><AdminStudent360/></AdminRoute></ProtectedRoute>}/>
                     <Route
                       path="/admin/career-education"
                       element={
@@ -730,7 +738,7 @@ const App = () => {
                       element={
                         <ProtectedRoute>
                           <DepartmentRoute department="executive">
-                            <AdminExecutiveOffice />
+                            <AdminHomeSwitch />
                           </DepartmentRoute>
                         </ProtectedRoute>
                       }
