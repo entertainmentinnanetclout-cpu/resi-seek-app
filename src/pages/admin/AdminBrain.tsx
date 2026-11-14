@@ -15,7 +15,7 @@ type Metrics={open:number;overdue:number;unanswered:number;recent_open:number;re
  residence_recommendations_pending:number;wil_open:number;partner_open:number;post_service:number;needs_recovery:number};
 type StudentHit={user_id:string;full_name:string|null;student_number:string|null;email:string|null;
  campus:string|null;student_stage:string|null;course:string|null};
-type QueueItem={id:string;kind:string;customer:string;status:string;step:string;next_action:string;
+type QueueItem={id:string;kind:string;student_user_id?:string|null;customer:string;status:string;step:string;next_action:string;
  priority:string;next_action_due_at:string|null;needs_reply:boolean;overdue:boolean};
 const human=(text:string)=>String(text||"Unspecified").replaceAll("_"," ").replace(/\b\w/g,x=>x.toUpperCase());
 const work=[
@@ -153,7 +153,8 @@ export default function AdminBrain(){
       cases.map(c=><div key={c.kind+":"+c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3">
        <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="truncate text-sm font-black">{c.customer||"Unlinked profile"}</p><Badge variant="outline">{human(c.kind)}</Badge></div>
         <p className="mt-1 text-xs text-muted-foreground">{human(c.step)} · {c.next_action||"Investigate next step"}</p></div>
-       <Button asChild size="sm" variant="outline"><Link to="/admin/golden-cycle?filter=overdue">Handle case</Link></Button>
+       <div className="flex flex-wrap gap-2">{c.student_user_id&&<Button asChild size="sm" variant="outline"><Link to={"/admin/students/"+c.student_user_id}>Student 360</Link></Button>}
+       <Button asChild size="sm" variant="outline"><Link to="/admin/golden-cycle?filter=overdue">Handle case</Link></Button></div>
       </div>)}
      </div>
     </section>
