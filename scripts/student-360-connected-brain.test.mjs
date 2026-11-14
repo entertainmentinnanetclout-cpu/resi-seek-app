@@ -7,6 +7,9 @@ const source=file=>readFileSync(resolve(root,file),"utf8");
 const good=(ok,label)=>{assert.ok(ok,label);console.log("PASS",label);};
 const sql=source("supabase/migrations/20261114153000_rk_student_360_connected_journey.sql");
 const queue=source("supabase/migrations/20261114153500_rk_student_360_case_queue_link.sql");
+const wildcard=source("supabase/migrations/20261114154000_rk_student_360_literal_search_hardening.sql");
+good(wildcard.includes("rk_student_360_search")&&wildcard.includes("E'\\\\%'")
+ &&wildcard.includes("E'\\\\_'"),"Student directory search treats % and _ as literal characters");
 const brain=source("src/pages/admin/AdminBrain.tsx");
 const journey=source("src/pages/admin/AdminStudent360.tsx");
 const apps=source("src/pages/admin/AdminApplications.tsx");
