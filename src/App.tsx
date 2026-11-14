@@ -132,6 +132,7 @@ const SeoLandingPage = lazy(() => import("./pages/seo/SeoLandingPage"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminVisualStudio = lazy(() => import("./pages/admin/AdminVisualStudio"));
 const AdminCaseCommandCenter = lazy(() => import("./pages/admin/AdminCaseCommandCenter"));
+const AdminGoldenServiceCycle = lazy(() => import("./pages/admin/AdminGoldenServiceCycle"));
 const ResidenceEligibilityDesk = lazy(() => import("./pages/residence/ResidenceEligibilityDesk"));
 const AdminResidences = lazy(() => import("./pages/admin/AdminResidences"));
 const AdminApplications = lazy(() => import("./pages/admin/AdminApplications"));
@@ -713,6 +714,7 @@ const App = () => {
                     />
                     <Route path="/admin/studio" element={<ProtectedRoute><AdminRoute><AdminVisualStudio/></AdminRoute></ProtectedRoute>}/>
                     <Route path="/admin/cases" element={<ProtectedRoute><AdminRoute><AdminCaseCommandCenter/></AdminRoute></ProtectedRoute>}/>
+                    <Route path="/admin/golden-cycle" element={<ProtectedRoute><AdminRoute><AdminGoldenServiceCycle/></AdminRoute></ProtectedRoute>}/>
                     <Route
                       path="/admin/career-education"
                       element={
