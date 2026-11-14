@@ -168,12 +168,12 @@ export default function AdminStudent360(){
       <CardContent className="space-y-3">
        <div><p className="mb-2 text-xs font-black uppercase tracking-wide text-muted-foreground">Accommodation applications · {data.summary.applications}</p>
         {data.applications.length===0?<p className="text-sm text-muted-foreground">No accommodation application linked.</p>:
-        data.applications.map(a=><div key={a.id} className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3"><div><p className="font-semibold">{String(a.residence_name||"Residence unspecified")}</p><p className="text-xs text-muted-foreground">{format(a.status)} · {when(a.created_at)} · {a.academic_year||"Year unknown"}</p></div>
+        data.applications.map(a=><div key={a.id} className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3"><div><p className="font-semibold">{String(a.residence_name||"Residence unspecified")}</p><p className="text-xs text-muted-foreground">{format(a.status)} · {when(a.created_at)} · {String(a.academic_year||"Year unknown")}</p></div>
          <Button variant="outline" size="sm" asChild><Link to={"/admin/applications?application="+a.id}>Open application<ArrowRight className="ml-1 h-3.5 w-3.5"/></Link></Button></div>)}
        </div>
        <div><p className="mb-2 text-xs font-black uppercase tracking-wide text-muted-foreground">Accommodation reservations · {data.summary.reservations}</p>
         {data.reservations.length===0?<p className="text-sm text-muted-foreground">No accommodation reservation linked.</p>:
-        data.reservations.map(a=><div key={a.id} className="mb-2 rounded-xl border p-3"><p className="font-semibold">{String(a.residence_name||"Residence unspecified")}</p><p className="text-xs text-muted-foreground">{format(a.status)} · {when(a.created_at)} · {a.academic_year||"Year unknown"}</p></div>)}
+        data.reservations.map(a=><div key={a.id} className="mb-2 rounded-xl border p-3"><p className="font-semibold">{String(a.residence_name||"Residence unspecified")}</p><p className="text-xs text-muted-foreground">{format(a.status)} · {when(a.created_at)} · {String(a.academic_year||"Year unknown")}</p></div>)}
         <Button variant="outline" size="sm" asChild><Link to="/admin/cases">Reservation review and handover</Link></Button>
        </div>
       </CardContent></Card>
