@@ -248,9 +248,9 @@ export default function AdminGoldenServiceCycle(){
        <card.Icon className="h-5 w-5 text-[#2563eb]" aria-hidden="true"/>
       </div>
       <p className="mt-2 text-sm font-black">{card.title}</p>
-      <p className="mt-2 text-2xl font-black tabular-nums text-[#071326]">{Number(card.count).toLocaleString("en-ZA")}</p>
+      <p className="mt-2 text-2xl font-black tabular-nums text-[#071326]">{loading||error?"—":Number(card.count).toLocaleString("en-ZA")}</p>
       <p className="mt-1 text-[11px] font-semibold leading-4">{card.descriptor}</p>
-      <p className="mt-2 flex-1 text-[11px] leading-5 text-muted-foreground">{card.detail}</p>
+      <p className="mt-2 flex-1 text-[11px] leading-5 text-muted-foreground">{error?"Workload data unavailable. Retry the secure queue.":card.detail}</p>
       {card.id==="05"
        ?<Button size="sm" variant="outline" className="mt-3 w-full"
          onClick={()=>{
