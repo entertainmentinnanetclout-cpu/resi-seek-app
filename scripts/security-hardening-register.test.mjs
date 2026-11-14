@@ -34,12 +34,17 @@ const headers=(vercel.headers||[]).flatMap(item=>item.headers||[]).map(h=>h.key.
 for(const name of ["strict-transport-security","x-content-type-options","x-frame-options","content-security-policy"])
  pass(headers.includes(name),"Existing deployed-header configuration remains represented: "+name);
 const config=read("supabase/config.toml");
-for(const name of ["create-payment","yoco-webhook","reskonnect-brain","adminos-agent"]){
+for(const name of ["create-payment","yoco-checkout","yoco-verify-payment","reskonnect-brain","adminos-agent"]){
  const line="[functions."+name+"]";
  const idx=config.indexOf(line);
  pass(idx>=0&&/^\s*verify_jwt\s*=\s*true\s*$/m.test(config.slice(idx+line.length).split("[functions.")[0]),
-  name+" retains Supabase transport JWT gate (independent of provider authentication and object ownership)");
+  name+" retains its Supabase transport JWT gate");
 }
+const webhookSection=config.split("[functions.yoco-webhook]")[1]?.split("[functions.")[0]||"";
+pass(/^\s*verify_jwt\s*=\s*false\s*$/m.test(webhookSection)
+  &&read("supabase/functions/yoco-webhook/index.ts").includes("verifyYocoWebhook")
+  &&read("supabase/functions/_shared/yoco-webhook-security.mjs").includes('crypto.subtle.sign'),
+ "Yoco webhook is provider-HMAC authenticated without an incompatible Supabase user JWT");
 const dep=read(".github/workflows/dependency-security.yml");
 pass(dep.includes("pull_request:")&&dep.includes("dependency-security-audit.mjs"),
  "Existing dependency audit remains release-gated");
