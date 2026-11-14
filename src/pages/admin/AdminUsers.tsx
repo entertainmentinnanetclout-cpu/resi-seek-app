@@ -1,5 +1,5 @@
 import ContactExportButtons from "@/components/admin/ContactExportButtons";
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";\nimport { Link } from "react-router-dom";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -237,6 +237,9 @@ export const AdminUsersContent = () => {
                             <div className="min-w-0">
                               <p className="font-medium truncate">{user.full_name}</p>
                               <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                               <Link className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-primary underline" to={"/admin/students/"+user.id}>
+                                Open Student 360
+                               </Link>
                               {user.student_number && (
                                 <p className="text-xs text-muted-foreground">#{user.student_number}</p>
                               )}
