@@ -257,3 +257,25 @@
   .rk-glass-panel{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
   .rk-clay-card,.rk-neo-panel{box-shadow:5px 7px 16px -11px rgba(12,36,71,.3),inset 1px 1px #fff}
 }
+
+/* God Mode only: visual selection never changes the public website or its interactions. */
+html[data-rk-visual-preview="true"] .rk-visual-section {
+  cursor: crosshair;
+  scroll-margin-top: 2.5rem;
+  transition: outline-color 180ms ease, box-shadow 180ms ease;
+}
+html[data-rk-visual-preview="true"] .rk-visual-section:hover {
+  outline: 2px dashed rgba(37,99,235,.55);
+  outline-offset: -2px;
+}
+html[data-rk-visual-preview="true"] .rk-visual-section.rk-preview-selected {
+  outline: 3px solid #f5b32f;
+  outline-offset: -3px;
+  box-shadow: inset 0 0 0 1px #102d57, 0 0 0 2px rgba(245,179,47,.3);
+}
+html[data-rk-visual-preview="true"] .rk-visual-section [data-rk-visual-edit="true"] {
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-rk-visual-preview="true"] .rk-visual-section {transition: none;}
+}
