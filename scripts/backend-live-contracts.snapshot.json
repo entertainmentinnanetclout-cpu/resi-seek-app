@@ -386,6 +386,9 @@
     "rk_partner_profiles",
     "rk_partner_scopes",
     "rk_partner_staff_roles",
+    "rk_residence_portal_application_cards",
+    "rk_residence_portal_lead_cards",
+    "rk_roommate_public_cards",
     "rk_student_journey_audit",
     "rk_student_journey_milestones",
     "rk_visual_page_audit",
@@ -1410,7 +1413,7 @@
       "authenticated": true
     },
     {
-      "anon": true,
+      "anon": false,
       "args": [
         "_application_id",
         "_user_id"
