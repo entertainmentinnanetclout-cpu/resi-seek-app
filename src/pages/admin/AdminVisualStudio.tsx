@@ -193,8 +193,8 @@ export default function AdminVisualStudio(){
   toast.success(publish?"Live page published and version saved":"Draft revision saved privately");
   setNote("");
   if(publish){await loadPage();setPublishedSuccess(true);}
-  else setSavedDraftSignature(draftSignature);
   else{
+   setSavedDraftSignature(draftSignature);
    const {data:versions}=await (supabase as any).from("rk_visual_page_revisions")
     .select("*").eq("page_key",page).order("revision",{ascending:false}).limit(20);
    setHistory((versions||[]) as Revision[]);
