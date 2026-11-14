@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { AlertCircle, CheckCircle2, Clock3, Headphones, Loader2, Plus, RefreshCw, Send } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
+import GoldenServiceJourneyPanel from "@/components/service/GoldenServiceJourneyPanel";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -88,6 +89,7 @@ export default function ServiceCentre(){
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><div className="flex items-center gap-2"><Headphones className="h-5 w-5 text-primary"/><p className="text-xs font-black uppercase tracking-[0.18em] text-primary">MY RESKONNECT SERVICE CENTRE</p></div><h1 className="mt-2 text-3xl font-black">Ask. Track. Resolve.</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Submit one request and follow its real ResKonnect status instead of repeating the same issue across channels.</p></div><div className="rounded-2xl border bg-card px-5 py-3 text-center"><p className="text-2xl font-black">{Number(data?.open_count||0)}</p><p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Open requests</p></div></div>
       </section>
 
+      <GoldenServiceJourneyPanel/>
       <div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]">
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><Plus className="h-5 w-5 text-primary"/>Create a service request</CardTitle></CardHeader><CardContent className="space-y-4">
           <div><label className="text-xs font-bold">What do you need help with?</label><Select value={type} onValueChange={setType}><SelectTrigger className="mt-1.5"><SelectValue/></SelectTrigger><SelectContent>{requestTypes.map(([value,text])=><SelectItem key={value} value={value}>{text}</SelectItem>)}</SelectContent></Select></div>
