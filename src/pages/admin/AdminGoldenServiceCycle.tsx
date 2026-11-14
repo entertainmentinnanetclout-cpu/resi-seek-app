@@ -17,7 +17,7 @@ import {supabase} from "@/integrations/supabase/client";
 type Kind="application"|"reservation"|"viewing"|"enquiry"|"onboarding"|"application_support"|"private_rental"|"student_support"|"wil"|"landlord"|"partner";
 type FlowAction="begin_review"|"request_info"|"waiting_residence"|"waiting_partner"|"set_followup"|"contact_confirmed"|"complete_cycle"|"reopen"|"private_note";
 type BatchAction="begin_review"|"set_followup"|"private_note";
-type Metric={total:number;open:number;overdue:number;unanswered:number;waiting:number;post_service:number;replied_today:number;feedback_count?:number;feedback_average?:number|null;needs_recovery?:number};
+type Metric={total:number;open:number;overdue:number;unanswered:number;waiting:number;post_service:number;replied_today:number;recent_open?:number;recent_unanswered?:number;feedback_count?:number;feedback_average?:number|null;needs_recovery?:number};
 type Item={id:string;kind:Kind;customer:string;residence_name:string;status:string;step:string;next_action:string;priority:string;
  first_response_due_at:string;next_action_due_at:string;last_human_response_at:string|null;last_human_channel:string|null;
  receipt_issued_at:string|null;feedback_rating?:number|null;overdue:boolean;needs_reply:boolean;delegated_review_open:boolean;source_created_at:string;closed_at:string|null};
@@ -56,7 +56,7 @@ const rpc=async(name:string,args:Record<string,unknown>)=>{
  return data;
 };
 export default function AdminGoldenServiceCycle(){
- const [filter,setFilter]=useState("overdue");
+ const [filter,setFilter]=useState("recent");
  const [kind,setKind]=useState("all");
  const [offset,setOffset]=useState(0);
  const [query,setQuery]=useState("");
@@ -205,6 +205,7 @@ export default function AdminGoldenServiceCycle(){
     <Badge variant="outline">Average {metrics.feedback_average??"—"} / 5</Badge>
     {(metrics.needs_recovery||0)>0&&<Badge variant="destructive">{metrics.needs_recovery} low ratings · recovery required</Badge>}
     <span className="text-muted-foreground">Ratings are private to ResKonnect Service; they do not affect public property rankings.</span>
+    <Badge variant="outline">Last 72h: {metrics.recent_open??0} open · {metrics.recent_unanswered??0} without confirmed reply</Badge>
    </div>
    <section aria-label="Golden customer journey" className="rk-neo-panel p-3 sm:p-4">
     <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-sm font-black">Golden customer journey</h2><span className="text-[11px] text-muted-foreground">Automation prepares · operator verifies · partners deliver</span></div>
@@ -214,7 +215,7 @@ export default function AdminGoldenServiceCycle(){
     <div className="flex flex-wrap items-center gap-2">
      <Label htmlFor="golden-filter">Work to do</Label><Select value={filter} onValueChange={x=>{setFilter(x);setOffset(0);setSelected(null);}}>
       <SelectTrigger id="golden-filter" className="w-[165px]"><SelectValue/></SelectTrigger><SelectContent>
-       <SelectItem value="overdue">Needs attention</SelectItem><SelectItem value="all">All open</SelectItem>
+       <SelectItem value="recent">New requests · last 72 hours</SelectItem><SelectItem value="overdue">Needs attention</SelectItem><SelectItem value="all">All open</SelectItem>
        <SelectItem value="needs_reply">Awaiting first reply</SelectItem><SelectItem value="waiting">Waiting on others</SelectItem>
        <SelectItem value="post_service">Move-in & aftercare</SelectItem><SelectItem value="closed">Closed services</SelectItem>
       </SelectContent></Select>
