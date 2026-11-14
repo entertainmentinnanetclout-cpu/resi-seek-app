@@ -1,5 +1,6 @@
 import ContactExportButtons from "@/components/admin/ContactExportButtons";
-import { useEffect, useState } from "react";\nimport { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
