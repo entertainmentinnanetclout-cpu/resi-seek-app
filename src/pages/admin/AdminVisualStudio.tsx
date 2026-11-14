@@ -77,6 +77,10 @@ export default function AdminVisualStudio(){
  const draftSignature=useMemo(()=>JSON.stringify(sorted),[sorted]);
  const dirty=useMemo(()=>JSON.stringify(normalized(mapSnapshot(source)))!==draftSignature,[source,draftSignature]);
  const unsavedLocal=dirty&&savedDraftSignature!==draftSignature;
+ const changedBlocks=useMemo(()=>sorted.filter(row=>{
+  const published=source.find(item=>item.section_key===row.section_key);
+  return !!published&&JSON.stringify(mapSnapshot([published])[0])!==JSON.stringify(row);
+ }).length,[sorted,source]);
  const latestDraft=history[0]?.state==="draft" ? history[0] : null;
  const canResumeDraft=!!latestDraft&&JSON.stringify(normalized(latestDraft.snapshot))!==draftSignature;
  const studioMetrics=[["Published residences",residences.filter(r=>r.is_visible===true).length],["Spotlight properties",residences.filter(r=>r.is_visible===true&&r.is_spotlight===true).length],["Recent page revisions",history.length]] as const;
@@ -160,6 +164,7 @@ export default function AdminVisualStudio(){
   setRedo([]);setDraft(transform(clone(draft)));
  };
  const patch=(p:Partial<VisualSectionDraft>)=>mutate(rows=>rows.map(row=>row.section_key===selected?{...row,...p}:row));
+ const patchByKey=(key:string,p:Partial<VisualSectionDraft>)=>mutate(rows=>rows.map(row=>row.section_key===key?{...row,...p}:row));
  const move=(key:string,target:string)=>{
   if(page!=="landing" || key===target)return;
   const items=normalized(draft);
@@ -235,6 +240,7 @@ export default function AdminVisualStudio(){
         <option value="landing">Homepage</option><option value="findmyres">Find My Res</option>
        </select>
        <Badge variant={dirty?"secondary":"outline"}>{dirty?(unsavedLocal?"Unsaved changes":"Saved draft · not live"):"Matching published version"}</Badge>
+       <Badge variant="outline">{changedBlocks} changed block{changedBlocks===1?"":"s"}</Badge>
        {canResumeDraft&&<Button type="button" size="sm" variant="outline" disabled={loading||saving} onClick={()=>restore(latestDraft!)}><History className="mr-1.5 h-4 w-4"/>Resume saved draft</Button>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -263,7 +269,12 @@ export default function AdminVisualStudio(){
           onKeyDown={e=>{if(e.target!==e.currentTarget)return;if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelected(row.section_key);}}}
           className={"rk-pressable flex w-full cursor-pointer items-center gap-2 rounded-xl border px-2.5 py-2.5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 "+(selected===row.section_key?"border-[#2563eb] bg-[#eef4ff]":"border-transparent hover:border-border hover:bg-muted/60")}>
           <Move className="h-3.5 w-3.5 shrink-0 text-muted-foreground"/><span className="min-w-0 flex-1 truncate text-xs font-bold">{slot?.title||row.section_key}</span>
-          {!row.visible?<EyeOff className="h-3.5 w-3.5 text-amber-600"/>:<Eye className="h-3.5 w-3.5 text-muted-foreground"/>}
+          <button type="button" disabled={slot?.required} aria-label={(row.visible?"Hide ":"Show ")+(slot?.title||row.section_key)}
+           title={slot?.required?"Required section cannot be hidden":"Toggle section visibility"}
+           onClick={e=>{e.stopPropagation();patchByKey(row.section_key,{visible:!row.visible});}}
+           className="rounded p-1.5 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">
+           {!row.visible?<EyeOff className="h-3.5 w-3.5 text-amber-600"/>:<Eye className="h-3.5 w-3.5 text-muted-foreground"/>}
+          </button>
           <span className="flex flex-col gap-0.5">
            <button type="button" aria-label={"Move "+(slot?.title||row.section_key)+" up"} disabled={page!=="landing"} onClick={e=>{e.stopPropagation();moveStep(row.section_key,i,-1,e.currentTarget);}} className="rounded p-1 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"><ArrowUp className="h-3 w-3"/></button>
            <button type="button" aria-label={"Move "+(slot?.title||row.section_key)+" down"} disabled={page!=="landing"} onClick={e=>{e.stopPropagation();moveStep(row.section_key,i,1,e.currentTarget);}} className="rounded p-1 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"><ArrowDown className="h-3 w-3"/></button>
