@@ -18,6 +18,7 @@ export type VisualPageSection = {
  updated_at?: string;
 };
 export type VisualSectionDraft = Pick<VisualPageSection,"section_key"|"position"|"visible"|"headline"|"subtitle">;
+const EMPTY_SECTIONS:VisualPageSection[]=[];
 
 const pageDefaults: Record<VisualPageKey, Array<[string,string,number,boolean]>> = {
  landing: [
@@ -42,7 +43,7 @@ export const VISUAL_PAGE_DEFAULTS = pageDefaults;
 
 export function useVisualPageSections(page:VisualPageKey) {
  const {isGodMode,session}=useAuth();
- const {data=[],isLoading,error,refetch}=useQuery({
+ const {data:sectionRows,isLoading,error,refetch}=useQuery({
   queryKey:["rk-visual-sections",page],
   queryFn:async()=>{
    const {data,error}=await (supabase as any).from("rk_visual_page_sections").select("page_key,section_key,title,position,visible,required,editable_copy,headline,subtitle,updated_at").eq("page_key",page).order("position");
@@ -50,6 +51,7 @@ export function useVisualPageSections(page:VisualPageKey) {
    return (data||[]) as VisualPageSection[];
   },staleTime:60_000,retry:1,
  });
+ const data=sectionRows??EMPTY_SECTIONS;
  const isPreview=isVisualPreviewAuthorized(isGodMode,session?.access_token);
  const [preview,setPreview]=useState<Record<string,VisualSectionDraft>>({});
  useEffect(()=>{
