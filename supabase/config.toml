@@ -16,7 +16,9 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.yoco-webhook]
-verify_jwt = true
+# Yoco sends signed Standard Webhooks, not a Supabase bearer JWT.
+# Raw HMAC signature and timestamp verified in the handler; fail closed if YOCO_WEBHOOK_SECRET is absent.
+verify_jwt = false
 
 [functions.yoco-verify-payment]
 verify_jwt = true
