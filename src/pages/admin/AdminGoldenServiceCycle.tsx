@@ -17,7 +17,7 @@ import {supabase} from "@/integrations/supabase/client";
 type Kind="application"|"reservation"|"viewing"|"enquiry"|"onboarding"|"application_support"|"private_rental"|"student_support"|"wil"|"landlord"|"partner";
 type FlowAction="begin_review"|"request_info"|"waiting_residence"|"waiting_partner"|"set_followup"|"contact_confirmed"|"complete_cycle"|"reopen"|"private_note";
 type BatchAction="begin_review"|"set_followup"|"private_note";
-type Metric={total:number;open:number;overdue:number;unanswered:number;waiting:number;post_service:number;replied_today:number;recent_open?:number;recent_unanswered?:number;feedback_count?:number;feedback_average?:number|null;needs_recovery?:number};
+type Metric={total:number;open:number;overdue:number;unanswered:number;waiting:number;post_service:number;replied_today:number;recent_open?:number;recent_unanswered?:number;pending_documents?:number;pending_documents_older_48h?:number;pending_application_documents?:number;delegated_residence_open?:number;residence_recommendations_pending?:number;wil_open?:number;partner_open?:number;feedback_count?:number;feedback_average?:number|null;needs_recovery?:number};
 type Item={id:string;kind:Kind;customer:string;residence_name:string;status:string;step:string;next_action:string;priority:string;
  first_response_due_at:string;next_action_due_at:string;last_human_response_at:string|null;last_human_channel:string|null;
  receipt_issued_at:string|null;feedback_rating?:number|null;overdue:boolean;needs_reply:boolean;delegated_review_open:boolean;source_created_at:string;closed_at:string|null};
@@ -180,6 +180,28 @@ export default function AdminGoldenServiceCycle(){
  };
  const selectedAction=ACTIONS.find(x=>x[0]===action);
  const stats=[["Open cases",metrics.open,UsersRound],["Action overdue",metrics.overdue,AlarmClock],["No confirmed reply",metrics.unanswered,MessageCircle],["Awaiting others",metrics.waiting,Handshake],["Aftercare",metrics.post_service,Home],["Contacted today",metrics.replied_today,CheckCircle2]] as const;
+ const sprintCards=[
+  {id:"01",title:"New intake & replies",count:metrics.recent_unanswered??0,Icon:Mail,
+   descriptor:"New requests without a confirmed personal response (72h)",
+   detail:"Check the customer, current case status and channel consent before any message. A draft is not a delivery.",
+   route:"/admin/communications?tab=email",action:"Open Mail Dock"},
+  {id:"02",title:"Verify documents",count:(metrics.pending_documents??0)+(metrics.pending_application_documents??0),Icon:FileCheck2,
+   descriptor:"Pending general and application document records",
+   detail:`${metrics.pending_documents_older_48h??0} general files pending over 48h. Uploaded does not mean verified.`,
+   route:"/admin/documents",action:"Open document reviews"},
+  {id:"03",title:"Residence decisions",count:(metrics.delegated_residence_open??0)+(metrics.residence_recommendations_pending??0),Icon:Home,
+   descriptor:"Open delegated reviews and returned recommendations",
+   detail:`${metrics.residence_recommendations_pending??0} recommendations require ResKonnect sign-off. Confirm genuine evidence and available rooms.`,
+   route:"/admin/cases",action:"Open Case Command"},
+  {id:"04",title:"WIL & partners",count:(metrics.wil_open??0)+(metrics.partner_open??0),Icon:Handshake,
+   descriptor:"Open WIL and partner service journeys",
+   detail:`${metrics.wil_open??0} WIL requests · ${metrics.partner_open??0} partner requests. Final placements remain in their own workflows.`,
+   route:"/admin/wil",action:"Open WIL workspace"},
+  {id:"05",title:"Aftercare & recovery",count:metrics.post_service??0,Icon:Headphones,
+   descriptor:"Open aftercare journeys in the selected service category",
+   detail:`${metrics.needs_recovery??0} low-rated services require a separate recovery follow-up.`,
+   route:"/admin/golden-cycle",action:"Review this service queue"}
+ ] as const;
  return <AdminLayout>
   <SEO noIndex title="Golden Service Cycle | ResKonnect God Mode" description="Solo-operator end-to-end service queue, verified case deadlines and task handovers"/>
   <div className="rk-motion mx-auto max-w-[1600px] space-y-5">
@@ -210,6 +232,37 @@ export default function AdminGoldenServiceCycle(){
    <section aria-label="Golden customer journey" className="rk-neo-panel p-3 sm:p-4">
     <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-sm font-black">Golden customer journey</h2><span className="text-[11px] text-muted-foreground">Automation prepares · operator verifies · partners deliver</span></div>
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">{journey.map(([i,title,desc])=><div key={i} className="rk-neo-inset min-w-0 p-3"><span className="text-[10px] font-black text-[#2563eb]">{i}</span><p className="mt-1 text-xs font-black">{title}</p><p className="mt-1 text-[10px] leading-4 text-muted-foreground">{desc}</p></div>)}</div>
+   </section>
+   <section className="rk-neo-panel space-y-3 p-3 sm:p-4" aria-label="Solo-operator daily mission control">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+     <div>
+      <h2 className="text-base font-black">Daily mission control</h2>
+      <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">Follow five short service sprints: respond, verify, delegate, coordinate and recover. Counts are factual workload indicators, not approvals or delivery confirmations.</p>
+     </div>
+     <Badge variant="outline"><Clock3 className="mr-1.5 h-3.5 w-3.5"/>Refreshes with the service queue</Badge>
+    </div>
+    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+     {sprintCards.map(card=><div key={card.id} className="rk-neo-inset flex min-w-0 flex-col rounded-2xl p-3.5">
+      <div className="flex items-start justify-between gap-2">
+       <span className="text-[10px] font-black tracking-wider text-[#55729a]">SPRINT {card.id}</span>
+       <card.Icon className="h-5 w-5 text-[#2563eb]" aria-hidden="true"/>
+      </div>
+      <p className="mt-2 text-sm font-black">{card.title}</p>
+      <p className="mt-2 text-2xl font-black tabular-nums text-[#071326]">{Number(card.count).toLocaleString("en-ZA")}</p>
+      <p className="mt-1 text-[11px] font-semibold leading-4">{card.descriptor}</p>
+      <p className="mt-2 flex-1 text-[11px] leading-5 text-muted-foreground">{card.detail}</p>
+      <Button asChild size="sm" variant="outline" className="mt-3 w-full">
+       <Link to={card.route}>{card.action}<ArrowRight className="ml-1.5 h-3.5 w-3.5"/></Link>
+      </Button>
+     </div>)}
+    </div>
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-3 text-xs">
+     <span className="font-bold">Other handoff workspaces</span>
+     <Link className="font-semibold text-primary underline" to="/admin/partnerships">Partner coordination</Link>
+     <Link className="font-semibold text-primary underline" to="/admin/onboarding">Landlord onboarding</Link>
+     <Link className="font-semibold text-primary underline" to="/admin/cases">Compulsory eligibility review</Link>
+     <Link className="font-semibold text-primary underline" to="/admin/communications?tab=email">Email &amp; WhatsApp</Link>
+    </div>
    </section>
    <div className="rk-neo-panel flex flex-wrap items-center gap-2 p-3">
     <div className="flex flex-wrap items-center gap-2">
