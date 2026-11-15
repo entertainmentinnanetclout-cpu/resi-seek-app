@@ -93,7 +93,7 @@ async function route(service:any,body:any){
 }
 
 function extractOutputText(data:any){if(typeof data?.output_text==="string")return data.output_text;for(const item of data?.output||[])for(const c of item?.content||[])if(c?.type==="output_text"&&typeof c.text==="string")return c.text;return "";}
-async function allowAi(service:any,req:Request){const forwarded=req.headers.get("x-forwarded-for")||req.headers.get("cf-connecting-ip")||"anonymous";const visitorHash=(await hash(forwarded.split(",")[0].trim())).slice(0,32);const today=new Date().toISOString().slice(0,10);const row=(await service.from("resmap_ai_usage").select("request_count").eq("visitor_hash",visitorHash).eq("usage_day",today).maybeSingle()).data;const count=Number(row?.request_count||0);if(count>=20)return false;await service.from("resmap_ai_usage").upsert({visitor_hash:visitorHash,usage_day:today,request_count:count+1,last_used_at:new Date().toISOString()},{onConflict:"visitor_hash,usage_day"});return true;}
+async function allowAi(service:any,req:Request){const forwarded=req.headers.get("x-forwarded-for")||req.headers.get("cf-connecting-ip")||"anonymous";const visitorHash=(await hash(forwarded.split(",")[0].trim())).slice(0,32);const budget=await service.rpc("rk_consume_ai_budget",{p_surface:"map_intent",p_subject:"guest:"+visitorHash,p_verified_user:false});if(budget.error){if(budget.error.code==="PT429")return false;throw new Error("AI map search temporarily unavailable");}const today=new Date().toISOString().slice(0,10);const row=(await service.from("resmap_ai_usage").select("request_count").eq("visitor_hash",visitorHash).eq("usage_day",today).maybeSingle()).data;const count=Number(row?.request_count||0);if(count>=20)return false;await service.from("resmap_ai_usage").upsert({visitor_hash:visitorHash,usage_day:today,request_count:count+1,last_used_at:new Date().toISOString()},{onConflict:"visitor_hash,usage_day"});return true;}
 
 async function aiIntent(service:any,req:Request,query:string){
   if(!openaiKey)throw new Error("AI search is not configured");
@@ -118,5 +118,5 @@ serve(async(req)=>{
     if(action==="ai_intent"){const query=String(body.query||"").trim().slice(0,500);if(query.length<3)return json({error:"Search query is too short"},400);return json({ok:true,filters:await aiIntent(service,req,query)});}
     if(action==="transport_routes"){const rows=await service.from("resmap_transport_routes").select("*").eq("is_active",true).eq("is_verified",true);return json({ok:true,routes:rows.data||[]});}
     return json({error:"Unsupported action"},400);
-  }catch(error){return json({error:error instanceof Error?error.message:String(error)},400);}
+  }catch(error){const message=error instanceof Error?error.message:String(error);return json({error:message},message.includes("limit reached")?429:message.includes("temporarily unavailable")?503:400);}
 });
