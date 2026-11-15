@@ -6,6 +6,7 @@ import { Upload, Link2, X, Loader2, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PUBLIC_IMAGE_ACCEPT, publicImageUploadError } from "@/lib/storage/uploadPolicy";
 
 interface ImageInputProps {
   value: string;
@@ -34,12 +35,9 @@ const ImageInput = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const uploadFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be under 5 MB");
+    const validationError = publicImageUploadError(file, 5);
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
 
@@ -139,7 +137,7 @@ const ImageInput = ({
           <input
             ref={inputRef}
             type="file"
-            accept="image/*"
+            accept={PUBLIC_IMAGE_ACCEPT}
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -155,7 +153,7 @@ const ImageInput = ({
             <div className="flex flex-col items-center gap-1.5">
               <ImageIcon className="w-6 h-6 text-muted-foreground" />
               <p className="text-sm font-medium">Drop image or click to browse</p>
-              <p className="text-xs text-muted-foreground">PNG, JPG, WEBP up to 5 MB</p>
+              <p className="text-xs text-muted-foreground">JPG, PNG, WebP, GIF or AVIF up to 5 MB</p>
             </div>
           )}
         </div>
