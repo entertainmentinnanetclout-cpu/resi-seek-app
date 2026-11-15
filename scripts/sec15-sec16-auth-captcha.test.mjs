@@ -28,6 +28,6 @@ expect(src.includes("setCaptchaEpoch((epoch) => epoch + 1)"),path+" resets singl
 expect(src.includes("setCaptchaToken(null)"),path+" clears stale tokens");
 sum+=cnt;
 }
-expect(sum===7,"All seven login/signup/recovery call sites covered (3+3+1)");
+expect(sum===9,"All nine login/signup/recovery call sites covered (3+3+2+1)");
 expect(read("package.json").includes("node scripts/sec15-sec16-auth-captcha.test.mjs"),"Auth CI includes Turnstile regression gate");
 console.log("SEC15/16 source contract PASS; Supabase hosted CAPTCHA switch remains dashboard-managed.");
