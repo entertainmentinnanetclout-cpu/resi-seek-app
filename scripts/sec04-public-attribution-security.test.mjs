@@ -7,6 +7,7 @@ const read=path=>readFileSync(resolve(root,path),"utf8");
 const pass=(v,msg)=>{assert.ok(v,msg);console.log("PASS",msg);};
 const budgets=read("supabase/migrations/20261115072500_sec04_public_rpc_budgets_and_guard.sql");
 const rpc=read("supabase/migrations/20261115073000_sec04_referral_attribution_telemetry_bounded.sql");
+const redirects=read("supabase/migrations/20261115074500_sec04_recruiter_redirect_budget_guard.sql");
 const funcs=[
  ["capture_referral_click","referral_click"],
  ["capture_residence_referral_click",null],
@@ -42,6 +43,12 @@ pass(rpc.includes("octet_length(coalesce(_visitor_id,''))>128") &&
  "Referral click inputs have explicit size caps before writes");
 pass(rpc.includes("if v_session is null then return null; end if;"),
  "Residence recruiter click cannot emit events without a valid captured referral session");
+pass(redirects.includes("'recruiter_redirect'") &&
+ redirects.includes("rk_guard_public_rpc_budget") &&
+ redirects.indexOf("'recruiter_redirect'") < redirects.indexOf("select * into v_link from public.recruiter_residence_links"),
+ "Unknown recruiter redirects are throttled before database lookups");
+pass(redirects.includes("length(coalesce(p_subject,''))>257"),
+ "Joined maximum-length visitor/session keys remain valid while constrained");
 pass(rpc.includes("where adminos_attribution_sessions.visitor_hash=excluded.visitor_hash") &&
  rpc.includes("adminos_attribution_sessions.user_id=excluded.user_id"),
  "Attribution upsert cannot claim a different actor's existing session");
