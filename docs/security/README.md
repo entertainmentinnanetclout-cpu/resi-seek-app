@@ -125,3 +125,8 @@ No production payment, login, document upload, database privileges or DNS settin
 ## SEC-04 public read privacy controls (15 November 2026)
 - [Privacy and bounded request fixes for referral lookup, tour snapshots and opportunity feeds](SEC04_PUBLIC_READ_PRIVACY_20261115.md).
 - Three public `SECURITY DEFINER` read RPCs retain their exact signatures and public grant; the fix blocks inactive recruiter names, hidden-residence tour snapshots and oversized opportunity searches. Security Advisor *counts* for privileged RPCs are therefore not expected to decrease. Auth rate-limit/CAPTCHA hosted settings remain independently unverified.
+
+
+## SEC-07/08 private profile and store-image RLS repair (15 November 2026)
+- [Verified private-profile anonymous metadata exposure and targeted store-image owner-folder remediation](SEC07_SEC08_STORAGE_OWNER_ISOLATION_20261115.md).
+- This release removes anonymous `SELECT` for the private `user-profiles` bucket and replaces two permissive store-assets upload paths with a single owner/admin check. No existing objects are deleted. Bucket MIME/size enforcement remains a separate staged review.
