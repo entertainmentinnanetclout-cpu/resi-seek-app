@@ -53,6 +53,18 @@ verify(types.includes('adminos_set_contact_language') && types.includes('adminos
 const agent=read("supabase/functions/adminos-agent/index.ts");
 verify(agent.includes('dimpho_search_knowledge') && agent.includes('adminos_record_learning_gap'),
  "AI agent service flow retains internal-knowledge and learning RPC consumers");
+// SEC-05 addendum: keep trigger-only application-health evaluation out of browser RPCs.
+// Trigger caller SECURITY DEFINER role remains postgres; scheduler is service-only.
+const internalHealthSql = read("supabase/migrations/20261115110500_sec05_internal_health_recalculation_rpc.sql");
+verify(internalHealthSql.includes(
+  "revoke execute on function public.adminos_recalculate_application_health(uuid)\n  from public, anon, authenticated;")
+  && internalHealthSql.includes(
+  "grant execute on function public.adminos_recalculate_application_health(uuid)\n  to service_role;"),
+  "Application-health privileged recalc is service/trigger only");
+const healthRoutine = snapshot.callable_routines.filter(x => x.name === "adminos_recalculate_application_health");
+verify(healthRoutine.length === 1 && healthRoutine[0].anon === false && healthRoutine[0].authenticated === false,
+  "Production contract denies direct user execution of the internal application-health recalculation");
+
 const srcNames=[];
 function sourceWalk(dir){
  for(const d of readdirSync(dir,{withFileTypes:true})){

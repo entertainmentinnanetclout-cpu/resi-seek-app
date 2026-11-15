@@ -1,7 +1,7 @@
 {
   "project_id": "mefjzkhobkltlbmhusdh",
   "captured_date": "2026-11-15",
-  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles; 15 Nov verified service-only ResMap atomic AI budget function after scoped live migration",
+  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles; 15 Nov verified service-only ResMap atomic AI budget function after scoped live migration; SEC05 privileged app-health recompute direct Auth execution revoked",
   "public_relations": [
     "Bookings",
     "Users",
@@ -745,7 +745,7 @@
         "p_application_id"
       ],
       "name": "adminos_recalculate_application_health",
-      "authenticated": true
+      "authenticated": false
     },
     {
       "anon": false,
