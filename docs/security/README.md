@@ -135,3 +135,8 @@ No production payment, login, document upload, database privileges or DNS settin
 ## SEC-07 storage MIME and size caps (15 November 2026)
 - [Twelve per-bucket server-side allowlists and upload-size caps](SEC07_STORAGE_BUCKET_MIME_SIZE_20261115.md).
 - All historical stored files preserved; new HTML, SVG and generic octet-stream MIME uploads disallowed. Seller verification and shop images now validate in the browser, and seller onboarding stops on failed KYC uploads. This is not a substitute for actual content sniffing and malware scanning.
+
+
+## SEC-15/16 authentication bot protection preparation (15 November 2026)
+- [Turnstile-enabled password authentication across students, recruiters, residence users and recovery](SEC15_SEC16_TURNSTILE_20261115.md).
+- All seven password-based call sites use a shared single-use challenge. The challenge is **disabled unless** the public `VITE_TURNSTILE_SITE_KEY` is configured; server-side Auth CAPTCHA is **not** activated by this PR. Require real device checks and dashboard configuration before enforcement.
