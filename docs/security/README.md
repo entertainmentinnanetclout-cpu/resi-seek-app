@@ -120,3 +120,8 @@ No production payment, login, document upload, database privileges or DNS settin
 ## SEC-10 and SEC-12 follow-up — 15 November 2026
 - Supabase Security Advisor was rerun after the operator enabled leaked-password screening; the former `auth_leaked_password_protection` warning is no longer reported. This does not replace an interactive password-signup negative test.
 - [ResMap AI request-budget implementation and live verification](SEC12_RESMAP_AI_ABUSE_20261115.md): direct Supabase Edge calls for map intent and accommodation image AI must consume atomic service-only budgets with rotating-guest global caps. This is distinct from Vercel WAF and Supabase Auth's native rate limits.
+
+
+## SEC-04 public read privacy controls (15 November 2026)
+- [Privacy and bounded request fixes for referral lookup, tour snapshots and opportunity feeds](SEC04_PUBLIC_READ_PRIVACY_20261115.md).
+- Three public `SECURITY DEFINER` read RPCs retain their exact signatures and public grant; the fix blocks inactive recruiter names, hidden-residence tour snapshots and oversized opportunity searches. Security Advisor *counts* for privileged RPCs are therefore not expected to decrease. Auth rate-limit/CAPTCHA hosted settings remain independently unverified.
