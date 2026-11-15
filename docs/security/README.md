@@ -107,3 +107,12 @@ No production payment, login, document upload, database privileges or DNS settin
 - Atomic per-actor minute/hour budget counters plus high-ceiling global safety caps and 48-hour private counter cleanup.
 - Anonymous identifiers can be changed by clients: these are **abuse heuristics, not authenticated identities**. Trusted IP/edge network abuse controls remain a separate priority.
 - Rolled-back live role tests confirmed legitimate events, throttled floods, oversized payload rejection and non-owner attribution changes denied. No customer tracking records were written by tests.
+
+
+## SEC-12 live firewall and SEC-10 Auth readiness (15 November 2026)
+- [Verified production and secondary Vercel firewall deployment, password-policy readiness and pending Auth toggle](SEC12_WAF_AUTH_READINESS_20261115.md).
+- [Machine-readable WAF configuration and per-project rollback receipt](VERCEL_WAF_SECURITY_BASELINE_20261115.json).
+- Both Vercel projects have a **240 requests/60 seconds per IP** rate limit only on Vercel API/sitemap paths, plus denial of common non-app secret/CMS probes. Their rules are active and validated; regular student, accommodation and landlord navigation is intentionally outside these path limits.
+- **No claim of full Supabase edge protection:** direct Supabase Auth/PostgREST calls bypass Vercel; SQL authorization and telemetry quota protections remain in place.
+- **SEC-10 remains pending in the hosted Auth service:** Supabase Pro eligibility verified, but the live advisor still reports breached-password protection off. The operator must toggle `Authentication → Sign In / Providers → Email → Prevent use of leaked passwords` in the Supabase dashboard.
+- The frontend code only improves password error handling and signup/reset guidance; it does **not** activate the hosted breached-password feature.
