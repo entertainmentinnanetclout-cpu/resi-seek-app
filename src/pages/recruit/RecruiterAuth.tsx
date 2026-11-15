@@ -15,6 +15,7 @@ import { Loader2, Chrome, ArrowLeft } from "lucide-react";
 import { savePendingRecruiter, readPendingRecruiter, clearPendingRecruiter } from "@/lib/referrals/referralStorage";
 import { clearWeakPassword, rememberWeakPassword } from "@/lib/passwordSecurity";
 import { getAuthErrorMessage } from "@/lib/authErrors";
+import AuthBotChallenge, { requireAuthCaptchaToken } from "@/components/auth/AuthBotChallenge";
 
 const loginSchema = z.object({ email: z.string().email("Invalid email address"), password: z.string().min(1, "Password is required") });
 const signupSchema = z.object({
@@ -36,6 +37,8 @@ export default function RecruiterAuth() {
   const [error, setError] = useState<string | null>(null);
   const [emailValue, setEmailValue] = useState("");
   const [resetSending, setResetSending] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaEpoch, setCaptchaEpoch] = useState(0);
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo");
 
@@ -63,12 +66,14 @@ export default function RecruiterAuth() {
     setResetSending(true);
     try {
       const redirectTo = `${window.location.origin}/auth?mode=password-reset&returnTo=${encodeURIComponent("/recruit/dashboard")}`;
-      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo });
+      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo, ...requireAuthCaptchaToken(captchaToken) });
       if (error) throw error;
       toast.success("If this email is registered, a secure reset link has been sent.");
     } catch (error) {
       toast.error(getAuthErrorMessage(error, "Could not send a password reset email."));
     } finally {
+      setCaptchaToken(null);
+      setCaptchaEpoch((epoch) => epoch + 1);
       setResetSending(false);
     }
   };
@@ -93,7 +98,7 @@ export default function RecruiterAuth() {
       const validated = schema.parse(data);
 
       if (isLogin) {
-        const { data: loginData, error } = await supabase.auth.signInWithPassword({ email: validated.email, password: validated.password });
+        const { data: loginData, error } = await supabase.auth.signInWithPassword({ email: validated.email, password: validated.password, options: requireAuthCaptchaToken(captchaToken) });
         if (error) throw error;
         if (loginData.user?.id && loginData.weakPassword) {
           rememberWeakPassword(loginData.user.id, loginData.weakPassword);
@@ -110,6 +115,7 @@ export default function RecruiterAuth() {
           password: signupData.password,
           options: {
             emailRedirectTo: `${window.location.origin}/recruit/auth`,
+            ...requireAuthCaptchaToken(captchaToken),
             data: {
               full_name: signupData.fullName,
               phone: signupData.phoneNumber,
@@ -126,6 +132,8 @@ export default function RecruiterAuth() {
       setError(message);
       toast.error(message);
     } finally {
+      setCaptchaToken(null);
+      setCaptchaEpoch((epoch) => epoch + 1);
       setIsLoading(false);
     }
   };
@@ -171,13 +179,14 @@ export default function RecruiterAuth() {
               </div>
             )}
 
+            <AuthBotChallenge key={`${isLogin ? "login" : "signup"}-${captchaEpoch}`} action="auth_recruiter" onTokenChange={setCaptchaToken} />
             <Button type="submit" className="w-full h-11" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLogin ? "Sign in as Recruiter" : "Create Recruiter Account"}
             </Button>
 
             <div className="text-center">
-              <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-sm text-primary hover:underline">
+              <button type="button" onClick={() => { setIsLogin(!isLogin); setCaptchaToken(null); setCaptchaEpoch((epoch) => epoch + 1); }} className="text-sm text-primary hover:underline">
                 {isLogin ? "Don't have a recruiter account? Sign up" : "Already have a recruiter account? Sign in"}
               </button>
             </div>
