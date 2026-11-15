@@ -4,7 +4,7 @@
 ## Threat and scope
 Supabase Auth has native built-in rate limiting and optional Cloudflare Turnstile/hCaptcha enforcement. Direct Supabase Auth calls do not pass through Vercel WAF. Project-specific current hosted Auth rate limits, bot protection state and provider secret **cannot be read or modified with the connected Supabase database/functions tools**. This release adds **functional frontend Turnstile integration**, not a claim of activated backend CAPTCHA.
 
-### Seven password-based call paths
+### Nine password-based call paths
 | Portal | Login | Signup | Request password reset |
 | --- | --- | --- | --- |
 | Student `/auth` | Token | Token | Token |
@@ -12,7 +12,7 @@ Supabase Auth has native built-in rate limiting and optional Cloudflare Turnstil
 | Landlord `/residence/login` | Token | — | Token |
 | Password recovery `PasswordReset` | — | — | Token |
 
-All seven paths pass the single-use challenge proof in the correct Supabase Auth option location: `signInWithPassword({...,options:{captchaToken}})`, `signUp({...,options:{captchaToken}})`, or `resetPasswordForEmail(email,{...,captchaToken})`. Failure/expiry/timeouts invalidate the proof and the widget is remounted after each attempt. Social OAuth remains untouched.
+All nine paths pass the single-use challenge proof in the correct Supabase Auth option location: `signInWithPassword({...,options:{captchaToken}})`, `signUp({...,options:{captchaToken}})`, or `resetPasswordForEmail(email,{...,captchaToken})`. Failure/expiry/timeouts invalidate the proof and the widget is remounted after each attempt. Social OAuth remains untouched.
 
 ### Activation sequence — do not reverse
 1. Obtain **Cloudflare Turnstile widget** for every active ResKonnect website domain; include staging and local development test domains as needed.
@@ -27,7 +27,7 @@ All seven paths pass the single-use challenge proof in the correct Supabase Auth
 - Challenge is not a guarantee of human identity or an alternative to Supabase server-side protection. Guest discovery, Google OAuth and private document flows remain unchanged.
 
 ### Verification / limitations
-- `scripts/sec15-sec16-auth-captcha.test.mjs` is a mandatory `auth:check` gate for all seven source API call sites, failure and expiry handling, reset and no-key compatibility.
+- `scripts/sec15-sec16-auth-captcha.test.mjs` is a mandatory `auth:check` gate for all nine source API call sites, failure and expiry handling, reset and no-key compatibility.
 - CI compilation, web/Android tests and deployment checks required before merge.
 - Live CAPTCHA Solves and Auth rate-limit HTTP tests are not possible until a valid provider test site key and server enforcement are configured.
 - Continue existing leaked-password protection (Security Advisor no warning). Do not claim active Turnstile enforcement by merely merging these changes.
