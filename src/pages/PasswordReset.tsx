@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { clearWeakPassword } from "@/lib/passwordSecurity";
 import { getAuthErrorMessage } from "@/lib/authErrors";
+import AuthBotChallenge, { requireAuthCaptchaToken } from "@/components/auth/AuthBotChallenge";
 
 const passwordSchema = z.string()
   .min(8, "Password must be at least 8 characters")
@@ -41,6 +42,8 @@ export default function PasswordReset() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaEpoch, setCaptchaEpoch] = useState(0);
 
   const requestReset = async () => {
     const parsed = z.string().email("Enter a valid email address").safeParse(email.trim());
@@ -52,13 +55,15 @@ export default function PasswordReset() {
     setBusy(true);
     try {
       const redirectTo = `${window.location.origin}/auth?mode=password-reset&returnTo=${encodeURIComponent(returnTo)}`;
-      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo });
+      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo, ...requireAuthCaptchaToken(captchaToken) });
       if (error) throw error;
       setEmailSent(true);
       toast.success("If this email is registered, a secure password reset link has been sent.");
     } catch (error) {
       toast.error(getAuthErrorMessage(error, "Could not send a password reset email."));
     } finally {
+      setCaptchaToken(null);
+      setCaptchaEpoch((epoch) => epoch + 1);
       setBusy(false);
     }
   };
@@ -147,6 +152,7 @@ export default function PasswordReset() {
                   <Label htmlFor="recovery-email">Email address</Label>
                   <Input id="recovery-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" />
                 </div>
+                <AuthBotChallenge key={`password-recovery-${captchaEpoch}`} action="auth_recovery" onTokenChange={setCaptchaToken} />
                 <Button className="w-full" onClick={() => void requestReset()} disabled={busy || emailSent}>
                   {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
                   {emailSent ? "Recovery email sent" : "Send secure reset link"}

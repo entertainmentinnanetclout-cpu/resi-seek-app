@@ -20,6 +20,7 @@ import { clearPendingApplication, clearPendingRecruiter, readPendingApplication,
 import GoogleLogo from "@/components/auth/GoogleLogo";
 import { clearWeakPassword, rememberWeakPassword } from "@/lib/passwordSecurity";
 import PasswordReset from "@/pages/PasswordReset";
+import AuthBotChallenge, { requireAuthCaptchaToken } from "@/components/auth/AuthBotChallenge";
 import AccountPortals from "@/components/AccountPortals";
 import { accountHome } from "@/lib/accountRouting";
 
@@ -95,6 +96,8 @@ const Auth = () => {
   const [heardAboutUs, setHeardAboutUs] = useState("");
   const [emailValue, setEmailValue] = useState("");
   const [resetSending, setResetSending] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaEpoch, setCaptchaEpoch] = useState(0);
   const returnTo = safeLocalReturnPath(searchParams.get("returnTo"));
   const refCode = searchParams.get("ref");
   const isPasswordRecovery = searchParams.get("mode") === "password-reset";
@@ -183,7 +186,7 @@ const Auth = () => {
       const password = String(form.get("password") || "");
       if (isLogin) {
         z.string().min(1, "Password is required").parse(password);
-        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password, options: requireAuthCaptchaToken(captchaToken) });
         if (loginError) throw loginError;
         if (loginData.user?.id && loginData.weakPassword) {
           rememberWeakPassword(loginData.user.id, loginData.weakPassword);
@@ -218,7 +221,7 @@ const Auth = () => {
         const { data, error: signupError } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${publicAuthOrigin}/auth`, data: metadata },
+          options: { emailRedirectTo: `${publicAuthOrigin}/auth`, data: metadata, ...requireAuthCaptchaToken(captchaToken) },
         });
         if (signupError) throw signupError;
 
@@ -250,6 +253,8 @@ const Auth = () => {
       setError(message);
       toast.error(message);
     } finally {
+      setCaptchaToken(null);
+      setCaptchaEpoch((epoch) => epoch + 1);
       setIsLoading(false);
     }
   };
@@ -267,7 +272,7 @@ const Auth = () => {
     setError(null);
     try {
       const redirectTo = `${publicAuthOrigin}/auth?mode=password-reset&returnTo=${encodeURIComponent(returnTo || "/dashboard")}`;
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo });
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo, ...requireAuthCaptchaToken(captchaToken) });
       if (resetError) throw resetError;
       toast.success("If this email is registered, a secure reset link has been sent.");
     } catch (resetError) {
@@ -275,6 +280,8 @@ const Auth = () => {
       setError(message);
       toast.error(message);
     } finally {
+      setCaptchaToken(null);
+      setCaptchaEpoch((epoch) => epoch + 1);
       setResetSending(false);
     }
   };
@@ -364,6 +371,7 @@ const Auth = () => {
 
             <div className="space-y-2"><div className="flex items-center justify-between gap-3"><Label htmlFor="password">Password *</Label>{isLogin && <button type="button" onClick={() => void handlePasswordReset()} disabled={resetSending} className="text-xs font-semibold text-primary hover:underline disabled:opacity-50">{resetSending ? "Sending..." : "Forgot password?"}</button>}</div><Input id="password" name="password" type="password" autoComplete={isLogin ? "current-password" : "new-password"} required placeholder="••••••••" /></div>
             {!isLogin && <><div className="space-y-2"><Label htmlFor="confirmPassword">Confirm password *</Label><Input id="confirmPassword" name="confirmPassword" type="password" required placeholder="••••••••" /></div><div className="flex items-start gap-3"><Checkbox id="terms" required /><Label htmlFor="terms" className="-mt-1 text-sm leading-6 text-muted-foreground">I agree to the <a href="/terms" className="underline">Terms</a> and <a href="/privacy" className="underline">Privacy Policy</a>.</Label></div></>}
+            <AuthBotChallenge key={`${isLogin ? "login" : "signup"}-${captchaEpoch}`} action="auth_student" onTokenChange={setCaptchaToken} />
             <Button type="submit" className="w-full" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{isLogin ? "Sign In" : "Create Account"}</Button>
           </form>
 
@@ -393,7 +401,7 @@ const Auth = () => {
               Google verifies your email identity. ResKonnect then collects only the contact and student details needed for your services.
             </p>
           </>}
-          <button type="button" onClick={() => { setIsLogin((v) => !v); setError(null); }} className="mt-5 w-full text-center text-sm font-semibold text-primary hover:underline">{isLogin ? "New here? Create an account" : "Already have an account? Sign in"}</button>
+          <button type="button" onClick={() => { setIsLogin((v) => !v); setError(null); setCaptchaToken(null); setCaptchaEpoch((epoch) => epoch + 1); }} className="mt-5 w-full text-center text-sm font-semibold text-primary hover:underline">{isLogin ? "New here? Create an account" : "Already have an account? Sign in"}</button>
         </CardContent></Card>
         <p className="mt-6 text-center text-xs text-muted-foreground">{BRAND.tagline}</p>
       </div>

@@ -14,6 +14,7 @@ import SEO from "@/components/SEO";
 import { BRAND } from "@/constants/brand";
 import { clearWeakPassword, rememberWeakPassword } from "@/lib/passwordSecurity";
 import { isNativeApp } from "@/lib/accountRouting";
+import AuthBotChallenge, { requireAuthCaptchaToken } from "@/components/auth/AuthBotChallenge";
 
 const ResidenceLogin = () => {
   const navigate = useNavigate();
@@ -24,6 +25,8 @@ const ResidenceLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(false);
   const [serviceUnavailable, setServiceUnavailable] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaEpoch, setCaptchaEpoch] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -54,12 +57,14 @@ const ResidenceLogin = () => {
     setIsLoading(true);
     try {
       const redirectTo = `${isNativeApp() ? "https://www.reskonnect.org" : window.location.origin}/auth?mode=password-reset&returnTo=${encodeURIComponent("/residence")}`;
-      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo });
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo, ...requireAuthCaptchaToken(captchaToken) });
       if (error) throw error;
       toast.success("If this email is registered, a secure reset link has been sent.");
     } catch (error) {
       toast.error(getAuthErrorMessage(error, "Could not send a password reset email."));
     } finally {
+      setCaptchaToken(null);
+      setCaptchaEpoch((epoch) => epoch + 1);
       setIsLoading(false);
     }
   };
@@ -73,6 +78,7 @@ const ResidenceLogin = () => {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
+        options: requireAuthCaptchaToken(captchaToken),
       });
       if (error) throw error;
       if (!data.user) throw new Error("Login failed");
@@ -103,6 +109,8 @@ const ResidenceLogin = () => {
       setServiceUnavailable(isTemporaryAuthServiceError(error));
       toast.error(getAuthErrorMessage(error, "Could not sign in to the residence portal"));
     } finally {
+      setCaptchaToken(null);
+      setCaptchaEpoch((epoch) => epoch + 1);
       setIsLoading(false);
     }
   };
@@ -148,6 +156,7 @@ const ResidenceLogin = () => {
                   </div>
                 </div>
 
+                <AuthBotChallenge key={`residence-login-${captchaEpoch}`} action="auth_residence" onTokenChange={setCaptchaToken} />
                 <Button type="submit" size="lg" className="w-full" disabled={isLoading || checkingSession}>
                   {(isLoading || checkingSession) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {checkingSession ? "Opening portal..." : isLoading ? "Signing in..." : "Open Residence Portal"}
