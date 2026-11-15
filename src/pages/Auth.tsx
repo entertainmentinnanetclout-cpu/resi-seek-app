@@ -187,7 +187,7 @@ const Auth = () => {
         if (loginError) throw loginError;
         if (loginData.user?.id && loginData.weakPassword) {
           rememberWeakPassword(loginData.user.id, loginData.weakPassword);
-          toast.warning("You are signed in. For your security, please replace this password when convenient.", { duration: 9000 });
+          toast.warning("Your password was flagged as weak or exposed. Update it promptly through Account Security; your saved applications are preserved.", { duration: 9000 });
         } else if (loginData.user?.id) {
           clearWeakPassword(loginData.user.id);
           toast.success("Welcome back!");
