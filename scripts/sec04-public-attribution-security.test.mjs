@@ -26,7 +26,7 @@ pass(budgets.includes("rk_guard_public_rpc_budget") &&
  budgets.includes("'global'"),
  "Per-minute, per-hour and global budgets use atomic conflict updates and 429 failures");
 pass(budgets.includes("md5(coalesce(auth.uid()::text") &&
- budgets.includes("Anonymous browser IDs are untrusted heuristics"),
+ /anonymous browser IDs are untrusted heuristics/i.test(budgets),
  "Authenticated quota uses auth.uid; anonymous session tokens explicitly treated as spoofable");
 pass(budgets.includes("rk-public-rpc-budget-prune") &&
  budgets.includes("interval '48 hours'"),
