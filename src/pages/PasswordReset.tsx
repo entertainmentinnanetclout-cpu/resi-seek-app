@@ -121,7 +121,7 @@ export default function PasswordReset() {
               <form onSubmit={updatePassword} className="space-y-4">
                 <div className="rounded-xl border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">
                   <KeyRound className="mr-1.5 inline h-4 w-4 text-primary" />
-                  Existing users are not forced out when leaked-password protection is enabled. This page lets you replace a flagged password safely.
+                  If ResKonnect flags your password as weak or exposed, replace it here. Your account, applications and accommodation progress stay intact.
                 </div>
                 <div className="space-y-2">
                   <Label>Email</Label>
@@ -130,7 +130,7 @@ export default function PasswordReset() {
                 <div className="space-y-2">
                   <Label htmlFor="new-password">New password</Label>
                   <Input id="new-password" type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
-                  <p className="text-[11px] text-muted-foreground">Use 8+ characters with uppercase, lowercase and a number. Supabase will also reject known leaked passwords.</p>
+                  <p className="text-[11px] text-muted-foreground">Use 8+ characters with uppercase, lowercase and a number. Choose a unique password; server-side breached-password checks will apply once enabled.</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-new-password">Confirm new password</Label>
