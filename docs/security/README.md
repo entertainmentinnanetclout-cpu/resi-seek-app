@@ -116,3 +116,7 @@ No production payment, login, document upload, database privileges or DNS settin
 - **No claim of full Supabase edge protection:** direct Supabase Auth/PostgREST calls bypass Vercel; SQL authorization and telemetry quota protections remain in place.
 - **SEC-10 remains pending in the hosted Auth service:** Supabase Pro eligibility verified, but the live advisor still reports breached-password protection off. The operator must toggle `Authentication → Sign In / Providers → Email → Prevent use of leaked passwords` in the Supabase dashboard.
 - The frontend code only improves password error handling and signup/reset guidance; it does **not** activate the hosted breached-password feature.
+
+## SEC-10 and SEC-12 follow-up — 15 November 2026
+- Supabase Security Advisor was rerun after the operator enabled leaked-password screening; the former `auth_leaked_password_protection` warning is no longer reported. This does not replace an interactive password-signup negative test.
+- [ResMap AI request-budget implementation and live verification](SEC12_RESMAP_AI_ABUSE_20261115.md): direct Supabase Edge calls for map intent and accommodation image AI must consume atomic service-only budgets with rotating-guest global caps. This is distinct from Vercel WAF and Supabase Auth's native rate limits.
