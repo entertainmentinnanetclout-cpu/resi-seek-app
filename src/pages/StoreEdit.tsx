@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Store, Upload, Image as ImageIcon, Loader2, ArrowLeft, Save } from "lucide-react";
 import { TUT_CAMPUSES } from "@/lib/campuses";
+import { PUBLIC_IMAGE_ACCEPT, publicImageUploadError } from "@/lib/storage/uploadPolicy";
 
 const StoreEdit = () => {
   const { user } = useAuth();
@@ -87,7 +88,8 @@ const StoreEdit = () => {
   const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.size > 2 * 1024 * 1024) return toast.error("Logo must be under 2MB");
+    const error = publicImageUploadError(f, 2);
+    if (error) return toast.error(error);
     setLogoFile(f);
     setLogoPreview(URL.createObjectURL(f));
   };
@@ -95,7 +97,8 @@ const StoreEdit = () => {
   const handleBanner = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.size > 5 * 1024 * 1024) return toast.error("Banner must be under 5MB");
+    const error = publicImageUploadError(f, 5);
+    if (error) return toast.error(error);
     setBannerFile(f);
     setBannerPreview(URL.createObjectURL(f));
   };
@@ -170,7 +173,7 @@ const StoreEdit = () => {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label>Logo</Label>
-                <input type="file" ref={logoInputRef} onChange={handleLogo} accept="image/*" className="hidden" />
+                <input type="file" ref={logoInputRef} onChange={handleLogo} accept={PUBLIC_IMAGE_ACCEPT} className="hidden" />
                 <div className="flex items-center gap-4">
                   {logoPreview ? (
                     <img src={logoPreview} alt="Logo" className="w-20 h-20 rounded-full object-cover border" />
@@ -185,7 +188,7 @@ const StoreEdit = () => {
 
               <div className="space-y-2">
                 <Label>Banner</Label>
-                <input type="file" ref={bannerInputRef} onChange={handleBanner} accept="image/*" className="hidden" />
+                <input type="file" ref={bannerInputRef} onChange={handleBanner} accept={PUBLIC_IMAGE_ACCEPT} className="hidden" />
                 {bannerPreview ? (
                   <div className="w-full h-32 rounded-lg bg-cover bg-center border cursor-pointer" style={{ backgroundImage: `url(${bannerPreview})` }} onClick={() => bannerInputRef.current?.click()} />
                 ) : (
