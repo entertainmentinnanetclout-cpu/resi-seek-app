@@ -1,7 +1,7 @@
 {
   "project_id": "mefjzkhobkltlbmhusdh",
-  "captured_date": "2026-11-14",
-  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles",
+  "captured_date": "2026-11-15",
+  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles; 15 Nov verified service-only ResMap atomic AI budget function after scoped live migration",
   "public_relations": [
     "Bookings",
     "Users",
@@ -5470,6 +5470,17 @@
         "p_contact_id",
         "p_key",
         "p_purpose"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "rk_consume_ai_budget",
+      "args": [
+        "p_surface",
+        "p_subject",
+        "p_verified_user"
       ],
       "service_role": true,
       "authenticated": false,
