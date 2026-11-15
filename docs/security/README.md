@@ -99,3 +99,11 @@ No production payment, login, document upload, database privileges or DNS settin
 - Supabase authenticated-executable privileged-function Advisor count **218 → 206**; anonymous-executable count remains **24**. **SEC-04 and SEC-05 stay open** for per-function review.
 - Actual role-negative tests, one staff-MFA positive test and owner-scoped tour test passed; known AdminOS cron workers still run under postgres.
 - Existing SEC-03/06 roles and projection protections remain in place. All remaining privileged functions require individual risk review rather than broad grant removal.
+
+
+## Public RPC / visitor-journey abuse controls — SEC-04 (15 November 2026)
+- [Six hardened guest telemetry/referral RPCs, private request budgets, attribution session ownership and live tests](SEC04_PUBLIC_ATTRIBUTION_TELEMETRY_HARDENING_20261115.md)
+- Browser compatibility preserved for the original referral click, recruiter redirect, Luna attribution and demand, virtual-tour events and Android diagnostics. Public functions intentionally retain their original signatures and public EXECUTE rights.
+- Atomic per-actor minute/hour budget counters plus high-ceiling global safety caps and 48-hour private counter cleanup.
+- Anonymous identifiers can be changed by clients: these are **abuse heuristics, not authenticated identities**. Trusted IP/edge network abuse controls remain a separate priority.
+- Rolled-back live role tests confirmed legitimate events, throttled floods, oversized payload rejection and non-owner attribution changes denied. No customer tracking records were written by tests.
