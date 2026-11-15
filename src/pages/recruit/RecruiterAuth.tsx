@@ -20,7 +20,10 @@ const loginSchema = z.object({ email: z.string().email("Invalid email address"),
 const signupSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Include an uppercase letter")
+    .regex(/[a-z]/, "Include a lowercase letter")
+    .regex(/[0-9]/, "Include a number"),
   confirmPassword: z.string(),
   phoneNumber: z.string().regex(/^(\+27|0)[6-8][0-9]{8}$/, "Invalid SA phone number")
 }).refine((data) => data.password === data.confirmPassword, { message: "Passwords don't match", path: ["confirmPassword"] });
@@ -119,7 +122,7 @@ export default function RecruiterAuth() {
         setIsLogin(true);
       }
     } catch (error: any) {
-      const message = error instanceof z.ZodError ? error.issues[0].message : error.message || "An unexpected error occurred.";
+      const message = error instanceof z.ZodError ? error.issues[0].message : getAuthErrorMessage(error);
       setError(message);
       toast.error(message);
     } finally {
