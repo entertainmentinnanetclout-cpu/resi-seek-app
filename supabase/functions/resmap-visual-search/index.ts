@@ -37,6 +37,17 @@ serve(async(req)=>{
   if((usage.count||0)>=limit)return json({error:`Visual search limit reached for today (${limit}). This keeps AI costs focused on useful searches.`},429);
   if(!OPENAI_API_KEY)return json({error:"Dimpho visual search is temporarily unavailable"},503);
 
+  // Server-authoritative, transactional quotas precede every paid AI request.
+  // Guest IDs are not trusted identities; global ceilings bound rotation abuse.
+  const budget=await service.rpc("rk_consume_ai_budget",{
+    p_surface:"visual_search",p_subject:userId?`user:${userId}`:`guest:${visitor}`,p_verified_user:Boolean(userId)
+  });
+  if(budget.error)return json({
+    error:budget.error.code==="PT429"
+      ?"Visual search limit reached. Try again later."
+      :"Visual search is temporarily unavailable."
+  },budget.error.code==="PT429"?429:503);
+
   const prompt=`Analyze this accommodation/interior reference image for student-housing discovery. Do not identify people. Return ONLY JSON with this exact shape:\n{"style_tags":string[],"room_types":string[],"amenities":string[],"features":string[],"summary":string}.\nUse only visible housing characteristics. Allowed examples: modern, minimalist, bright, furnished, compact, studio, single room, sharing room, private bathroom, desk, wardrobe, kitchen, balcony, parking, wifi-ready, natural light. Keep each array to max 8 short lowercase tags. Never infer safety, price, neighbourhood, funding, race, gender or location from the image.`;
   const response=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${OPENAI_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({model:MODEL,input:[{role:"user",content:[{type:"input_text",text:prompt},{type:"input_image",image_url:image}]}],max_output_tokens:350})});
   const data=await response.json().catch(()=>({}));
