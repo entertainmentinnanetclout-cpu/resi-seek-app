@@ -1,0 +1,113 @@
+{
+  "verified_date": "2026-11-15",
+  "intent": "SEC-12 trusted Vercel network edge and preparation for Supabase Auth leaked-password screening",
+  "projects": [
+    {
+      "name": "reskonnect-hub",
+      "project_id": "prj_tjqfZtlukq3wc6k4wQGImzDDxSUf",
+      "team_id": "team_nirVWjVsRKTYYTpMkLrEkVtF",
+      "hostnames": [
+        "www.reskonnect.org",
+        "reskonnect.org",
+        "reskonnect.co.za"
+      ],
+      "active_version": 4,
+      "firewall_enabled": true,
+      "rules": [
+        {
+          "id": "rule_sec_12_res_konnect_public_api_rate_budget_BXFhP9",
+          "name": "SEC-12 ResKonnect public API rate budget",
+          "active": true,
+          "valid": true,
+          "action": "rate_limit",
+          "paths": [
+            "/api/",
+            "/sitemaps/",
+            "/sitemap.xml"
+          ],
+          "algo": "fixed_window",
+          "limit": 240,
+          "window_seconds": 60,
+          "keys": [
+            "ip"
+          ],
+          "over_limit": "rate_limit"
+        },
+        {
+          "id": "rule_sec_32_deny_secret_file_and_legacy_cms_probes_28kAyp",
+          "name": "SEC-32 Deny secret-file and legacy CMS probes",
+          "active": true,
+          "valid": true,
+          "action": "deny",
+          "paths": [
+            "/.git",
+            "/.env",
+            "/.svn",
+            "/wp-admin",
+            "/wp-login.php",
+            "/xmlrpc.php",
+            "/vendor/phpunit"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "resi-seek-app",
+      "project_id": "prj_3is5C6kF6YsO1zc3mQUmUWwFUyq2",
+      "team_id": "team_nirVWjVsRKTYYTpMkLrEkVtF",
+      "hostnames": [
+        "resi-seek-app.vercel.app"
+      ],
+      "active_version": 2,
+      "firewall_enabled": true,
+      "rules": [
+        {
+          "id": "rule_sec_12_res_konnect_public_api_rate_budget_4ydJDo",
+          "name": "SEC-12 ResKonnect public API rate budget",
+          "active": true,
+          "valid": true,
+          "action": "rate_limit",
+          "paths": [
+            "/api/",
+            "/sitemaps/",
+            "/sitemap.xml"
+          ],
+          "algo": "fixed_window",
+          "limit": 240,
+          "window_seconds": 60,
+          "keys": [
+            "ip"
+          ],
+          "over_limit": "rate_limit"
+        },
+        {
+          "id": "rule_sec_32_deny_secret_file_and_legacy_cms_probes_FoAEex",
+          "name": "SEC-32 Deny secret-file and legacy CMS probes",
+          "active": true,
+          "valid": true,
+          "action": "deny",
+          "paths": [
+            "/.git",
+            "/.env",
+            "/.svn",
+            "/wp-admin",
+            "/wp-login.php",
+            "/xmlrpc.php",
+            "/vendor/phpunit"
+          ]
+        }
+      ]
+    }
+  ],
+  "scope_limitations": "Supabase direct requests bypass Vercel Firewall; database-side RPC request budgets and RLS remain independently necessary. This JSON is a verified deployment receipt, not a firewall-as-code reconciler.",
+  "rollback": "For an unexpected false positive, remove or disable the relevant custom Vercel rule by its ID in Firewall; do not disable the entire project firewall. Audit historical configuration versions in Vercel.",
+  "supabase": {
+    "project_id": "mefjzkhobkltlbmhusdh",
+    "plan": "pro",
+    "leaked_password_protection": "disabled_pending_dashboard_enable",
+    "dashboard_change_required": true,
+    "dashboard_url": "https://supabase.com/dashboard/project/mefjzkhobkltlbmhusdh/auth/providers?provider=Email",
+    "source": "Live Supabase Security Advisor still reports auth_leaked_password_protection; connector cannot edit hosted Auth settings.",
+    "user_action": "Authentication > Sign In / Providers > Email > Prevent use of leaked passwords > Save. Re-run Security Advisor after changing."
+  }
+}
