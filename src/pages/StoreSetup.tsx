@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Store, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
 import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import { TUT_CAMPUSES } from "@/lib/campuses";
+import { PUBLIC_IMAGE_ACCEPT, publicImageUploadError } from "@/lib/storage/uploadPolicy";
 
 const StoreSetup = () => {
   const shouldBlock = useAdminRedirect();
@@ -42,8 +43,9 @@ const StoreSetup = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Logo must be less than 2MB");
+    const error = publicImageUploadError(file, 2);
+    if (error) {
+      toast.error(error);
       return;
     }
 
@@ -55,8 +57,9 @@ const StoreSetup = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Banner must be less than 5MB");
+    const error = publicImageUploadError(file, 5);
+    if (error) {
+      toast.error(error);
       return;
     }
 
@@ -183,7 +186,7 @@ const StoreSetup = () => {
                     type="file"
                     ref={logoInputRef}
                     onChange={handleLogoSelect}
-                    accept="image/*"
+                    accept={PUBLIC_IMAGE_ACCEPT}
                     className="hidden"
                   />
                   <div className="flex items-center gap-4">
@@ -217,7 +220,7 @@ const StoreSetup = () => {
                     type="file"
                     ref={bannerInputRef}
                     onChange={handleBannerSelect}
-                    accept="image/*"
+                    accept={PUBLIC_IMAGE_ACCEPT}
                     className="hidden"
                   />
                   {bannerPreview ? (
