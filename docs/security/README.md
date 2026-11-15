@@ -130,3 +130,8 @@ No production payment, login, document upload, database privileges or DNS settin
 ## SEC-07/08 private profile and store-image RLS repair (15 November 2026)
 - [Verified private-profile anonymous metadata exposure and targeted store-image owner-folder remediation](SEC07_SEC08_STORAGE_OWNER_ISOLATION_20261115.md).
 - This release removes anonymous `SELECT` for the private `user-profiles` bucket and replaces two permissive store-assets upload paths with a single owner/admin check. No existing objects are deleted. Bucket MIME/size enforcement remains a separate staged review.
+
+
+## SEC-07 storage MIME and size caps (15 November 2026)
+- [Twelve per-bucket server-side allowlists and upload-size caps](SEC07_STORAGE_BUCKET_MIME_SIZE_20261115.md).
+- All historical stored files preserved; new HTML, SVG and generic octet-stream MIME uploads disallowed. Seller verification and shop images now validate in the browser, and seller onboarding stops on failed KYC uploads. This is not a substitute for actual content sniffing and malware scanning.
