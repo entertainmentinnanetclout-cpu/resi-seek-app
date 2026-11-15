@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { TUT_CAMPUSES } from "@/lib/campuses";
+import { PUBLIC_IMAGE_ACCEPT, SELLER_VERIFICATION_ACCEPT, publicImageUploadError, sellerVerificationUploadError } from "@/lib/storage/uploadPolicy";
 import { Loader2, Upload, ShieldCheck, ChevronRight, ChevronLeft, FileCheck2, Store as StoreIcon } from "lucide-react";
 
 const TOTAL_STEPS = 4;
@@ -70,11 +71,15 @@ export default function SellerOnboarding() {
   }, [user]);
 
   const upload = async (file: File, folder: string, bucket: string) => {
-    if (!user) return null;
+    if (!user) throw new Error("Sign in required before uploading files");
+    const validationError = bucket === "seller-kyc"
+      ? sellerVerificationUploadError(file)
+      : publicImageUploadError(file, 10);
+    if (validationError) throw new Error(validationError);
     const ext = file.name.split(".").pop();
     const path = `${user.id}/${folder}_${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
-    if (error) { console.error(error); return null; }
+    if (error) throw error;
     if (bucket === "store-assets") {
       return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
     }
@@ -205,7 +210,7 @@ export default function SellerOnboarding() {
                   </div>
                   <div className="space-y-2">
                     <Label>Logo</Label>
-                    <input ref={logoRef} type="file" accept="image/*" hidden onChange={(e) => setLogoFile(e.target.files?.[0] || null)} />
+                    <input ref={logoRef} type="file" accept={PUBLIC_IMAGE_ACCEPT} hidden onChange={(e) => setLogoFile(e.target.files?.[0] || null)} />
                     <Button type="button" variant="outline" onClick={() => logoRef.current?.click()}><Upload className="w-4 h-4 mr-2" />{logoFile ? logoFile.name : (existingStore?.store_logo_url ? "Replace logo" : "Upload logo")}</Button>
                   </div>
                   <div className="grid sm:grid-cols-2 gap-3">
@@ -269,7 +274,7 @@ export default function SellerOnboarding() {
                   <div className="space-y-2">
                     <Label>Verification document *</Label>
                     <p className="text-xs text-muted-foreground">Upload a clear photo of your SA ID, driver's licence, or student card.</p>
-                    <input ref={docRef} type="file" accept="image/*,application/pdf" hidden onChange={(e) => setDocFile(e.target.files?.[0] || null)} />
+                    <input ref={docRef} type="file" accept={SELLER_VERIFICATION_ACCEPT} hidden onChange={(e) => setDocFile(e.target.files?.[0] || null)} />
                     <Button type="button" variant="outline" onClick={() => docRef.current?.click()}>
                       <FileCheck2 className="w-4 h-4 mr-2" />{docFile ? docFile.name : (existingStore?.verification_doc_url ? "Replace document" : "Upload document")}
                     </Button>
