@@ -219,6 +219,8 @@ Deno.serve(async(req:Request)=>{
    return res({items,eligible:items.filter(x=>x.ok).length,requested:ids.length});
   }
   if(action==="bulk_send"){
+   // A stale browser must refresh instead of processing five PDFs in one CPU-limited request.
+   if(ids.length>1)return res({error:"Email Dock has been updated. Refresh the page to use safe one-at-a-time sending."},409);
    if(input.confirmed!==true||!validUuid(input.batch_id)||!Array.isArray(input.requests)||input.requests.length!==ids.length||
       input.requests.some((r:any,i:number)=>r?.id!==ids[i]||!validUuid(r.request_id)))
     return res({error:"Review and explicitly approve each batch of up to five emails"},400);
