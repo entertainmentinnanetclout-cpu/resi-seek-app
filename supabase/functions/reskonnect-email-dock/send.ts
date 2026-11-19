@@ -78,6 +78,16 @@ export async function makePreviewPdf(s:EmailSession,ctx:CaseContext,key:Template
 export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,note:string,requestId:string,batchId:string|null){
  if(!validEmail(ctx.email)||!ctx.contactAllowed)throw Error("Contact details or permission is missing");
  const selected=assertTemplateIsFactual(ctx,key);
+ // Idempotency is checked before quotas and Gmail. A replay must never resend.
+ const {data:existing,error:lookupErr}=await s.db.from("reskonnect_outbound_emails")
+  .select("id,delivery_status,provider_message_id")
+  .eq("actor_user_id",s.actor).eq("idempotency_key",requestId).maybeSingle();
+ if(lookupErr)throw Error("Cannot safely verify the email request history");
+ if(existing){
+  if(existing.delivery_status==="sent")return {sent:true,recovered:true,email_id:existing.id,record_id:ctx.id};
+  if(existing.delivery_status==="failed")return {sent:false,status:409,error:"This request previously failed. Review the delivery history before starting a new attempt."};
+  return {sent:false,status:202,uncertain:true,error:"Delivery is still being verified. Check Gmail Sent and the Email Dock history before retrying."};
+ }
  const {count,error:countErr}=await s.db.from("reskonnect_outbound_emails")
   .select("id",{head:true,count:"exact"}).eq("actor_user_id",s.actor)
   .gte("created_at",new Date(Date.now()-86400000).toISOString());
@@ -86,9 +96,9 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
  const {data:recent,error:recentErr}=await s.db.from("reskonnect_outbound_emails")
   .select("id").eq("actor_user_id",s.actor).eq("target_kind",ctx.kind).eq("target_id",ctx.id)
   .eq("template_key",selected).in("delivery_status",["sending","sent","unknown"])
-  .gte("created_at",new Date(Date.now()-60000).toISOString()).limit(1);
+  .gte("created_at",new Date(Date.now()-86400000).toISOString()).limit(1);
  if(recentErr)throw Error("Cannot verify duplicate email attempts");
- if(recent?.length)return {sent:false,error:"A recent email with the same purpose exists; check Sent and history",status:409};
+ if(recent?.length)return {sent:false,error:"An existing email attempt has this purpose; check Gmail Sent and history before attempting another send",status:409,uncertain:true};
  const packet=await previewPacket(s,ctx,key,note);
  const {data:log,error:logErr}=await s.db.from("reskonnect_outbound_emails").insert({
   actor_user_id:s.actor,target_kind:ctx.kind,target_id:ctx.id,template_key:selected,
@@ -97,7 +107,7 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
   context_snapshot:{recorded_status:ctx.status,document_stage:ctx.documents.stage,
    missing_count:ctx.documents.missing.length,template_key:selected}
  }).select("id").single();
- if(logErr)return {sent:false,error:logErr.code==="23505"?"This send request has already been processed":"Could not record email request",status:409};
+ if(logErr)return {sent:false,error:logErr.code==="23505"?"An email with this request ID already exists; check delivery status before retrying":"Could not record email request",status:409,uncertain:logErr.code==="23505"};
  const mark=async(status:"failed"|"unknown",code:string)=>{await s.db.from("reskonnect_outbound_emails").update({delivery_status:status,failure_code:code}).eq("id",log.id);};
  let sender:{token:string;fromEmail:string};
  try{sender=await bearerToken(s);}catch(e){await mark("failed","google_oauth");return {sent:false,error:e instanceof Error?e.message:"Gmail authorization unavailable",status:409};}
@@ -118,12 +128,20 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
   });
  }catch{await mark("unknown","gmail_delivery_uncertain");return {sent:false,error:"Delivery outcome unknown. Check Gmail Sent Mail before retrying.",status:502};}
  if(!sent.ok){await mark("failed","gmail_http_"+sent.status);return {sent:false,error:sent.status===401||sent.status===403?"Gmail rejected authorization; reconnect Gmail":"Gmail rejected message",status:502};}
- const result=await sent.json();
- const {error:logSaveErr}=await s.db.from("reskonnect_outbound_emails").update({
-  delivery_status:"sent",provider_message_id:result.id||null,pdf_attached:true,
-  sent_at:new Date().toISOString(),failure_code:null
- }).eq("id",log.id);
- if(logSaveErr)console.error("Gmail accepted message but audit update failed",logSaveErr.message);
- await s.db.from("landlord_gmail_connections").update({last_used_at:new Date().toISOString()}).eq("user_id",s.actor);
- return {sent:true,record_id:ctx.id,attachment,template_key:selected,email_id:log.id,recipient_hint:recipientHint(s,ctx.email)};
+ // HTTP 2xx from Gmail is the delivery handoff, even if its response body or
+ // later optional bookkeeping fails. Never report a definitive "not sent" here.
+ let providerId:string|null=null;
+ try{const receipt=await sent.json();providerId=typeof receipt?.id==="string"?receipt.id:null;}
+ catch(e){console.warn("Gmail accepted the message but its receipt was unreadable",e);}
+ try{
+  const {error:logSaveErr}=await s.db.from("reskonnect_outbound_emails").update({
+   delivery_status:"sent",provider_message_id:providerId,pdf_attached:true,
+   sent_at:new Date().toISOString(),failure_code:null
+  }).eq("id",log.id);
+  if(logSaveErr)console.error("Gmail accepted message but audit update failed",logSaveErr.message);
+ }catch(e){console.error("Gmail accepted message but audit persistence threw",e);}
+ // Do not wait for a nonessential last-used timestamp before acknowledging Gmail.
+ try{await s.db.from("landlord_gmail_connections").update({last_used_at:new Date().toISOString()}).eq("user_id",s.actor);}
+ catch(e){console.warn("Gmail connection timestamp update failed",e);}
+ return {sent:true,record_id:ctx.id,attachment,template_key:selected,email_id:log.id,recipient_hint:recipientHint(s,ctx.email),audit_confirmed:!!providerId};
 }
