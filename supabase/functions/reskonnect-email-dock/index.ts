@@ -73,6 +73,22 @@ Deno.serve(async(req:Request)=>{
   try{return res(await contactActivity(s,input));}
   catch(e){console.error("Contact activity load failed",e instanceof Error?e.message:"unknown");return res({error:"Contact activity temporarily unavailable. Retry shortly."},503);}
  }
+ // A lightweight, read-only outcome lookup lets the dock reconcile a lost response
+ // without sending the same message again. Only the authenticated sender can see it.
+ if(action==="send_status"){
+  if(!validUuid(input.request_id))return res({error:"A valid email request ID is required"},400);
+  const {data:attempt,error:lookupError}=await db.from("reskonnect_outbound_emails")
+   .select("delivery_status,provider_message_id,failure_code,created_at")
+   .eq("actor_user_id",actor).eq("idempotency_key",input.request_id).maybeSingle();
+  if(lookupError)return res({error:"Email delivery status is temporarily unavailable"},503);
+  if(!attempt)return res({found:false,delivery_status:"not_found",sent:false});
+  const status=String(attempt.delivery_status||"unknown");
+  return res({found:true,delivery_status:status,sent:status==="sent",
+   confirmed:status==="sent"&&!!attempt.provider_message_id,
+   uncertain:status==="sending"||status==="unknown",
+   failure_code:status==="failed"?attempt.failure_code:null,
+   created_at:attempt.created_at});
+ }
  if(action==="history"){
   const {data,error}=await db.from("reskonnect_outbound_emails").select("id,target_kind,target_id,template_key,recipient_email,subject,delivery_status,created_at,sent_at,failure_code,pdf_attached,batch_id")
    .eq("actor_user_id",actor).order("created_at",{ascending:false}).limit(100);
@@ -203,6 +219,8 @@ Deno.serve(async(req:Request)=>{
    return res({items,eligible:items.filter(x=>x.ok).length,requested:ids.length});
   }
   if(action==="bulk_send"){
+   // A stale browser must refresh instead of processing five PDFs in one CPU-limited request.
+   if(ids.length>1)return res({error:"Email Dock has been updated. Refresh the page to use safe one-at-a-time sending."},409);
    if(input.confirmed!==true||!validUuid(input.batch_id)||!Array.isArray(input.requests)||input.requests.length!==ids.length||
       input.requests.some((r:any,i:number)=>r?.id!==ids[i]||!validUuid(r.request_id)))
     return res({error:"Review and explicitly approve each batch of up to five emails"},400);
