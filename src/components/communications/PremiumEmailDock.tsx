@@ -85,6 +85,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [connection,setConnection]=useState<{connected:boolean;email:string|null}|null>(null);
  const [connectedError,setConnectedError]=useState("");
  const [busy,setBusy]=useState<string|null>(null);
+ const [pendingSend,setPendingSend]=useState<{requestId:string;kind:Kind;targetId:string}|null>(null);
  const [loading,setLoading]=useState(false);
  const [queueError,setQueueError]=useState("");
  const loadedQueueKeyRef=useRef("");
@@ -312,20 +313,54 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    element.click();window.setTimeout(()=>URL.revokeObjectURL(url),30_000);
   }catch(e){showError(e);}finally{setBusy(null);}
  };
+ const reconcileSend=async(requestId:string)=>{
+  try{return await premium({action:"send_status",request_id:requestId});}
+  catch(e){console.warn("Email delivery reconciliation unavailable",e);return null;}
+ };
+ const finishSent=async()=>{
+  setPendingSend(null);
+  resetPreview();setNote("");
+  await Promise.all([loadHistory(),loadItems(),loadConnection()]);
+  setActivityRevision(v=>v+1);
+ };
+ const checkPendingSend=async()=>{
+  if(!pendingSend)return;
+  setBusy("send-status");
+  try{
+   const status=await premium({action:"send_status",request_id:pendingSend.requestId});
+   if(status?.sent){toast.success("Gmail delivery confirmed from the email audit");await finishSent();}
+   else if(status?.delivery_status==="failed"){
+    setPendingSend(null);toast.error("That attempt failed. Check Gmail Sent before creating another request.");
+   }else toast.warning("Delivery is still unconfirmed. Check Gmail Sent and history; do not resend yet.");
+  }catch(e){showError(e);}finally{setBusy(null);}
+ };
  const sendOne=async()=>{
   if(!preview||!selected||!approved||!connection?.connected)return;
+  if(pendingSend?.targetId===selected&&pendingSend.kind===kind)return toast.warning("Resolve the previous email attempt before resending");
   if(needsReview&&!reviewedNow)return toast.error("Review this student’s documents before sending");
   if(lastPreviewRef.current!==selected+":"+template+":"+note)return toast.error("Refresh your preview before sending");
   if(!window.confirm("Send this official ResKonnect email and branded PDF using your connected Gmail?"))return;
+  const requestId=crypto.randomUUID();
   setBusy("send");
   try{
    const result=await premium({action:"send",kind,target_id:selected,template_key:template,
-    message:note,confirmed:true,request_id:crypto.randomUUID(),expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage,preview_hash:preview.preview_hash,document_review_id:selectedReceipt?.id||null});
+    message:note,confirmed:true,request_id:requestId,expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage,preview_hash:preview.preview_hash,document_review_id:selectedReceipt?.id||null});
+   if(result?.uncertain){
+    setPendingSend({requestId,kind,targetId:selected});
+    toast.warning("Email delivery is not confirmed. Check status or Gmail Sent before attempting another send.");
+    return;
+   }
    if(!result.sent)throw Error(result.error||"Gmail did not accept the message");
    toast.success("Gmail accepted your email and branded PDF attachment");
-   resetPreview();setNote("");
-   await Promise.all([loadHistory(),loadItems(),loadConnection()]);setActivityRevision(v=>v+1);
-  }catch(e){showError(e);}finally{setBusy(null);}
+   await finishSent();
+  }catch(e){
+   const status=await reconcileSend(requestId);
+   if(status?.sent){toast.success("Gmail accepted this email. Recovered its delivery confirmation.");await finishSent();}
+   else if(status?.uncertain){
+    setPendingSend({requestId,kind,targetId:selected});
+    toast.warning("The connection ended before delivery could be confirmed. Do not resend until checking Gmail Sent.");
+   }else showError(e);
+  }finally{setBusy(null);}
  };
  const previewBulk=async()=>{
   const ids=[...checked];
@@ -343,21 +378,39 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   const ids=bulkPreview.filter(x=>x.ok).map(x=>x.id);
   if(!ids.length)return toast.error("No eligible case emails");
   if(!window.confirm("Send "+ids.length+" individualized Gmail messages, each with its own ResKonnect PDF?"))return;
-  setBusy("bulk-send");let ok=0,failed=0;
+  // A Supabase Edge Function has a per-request CPU limit. Generate and send
+  // only one PDF per invocation, while retaining the audited batch ID.
+  setBusy("bulk-send");let ok=0,failed=0,unconfirmed=0;
   const batchId=crypto.randomUUID();
   try{
-   for(let i=0;i<ids.length;i+=5){
-    const slice=ids.slice(i,i+5);
-    const requests=slice.map(id=>{const info=bulkPreview.find(p=>p.id===id);return {id,request_id:crypto.randomUUID(),expected_status:info?.status,expected_document_stage:info?.document_signal?.stage,preview_hash:info?.preview_hash,document_review_id:reviewReceiptFor(id)?.id||null};});
-    const response=await premium({action:"bulk_send",kind,ids:slice,requests,confirmed:true,
-     batch_id:batchId,template_key:"smart",message:note});
-    ok+=response.succeeded||0;failed+=response.failed||0;
-    setBatchSummary({ok,failed});
+   for(const id of ids){
+    const info=bulkPreview.find(p=>p.id===id);
+    const requestId=crypto.randomUUID();
+    const request={id,request_id:requestId,expected_status:info?.status,
+     expected_document_stage:info?.document_signal?.stage,preview_hash:info?.preview_hash,
+     document_review_id:reviewReceiptFor(id)?.id||null};
+    try{
+     const response=await premium({action:"bulk_send",kind,ids:[id],requests:[request],confirmed:true,
+      batch_id:batchId,template_key:"smart",message:note});
+     const outcome=response.results?.[0];
+     if(outcome?.sent)ok++;
+     else if(outcome?.uncertain)unconfirmed++;
+     else failed++;
+    }catch(e){
+     // The Edge Function may have accepted the email before losing its response.
+     const status=await reconcileSend(requestId);
+     if(status?.sent)ok++;
+     else if(status?.uncertain||!status)unconfirmed++;
+     else failed++;
+    }
+    setBatchSummary({ok,failed:failed+unconfirmed});
    }
-   toast.success(ok+" messages accepted by Gmail"+(failed?", "+failed+" not sent":""));
+   if(unconfirmed)toast.warning(ok+" accepted, "+unconfirmed+" unconfirmed. Check Gmail Sent and email history; do not repeat the entire batch.");
+   else if(failed)toast.warning(ok+" accepted by Gmail, "+failed+" failed. Review history before retrying.");
+   else toast.success(ok+" messages accepted by Gmail");
    setBulkPreview([]);setBulkApproval(false);setChecked(new Set());
    await Promise.all([loadHistory(),loadItems()]);setActivityRevision(v=>v+1);
-  }catch(e){showError(e);setBatchSummary({ok,failed});}
+  }catch(e){showError(e);setBatchSummary({ok,failed:failed+unconfirmed});}
   finally{setBusy(null);}
  };
  const previewStatuses=async()=>{
@@ -688,7 +741,13 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
          <Checkbox checked={approved} onCheckedChange={v=>setApproved(v===true)}/>
          <span>I reviewed the recipient, current status, decision wording and PDF attachment. I authorize this service email.</span>
         </label>
-        <Button className="w-full" disabled={!approved||!connection?.connected||!!busy||!reviewedNow} onClick={()=>void sendOne()}>
+        {pendingSend?.targetId===selected&&pendingSend.kind===kind&&<div className="rounded-lg border border-amber-400/50 p-3 text-sm" role="alert">
+          Email delivery is not yet confirmed. Do not resend until you check Gmail Sent and the email audit.
+          <Button type="button" className="mt-2 w-full" variant="outline" disabled={!!busy} onClick={()=>void checkPendingSend()}>
+           {busy==="send-status"?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<RefreshCw className="mr-2 h-4 w-4"/>}Check delivery status
+          </Button>
+         </div>}
+         <Button className="w-full" disabled={!approved||!connection?.connected||!!busy||!reviewedNow||(pendingSend?.targetId===selected&&pendingSend.kind===kind)} onClick={()=>void sendOne()}>
          {busy==="send"?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<Send className="mr-2 h-4 w-4"/>}Send official email + PDF
         </Button>
        </div>:<div className="rounded-xl border border-dashed bg-card p-8 text-center">
