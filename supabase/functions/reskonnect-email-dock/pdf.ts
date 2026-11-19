@@ -47,14 +47,16 @@ export async function createBrandedPdf(details:LetterDetails):Promise<Uint8Array
  // renders with a complete vector wordmark when the network or image fails.
  try{
   const image=await fetch("https://www.reskonnect.org/favicon-transparent.png",{signal:AbortSignal.timeout(2500)});
-  if(image.ok && Number(image.headers.get("content-length")||0)<250000){
+  if(image.ok && Number(image.headers.get("content-length")||0)<40_000){
    const bytes=new Uint8Array(await image.arrayBuffer());
-   if(bytes.length<250000)logo=await pdf.embedPng(bytes);
+   if(bytes.length<40_000)logo=await pdf.embedPng(bytes);
   }
  }catch{/* Do not make document generation depend on a public image host. */}
- const realPhoto=await readPublishedPhotoBytes(details.residenceImageUrl);
+ // PDF-Lib PNG inflation and embedding of multi-MB residence images can exceed
+ // Supabase's per-request CPU quota. HTML mail retains the original image.
+ const realPhoto=await readPublishedPhotoBytes(details.residenceImageUrl,350_000);
  let photo:any=null;
- try{if(realPhoto)photo=realPhoto.mime==="image/png"?await pdf.embedPng(realPhoto.bytes):await pdf.embedJpg(realPhoto.bytes);}catch{/* Optional photo never prevents an official letter. */}
+ try{if(realPhoto?.mime==="image/jpeg")photo=await pdf.embedJpg(realPhoto.bytes);}catch{/* Optional photo never prevents an official letter. */}
  const pages:any[]=[];
  const drawFooter=(page:any,index:number)=>{
   page.drawRectangle({x:0,y:0,width:WIDTH,height:89,color:rgb(1,1,1)});
