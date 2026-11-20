@@ -435,9 +435,18 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   if(ids.length>10)return toast.error("Email batches are capped at 10 cases. Reduce your selection before previewing.");
   setBusy("bulk-preview");setBulkPreview([]);setBulkApproval(false);setBatchSummary(null);
   try{
-   const response=await premium({action:"bulk_preview",kind,ids,template_key:bulkTemplate,message:fixedBulkTriage?"":note});
-   setBulkPreview(response.items||[]);
-   toast.info((response.eligible||0)+" of "+ids.length+" cases eligible");
+   // Preview at most five case contexts per Edge invocation. Sending then uses
+   // one fresh PDF/Gmail request per recipient; increasing the operator batch
+   // from 5 to 10 must not double any single Edge worker's CPU load.
+   const results:BulkResult[]=[];
+   for(let offset=0;offset<ids.length;offset+=5){
+    const batch=ids.slice(offset,offset+5);
+    const response=await premium({action:"bulk_preview",kind,ids:batch,
+     template_key:bulkTemplate,message:fixedBulkTriage?"":note});
+    results.push(...(response.items||[]));
+   }
+   setBulkPreview(results);
+   toast.info(results.filter(x=>x.ok).length+" of "+ids.length+" cases eligible");
   }catch(e){showError(e);}finally{setBusy(null);}
  };
  const sendBulk=async()=>{
