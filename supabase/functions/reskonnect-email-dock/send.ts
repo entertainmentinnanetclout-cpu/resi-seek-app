@@ -144,12 +144,12 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
  if(!sent.ok){await mark("failed","gmail_http_"+sent.status);return {sent:false,error:sent.status===401||sent.status===403?"Gmail rejected authorization; reconnect Gmail":"Gmail rejected message",status:502};}
  // Gmail HTTP 2xx is accepted delivery handoff. Never turn that into an
  // explicit failure if a later receipt or optional audit write is unavailable.
- let providerId:string|null=null;
- try{const receipt=await sent.json();providerId=typeof receipt?.id==="string"?receipt.id:null;}
+ let providerId:string|null=null,providerThreadId:string|null=null;
+ try{const receipt=await sent.json();providerId=typeof receipt?.id==="string"?receipt.id:null;providerThreadId=typeof receipt?.threadId==="string"?receipt.threadId:null;}
  catch(e){console.warn("Gmail accepted the message but its receipt was unreadable",e);}
  try{
   const {error:logSaveErr}=await s.db.from("reskonnect_outbound_emails").update({
-   delivery_status:"sent",provider_message_id:providerId,pdf_attached:true,
+   delivery_status:"sent",provider_message_id:providerId,provider_thread_id:providerThreadId,pdf_attached:true,
    sent_at:new Date().toISOString(),failure_code:null
   }).eq("id",log.id);
   if(logSaveErr)console.error("Gmail accepted message but audit update failed",logSaveErr.message);
