@@ -658,6 +658,46 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       </p>
      </>}
     </nav>
+    {(kind==="reservation"||kind==="application")&&<section className="space-y-3 border-b bg-muted/10 px-4 py-4" aria-label="Verified delivery coverage by accommodation">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+       <div><p className="font-bold">Accommodation email coverage</p><p className="text-xs text-muted-foreground">Exact case-level lifetime audit, separate from today's email count and message templates.</p></div>
+       <div className="flex flex-wrap gap-2">
+        <Select value={selectedResidence||undefined} onValueChange={setSelectedResidence}>
+         <SelectTrigger aria-label="Choose residence for email coverage" className="w-[min(92vw,300px)]"><SelectValue placeholder="Select a residence"/></SelectTrigger>
+         <SelectContent>{residenceChoices.map(r=><SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
+        </Select>
+        <Button variant="outline" size="sm" disabled={!selectedResidence||coverageLoading} onClick={()=>void loadCoverage()}><RefreshCw className="mr-1 h-3.5 w-3.5"/>Reconcile</Button>
+       </div>
+      </div>
+      {coverageLoading&&<p className="text-xs text-muted-foreground">Checking exact case and Gmail audit totals…</p>}
+      {coverageError&&<p role="alert" className="text-xs text-amber-700">{coverageError}</p>}
+      {coverage&&<div className="space-y-2">
+       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+        {([
+         ["Cases",coverage.total_cases],
+         ["Emailed cases",coverage.emailed_cases],
+         ["Not yet emailed",coverage.unemailed_cases],
+         ["Sent messages",coverage.sent_messages],
+         ["Never attempted",coverage.never_attempted],
+         ["Uncertain only",coverage.uncertain_only],
+         ["Repeat sends",coverage.repeat_sent_cases]
+        ] as const).map(([title,num])=><div key={title} className="rounded-lg border bg-card p-2.5">
+         <p className="text-[10px] text-muted-foreground">{title}</p><p className="mt-1 text-xl font-black tabular-nums">{Number(num).toLocaleString("en-ZA")}</p>
+        </div>)}
+       </div>
+       <p className="text-xs text-muted-foreground">Coverage: <strong>{coverage.total_cases?(100*coverage.emailed_cases/coverage.total_cases).toFixed(2):"0.00"}%</strong>. Checked equation: {coverage.emailed_cases} emailed + {coverage.unemailed_cases} not confirmed = {coverage.total_cases} cases. {coverage.uncertain_attempts>0&&`${coverage.uncertain_attempts} uncertain attempt(s) require investigation, not automatic resending.`}</p>
+       {coverage.never_attempted>0&&<div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="outline" onClick={()=>{
+         const available=new Set(items.filter(x=>x.can_email).map(x=>x.id));
+         const ids=coverage.never_attempted_case_ids.filter(id=>available.has(id)).slice(0,10);
+         if(!ids.length)return toast.warning("Load the remaining case pages before selecting untouched recipients.");
+         setChecked(new Set(ids));setBulkTemplate(mode==="admin"?"triage_received":"smart");setPane("bulk");setWorkspace("cases");
+         toast.info(ids.length+" never-contacted cases selected. Review the drafts before sending.");
+        }}>Select up to 10 never attempted</Button>
+        <span className="text-xs text-muted-foreground">Selects only never-attempted cases, excluding failed and uncertain delivery attempts.</span>
+       </div>}
+      </div>}
+     </section>}
     {workspace==="activity"?<ContactActivityDashboard mode={mode} invoke={premium} refreshKey={activityRevision}
      onOpenCase={(targetKind,id)=>{
       deepLinkedIdRef.current=id;setWorkspace("cases");setKind(targetKind);setSelected(id);setPane(targetKind==="application"||targetKind==="reservation"?"documents":"compose");resetPreview();setChecked(new Set());
@@ -680,7 +720,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
      <div className="flex items-center justify-between gap-2 border-b px-4 py-2">
       <p className="text-[11px] text-muted-foreground">{selectedCount} selected</p>
       <div className="flex gap-1">
-       <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={()=>setChecked(new Set(visible.filter(x=>x.can_email).slice(0,25).map(x=>x.id)))}>Select 25</Button>
+       <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={()=>setChecked(new Set(visible.filter(x=>x.can_email).slice(0,10).map(x=>x.id)))}>Select 10 email</Button>
+       <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={()=>setChecked(new Set(visible.filter(x=>x.can_email).slice(0,25).map(x=>x.id)))}>25 for status</Button>
        <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={()=>setChecked(new Set())}>Clear</Button>
        {selectedCount>0&&<Button size="sm" className="h-8 text-[11px]" onClick={()=>setPane("bulk")}>Bulk actions</Button>}
       </div>
@@ -839,7 +880,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       </TabsContent>
       <TabsContent value="bulk" className="m-0 space-y-4 px-4 pb-5">
        <div className="rounded-xl border bg-card p-4"><p className="flex items-center gap-2 font-semibold"><Users className="h-4 w-4 text-primary"/>Bulk communication</p>
-        <p className="mt-1 text-xs text-muted-foreground">{selectedCount} selected · individualized case context and PDF per recipient · five sends per batch</p>
+        <p className="mt-1 text-xs text-muted-foreground">{selectedCount} selected · individualized case context and PDF per recipient · maximum 10 sends per email batch</p>
         <p className="mt-1 text-xs font-semibold text-primary">One unified sending engine: select Smart correspondence or a fixed ResKonnect triage notice with MFA.</p>
         {mode==="admin"&&needsReview&&<div className="space-y-2 rounded-lg border p-3">
          <Label>Batch template</Label>
@@ -851,7 +892,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           </SelectContent></Select>
          {fixedBulkTriage&&<p className="text-xs text-amber-700">Fixed factual wording only. MFA-verified administrators may acknowledge a case before document review; this never approves accommodation or funding.</p>}
         </div>}
-        <Button className="mt-3 w-full" variant="secondary" onClick={()=>void previewBulk()} disabled={!selectedCount||!!busy}><FileCheck2 className="mr-2 h-4 w-4"/>Review selected messages</Button>
+        {selectedCount>10&&<p className="mt-2 text-xs font-semibold text-amber-700" role="alert">Choose no more than 10 for email. The 25-case selection is reserved for the separate status manager.</p>}
+        <Button className="mt-3 w-full" variant="secondary" onClick={()=>void previewBulk()} disabled={!selectedCount||selectedCount>10||!!busy}><FileCheck2 className="mr-2 h-4 w-4"/>Review selected messages</Button>
         {bulkPreview.length>0&&<div className="mt-3 space-y-2">{bulkPreview.map(messageCard)}
          {needsReview&&!fixedBulkTriage&&bulkPreview.some(x=>x.ok&&!reviewReceiptFor(x.id))&&<div className="rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-950">
           <p className="font-bold">Document review needed before bulk sending</p>
@@ -861,14 +903,14 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
          </div>}
          <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs">
           <Checkbox checked={bulkApproval} onCheckedChange={v=>setBulkApproval(v===true)}/>
-          <span>I reviewed these recipients and understand each will get an individualized Gmail email and PDF.</span>
+          <span>I reviewed these recipients and understand each will get an individualized Gmail email and PDF. Official correspondence can also record an eligible non-final case progression.</span>
          </label>
-         <Button className="w-full" disabled={!bulkApproval||!connection?.connected||!!busy||!bulkPreview.some(x=>x.ok)||(needsReview&&!fixedBulkTriage&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))} onClick={()=>void sendBulk()}>
+         <Button className="w-full" disabled={!bulkApproval||!connection?.connected||!!busy||bulkPreview.length>10||!bulkPreview.some(x=>x.ok)||(needsReview&&!fixedBulkTriage&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))} onClick={()=>void sendBulk()}>
           <Send className="mr-2 h-4 w-4"/>{busy==="bulk-send"?"Sending approved batches…":"Send reviewed emails"}
          </Button>
         </div>}
         {batchSummary&&<div className="mt-2 text-sm font-semibold" role="status">
-         {batchSummary.ok} accepted by Gmail · {batchSummary.failed} failed · {batchSummary.unconfirmed} unconfirmed
+         {batchSummary.ok} accepted by Gmail · {batchSummary.failed} failed · {batchSummary.unconfirmed} unconfirmed · {batchSummary.autoUpdated} auto-progressed
          {batchSummary.unconfirmed>0&&<p className="mt-1 text-xs font-normal text-amber-700 dark:text-amber-300">Do not resend unconfirmed messages. First check Gmail Sent and the audit history.</p>}
          {selectedCount>0&&<p className="mt-1 text-xs font-normal text-muted-foreground">{selectedCount} incomplete case(s) remain selected for review.</p>}
         </div>}
