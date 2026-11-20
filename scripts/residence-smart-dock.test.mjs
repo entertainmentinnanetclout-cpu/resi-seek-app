@@ -11,6 +11,7 @@ const ui=read("src/components/communications/PremiumEmailDock.tsx");
 test("Residence tabs scope the backend queue; switching application and reservation preserves accommodation",()=>{
  assert.match(api,/action==="residence_directory"/);
  assert.match(api,/residenceId&&!canView\(s,residenceId\)/);
+ assert.match(api,/if\(!residenceId\|\|c\.residenceId===residenceId\)/);
  assert.match(context,/q\.eq\("residence_id",options\.residenceId\)/);
  assert.match(ui,/residence_id:selectedResidence\|\|undefined,offset:0/);
  assert.match(ui,/residence_id:selectedResidence\|\|undefined,offset/);
