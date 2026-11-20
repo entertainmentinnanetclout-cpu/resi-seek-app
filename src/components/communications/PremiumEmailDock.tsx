@@ -367,6 +367,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  };
  const selectResidence=(id:string)=>{
   if(id===selectedResidence)return;
+  deepLinkedIdRef.current=null;
   setSelectedResidence(id);setSelected("");setCaseInfo(null);setChecked(new Set());setFilter("all");
   setSearch("");setCoverage(null);resetPreview();setWorkspace("cases");
   const next=new URLSearchParams(params);
