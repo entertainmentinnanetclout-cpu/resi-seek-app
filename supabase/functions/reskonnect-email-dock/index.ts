@@ -1,7 +1,7 @@
 import {createClient} from "npm:@supabase/supabase-js@2.86.2";
 import {KINDS,TEMPLATES,TEMPLATE_KEYS,APPLICATION_STATUSES,RESERVATION_STATUSES,
  smartTemplate,validateTemplate,type Kind,type TemplateKey} from "./correspondence.ts";
-import {type EmailSession,readCase,listCases,validUuid,permitted,publicCase} from "./context.ts";
+import {type EmailSession,readCase,listCases,validUuid,permitted,canView,publicCase} from "./context.ts";
 import {caseFingerprint} from "./case-queue.ts";
 import {previewPacket,makePreviewPdf,sendOne} from "./send.ts";
 import {whatsappClickToChat,whatsappMessage} from "./whatsapp.ts";
