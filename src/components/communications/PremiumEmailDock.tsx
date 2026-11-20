@@ -480,7 +480,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     }catch(e){
      // The Edge Function may have accepted the email before losing its response.
      const status=await reconcileSend(requestId);
-     if(status?.sent)ok++;
+     if(status?.sent){ok++;if(status.status_sync?.applied)autoUpdated++;}
      else if(status?.uncertain||(!status&&deliveryMayBeUncertain(e))){unconfirmed++;incompleteIds.push(id);}
      else {failed++;incompleteIds.push(id);failureReasons.push(e instanceof Error?e.message:"Email was not sent");}
     }
