@@ -138,7 +138,9 @@ export async function createBrandedPdf(details:LetterDetails):Promise<Uint8Array
  y-=23;
  page.drawText("Please sign in to your secure account for current information.",{x:42,y:y-5,size:9,font:regular,color:muted});
  pages.forEach((pg,index)=>drawFooter(pg,index+1));
- return new Uint8Array(await pdf.save({useObjectStreams:true}));
+ // Avoid CPU-heavy object-stream compression in the Edge runtime. The PDF
+ // remains an ordinary valid attachment, with full letterhead and photo when safe.
+ return new Uint8Array(await pdf.save({useObjectStreams:false}));
 }
 const encodeBase64=(text:string)=>base64(new TextEncoder().encode(text));
 const wrappedBase64=(base:string)=>base.match(/.{1,76}/g)?.join("\r\n")||"";

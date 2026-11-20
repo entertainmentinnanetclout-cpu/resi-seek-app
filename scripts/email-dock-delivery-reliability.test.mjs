@@ -26,6 +26,7 @@ test("PDF generation avoids CPU-expensive embedded residence PNGs and oversized 
  assert.match(pdf,/readPublishedPhotoBytes\(details\.residenceImageUrl,350_000\)/);
  assert.match(pdf,/realPhoto\?\.mime==="image\/jpeg"/);
  assert.doesNotMatch(pdf,/pdf\.embedPng\(realPhoto\.bytes\)/);
+ assert.match(pdf,/pdf\.save\(\{useObjectStreams:false\}\)/);
 });
 test("bulk Gmail sends use one PDF per Edge Function request",()=>{
  assert.match(dock,/for\(const id of ids\)/);
@@ -37,4 +38,21 @@ test("the UI can reconcile a lost response and blocks a second ambiguous send",(
  assert.match(dock,/checkPendingSend/);
  assert.match(dock,/status\?\.uncertain/);
  assert.match(dock,/pendingSend\?\.targetId===selected/);
+});
+test("local PDF and Gmail MIME preparation happen before the sending claim",()=>{
+ const preparation=send.indexOf("const packet=await previewPacket(s,ctx,key,note);",send.indexOf("export async function sendOne("));
+ const pdfMade=send.indexOf("pdf=await createBrandedPdf(",preparation);
+ const mimeMade=send.indexOf("raw=createGmailMime(",pdfMade);
+ const claim=send.indexOf('.insert({',mimeMade);
+ const gmailRequest=send.indexOf('fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send"',claim);
+ assert.ok(preparation>=0&&pdfMade>preparation&&mimeMade>pdfMade&&claim>mimeMade&&gmailRequest>claim,
+  "do not create an ambiguous sending row while building the PDF");
+ assert.match(send,/Could not generate the official PDF attachment; no email was sent/);
+ assert.match(send,/Gmail accepted message but audit update failed/);
+});
+test("single and bulk sends preserve uncertain delivery states and reveal genuine failures",()=>{
+ assert.match(dock,/class EmailDockRequestError extends Error/);
+ assert.match(dock,/deliveryMayBeUncertain\(e\)/);
+ assert.match(dock,/setPendingSend\(\{requestId,kind,targetId:selected\}\)/);
+ assert.match(dock,/failureReasons\.push/);
 });
