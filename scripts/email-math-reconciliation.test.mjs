@@ -70,6 +70,9 @@ test("a failed or uncertain Gmail request cannot update a student status",()=>{
  assert.ok(accepted>=0&&provider>accepted&&reconcile>provider);
  assert.match(mail,/if\(providerId\)\{/);
  assert.match(mail,/status_sync:statusSync/);
+ assert.match(mail,/recoveredSync/);
+ assert.match(api,/reskonnect_email_status_sync_audit/);
+ assert.match(api,/status_sync:statusSync/);
  assert.match(ui,/batchSummary\.unconfirmed/);
  assert.match(ui,/status_sync\?\.applied/);
 });
