@@ -4,7 +4,7 @@ export type CaseBucket =
  "not_contacted"|"missing_documents"|"followup_due"|"student_acted"|
  "awaiting_review"|"decision_changed"|"approved"|"rejected"|"closed"|"awaiting_action";
 export type OutboundEmail={
- target_id:string;template_key:string;delivery_status:string;created_at:string;sent_at:string|null;
+ id:string;target_id:string;template_key:string;delivery_status:string;created_at:string;sent_at:string|null;
  context_snapshot:Record<string,unknown>|null;
 };
 export type CaseJourney={

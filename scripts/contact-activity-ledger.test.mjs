@@ -37,7 +37,8 @@ test("live tracker refreshes on changes and foreground polling, including manual
  assert.match(ui,/visibilitychange/);
  assert.match(dock,/ContactActivityDashboard mode=\{mode\}/);
  assert.match(manual,/onActivityChange\?\.\(\)/);
- assert.match(dock,/onActivityChange=\{\(\)=>setActivityRevision/);
+ assert.match(dock,/onActivityChange=\{\(\)=>\{setActivityRevision/);
+ assert.match(dock,/void loadItems\(\{preserveLoaded:true\}\)/);
 });
 
 test("activity reader is bounded, never exposes direct contact fields, and offers pagination",()=>{

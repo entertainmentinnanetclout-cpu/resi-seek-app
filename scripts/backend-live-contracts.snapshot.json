@@ -1,7 +1,7 @@
 {
   "project_id": "mefjzkhobkltlbmhusdh",
   "captured_date": "2026-11-20",
-  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles; 15 Nov verified service-only ResMap atomic AI budget function after scoped live migration; SEC05 privileged app-health recompute direct Auth execution revoked; 20 Nov verified service-only exact email coverage, RLS-locked status sync audit, and non-final Gmail sender progression",
+  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles; 15 Nov verified service-only ResMap atomic AI budget function after scoped live migration; SEC05 privileged app-health recompute direct Auth execution revoked; 20 Nov verified service-only exact email coverage, RLS-locked status sync audit, and non-final Gmail sender progression; verified 20 Nov sender-aware atomic 450/1800 quota and residence WhatsApp/email/status audit",
   "public_relations": [
     "academic_periods",
     "accommodation_compliance_cases",
@@ -336,6 +336,7 @@
     "reskonnect_email_response_cases",
     "reskonnect_email_status_sync_audit",
     "reskonnect_email_templates",
+    "reskonnect_gmail_sender_policies",
     "reskonnect_listing_studio_drafts",
     "reskonnect_marketplace_readiness_v",
     "reskonnect_monthly_top3_editorial",
@@ -5520,6 +5521,44 @@
       "anon": false
     },
     {
+      "name": "rk_gmail_reserve_send",
+      "args": [
+        "p_sender",
+        "p_actor",
+        "p_kind",
+        "p_target",
+        "p_template",
+        "p_request",
+        "p_recipient",
+        "p_recipient_user",
+        "p_subject",
+        "p_batch",
+        "p_snapshot"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "rk_gmail_sender_budget",
+      "args": [
+        "p_sender"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "rk_gmail_sender_pause",
+      "args": [
+        "p_sender",
+        "p_minutes"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
       "name": "rk_golden_case_history",
       "args": [
         "p_kind",
@@ -5713,6 +5752,16 @@
       ],
       "service_role": true,
       "authenticated": true,
+      "anon": false
+    },
+    {
+      "name": "rk_residence_case_channel_snapshot",
+      "args": [
+        "p_kind",
+        "p_ids"
+      ],
+      "service_role": true,
+      "authenticated": false,
       "anon": false
     },
     {
@@ -6050,6 +6099,7 @@
   ],
   "verified_schema_additions_2026_11_20": [
     "reskonnect_email_replies",
-    "reskonnect_email_response_cases"
+    "reskonnect_email_response_cases",
+    "reskonnect_gmail_sender_policies"
   ]
 }
