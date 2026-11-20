@@ -264,6 +264,10 @@ Deno.serve(async(req:Request)=>{
     return res({error:"Review and explicitly approve each batch of up to ten emails"},400);
 
    if(ids.length>1){
+    // The newest client safely runs batches of ten as ten separate Edge requests.
+    // Keep old multi-item PWA clients bounded to their prior five-item contract;
+    // ten PDFs inside one legacy parent function would risk HTTP timeouts.
+    if(ids.length>5)return res({error:"Refresh ResKonnect to send ten messages safely, one per request. Older multi-item requests remain limited to five."},422);
     // Compatibility for already-open browser/PWA tabs that submit 2-5 messages
     // together. Never generate several PDFs in one Edge isolate: dispatch
     // individual JWT-protected requests, each with its own CPU and audit row.
