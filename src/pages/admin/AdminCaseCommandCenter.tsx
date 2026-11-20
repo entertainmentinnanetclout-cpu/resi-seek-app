@@ -21,6 +21,7 @@ type CaseRow={id:string;kind:Kind;student_user_id?:string|null;status:string;sta
 type Action="acknowledge_received"|"start_review"|"request_documents"|"delegate_review"|"mark_eligible"|"mark_ineligible"|"approve_handover"|"confirm_reservation"|"approve_application"|"reject_application"|"cancel_reservation"|"internal_note"|"mark_follow_up";
 type OperationResult={id:string;ok:boolean;reason?:string;status?:string;stage?:string;document_readiness?:Docs};
 type EmailItem={id:string;ok:boolean;label?:string;subject?:string;body?:string;status?:string;document_signal?:{stage:string};preview_hash?:string;error?:string};
+type EmailBatchOutcome={id:string;label:string;status:"accepted"|"failed"|"unconfirmed";detail?:string};
 type Thread={id:string;message:string;visibility:string;created_at:string;sender_id:string};
 type WaDraft={id:string;ok:boolean;message?:string;preview_hash?:string;case?:{status:string;document_signal:{stage:string}};can_open?:boolean;phone_hint?:string;error?:string};
 const OPTIONS:{id:Action;label:string;hint:string}[]=[
@@ -67,6 +68,7 @@ export default function AdminCaseCommandCenter(){
  const [result,setResult]=useState<{applied:number;skipped:number;items:OperationResult[]}|null>(null);
  const [emailMode,setEmailMode]=useState<"triage_received"|"triage_under_review">("triage_received");
  const [emailDrafts,setEmailDrafts]=useState<EmailItem[]>([]);
+ const [emailBatchOutcomes,setEmailBatchOutcomes]=useState<EmailBatchOutcome[]>([]);
  const [whatsappDrafts,setWhatsappDrafts]=useState<WaDraft[]>([]);
  const [handoffs,setHandoffs]=useState<Record<string,{id:string;url:string;reported?:boolean}>>({});
  const [view,setView]=useState<CaseRow|null>(null);
@@ -140,7 +142,7 @@ export default function AdminCaseCommandCenter(){
  const emailPreview=async()=>{
   if(kind==="wil")return toast.error("WIL correspondence uses its own department workflow");
   if(!chosen.length)return toast.error("Select cases first");
-  setBusy(true);setEmailDrafts([]);
+  setBusy(true);setEmailDrafts([]);setEmailBatchOutcomes([]);
   try{
    const ids=chosen.slice(0,5),result=await edge({action:"bulk_preview",kind,ids,template_key:emailMode,message:""});
    setEmailDrafts(result.items||[]);
@@ -152,15 +154,48 @@ export default function AdminCaseCommandCenter(){
   const eligible=emailDrafts.filter(x=>x.ok);
   if(!eligible.length)return toast.error("No approved draft emails");
   if(!window.confirm("Send "+eligible.length+" factual service emails with a branded PDF through your linked Gmail account? This is an EXTERNAL send."))return;
-  setBusy(true);
+  setBusy(true);setEmailBatchOutcomes([]);
+  const batchId=crypto.randomUUID();
+  const outcomes:EmailBatchOutcome[]=[];
   try{
-   const ids=eligible.map(x=>x.id);
-   const requests=eligible.map(x=>({id:x.id,request_id:crypto.randomUUID(),expected_status:x.status,expected_document_stage:x.document_signal?.stage,preview_hash:x.preview_hash}));
-   const outcome=await edge({action:"bulk_send",kind,ids,requests,batch_id:crypto.randomUUID(),confirmed:true,template_key:emailMode,message:""});
-   toast.info((outcome.succeeded||0)+" Gmail messages accepted; "+(outcome.failed||0)+" not sent. Check delivery history for details.");
-   setEmailDrafts([]);setSelected(prev=>{const next=new Set(prev);for(const item of outcome.results||[])if(item.sent)next.delete(item.id);return next;});
-  }catch(e){toast.error(e instanceof Error?e.message:"Gmail send failed");}
-  finally{setBusy(false);}
+   // One PDF and one Gmail request per Edge invocation. Keep the same
+   // batch ID for audit; never turn an uncertain network result into a retry.
+   for(const draft of eligible){
+    const requestId=crypto.randomUUID();
+    const request={id:draft.id,request_id:requestId,expected_status:draft.status,
+     expected_document_stage:draft.document_signal?.stage,preview_hash:draft.preview_hash};
+    let state:EmailBatchOutcome={id:draft.id,label:draft.label||draft.id.slice(0,8),status:"unconfirmed"};
+    try{
+     const response=await edge({action:"bulk_send",kind,ids:[draft.id],requests:[request],
+      batch_id:batchId,confirmed:true,template_key:emailMode,message:""});
+     const result=response.results?.[0];
+     if(result?.sent)state={...state,status:"accepted"};
+     else if(result?.uncertain)state={...state,status:"unconfirmed",detail:result?.error};
+     else if(result?.error)state={...state,status:"failed",detail:result.error};
+     else state={...state,status:"unconfirmed",detail:"Could not confirm delivery; verify Gmail Sent and audit history."};
+    }catch(e){
+     // A lost HTTP response may follow an accepted Gmail send. Query by
+     // immutable request ID only; do not issue another send automatically.
+     let status:any=null;
+     try{status=await edge({action:"send_status",request_id:requestId});}catch{/* Keep uncertain. */}
+     if(status?.sent)state={...state,status:"accepted"};
+     else if(status?.delivery_status==="failed")state={...state,status:"failed",detail:"Gmail rejected the attempt. Check the audit before retrying."};
+     else if(status?.found===false&&/changed since preview|refresh the preview|regenerate the email/i.test(e instanceof Error?e.message:""))
+      state={...state,status:"failed",detail:e instanceof Error?e.message:"Case changed. Review again."};
+     else state={...state,status:"unconfirmed",detail:"Check Gmail Sent and email history before another attempt."};
+    }
+    outcomes.push(state);
+    setEmailBatchOutcomes([...outcomes]);
+   }
+   const accepted=outcomes.filter(x=>x.status==="accepted").length;
+   const failed=outcomes.filter(x=>x.status==="failed").length;
+   const unconfirmed=outcomes.filter(x=>x.status==="unconfirmed").length;
+   if(unconfirmed)toast.warning(accepted+" accepted · "+failed+" failed · "+unconfirmed+" unconfirmed. Check Gmail Sent before retrying.");
+   else if(failed)toast.warning(accepted+" accepted · "+failed+" failed. Review each reason before retrying.");
+   else toast.success(accepted+" messages accepted by Gmail, with individual PDFs.");
+   setEmailDrafts([]);
+   setSelected(prev=>{const next=new Set(prev);for(const item of outcomes)if(item.status==="accepted")next.delete(item.id);return next;});
+  }finally{setBusy(false);}
  };
  const whatsappPreview=async()=>{
   if(kind==="wil")return toast.error("WIL contacts use their own departmental desk");
@@ -278,6 +313,13 @@ export default function AdminCaseCommandCenter(){
        <p className="text-xs font-bold">Individual, personalised drafts · {emailDrafts.filter(x=>x.ok).length} ready</p>
        <div className="max-h-56 space-y-3 overflow-auto">{emailDrafts.map(x=><div key={x.id} className="rounded-lg border bg-background p-2.5"><p className="text-xs font-black">{x.label||x.id.slice(0,8)} · {x.ok?"Ready":"Blocked"}</p>{x.ok?<><p className="mt-1 text-xs font-bold">{x.subject}</p><p className="mt-1 whitespace-pre-wrap text-[11px] leading-5 text-muted-foreground">{x.body}</p></>:<p className="text-xs text-amber-700">{x.error}</p>}</div>)}</div>
        <Button className="rk-clay-action w-full" disabled={busy||!emailDrafts.some(x=>x.ok)} onClick={()=>void sendEmails()}><Send className="mr-2 h-4 w-4"/>Send via connected Gmail (max 5)</Button>
+      </div>}
+      {emailBatchOutcomes.length>0&&<div className="space-y-1 rounded-xl border p-3 text-xs" role="status">
+       <p className="font-bold">Email results · {emailBatchOutcomes.filter(x=>x.status==="accepted").length} accepted · {emailBatchOutcomes.filter(x=>x.status==="failed").length} failed · {emailBatchOutcomes.filter(x=>x.status==="unconfirmed").length} unconfirmed</p>
+       {emailBatchOutcomes.map(outcome=><p key={outcome.id} className={outcome.status==="accepted"?"text-emerald-700":outcome.status==="failed"?"text-red-700":"text-amber-700"}>
+        {outcome.label}: {outcome.status}{outcome.detail?" · "+outcome.detail:""}
+       </p>)}
+       {emailBatchOutcomes.some(x=>x.status==="unconfirmed")&&<p className="font-semibold text-amber-700">Do not resend unconfirmed emails. Verify Gmail Sent and Email Dock history first.</p>}
       </div>}
       <div className="border-t pt-4">
        <h3 className="flex items-center gap-2 text-sm font-black"><MessageCircle className="h-4 w-4 text-emerald-600"/>Manual WhatsApp batch handoff</h3>

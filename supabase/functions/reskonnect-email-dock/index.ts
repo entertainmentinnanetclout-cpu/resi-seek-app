@@ -219,11 +219,61 @@ Deno.serve(async(req:Request)=>{
    return res({items,eligible:items.filter(x=>x.ok).length,requested:ids.length});
   }
   if(action==="bulk_send"){
-   // A stale browser must refresh instead of processing five PDFs in one CPU-limited request.
-   if(ids.length>1)return res({error:"Email Dock has been updated. Refresh the page to use safe one-at-a-time sending."},409);
    if(input.confirmed!==true||!validUuid(input.batch_id)||!Array.isArray(input.requests)||input.requests.length!==ids.length||
       input.requests.some((r:any,i:number)=>r?.id!==ids[i]||!validUuid(r.request_id)))
     return res({error:"Review and explicitly approve each batch of up to five emails"},400);
+
+   if(ids.length>1){
+    // Compatibility for already-open browser/PWA tabs that submit 2-5 messages
+    // together. Never generate several PDFs in one Edge isolate: dispatch
+    // individual JWT-protected requests, each with its own CPU and audit row.
+    // Do not retry ambiguous responses: status reconciliation is read-only.
+    const anonKey=Deno.env.get("SUPABASE_ANON_KEY");
+    const baseUrl=Deno.env.get("SUPABASE_URL");
+    if(!anonKey||!baseUrl)return res({error:"Secure batch processing is temporarily unavailable. Refresh the app."},503);
+    const processOne=async(item:any)=>{
+     const childBody={action:"bulk_send",kind,ids:[item.id],requests:[item],
+      confirmed:true,batch_id:input.batch_id,template_key:key,message:note};
+     const readOutcome=async()=>{
+      const {data:attempt,error:lookupError}=await db.from("reskonnect_outbound_emails")
+       .select("delivery_status,failure_code").eq("actor_user_id",actor)
+       .eq("idempotency_key",item.request_id).maybeSingle();
+      if(!lookupError&&attempt?.delivery_status==="sent")return {id:item.id,sent:true,recovered:true};
+      if(!lookupError&&attempt?.delivery_status==="failed")return {id:item.id,sent:false,error:"Gmail rejected this attempt; review email history before retrying"};
+      return {id:item.id,sent:false,uncertain:true,error:"Delivery not confirmed. Check Gmail Sent and the Email Dock audit before attempting another send."};
+     };
+     try{
+      const response=await fetch(baseUrl+"/functions/v1/reskonnect-email-dock",{
+       method:"POST",
+       headers:{"Authorization":"Bearer "+bearer,"apikey":anonKey,"Content-Type":"application/json"},
+       body:JSON.stringify(childBody),signal:AbortSignal.timeout(25000)
+      });
+      const answer=await response.json().catch(()=>null);
+      if(response.ok&&Array.isArray(answer?.results)&&answer.results[0]){
+       return {id:item.id,...answer.results[0]};
+      }
+      if(!response.ok&&[400,401,403,409,422].includes(response.status)){
+       return {id:item.id,sent:false,error:String(answer?.error||"Email was not sent; review the case and refresh.")};
+      }
+      return await readOutcome();
+     }catch(e){
+      // A lost response does not prove a failed Gmail send. Do not reissue it.
+      console.warn("Legacy bulk child outcome unavailable",e instanceof Error?e.name:"unknown");
+      return await readOutcome();
+     }
+    };
+    const results:any[]=[];
+    // Two at a time prevents a single Edge worker from building five PDFs
+    // while keeping the old client within an ordinary HTTP response window.
+    for(let offset=0;offset<input.requests.length;offset+=2){
+     const slice=input.requests.slice(offset,offset+2);
+     const outcomes=await Promise.all(slice.map(processOne));
+     results.push(...outcomes);
+    }
+    return res({results,succeeded:results.filter(x=>x.sent).length,
+     failed:results.filter(x=>!x.sent&&!x.uncertain).length,
+     unconfirmed:results.filter(x=>x.uncertain).length});
+   }
    const results:any[]=[];
    for(const item of input.requests){
     try{const c=await readCase(s,kind,item.id);const reviewed=await previewPacket(s,c,key,note);if(item.expected_status!==c.status||item.expected_document_stage!==c.documents.stage||(typeof item.preview_hash==="string"&&item.preview_hash!==await reviewedHash(c,reviewed)))throw Error("Case content changed since bulk preview; review again");if(!fixedTriage)await assertReviewed(s,c,item.document_review_id);const result=await sendOne(s,c,key,note,item.request_id,input.batch_id);
