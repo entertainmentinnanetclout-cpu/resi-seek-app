@@ -17,19 +17,21 @@ Replaces the former two-column email composer in the admin Communications & Serv
 
 - Every premium-dock outgoing email includes a branded HTML body, ResKonnect navy/blue/gold styling, official contact/footer, and a generated A4 PDF letter as a Gmail MIME attachment.
 - PDF includes the case reference, recorded status, issued date, letter body, brand logo/wordmark and page footer. Documents are generated on demand, not publicly stored. The logo has a vector-wordmark fallback if the static icon is temporarily unavailable.
-- Google scope remains `gmail.send` only, with user-specific OAuth refresh tokens stored in Supabase Vault. The existing login provider remains unchanged.
+- Gmail sending uses `gmail.send`. Optional reply synchronization requests a separately consented `gmail.readonly` scope; connected refresh tokens stay in Supabase Vault. Existing send-only accounts remain supported.
 - A live PDF preview can be downloaded from an authorized dashboard; the send endpoint regenerates it from the validated case.
 - Gmail accepting a message does not establish delivery, an open/read receipt or applicant acceptance.
 
 ### Bulk sending and bulk statuses
 
-- A user can select up to **25** records to review. The frontend sends at most **5** explicitly approved, case-specific messages per Edge Function call, in sequential batches.
+- The Email Dock allows up to **10** explicitly approved, individual Gmail/PDF messages per batch. **Each recipient gets a separate Edge Function call** to avoid multi-PDF CPU and timeout errors. Older five-at-once clients remain capped at five. The status manager separately retains selection of up to 25 records.
 - Each message resolves its own documents, template, recipient and PDF. Send failures are reported individually. No arbitrary addresses, imported email lists or marketing mass blasts are accepted.
-- Existing rolling safety limit is **80 email attempts per account per 24 hours** with a per-case 60-second duplicate guard and idempotent request IDs. Network-uncertain deliveries must be checked in Gmail Sent before retrying.
+- Existing rolling safety limit is **80 email attempts per account per 24 hours** with a per-case/template duplicate guard and idempotent request IDs. Network-uncertain deliveries must be checked in Gmail Sent before retrying.
 - Bulk application/reservation statuses are validated against the current recorded status, owner permissions and mandatory-document checks. Up to 25 are processed after an explicit preview and confirmation.
 - Formal approvals, rejections, confirmations and cancellations require a written reason; premature approval without required documents is blocked.
 - Status updates create per-record audit history and in-app student notifications. **They do not automatically send Gmail emails**; a separate preview and send is required.
 - Email send requests recheck the recorded status and document stage after preview to reject stale acceptance letters.
+- **Verified coverage by accommodation:** a server-side exact reconciliation counts unique reservation/application cases, successful sent messages, never-attempted records, uncertain-only records, failed-only records and repeat sends. The Dock can select up to ten genuinely untouched cases for operator-approved outreach.
+- **Post-delivery, non-final progression:** an official company email with Gmail's provider message ID may safely change a reservation from reserved to contacted; an application can move to under_review only when internal review already started, or documents_required after a reviewed missing-document notice. Each update has a service-only audit entry; no email can automatically approve, reject, confirm, cancel or allocate a room. Older emails are not silently replayed.
 
 ### Access and security
 
@@ -37,7 +39,7 @@ Replaces the former two-column email composer in the admin Communications & Serv
 - Every case is checked against the landlord's assigned residence, including bulk operations.
 - Applicant email addresses are never disclosed to landlord dashboard APIs; recipient addresses are resolved server-side.
 - Support enquiry replies are restricted to administrators and records with `consent_to_be_contacted=true`.
-- Email audit logs, customization templates and bulk-status audits are private, RLS-enabled and service-role-only.
+- Email audit logs, customization templates, reply reviews, bulk-status audits and email-triggered status audit records are private, RLS-enabled and service-role-only.
 
 ## Files and live Supabase
 
@@ -45,6 +47,7 @@ Replaces the former two-column email composer in the admin Communications & Serv
 - `src/components/communications/CommunicationEmailWorkspace.tsx`: stable re-export retaining dashboard routes.
 - `supabase/functions/reskonnect-email-dock`: new standalone premium endpoint plus case engine, PDF generator and Gmail MIME attachment helper.
 - `supabase/migrations/20261108142000_reskonnect_premium_email_dock.sql`: private templates, bulk status audit, PDF and snapshot metadata.
+- `supabase/migrations/20261120183000_email_coverage_status_sync.sql`: exact coverage and audited non-final status reconciliation.
 - Live Supabase project `mefjzkhobkltlbmhusdh` has received the migration and the new JWT-protected Edge Function. The legacy `reskonnect-email` endpoint is unchanged.
 
 ## Operational QA

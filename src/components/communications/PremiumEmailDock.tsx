@@ -24,7 +24,7 @@ type Template="triage_received"|"triage_under_review"|"smart"|"acknowledgement"|
 type Mode="admin"|"landlord";
 type Signal={stage:string;missing:string[];uploaded:number;pendingReview:number;summary:string};
 type CaseItem={
- id:string;kind:Kind;label:string;status:string;property:string;reference:string;
+ id:string;kind:Kind;label:string;status:string;property:string;residence_id?:string|null;reference:string;
  created_at:string;document_stage:string;missing_count:number;pending_review:number;uploaded_count?:number;
  recommended_template:Template;recipient_hint:string|null;can_email:boolean;
  workflow_bucket?:string;service_action?:string;last_email_at?:string|null;last_email_template?:string|null;
@@ -32,7 +32,7 @@ type CaseItem={
  suggested_template?:Template;academic_year?:string;
 };
 type CaseInfo={
- id:string;kind:Kind;label:string;status:string;property:string;reference:string;
+ id:string;kind:Kind;label:string;status:string;property:string;residence_id?:string|null;reference:string;
  document_signal:Signal;recommended_template:Template;recipient_hint:string|null;can_email:boolean;academic_year:string;
  residence_image_url?:string|null;has_whatsapp?:boolean;
 };
@@ -40,6 +40,12 @@ type EmailPreview={subject:string;body:string;html:string;template_name:string;r
 type DocTemplate={name:string;subject:string;body:string};
 type Override={target_kind:Kind;template_key:Template;subject_template:string;body_template:string};
 type History={id:string;subject:string;target_kind:Kind;template_key:string;delivery_status:string;recipient_email:string;created_at:string;failure_code:string|null;pdf_attached:boolean;sender_scope?:string;sender_name?:string};
+type DeliveryCoverage={
+ kind:"application"|"reservation";residence_id:string;academic_year:number;verified:boolean;
+ total_cases:number;emailed_cases:number;unemailed_cases:number;sent_messages:number;
+ never_attempted:number;uncertain_only:number;failed_only:number;uncertain_attempts:number;failed_attempts:number;
+ repeat_sent_cases:number;never_attempted_case_ids:string[];uncertain_only_case_ids:string[];failed_only_case_ids:string[];
+};
 type BulkResult={id:string;ok?:boolean;updated?:boolean;sent?:boolean;label?:string;status?:string;from?:string;to?:string;reason?:string;error?:string;subject?:string;body?:string;resolved_key?:Template;document_signal?:Signal;preview_hash?:string};
 const kindLabels:Record<Kind,string>={application:"Applications",reservation:"Reservations",housing_lead:"Housing enquiries",support_enquiry:"Support enquiries"};
 const statusOptions:Record<"application"|"reservation",string[]>={
@@ -121,7 +127,12 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [statusNote,setStatusNote]=useState("");
  const [statusPreview,setStatusPreview]=useState<BulkResult[]>([]);
  const [statusApproved,setStatusApproved]=useState(false);
- const [batchSummary,setBatchSummary]=useState<{ok:number;failed:number;unconfirmed:number}|null>(null);
+ const [batchSummary,setBatchSummary]=useState<{ok:number;failed:number;unconfirmed:number;autoUpdated:number}|null>(null);
+ const [selectedResidence,setSelectedResidence]=useState(params.get("residence")||"");
+ const [coverage,setCoverage]=useState<DeliveryCoverage|null>(null);
+ const [coverageError,setCoverageError]=useState("");
+ const [coverageLoading,setCoverageLoading]=useState(false);
+ const coverageRequestRef=useRef(0);
  const [updateAvailable,setUpdateAvailable]=useState(false);
  const lastPreviewRef=useRef("");
  const deepLinkedIdRef=useRef(params.get("target"));
@@ -149,6 +160,21 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const loadHistory=useCallback(async()=>{
   try{const r=await premium({action:"history"});setHistory(r.items||[]);}catch(e){console.warn("History unavailable",e);}
  },[premium]);
+ const loadCoverage=useCallback(async()=>{
+  const requestId=++coverageRequestRef.current;
+  if(!selectedResidence||!(kind==="reservation"||kind==="application")){
+   setCoverage(null);setCoverageError("");setCoverageLoading(false);return;
+  }
+  setCoverage(null);setCoverageError("");setCoverageLoading(true);
+  try{
+   const result=await premium({action:"delivery_coverage",kind,residence_id:selectedResidence,
+    academic_year:Number(academicYear)});
+   if(!result.verified)throw Error("Coverage was not independently verified");
+   if(requestId===coverageRequestRef.current)setCoverage(result as DeliveryCoverage);
+  }catch(e){if(requestId===coverageRequestRef.current)setCoverageError(e instanceof Error?e.message:"Cannot reconcile emails");}
+  finally{if(requestId===coverageRequestRef.current)setCoverageLoading(false);}
+ },[premium,kind,academicYear,selectedResidence]);
+ useEffect(()=>{void loadCoverage();},[loadCoverage]);
  const loadTemplates=useCallback(async()=>{
   try{const r=await premium({action:"templates"});setDefaults(r.defaults||{});setOverrides(r.overrides||[]);setPlaceholders(r.placeholders||[]);}
   catch(e){console.warn("Template catalogue unavailable",e);}
@@ -234,6 +260,12 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    void loadConnection();
   }
  },[params,setParams,loadConnection]);
+ const residenceChoices=useMemo(()=>{
+  const unique=new Map<string,string>();
+  for(const item of items)if(item.residence_id&&!unique.has(item.residence_id))
+    unique.set(item.residence_id,item.property);
+  return [...unique].map(([id,name])=>({id,name})).sort((a,b)=>a.name.localeCompare(b.name));
+ },[items]);
  const active=items.find(x=>x.id===selected)||null;
  const needsReview=kind==="application"||kind==="reservation";
  const selectedReceipt=reviewReceipts.get(kind+":"+selected)||null;
@@ -291,7 +323,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const selectedCount=checked.size;
  const resetPreview=()=>{setPreview(null);setApproved(false);setBulkPreview([]);setBulkApproval(false);setStatusPreview([]);setStatusApproved(false);setBatchSummary(null);};
  const selectKind=(k:Kind)=>{
-  setKind(k);setWorkspace("cases");setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setBulkTemplate("smart");setChecked(new Set());setNote("");setPane(k==="application"||k==="reservation"?"documents":"compose");resetPreview();
+  setKind(k);setWorkspace("cases");setSelectedResidence("");setCoverage(null);setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setBulkTemplate("smart");setChecked(new Set());setNote("");setPane(k==="application"||k==="reservation"?"documents":"compose");resetPreview();
   const next=new URLSearchParams(params);next.set("kind",k);next.delete("target");next.delete("view");setParams(next,{replace:true});
  };
  const selectRecord=(id:string)=>{
@@ -348,7 +380,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const finishSent=async()=>{
   setPendingSend(null);
   resetPreview();setNote("");
-  await Promise.all([loadHistory(),loadItems(),loadConnection()]);
+  await Promise.all([loadHistory(),loadItems(),loadConnection(),loadCoverage()]);
   setActivityRevision(v=>v+1);
  };
  const checkPendingSend=async()=>{
@@ -379,7 +411,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     return;
    }
    if(!result.sent)throw Error(result.error||"Gmail did not accept the message");
-   toast.success("Gmail accepted your email and branded PDF attachment");
+   toast.success("Gmail accepted the email and PDF"+(result.status_sync?.applied?" · "+pretty(result.status_sync.new_status)+" status recorded":""));
    await finishSent();
   }catch(e){
    const status=await reconcileSend(requestId);
@@ -400,11 +432,21 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const previewBulk=async()=>{
   const ids=[...checked];
   if(!ids.length)return toast.error("Select cases from the inbox");
+  if(ids.length>10)return toast.error("Email batches are capped at 10 cases. Reduce your selection before previewing.");
   setBusy("bulk-preview");setBulkPreview([]);setBulkApproval(false);setBatchSummary(null);
   try{
-   const response=await premium({action:"bulk_preview",kind,ids,template_key:bulkTemplate,message:fixedBulkTriage?"":note});
-   setBulkPreview(response.items||[]);
-   toast.info((response.eligible||0)+" of "+ids.length+" cases eligible");
+   // Preview at most five case contexts per Edge invocation. Sending then uses
+   // one fresh PDF/Gmail request per recipient; increasing the operator batch
+   // from 5 to 10 must not double any single Edge worker's CPU load.
+   const results:BulkResult[]=[];
+   for(let offset=0;offset<ids.length;offset+=5){
+    const batch=ids.slice(offset,offset+5);
+    const response=await premium({action:"bulk_preview",kind,ids:batch,
+     template_key:bulkTemplate,message:fixedBulkTriage?"":note});
+    results.push(...(response.items||[]));
+   }
+   setBulkPreview(results);
+   toast.info(results.filter(x=>x.ok).length+" of "+ids.length+" cases eligible");
   }catch(e){showError(e);}finally{setBusy(null);}
  };
  const sendBulk=async()=>{
@@ -413,10 +455,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   if(needsReview&&!fixedBulkTriage&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))return toast.error("Review every selected student’s documents before a bulk send");
   const ids=bulkPreview.filter(x=>x.ok).map(x=>x.id);
   if(!ids.length)return toast.error("No eligible case emails");
+  if(ids.length>10)return toast.error("Maximum 10 Gmail messages per batch");
   if(!window.confirm("Send "+ids.length+" individualized Gmail messages, each with its own ResKonnect PDF?"))return;
   // A Supabase Edge Function has a per-request CPU limit. Generate and send
   // only one PDF per invocation, while retaining the audited batch ID.
-  setBusy("bulk-send");let ok=0,failed=0,unconfirmed=0;
+  setBusy("bulk-send");let ok=0,failed=0,unconfirmed=0,autoUpdated=0;
   const failureReasons:string[]=[];
   const incompleteIds:string[]=[];
   const batchId=crypto.randomUUID();
@@ -431,24 +474,24 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
      const response=await premium({action:"bulk_send",kind,ids:[id],requests:[request],confirmed:true,
       batch_id:batchId,template_key:bulkTemplate,message:fixedBulkTriage?"":note});
      const outcome=response.results?.[0];
-     if(outcome?.sent)ok++;
+     if(outcome?.sent){ok++;if(outcome.status_sync?.applied)autoUpdated++;}
      else if(outcome?.uncertain||!outcome){unconfirmed++;incompleteIds.push(id);}
      else {failed++;incompleteIds.push(id);if(outcome?.error)failureReasons.push(String(outcome.error));}
     }catch(e){
      // The Edge Function may have accepted the email before losing its response.
      const status=await reconcileSend(requestId);
-     if(status?.sent)ok++;
+     if(status?.sent){ok++;if(status.status_sync?.applied)autoUpdated++;}
      else if(status?.uncertain||(!status&&deliveryMayBeUncertain(e))){unconfirmed++;incompleteIds.push(id);}
      else {failed++;incompleteIds.push(id);failureReasons.push(e instanceof Error?e.message:"Email was not sent");}
     }
-    setBatchSummary({ok,failed,unconfirmed});
+    setBatchSummary({ok,failed,unconfirmed,autoUpdated});
    }
    if(unconfirmed)toast.warning(ok+" accepted, "+unconfirmed+" unconfirmed. Check Gmail Sent and email history; do not repeat the entire batch.");
    else if(failed)toast.warning(ok+" accepted by Gmail, "+failed+" failed. "+(failureReasons[0]||"Review history before retrying."));
    else toast.success(ok+" messages accepted by Gmail");
    setBulkPreview([]);setBulkApproval(false);setChecked(new Set(incompleteIds));
-   await Promise.all([loadHistory(),loadItems()]);setActivityRevision(v=>v+1);
-  }catch(e){showError(e);setBatchSummary({ok,failed,unconfirmed});}
+   await Promise.all([loadHistory(),loadItems(),loadCoverage()]);setActivityRevision(v=>v+1);
+  }catch(e){showError(e);setBatchSummary({ok,failed,unconfirmed,autoUpdated});}
   finally{setBusy(null);}
  };
  const previewStatuses=async()=>{
@@ -626,6 +669,46 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       </p>
      </>}
     </nav>
+    {(kind==="reservation"||kind==="application")&&<section className="space-y-3 border-b bg-muted/10 px-4 py-4" aria-label="Verified delivery coverage by accommodation">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+       <div><p className="font-bold">Accommodation email coverage</p><p className="text-xs text-muted-foreground">Exact case-level lifetime audit, separate from today's email count and message templates.</p></div>
+       <div className="flex flex-wrap gap-2">
+        <Select value={selectedResidence||undefined} onValueChange={setSelectedResidence}>
+         <SelectTrigger aria-label="Choose residence for email coverage" className="w-[min(92vw,300px)]"><SelectValue placeholder="Select a residence"/></SelectTrigger>
+         <SelectContent>{residenceChoices.map(r=><SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
+        </Select>
+        <Button variant="outline" size="sm" disabled={!selectedResidence||coverageLoading} onClick={()=>void loadCoverage()}><RefreshCw className="mr-1 h-3.5 w-3.5"/>Reconcile</Button>
+       </div>
+      </div>
+      {coverageLoading&&<p className="text-xs text-muted-foreground">Checking exact case and Gmail audit totals…</p>}
+      {coverageError&&<p role="alert" className="text-xs text-amber-700">{coverageError}</p>}
+      {coverage&&<div className="space-y-2">
+       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+        {([
+         ["Cases",coverage.total_cases],
+         ["Emailed cases",coverage.emailed_cases],
+         ["Not yet emailed",coverage.unemailed_cases],
+         ["Sent messages",coverage.sent_messages],
+         ["Never attempted",coverage.never_attempted],
+         ["Uncertain only",coverage.uncertain_only],
+         ["Repeat sends",coverage.repeat_sent_cases]
+        ] as const).map(([title,num])=><div key={title} className="rounded-lg border bg-card p-2.5">
+         <p className="text-[10px] text-muted-foreground">{title}</p><p className="mt-1 text-xl font-black tabular-nums">{Number(num).toLocaleString("en-ZA")}</p>
+        </div>)}
+       </div>
+       <p className="text-xs text-muted-foreground">Coverage: <strong>{coverage.total_cases?(100*coverage.emailed_cases/coverage.total_cases).toFixed(2):"0.00"}%</strong>. Checked equation: {coverage.emailed_cases} emailed + {coverage.unemailed_cases} not confirmed = {coverage.total_cases} cases. {coverage.uncertain_attempts>0&&`${coverage.uncertain_attempts} uncertain attempt(s) require investigation, not automatic resending.`}</p>
+       {coverage.never_attempted>0&&<div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="outline" onClick={()=>{
+         const available=new Set(items.filter(x=>x.can_email).map(x=>x.id));
+         const ids=coverage.never_attempted_case_ids.filter(id=>available.has(id)).slice(0,10);
+         if(!ids.length)return toast.warning("Load the remaining case pages before selecting untouched recipients.");
+         setChecked(new Set(ids));setBulkTemplate(mode==="admin"?"triage_received":"smart");setPane("bulk");setWorkspace("cases");
+         toast.info(ids.length+" never-contacted cases selected. Review the drafts before sending.");
+        }}>Select up to 10 never attempted</Button>
+        <span className="text-xs text-muted-foreground">Selects only never-attempted cases, excluding failed and uncertain delivery attempts.</span>
+       </div>}
+      </div>}
+     </section>}
     {workspace==="activity"?<ContactActivityDashboard mode={mode} invoke={premium} refreshKey={activityRevision}
      onOpenCase={(targetKind,id)=>{
       deepLinkedIdRef.current=id;setWorkspace("cases");setKind(targetKind);setSelected(id);setPane(targetKind==="application"||targetKind==="reservation"?"documents":"compose");resetPreview();setChecked(new Set());
@@ -648,7 +731,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
      <div className="flex items-center justify-between gap-2 border-b px-4 py-2">
       <p className="text-[11px] text-muted-foreground">{selectedCount} selected</p>
       <div className="flex gap-1">
-       <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={()=>setChecked(new Set(visible.filter(x=>x.can_email).slice(0,25).map(x=>x.id)))}>Select 25</Button>
+       <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={()=>setChecked(new Set(visible.filter(x=>x.can_email).slice(0,10).map(x=>x.id)))}>Select 10 email</Button>
+       <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={()=>setChecked(new Set(visible.filter(x=>x.can_email).slice(0,25).map(x=>x.id)))}>25 for status</Button>
        <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={()=>setChecked(new Set())}>Clear</Button>
        {selectedCount>0&&<Button size="sm" className="h-8 text-[11px]" onClick={()=>setPane("bulk")}>Bulk actions</Button>}
       </div>
@@ -807,7 +891,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       </TabsContent>
       <TabsContent value="bulk" className="m-0 space-y-4 px-4 pb-5">
        <div className="rounded-xl border bg-card p-4"><p className="flex items-center gap-2 font-semibold"><Users className="h-4 w-4 text-primary"/>Bulk communication</p>
-        <p className="mt-1 text-xs text-muted-foreground">{selectedCount} selected · individualized case context and PDF per recipient · five sends per batch</p>
+        <p className="mt-1 text-xs text-muted-foreground">{selectedCount} selected · individualized case context and PDF per recipient · maximum 10 sends per email batch</p>
         <p className="mt-1 text-xs font-semibold text-primary">One unified sending engine: select Smart correspondence or a fixed ResKonnect triage notice with MFA.</p>
         {mode==="admin"&&needsReview&&<div className="space-y-2 rounded-lg border p-3">
          <Label>Batch template</Label>
@@ -819,7 +903,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           </SelectContent></Select>
          {fixedBulkTriage&&<p className="text-xs text-amber-700">Fixed factual wording only. MFA-verified administrators may acknowledge a case before document review; this never approves accommodation or funding.</p>}
         </div>}
-        <Button className="mt-3 w-full" variant="secondary" onClick={()=>void previewBulk()} disabled={!selectedCount||!!busy}><FileCheck2 className="mr-2 h-4 w-4"/>Review selected messages</Button>
+        {selectedCount>10&&<p className="mt-2 text-xs font-semibold text-amber-700" role="alert">Choose no more than 10 for email. The 25-case selection is reserved for the separate status manager.</p>}
+        <Button className="mt-3 w-full" variant="secondary" onClick={()=>void previewBulk()} disabled={!selectedCount||selectedCount>10||!!busy}><FileCheck2 className="mr-2 h-4 w-4"/>Review selected messages</Button>
         {bulkPreview.length>0&&<div className="mt-3 space-y-2">{bulkPreview.map(messageCard)}
          {needsReview&&!fixedBulkTriage&&bulkPreview.some(x=>x.ok&&!reviewReceiptFor(x.id))&&<div className="rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-950">
           <p className="font-bold">Document review needed before bulk sending</p>
@@ -829,14 +914,14 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
          </div>}
          <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-xs">
           <Checkbox checked={bulkApproval} onCheckedChange={v=>setBulkApproval(v===true)}/>
-          <span>I reviewed these recipients and understand each will get an individualized Gmail email and PDF.</span>
+          <span>I reviewed these recipients and understand each will get an individualized Gmail email and PDF. Official correspondence can also record an eligible non-final case progression.</span>
          </label>
-         <Button className="w-full" disabled={!bulkApproval||!connection?.connected||!!busy||!bulkPreview.some(x=>x.ok)||(needsReview&&!fixedBulkTriage&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))} onClick={()=>void sendBulk()}>
+         <Button className="w-full" disabled={!bulkApproval||!connection?.connected||!!busy||bulkPreview.length>10||!bulkPreview.some(x=>x.ok)||(needsReview&&!fixedBulkTriage&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))} onClick={()=>void sendBulk()}>
           <Send className="mr-2 h-4 w-4"/>{busy==="bulk-send"?"Sending approved batches…":"Send reviewed emails"}
          </Button>
         </div>}
         {batchSummary&&<div className="mt-2 text-sm font-semibold" role="status">
-         {batchSummary.ok} accepted by Gmail · {batchSummary.failed} failed · {batchSummary.unconfirmed} unconfirmed
+         {batchSummary.ok} accepted by Gmail · {batchSummary.failed} failed · {batchSummary.unconfirmed} unconfirmed · {batchSummary.autoUpdated} auto-progressed
          {batchSummary.unconfirmed>0&&<p className="mt-1 text-xs font-normal text-amber-700 dark:text-amber-300">Do not resend unconfirmed messages. First check Gmail Sent and the audit history.</p>}
          {selectedCount>0&&<p className="mt-1 text-xs font-normal text-muted-foreground">{selectedCount} incomplete case(s) remain selected for review.</p>}
         </div>}

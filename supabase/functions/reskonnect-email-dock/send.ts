@@ -85,7 +85,19 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
   .eq("actor_user_id",s.actor).eq("idempotency_key",requestId).maybeSingle();
  if(lookupErr)throw Error("Cannot safely verify the email request history");
  if(existing){
-  if(existing.delivery_status==="sent")return {sent:true,recovered:true,email_id:existing.id,record_id:ctx.id};
+  if(existing.delivery_status==="sent"){
+   // The original invocation may have ended after the Gmail audit write but
+   // before its optional case-status sync. Reconciliation is idempotent and
+   // never sends Gmail a second time.
+   let recoveredSync:null|{applied:boolean;reason:string}=null;
+   if(existing.provider_message_id){
+    try{
+     const {data,error}=await s.db.rpc("rk_email_sync_after_send",{p_email_id:existing.id});
+     if(!error)recoveredSync=data;
+    }catch(e){console.warn("Delivered email case-sync recovery unavailable",e instanceof Error?e.message:"unknown");}
+   }
+   return {sent:true,recovered:true,email_id:existing.id,record_id:ctx.id,status_sync:recoveredSync};
+  }
   if(existing.delivery_status==="failed")return {sent:false,status:409,error:"This request previously failed. Review the delivery history before starting a new attempt."};
   return {sent:false,status:202,uncertain:true,error:"Delivery is still being verified. Check Gmail Sent and the Email Dock history before retrying."};
  }
@@ -158,8 +170,20 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
   }).eq("id",log.id);
   if(logSaveErr)console.error("Gmail accepted message but audit update failed",logSaveErr.message);
  }catch(e){console.error("Gmail accepted message but audit persistence threw",e);}
+ // Reconcile only the safe, non-final case status after Gmail confirms delivery.
+ // Never reclassify a failed/unknown send as successful and never override
+ // recorded placement decisions. A failure here must not turn accepted Gmail
+ // delivery into a failed email or an automatic resend.
+ let statusSync:{applied:boolean;reason:string;old_status?:string;new_status?:string}|null=null;
+ if(providerId){
+  try{
+   const {data,error}=await s.db.rpc("rk_email_sync_after_send",{p_email_id:log.id});
+   if(error){console.error("Email delivered but case status reconciliation unavailable",error.message);}
+   else if(data)statusSync=data;
+  }catch(e){console.error("Email delivered but case status sync threw",e instanceof Error?e.message:"unknown");}
+ }
  // This timestamp is optional, and must never change the result of a sent email.
  try{await s.db.from("landlord_gmail_connections").update({last_used_at:new Date().toISOString()}).eq("user_id",s.actor);}
  catch(e){console.warn("Gmail connection timestamp update failed",e);}
- return {sent:true,record_id:ctx.id,attachment,template_key:selected,email_id:log.id,recipient_hint:recipientHint(s,ctx.email),audit_confirmed:!!providerId};
+ return {sent:true,record_id:ctx.id,attachment,template_key:selected,email_id:log.id,recipient_hint:recipientHint(s,ctx.email),audit_confirmed:!!providerId,status_sync:statusSync};
 }

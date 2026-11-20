@@ -1,10 +1,8 @@
 {
   "project_id": "mefjzkhobkltlbmhusdh",
-  "captured_date": "2026-11-15",
-  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles; 15 Nov verified service-only ResMap atomic AI budget function after scoped live migration; SEC05 privileged app-health recompute direct Auth execution revoked",
+  "captured_date": "2026-11-20",
+  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles; 15 Nov verified service-only ResMap atomic AI budget function after scoped live migration; SEC05 privileged app-health recompute direct Auth execution revoked; 20 Nov verified service-only exact email coverage, RLS-locked status sync audit, and non-final Gmail sender progression",
   "public_relations": [
-    "Bookings",
-    "Users",
     "academic_periods",
     "accommodation_compliance_cases",
     "accommodation_compliance_evidence",
@@ -156,6 +154,7 @@
     "assistance_document_requests",
     "assistance_submissions",
     "balances",
+    "Bookings",
     "bursaries",
     "call_logs",
     "campaigns",
@@ -335,6 +334,7 @@
     "reskonnect_document_review_audit",
     "reskonnect_email_replies",
     "reskonnect_email_response_cases",
+    "reskonnect_email_status_sync_audit",
     "reskonnect_email_templates",
     "reskonnect_listing_studio_drafts",
     "reskonnect_marketplace_readiness_v",
@@ -448,6 +448,7 @@
     "user_phone_verification_attempts",
     "user_roles",
     "user_security_events",
+    "Users",
     "v_daily_operations_summary",
     "v_onboarding_command_center",
     "viewing_requests",
@@ -5483,6 +5484,26 @@
         "p_surface",
         "p_subject",
         "p_verified_user"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "rk_email_delivery_coverage",
+      "args": [
+        "p_kind",
+        "p_residence_id",
+        "p_year"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "rk_email_sync_after_send",
+      "args": [
+        "p_email_id"
       ],
       "service_role": true,
       "authenticated": false,
