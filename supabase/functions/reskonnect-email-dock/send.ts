@@ -85,7 +85,19 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
   .eq("actor_user_id",s.actor).eq("idempotency_key",requestId).maybeSingle();
  if(lookupErr)throw Error("Cannot safely verify the email request history");
  if(existing){
-  if(existing.delivery_status==="sent")return {sent:true,recovered:true,email_id:existing.id,record_id:ctx.id};
+  if(existing.delivery_status==="sent"){
+   // The original invocation may have ended after the Gmail audit write but
+   // before its optional case-status sync. Reconciliation is idempotent and
+   // never sends Gmail a second time.
+   let recoveredSync:null|{applied:boolean;reason:string}=null;
+   if(existing.provider_message_id){
+    try{
+     const {data,error}=await s.db.rpc("rk_email_sync_after_send",{p_email_id:existing.id});
+     if(!error)recoveredSync=data;
+    }catch(e){console.warn("Delivered email case-sync recovery unavailable",e instanceof Error?e.message:"unknown");}
+   }
+   return {sent:true,recovered:true,email_id:existing.id,record_id:ctx.id,status_sync:recoveredSync};
+  }
   if(existing.delivery_status==="failed")return {sent:false,status:409,error:"This request previously failed. Review the delivery history before starting a new attempt."};
   return {sent:false,status:202,uncertain:true,error:"Delivery is still being verified. Check Gmail Sent and the Email Dock history before retrying."};
  }
