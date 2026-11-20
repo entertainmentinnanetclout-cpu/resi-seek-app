@@ -172,8 +172,8 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
    const retryHeader=Number(sent.headers.get("Retry-After"));
    const pauseMinutes=Number.isFinite(retryHeader)&&retryHeader>0?
     Math.min(1440,Math.max(15,Math.ceil(retryHeader/60))):60;
-   await s.db.rpc("rk_gmail_sender_pause",{p_sender:sender.fromEmail,p_minutes:pauseMinutes})
-    .catch(()=>undefined);
+   try{await s.db.rpc("rk_gmail_sender_pause",{p_sender:sender.fromEmail,p_minutes:pauseMinutes});}
+   catch(e){console.warn("Could not record Gmail provider pause",e);}
    return {sent:false,error:"Gmail is limiting this mailbox. The sender is paused; review Gmail quota before continuing.",status:429};
   }
   return {sent:false,error:sent.status===401||sent.status===403?"Gmail rejected authorization; reconnect Gmail":"Gmail rejected message",status:502};
