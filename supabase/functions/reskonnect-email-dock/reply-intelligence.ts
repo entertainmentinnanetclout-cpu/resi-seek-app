@@ -78,7 +78,7 @@ const safeSnippet=(input:string)=>input.replace(/[\u0000-\u001f]/g," ").replace(
 const recentRows=async(s:EmailSession,day:unknown)=>{
  const d=dateWindow(day);
  let q=s.db.from("reskonnect_outbound_emails")
-  .select("id,target_kind,target_id,recipient_user_id,recipient_email,subject,template_key,delivery_status,created_at,sent_at,pdf_attached,provider_message_id,provider_thread_id,last_reply_checked_at",{count:"exact"})
+  .select("id,target_kind,target_id,recipient_user_id,recipient_email,subject,template_key,delivery_status,created_at,sent_at,pdf_attached,provider_message_id,provider_thread_id,last_reply_checked_at,context_snapshot",{count:"exact"})
   .eq("actor_user_id",s.actor).eq("delivery_status","sent")
   .gte("sent_at",d.from).lt("sent_at",d.to)
   .order("sent_at",{ascending:false}).limit(100);
@@ -119,6 +119,7 @@ export async function replyOverview(s:EmailSession,day:unknown){
   return {id:x.id,target_kind:x.target_kind,target_id:x.target_id,subject:x.subject,template_key:x.template_key,
    student_name:names.get(x.recipient_user_id)||"Student",recipient_hint:recipientHint(s,x.recipient_email),
    delivery_status:x.delivery_status,sent_at:x.sent_at,pdf_attached:x.pdf_attached,
+   sender_scope:x.context_snapshot?.sender_scope||"not_recorded",sender_name:x.context_snapshot?.sender_display_name||"Not recorded",
    reply_status,last_checked_at:x.last_reply_checked_at||null,reply_count:found.length,latest_reply:found[0]||null};
  });
  return {day:date,items:rows,total,reply_sync_enabled:!!connection?.enabled&&!!connection?.reply_read_enabled,
