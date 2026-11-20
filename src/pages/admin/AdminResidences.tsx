@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import SEO from "@/components/SEO";
+import { Link } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,15 +17,12 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2, Search, Upload, Grid3X3, X, Images, Star, LayoutList, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import TrustedResidencesEditor from "@/components/admin/TrustedResidencesEditor";
 import SectionsManager from "@/components/admin/SectionsManager";
 import { useResidenceSections } from "@/hooks/useResidenceSections";
 import { BulkAudienceActions } from "@/components/admin/residences/BulkAudienceActions";
 import AdminListingReview from "@/components/admin/AdminListingReview";
 import AdminMarketplaceReadiness from "@/components/admin/AdminMarketplaceReadiness";
 import AdminResidenceReviewModeration from "@/components/admin/residences/AdminResidenceReviewModeration";
-import SpotlightPlacementManager from "@/components/admin/residences/SpotlightPlacementManager";
-import MonthlyTopThreeManager from "@/components/admin/residences/MonthlyTopThreeManager";
 import {INSTITUTION_SUGGESTIONS,normalizeInstitutionTags} from "@/components/findmyres/ResidenceInstitutionBadges";
 
 interface Residence {
@@ -794,8 +792,11 @@ export const AdminResidencesContent = () => {
           </Dialog>
         </div>
 
-        <SpotlightPlacementManager residences={residences} onRefresh={()=>{void fetchResidences();}}/>
-        <MonthlyTopThreeManager residences={residences}/>
+        <div className="rounded-xl border bg-muted/30 p-4">
+          <p className="font-bold">Spotlight, Top 3 and trusted residence curation</p>
+          <p className="mt-1 text-sm text-muted-foreground">The Visual Studio is the single editor for public website showcases. Residence records and moderation remain here.</p>
+          <Button variant="outline" className="mt-3" asChild><Link to="/admin/studio?tab=showcases">Open canonical showcase editor</Link></Button>
+        </div>
 
         <Card>
           <CardHeader>
@@ -968,7 +969,10 @@ export const AdminResidencesContent = () => {
           </TabsContent>
 
           <TabsContent value="trusted">
-            <TrustedResidencesEditor />
+            <div className="rounded-xl border p-5">
+              <p className="font-semibold">Trusted residence curation is managed in Visual Studio.</p>
+              <Button asChild variant="outline" className="mt-3"><Link to="/admin/studio?tab=showcases">Open trusted residence editor</Link></Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="sections">
