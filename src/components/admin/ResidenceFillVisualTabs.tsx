@@ -119,12 +119,15 @@ export default function ResidenceFillVisualTabs({
   const [outreachLoading,setOutreachLoading] = useState(true);
   const [outreachError,setOutreachError] = useState("");
   const [outreachVerified,setOutreachVerified] = useState(false);
+  const [outreachScope,setOutreachScope] = useState("");
+  const outreachCurrent=outreachVerified&&outreachScope===mode+":"+academicYear;
   const requestRef=useRef(0);
   const db = supabase as any;
 
   const loadOutreach=useCallback(async()=>{
    const request=++requestRef.current;
    setOutreachLoading(true);
+   setOutreachError("");
    try{
     const {data,error}=await supabase.functions.invoke("reskonnect-email-dock",{
      body:{action:"residence_outreach_summary",
@@ -134,11 +137,11 @@ export default function ResidenceFillVisualTabs({
      throw new Error(data?.error||error?.message||"Unable to verify residence communication audit");
     if(request!==requestRef.current)return;
     setOutreach(data.items as ResidenceOutreach[]);
-    setOutreachVerified(true);setOutreachError("");
+    setOutreachVerified(true);setOutreachScope(mode+":"+academicYear);setOutreachError("");
    }catch(e){
     if(request!==requestRef.current)return;
     setOutreachVerified(false);
-    setOutreach([]);
+    setOutreachScope("");setOutreach([]);
     setOutreachError(e instanceof Error?e.message:"Communications data temporarily unavailable");
    }finally{if(request===requestRef.current)setOutreachLoading(false);}
   },[academicYear,mode]);
@@ -273,7 +276,7 @@ export default function ResidenceFillVisualTabs({
       const v=row.outreach;
       // Unknown audit state is not treated as "zero emails sent".
       const matchesOutreach=outreachFilter==="all"||
-       (outreachVerified&&(
+       (outreachCurrent&&(
         (outreachFilter==="needs-email"&&!!v&&v.unemailed_cases>0)||
         (outreachFilter==="contacted"&&!!v&&v.emailed_cases>0)||
         (outreachFilter==="completed"&&!!v&&v.total_cases>0&&v.unemailed_cases===0)||
@@ -283,7 +286,7 @@ export default function ResidenceFillVisualTabs({
        ));
       return matchesTab && matchesQuery && matchesOutreach;
     });
-  }, [rows, tab, query, outreachFilter, outreachVerified]);
+  }, [rows, tab, query, outreachFilter, outreachCurrent]);
 
   const totals = useMemo(() => {
     const measurable = rows.filter((row) => row.capacity !== null && row.reportedAvailable !== null);
@@ -349,9 +352,9 @@ export default function ResidenceFillVisualTabs({
             {outreachError&&<div role="alert" className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-700">
               Communication audit unavailable: {outreachError}. No unsent counts are inferred while the audit is unavailable.
             </div>}
-            {outreachLoading&&!outreachVerified&&!outreachError&&
+            {outreachLoading&&!outreachCurrent&&!outreachError&&
               <p className="text-xs text-muted-foreground" role="status">Reconciling residence communication evidence…</p>}
-            {outreachVerified&&<>
+            {outreachCurrent&&<>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
                 <Metric icon={Building2} label="Cases tracked" value={outreachTotals.cases.toLocaleString("en-ZA")}/>
                 <Metric icon={MailCheck} label="Cases emailed" value={outreachTotals.emailed.toLocaleString("en-ZA")}/>
@@ -438,7 +441,7 @@ export default function ResidenceFillVisualTabs({
                             <TinyStat label={securedLabel} value={row.securedCount} />
                           </div>
                           <div className="mt-3 border-t pt-3" aria-label="Case communication audit">
-                            {!outreachVerified?(
+                            {!outreachCurrent?(
                               <p className="text-xs text-muted-foreground">Communication tracking {outreachLoading?"loading…":"unavailable — use Refresh tracking"}</p>
                             ):!row.outreach?(
                               <p className="text-xs text-muted-foreground">{row.activityCount>0?"Communication ledger not reconciled for these cases":"No intake cases to contact"}</p>
