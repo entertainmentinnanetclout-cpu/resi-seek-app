@@ -3,6 +3,7 @@ import {KINDS,TEMPLATES,TEMPLATE_KEYS,APPLICATION_STATUSES,RESERVATION_STATUSES,
  smartTemplate,validateTemplate,type Kind,type TemplateKey} from "./correspondence.ts";
 import {type EmailSession,readCase,listCases,validUuid,permitted,publicCase} from "./context.ts";
 import {caseFingerprint} from "./case-queue.ts";
+import {reconcileReservationCorrespondence} from "./reservation-reconciliation.ts";
 import {previewPacket,makePreviewPdf,sendOne} from "./send.ts";
 import {whatsappClickToChat,whatsappMessage} from "./whatsapp.ts";
 import {readPublishedPhotoBytes} from "./residence-media.ts";
@@ -70,6 +71,10 @@ Deno.serve(async(req:Request)=>{
  }
  if(fixedTriage&&(note.length>0||!["application","reservation"].includes(kind)))return res({error:"Triage correspondence must use the fixed factual template without a custom note"},400);
 
+ if(action==="reservation_reconciliation"){
+  try{return res(await reconcileReservationCorrespondence(s,input.residence_id,input.academic_year));}
+  catch(e){return failure(e);}
+ }
  if(action==="reply_overview"){
   try{return res(await replyOverview(s,input.day));}
   catch(e){return failure(e);}
@@ -225,7 +230,7 @@ Deno.serve(async(req:Request)=>{
   }catch(e){return failure(e);}
  }
  if(["bulk_preview","bulk_send","bulk_status_preview","bulk_status_apply"].includes(action)){
-  const max=action==="bulk_send"?5:25;
+  const max=action==="bulk_send"||action==="bulk_preview"?10:25;
   const ids=idsFrom(input.ids,max);
   if(!ids)return res({error:"Select 1 to "+max+" unique case records"},400);
   if(action==="bulk_preview"){
@@ -240,7 +245,7 @@ Deno.serve(async(req:Request)=>{
   if(action==="bulk_send"){
    if(input.confirmed!==true||!validUuid(input.batch_id)||!Array.isArray(input.requests)||input.requests.length!==ids.length||
       input.requests.some((r:any,i:number)=>r?.id!==ids[i]||!validUuid(r.request_id)))
-    return res({error:"Review and explicitly approve each batch of up to five emails"},400);
+    return res({error:"Review and explicitly approve each batch of up to ten emails"},400);
 
    if(ids.length>1){
     // Compatibility for already-open browser/PWA tabs that submit 2-5 messages
@@ -282,7 +287,7 @@ Deno.serve(async(req:Request)=>{
      }
     };
     const results:any[]=[];
-    // Two at a time prevents a single Edge worker from building five PDFs
+    // Two at a time prevents a single Edge worker from building ten PDFs
     // while keeping the old client within an ordinary HTTP response window.
     for(let offset=0;offset<input.requests.length;offset+=2){
      const slice=input.requests.slice(offset,offset+2);
