@@ -1007,7 +1007,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        {needsReview&&!reviewedNow&&<div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950">
         Review this student's uploaded documents before opening a WhatsApp handoff. <Button size="sm" variant="outline" className="ml-2" onClick={()=>setPane("documents")}>Review now</Button>
        </div>}
-       <ManualWhatsAppPanel key={kind+":"+selected+":"+template+":"+note} kind={kind} targetId={selected} templateKey={template} note={note} invoke={premium} reviewId={selectedReceipt?.id||null} needsReview={needsReview} onActivityChange={()=>setActivityRevision(v=>v+1)}/>
+       <ManualWhatsAppPanel key={kind+":"+selected+":"+template+":"+note} kind={kind} targetId={selected} templateKey={template} note={note} invoke={premium} reviewId={selectedReceipt?.id||null} needsReview={needsReview} onActivityChange={()=>{setActivityRevision(v=>v+1);void loadItems({preserveLoaded:true});}}/>
       </TabsContent>
       <TabsContent value="bulk" className="m-0 space-y-4 px-4 pb-5">
        <div className="rounded-xl border bg-card p-4"><p className="flex items-center gap-2 font-semibold"><Users className="h-4 w-4 text-primary"/>Bulk communication</p>
