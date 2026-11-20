@@ -12,6 +12,8 @@ const context=read("supabase/functions/reskonnect-email-dock/context.ts");
 test("ten-email batches remain sequential and each Gmail/PDF send gets its own Edge request",()=>{
  assert.match(api,/action==="bulk_send"\|\|action==="bulk_preview"\?10:25/);
  assert.match(ui,/if\(ids\.length>10\)return toast\.error/);
+ assert.match(ui,/for\(let offset=0;offset<ids\.length;offset\+=5\)/);
+ assert.match(ui,/const batch=ids\.slice\(offset,offset\+5\)/);
  assert.match(ui,/for\(const id of ids\)/);
  assert.match(ui,/ids:\[id\],requests:\[request\]/);
  assert.match(ui,/Select 10 email/);
