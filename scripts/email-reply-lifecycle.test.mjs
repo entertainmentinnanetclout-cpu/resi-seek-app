@@ -47,7 +47,7 @@ test("student classifications are suggestions and cannot approve a placement",()
  assert.match(replies,/caseContext\.status!=="confirmed"/);
  assert.match(replies,/handover_approved_at/);
  assert.match(replies,/milestone:"housing",status:"verified_complete"/);
- assert.match(ui,/not a formal status change/);
+ assert.match(ui,/not a formal placement decision/);
 });
 test("response cases and inbox excerpts remain private behind Edge authorization",()=>{
  assert.match(sql,/create table if not exists public\.reskonnect_email_response_cases/);
