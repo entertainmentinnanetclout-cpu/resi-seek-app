@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {ArrowDown,ArrowUp,CheckCircle2,Clock3,ExternalLink,Eye,EyeOff,History,Image,Layers,Loader2,Monitor,Move,RefreshCw,RotateCcw,Save,Search,ShieldCheck,Smartphone,Tablet,Undo2,Redo2} from "lucide-react";
-import {Link} from "react-router-dom";
+import {Link,useSearchParams} from "react-router-dom";
 import {toast} from "sonner";
 import SEO from "@/components/SEO";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -8,8 +8,6 @@ import ResidenceVisualManager from "@/components/admin/ResidenceVisualManager";
 import SpotlightPlacementManager from "@/components/admin/residences/SpotlightPlacementManager";
 import MonthlyTopThreeManager from "@/components/admin/residences/MonthlyTopThreeManager";
 import TrustedResidencesEditor from "@/components/admin/TrustedResidencesEditor";
-import {AdminSlidesContent} from "@/pages/admin/AdminSlides";
-import {AdminCategoryCardsContent} from "@/pages/admin/AdminCategoryCards";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
@@ -46,7 +44,10 @@ const mediaLinks=[
 ];
 
 export default function AdminVisualStudio(){
- const [tab,setTab]=useState("pages");
+ const [params,setParams]=useSearchParams();
+ const activeTab=params.get("tab");
+ const [tab,setTabState]=useState(activeTab&&["pages","residences","showcases","media"].includes(activeTab)?activeTab:"pages");
+ const setTab=(value:string)=>{setTabState(value);const next=new URLSearchParams(params);next.set("tab",value);setParams(next,{replace:true});};
  const [page,setPage]=useState<VisualPageKey>("landing");
  const [source,setSource]=useState<VisualPageSection[]>([]);
  const [draft,setDraft]=useState<VisualSectionDraft[]>([]);
@@ -355,8 +356,8 @@ export default function AdminVisualStudio(){
     <TabsContent value="media" className="mt-5 space-y-5">
      <div className="rounded-2xl border bg-card p-4"><h2 className="text-xl font-black">Visual media & discovery cards</h2><p className="mt-2 text-sm text-muted-foreground">Use the existing production media managers in this workspace. No duplicate content records are created.</p></div>
      <div className="flex flex-wrap gap-2">{mediaLinks.map(([label,to])=><Button key={to} size="sm" variant="outline" asChild><Link to={to}>{label}<ExternalLink className="ml-1.5 h-3.5 w-3.5"/></Link></Button>)}</div>
-     <AdminSlidesContent/>
-     <AdminCategoryCardsContent/>
+     <p className="text-xs text-muted-foreground">Media & cards open their existing editorial controls. Studio no longer renders a second copy of those managers.</p>
+     <Button variant="outline" asChild><Link to="/admin/media?tab=slides">Open one media and category editor <ExternalLink className="ml-2 h-3 w-3"/></Link></Button>
     </TabsContent>
    </Tabs>
   </div>
