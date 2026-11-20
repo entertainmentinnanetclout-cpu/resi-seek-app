@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { Activity, BedDouble, Building2, CheckCircle2, CircleAlert, Gauge, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { Activity, BedDouble, Building2, CheckCircle2, CircleAlert, Gauge, MailCheck, MessageCircle, RefreshCw, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -25,10 +28,31 @@ type AcademicInventory = {
   residences?: { name?: string | null; campus?: string | null } | null;
 };
 
+type ResidenceOutreach = {
+ residence_id: string;
+ total_cases: number;
+ emailed_cases: number;
+ unemailed_cases: number;
+ accepted_messages: number;
+ unconfirmed_only_cases: number;
+ failed_only_cases: number;
+ whatsapp_marked_cases: number;
+ whatsapp_opened_only_cases: number;
+ emailed_whatsapp_pending: number;
+ replied_cases: number;
+ replies_needing_review: number;
+ last_gmail_at: string | null;
+ last_whatsapp_at: string | null;
+ status_counts: Record<string,number>;
+};
+
+type OutreachFilter = "all" | "needs-email" | "contacted" | "completed" | "whatsapp-pending" | "replied" | "uncertain";
+
 type FillRow = {
   id: string;
   name: string;
   campus: string | null;
+  outreach: ResidenceOutreach | null;
   capacity: number | null;
   reportedAvailable: number | null;
   blocked: number;
@@ -90,7 +114,51 @@ export default function ResidenceFillVisualTabs({
   const [inventory, setInventory] = useState<AcademicInventory[]>([]);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("all");
+  const [outreachFilter,setOutreachFilter] = useState<OutreachFilter>("all");
+  const [outreach,setOutreach] = useState<ResidenceOutreach[]>([]);
+  const [outreachLoading,setOutreachLoading] = useState(true);
+  const [outreachError,setOutreachError] = useState("");
+  const [outreachVerified,setOutreachVerified] = useState(false);
+  const requestRef=useRef(0);
   const db = supabase as any;
+
+  const loadOutreach=useCallback(async()=>{
+   const request=++requestRef.current;
+   setOutreachLoading(true);
+   try{
+    const {data,error}=await supabase.functions.invoke("reskonnect-email-dock",{
+     body:{action:"residence_outreach_summary",
+      kind:mode==="reservations"?"reservation":"application",academic_year:academicYear}
+    });
+    if(error||data?.verified!==true||!Array.isArray(data?.items))
+     throw new Error(data?.error||error?.message||"Unable to verify residence communication audit");
+    if(request!==requestRef.current)return;
+    setOutreach(data.items as ResidenceOutreach[]);
+    setOutreachVerified(true);setOutreachError("");
+   }catch(e){
+    if(request!==requestRef.current)return;
+    setOutreachVerified(false);
+    setOutreach([]);
+    setOutreachError(e instanceof Error?e.message:"Communications data temporarily unavailable");
+   }finally{if(request===requestRef.current)setOutreachLoading(false);}
+  },[academicYear,mode]);
+  useEffect(()=>{
+   void loadOutreach();
+   const refresh=()=>{if(document.visibilityState==="visible")void loadOutreach();};
+   window.addEventListener("focus",refresh);
+   const interval=window.setInterval(refresh,60_000);
+   return ()=>{requestRef.current++;window.removeEventListener("focus",refresh);window.clearInterval(interval);};
+  },[loadOutreach]);
+
+  const outreachByResidence=useMemo(
+   ()=>new Map<string,ResidenceOutreach>(outreach.map(x=>[x.residence_id,x])),[outreach]);
+  const outreachTotals=useMemo(()=>outreach.reduce((a,r)=>({
+   cases:a.cases+r.total_cases,emailed:a.emailed+r.emailed_cases,
+   unemailed:a.unemailed+r.unemailed_cases,
+   sent:a.sent+r.accepted_messages,
+   whatsappPending:a.whatsappPending+r.emailed_whatsapp_pending,
+   replies:a.replies+r.replied_cases
+  }),{cases:0,emailed:0,unemailed:0,sent:0,whatsappPending:0,replies:0}),[outreach]);
 
   useEffect(() => {
     let active = true;
@@ -151,6 +219,7 @@ export default function ResidenceFillVisualTabs({
         id: entry.residence_id,
         name: entry.residences?.name || "Residence",
         campus: entry.residences?.campus || null,
+        outreach:outreachByResidence.get(entry.residence_id)||null,
         capacity,
         reportedAvailable: available,
         blocked,
@@ -172,6 +241,7 @@ export default function ResidenceFillVisualTabs({
         id: activity.residence_id,
         name: activity.residence_name || "Residence",
         campus: null,
+        outreach:outreachByResidence.get(activity.residence_id)||null,
         capacity: null,
         reportedAvailable: null,
         blocked: 0,
@@ -193,16 +263,27 @@ export default function ResidenceFillVisualTabs({
         || b.activeCount - a.activeCount
         || a.name.localeCompare(b.name);
     });
-  }, [activityRows, inventory, mode]);
+  }, [activityRows, inventory, mode, outreachByResidence]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return rows.filter((row) => {
       const matchesTab = tab === "all" || row.bucket === tab || (tab === "attention" && ["full", "near_full"].includes(row.bucket));
       const matchesQuery = !q || `${row.name} ${row.campus || ""}`.toLowerCase().includes(q);
-      return matchesTab && matchesQuery;
+      const v=row.outreach;
+      // Unknown audit state is not treated as "zero emails sent".
+      const matchesOutreach=outreachFilter==="all"||
+       (outreachVerified&&(
+        (outreachFilter==="needs-email"&&!!v&&v.unemailed_cases>0)||
+        (outreachFilter==="contacted"&&!!v&&v.emailed_cases>0)||
+        (outreachFilter==="completed"&&!!v&&v.total_cases>0&&v.unemailed_cases===0)||
+        (outreachFilter==="whatsapp-pending"&&!!v&&v.emailed_whatsapp_pending>0)||
+        (outreachFilter==="replied"&&!!v&&v.replied_cases>0)||
+        (outreachFilter==="uncertain"&&!!v&&v.unconfirmed_only_cases>0)
+       ));
+      return matchesTab && matchesQuery && matchesOutreach;
     });
-  }, [rows, tab, query]);
+  }, [rows, tab, query, outreachFilter, outreachVerified]);
 
   const totals = useMemo(() => {
     const measurable = rows.filter((row) => row.capacity !== null && row.reportedAvailable !== null);
