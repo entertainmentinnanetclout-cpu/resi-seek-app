@@ -36,10 +36,10 @@ type CaseInfo={
  document_signal:Signal;recommended_template:Template;recipient_hint:string|null;can_email:boolean;academic_year:string;
  residence_image_url?:string|null;has_whatsapp?:boolean;
 };
-type EmailPreview={subject:string;body:string;html:string;template_name:string;resolved_key:Template;case:CaseInfo;pdf_attached:boolean;preview_hash:string};
+type EmailPreview={subject:string;body:string;html:string;template_name:string;resolved_key:Template;case:CaseInfo;pdf_attached:boolean;preview_hash:string;issuer?:"reskonnect"|"residence"};
 type DocTemplate={name:string;subject:string;body:string};
 type Override={target_kind:Kind;template_key:Template;subject_template:string;body_template:string};
-type History={id:string;subject:string;target_kind:Kind;template_key:string;delivery_status:string;recipient_email:string;created_at:string;failure_code:string|null;pdf_attached:boolean};
+type History={id:string;subject:string;target_kind:Kind;template_key:string;delivery_status:string;recipient_email:string;created_at:string;failure_code:string|null;pdf_attached:boolean;sender_scope?:string;sender_name?:string};
 type BulkResult={id:string;ok?:boolean;updated?:boolean;sent?:boolean;label?:string;status?:string;from?:string;to?:string;reason?:string;error?:string;subject?:string;body?:string;resolved_key?:Template;document_signal?:Signal;preview_hash?:string};
 const kindLabels:Record<Kind,string>={application:"Applications",reservation:"Reservations",housing_lead:"Housing enquiries",support_enquiry:"Support enquiries"};
 const statusOptions:Record<"application"|"reservation",string[]>={
@@ -773,7 +773,9 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        <div><p className="text-base font-bold">Premium correspondence</p>
         <p className="text-xs text-muted-foreground">White and gold branded emails, accurate case details and an individual PDF letter.</p></div>
        {preview?<div className="space-y-3">
-        <div className="rounded-xl border bg-card p-3"><p className="text-[10px] font-bold uppercase text-muted-foreground">To: {preview.case.recipient_hint}</p>
+        <div className="rounded-xl border bg-card p-3">
+         <p className="text-[10px] font-bold uppercase text-muted-foreground">From: {preview.issuer==="reskonnect"?"ResKonnect · official company notice":preview.case.property+" · residence notice"} &lt;{connection?.email||"Connect Gmail"}&gt;</p>
+         <p className="mt-1 text-[10px] font-bold uppercase text-muted-foreground">To: {preview.case.recipient_hint} · Case residence: {preview.case.property}</p>
          <p className="mt-2 text-sm font-bold">{preview.subject}</p>
          <div className="mt-2 flex flex-wrap gap-2"><Badge variant="secondary">{pretty(preview.resolved_key)}</Badge><Badge variant="outline"><Paperclip className="mr-1 h-3 w-3"/>PDF attachment</Badge></div>
         </div>
@@ -892,6 +894,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           <div className="flex items-start justify-between gap-2"><p className="text-sm font-semibold">{x.subject}</p>
            <Badge variant={x.delivery_status==="sent"?"default":x.delivery_status==="failed"?"destructive":"outline"}>{pretty(x.delivery_status)}</Badge></div>
           <p className="mt-1 text-xs text-muted-foreground">{x.recipient_email} · {new Date(x.created_at).toLocaleString("en-ZA")}</p>
+          <p className="mt-1 text-xs font-semibold">Sent as: {x.sender_scope==="reskonnect"?"ResKonnect · company":x.sender_scope==="residence"?"Residence": "Historical identity not recorded"}</p>
           <div className="mt-2 flex items-center gap-2 text-xs">{x.pdf_attached&&<Badge variant="outline"><Paperclip className="mr-1 h-3 w-3"/>PDF included</Badge>}<span>{pretty(x.template_key)}</span></div>
           {x.failure_code&&<p className="mt-1 text-xs text-amber-700">{x.failure_code}</p>}
          </div>)}
