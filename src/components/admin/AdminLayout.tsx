@@ -126,7 +126,7 @@ const AdminSidebar=({
             <Paintbrush className="h-4 w-4 shrink-0"/>{!collapsed&&<span>Specialist tools</span>}
           </summary>
           <SidebarGroupContent><SidebarMenu>
-            {ADMIN_ADVANCED_TOOLS.map(tool)=><SidebarMenuItem key={tool.path}>
+            {ADMIN_ADVANCED_TOOLS.map(tool=><SidebarMenuItem key={tool.path}>
               <SidebarMenuButton asChild isActive={location.pathname===tool.path} tooltip={tool.function+" · "+tool.label}>
                 <Link to={tool.path}><span className="truncate">{tool.label}</span></Link>
               </SidebarMenuButton>
