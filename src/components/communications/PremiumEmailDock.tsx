@@ -404,6 +404,9 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   setBusy("preview");setPreview(null);setApproved(false);
   try{
    const r=await premium({action:"preview",kind,target_id:selected,template_key:template,message:note});
+   // A preview is a fresh server read. Synchronize the case card and displayed
+   // listing photo with exactly the residence image included in this email.
+   if(r.case)setCaseInfo(r.case as CaseInfo);
    setPreview(r as EmailPreview);lastPreviewRef.current=selected+":"+template+":"+note;
    setPane("compose");
   }catch(e){showError(e);}finally{setBusy(null);}
@@ -899,7 +902,14 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           <FileCheck2 className="mr-1.5 h-3.5 w-3.5"/>{reviewedNow?"Open files":"Review files"}
          </Button>
         </div>}
-        {caseInfo.residence_image_url&&<img src={caseInfo.residence_image_url} alt={"Real listing photo: "+caseInfo.property} className="mt-3 max-h-32 w-full rounded-lg object-cover"/>}
+        {caseInfo.residence_image_url&&<div className="mt-3 space-y-2">
+         <img src={caseInfo.residence_image_url} alt={"Current listing photo: "+caseInfo.property} className="max-h-32 w-full rounded-lg object-cover"/>
+         <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] text-muted-foreground">Image from this accommodation's current published listing</p>
+          <Button type="button" variant="outline" size="sm" className="h-7 text-[11px]" disabled={!!busy}
+           onClick={()=>{resetPreview();void loadCase();}}><RefreshCw className="mr-1 h-3 w-3"/>Refresh photo</Button>
+         </div>
+        </div>}
         {active&&<div className="rounded-xl border bg-background p-3" aria-label="Linked email WhatsApp and status evidence">
         <p className="flex items-center gap-1 text-xs font-bold"><ShieldCheck className="h-3.5 w-3.5"/>Channel and status evidence</p>
         <div className="mt-2 grid gap-1.5 text-xs">

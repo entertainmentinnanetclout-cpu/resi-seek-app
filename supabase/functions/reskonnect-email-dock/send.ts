@@ -142,7 +142,7 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
   p_snapshot:{recorded_status:ctx.status,document_stage:ctx.documents.stage,
    missing_count:ctx.documents.missing.length,template_key:selected,
    sender_scope:senderScope,sender_display_name:senderName,sender_email:sender.fromEmail,
-   accommodation_name:ctx.property}
+   accommodation_name:ctx.property,residence_image_url:ctx.residenceImageUrl||null}
  });
  if(reserveErr)return {sent:false,error:"Cannot safely reserve sender quota. No email was sent.",status:503};
  if(!reservation?.reserved){
