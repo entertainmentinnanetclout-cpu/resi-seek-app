@@ -3,6 +3,7 @@ import {useSearchParams} from "react-router-dom";
 import {AlertTriangle,CheckCircle2,CheckCheck,ChevronRight,Clock3,Download,FileCheck2,FileText,Inbox,Layers,Loader2,Mail,MailCheck,MessageCircle,Paperclip,RefreshCw,Search,Send,Settings2,ShieldCheck,Sparkles,Unplug,Users,WalletCards,LayoutList,SlidersHorizontal,ArrowUpDown} from "lucide-react";
 import ManualWhatsAppPanel from "./ManualWhatsAppPanel";
 import DocumentReviewPanel,{type DocumentReviewReceipt} from "./DocumentReviewPanel";
+import ReservationEmailReconciliation from "./ReservationEmailReconciliation";
 import ContactActivityDashboard from "./ContactActivityDashboard";
 import ReplyIntelligencePanel from "./ReplyIntelligencePanel";
 import LandlordGmailGuide from "./LandlordGmailGuide";
@@ -24,7 +25,7 @@ type Template="triage_received"|"triage_under_review"|"smart"|"acknowledgement"|
 type Mode="admin"|"landlord";
 type Signal={stage:string;missing:string[];uploaded:number;pendingReview:number;summary:string};
 type CaseItem={
- id:string;kind:Kind;label:string;status:string;property:string;reference:string;
+ id:string;kind:Kind;label:string;status:string;property:string;residence_id?:string|null;reference:string;
  created_at:string;document_stage:string;missing_count:number;pending_review:number;uploaded_count?:number;
  recommended_template:Template;recipient_hint:string|null;can_email:boolean;
  workflow_bucket?:string;service_action?:string;last_email_at?:string|null;last_email_template?:string|null;
@@ -83,7 +84,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [selected,setSelected]=useState(params.get("target")||"");
  // Case Command Center deep links into the *same* real Email Dock; never
  // create a second send implementation or a second audit history.
- const initialBatchIds=(params.get("cases")||"").split(",").filter(x=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(x)).slice(0,25);
+ const initialBatchIds=(params.get("cases")||"").split(",").filter(x=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(x)).slice(0,10);
  const initialTriage=params.get("template")==="triage_under_review"?"triage_under_review":
    params.get("template")==="triage_received"?"triage_received":null;
  const [checked,setChecked]=useState<Set<string>>(()=>new Set(initialBatchIds));
@@ -214,7 +215,13 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   }catch(e){setCaseInfo(null);console.warn("Case unavailable",e);}
  },[premium,kind,selected]);
  useEffect(()=>{void loadConnection();void loadHistory();void loadTemplates();},[loadConnection,loadHistory,loadTemplates]);
- useEffect(()=>{void loadItems();setChecked(new Set());},[loadItems]);
+ const firstCaseLoad=useRef(true);
+ useEffect(()=>{
+  void loadItems();
+  // Keep the God Mode cases when this component initially opens.
+  if(firstCaseLoad.current){firstCaseLoad.current=false;return;}
+  setChecked(new Set());
+ },[loadItems]);
  useEffect(()=>{const interval=window.setInterval(()=>{if(document.visibilityState==="visible")void loadItems({preserveLoaded:true});},45000);return ()=>window.clearInterval(interval);},[loadItems]);
  useEffect(()=>{
   // Typical residence queues fit into a few pages. Load them automatically so
@@ -400,6 +407,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const previewBulk=async()=>{
   const ids=[...checked];
   if(!ids.length)return toast.error("Select cases from the inbox");
+  if(ids.length>10)return toast.error("A Gmail batch has a maximum of 10 unique records. Deselect "+(ids.length-10)+" first.");
   setBusy("bulk-preview");setBulkPreview([]);setBulkApproval(false);setBatchSummary(null);
   try{
    const response=await premium({action:"bulk_preview",kind,ids,template_key:bulkTemplate,message:fixedBulkTriage?"":note});
@@ -410,6 +418,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const sendBulk=async()=>{
   if(updateAvailable)return toast.warning("A new ResKonnect version is available. Refresh the page before sending a bulk batch.");
   if(!connection?.connected||!bulkApproval||!bulkPreview.length)return;
+  if(bulkPreview.filter(x=>x.ok).length>10)return toast.error("A Gmail batch can include no more than 10 cases");
   if(needsReview&&!fixedBulkTriage&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))return toast.error("Review every selected student’s documents before a bulk send");
   const ids=bulkPreview.filter(x=>x.ok).map(x=>x.id);
   if(!ids.length)return toast.error("No eligible case emails");
@@ -539,6 +548,13 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        <span>A new ResKonnect version is ready. Refresh before using the bulk Email Dock.</span>
        <Button type="button" size="sm" variant="outline" disabled={!!busy||!!pendingSend} onClick={()=>window.location.reload()}>Refresh app</Button>
       </div>}
+    {mode==="admin"&&kind==="reservation"&&workspace==="cases"&&
+     <div className="border-b p-4">
+      <ReservationEmailReconciliation items={items} year={academicYear} revision={activityRevision}
+       premium={premium}
+       onPrepare={ids=>{setChecked(new Set(ids.slice(0,10)));setBulkTemplate("triage_received");setBulkPreview([]);setBulkApproval(false);setPane("bulk");toast.info("Prepared "+Math.min(ids.length,10)+" never-attempted reservations. Review the drafts and approve manually; no email has been sent.");}}
+       onSelect={id=>{selectRecord(id);setPane("compose");}}/>
+     </div>}
     <nav className="sticky top-0 z-20 border-b bg-background/95 px-4 py-3 shadow-sm backdrop-blur sm:px-5" aria-label="Communications workspace">
      <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex flex-wrap gap-1.5">
@@ -807,7 +823,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       </TabsContent>
       <TabsContent value="bulk" className="m-0 space-y-4 px-4 pb-5">
        <div className="rounded-xl border bg-card p-4"><p className="flex items-center gap-2 font-semibold"><Users className="h-4 w-4 text-primary"/>Bulk communication</p>
-        <p className="mt-1 text-xs text-muted-foreground">{selectedCount} selected · individualized case context and PDF per recipient · five sends per batch</p>
+        <p className="mt-1 text-xs text-muted-foreground">{selectedCount} selected · up to 10 individualized emails per batch · each PDF generated in a separate authenticated Edge request</p>
+        {selectedCount>10&&<p role="alert" className="mt-1 text-xs font-semibold text-amber-700">Select 10 or fewer for email. Bulk status changes retain their existing limit.</p>}
         <p className="mt-1 text-xs font-semibold text-primary">One unified sending engine: select Smart correspondence or a fixed ResKonnect triage notice with MFA.</p>
         {mode==="admin"&&needsReview&&<div className="space-y-2 rounded-lg border p-3">
          <Label>Batch template</Label>
@@ -819,7 +836,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           </SelectContent></Select>
          {fixedBulkTriage&&<p className="text-xs text-amber-700">Fixed factual wording only. MFA-verified administrators may acknowledge a case before document review; this never approves accommodation or funding.</p>}
         </div>}
-        <Button className="mt-3 w-full" variant="secondary" onClick={()=>void previewBulk()} disabled={!selectedCount||!!busy}><FileCheck2 className="mr-2 h-4 w-4"/>Review selected messages</Button>
+        <Button className="mt-3 w-full" variant="secondary" onClick={()=>void previewBulk()} disabled={!selectedCount||selectedCount>10||!!busy}><FileCheck2 className="mr-2 h-4 w-4"/>Review selected messages</Button>
         {bulkPreview.length>0&&<div className="mt-3 space-y-2">{bulkPreview.map(messageCard)}
          {needsReview&&!fixedBulkTriage&&bulkPreview.some(x=>x.ok&&!reviewReceiptFor(x.id))&&<div className="rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-950">
           <p className="font-bold">Document review needed before bulk sending</p>
