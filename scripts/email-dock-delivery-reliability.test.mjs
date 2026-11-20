@@ -31,7 +31,10 @@ test("PDF generation avoids CPU-expensive embedded residence PNGs and oversized 
 test("bulk Gmail sends use one PDF per Edge Function request",()=>{
  assert.match(dock,/for\(const id of ids\)/);
  assert.match(dock,/ids:\[id\],requests:\[request\]/);
- assert.match(api,/if\(ids\.length>1\)return res/);
+ assert.match(api,/if\(ids\.length>1\)\{/);
+ assert.match(api,/const processOne=async\(item:any\)=>/);
+ assert.match(api,/ids:\[item\.id\],requests:\[item\]/);
+ assert.match(api,/Promise\.all\(slice\.map\(processOne\)\)/);
 });
 test("the UI can reconcile a lost response and blocks a second ambiguous send",()=>{
  assert.match(dock,/reconcileSend\(requestId\)/);
@@ -55,4 +58,29 @@ test("single and bulk sends preserve uncertain delivery states and reveal genuin
  assert.match(dock,/deliveryMayBeUncertain\(e\)/);
  assert.match(dock,/setPendingSend\(\{requestId,kind,targetId:selected\}\)/);
  assert.match(dock,/failureReasons\.push/);
+});
+
+test("God Mode and Communications Dock both send one PDF per request",()=>{
+ const godmode=file("src/pages/admin/AdminCaseCommandCenter.tsx");
+ assert.match(godmode,/for\(const draft of eligible\)/);
+ assert.match(godmode,/ids:\[draft\.id\],requests:\[request\]/);
+ assert.doesNotMatch(godmode,/action:"bulk_send",kind,ids,requests/);
+ assert.match(godmode,/action:"send_status",request_id:requestId/);
+ assert.match(dock,/ids:\[id\],requests:\[request\]/);
+});
+test("legacy batch fanout is bounded, JWT-protected, and never retries unknown sends",()=>{
+ assert.match(api,/const anonKey=Deno\.env\.get\("SUPABASE_ANON_KEY"\)/);
+ assert.match(api,/\["Authorization":"Bearer "\+bearer,"apikey":anonKey/);
+ assert.match(api,/\.eq\("actor_user_id",actor\)/);
+ assert.match(api,/uncertain:true/);
+ assert.match(api,/for\(let offset=0;offset<input\.requests\.length;offset\+=2\)/);
+ assert.match(api,/unconfirmed:results\.filter\(x=>x\.uncertain\)\.length/);
+});
+test("bulk UI no longer labels unknown outcomes as definitely unsent",()=>{
+ assert.match(dock,/batchSummary\.unconfirmed/);
+ assert.match(dock,/incompleteIds\.push\(id\)/);
+ assert.match(dock,/controllerchange/);
+ const godmode=file("src/pages/admin/AdminCaseCommandCenter.tsx");
+ assert.match(godmode,/status:"accepted"\|"failed"\|"unconfirmed"/);
+ assert.match(godmode,/Do not resend unconfirmed emails/);
 });
