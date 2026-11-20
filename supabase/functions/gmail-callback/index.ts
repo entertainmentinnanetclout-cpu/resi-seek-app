@@ -40,6 +40,11 @@ Deno.serve(async (req:Request)=>{
   if(!google.sub || !google.email || google.email_verified!==true) return html("Unverified Google account","Please use a verified Google email address.",400);
   const {error:saveError}=await admin.rpc("gmail_store_connection",{p_user_id:user_id,p_google_subject:google.sub,p_gmail_address:google.email,p_refresh_token:tokens.refresh_token});
   if(saveError){console.error("gmail vault save failed",saveError.message);return html("Unable to save connection","Please try connecting Gmail again.",503);}
+  // Persist only permissions actually granted by Google, never requested scopes.
+  const {error:scopeErr}=await admin.from("landlord_gmail_connections")
+    .update({reply_read_enabled:granted.has("https://www.googleapis.com/auth/gmail.readonly")})
+    .eq("user_id",user_id);
+  if(scopeErr){console.error("Gmail scope audit failed",scopeErr.message);return html("Permission record unavailable","Reconnect Gmail so ResKonnect can validate inbox-sync permissions.",503);}
   const destination=isAdmin
     ? "https://www.reskonnect.org/admin/communications?tab=email&gmail=connected"
     : "https://www.reskonnect.org/residence/communications?gmail=connected";

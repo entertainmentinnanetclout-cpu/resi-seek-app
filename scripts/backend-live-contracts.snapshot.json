@@ -333,6 +333,8 @@
     "reskonnect_commercial_promotions",
     "reskonnect_discovery_inventory_v",
     "reskonnect_document_review_audit",
+    "reskonnect_email_replies",
+    "reskonnect_email_response_cases",
     "reskonnect_email_templates",
     "reskonnect_listing_studio_drafts",
     "reskonnect_marketplace_readiness_v",
@@ -6024,5 +6026,9 @@
       "authenticated": true,
       "anon": false
     }
+  ],
+  "verified_schema_additions_2026_11_20": [
+    "reskonnect_email_replies",
+    "reskonnect_email_response_cases"
   ]
 }

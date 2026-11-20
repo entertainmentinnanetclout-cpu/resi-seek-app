@@ -4,6 +4,7 @@ import {AlertTriangle,CheckCircle2,CheckCheck,ChevronRight,Clock3,Download,FileC
 import ManualWhatsAppPanel from "./ManualWhatsAppPanel";
 import DocumentReviewPanel,{type DocumentReviewReceipt} from "./DocumentReviewPanel";
 import ContactActivityDashboard from "./ContactActivityDashboard";
+import ReplyIntelligencePanel from "./ReplyIntelligencePanel";
 import LandlordGmailGuide from "./LandlordGmailGuide";
 import {supabase} from "@/integrations/supabase/client";
 import {toast} from "sonner";
@@ -91,7 +92,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [note,setNote]=useState("");
  const [preview,setPreview]=useState<EmailPreview|null>(null);
  const [approved,setApproved]=useState(false);
- const [connection,setConnection]=useState<{connected:boolean;email:string|null}|null>(null);
+ const [connection,setConnection]=useState<{connected:boolean;email:string|null;reply_sync_enabled?:boolean}|null>(null);
  const [connectedError,setConnectedError]=useState("");
  const [busy,setBusy]=useState<string|null>(null);
  const [pendingSend,setPendingSend]=useState<{requestId:string;kind:Kind;targetId:string}|null>(null);
@@ -295,12 +296,12 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   setBulkPreview([]);setStatusPreview([]);setBulkApproval(false);setStatusApproved(false);
  };
  const showError=(e:unknown)=>toast.error(e instanceof Error?e.message:"Email operation failed");
- const connectionAction=async(action:"connect"|"disconnect")=>{
+ const connectionAction=async(action:"connect"|"connect_replies"|"disconnect")=>{
   if(action==="disconnect"&&!window.confirm("Disconnect the selected Gmail account? The audit history remains available."))return;
   setBusy(action);
   try{
    const r=await invoke("gmail-connect",{action});
-   if(action==="connect"){
+   if(action==="connect"||action==="connect_replies"){
     if(!String(r.authorization_url||"").startsWith("https://accounts.google.com/"))throw Error("Google authorization URL unavailable");
     window.location.assign(r.authorization_url);
    }else{
@@ -747,7 +748,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        <TabsTrigger value="whatsapp"><MessageCircle className="mr-1 h-3.5 w-3.5"/>WhatsApp</TabsTrigger>
        <TabsTrigger value="bulk"><Layers className="mr-1 h-3.5 w-3.5"/>Bulk</TabsTrigger>
        <TabsTrigger value="templates"><Settings2 className="mr-1 h-3.5 w-3.5"/>Templates</TabsTrigger>
-       <TabsTrigger value="history"><Clock3 className="mr-1 h-3.5 w-3.5"/>History</TabsTrigger>
+       <TabsTrigger value="history"><Clock3 className="mr-1 h-3.5 w-3.5"/>Sent & replies</TabsTrigger>
       </TabsList>
       {needsReview&&<TabsContent value="documents" className="m-0 space-y-4 px-4 pb-5">
        {selected?<DocumentReviewPanel key={kind+":"+selected} kind={kind} targetId={selected} invoke={premium}
@@ -860,7 +861,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        <p className="text-xs text-muted-foreground">{stored?"Custom version saved":"ResKonnect standard template"} · The logo, footer and case-status checks remain controlled by ResKonnect.</p>
       </TabsContent>
       <TabsContent value="history" className="m-0 space-y-3 px-4 pb-5">
-       <div className="flex items-center justify-between"><p className="font-bold">Correspondence history</p><Button variant="ghost" size="sm" onClick={()=>void loadHistory()}><RefreshCw className="h-4 w-4"/></Button></div>
+       <ReplyIntelligencePanel invoke={premium} connection={connection} mode={mode} revision={activityRevision}
+        onEnableReplySync={()=>void connectionAction("connect_replies")}/>
+       <details className="rounded-xl border p-3">
+       <summary className="cursor-pointer text-sm font-semibold">Full outgoing delivery audit (including unsent and uncertain attempts)</summary>
+       <div className="mt-3 flex items-center justify-between"><p className="font-bold">Correspondence history</p><Button variant="ghost" size="sm" onClick={()=>void loadHistory()}><RefreshCw className="h-4 w-4"/></Button></div>
        <ScrollArea className="h-[550px]">
         {history.length===0?<p className="p-8 text-center text-sm text-muted-foreground">No outgoing emails recorded yet.</p>:
          history.map(x=><div key={x.id} className="mb-2 rounded-xl border bg-card p-3">
@@ -871,6 +876,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           {x.failure_code&&<p className="mt-1 text-xs text-amber-700">{x.failure_code}</p>}
          </div>)}
        </ScrollArea>
+       </details>
       </TabsContent>
      </Tabs>
     </section>

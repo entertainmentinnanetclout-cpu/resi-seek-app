@@ -1,0 +1,60 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const file=(path)=>readFileSync(path,"utf8");
+const edge=file("supabase/functions/reskonnect-email-dock/index.ts");
+const replies=file("supabase/functions/reskonnect-email-dock/reply-intelligence.ts");
+const connect=file("supabase/functions/gmail-connect/index.ts");
+const callback=file("supabase/functions/gmail-callback/index.ts");
+const dock=file("src/components/communications/PremiumEmailDock.tsx");
+const ui=file("src/components/communications/ReplyIntelligencePanel.tsx");
+const sql=file("supabase/migrations/20261120164000_email_reply_lifecycle_intelligence.sql");
+test("outbound history has day-scoped local-time audited emails",()=>{
+ assert.match(replies,/Date\.now\(\)\+2\*60\*60\*1000/);
+ assert.match(replies,/\.eq\("actor_user_id",s\.actor\)\.eq\("delivery_status","sent"\)/);
+ assert.match(replies,/\.gte\("sent_at",d\.from\)\.lt\("sent_at",d\.to\)/);
+ assert.match(replies,/awaiting_reply":"not_checked"/);
+ assert.match(replies,/last_reply_checked_at/);
+ assert.match(ui,/Sent on selected date/);
+ assert.match(ui,/Reply not checked/);
+ assert.match(ui,/No reply as of last check/);
+});
+test("Gmail inbox read permission is separate and opt-in",()=>{
+ assert.match(connect,/action==="connect"\|\|action==="connect_replies"/);
+ assert.match(connect,/action==="connect_replies"\?/);
+ assert.match(connect,/https:\/\/www\.googleapis\.com\/auth\/gmail\.send/);
+ assert.match(connect,/https:\/\/www\.googleapis\.com\/auth\/gmail\.readonly/);
+ assert.match(callback,/reply_read_enabled:granted\.has/);
+ assert.match(replies,/reply_read_enabled/);
+ assert.match(replies,/READ_SCOPE/);
+ assert.match(dock,/connectionAction\("connect_replies"\)/);
+ assert.match(file("src/pages/Privacy.tsx"),/Separately, you may explicitly enable reply tracking/);
+});
+test("only actual Gmail reply threads from the intended recipient match",()=>{
+ assert.match(replies,/encodeURIComponent\(outgoing\.provider_message_id\)/);
+ assert.match(replies,/encodeURIComponent\(threadId\)/);
+ assert.match(replies,/mailbox\(header\(message,"From"\)\)!==String\(outgoing\.recipient_email\)\.toLowerCase\(\)/);
+ assert.match(replies,/receivedAt<boundary-30000/);
+ assert.match(replies,/gmail_message_id:message\.id/);
+ assert.match(replies,/ignoreDuplicates:true/);
+});
+test("student classifications are suggestions and cannot approve a placement",()=>{
+ assert.match(replies,/category:"confirmation_intent",stage:"final_confirmation_review"/);
+ assert.match(replies,/category:"declined",stage:"follow_up"/);
+ assert.match(replies,/category:"documents_provided",stage:"documents_review"/);
+ assert.match(replies,/category:"viewing_request",stage:"viewing_review"/);
+ assert.match(replies,/if\(!s\.isAdmin\|\|!aal2\)/);
+ assert.match(replies,/caseContext\.status!=="confirmed"/);
+ assert.match(replies,/handover_approved_at/);
+ assert.match(replies,/milestone:"housing",status:"verified_complete"/);
+ assert.match(ui,/not a formal placement decision/);
+});
+test("response cases and inbox excerpts remain private behind Edge authorization",()=>{
+ assert.match(sql,/create table if not exists public\.reskonnect_email_response_cases/);
+ assert.match(sql,/unique\(actor_user_id,gmail_message_id\)/);
+ assert.match(sql,/enable row level security/);
+ assert.match(sql,/revoke all on public\.reskonnect_email_replies from public, anon, authenticated/);
+ assert.match(sql,/revoke all on public\.reskonnect_email_response_cases from public, anon, authenticated/);
+ assert.match(replies,/\.eq\("actor_user_id",s\.actor\)/);
+ for(const action of ["reply_overview","reply_sync","reply_review"])assert.ok(edge.includes('action==="'+action+'"'));
+});

@@ -9,6 +9,7 @@ import {readPublishedPhotoBytes} from "./residence-media.ts";
 import {pdfAsBase64} from "./pdf.ts";
 import {listDocumentReview,documentPreview,acknowledgeDocumentReview,assertReviewed,setDocumentDecision} from "./document-review.ts";
 import {contactActivity} from "./contact-activity.ts";
+import {replyOverview,replySync,reviewReply} from "./reply-intelligence.ts";
 
 const HEAD={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type",
  "Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};
@@ -69,6 +70,24 @@ Deno.serve(async(req:Request)=>{
  }
  if(fixedTriage&&(note.length>0||!["application","reservation"].includes(kind)))return res({error:"Triage correspondence must use the fixed factual template without a custom note"},400);
 
+ if(action==="reply_overview"){
+  try{return res(await replyOverview(s,input.day));}
+  catch(e){return failure(e);}
+ }
+ if(action==="reply_sync"){
+  try{return res(await replySync(s,input.day,input.offset));}
+  catch(e){return failure(e);}
+ }
+ if(action==="reply_review"){
+  let aal2=false;
+  try{
+   const raw=(bearer.split(".")[1]||"").replace(/-/g,"+").replace(/_/g,"/");
+   const claims=JSON.parse(atob(raw.padEnd(Math.ceil(raw.length/4)*4,"=")));
+   aal2=claims?.sub===actor&&claims?.aal==="aal2";
+  }catch{/* Unverified token claims can never grant final approval. */}
+  try{return res(await reviewReply(s,input,aal2));}
+  catch(e){return failure(e);}
+ }
  if(action==="contact_activity"){
   try{return res(await contactActivity(s,input));}
   catch(e){console.error("Contact activity load failed",e instanceof Error?e.message:"unknown");return res({error:"Contact activity temporarily unavailable. Retry shortly."},503);}
