@@ -14,7 +14,7 @@ type Reply={
 };
 type MailRow={
  id:string;target_kind:string;target_id:string;student_name:string;recipient_hint:string;
- subject:string;template_key:string;delivery_status:string;sent_at:string;pdf_attached:boolean;
+ subject:string;template_key:string;delivery_status:string;sent_at:string;pdf_attached:boolean;sender_scope?:string;sender_name?:string;
  reply_status:"replied"|"awaiting_reply"|"not_checked";reply_count:number;last_checked_at:string|null;latest_reply:Reply|null;
 };
 type Overview={
@@ -154,7 +154,8 @@ export default function ReplyIntelligencePanel({
     <div className="flex flex-wrap items-start justify-between gap-2">
      <div className="min-w-0"><p className="text-sm font-bold">{row.student_name}</p>
       <p className="break-words text-xs font-semibold">{row.subject}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{row.recipient_hint} · {when(row.sent_at)} · {title(row.target_kind)}</p></div>
+      <p className="mt-1 text-xs text-muted-foreground">{row.recipient_hint} · {when(row.sent_at)} · {title(row.target_kind)}</p>
+      <p className="mt-1 text-xs font-semibold">Sender: {row.sender_scope==="reskonnect"?"ResKonnect · official company notice":row.sender_scope==="residence"?"Residence correspondence":"Historical sender category not recorded"}</p></div>
      <Badge variant={row.reply_status==="replied"?"default":"outline"}>{row.reply_status==="replied"?"Reply received":row.reply_status==="awaiting_reply"?"No reply as of last check":"Reply not checked"}</Badge>
     </div>
     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
