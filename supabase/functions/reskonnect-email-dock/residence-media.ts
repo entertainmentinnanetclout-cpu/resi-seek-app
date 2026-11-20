@@ -19,6 +19,23 @@ export function approvedResidencePhoto(value:unknown):string|null{
 }
 export async function residencePhoto(db:any,residenceId:string|null,fallback:unknown[]):Promise<ResidencePhoto>{
  if(!residenceId)return null;
+ // Official email and PDF correspondence must use the CURRENT residence listing,
+ // not a historical ResMap "primary" record left behind after a rename or cover change.
+ // The caller passes [cover_image_url, image_url, images] from public.residences.
+ // These fields are the accommodation owner's current published source of truth.
+ for(const candidate of fallback){
+  if(Array.isArray(candidate)){
+   for(const item of candidate){
+    const url=approvedResidencePhoto(item);
+    if(url)return {url,label:"Current residence listing photo"};
+   }
+  }else{
+   const url=approvedResidencePhoto(candidate);
+   if(url)return {url,label:"Current residence listing cover"};
+  }
+ }
+ // Legacy residences may have no cover fields at all; in that case only, use
+ // the published media registry. Never let it override a changed listing cover.
  try{
   const media=await db.from("resmap_residence_media").select("url,thumbnail_url,title")
     .eq("residence_id",residenceId).eq("media_type","photo").eq("is_published",true)
@@ -26,18 +43,10 @@ export async function residencePhoto(db:any,residenceId:string|null,fallback:unk
   if(!media.error){
    for(const row of media.data||[]){
     const url=approvedResidencePhoto(row.url)||approvedResidencePhoto(row.thumbnail_url);
-    if(url)return {url,label:String(row.title||"Residence exterior or interior photo").slice(0,80)};
+    if(url)return {url,label:String(row.title||"Published residence photo").slice(0,80)};
    }
   }
- }catch{/* Residence media is optional, never block a service notice. */}
- for(const candidate of fallback){
-  if(Array.isArray(candidate)){
-   for(const item of candidate){const url=approvedResidencePhoto(item);if(url)return {url,label:"Residence listing photo"};}
-  }else{
-   const url=approvedResidencePhoto(candidate);
-   if(url)return {url,label:"Residence listing photo"};
-  }
- }
+ }catch{/* Photo is optional: a factual service notice must still work. */}
  return null;
 }
 export async function readPublishedPhotoBytes(url:string|null|undefined,maxBytes=6_000_000):Promise<{bytes:Uint8Array;mime:"image/jpeg"|"image/png"}|null>{
