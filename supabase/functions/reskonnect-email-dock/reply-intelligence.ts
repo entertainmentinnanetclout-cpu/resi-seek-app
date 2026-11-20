@@ -201,6 +201,10 @@ export async function reviewReply(s:EmailSession,input:any,aal2:boolean){
  const {data:outgoing,error:outError}=await s.db.from("reskonnect_outbound_emails")
   .select("target_kind,target_id,recipient_user_id").eq("id",reply.outbound_email_id).eq("actor_user_id",s.actor).maybeSingle();
  if(outError||!outgoing)throw Error("The source email no longer belongs to this account");
+ if(reply.review_status==="verified_final"){
+  if(decision==="verified_final")return {reviewed:true,case_stage:"final_confirmation_verified",student_lifecycle_updated:true,recovered:true};
+  throw Error("A verified final confirmation cannot be silently downgraded");
+ }
  const caseContext=await readCase(s,outgoing.target_kind,outgoing.target_id);
  if(decision!=="reviewed"&&category!=="confirmation_intent")throw Error("Final confirmation review requires an explicit student confirmation response");
  if(decision==="verified_final"){
@@ -237,6 +241,30 @@ export async function reviewReply(s:EmailSession,input:any,aal2:boolean){
   category==="viewing_request"?"viewing_review":
   category==="more_time"||category==="declined"?"follow_up":
   category==="confirmation_intent"?"final_confirmation_review":"closed";
+ // Link reviewed replies back to existing operational work queues. Never
+ // change the official application/reservation decision based on email alone.
+ if(decision!=="verified_final"&&["application","reservation"].includes(outgoing.target_kind)&&
+    (stage==="final_confirmation_review"||stage==="documents_review")){
+  const {data:workflow,error:workflowError}=await s.db.from("rk_case_workflows")
+   .select("case_id,residence_id").eq("kind",outgoing.target_kind).eq("case_id",outgoing.target_id).maybeSingle();
+  if(workflowError)throw Error("Could not check the linked case workflow");
+  if(workflow){
+   const taskType=stage==="documents_review"?"document_followup":"case_followup";
+   const {data:openTasks,error:taskLookupError}=await s.db.from("rk_case_tasks")
+    .select("id").eq("kind",outgoing.target_kind).eq("case_id",outgoing.target_id)
+    .eq("task_type",taskType).eq("assigned_scope","reskonnect").eq("status","open").limit(1);
+   if(taskLookupError)throw Error("Could not check the official review queue");
+   if(!openTasks?.length){
+    const {error:taskError}=await s.db.from("rk_case_tasks").insert({
+     kind:outgoing.target_kind,case_id:outgoing.target_id,residence_id:workflow.residence_id,
+     assigned_scope:"reskonnect",task_type:taskType,assigned_by:s.actor,
+     summary:stage==="documents_review"?"Review student's email reply against uploaded evidence":
+      "Review student's confirmation reply before final placement signoff"
+    });
+    if(taskError&&taskError.code!=="23505")throw Error("Could not create the linked ResKonnect case task");
+   }
+  }
+ }
  const now=new Date().toISOString();
  const {error:caseError}=await s.db.from("reskonnect_email_response_cases").update({
   recommended_stage:stage,case_stage:stage,status:decision==="verified_final"?"verified":"reviewed",
