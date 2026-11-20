@@ -47,6 +47,15 @@ const statusOptions:Record<"application"|"reservation",string[]>={
 };
 const pretty=(v:string)=>v.replace(/_/g," ").replace(/\b\w/g,x=>x.toUpperCase());
 const signalStyle=(stage:string)=>stage==="missing"||stage==="incomplete"?"text-amber-700 dark:text-amber-400":stage==="received"?"text-blue-700 dark:text-blue-400":"text-emerald-700 dark:text-emerald-400";
+class EmailDockRequestError extends Error {
+ constructor(message:string,public readonly httpStatus:number,public readonly transportFailure:boolean){
+  super(message);this.name="EmailDockRequestError";
+ }
+}
+const deliveryMayBeUncertain=(error:unknown)=>
+ error instanceof EmailDockRequestError &&
+ (error.transportFailure || (error.httpStatus>=500 && !/no email was sent/i.test(error.message)));
+
 async function extractError(error:any):Promise<string>{
  const response=error?.context;
  try {
@@ -110,7 +119,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const deepLinkedIdRef=useRef(params.get("target"));
  const invoke=useCallback(async(fn:string,body:Record<string,unknown>)=>{
   const {data,error}=await supabase.functions.invoke(fn,{body});
-  if(error)throw new Error(await extractError(error));
+  if(error)throw new EmailDockRequestError(await extractError(error),Number(error?.context?.status||0),
+   error?.name==="FunctionsFetchError"||/Failed to send a request to the Edge Function/i.test(String(error?.message||"")));
   if(data?.error)throw new Error(data.error);
   return data;
  },[]);
@@ -359,7 +369,14 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    else if(status?.uncertain){
     setPendingSend({requestId,kind,targetId:selected});
     toast.warning("The connection ended before delivery could be confirmed. Do not resend until checking Gmail Sent.");
-   }else showError(e);
+   }else if(!status?.found&&deliveryMayBeUncertain(e)){
+    // A lost HTTP response is not proof that Gmail failed: retain the request ID.
+    setPendingSend({requestId,kind,targetId:selected});
+    toast.warning("Delivery could not be checked after a connection problem. Check Gmail Sent and use Check delivery status before resending.");
+   }else{
+    if(/changed since preview|regenerate the email/i.test(e instanceof Error?e.message:"")){setPreview(null);setApproved(false);}
+    showError(e);
+   }
   }finally{setBusy(null);}
  };
  const previewBulk=async()=>{
@@ -381,6 +398,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   // A Supabase Edge Function has a per-request CPU limit. Generate and send
   // only one PDF per invocation, while retaining the audited batch ID.
   setBusy("bulk-send");let ok=0,failed=0,unconfirmed=0;
+  const failureReasons:string[]=[];
   const batchId=crypto.randomUUID();
   try{
    for(const id of ids){
@@ -395,18 +413,18 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
      const outcome=response.results?.[0];
      if(outcome?.sent)ok++;
      else if(outcome?.uncertain)unconfirmed++;
-     else failed++;
+     else {failed++;if(outcome?.error)failureReasons.push(String(outcome.error));}
     }catch(e){
      // The Edge Function may have accepted the email before losing its response.
      const status=await reconcileSend(requestId);
      if(status?.sent)ok++;
-     else if(status?.uncertain||!status)unconfirmed++;
-     else failed++;
+     else if(status?.uncertain||(!status&&deliveryMayBeUncertain(e)))unconfirmed++;
+     else {failed++;failureReasons.push(e instanceof Error?e.message:"Email was not sent");}
     }
     setBatchSummary({ok,failed:failed+unconfirmed});
    }
    if(unconfirmed)toast.warning(ok+" accepted, "+unconfirmed+" unconfirmed. Check Gmail Sent and email history; do not repeat the entire batch.");
-   else if(failed)toast.warning(ok+" accepted by Gmail, "+failed+" failed. Review history before retrying.");
+   else if(failed)toast.warning(ok+" accepted by Gmail, "+failed+" failed. "+(failureReasons[0]||"Review history before retrying."));
    else toast.success(ok+" messages accepted by Gmail");
    setBulkPreview([]);setBulkApproval(false);setChecked(new Set());
    await Promise.all([loadHistory(),loadItems()]);setActivityRevision(v=>v+1);
