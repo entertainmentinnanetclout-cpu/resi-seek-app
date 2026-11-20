@@ -335,6 +335,49 @@ export default function ResidenceFillVisualTabs({
             <Metric icon={CircleAlert} label="Near / at full" value={String(totals.nearFull)} />
             <Metric icon={Building2} label="Awaiting report" value={String(totals.unknown)} />
           </div>
+
+          <section className="mt-4 space-y-3 border-t border-primary/10 pt-4" aria-label="Verified residence email and WhatsApp progress">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="flex items-center gap-2 text-sm font-black"><MailCheck className="h-4 w-4 text-primary"/>Communication progress</p>
+                <p className="text-[11px] text-muted-foreground">Verified case-level Gmail audit. Sent means accepted by Gmail, not delivered or read.</p>
+              </div>
+              <Button type="button" variant="outline" size="sm" disabled={outreachLoading} onClick={()=>void loadOutreach()}>
+                <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${outreachLoading?"animate-spin":""}`}/>Refresh tracking
+              </Button>
+            </div>
+            {outreachError&&<div role="alert" className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-700">
+              Communication audit unavailable: {outreachError}. No unsent counts are inferred while the audit is unavailable.
+            </div>}
+            {outreachLoading&&!outreachVerified&&!outreachError&&
+              <p className="text-xs text-muted-foreground" role="status">Reconciling residence communication evidence…</p>}
+            {outreachVerified&&<>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+                <Metric icon={Building2} label="Cases tracked" value={outreachTotals.cases.toLocaleString("en-ZA")}/>
+                <Metric icon={MailCheck} label="Cases emailed" value={outreachTotals.emailed.toLocaleString("en-ZA")}/>
+                <Metric icon={CircleAlert} label="Still to email" value={outreachTotals.unemailed.toLocaleString("en-ZA")}/>
+                <Metric icon={Activity} label="Gmail accepted" value={outreachTotals.sent.toLocaleString("en-ZA")}/>
+                <Metric icon={MessageCircle} label="Emailed, WA pending" value={outreachTotals.whatsappPending.toLocaleString("en-ZA")}/>
+                <Metric icon={CheckCircle2} label="Replies captured" value={outreachTotals.replies.toLocaleString("en-ZA")}/>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs font-bold">Show residences:</span>
+                <Select value={outreachFilter} onValueChange={v=>setOutreachFilter(v as OutreachFilter)}>
+                  <SelectTrigger className="h-9 w-[min(100%,285px)] bg-background" aria-label="Filter residences by verified communication status"><SelectValue/></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All residences</SelectItem>
+                    <SelectItem value="needs-email">Email action needed</SelectItem>
+                    <SelectItem value="contacted">At least one case emailed</SelectItem>
+                    <SelectItem value="completed">Every case emailed</SelectItem>
+                    <SelectItem value="whatsapp-pending">Emailed, WhatsApp not marked</SelectItem>
+                    <SelectItem value="replied">Gmail response captured</SelectItem>
+                    <SelectItem value="uncertain">Unconfirmed Gmail attempt</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">Updated automatically while open. Select a residence card to filter its records.</p>
+              </div>
+            </>}
+          </section>
         </div>
 
         <Tabs value={tab} onValueChange={setTab} className="p-4 sm:p-5">
