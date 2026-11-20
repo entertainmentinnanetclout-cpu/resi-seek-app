@@ -101,11 +101,8 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
   if(existing.delivery_status==="failed")return {sent:false,status:409,error:"This request previously failed. Review the delivery history before starting a new attempt."};
   return {sent:false,status:202,uncertain:true,error:"Delivery is still being verified. Check Gmail Sent and the Email Dock history before retrying."};
  }
- const {count,error:countErr}=await s.db.from("reskonnect_outbound_emails")
-  .select("id",{head:true,count:"exact"}).eq("actor_user_id",s.actor)
-  .gte("created_at",new Date(Date.now()-86400000).toISOString());
- if(countErr)throw Error("Sending limits are temporarily unavailable");
- if((count||0)>=80)return {sent:false,error:"80 message attempts per 24 hours reached",status:429};
+ // The former 80/day actor-based ceiling was an app-side restriction, not Gmail.
+ // Sender-specific quota is checked AND atomically reserved after preparing the PDF.
 
  // Complete every fallible local preparation BEFORE claiming a sending record.
  // In particular, pdf-lib can exhaust Edge CPU. If it does, Gmail was never
@@ -136,16 +133,27 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
  if(recentErr)throw Error("Cannot verify duplicate email attempts");
  if(recent?.length)return {sent:false,error:"An existing email attempt has this purpose; check Gmail Sent and history before attempting another send",status:409,uncertain:true};
 
- const {data:log,error:logErr}=await s.db.from("reskonnect_outbound_emails").insert({
-  actor_user_id:s.actor,target_kind:ctx.kind,target_id:ctx.id,template_key:selected,
-  idempotency_key:requestId,recipient_email:ctx.email,recipient_user_id:ctx.userId,
-  subject:packet.subject,delivery_status:"sending",batch_id:batchId,pdf_attached:false,
-  context_snapshot:{recorded_status:ctx.status,document_stage:ctx.documents.stage,
+ // Transaction-level sender lock keeps concurrent staff sessions within the
+ // same Gmail mailbox's 24-hour app budget, including uncertain attempts.
+ const {data:reservation,error:reserveErr}=await s.db.rpc("rk_gmail_reserve_send",{
+  p_sender:sender.fromEmail,p_actor:s.actor,p_kind:ctx.kind,p_target:ctx.id,
+  p_template:selected,p_request:requestId,p_recipient:ctx.email,
+  p_recipient_user:ctx.userId,p_subject:packet.subject,p_batch:batchId,
+  p_snapshot:{recorded_status:ctx.status,document_stage:ctx.documents.stage,
    missing_count:ctx.documents.missing.length,template_key:selected,
    sender_scope:senderScope,sender_display_name:senderName,sender_email:sender.fromEmail,
    accommodation_name:ctx.property}
- }).select("id").single();
- if(logErr)return {sent:false,error:logErr.code==="23505"?"An email with this request ID already exists; check delivery status before retrying":"Could not record email request",status:409,uncertain:logErr.code==="23505"};
+ });
+ if(reserveErr)return {sent:false,error:"Cannot safely reserve sender quota. No email was sent.",status:503};
+ if(!reservation?.reserved){
+  const limitReached=reservation?.reason==="reskonnect_rolling_ceiling"||
+   reservation?.reason==="gmail_temporarily_limited";
+  return {sent:false,error:limitReached?
+   "Connected Gmail sender has reached its safe 24-hour allowance or a provider pause. Other Gmail activity may also count; try again after it resets.":
+   "Cannot authorize or deduplicate this Gmail send. Review the audit first.",
+   status:limitReached?429:409};
+ }
+ const log={id:reservation.id};
  const mark=async(status:"failed"|"unknown",code:string)=>{
   const {error}=await s.db.from("reskonnect_outbound_emails").update({delivery_status:status,failure_code:code}).eq("id",log.id);
   if(error)console.error("Email delivery status audit update failed",error.message);
@@ -157,7 +165,19 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
    body:JSON.stringify({raw}),signal:AbortSignal.timeout(15000)
   });
  }catch{await mark("unknown","gmail_delivery_uncertain");return {sent:false,uncertain:true,error:"Delivery outcome unknown. Check Gmail Sent Mail before retrying.",status:502};}
- if(!sent.ok){await mark("failed","gmail_http_"+sent.status);return {sent:false,error:sent.status===401||sent.status===403?"Gmail rejected authorization; reconnect Gmail":"Gmail rejected message",status:502};}
+ if(!sent.ok){
+  await mark("failed","gmail_http_"+sent.status);
+  if(sent.status===429){
+   // Google's per-user quota is authoritative. Stop new attempts for this sender.
+   const retryHeader=Number(sent.headers.get("Retry-After"));
+   const pauseMinutes=Number.isFinite(retryHeader)&&retryHeader>0?
+    Math.min(1440,Math.max(15,Math.ceil(retryHeader/60))):60;
+   await s.db.rpc("rk_gmail_sender_pause",{p_sender:sender.fromEmail,p_minutes:pauseMinutes})
+    .catch(()=>undefined);
+   return {sent:false,error:"Gmail is limiting this mailbox. The sender is paused; review Gmail quota before continuing.",status:429};
+  }
+  return {sent:false,error:sent.status===401||sent.status===403?"Gmail rejected authorization; reconnect Gmail":"Gmail rejected message",status:502};
+ }
  // Gmail HTTP 2xx is accepted delivery handoff. Never turn that into an
  // explicit failure if a later receipt or optional audit write is unavailable.
  let providerId:string|null=null,providerThreadId:string|null=null;
