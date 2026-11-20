@@ -10,7 +10,7 @@ import {Textarea} from "@/components/ui/textarea";
 
 type Reply={
  id:string;received_at:string;classification:string;suggested_stage:string;review_status:string;
- reviewed_category?:string|null;snippet:string;
+ reviewed_category?:string|null;snippet:string;case_stage?:string;case_status?:string;
 };
 type MailRow={
  id:string;target_kind:string;target_id:string;student_name:string;recipient_hint:string;
@@ -167,7 +167,7 @@ export default function ReplyIntelligencePanel({
       <strong>{title(row.latest_reply.classification)} · {when(row.latest_reply.received_at)}</strong>
       <Badge variant={row.latest_reply.review_status==="pending"?"secondary":"outline"}>{title(row.latest_reply.review_status)}</Badge>
      </div>
-     <p className="mt-1 text-muted-foreground">Suggested case stage: {title(row.latest_reply.suggested_stage)}. This is not a formal status change.</p>
+     <p className="mt-1 text-muted-foreground">Suggested next step: {title(row.latest_reply.suggested_stage)} · Recorded response-case stage: {title(row.latest_reply.case_stage||"response_review")}. This is not a formal placement decision.</p>
      {row.latest_reply.snippet&&<p className="mt-2 whitespace-pre-wrap break-words">{row.latest_reply.snippet}</p>}
      {reviewId===row.latest_reply.id?<div className="mt-3 space-y-2">
       <Select value={category} onValueChange={setCategory}><SelectTrigger><SelectValue/></SelectTrigger>
