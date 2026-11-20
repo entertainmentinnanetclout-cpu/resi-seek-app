@@ -817,7 +817,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
          {batchSummary.ok} accepted by Gmail · {batchSummary.failed} failed · {batchSummary.unconfirmed} unconfirmed
          {batchSummary.unconfirmed>0&&<p className="mt-1 text-xs font-normal text-amber-700 dark:text-amber-300">Do not resend unconfirmed messages. First check Gmail Sent and the audit history.</p>}
          {selectedCount>0&&<p className="mt-1 text-xs font-normal text-muted-foreground">{selectedCount} incomplete case(s) remain selected for review.</p>}
-        </div>
+        </div>}
        </div>
        {(kind==="application"||kind==="reservation")&&<div className="space-y-3 rounded-xl border bg-card p-4">
         <p className="flex items-center gap-2 font-semibold"><WalletCards className="h-4 w-4 text-primary"/>Bulk status manager</p>
