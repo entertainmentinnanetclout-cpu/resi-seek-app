@@ -24,7 +24,7 @@ type Template="triage_received"|"triage_under_review"|"smart"|"acknowledgement"|
 type Mode="admin"|"landlord";
 type Signal={stage:string;missing:string[];uploaded:number;pendingReview:number;summary:string};
 type CaseItem={
- id:string;kind:Kind;label:string;status:string;property:string;reference:string;
+ id:string;kind:Kind;label:string;status:string;property:string;residence_id?:string|null;reference:string;
  created_at:string;document_stage:string;missing_count:number;pending_review:number;uploaded_count?:number;
  recommended_template:Template;recipient_hint:string|null;can_email:boolean;
  workflow_bucket?:string;service_action?:string;last_email_at?:string|null;last_email_template?:string|null;
@@ -32,7 +32,7 @@ type CaseItem={
  suggested_template?:Template;academic_year?:string;
 };
 type CaseInfo={
- id:string;kind:Kind;label:string;status:string;property:string;reference:string;
+ id:string;kind:Kind;label:string;status:string;property:string;residence_id?:string|null;reference:string;
  document_signal:Signal;recommended_template:Template;recipient_hint:string|null;can_email:boolean;academic_year:string;
  residence_image_url?:string|null;has_whatsapp?:boolean;
 };
@@ -40,6 +40,12 @@ type EmailPreview={subject:string;body:string;html:string;template_name:string;r
 type DocTemplate={name:string;subject:string;body:string};
 type Override={target_kind:Kind;template_key:Template;subject_template:string;body_template:string};
 type History={id:string;subject:string;target_kind:Kind;template_key:string;delivery_status:string;recipient_email:string;created_at:string;failure_code:string|null;pdf_attached:boolean;sender_scope?:string;sender_name?:string};
+type DeliveryCoverage={
+ kind:"application"|"reservation";residence_id:string;academic_year:number;verified:boolean;
+ total_cases:number;emailed_cases:number;unemailed_cases:number;sent_messages:number;
+ never_attempted:number;uncertain_only:number;failed_only:number;uncertain_attempts:number;failed_attempts:number;
+ repeat_sent_cases:number;never_attempted_case_ids:string[];uncertain_only_case_ids:string[];failed_only_case_ids:string[];
+};
 type BulkResult={id:string;ok?:boolean;updated?:boolean;sent?:boolean;label?:string;status?:string;from?:string;to?:string;reason?:string;error?:string;subject?:string;body?:string;resolved_key?:Template;document_signal?:Signal;preview_hash?:string};
 const kindLabels:Record<Kind,string>={application:"Applications",reservation:"Reservations",housing_lead:"Housing enquiries",support_enquiry:"Support enquiries"};
 const statusOptions:Record<"application"|"reservation",string[]>={
@@ -121,7 +127,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [statusNote,setStatusNote]=useState("");
  const [statusPreview,setStatusPreview]=useState<BulkResult[]>([]);
  const [statusApproved,setStatusApproved]=useState(false);
- const [batchSummary,setBatchSummary]=useState<{ok:number;failed:number;unconfirmed:number}|null>(null);
+ const [batchSummary,setBatchSummary]=useState<{ok:number;failed:number;unconfirmed:number;autoUpdated:number}|null>(null);
+ const [selectedResidence,setSelectedResidence]=useState(params.get("residence")||"");
+ const [coverage,setCoverage]=useState<DeliveryCoverage|null>(null);
+ const [coverageError,setCoverageError]=useState("");
+ const [coverageLoading,setCoverageLoading]=useState(false);
  const [updateAvailable,setUpdateAvailable]=useState(false);
  const lastPreviewRef=useRef("");
  const deepLinkedIdRef=useRef(params.get("target"));
@@ -149,6 +159,20 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const loadHistory=useCallback(async()=>{
   try{const r=await premium({action:"history"});setHistory(r.items||[]);}catch(e){console.warn("History unavailable",e);}
  },[premium]);
+ const loadCoverage=useCallback(async()=>{
+  if(!selectedResidence||!(kind==="reservation"||kind==="application")){
+   setCoverage(null);setCoverageError("");return;
+  }
+  setCoverage(null);setCoverageError("");setCoverageLoading(true);
+  try{
+   const result=await premium({action:"delivery_coverage",kind,residence_id:selectedResidence,
+    academic_year:Number(academicYear)});
+   if(!result.verified)throw Error("Coverage was not independently verified");
+   setCoverage(result as DeliveryCoverage);
+  }catch(e){setCoverageError(e instanceof Error?e.message:"Cannot reconcile emails");}
+  finally{setCoverageLoading(false);}
+ },[premium,kind,academicYear,selectedResidence]);
+ useEffect(()=>{void loadCoverage();},[loadCoverage]);
  const loadTemplates=useCallback(async()=>{
   try{const r=await premium({action:"templates"});setDefaults(r.defaults||{});setOverrides(r.overrides||[]);setPlaceholders(r.placeholders||[]);}
   catch(e){console.warn("Template catalogue unavailable",e);}
@@ -234,6 +258,12 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    void loadConnection();
   }
  },[params,setParams,loadConnection]);
+ const residenceChoices=useMemo(()=>{
+  const unique=new Map<string,string>();
+  for(const item of items)if(item.residence_id&&!unique.has(item.residence_id))
+    unique.set(item.residence_id,item.property);
+  return [...unique].map(([id,name])=>({id,name})).sort((a,b)=>a.name.localeCompare(b.name));
+ },[items]);
  const active=items.find(x=>x.id===selected)||null;
  const needsReview=kind==="application"||kind==="reservation";
  const selectedReceipt=reviewReceipts.get(kind+":"+selected)||null;
@@ -291,7 +321,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const selectedCount=checked.size;
  const resetPreview=()=>{setPreview(null);setApproved(false);setBulkPreview([]);setBulkApproval(false);setStatusPreview([]);setStatusApproved(false);setBatchSummary(null);};
  const selectKind=(k:Kind)=>{
-  setKind(k);setWorkspace("cases");setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setBulkTemplate("smart");setChecked(new Set());setNote("");setPane(k==="application"||k==="reservation"?"documents":"compose");resetPreview();
+  setKind(k);setWorkspace("cases");setSelectedResidence("");setCoverage(null);setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setBulkTemplate("smart");setChecked(new Set());setNote("");setPane(k==="application"||k==="reservation"?"documents":"compose");resetPreview();
   const next=new URLSearchParams(params);next.set("kind",k);next.delete("target");next.delete("view");setParams(next,{replace:true});
  };
  const selectRecord=(id:string)=>{
@@ -348,7 +378,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const finishSent=async()=>{
   setPendingSend(null);
   resetPreview();setNote("");
-  await Promise.all([loadHistory(),loadItems(),loadConnection()]);
+  await Promise.all([loadHistory(),loadItems(),loadConnection(),loadCoverage()]);
   setActivityRevision(v=>v+1);
  };
  const checkPendingSend=async()=>{
@@ -379,7 +409,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     return;
    }
    if(!result.sent)throw Error(result.error||"Gmail did not accept the message");
-   toast.success("Gmail accepted your email and branded PDF attachment");
+   toast.success("Gmail accepted the email and PDF"+(result.status_sync?.applied?" · "+pretty(result.status_sync.new_status)+" status recorded":""));
    await finishSent();
   }catch(e){
    const status=await reconcileSend(requestId);
@@ -400,6 +430,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const previewBulk=async()=>{
   const ids=[...checked];
   if(!ids.length)return toast.error("Select cases from the inbox");
+  if(ids.length>10)return toast.error("Email batches are capped at 10 cases. Reduce your selection before previewing.");
   setBusy("bulk-preview");setBulkPreview([]);setBulkApproval(false);setBatchSummary(null);
   try{
    const response=await premium({action:"bulk_preview",kind,ids,template_key:bulkTemplate,message:fixedBulkTriage?"":note});
@@ -413,10 +444,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   if(needsReview&&!fixedBulkTriage&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))return toast.error("Review every selected student’s documents before a bulk send");
   const ids=bulkPreview.filter(x=>x.ok).map(x=>x.id);
   if(!ids.length)return toast.error("No eligible case emails");
+  if(ids.length>10)return toast.error("Maximum 10 Gmail messages per batch");
   if(!window.confirm("Send "+ids.length+" individualized Gmail messages, each with its own ResKonnect PDF?"))return;
   // A Supabase Edge Function has a per-request CPU limit. Generate and send
   // only one PDF per invocation, while retaining the audited batch ID.
-  setBusy("bulk-send");let ok=0,failed=0,unconfirmed=0;
+  setBusy("bulk-send");let ok=0,failed=0,unconfirmed=0,autoUpdated=0;
   const failureReasons:string[]=[];
   const incompleteIds:string[]=[];
   const batchId=crypto.randomUUID();
@@ -431,7 +463,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
      const response=await premium({action:"bulk_send",kind,ids:[id],requests:[request],confirmed:true,
       batch_id:batchId,template_key:bulkTemplate,message:fixedBulkTriage?"":note});
      const outcome=response.results?.[0];
-     if(outcome?.sent)ok++;
+     if(outcome?.sent){ok++;if(outcome.status_sync?.applied)autoUpdated++;}
      else if(outcome?.uncertain||!outcome){unconfirmed++;incompleteIds.push(id);}
      else {failed++;incompleteIds.push(id);if(outcome?.error)failureReasons.push(String(outcome.error));}
     }catch(e){
@@ -441,14 +473,14 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
      else if(status?.uncertain||(!status&&deliveryMayBeUncertain(e))){unconfirmed++;incompleteIds.push(id);}
      else {failed++;incompleteIds.push(id);failureReasons.push(e instanceof Error?e.message:"Email was not sent");}
     }
-    setBatchSummary({ok,failed,unconfirmed});
+    setBatchSummary({ok,failed,unconfirmed,autoUpdated});
    }
    if(unconfirmed)toast.warning(ok+" accepted, "+unconfirmed+" unconfirmed. Check Gmail Sent and email history; do not repeat the entire batch.");
    else if(failed)toast.warning(ok+" accepted by Gmail, "+failed+" failed. "+(failureReasons[0]||"Review history before retrying."));
    else toast.success(ok+" messages accepted by Gmail");
    setBulkPreview([]);setBulkApproval(false);setChecked(new Set(incompleteIds));
-   await Promise.all([loadHistory(),loadItems()]);setActivityRevision(v=>v+1);
-  }catch(e){showError(e);setBatchSummary({ok,failed,unconfirmed});}
+   await Promise.all([loadHistory(),loadItems(),loadCoverage()]);setActivityRevision(v=>v+1);
+  }catch(e){showError(e);setBatchSummary({ok,failed,unconfirmed,autoUpdated});}
   finally{setBusy(null);}
  };
  const previewStatuses=async()=>{
