@@ -95,14 +95,24 @@ export async function replyOverview(s:EmailSession,day:unknown){
   counts:{sent:0,replied:0,awaiting:0,unchecked:0,pending_review:0,final_confirmation:0}};
  const {data:replies,error:replyErr}=await s.db.from("reskonnect_email_replies")
   .select("id,outbound_email_id,received_at,classification,suggested_stage,review_status,reviewed_category,snippet")
-  .eq("actor_user_id",s.actor).in("outbound_email_id",ids).order("received_at",{ascending:false}).limit(500);
+  .eq("actor_user_id",s.actor).in("outbound_email_id",ids).order("received_at",{ascending:false}).limit(2000);
  if(replyErr)throw Error("Cannot retrieve recorded Gmail replies");
  const userIds=[...new Set(items.map((x:any)=>x.recipient_user_id).filter(validUuid))];
  const {data:profiles,error:profileErr}=userIds.length?await s.db.from("profiles").select("id,full_name").in("id",userIds):{data:[],error:null};
  if(profileErr)throw Error("Cannot load linked student names");
  const names=new Map((profiles||[]).map((x:any)=>[x.id,String(x.full_name||"Student")]));
+ const replyIds=(replies||[]).map((x:any)=>x.id);
+ const {data:cases,error:caseError}=replyIds.length?await s.db.from("reskonnect_email_response_cases")
+  .select("reply_id,case_stage,status").eq("actor_user_id",s.actor).in("reply_id",replyIds).limit(2000):
+  {data:[],error:null};
+ if(caseError)throw Error("Cannot read student response-case stages");
+ const caseStages=new Map((cases||[]).map((x:any)=>[x.reply_id,{case_stage:x.case_stage,case_status:x.status}]));
  const byEmail=new Map<string,any[]>();
- for(const reply of replies||[]){const old=byEmail.get(reply.outbound_email_id)||[];old.push(reply);byEmail.set(reply.outbound_email_id,old);}
+ for(const reply of replies||[]){
+  const old=byEmail.get(reply.outbound_email_id)||[];
+  old.push({...reply,...(caseStages.get(reply.id)||{case_stage:reply.suggested_stage,case_status:"open"})});
+  byEmail.set(reply.outbound_email_id,old);
+ }
  const rows=items.map((x:any)=>{
   const found=byEmail.get(x.id)||[];
   const reply_status=found.length?"replied":x.last_reply_checked_at?"awaiting_reply":"not_checked";
@@ -138,6 +148,7 @@ export async function replySync(s:EmailSession,day:unknown,offset:unknown){
    }
    const thread=await googleGet(token,"threads/"+encodeURIComponent(threadId)+"?format=full");
    const boundary=Date.parse(outgoing.sent_at||outgoing.created_at);
+   if(!Number.isFinite(boundary))throw Error("Original email send timestamp is missing");
    for(const message of thread.messages||[]){
     if(message.id===outgoing.provider_message_id)continue;
     if(mailbox(header(message,"From"))!==String(outgoing.recipient_email).toLowerCase())continue;
@@ -224,7 +235,8 @@ export async function reviewReply(s:EmailSession,input:any,aal2:boolean){
   decision==="final_confirmation_pending"?"final_confirmation_review":
   category==="documents_provided"||category==="documents_question"?"documents_review":
   category==="viewing_request"?"viewing_review":
-  category==="more_time"||category==="declined"?"follow_up":"closed";
+  category==="more_time"||category==="declined"?"follow_up":
+  category==="confirmation_intent"?"final_confirmation_review":"closed";
  const now=new Date().toISOString();
  const {error:caseError}=await s.db.from("reskonnect_email_response_cases").update({
   recommended_stage:stage,case_stage:stage,status:decision==="verified_final"?"verified":"reviewed",
