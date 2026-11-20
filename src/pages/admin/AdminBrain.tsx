@@ -158,8 +158,9 @@ export default function AdminBrain(){
       </div>)}
      </div>
     </section>
-    <section className="rk-neo-panel rounded-2xl p-4 sm:p-5">
-     <h2 className="text-base font-black">Automation operating policy</h2>
+    <details className="rk-neo-panel rounded-2xl p-4 sm:p-5">
+     <summary className="cursor-pointer select-none text-sm font-black">Advanced operating policy & specialist links</summary>
+     <h2 className="sr-only">Automation operating policy</h2>
      <p className="mt-1 text-xs leading-5 text-muted-foreground">Target 95% automated coordination; reserve human work for real verification, approvals, disputes and exceptional customers.</p>
      <div className="mt-4 space-y-3">
       {([
@@ -175,7 +176,7 @@ export default function AdminBrain(){
       <Button size="sm" variant="outline" asChild><Link to="/admin/studio">Visual Studio</Link></Button>
       <Button size="sm" variant="outline" asChild><Link to="/admin/executive">Executive office</Link></Button>
      </div>
-    </section>
+    </details>
    </div>
   </div>
  </AdminLayout>;
