@@ -70,6 +70,46 @@ Deno.serve(async(req:Request)=>{
  }
  if(fixedTriage&&(note.length>0||!["application","reservation"].includes(kind)))return res({error:"Triage correspondence must use the fixed factual template without a custom note"},400);
 
+ // All residence tabs are sourced from authorization-scoped server records,
+ // not whichever case page happened to load first.
+ if(action==="residence_directory"){
+  const q=db.from("residences").select("id,name",{count:"exact"})
+   .order("name",{ascending:true}).limit(1000);
+  if(!s.isAdmin){
+   if(!s.residences.size)return res({items:[],total:0});
+   q.in("id",[...s.residences]);
+  }
+  const {data,error,count}=await q;
+  if(error)return res({error:"Accommodation directory is temporarily unavailable"},503);
+  return res({items:data||[],total:count||0,complete:(count||0)<1001});
+ }
+ if(action==="sender_budget"||action==="set_sender_tier"){
+  const {data:connected,error:mailErr}=await db.from("landlord_gmail_connections")
+   .select("gmail_address,enabled").eq("user_id",actor).maybeSingle();
+  if(mailErr||!connected?.enabled)return res({error:"Connect an authorized Gmail mailbox first"},409);
+  const sender=String(connected.gmail_address||"").trim().toLowerCase();
+  if(action==="set_sender_tier"){
+   if(!isAdmin)return res({error:"Only ResKonnect administrators may set the verified Workspace tier"},403);
+   let aal2=false;
+   try{const segment=(bearer.split(".")[1]||"").replace(/-/g,"+").replace(/_/g,"/");
+    const claims=JSON.parse(atob(segment.padEnd(Math.ceil(segment.length/4)*4,"=")));
+    aal2=claims?.sub===actor&&claims?.aal==="aal2";
+   }catch{/* Never grant higher quotas with unverified MFA. */}
+   if(!aal2||input.operator_confirmed!==true||
+      (input.tier!=="standard"&&input.tier!=="workspace_verified")||
+      (input.tier==="workspace_verified"&&input.workspace_license_verified!==true))
+     return res({error:"MFA and explicit Google Workspace license verification are required"},403);
+   const {error:saveErr}=await db.from("reskonnect_gmail_sender_policies").upsert({
+    sender_email:sender,tier:input.tier,verified_by:actor,
+    verified_at:input.tier==="workspace_verified"?new Date().toISOString():null,
+    updated_at:new Date().toISOString()
+   },{onConflict:"sender_email"});
+   if(saveErr)return res({error:"Could not record verified Gmail sender tier"},503);
+  }
+  const {data:budget,error:budgetErr}=await db.rpc("rk_gmail_sender_budget",{p_sender:sender});
+  if(budgetErr||!budget)return res({error:"Sender's rolling Gmail budget unavailable"},503);
+  return res({...budget,sender_email:sender,source:"ResKonnect rolling 24-hour audit; Gmail counts external sends separately"});
+ }
  if(action==="delivery_coverage"){
   if(!isKind(kind)||!["reservation","application"].includes(kind)||!validUuid(input.residence_id))
    return res({error:"Select a valid accommodation and case type"},400);
@@ -194,7 +234,10 @@ Deno.serve(async(req:Request)=>{
   }catch(e){return failure(e);}
  }
  if(action==="list"){
-  try{const result:any=await listCases(s,kind,{offset:Math.max(0,Math.floor(Number(input.offset)||0)),pageSize:100,academicYear:(kind==="application"||kind==="reservation")&&[2026,2027,2028].includes(Number(input.academic_year))?Number(input.academic_year):null});if(Number(input.offset||0)===0&&validUuid(input.highlight_id)&&!result.items.some(x=>x.id===input.highlight_id)){const c=await readCase(s,kind,input.highlight_id);const safe=publicCase(s,c);result.items.unshift({...safe,created_at:new Date().toISOString(),document_stage:c.documents.stage,missing_count:c.documents.missing.length,pending_review:c.documents.pendingReview,workflow_bucket:"not_contacted",service_action:"Review linked case"});}return res(result);}catch(e){return failure(e);}
+  try{const residenceId=validUuid(input.residence_id)?String(input.residence_id):null;
+   if(input.residence_id&&!residenceId)return res({error:"Choose a valid accommodation"},400);
+   if(residenceId&&!canView(s,residenceId))return res({error:"No access to this accommodation"},403);
+   const result:any=await listCases(s,kind,{offset:Math.max(0,Math.floor(Number(input.offset)||0)),pageSize:100,academicYear:(kind==="application"||kind==="reservation")&&[2026,2027,2028].includes(Number(input.academic_year))?Number(input.academic_year):null,residenceId});if(Number(input.offset||0)===0&&validUuid(input.highlight_id)&&!result.items.some(x=>x.id===input.highlight_id)){const c=await readCase(s,kind,input.highlight_id);const safe=publicCase(s,c);result.items.unshift({...safe,created_at:new Date().toISOString(),document_stage:c.documents.stage,missing_count:c.documents.missing.length,pending_review:c.documents.pendingReview,workflow_bucket:"not_contacted",service_action:"Review linked case"});}return res(result);}catch(e){return failure(e);}
  }
 
  if(["whatsapp_preview","whatsapp_handoff","residence_photo_download"].includes(action)){
