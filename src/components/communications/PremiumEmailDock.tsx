@@ -114,7 +114,8 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [statusNote,setStatusNote]=useState("");
  const [statusPreview,setStatusPreview]=useState<BulkResult[]>([]);
  const [statusApproved,setStatusApproved]=useState(false);
- const [batchSummary,setBatchSummary]=useState<{ok:number;failed:number}|null>(null);
+ const [batchSummary,setBatchSummary]=useState<{ok:number;failed:number;unconfirmed:number}|null>(null);
+ const [updateAvailable,setUpdateAvailable]=useState(false);
  const lastPreviewRef=useRef("");
  const deepLinkedIdRef=useRef(params.get("target"));
  const invoke=useCallback(async(fn:string,body:Record<string,unknown>)=>{
@@ -125,6 +126,13 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   return data;
  },[]);
  const premium=useCallback((body:Record<string,unknown>)=>invoke("reskonnect-email-dock",body),[invoke]);
+ useEffect(()=>{
+  if(!("serviceWorker" in navigator))return;
+  const onNewController=()=>setUpdateAvailable(true);
+  navigator.serviceWorker.addEventListener("controllerchange",onNewController);
+  void navigator.serviceWorker.getRegistration().then(registration=>registration?.update()).catch(()=>undefined);
+  return ()=>navigator.serviceWorker.removeEventListener("controllerchange",onNewController);
+ },[]);
  const loadConnection=useCallback(async()=>{
   try{
    const c=await invoke("gmail-connect",{action:"status"});
@@ -390,6 +398,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   }catch(e){showError(e);}finally{setBusy(null);}
  };
  const sendBulk=async()=>{
+  if(updateAvailable)return toast.warning("A new ResKonnect version is available. Refresh the page before sending a bulk batch.");
   if(!connection?.connected||!bulkApproval||!bulkPreview.length)return;
   if(needsReview&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))return toast.error("Review every selected student’s documents before a bulk send");
   const ids=bulkPreview.filter(x=>x.ok).map(x=>x.id);
@@ -399,6 +408,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   // only one PDF per invocation, while retaining the audited batch ID.
   setBusy("bulk-send");let ok=0,failed=0,unconfirmed=0;
   const failureReasons:string[]=[];
+  const incompleteIds:string[]=[];
   const batchId=crypto.randomUUID();
   try{
    for(const id of ids){
@@ -412,23 +422,23 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       batch_id:batchId,template_key:"smart",message:note});
      const outcome=response.results?.[0];
      if(outcome?.sent)ok++;
-     else if(outcome?.uncertain)unconfirmed++;
-     else {failed++;if(outcome?.error)failureReasons.push(String(outcome.error));}
+     else if(outcome?.uncertain||!outcome){unconfirmed++;incompleteIds.push(id);}
+     else {failed++;incompleteIds.push(id);if(outcome?.error)failureReasons.push(String(outcome.error));}
     }catch(e){
      // The Edge Function may have accepted the email before losing its response.
      const status=await reconcileSend(requestId);
      if(status?.sent)ok++;
-     else if(status?.uncertain||(!status&&deliveryMayBeUncertain(e)))unconfirmed++;
-     else {failed++;failureReasons.push(e instanceof Error?e.message:"Email was not sent");}
+     else if(status?.uncertain||(!status&&deliveryMayBeUncertain(e))){unconfirmed++;incompleteIds.push(id);}
+     else {failed++;incompleteIds.push(id);failureReasons.push(e instanceof Error?e.message:"Email was not sent");}
     }
-    setBatchSummary({ok,failed:failed+unconfirmed});
+    setBatchSummary({ok,failed,unconfirmed});
    }
    if(unconfirmed)toast.warning(ok+" accepted, "+unconfirmed+" unconfirmed. Check Gmail Sent and email history; do not repeat the entire batch.");
    else if(failed)toast.warning(ok+" accepted by Gmail, "+failed+" failed. "+(failureReasons[0]||"Review history before retrying."));
    else toast.success(ok+" messages accepted by Gmail");
-   setBulkPreview([]);setBulkApproval(false);setChecked(new Set());
+   setBulkPreview([]);setBulkApproval(false);setChecked(new Set(incompleteIds));
    await Promise.all([loadHistory(),loadItems()]);setActivityRevision(v=>v+1);
-  }catch(e){showError(e);setBatchSummary({ok,failed:failed+unconfirmed});}
+  }catch(e){showError(e);setBatchSummary({ok,failed,unconfirmed});}
   finally{setBusy(null);}
  };
  const previewStatuses=async()=>{
@@ -515,6 +525,10 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
      <LandlordGmailGuide connected={!!connection?.connected} email={connection?.email||null} busy={!!busy}
        onConnect={()=>void connectionAction("connect")} onRefresh={()=>void loadConnection()}/>
     </div></details>}
+    {updateAvailable&&<div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-300 bg-amber-50 px-5 py-3 text-xs text-amber-950" role="status">
+       <span>A new ResKonnect version is ready. Refresh before using the bulk Email Dock.</span>
+       <Button type="button" size="sm" variant="outline" disabled={!!busy||!!pendingSend} onClick={()=>window.location.reload()}>Refresh app</Button>
+      </div>}
     <nav className="sticky top-0 z-20 border-b bg-background/95 px-4 py-3 shadow-sm backdrop-blur sm:px-5" aria-label="Communications workspace">
      <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex flex-wrap gap-1.5">
@@ -799,7 +813,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           <Send className="mr-2 h-4 w-4"/>{busy==="bulk-send"?"Sending approved batches…":"Send reviewed emails"}
          </Button>
         </div>}
-        {batchSummary&&<p className="mt-2 text-sm font-semibold">{batchSummary.ok} accepted · {batchSummary.failed} not sent</p>}
+        {batchSummary&&<div className="mt-2 text-sm font-semibold" role="status">
+         {batchSummary.ok} accepted by Gmail · {batchSummary.failed} failed · {batchSummary.unconfirmed} unconfirmed
+         {batchSummary.unconfirmed>0&&<p className="mt-1 text-xs font-normal text-amber-700 dark:text-amber-300">Do not resend unconfirmed messages. First check Gmail Sent and the audit history.</p>}
+         {selectedCount>0&&<p className="mt-1 text-xs font-normal text-muted-foreground">{selectedCount} incomplete case(s) remain selected for review.</p>}
+        </div>
        </div>
        {(kind==="application"||kind==="reservation")&&<div className="space-y-3 rounded-xl border bg-card p-4">
         <p className="flex items-center gap-2 font-semibold"><WalletCards className="h-4 w-4 text-primary"/>Bulk status manager</p>
