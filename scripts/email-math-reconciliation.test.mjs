@@ -66,8 +66,18 @@ test("a provider-confirmed official email may only progress safe non-final statu
 test("a failed or uncertain Gmail request cannot update a student status",()=>{
  const accepted=mail.indexOf('if(!sent.ok)');
  const provider=mail.indexOf('let providerId:');
- const reconcile=mail.indexOf('rpc("rk_email_sync_after_send"');
- assert.ok(accepted>=0&&provider>accepted&&reconcile>provider);
+ // Two legitimate paths reconcile a verified send: an idempotent recovery
+ // for a previously confirmed message and the new-send receipt path.
+ // The first occurrence is therefore *before* the Gmail POST in this file.
+ const syncCall='rpc("rk_email_sync_after_send"';
+ const recoveredReconcile=mail.indexOf(syncCall);
+ const newSendReconcile=mail.lastIndexOf(syncCall);
+ assert.ok(accepted>=0&&provider>accepted&&newSendReconcile>provider,
+  "only the provider-confirmed new-send path may attempt status reconciliation");
+ assert.ok(recoveredReconcile>=0&&recoveredReconcile<accepted,
+  "recovery may reconcile an existing confirmed send without sending Gmail again");
+ assert.match(mail,/if\\(existing\\.delivery_status==="sent"\\)\\{/);
+ assert.match(mail,/if\\(existing\\.provider_message_id\\)\\{/);
  assert.match(mail,/if\(providerId\)\{/);
  assert.match(mail,/status_sync:statusSync/);
  assert.match(mail,/recoveredSync/);
