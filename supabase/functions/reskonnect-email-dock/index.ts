@@ -110,6 +110,27 @@ Deno.serve(async(req:Request)=>{
   if(budgetErr||!budget)return res({error:"Sender's rolling Gmail budget unavailable"},503);
   return res({...budget,sender_email:sender,source:"ResKonnect rolling 24-hour audit; Gmail counts external sends separately"});
  }
+ // Residence Fill Command is an executive, cross-residence overview.
+ // Never expose per-residence counts through the ordinary browser Data API.
+ if(action==="residence_outreach_summary"){
+  if(!s.isAdmin)return res({error:"Only verified ResKonnect administrators may view company-wide outreach"},403);
+  if(!["reservation","application"].includes(kind))return res({error:"Choose reservations or applications"},400);
+  const year=Number(input.academic_year);
+  if(![2026,2027,2028].includes(year))return res({error:"Select an authorized academic year"},400);
+  const {data,error}=await db.rpc("rk_admin_residence_outreach_summary",{p_kind:kind,p_year:year});
+  if(error||!Array.isArray(data))return res({error:"Residence communication audit temporarily unavailable"},503);
+  const invalid=data.some((entry:any)=>{
+   const total=Number(entry.total_cases),sent=Number(entry.emailed_cases),left=Number(entry.unemailed_cases),
+    messages=Number(entry.accepted_messages),wa=Number(entry.whatsapp_marked_cases);
+   return ![total,sent,left,messages,wa].every(Number.isSafeInteger)||
+    [total,sent,left,messages,wa].some(v=>v<0)||
+    total!==sent+left||messages<sent||wa>total;
+  });
+  if(invalid)return res({error:"Residence communication totals did not reconcile"},503);
+  return res({kind,academic_year:year,items:data,
+   verified:true,generated_at:new Date().toISOString(),
+   meaning:"Gmail accepted is not inbox delivery/read; WhatsApp operator-marked sent is not delivery/read; status is an independent case record."});
+ }
  if(action==="delivery_coverage"){
   if(!isKind(kind)||!["reservation","application"].includes(kind)||!validUuid(input.residence_id))
    return res({error:"Select a valid accommodation and case type"},400);

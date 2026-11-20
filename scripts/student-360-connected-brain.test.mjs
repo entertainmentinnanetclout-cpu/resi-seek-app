@@ -40,8 +40,10 @@ good(queue.includes("'student_user_id',case when p_scope='admin' then student_id
  &&queue.includes("rk_godmode_authorized()"),"Landlords do not receive the new direct Student 360 link");
 good(app.includes('path="/admin/students/:userId"')&&app.includes('path="/admin/brain"')
  &&app.includes("<AdminHomeSwitch />"),"One Brain is the protected God Mode home with a lifelong profile route");
-good(sidebar.includes("Student 360 · One Brain")&&sidebar.includes("Department workspaces"),
- "Solo operator sees five large operational commands, with advanced tools collapsed");
+const workspaceCatalog=source("src/lib/adminWorkspaces.ts");
+good(sidebar.includes("ADMIN_PRIMARY_WORKSPACES")&&sidebar.includes("Specialist tools")
+ &&workspaceCatalog.includes('path:"/admin/users"')&&workspaceCatalog.includes('path:"/admin/golden-cycle"'),
+ "Student 360 and case decisions remain available inside one canonical sidebar per function, with specialist tools collapsed");
 good(brain.includes("rk_student_360_search")&&brain.includes("rk_golden_service_queue")
  &&brain.includes("Six interconnected command actions"),"One Brain resolves people and live operational exceptions");
 good(journey.includes("rk_student_360_snapshot")&&journey.includes("rk_student_360_milestone_set")

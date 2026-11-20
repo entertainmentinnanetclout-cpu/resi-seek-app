@@ -120,7 +120,8 @@ test("React routes and private operations drawers are part of the original ResKo
  assert.match(app,/path="\/admin\/cases"/);
  assert.match(app,/AdminCaseCommandCenter/);
  assert.match(app,/path="eligibility" element=\{<ResidenceEligibilityDesk/);
- assert.match(adminNav,/\/admin\/cases/);
+ assert.match(read("src/lib/adminWorkspaces.ts"),/\/admin\/cases/);
+ assert.match(adminNav,/ADMIN_ADVANCED_TOOLS/);
  assert.match(landlordNav,/path: "\/residence\/eligibility"/);
  assert.match(admin,/rk_case_collaboration_list/);
  assert.match(admin,/rk_case_collaboration_post/);

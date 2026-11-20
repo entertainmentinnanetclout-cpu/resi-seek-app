@@ -1,7 +1,7 @@
 {
   "project_id": "mefjzkhobkltlbmhusdh",
   "captured_date": "2026-11-20",
-  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles; 15 Nov verified service-only ResMap atomic AI budget function after scoped live migration; SEC05 privileged app-health recompute direct Auth execution revoked; 20 Nov verified service-only exact email coverage, RLS-locked status sync audit, and non-final Gmail sender progression; verified 20 Nov sender-aware atomic 450/1800 quota and residence WhatsApp/email/status audit",
+  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles; 15 Nov verified service-only ResMap atomic AI budget function after scoped live migration; SEC05 privileged app-health recompute direct Auth execution revoked; 20 Nov verified service-only exact email coverage, RLS-locked status sync audit, and non-final Gmail sender progression; verified 20 Nov sender-aware atomic 450/1800 quota and residence WhatsApp/email/status audit; Nov 20 exact 2027 residence outreach command rollup (service-only, unique case vs message counts, WhatsApp and reply evidence)",
   "public_relations": [
     "academic_periods",
     "accommodation_compliance_cases",
@@ -5337,6 +5337,16 @@
       "authenticated": true,
       "anon": false,
       "service_role": true
+    },
+    {
+      "name": "rk_admin_residence_outreach_summary",
+      "args": [
+        "p_kind",
+        "p_year"
+      ],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
     },
     {
       "name": "rk_admin_review_partner_account",

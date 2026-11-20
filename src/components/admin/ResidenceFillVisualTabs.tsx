@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { Activity, BedDouble, Building2, CheckCircle2, CircleAlert, Gauge, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { Activity, BedDouble, Building2, CheckCircle2, CircleAlert, Gauge, MailCheck, MessageCircle, RefreshCw, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -25,10 +28,31 @@ type AcademicInventory = {
   residences?: { name?: string | null; campus?: string | null } | null;
 };
 
+type ResidenceOutreach = {
+ residence_id: string;
+ total_cases: number;
+ emailed_cases: number;
+ unemailed_cases: number;
+ accepted_messages: number;
+ unconfirmed_only_cases: number;
+ failed_only_cases: number;
+ whatsapp_marked_cases: number;
+ whatsapp_opened_only_cases: number;
+ emailed_whatsapp_pending: number;
+ replied_cases: number;
+ replies_needing_review: number;
+ last_gmail_at: string | null;
+ last_whatsapp_at: string | null;
+ status_counts: Record<string,number>;
+};
+
+type OutreachFilter = "all" | "needs-email" | "contacted" | "completed" | "whatsapp-pending" | "replied" | "uncertain";
+
 type FillRow = {
   id: string;
   name: string;
   campus: string | null;
+  outreach: ResidenceOutreach | null;
   capacity: number | null;
   reportedAvailable: number | null;
   blocked: number;
@@ -90,7 +114,54 @@ export default function ResidenceFillVisualTabs({
   const [inventory, setInventory] = useState<AcademicInventory[]>([]);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("all");
+  const [outreachFilter,setOutreachFilter] = useState<OutreachFilter>("all");
+  const [outreach,setOutreach] = useState<ResidenceOutreach[]>([]);
+  const [outreachLoading,setOutreachLoading] = useState(true);
+  const [outreachError,setOutreachError] = useState("");
+  const [outreachVerified,setOutreachVerified] = useState(false);
+  const [outreachScope,setOutreachScope] = useState("");
+  const outreachCurrent=outreachVerified&&outreachScope===mode+":"+academicYear;
+  const requestRef=useRef(0);
   const db = supabase as any;
+
+  const loadOutreach=useCallback(async()=>{
+   const request=++requestRef.current;
+   setOutreachLoading(true);
+   setOutreachError("");
+   try{
+    const {data,error}=await supabase.functions.invoke("reskonnect-email-dock",{
+     body:{action:"residence_outreach_summary",
+      kind:mode==="reservations"?"reservation":"application",academic_year:academicYear}
+    });
+    if(error||data?.verified!==true||!Array.isArray(data?.items))
+     throw new Error(data?.error||error?.message||"Unable to verify residence communication audit");
+    if(request!==requestRef.current)return;
+    setOutreach(data.items as ResidenceOutreach[]);
+    setOutreachVerified(true);setOutreachScope(mode+":"+academicYear);setOutreachError("");
+   }catch(e){
+    if(request!==requestRef.current)return;
+    setOutreachVerified(false);
+    setOutreachScope("");setOutreach([]);
+    setOutreachError(e instanceof Error?e.message:"Communications data temporarily unavailable");
+   }finally{if(request===requestRef.current)setOutreachLoading(false);}
+  },[academicYear,mode]);
+  useEffect(()=>{
+   void loadOutreach();
+   const refresh=()=>{if(document.visibilityState==="visible")void loadOutreach();};
+   window.addEventListener("focus",refresh);
+   const interval=window.setInterval(refresh,60_000);
+   return ()=>{requestRef.current++;window.removeEventListener("focus",refresh);window.clearInterval(interval);};
+  },[loadOutreach]);
+
+  const outreachByResidence=useMemo(
+   ()=>new Map<string,ResidenceOutreach>(outreach.map(x=>[x.residence_id,x])),[outreach]);
+  const outreachTotals=useMemo(()=>outreach.reduce((a,r)=>({
+   cases:a.cases+r.total_cases,emailed:a.emailed+r.emailed_cases,
+   unemailed:a.unemailed+r.unemailed_cases,
+   sent:a.sent+r.accepted_messages,
+   whatsappPending:a.whatsappPending+r.emailed_whatsapp_pending,
+   replies:a.replies+r.replied_cases
+  }),{cases:0,emailed:0,unemailed:0,sent:0,whatsappPending:0,replies:0}),[outreach]);
 
   useEffect(() => {
     let active = true;
@@ -151,6 +222,7 @@ export default function ResidenceFillVisualTabs({
         id: entry.residence_id,
         name: entry.residences?.name || "Residence",
         campus: entry.residences?.campus || null,
+        outreach:outreachByResidence.get(entry.residence_id)||null,
         capacity,
         reportedAvailable: available,
         blocked,
@@ -172,6 +244,7 @@ export default function ResidenceFillVisualTabs({
         id: activity.residence_id,
         name: activity.residence_name || "Residence",
         campus: null,
+        outreach:outreachByResidence.get(activity.residence_id)||null,
         capacity: null,
         reportedAvailable: null,
         blocked: 0,
@@ -193,16 +266,27 @@ export default function ResidenceFillVisualTabs({
         || b.activeCount - a.activeCount
         || a.name.localeCompare(b.name);
     });
-  }, [activityRows, inventory, mode]);
+  }, [activityRows, inventory, mode, outreachByResidence]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return rows.filter((row) => {
       const matchesTab = tab === "all" || row.bucket === tab || (tab === "attention" && ["full", "near_full"].includes(row.bucket));
       const matchesQuery = !q || `${row.name} ${row.campus || ""}`.toLowerCase().includes(q);
-      return matchesTab && matchesQuery;
+      const v=row.outreach;
+      // Unknown audit state is not treated as "zero emails sent".
+      const matchesOutreach=outreachFilter==="all"||
+       (outreachCurrent&&(
+        (outreachFilter==="needs-email"&&!!v&&v.unemailed_cases>0)||
+        (outreachFilter==="contacted"&&!!v&&v.emailed_cases>0)||
+        (outreachFilter==="completed"&&!!v&&v.total_cases>0&&v.unemailed_cases===0)||
+        (outreachFilter==="whatsapp-pending"&&!!v&&v.emailed_whatsapp_pending>0)||
+        (outreachFilter==="replied"&&!!v&&v.replied_cases>0)||
+        (outreachFilter==="uncertain"&&!!v&&v.unconfirmed_only_cases>0)
+       ));
+      return matchesTab && matchesQuery && matchesOutreach;
     });
-  }, [rows, tab, query]);
+  }, [rows, tab, query, outreachFilter, outreachCurrent]);
 
   const totals = useMemo(() => {
     const measurable = rows.filter((row) => row.capacity !== null && row.reportedAvailable !== null);
@@ -254,6 +338,49 @@ export default function ResidenceFillVisualTabs({
             <Metric icon={CircleAlert} label="Near / at full" value={String(totals.nearFull)} />
             <Metric icon={Building2} label="Awaiting report" value={String(totals.unknown)} />
           </div>
+
+          <section className="mt-4 space-y-3 border-t border-primary/10 pt-4" aria-label="Verified residence email and WhatsApp progress">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="flex items-center gap-2 text-sm font-black"><MailCheck className="h-4 w-4 text-primary"/>Communication progress</p>
+                <p className="text-[11px] text-muted-foreground">Verified case-level Gmail audit. Sent means accepted by Gmail, not delivered or read.</p>
+              </div>
+              <Button type="button" variant="outline" size="sm" disabled={outreachLoading} onClick={()=>void loadOutreach()}>
+                <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${outreachLoading?"animate-spin":""}`}/>Refresh tracking
+              </Button>
+            </div>
+            {outreachError&&<div role="alert" className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-700">
+              Communication audit unavailable: {outreachError}. No unsent counts are inferred while the audit is unavailable.
+            </div>}
+            {outreachLoading&&!outreachCurrent&&!outreachError&&
+              <p className="text-xs text-muted-foreground" role="status">Reconciling residence communication evidence…</p>}
+            {outreachCurrent&&<>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+                <Metric icon={Building2} label="Cases tracked" value={outreachTotals.cases.toLocaleString("en-ZA")}/>
+                <Metric icon={MailCheck} label="Cases emailed" value={outreachTotals.emailed.toLocaleString("en-ZA")}/>
+                <Metric icon={CircleAlert} label="Still to email" value={outreachTotals.unemailed.toLocaleString("en-ZA")}/>
+                <Metric icon={Activity} label="Gmail accepted" value={outreachTotals.sent.toLocaleString("en-ZA")}/>
+                <Metric icon={MessageCircle} label="Emailed, WA pending" value={outreachTotals.whatsappPending.toLocaleString("en-ZA")}/>
+                <Metric icon={CheckCircle2} label="Replies captured" value={outreachTotals.replies.toLocaleString("en-ZA")}/>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs font-bold">Show residences:</span>
+                <Select value={outreachFilter} onValueChange={v=>setOutreachFilter(v as OutreachFilter)}>
+                  <SelectTrigger className="h-9 w-[min(100%,285px)] bg-background" aria-label="Filter residences by verified communication status"><SelectValue/></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All residences</SelectItem>
+                    <SelectItem value="needs-email">Email action needed</SelectItem>
+                    <SelectItem value="contacted">At least one case emailed</SelectItem>
+                    <SelectItem value="completed">Every case emailed</SelectItem>
+                    <SelectItem value="whatsapp-pending">Emailed, WhatsApp not marked</SelectItem>
+                    <SelectItem value="replied">Gmail response captured</SelectItem>
+                    <SelectItem value="uncertain">Unconfirmed Gmail attempt</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">Updated automatically while open. Select a residence card to filter its records.</p>
+              </div>
+            </>}
+          </section>
         </div>
 
         <Tabs value={tab} onValueChange={setTab} className="p-4 sm:p-5">
@@ -278,11 +405,12 @@ export default function ResidenceFillVisualTabs({
                     {filtered.map((row) => {
                       const selected = selectedResidenceId === row.id;
                       return (
+                        <div key={row.id} className={`overflow-hidden rounded-2xl border transition hover:border-primary/40 hover:shadow-sm ${selected ? "border-primary bg-primary/[0.05] ring-1 ring-primary/20" : "bg-card"}`}>
                         <button
-                          key={row.id}
                           type="button"
                           onClick={() => onSelectResidence?.(selected ? "all" : row.id)}
-                          className={`rounded-2xl border p-4 text-left transition hover:border-primary/40 hover:shadow-sm ${selected ? "border-primary bg-primary/[0.05] ring-1 ring-primary/20" : "bg-card"}`}
+                          className="block w-full p-4 text-left"
+                          aria-label={`Filter ${academicYear} ${activityLabel} to ${row.name}`}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
@@ -312,7 +440,48 @@ export default function ResidenceFillVisualTabs({
                             <TinyStat label="active" value={row.activeCount} />
                             <TinyStat label={securedLabel} value={row.securedCount} />
                           </div>
+                          <div className="mt-3 border-t pt-3" aria-label="Case communication audit">
+                            {!outreachCurrent?(
+                              <p className="text-xs text-muted-foreground">Communication tracking {outreachLoading?"loading…":"unavailable — use Refresh tracking"}</p>
+                            ):!row.outreach?(
+                              <p className="text-xs text-muted-foreground">{row.activityCount>0?"Communication ledger not reconciled for these cases":"No intake cases to contact"}</p>
+                            ):<>
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-xs font-black">Gmail accepted · {row.outreach.emailed_cases}/{row.outreach.total_cases} cases</p>
+                                <Badge variant={row.outreach.unemailed_cases===0?"secondary":"outline"} className="text-[10px]">
+                                  {row.outreach.unemailed_cases===0?"All cases emailed":`${row.outreach.unemailed_cases} still to email`}
+                                </Badge>
+                              </div>
+                              <Progress value={row.outreach.total_cases>0?100*row.outreach.emailed_cases/row.outreach.total_cases:0} className="mt-2 h-1.5"/>
+                              <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                                <TinyStat label="WhatsApp marked" value={row.outreach.whatsapp_marked_cases}/>
+                                <TinyStat label="Email, WA pending" value={row.outreach.emailed_whatsapp_pending}/>
+                                <TinyStat label="Replies recorded" value={row.outreach.replied_cases}/>
+                              </div>
+                              {row.outreach.unconfirmed_only_cases>0&&
+                                <p className="mt-2 text-xs font-bold text-amber-700">{row.outreach.unconfirmed_only_cases} Gmail attempt(s) unconfirmed. Investigate; do not resend automatically.</p>}
+                              <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+                                Case status · {Object.entries(row.outreach.status_counts||{}).filter(([,n])=>n>0).map(([k,n])=>`${n} ${k.replaceAll("_"," ")}`).join(" · ")||"None"}
+                              </p>
+                              <p className="mt-1 text-[10px] text-muted-foreground">
+                                {row.outreach.last_gmail_at?`Last Gmail accepted ${new Date(row.outreach.last_gmail_at).toLocaleString("en-ZA")}`:"No confirmed Gmail sends"}
+                                {" · "}WhatsApp "operator marked sent" does not prove delivery.
+                              </p>
+                            </>}
+                          </div>
                         </button>
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/20 px-4 py-2.5">
+                          <Link to={`/admin/communications?tab=email&kind=${mode==="reservations"?"reservation":"application"}&residence=${encodeURIComponent(row.id)}`}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90"
+                            aria-label={`Open ${row.name} communications in the Email Dock`}>
+                            <MailCheck className="h-3.5 w-3.5"/>Open Email Dock
+                          </Link>
+                          <button type="button" onClick={()=>onSelectResidence?.(selected?"all":row.id)}
+                            className="text-xs font-semibold text-primary underline-offset-4 hover:underline">
+                            {selected?"Show all records":"View residence cases"}
+                          </button>
+                        </div>
+                        </div>
                       );
                     })}
                   </div>

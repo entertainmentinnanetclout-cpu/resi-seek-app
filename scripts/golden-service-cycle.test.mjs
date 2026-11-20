@@ -45,7 +45,9 @@ check(api.includes("rk-golden-service-watch")&&api.includes("*/15 * * * *")
 check(api.includes("where user_id=v_id")&&api.includes("p_limit not between 1 and 120"),
  "Student portal is owner-scoped and operator queue is bounded");
 check(app.includes('path="/admin/golden-cycle"')&&app.includes("AdminRoute")
- &&nav.includes("Golden Service Cycle")&&centre.includes("<GoldenServiceJourneyPanel/>"),
+ &&nav.includes("ADMIN_PRIMARY_WORKSPACES")
+ &&read("src/lib/adminWorkspaces.ts").includes('path:"/admin/golden-cycle"')
+ &&centre.includes("<GoldenServiceJourneyPanel/>"),
  "Golden service is reachable from protected God Mode and existing student service centre");
 check(homepage.includes('to="/dashboard/services"')&&finder.includes('to="/dashboard/services"'),
  "First-time visitors and returning applicants can always locate service tracking");

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3, BriefcaseBusiness, Building2, Cpu, Handshake, Home, Landmark, LayoutDashboard,
@@ -13,6 +14,7 @@ import { useAuth, StaffRole } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { BRAND } from "@/constants/brand";
 import { ADMIN_DEPARTMENTS, AdminDepartmentKey } from "@/lib/adminDepartments";
+import {ADMIN_PRIMARY_WORKSPACES,ADMIN_ADVANCED_TOOLS,ADMIN_PRIMARY_DEPARTMENT_KEYS} from "@/lib/adminWorkspaces";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar
@@ -49,9 +51,19 @@ const AdminSidebar=({
   const location=useLocation();
   const {state}=useSidebar();
   const collapsed=state==="collapsed";
-  const visibleDepartments=ADMIN_DEPARTMENTS.filter((department)=>
-    (isGodMode||departments.includes(department.key))&&
-    (!isGodMode||!["executive","communications_service"].includes(department.key)));
+  const [officesOpen,setOfficesOpen]=useState(!isGodMode);
+  const [specialistOpen,setSpecialistOpen]=useState(false);
+  const visibleDepartments=ADMIN_DEPARTMENTS.filter(department=>
+    isGodMode||departments.includes(department.key));
+  const specialistDepartments=isGodMode?visibleDepartments.filter(department=>
+    !(ADMIN_PRIMARY_DEPARTMENT_KEYS as readonly string[]).includes(department.key)):visibleDepartments;
+  const activeWorkspace=(match:readonly string[])=>match.some(path=>
+    path.endsWith("/")?location.pathname.startsWith(path):location.pathname===path);
+  const workspaceIcon:Record<string,any>={
+    overview:LayoutDashboard,people:UsersRound,accommodation:Building2,
+    communications:MessageCircle,decisions:ClipboardCheck,
+    opportunities:BriefcaseBusiness,growth:Megaphone,technology:Cpu
+  };
 
   const handleLogout=async()=>{await supabase.auth.signOut();navigate("/");};
   const handleRefresh=()=>{toast.info("Refreshing live administration data…");window.location.reload();};
@@ -64,7 +76,7 @@ const AdminSidebar=({
           <img src={BRAND.logos.full} alt={BRAND.name} className="h-6 w-auto object-contain"/>
           <div className="mt-1 flex flex-wrap gap-1">
             <Badge variant="outline" className="text-[9px]">{roleLabels[staffRole||"department_staff"]||"Department Staff"}</Badge>
-            <Badge variant="secondary" className="text-[9px]">{isGodMode?"All offices":`${visibleDepartments.length} office${visibleDepartments.length===1?"":"s"}`}</Badge>
+            <Badge variant="secondary" className="text-[9px]">{isGodMode?`${ADMIN_PRIMARY_WORKSPACES.length} workspaces`:`${visibleDepartments.length} office${visibleDepartments.length===1?"":"s"}`}</Badge>
           </div>
         </div>}
       </div>
@@ -72,51 +84,61 @@ const AdminSidebar=({
 
     <SidebarContent className="min-h-0 overflow-y-auto overscroll-contain">
       {isGodMode&&<SidebarGroup>
-        {!collapsed&&<SidebarGroupLabel>Student 360 · One Brain</SidebarGroupLabel>}
+        {!collapsed&&<SidebarGroupLabel>One workspace per function</SidebarGroupLabel>}
         <SidebarGroupContent><SidebarMenu>
-         {([
-           ["/admin/brain","One Brain",Sparkles],
-           ["/admin/users","People & Journeys",UsersRound],
-           ["/admin/golden-cycle","Needs My Decision",ClipboardCheck],
-           ["/admin/applications","Bulk Applications",Building2],
-           ["/admin/communications","Communication Centre",MessageCircle],
-           ["/admin/cases","Case Command Center",ClipboardCheck],
-           ["/admin/studio","Visual Studio",Paintbrush]
-         ] as const).map(([path,label,Icon])=><SidebarMenuItem key={path}>
-          <SidebarMenuButton asChild isActive={location.pathname===path||(path==="/admin/brain"&&location.pathname==="/admin")
-           ||(path==="/admin/users"&&location.pathname.startsWith("/admin/students/"))} tooltip={path==="/admin/golden-cycle"?"Golden Service Cycle":label}>
-           <Link to={path}><Icon className="h-4 w-4"/><span className="font-bold">{label}</span></Link>
-          </SidebarMenuButton>
-         </SidebarMenuItem>)}
+          {ADMIN_PRIMARY_WORKSPACES.map(workspace=>{
+            const Icon=workspaceIcon[workspace.id]||LayoutDashboard;
+            return <SidebarMenuItem key={workspace.id}>
+              <SidebarMenuButton asChild isActive={activeWorkspace(workspace.match)}
+                tooltip={workspace.description} className="min-h-9 rounded-xl">
+                <Link to={workspace.path}>
+                  <Icon className="h-4 w-4 shrink-0"/>
+                  <span className="font-semibold">{workspace.label}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>;
+          })}
         </SidebarMenu></SidebarGroupContent>
-       </SidebarGroup>}
+      </SidebarGroup>}
+
       <SidebarGroup>
-        <details className="w-full" open={!isGodMode}>
-          <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-2 text-xs font-bold text-sidebar-foreground/70 hover:text-sidebar-foreground">
-           <Settings2 className="h-4 w-4"/>{!collapsed&&<span>{isGodMode?"Department workspaces":"Departments & Offices"}</span>}
+        <details className="w-full" open={officesOpen} onToggle={event=>setOfficesOpen(event.currentTarget.open)}>
+          <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-2 py-2 text-xs font-bold text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground">
+            <Settings2 className="h-4 w-4 shrink-0"/>{!collapsed&&<span>{isGodMode?"Other offices":"My departments"}</span>}
           </summary>
           <SidebarGroupContent><SidebarMenu>
-           {visibleDepartments.map((department)=>{
-             const Icon=iconByDepartment[department.key];
-             const isActive=location.pathname===department.path
-               || (department.key==="executive"&&location.pathname==="/admin")
-               || (department.key==="accommodation"&&location.pathname==="/admin/operations")
-               || (department.key==="intelligence_analytics"&&location.pathname==="/admin/analytics");
-             return <SidebarMenuItem key={department.key}>
-              <SidebarMenuButton asChild isActive={isActive} tooltip={department.label}>
-               <Link to={department.path}><Icon className="h-4 w-4"/><span>{department.shortLabel}</span></Link>
-              </SidebarMenuButton>
-             </SidebarMenuItem>;
-           })}
-
+            {specialistDepartments.map(department=>{
+              const Icon=iconByDepartment[department.key];
+              const isActive=location.pathname===department.path;
+              return <SidebarMenuItem key={department.key}>
+                <SidebarMenuButton asChild isActive={isActive} tooltip={department.description}>
+                  <Link to={department.path}><Icon className="h-4 w-4 shrink-0"/><span>{department.shortLabel}</span></Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>;
+            })}
           </SidebarMenu></SidebarGroupContent>
         </details>
       </SidebarGroup>
+
+      {isGodMode&&<SidebarGroup>
+        <details className="w-full" open={specialistOpen} onToggle={event=>setSpecialistOpen(event.currentTarget.open)}>
+          <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-2 py-2 text-xs font-bold text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground">
+            <Paintbrush className="h-4 w-4 shrink-0"/>{!collapsed&&<span>Specialist tools</span>}
+          </summary>
+          <SidebarGroupContent><SidebarMenu>
+            {ADMIN_ADVANCED_TOOLS.map(tool=><SidebarMenuItem key={tool.path}>
+              <SidebarMenuButton asChild isActive={location.pathname===tool.path} tooltip={tool.function+" · "+tool.label}>
+                <Link to={tool.path}><span className="truncate">{tool.label}</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>)}
+          </SidebarMenu></SidebarGroupContent>
+        </details>
+      </SidebarGroup>}
     </SidebarContent>
 
     <SidebarFooter className="shrink-0 space-y-1 border-t bg-sidebar p-2">
       <SidebarMenu>
-        <SidebarMenuItem><SidebarMenuButton asChild tooltip="Student Care & Applications"><Link to="/admin/student-care"><UsersRound className="h-4 w-4"/><span>Student Care & Applications</span></Link></SidebarMenuButton></SidebarMenuItem>
+        {!isGodMode&&<SidebarMenuItem><SidebarMenuButton asChild tooltip="Student Care & Applications"><Link to="/admin/student-care"><UsersRound className="h-4 w-4"/><span>Student Care & Applications</span></Link></SidebarMenuButton></SidebarMenuItem>}
         <SidebarMenuItem><SidebarMenuButton onClick={handleRefresh} tooltip="Refresh Data"><RefreshCw className="h-4 w-4"/><span>Refresh Data</span></SidebarMenuButton></SidebarMenuItem>
         <SidebarMenuItem><SidebarMenuButton onClick={()=>navigate("/")} tooltip="Public Site"><Home className="h-4 w-4"/><span>View Public Site</span></SidebarMenuButton></SidebarMenuItem>
         <SidebarMenuItem><SidebarMenuButton onClick={handleLogout} tooltip="Logout" className="text-destructive hover:text-destructive"><LogOut className="h-4 w-4"/><span>Logout</span></SidebarMenuButton></SidebarMenuItem>
