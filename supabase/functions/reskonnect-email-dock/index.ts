@@ -118,12 +118,18 @@ Deno.serve(async(req:Request)=>{
  if(action==="send_status"){
   if(!validUuid(input.request_id))return res({error:"A valid email request ID is required"},400);
   const {data:attempt,error:lookupError}=await db.from("reskonnect_outbound_emails")
-   .select("delivery_status,provider_message_id,failure_code,created_at")
+   .select("id,delivery_status,provider_message_id,failure_code,created_at")
    .eq("actor_user_id",actor).eq("idempotency_key",input.request_id).maybeSingle();
   if(lookupError)return res({error:"Email delivery status is temporarily unavailable"},503);
   if(!attempt)return res({found:false,delivery_status:"not_found",sent:false});
   const status=String(attempt.delivery_status||"unknown");
-  return res({found:true,delivery_status:status,sent:status==="sent",
+  let statusSync:null|{old_status?:string;new_status?:string;applied:boolean;reason:string}=null;
+  if(status==="sent"&&attempt.provider_message_id){
+   const {data:sync,error:syncError}=await db.from("reskonnect_email_status_sync_audit")
+    .select("old_status,new_status,applied,reason").eq("email_id",attempt.id).maybeSingle();
+   if(!syncError&&sync)statusSync=sync;
+  }
+  return res({found:true,delivery_status:status,sent:status==="sent",status_sync:statusSync,
    confirmed:status==="sent"&&!!attempt.provider_message_id,
    uncertain:status==="sending"||status==="unknown",
    failure_code:status==="failed"?attempt.failure_code:null,
