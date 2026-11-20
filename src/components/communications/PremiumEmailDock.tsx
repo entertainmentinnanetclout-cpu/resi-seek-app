@@ -817,7 +817,6 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
            <SelectItem value="triage_received">ResKonnect · submission received (MFA only)</SelectItem>
            <SelectItem value="triage_under_review">ResKonnect · review started (MFA only)</SelectItem>
           </SelectContent></Select>
-         </Select>
          {fixedBulkTriage&&<p className="text-xs text-amber-700">Fixed factual wording only. MFA-verified administrators may acknowledge a case before document review; this never approves accommodation or funding.</p>}
         </div>}
         <Button className="mt-3 w-full" variant="secondary" onClick={()=>void previewBulk()} disabled={!selectedCount||!!busy}><FileCheck2 className="mr-2 h-4 w-4"/>Review selected messages</Button>
