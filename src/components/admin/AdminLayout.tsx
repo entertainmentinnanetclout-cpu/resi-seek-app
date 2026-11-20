@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3, BriefcaseBusiness, Building2, Cpu, Handshake, Home, Landmark, LayoutDashboard,
@@ -50,6 +51,8 @@ const AdminSidebar=({
   const location=useLocation();
   const {state}=useSidebar();
   const collapsed=state==="collapsed";
+  const [officesOpen,setOfficesOpen]=useState(!isGodMode);
+  const [specialistOpen,setSpecialistOpen]=useState(false);
   const visibleDepartments=ADMIN_DEPARTMENTS.filter(department=>
     isGodMode||departments.includes(department.key));
   const specialistDepartments=isGodMode?visibleDepartments.filter(department=>
@@ -99,7 +102,7 @@ const AdminSidebar=({
       </SidebarGroup>}
 
       <SidebarGroup>
-        <details className="w-full" defaultOpen={!isGodMode}>
+        <details className="w-full" open={officesOpen} onToggle={event=>setOfficesOpen(event.currentTarget.open)}>
           <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-2 py-2 text-xs font-bold text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground">
             <Settings2 className="h-4 w-4 shrink-0"/>{!collapsed&&<span>{isGodMode?"Other offices":"My departments"}</span>}
           </summary>
@@ -118,7 +121,7 @@ const AdminSidebar=({
       </SidebarGroup>
 
       {isGodMode&&<SidebarGroup>
-        <details className="w-full">
+        <details className="w-full" open={specialistOpen} onToggle={event=>setSpecialistOpen(event.currentTarget.open)}>
           <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-2 py-2 text-xs font-bold text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground">
             <Paintbrush className="h-4 w-4 shrink-0"/>{!collapsed&&<span>Specialist tools</span>}
           </summary>
