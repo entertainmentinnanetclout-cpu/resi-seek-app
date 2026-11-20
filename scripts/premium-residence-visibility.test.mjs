@@ -57,7 +57,8 @@ test("paid placements remain in a separately disclosed section",()=>{
 });
 
 test("admin can select and reorder editorial hero placements without new public mutation rights",()=>{
- assert.match(admin,/SpotlightPlacementManager residences=\{residences\}/);
+ assert.match(admin,/\/admin\/studio\?tab=showcases/);
+ assert.match(read("src/pages/admin/AdminVisualStudio.tsx"),/SpotlightPlacementManager residences=\{residences\}/);
  assert.match(admin,/toggleSpotlight/);
  assert.match(admin,/spotlight_rank: null/);
  assert.match(manager,/\.rpc\("rk_admin_reorder_spotlight",\{p_ids:ids\}\)/);
