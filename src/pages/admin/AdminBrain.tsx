@@ -23,8 +23,8 @@ const work=[
   Icon:UsersRound,to:"/admin/users",small:"Student directory"},
  {id:"service",title:"Needs My Decision",tag:"EXCEPTION QUEUE",desc:"Act on overdue service, missing replies, recovery and time-sensitive requests.",
   Icon:Workflow,to:"/admin/golden-cycle?filter=overdue",small:"Golden Service Cycle"},
- {id:"applications",title:"Applications & Housing",tag:"BULK WORK",desc:"Update multiple applications safely, review room eligibility and manage handover.",
-  Icon:Home,to:"/admin/applications",small:"Application operations"},
+ {id:"applications",title:"Accommodation & Fill",tag:"RESIDENCE 2027",desc:"See residence occupancy, emailed students, pending follow-ups and reservations in one place.",
+  Icon:Home,to:"/admin/accommodation?tab=applications-reservations&view=reservations",small:"2027 residence command"},
  {id:"communications",title:"Communication Centre",tag:"ONE INBOX",desc:"Work from linked case context; review actual delivery, not just composed drafts.",
   Icon:Mail,to:"/admin/communications?tab=email",small:"Mail Dock & WhatsApp"},
  {id:"verification",title:"Evidence & Approvals",tag:"HUMAN GATES",desc:"Review real documents, funding evidence and decisions before final sign-off.",
@@ -81,12 +81,12 @@ export default function AdminBrain(){
  };
  return <AdminLayout>
   <SEO noIndex title="ResKonnect Brain | Student 360" description="Unified and private solo-operator student lifecycle mission control"/>
-  <div className="rk-motion mx-auto max-w-[1600px] space-y-5 p-3 sm:p-6">
-   <header className="rk-skeuo-frame rounded-[28px] bg-[linear-gradient(125deg,#071326,#123468,#1d4986)] p-5 text-white sm:p-8">
+  <div className="rk-motion mx-auto max-w-[1600px] space-y-4 p-1 sm:p-2">
+   <header className="rk-skeuo-frame rounded-[24px] bg-[linear-gradient(125deg,#071326,#123468,#1d4986)] p-4 text-white sm:p-6">
     <div className="flex flex-wrap items-start justify-between gap-4">
      <div className="max-w-3xl">
       <Badge className="border-0 bg-[#F5B32F] text-[#071326] hover:bg-[#F5B32F]"><Sparkles className="mr-1 h-3.5 w-3.5"/>STUDENT 360 · RESKONNECT BRAIN</Badge>
-      <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">One company. One brain.</h1>
+      <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">One company. One brain.</h1>
       <p className="mt-3 text-sm leading-7 text-white/80 sm:text-base">A person is never just an application. All incoming requests, document checks, residence decisions, verified communications and lifelong milestones connect back to one student journey.</p>
      </div>
      <Button variant="outline" size="sm" onClick={()=>void load()} disabled={loading} className="border-white/30 bg-white/10 text-white hover:text-white"><RefreshCw className="mr-2 h-4 w-4"/>Refresh live pulse</Button>
@@ -128,16 +128,16 @@ export default function AdminBrain(){
       <p className="mt-1 text-xs text-muted-foreground">Choose an outcome, not a department. The underlying specialist tools retain their secure business checks.</p></div>
      <Badge variant="outline"><ShieldCheck className="mr-1 h-3.5 w-3.5"/>No silent approvals or sends</Badge>
     </div>
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-     {work.map(item=><Link to={item.to} key={item.id} className="rk-neo-panel group flex min-h-[210px] flex-col justify-between rounded-[22px] border p-5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
+    <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+     {work.map(item=><Link to={item.to} key={item.id} className="rk-neo-panel group flex min-h-[152px] flex-col justify-between rounded-[20px] border p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
       <div><div className="flex items-start justify-between gap-3">
-       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e7f0ff] text-[#174c93]"><item.Icon className="h-6 w-6"/></div>
+       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e7f0ff] text-[#174c93]"><item.Icon className="h-4 w-4"/></div>
        <span className="text-[10px] font-black uppercase tracking-wider text-[#536985]">{item.tag}</span>
       </div>
-       <h3 className="mt-4 text-lg font-black">{item.title}</h3>
-       <p className="mt-2 text-xs leading-6 text-muted-foreground">{item.desc}</p>
+       <h3 className="mt-2 text-sm font-black">{item.title}</h3>
+       <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{item.desc}</p>
       </div>
-      <div className="mt-4 flex items-center justify-between border-t pt-3 text-xs font-bold text-primary">
+      <div className="mt-2 flex items-center justify-between border-t pt-2 text-xs font-bold text-primary">
        <span>{item.small}</span>
        <span className="flex items-center gap-1">{count(item.id)!==null&&!loading?Number(count(item.id)).toLocaleString("en-ZA")+" flagged · ":""}Open <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1"/></span>
       </div>
