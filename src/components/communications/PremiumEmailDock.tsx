@@ -29,6 +29,9 @@ type CaseItem={
  recommended_template:Template;recipient_hint:string|null;can_email:boolean;
  workflow_bucket?:string;service_action?:string;last_email_at?:string|null;last_email_template?:string|null;
  email_sent?:boolean;email_status?:string|null;student_uploaded_after_email?:boolean;
+ whatsapp_marked_sent?:boolean;whatsapp_opened?:boolean;whatsapp_status?:string|null;
+ last_whatsapp_at?:string|null;whatsapp_notice_due?:boolean;email_notice_due?:boolean;
+ email_attempt_uncertain?:boolean;last_status_sync_from?:string|null;last_status_sync_to?:string|null;last_status_sync_at?:string|null;
  suggested_template?:Template;academic_year?:string;
 };
 type CaseInfo={
@@ -40,6 +43,7 @@ type EmailPreview={subject:string;body:string;html:string;template_name:string;r
 type DocTemplate={name:string;subject:string;body:string};
 type Override={target_kind:Kind;template_key:Template;subject_template:string;body_template:string};
 type History={id:string;subject:string;target_kind:Kind;template_key:string;delivery_status:string;recipient_email:string;created_at:string;failure_code:string|null;pdf_attached:boolean;sender_scope?:string;sender_name?:string};
+type SenderBudget={tier:"standard"|"workspace_verified";limit:number;used:number;remaining:number;blocked_until?:string|null;sender_email:string;source:string};
 type DeliveryCoverage={
  kind:"application"|"reservation";residence_id:string;academic_year:number;verified:boolean;
  total_cases:number;emailed_cases:number;unemailed_cases:number;sent_messages:number;
@@ -97,7 +101,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [workspace,setWorkspace]=useState<"cases"|"activity">(params.get("view")==="activity"?"activity":"cases");
  const [advancedFilters,setAdvancedFilters]=useState(false);
  const [sortBy,setSortBy]=useState<"newest"|"oldest"|"needs_action">("needs_action");
- const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision"|"not_contacted"|"followup_due"|"student_acted"|"awaiting_review"|"decision_changed"|"approved"|"rejected"|"uploaded"|"no_uploads"|"submitted"|"under_review"|"reserved"|"confirmed">("all");
+ const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision"|"not_contacted"|"followup_due"|"student_acted"|"awaiting_review"|"decision_changed"|"approved"|"rejected"|"uploaded"|"no_uploads"|"submitted"|"under_review"|"reserved"|"confirmed"|"emailed_no_whatsapp"|"whatsapp_unmarked"|"email_notice_due"|"whatsapp_notice_due"|"email_uncertain">("all");
  const [caseInfo,setCaseInfo]=useState<CaseInfo|null>(null);
  const [template,setTemplate]=useState<Template>(initialTriage||"smart");
  const [bulkTemplate,setBulkTemplate]=useState<"smart"|"triage_received"|"triage_under_review">(initialTriage||"smart");
@@ -129,6 +133,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [statusApproved,setStatusApproved]=useState(false);
  const [batchSummary,setBatchSummary]=useState<{ok:number;failed:number;unconfirmed:number;autoUpdated:number}|null>(null);
  const [selectedResidence,setSelectedResidence]=useState(params.get("residence")||"");
+ const [residenceDirectory,setResidenceDirectory]=useState<{id:string;name:string}[]>([]);
+ const [residenceDirectoryIncomplete,setResidenceDirectoryIncomplete]=useState(false);
+ const [senderBudget,setSenderBudget]=useState<SenderBudget|null>(null);
+ const [budgetError,setBudgetError]=useState("");
+ const [budgetBusy,setBudgetBusy]=useState(false);
  const [coverage,setCoverage]=useState<DeliveryCoverage|null>(null);
  const [coverageError,setCoverageError]=useState("");
  const [coverageLoading,setCoverageLoading]=useState(false);
@@ -160,6 +169,24 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const loadHistory=useCallback(async()=>{
   try{const r=await premium({action:"history"});setHistory(r.items||[]);}catch(e){console.warn("History unavailable",e);}
  },[premium]);
+ const loadResidenceDirectory=useCallback(async()=>{
+  try{const d=await premium({action:"residence_directory"});
+   setResidenceDirectory(d.items||[]);setResidenceDirectoryIncomplete(d.complete===false);
+  }catch(e){console.warn("Residence directory unavailable",e);}
+ },[premium]);
+ const loadSenderBudget=useCallback(async()=>{
+  try{const b=await premium({action:"sender_budget"});setSenderBudget(b as SenderBudget);setBudgetError("");}
+  catch(e){setSenderBudget(null);setBudgetError(e instanceof Error?e.message:"Sender budget unavailable");}
+ },[premium]);
+ const setSenderTier=async(tier:"standard"|"workspace_verified")=>{
+  if(!window.confirm(tier==="workspace_verified"?
+   "Confirm this connected sender has a verified paid Google Workspace license with 2,000 daily messages. ResKonnect will cap at 1,800, but Google may impose a lower quota. Proceed?":
+   "Return this sender to the conservative 450-per-24-hour app ceiling?"))return;
+  setBudgetBusy(true);
+  try{await premium({action:"set_sender_tier",tier,operator_confirmed:true,workspace_license_verified:tier==="workspace_verified"});
+   await loadSenderBudget();toast.success("Sender plan verification recorded.");
+  }catch(e){showError(e);}finally{setBudgetBusy(false);}
+ };
  const loadCoverage=useCallback(async()=>{
   const requestId=++coverageRequestRef.current;
   if(!selectedResidence||!(kind==="reservation"||kind==="application")){
@@ -182,7 +209,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const loadItems=useCallback(async({preserveLoaded=false}:{preserveLoaded?:boolean}={})=>{
   if(!preserveLoaded)setLoading(true);
   try{
-   const r=await premium({action:"list",kind,academic_year:Number(academicYear),offset:0,highlight_id:deepLinkedIdRef.current});
+   const r=await premium({action:"list",kind,academic_year:Number(academicYear),residence_id:selectedResidence||undefined,offset:0,highlight_id:deepLinkedIdRef.current});
    const next=(r.items||[]) as CaseItem[];
    setItems(previous=>{
     if(!preserveLoaded||previous.length<=next.length)return next;
@@ -191,31 +218,31 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    });
    setTotalCases(Number(r.total||0));
    setQueueError("");
-   loadedQueueKeyRef.current=kind+":"+academicYear;
+   loadedQueueKeyRef.current=kind+":"+academicYear+":"+selectedResidence;
    setNextOffset(current=>preserveLoaded?current:(r.has_more?Number(r.next_offset):null));
    setSelected(old=>old||next[0]?.id||"");
   }catch(e){
    const message=e instanceof Error?e.message:"Email cases could not load";
    setQueueError(message);
    if(!preserveLoaded){
-    if(loadedQueueKeyRef.current!==kind+":"+academicYear){
+    if(loadedQueueKeyRef.current!==kind+":"+academicYear+":"+selectedResidence){
      setItems([]);setTotalCases(0);setNextOffset(null);setCaseInfo(null);
     }
     toast.error("Email Dock unavailable — use Retry to reload the queue");
    }
   }
   finally{if(!preserveLoaded)setLoading(false);}
- },[premium,kind,academicYear]);
+ },[premium,kind,academicYear,selectedResidence]);
  const loadRemaining=async(all=false)=>{
   if(nextOffset===null||loadingMore)return;
-  const queueKey=kind+":"+academicYear;
+  const queueKey=kind+":"+academicYear+":"+selectedResidence;
   if(loadedQueueKeyRef.current!==queueKey)return;
   setLoadingMore(true);
   try{
    let offset=nextOffset,pages=0;
    const appended:CaseItem[]=[];
    while(offset!==null){
-    const result=await premium({action:"list",kind,academic_year:Number(academicYear),offset});
+    const result=await premium({action:"list",kind,academic_year:Number(academicYear),residence_id:selectedResidence||undefined,offset});
     appended.push(...((result.items||[]) as CaseItem[]));
     setTotalCases(Number(result.total||0));
     offset=result.has_more?Number(result.next_offset):null;
@@ -239,18 +266,19 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    setCaseInfo(r.case||null);
   }catch(e){setCaseInfo(null);console.warn("Case unavailable",e);}
  },[premium,kind,selected]);
- useEffect(()=>{void loadConnection();void loadHistory();void loadTemplates();},[loadConnection,loadHistory,loadTemplates]);
+ useEffect(()=>{void loadConnection();void loadHistory();void loadTemplates();void loadResidenceDirectory();},[loadConnection,loadHistory,loadTemplates,loadResidenceDirectory]);
+ useEffect(()=>{if(connection?.connected)void loadSenderBudget();else setSenderBudget(null);},[connection?.connected,connection?.email,loadSenderBudget]);
  useEffect(()=>{void loadItems();setChecked(new Set());},[loadItems]);
  useEffect(()=>{const interval=window.setInterval(()=>{if(document.visibilityState==="visible")void loadItems({preserveLoaded:true});},45000);return ()=>window.clearInterval(interval);},[loadItems]);
  useEffect(()=>{
   // Typical residence queues fit into a few pages. Load them automatically so
   // searching or filtering doesn't silently hide students outside page one.
   if(workspace!=="cases"||totalCases===0||totalCases>600||nextOffset===null||
-     loading||loadingMore||queueError||loadedQueueKeyRef.current!==kind+":"+academicYear)return;
+     loading||loadingMore||queueError||loadedQueueKeyRef.current!==kind+":"+academicYear+":"+selectedResidence)return;
   void loadRemaining(true);
  // loadRemaining is intentionally invoked only for the current case/year snapshot.
  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[workspace,kind,academicYear,totalCases,nextOffset,loading,loadingMore,queueError]);
+ },[workspace,kind,academicYear,selectedResidence,totalCases,nextOffset,loading,loadingMore,queueError]);
 
  useEffect(()=>{void loadCase();setPreview(null);setApproved(false);},[loadCase]);
  useEffect(()=>{
@@ -261,11 +289,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   }
  },[params,setParams,loadConnection]);
  const residenceChoices=useMemo(()=>{
-  const unique=new Map<string,string>();
+  const unique=new Map<string,string>(residenceDirectory.map(r=>[r.id,r.name]));
   for(const item of items)if(item.residence_id&&!unique.has(item.residence_id))
     unique.set(item.residence_id,item.property);
   return [...unique].map(([id,name])=>({id,name})).sort((a,b)=>a.name.localeCompare(b.name));
- },[items]);
+ },[items,residenceDirectory]);
  const active=items.find(x=>x.id===selected)||null;
  const needsReview=kind==="application"||kind==="reservation";
  const selectedReceipt=reviewReceipts.get(kind+":"+selected)||null;
@@ -281,6 +309,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   if(filter==="received")return x.pending_review>0||x.document_stage==="received";
   if(filter==="decision")return ["approved","conditionally_approved","rejected","confirmed","cancelled"].includes(x.status);
   if(filter==="not_contacted")return !x.email_sent;
+  if(filter==="emailed_no_whatsapp")return !!x.email_sent&&!x.whatsapp_marked_sent;
+  if(filter==="whatsapp_unmarked")return !x.whatsapp_marked_sent;
+  if(filter==="email_notice_due")return !!x.email_notice_due;
+  if(filter==="whatsapp_notice_due")return !!x.whatsapp_notice_due;
+  if(filter==="email_uncertain")return !!x.email_attempt_uncertain;
   if(filter!=="all")return x.workflow_bucket===filter;
   return true;
  }).sort((a,b)=>{
@@ -303,6 +336,12 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   review:items.filter(x=>x.pending_review>0||x.document_stage==="received").length,
   unemailed:items.filter(x=>!x.email_sent).length,
   followup:items.filter(x=>x.workflow_bucket==="followup_due").length,
+  emailedNoWhatsapp:items.filter(x=>x.email_sent&&!x.whatsapp_marked_sent).length,
+  whatsappUnmarked:items.filter(x=>!x.whatsapp_marked_sent).length,
+  whatsappMarked:items.filter(x=>x.whatsapp_marked_sent).length,
+  emailNoticeDue:items.filter(x=>x.email_notice_due).length,
+  whatsappNoticeDue:items.filter(x=>x.whatsapp_notice_due).length,
+  emailUncertain:items.filter(x=>x.email_attempt_uncertain).length,
   submitted:items.filter(x=>x.status==="submitted").length,
   underReview:items.filter(x=>x.status==="under_review").length,
   reserved:items.filter(x=>x.status==="reserved").length,
@@ -323,8 +362,16 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const selectedCount=checked.size;
  const resetPreview=()=>{setPreview(null);setApproved(false);setBulkPreview([]);setBulkApproval(false);setStatusPreview([]);setStatusApproved(false);setBatchSummary(null);};
  const selectKind=(k:Kind)=>{
-  setKind(k);setWorkspace("cases");setSelectedResidence("");setCoverage(null);setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setBulkTemplate("smart");setChecked(new Set());setNote("");setPane(k==="application"||k==="reservation"?"documents":"compose");resetPreview();
+  setKind(k);setWorkspace("cases");setCoverage(null);setSearch("");setFilter("all");setSelected("");setTemplate("smart");setBulkTemplate("smart");setChecked(new Set());setNote("");setPane(k==="application"||k==="reservation"?"documents":"compose");resetPreview();
   const next=new URLSearchParams(params);next.set("kind",k);next.delete("target");next.delete("view");setParams(next,{replace:true});
+ };
+ const selectResidence=(id:string)=>{
+  if(id===selectedResidence)return;
+  setSelectedResidence(id);setSelected("");setCaseInfo(null);setChecked(new Set());setFilter("all");
+  setSearch("");setCoverage(null);resetPreview();setWorkspace("cases");
+  const next=new URLSearchParams(params);
+  if(id)next.set("residence",id);else next.delete("residence");
+  next.delete("target");next.delete("cases");next.delete("view");setParams(next,{replace:true});
  };
  const selectRecord=(id:string)=>{
   setSelected(id);setTemplate(items.find(x=>x.id===id)?.suggested_template||"smart");setNote("");resetPreview();
@@ -380,7 +427,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const finishSent=async()=>{
   setPendingSend(null);
   resetPreview();setNote("");
-  await Promise.all([loadHistory(),loadItems(),loadConnection(),loadCoverage()]);
+  await Promise.all([loadHistory(),loadItems(),loadConnection(),loadCoverage(),loadSenderBudget()]);
   setActivityRevision(v=>v+1);
  };
  const checkPendingSend=async()=>{
@@ -490,7 +537,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    else if(failed)toast.warning(ok+" accepted by Gmail, "+failed+" failed. "+(failureReasons[0]||"Review history before retrying."));
    else toast.success(ok+" messages accepted by Gmail");
    setBulkPreview([]);setBulkApproval(false);setChecked(new Set(incompleteIds));
-   await Promise.all([loadHistory(),loadItems(),loadCoverage()]);setActivityRevision(v=>v+1);
+   await Promise.all([loadHistory(),loadItems(),loadCoverage(),loadSenderBudget()]);setActivityRevision(v=>v+1);
   }catch(e){showError(e);setBatchSummary({ok,failed,unconfirmed,autoUpdated});}
   finally{setBusy(null);}
  };
@@ -520,7 +567,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
    setStatusPreview([]);setStatusApproved(false);setChecked(new Set(updatedIds));
    setTemplate("smart");setNote("");setBulkPreview([]);setBulkApproval(false);
    await Promise.all([loadItems(),loadCase(),loadHistory()]);setActivityRevision(v=>v+1);
-   if(updatedIds.length)toast.info("Updated records remain selected. Review smart emails before sending their decisions.");
+   if(updatedIds.length)toast.info("Status saved in ResKonnect. Email and WhatsApp communication are separate and will appear as pending until sent or marked sent.");
   }catch(e){showError(e);}finally{setBusy(null);}
  };
  const stored=overrides.find(x=>x.target_kind===kind&&x.template_key===studioKey);
