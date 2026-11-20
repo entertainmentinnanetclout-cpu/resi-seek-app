@@ -109,10 +109,10 @@ Deno.serve(async(req:Request)=>{
    created_at:attempt.created_at});
  }
  if(action==="history"){
-  const {data,error}=await db.from("reskonnect_outbound_emails").select("id,target_kind,target_id,template_key,recipient_email,subject,delivery_status,created_at,sent_at,failure_code,pdf_attached,batch_id")
+  const {data,error}=await db.from("reskonnect_outbound_emails").select("id,target_kind,target_id,template_key,recipient_email,subject,delivery_status,created_at,sent_at,failure_code,pdf_attached,batch_id,context_snapshot")
    .eq("actor_user_id",actor).order("created_at",{ascending:false}).limit(100);
   if(error)return res({error:"Cannot retrieve email audit history"},503);
-  return res({items:(data||[]).map(item=>({...item,recipient_email:isAdmin?item.recipient_email.slice(0,2)+"***@"+item.recipient_email.split("@")[1]:"Private recipient"}))});
+  return res({items:(data||[]).map(item=>({id:item.id,target_kind:item.target_kind,target_id:item.target_id,template_key:item.template_key,subject:item.subject,delivery_status:item.delivery_status,created_at:item.created_at,sent_at:item.sent_at,failure_code:item.failure_code,pdf_attached:item.pdf_attached,batch_id:item.batch_id,sender_scope:item.context_snapshot?.sender_scope||"not_recorded",sender_name:item.context_snapshot?.sender_display_name||"Not recorded",recipient_email:isAdmin?item.recipient_email.slice(0,2)+"***@"+item.recipient_email.split("@")[1]:"Private recipient"}))});
  }
  if(action==="templates"){
   const {data,error}=await db.from("reskonnect_email_templates")
