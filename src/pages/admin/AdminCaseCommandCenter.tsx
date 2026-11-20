@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useState} from "react";
 import {Link} from "react-router-dom";
-import {ArrowRight,BriefcaseBusiness,Check,CheckCheck,ClipboardList,FileCheck2,Mail,MessageCircle,RefreshCw,Search,Send,ShieldCheck,UsersRound,Workflow} from "lucide-react";
+import {ArrowRight,BriefcaseBusiness,Check,CheckCheck,ClipboardList,FileCheck2,Mail,RefreshCw,Search,ShieldCheck,UsersRound,Workflow} from "lucide-react";
 import {toast} from "sonner";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
@@ -20,10 +20,7 @@ type Docs={ready?:boolean;identity_verified?:boolean;academic_verified?:boolean;
 type CaseRow={id:string;kind:Kind;student_user_id?:string|null;status:string;stage:string;student_name:string|null;student_number:string|null;campus:string|null;course:string|null;residence_name:string|null;funding_type:string|null;created_at:string;document_readiness:Docs;eligibility_decision:string|null;task_id:string|null;task_status:string|null};
 type Action="acknowledge_received"|"start_review"|"request_documents"|"delegate_review"|"mark_eligible"|"mark_ineligible"|"approve_handover"|"confirm_reservation"|"approve_application"|"reject_application"|"cancel_reservation"|"internal_note"|"mark_follow_up";
 type OperationResult={id:string;ok:boolean;reason?:string;status?:string;stage?:string;document_readiness?:Docs};
-type EmailItem={id:string;ok:boolean;label?:string;subject?:string;body?:string;status?:string;document_signal?:{stage:string};preview_hash?:string;error?:string};
-type EmailBatchOutcome={id:string;label:string;status:"accepted"|"failed"|"unconfirmed";detail?:string};
 type Thread={id:string;message:string;visibility:string;created_at:string;sender_id:string};
-type WaDraft={id:string;ok:boolean;message?:string;preview_hash?:string;case?:{status:string;document_signal:{stage:string}};can_open?:boolean;phone_hint?:string;error?:string};
 const OPTIONS:{id:Action;label:string;hint:string}[]=[
  {id:"acknowledge_received",label:"Mark received",hint:"Bulk receipt: records the case and notifies the student in-app. No document verification or booking decision."},
  {id:"start_review",label:"Start review",hint:"Moves the operations stage to Under Review. An application may also change to under_review; reservations stay unconfirmed."},
@@ -45,11 +42,6 @@ const rpc=async(action:string,params:Record<string,unknown>)=>{
  const {data,error}=await (supabase as any).rpc(action,params);
  if(error)throw new Error(error.message||"Action failed");return data;
 };
-const edge=async(body:Record<string,unknown>)=>{
- const {data,error}=await supabase.functions.invoke("reskonnect-email-dock",{body});
- if(error||data?.error)throw new Error(data?.error||error?.message||"Communication service unavailable");
- return data;
-};
 export default function AdminCaseCommandCenter(){
  const [kind,setKind]=useState<Kind>("reservation");
  const [stage,setStage]=useState("all");
@@ -67,10 +59,6 @@ export default function AdminCaseCommandCenter(){
  const [typed,setTyped]=useState("");
  const [result,setResult]=useState<{applied:number;skipped:number;items:OperationResult[]}|null>(null);
  const [emailMode,setEmailMode]=useState<"triage_received"|"triage_under_review">("triage_received");
- const [emailDrafts,setEmailDrafts]=useState<EmailItem[]>([]);
- const [emailBatchOutcomes,setEmailBatchOutcomes]=useState<EmailBatchOutcome[]>([]);
- const [whatsappDrafts,setWhatsappDrafts]=useState<WaDraft[]>([]);
- const [handoffs,setHandoffs]=useState<Record<string,{id:string;url:string;reported?:boolean}>>({});
  const [view,setView]=useState<CaseRow|null>(null);
  const [packet,setPacket]=useState<any>(null);
  const [thread,setThread]=useState<Thread[]>([]);
@@ -85,7 +73,7 @@ export default function AdminCaseCommandCenter(){
   finally{setLoading(false);}
  },[kind,stage,offset]);
  useEffect(()=>{void load();},[load]);
- useEffect(()=>{setPreview(null);setEmailDrafts([]);setWhatsappDrafts([]);setHandoffs({});setTyped("");},[selected,action,note,emailMode,kind]);
+ useEffect(()=>{setPreview(null);setTyped("");},[selected,action,note,kind]);
  const filtered=useMemo(()=>rows.filter(r=>[r.student_name,r.student_number,r.residence_name,r.campus,r.status,r.stage,r.id].join(" ").toLowerCase().includes(query.toLowerCase())),[rows,query]);
  const chosen=useMemo(()=>[...selected].slice(0,75),[selected]);
  const selectAll=()=>setSelected(prev=>new Set(filtered.slice(0,75).map(r=>r.id)));
@@ -137,105 +125,6 @@ export default function AdminCaseCommandCenter(){
   setBusy(true);
   try{await rpc("rk_case_collaboration_post",{p_kind:view.kind,p_case_id:view.id,p_message:comment,p_shared:share});setComment("");setThread(await rpc("rk_case_collaboration_list",{p_kind:view.kind,p_case_id:view.id}));toast.success("Private case discussion updated");}
   catch(e){toast.error(e instanceof Error?e.message:"Could not save collaboration note");}
-  finally{setBusy(false);}
- };
- const emailPreview=async()=>{
-  if(kind==="wil")return toast.error("WIL correspondence uses its own department workflow");
-  if(!chosen.length)return toast.error("Select cases first");
-  setBusy(true);setEmailDrafts([]);setEmailBatchOutcomes([]);
-  try{
-   const ids=chosen.slice(0,5),result=await edge({action:"bulk_preview",kind,ids,template_key:emailMode,message:""});
-   setEmailDrafts(result.items||[]);
-   toast.info("Showing "+ids.length+" personalised, fixed-wording draft(s). The Gmail batch limit is five.");
-  }catch(e){toast.error(e instanceof Error?e.message:"Could not preview emails");}
-  finally{setBusy(false);}
- };
- const sendEmails=async()=>{
-  const eligible=emailDrafts.filter(x=>x.ok);
-  if(!eligible.length)return toast.error("No approved draft emails");
-  if(!window.confirm("Send "+eligible.length+" factual service emails with a branded PDF through your linked Gmail account? This is an EXTERNAL send."))return;
-  setBusy(true);setEmailBatchOutcomes([]);
-  const batchId=crypto.randomUUID();
-  const outcomes:EmailBatchOutcome[]=[];
-  try{
-   // One PDF and one Gmail request per Edge invocation. Keep the same
-   // batch ID for audit; never turn an uncertain network result into a retry.
-   for(const draft of eligible){
-    const requestId=crypto.randomUUID();
-    const request={id:draft.id,request_id:requestId,expected_status:draft.status,
-     expected_document_stage:draft.document_signal?.stage,preview_hash:draft.preview_hash};
-    let state:EmailBatchOutcome={id:draft.id,label:draft.label||draft.id.slice(0,8),status:"unconfirmed"};
-    try{
-     const response=await edge({action:"bulk_send",kind,ids:[draft.id],requests:[request],
-      batch_id:batchId,confirmed:true,template_key:emailMode,message:""});
-     const result=response.results?.[0];
-     if(result?.sent)state={...state,status:"accepted"};
-     else if(result?.uncertain)state={...state,status:"unconfirmed",detail:result?.error};
-     else if(result?.error)state={...state,status:"failed",detail:result.error};
-     else state={...state,status:"unconfirmed",detail:"Could not confirm delivery; verify Gmail Sent and audit history."};
-    }catch(e){
-     // A lost HTTP response may follow an accepted Gmail send. Query by
-     // immutable request ID only; do not issue another send automatically.
-     let status:any=null;
-     try{status=await edge({action:"send_status",request_id:requestId});}catch{/* Keep uncertain. */}
-     if(status?.sent)state={...state,status:"accepted"};
-     else if(status?.delivery_status==="failed")state={...state,status:"failed",detail:"Gmail rejected the attempt. Check the audit before retrying."};
-     else if(status?.found===false&&/changed since preview|refresh the preview|regenerate the email/i.test(e instanceof Error?e.message:""))
-      state={...state,status:"failed",detail:e instanceof Error?e.message:"Case changed. Review again."};
-     else state={...state,status:"unconfirmed",detail:"Check Gmail Sent and email history before another attempt."};
-    }
-    outcomes.push(state);
-    setEmailBatchOutcomes([...outcomes]);
-   }
-   const accepted=outcomes.filter(x=>x.status==="accepted").length;
-   const failed=outcomes.filter(x=>x.status==="failed").length;
-   const unconfirmed=outcomes.filter(x=>x.status==="unconfirmed").length;
-   if(unconfirmed)toast.warning(accepted+" accepted · "+failed+" failed · "+unconfirmed+" unconfirmed. Check Gmail Sent before retrying.");
-   else if(failed)toast.warning(accepted+" accepted · "+failed+" failed. Review each reason before retrying.");
-   else toast.success(accepted+" messages accepted by Gmail, with individual PDFs.");
-   setEmailDrafts([]);
-   setSelected(prev=>{const next=new Set(prev);for(const item of outcomes)if(item.status==="accepted")next.delete(item.id);return next;});
-  }finally{setBusy(false);}
- };
- const whatsappPreview=async()=>{
-  if(kind==="wil")return toast.error("WIL contacts use their own departmental desk");
-  if(!chosen.length)return toast.error("Select one or more cases to prepare manual WhatsApp drafts");
-  setBusy(true);setWhatsappDrafts([]);setHandoffs({});
-  try{
-   const ids=chosen.slice(0,5);
-   // Batch preparation only. Every external send is explicitly handled by an operator.
-   const prepared=await Promise.all(ids.map(async id=>{
-    try{
-     const d=await edge({action:"whatsapp_preview",kind,target_id:id,template_key:emailMode,message:""});
-     return {id,ok:true,...d} as WaDraft;
-    }catch(e){return {id,ok:false,error:e instanceof Error?e.message:"Unavailable"} as WaDraft;}
-   }));
-   setWhatsappDrafts(prepared);
-   toast.info(prepared.filter(x=>x.ok&&x.can_open).length+" WhatsApp draft(s) ready. Each requires a separate manual Send.");
-  }finally{setBusy(false);}
- };
- const prepareWhatsapp=async(draft:WaDraft)=>{
-  if(!draft.ok||!draft.can_open||!draft.case||!draft.preview_hash)return toast.error("No contactable, verified preview for this case");
-  if(!window.confirm("Create an audited WhatsApp draft for this student? No message is sent automatically."))return;
-  setBusy(true);
-  try{
-   const d=await edge({action:"whatsapp_handoff",kind,target_id:draft.id,template_key:emailMode,message:"",
-    operator_confirmed:true,request_id:crypto.randomUUID(),expected_status:draft.case.status,
-    expected_document_stage:draft.case.document_signal.stage,preview_hash:draft.preview_hash});
-   setHandoffs(old=>({...old,[draft.id]:{id:d.handoff_id,url:d.url}}));
-   toast.info("Handoff recorded. Use Open WhatsApp below and manually press Send.");
-  }catch(e){toast.error(e instanceof Error?e.message:"WhatsApp handoff failed");}
-  finally{setBusy(false);}
- };
- const markWhatsappSent=async(id:string)=>{
-  const prepared=handoffs[id];
-  if(!prepared||!window.confirm("Did you actually press Send in WhatsApp Business for this student? This records an operator report, not delivery."))return;
-  setBusy(true);
-  try{
-   await edge({action:"whatsapp_mark_sent",handoff_id:prepared.id,operator_confirmed:true});
-   setHandoffs(prev=>({...prev,[id]:{...prepared,reported:true}}));
-   toast.success("Operator-reported WhatsApp send recorded. No delivery receipt was implied.");
-  }catch(e){toast.error(e instanceof Error?e.message:"Handoff audit failed");}
   finally{setBusy(false);}
  };
  const summary=OPTIONS.find(x=>x.id===action)!;
@@ -305,41 +194,31 @@ export default function AdminCaseCommandCenter(){
      {result&&<div role="status" className="rounded-xl border bg-muted/20 p-3 text-sm"><p className="font-black">{result.applied} applied · {result.skipped} skipped</p>{result.items.filter(x=>!x.ok).map(x=><p key={x.id} className="mt-1 text-xs text-amber-700">{x.id.slice(0,8)}: {x.reason}</p>)}</div>}
     </CardContent></Card>
     <Card className="rk-neo-panel"><CardContent className="space-y-4 p-5">
-     <div><h2 className="flex items-center gap-2 text-lg font-black"><Mail className="h-5 w-5 text-[#2563eb]"/>Batch communications</h2><p className="mt-1 text-xs leading-5 text-muted-foreground">Factual service receipts can be sent before document verification. Final approval, formal decision and document-specific correspondence still require review.</p></div>
-     <div><Label>Approved fixed-wording template</Label><Select value={emailMode} onValueChange={v=>setEmailMode(v as "triage_received"|"triage_under_review")}><SelectTrigger className="mt-1"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="triage_received">We received your submission</SelectItem><SelectItem value="triage_under_review">Your submission is under review</SelectItem></SelectContent></Select></div>
-     {kind==="wil"?<div className="rounded-xl border p-4 text-sm"><p>WIL external communications remain in the dedicated WIL department to preserve its approval workflows.</p><Button asChild variant="outline" className="mt-2"><Link to="/admin/wil">Open WIL</Link></Button></div>:<>
-      <Button className="w-full" variant="outline" disabled={busy||!chosen.length} onClick={()=>void emailPreview()}><Mail className="mr-2 h-4 w-4"/>Preview up to 5 Gmail + PDF messages</Button>
-      {emailDrafts.length>0&&<div className="space-y-3 rounded-xl border p-3">
-       <p className="text-xs font-bold">Individual, personalised drafts · {emailDrafts.filter(x=>x.ok).length} ready</p>
-       <div className="max-h-56 space-y-3 overflow-auto">{emailDrafts.map(x=><div key={x.id} className="rounded-lg border bg-background p-2.5"><p className="text-xs font-black">{x.label||x.id.slice(0,8)} · {x.ok?"Ready":"Blocked"}</p>{x.ok?<><p className="mt-1 text-xs font-bold">{x.subject}</p><p className="mt-1 whitespace-pre-wrap text-[11px] leading-5 text-muted-foreground">{x.body}</p></>:<p className="text-xs text-amber-700">{x.error}</p>}</div>)}</div>
-       <Button className="rk-clay-action w-full" disabled={busy||!emailDrafts.some(x=>x.ok)} onClick={()=>void sendEmails()}><Send className="mr-2 h-4 w-4"/>Send via connected Gmail (max 5)</Button>
-      </div>}
-      {emailBatchOutcomes.length>0&&<div className="space-y-1 rounded-xl border p-3 text-xs" role="status">
-       <p className="font-bold">Email results · {emailBatchOutcomes.filter(x=>x.status==="accepted").length} accepted · {emailBatchOutcomes.filter(x=>x.status==="failed").length} failed · {emailBatchOutcomes.filter(x=>x.status==="unconfirmed").length} unconfirmed</p>
-       {emailBatchOutcomes.map(outcome=><p key={outcome.id} className={outcome.status==="accepted"?"text-emerald-700":outcome.status==="failed"?"text-red-700":"text-amber-700"}>
-        {outcome.label}: {outcome.status}{outcome.detail?" · "+outcome.detail:""}
-       </p>)}
-       {emailBatchOutcomes.some(x=>x.status==="unconfirmed")&&<p className="font-semibold text-amber-700">Do not resend unconfirmed emails. Verify Gmail Sent and Email Dock history first.</p>}
-      </div>}
-      <div className="border-t pt-4">
-       <h3 className="flex items-center gap-2 text-sm font-black"><MessageCircle className="h-4 w-4 text-emerald-600"/>Manual WhatsApp batch handoff</h3>
-       <p className="mt-1 text-xs text-muted-foreground">Prepare up to five individual WhatsApp service messages in one batch. You must open each draft and press Send separately in WhatsApp Business. No automatic mass-spam dispatch.</p>
-       <Button className="mt-3 w-full" variant="outline" disabled={busy||!chosen.length} onClick={()=>void whatsappPreview()}>Preview up to 5 selected WhatsApp messages</Button>
-       {whatsappDrafts.length>0&&<div className="mt-2 max-h-[500px] space-y-3 overflow-y-auto">
-        {whatsappDrafts.map(draft=><div key={draft.id} className="space-y-2 rounded-xl border p-3">
-         <p className="text-xs font-semibold">Case {draft.id.slice(0,8)} · {draft.ok?draft.phone_hint||"Contact not provided":"Cannot prepare"}</p>
-         {!draft.ok?<p className="text-xs text-amber-700">{draft.error}</p>:
-          <><Textarea readOnly value={draft.message||""} rows={5} className="text-xs"/>
-          {!handoffs[draft.id]&&<Button className="w-full" variant="outline" disabled={busy||!draft.can_open} onClick={()=>void prepareWhatsapp(draft)}>Prepare audited WhatsApp link</Button>}
-          {handoffs[draft.id]&&<div className="grid gap-2 sm:grid-cols-2">
-           <Button asChild variant="outline"><a href={handoffs[draft.id].url} target="_blank" rel="noopener noreferrer">Open WhatsApp to send</a></Button>
-           <Button variant={handoffs[draft.id].reported?"secondary":"default"} disabled={busy||handoffs[draft.id].reported===true} onClick={()=>void markWhatsappSent(draft.id)}>{handoffs[draft.id].reported?"Operator marked sent":"I pressed Send · record"}</Button>
-          </div>}</>}
-        </div>)}
-       </div>}
-       {chosen.length>5&&<p className="text-xs text-muted-foreground">Five drafts per preparation batch. Complete this batch, then adjust the selection for the remaining students.</p>}
+     <div>
+      <h2 className="flex items-center gap-2 text-lg font-black"><Mail className="h-5 w-5 text-[#2563eb]"/>One Communications Dock</h2>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">Email, branded PDF, fixed God Mode triage receipts, document-reviewed messages, reply intelligence, contact activity, bulk sending, manual WhatsApp and audit history now live in one protected workspace.</p>
+     </div>
+     {kind==="wil"?<div className="rounded-xl border p-4 text-sm">
+      WIL has its own departmental decision workflow. External WIL messages remain in the WIL office.
+      <Button asChild variant="outline" className="mt-3 w-full"><Link to="/admin/wil">Open WIL</Link></Button>
+     </div>:<>
+      <div className="space-y-1">
+       <Label>Prepare an official ResKonnect notice</Label>
+       <Select value={emailMode} onValueChange={v=>setEmailMode(v as "triage_received"|"triage_under_review")}>
+        <SelectTrigger><SelectValue/></SelectTrigger><SelectContent>
+         <SelectItem value="triage_received">Submission received · factual acknowledgement</SelectItem>
+         <SelectItem value="triage_under_review">Under review · factual notification</SelectItem>
+        </SelectContent>
+       </Select>
       </div>
-      <Button asChild variant="link" className="w-full"><Link to={"/admin/communications?tab=email&kind="+kind}>Open full document-reviewed communications <ArrowRight className="ml-1 h-4 w-4"/></Link></Button>
+      <p className="rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-900">A triage notice is not a placement, application or funding decision. The unified dock verifies God Mode MFA and uses one Gmail delivery audit.</p>
+      <Button className="w-full" asChild>
+       <Link to={"/admin/communications?tab=email&kind="+kind+"&template="+emailMode+
+        (chosen.length?"&cases="+encodeURIComponent(chosen.slice(0,25).join(",")):"")}>
+        <Mail className="mr-2 h-4 w-4"/>Open one Email Dock · {Math.min(chosen.length,25)} selected <ArrowRight className="ml-1 h-4 w-4"/>
+       </Link>
+      </Button>
+      {chosen.length>25&&<p className="text-xs text-muted-foreground">The first 25 selected cases can be transferred per review batch. All case records remain available in the unified dock.</p>}
      </>}
     </CardContent></Card>
    </div>
