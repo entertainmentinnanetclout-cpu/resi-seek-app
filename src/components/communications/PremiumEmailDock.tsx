@@ -621,6 +621,21 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
     <p>{connection?.connected?"Authorized sender: "+connection.email:(connectedError||"Connect your own residence email above to send from that mailbox")}</p>
     <p className="flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5"/>Server-verified recipients · PDF attached per email</p>
    </div>
+   {connection?.connected&&<section aria-label="Connected Gmail account sending allowance" className="border-b bg-muted/20 px-5 py-3">
+    {senderBudget?<div className="flex flex-wrap items-center justify-between gap-3">
+     <div className="min-w-0">
+      <p className="text-xs font-bold">Connected sender allowance · rolling 24 hours</p>
+      <p className="text-sm font-semibold tabular-nums">{senderBudget.used.toLocaleString("en-ZA")} / {senderBudget.limit.toLocaleString("en-ZA")} reserved · {senderBudget.remaining.toLocaleString("en-ZA")} available in ResKonnect</p>
+      <p className="text-[11px] text-muted-foreground">Google also counts messages sent outside ResKonnect. {senderBudget.tier==="workspace_verified"?"Operator-verified Google Workspace tier (1,800 app ceiling).":"Standard tier (450 app ceiling)."} These are not live Gmail quota balances.</p>
+      {senderBudget.blocked_until&&new Date(senderBudget.blocked_until).getTime()>Date.now()&&
+       <p className="mt-1 text-xs font-semibold text-amber-700">Google has restricted this sender temporarily. Sending is paused.</p>}
+     </div>
+     <div className="flex items-center gap-2">
+      <Button type="button" variant="outline" size="sm" disabled={budgetBusy} onClick={()=>void loadSenderBudget()}><RefreshCw className="mr-1 h-3.5 w-3.5"/>Refresh allowance</Button>
+      {mode==="admin"&&<Button type="button" variant="secondary" size="sm" disabled={budgetBusy} onClick={()=>void setSenderTier(senderBudget.tier==="workspace_verified"?"standard":"workspace_verified")}>{senderBudget.tier==="workspace_verified"?"Use standard limit":"Verify Workspace plan"}</Button>}
+     </div>
+    </div>:<div className="text-xs text-amber-700" role="status">Sending allowance unavailable. {budgetError} <Button size="sm" variant="ghost" onClick={()=>void loadSenderBudget()}>Retry</Button></div>}
+   </section>}
    {mode==="landlord"&&<details className="border-b bg-muted/25 px-5 py-2"><summary className="cursor-pointer text-xs font-semibold text-primary">Gmail setup guide</summary><div className="pt-3">
      <LandlordGmailGuide connected={!!connection?.connected} email={connection?.email||null} busy={!!busy}
        onConnect={()=>void connectionAction("connect")} onRefresh={()=>void loadConnection()}/>
@@ -644,6 +659,22 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       </Button>
      </div>
      {workspace==="cases"&&<>
+      <div role="tablist" aria-label="Open accommodation workspace" className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
+       <Button role="tab" aria-selected={!selectedResidence} size="sm" variant={!selectedResidence?"default":"outline"} className="h-9 shrink-0" onClick={()=>selectResidence("")}>All accommodations</Button>
+       {residenceChoices.slice(0,12).map(r=><Button key={r.id} role="tab" aria-selected={selectedResidence===r.id}
+        size="sm" variant={selectedResidence===r.id?"default":"outline"} className="h-9 max-w-52 shrink-0 truncate"
+        onClick={()=>selectResidence(r.id)} title={r.name}>{r.name}</Button>)}
+       {selectedResidence&&!residenceChoices.slice(0,12).some(r=>r.id===selectedResidence)&&
+        <Button role="tab" aria-selected size="sm" variant="default" className="h-9 shrink-0" onClick={()=>selectResidence(selectedResidence)}>
+         {residenceChoices.find(r=>r.id===selectedResidence)?.name||"Selected accommodation"}</Button>}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+       <Select value={selectedResidence||"all"} onValueChange={v=>selectResidence(v==="all"?"":v)}>
+        <SelectTrigger className="h-9 w-[min(95vw,330px)]" aria-label="Open specific accommodation workspace"><SelectValue placeholder="Choose accommodation"/></SelectTrigger>
+        <SelectContent><SelectItem value="all">All accommodation workspaces</SelectItem>{residenceChoices.map(r=><SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
+       </Select>
+       <p className="text-[11px] text-muted-foreground">{selectedResidence?"Workspace limited to this accommodation across reservations and applications":"Choose a residence to open its own case queue"}{residenceDirectoryIncomplete?" · Directory limited to first 1,000; contact support to paginate":""}</p>
+      </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
        <div className="relative min-w-[190px] flex-1">
         <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"/>
@@ -686,7 +717,11 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
        {([
         ["all","All cases",totalCases],["uploaded","Docs uploaded",queueStats.uploaded],
         ["missing","Missing docs",queueStats.missing],["received","Ready to review",queueStats.review],
-        ["not_contacted","No email yet",queueStats.unemailed],["followup_due","Follow-up due",queueStats.followup]
+        ["not_contacted","No email yet",queueStats.unemailed],["emailed_no_whatsapp","Emailed · WhatsApp pending",queueStats.emailedNoWhatsapp],
+        ["email_notice_due","Status changed · email pending",queueStats.emailNoticeDue],
+        ["whatsapp_unmarked","WhatsApp not marked sent",queueStats.whatsappUnmarked],
+        ["email_uncertain","Email outcome uncertain",queueStats.emailUncertain],
+        ["followup_due","Follow-up due",queueStats.followup]
        ] as const).map(([key,label,count])=><Button key={key} type="button" size="sm" variant={filter===key?"default":"outline"}
          className="h-8 shrink-0 gap-1.5 rounded-full px-3 text-xs" onClick={()=>setFilter(key)}>
          {label}<span className="text-[11px] opacity-70">{count}</span></Button>)}
@@ -699,7 +734,13 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
          <SelectItem value="all">All cases</SelectItem><SelectItem value="uploaded">Any documents uploaded</SelectItem>
          <SelectItem value="no_uploads">No documents uploaded</SelectItem><SelectItem value="missing">Missing required documents</SelectItem>
          <SelectItem value="received">Documents awaiting review</SelectItem><SelectItem value="decision">Decisions and confirmations</SelectItem>
-         <SelectItem value="not_contacted">No email sent yet</SelectItem><SelectItem value="followup_due">Follow-up due</SelectItem>
+         <SelectItem value="not_contacted">No email sent yet</SelectItem>
+         <SelectItem value="emailed_no_whatsapp">Email accepted · WhatsApp not marked sent</SelectItem>
+         <SelectItem value="whatsapp_unmarked">WhatsApp not marked sent</SelectItem>
+         <SelectItem value="email_notice_due">Changed status · new email required</SelectItem>
+         <SelectItem value="whatsapp_notice_due">Changed status · WhatsApp follow-up required</SelectItem>
+         <SelectItem value="email_uncertain">Uncertain email send · investigate</SelectItem>
+         <SelectItem value="followup_due">Follow-up due</SelectItem>
          <SelectItem value="student_acted">Student uploaded after email</SelectItem><SelectItem value="awaiting_review">Awaiting verification</SelectItem>
          <SelectItem value="decision_changed">Status changed since email</SelectItem><SelectItem value="approved">Approved / confirmed</SelectItem>
          <SelectItem value="rejected">Rejected</SelectItem>
@@ -720,7 +761,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       <div className="flex flex-wrap items-center justify-between gap-3">
        <div><p className="font-bold">Accommodation email coverage</p><p className="text-xs text-muted-foreground">Exact case-level lifetime audit, separate from today's email count and message templates.</p></div>
        <div className="flex flex-wrap gap-2">
-        <Select value={selectedResidence||undefined} onValueChange={setSelectedResidence}>
+        <Select value={selectedResidence||undefined} onValueChange={selectResidence}>
          <SelectTrigger aria-label="Choose residence for email coverage" className="w-[min(92vw,300px)]"><SelectValue placeholder="Select a residence"/></SelectTrigger>
          <SelectContent>{residenceChoices.map(r=><SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
         </Select>
@@ -813,16 +854,32 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
            ?<Badge variant="outline" className="border-emerald-500/30 text-[10px] text-emerald-700 dark:text-emerald-300">Email sent</Badge>
            :<Badge variant="outline" className="text-[10px]">No email yet</Badge>}
          </div>
+         <div className="mt-1 flex flex-wrap gap-1">
+          {item.whatsapp_marked_sent
+           ?<Badge variant="outline" className="border-emerald-500/30 text-[10px]">WhatsApp operator-marked sent</Badge>
+           :<Badge variant="outline" className="text-[10px]">WhatsApp not marked sent</Badge>}
+          {item.whatsapp_opened&&!item.whatsapp_marked_sent&&<Badge variant="outline" className="text-[10px]">WhatsApp opened only</Badge>}
+          {item.email_attempt_uncertain&&<Badge variant="outline" className="border-amber-500 text-[10px]">Email uncertain · do not resend</Badge>}
+          {item.email_notice_due&&<Badge variant="outline" className="border-amber-500 text-[10px]">New status email required</Badge>}
+          {item.whatsapp_notice_due&&<Badge variant="outline" className="border-amber-500 text-[10px]">New status WhatsApp follow-up</Badge>}
+         </div>
          <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
           <span className="font-semibold text-foreground">Next:</span> {item.service_action||pretty(item.workflow_bucket||"awaiting_action")}
          </p>
          {item.student_uploaded_after_email&&<p className="mt-1 text-[11px] font-semibold text-blue-600">New upload since last email</p>}
          </button>
-         {needsReview&&<Button size="sm" variant="outline" className="mt-1 h-8 shrink-0 rounded-lg px-2 text-[10px]"
-          onClick={()=>{selectRecord(item.id);setPane("documents");}}
-          aria-label={"Review student documents for "+item.label}>
-          <FileCheck2 className="mr-1 h-3.5 w-3.5"/>Files
-         </Button>}
+         <div className="mt-1 flex shrink-0 flex-col gap-1">
+          <Button size="sm" variant="outline" className="h-7 rounded-lg px-2 text-[10px]"
+           onClick={()=>{selectRecord(item.id);setPane("compose");}}
+           aria-label={"Prepare email for "+item.label}><Mail className="mr-1 h-3 w-3"/>Email</Button>
+          <Button size="sm" variant="outline" className="h-7 rounded-lg px-2 text-[10px]"
+           onClick={()=>{selectRecord(item.id);setPane("whatsapp");}}
+           aria-label={"Open WhatsApp for "+item.label}><MessageCircle className="mr-1 h-3 w-3"/>WA</Button>
+          {needsReview&&<Button size="sm" variant="ghost" className="h-7 rounded-lg px-2 text-[10px]"
+           onClick={()=>{selectRecord(item.id);setPane("documents");}}
+           aria-label={"Review student documents for "+item.label}>
+           <FileCheck2 className="mr-1 h-3 w-3"/>Files</Button>}
+         </div>
        </div>)}
      </ScrollArea>
     </aside>
@@ -842,7 +899,23 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
          </Button>
         </div>}
         {caseInfo.residence_image_url&&<img src={caseInfo.residence_image_url} alt={"Real listing photo: "+caseInfo.property} className="mt-3 max-h-32 w-full rounded-lg object-cover"/>}
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        {active&&<div className="rounded-xl border bg-background p-3" aria-label="Linked email WhatsApp and status evidence">
+        <p className="flex items-center gap-1 text-xs font-bold"><ShieldCheck className="h-3.5 w-3.5"/>Channel and status evidence</p>
+        <div className="mt-2 grid gap-1.5 text-xs">
+         <p><strong>Gmail:</strong> {active.email_sent?"Accepted by Gmail · not proof of inbox receipt or read":"No confirmed send"}{active.email_attempt_uncertain?" · Uncertain attempt, investigate before resending":""}</p>
+         <p><strong>WhatsApp:</strong> {active.whatsapp_marked_sent?"Operator marked sent · delivery/read not verified":active.whatsapp_opened?"Opened in WhatsApp · operator has not marked sent":"Not marked sent"}</p>
+         <p><strong>ResKonnect status:</strong> {pretty(active.status)} · system record, not proof of external communication</p>
+         {active.last_status_sync_to&&<p><strong>Verified Gmail-linked change:</strong> {pretty(active.last_status_sync_from||"previous")} → {pretty(active.last_status_sync_to)} · {active.last_status_sync_at?new Date(active.last_status_sync_at).toLocaleString("en-ZA"):"audited"}</p>}
+         {active.email_notice_due&&<p className="font-semibold text-amber-700">Status differs from the last confirmed email. Send a new factual status notice.</p>}
+         {active.whatsapp_notice_due&&<p className="font-semibold text-amber-700">WhatsApp has not been re-marked sent for this status.</p>}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+         <Button size="sm" variant="outline" onClick={()=>{setTemplate("status_update");setPane("compose");resetPreview();}}>Prepare current status email</Button>
+         <Button size="sm" variant="outline" onClick={()=>setPane("whatsapp")}>WhatsApp follow-up</Button>
+         <Button size="sm" variant="outline" onClick={()=>{setChecked(new Set([selected]));setPane("bulk");}}>Verify / update case status</Button>
+        </div>
+       </div>}
+       <div className="mt-3 grid grid-cols-2 gap-2">
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recorded status</p><p className="mt-1 text-xs font-bold">{pretty(caseInfo.status)}</p></div>
          <div className="rounded-lg bg-muted/50 p-2.5"><p className="text-[10px] uppercase text-muted-foreground">Recipient</p><p className="mt-1 text-xs font-bold">{caseInfo.recipient_hint||"No valid email"}</p></div>
         </div>
