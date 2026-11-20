@@ -129,8 +129,9 @@ export function renderLetter(c:CaseContext,key:TemplateKey,customNote:string="",
  const originalSubject=expand(override?.subject_template||def.subject).replace(/[\r\n]/g," ").trim();
  const residencePrefix=clean(c.property,140)+" | ";
  const officialTopic=originalSubject.startsWith(residencePrefix)?originalSubject.slice(residencePrefix.length):originalSubject;
- const subject=(issuer==="reskonnect"&&!/^reskonnect\s*\|/i.test(officialTopic)
-  ?"ResKonnect | "+officialTopic:officialTopic).slice(0,180);
+ const subject=(issuer==="reskonnect"
+  ?(/^reskonnect\s*\|/i.test(officialTopic)?officialTopic:"ResKonnect | "+officialTopic)
+  :originalSubject).slice(0,180);
  const message=expand(override?.body_template||def.body);
  // Residence details remain case context, not the organization sending the notice.
  const signoff=issuer==="reskonnect"?"ResKonnect":c.property==="ResKonnect"?"ResKonnect":clean(c.property,140)+" via ResKonnect";
