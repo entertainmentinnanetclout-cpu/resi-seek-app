@@ -20,7 +20,7 @@ import {Textarea} from "@/components/ui/textarea";
 import {cn} from "@/lib/utils";
 
 type Kind="application"|"reservation"|"housing_lead"|"support_enquiry";
-type Template="smart"|"acknowledgement"|"documents_needed"|"documents_received"|"approved"|"rejected"|"conditionally_approved"|"status_update"|"feedback"|"next_steps"|"enquiry_response"|"viewing_invite"|"follow_up"|"reservation_confirmed"|"move_in_arrangements";
+type Template="triage_received"|"triage_under_review"|"smart"|"acknowledgement"|"documents_needed"|"documents_received"|"approved"|"rejected"|"conditionally_approved"|"status_update"|"feedback"|"next_steps"|"enquiry_response"|"viewing_invite"|"follow_up"|"reservation_confirmed"|"move_in_arrangements";
 type Mode="admin"|"landlord";
 type Signal={stage:string;missing:string[];uploaded:number;pendingReview:number;summary:string};
 type CaseItem={
@@ -81,14 +81,20 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [nextOffset,setNextOffset]=useState<number|null>(null);
  const [loadingMore,setLoadingMore]=useState(false);
  const [selected,setSelected]=useState(params.get("target")||"");
- const [checked,setChecked]=useState<Set<string>>(new Set());
+ // Case Command Center deep links into the *same* real Email Dock; never
+ // create a second send implementation or a second audit history.
+ const initialBatchIds=(params.get("cases")||"").split(",").filter(x=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(x)).slice(0,25);
+ const initialTriage=params.get("template")==="triage_under_review"?"triage_under_review":
+   params.get("template")==="triage_received"?"triage_received":null;
+ const [checked,setChecked]=useState<Set<string>>(()=>new Set(initialBatchIds));
  const [search,setSearch]=useState("");
  const [workspace,setWorkspace]=useState<"cases"|"activity">(params.get("view")==="activity"?"activity":"cases");
  const [advancedFilters,setAdvancedFilters]=useState(false);
  const [sortBy,setSortBy]=useState<"newest"|"oldest"|"needs_action">("needs_action");
  const [filter,setFilter]=useState<"all"|"missing"|"received"|"decision"|"not_contacted"|"followup_due"|"student_acted"|"awaiting_review"|"decision_changed"|"approved"|"rejected"|"uploaded"|"no_uploads"|"submitted"|"under_review"|"reserved"|"confirmed">("all");
  const [caseInfo,setCaseInfo]=useState<CaseInfo|null>(null);
- const [template,setTemplate]=useState<Template>("smart");
+ const [template,setTemplate]=useState<Template>(initialTriage||"smart");
+ const [bulkTemplate,setBulkTemplate]=useState<"smart"|"triage_received"|"triage_under_review">(initialTriage||"smart");
  const [note,setNote]=useState("");
  const [preview,setPreview]=useState<EmailPreview|null>(null);
  const [approved,setApproved]=useState(false);
@@ -272,17 +278,20 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  }),[items]);
  const templatesForKind=useMemo(()=>{
   const base:(Template)[]=["smart","acknowledgement","documents_needed","documents_received","status_update","feedback","next_steps","follow_up"];
+  if(mode==="admin"&&(kind==="application"||kind==="reservation"))base.push("triage_received","triage_under_review");
   if(kind==="application")base.push("approved","rejected","conditionally_approved");
   if(kind==="reservation")base.push("reservation_confirmed","viewing_invite","move_in_arrangements");
   if(kind==="housing_lead")base.push("viewing_invite","enquiry_response");
   if(kind==="support_enquiry")base.push("enquiry_response");
   return [...new Set(base)];
  },[kind]);
- const availableStudio:Template[]=templatesForKind.filter(x=>x!=="smart");
+ const availableStudio:Template[]=templatesForKind.filter(x=>!["smart","triage_received","triage_under_review"].includes(x));
+ const fixedTriage=template==="triage_received"||template==="triage_under_review";
+ const fixedBulkTriage=bulkTemplate==="triage_received"||bulkTemplate==="triage_under_review";
  const selectedCount=checked.size;
  const resetPreview=()=>{setPreview(null);setApproved(false);setBulkPreview([]);setBulkApproval(false);setStatusPreview([]);setStatusApproved(false);setBatchSummary(null);};
  const selectKind=(k:Kind)=>{
-  setKind(k);setWorkspace("cases");setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setChecked(new Set());setNote("");setPane(k==="application"||k==="reservation"?"documents":"compose");resetPreview();
+  setKind(k);setWorkspace("cases");setAcademicYear(k==="reservation"?"2027":"2026");setSearch("");setFilter("all");setSelected("");setTemplate("smart");setBulkTemplate("smart");setChecked(new Set());setNote("");setPane(k==="application"||k==="reservation"?"documents":"compose");resetPreview();
   const next=new URLSearchParams(params);next.set("kind",k);next.delete("target");next.delete("view");setParams(next,{replace:true});
  };
  const selectRecord=(id:string)=>{
@@ -356,14 +365,14 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const sendOne=async()=>{
   if(!preview||!selected||!approved||!connection?.connected)return;
   if(pendingSend?.targetId===selected&&pendingSend.kind===kind)return toast.warning("Resolve the previous email attempt before resending");
-  if(needsReview&&!reviewedNow)return toast.error("Review this student’s documents before sending");
+  if(needsReview&&!fixedTriage&&!reviewedNow)return toast.error("Review this student’s documents before sending");
   if(lastPreviewRef.current!==selected+":"+template+":"+note)return toast.error("Refresh your preview before sending");
-  if(!window.confirm("Send this official ResKonnect email and branded PDF using your connected Gmail?"))return;
+  if(!window.confirm("Send the approved "+(mode==="admin"?"ResKonnect company":"residence")+" email and PDF using the authorized Gmail account "+(connection.email||"")+"?"))return;
   const requestId=crypto.randomUUID();
   setBusy("send");
   try{
    const result=await premium({action:"send",kind,target_id:selected,template_key:template,
-    message:note,confirmed:true,request_id:requestId,expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage,preview_hash:preview.preview_hash,document_review_id:selectedReceipt?.id||null});
+    message:fixedTriage?"":note,confirmed:true,request_id:requestId,expected_status:preview.case.status,expected_document_stage:preview.case.document_signal.stage,preview_hash:preview.preview_hash,document_review_id:selectedReceipt?.id||null});
    if(result?.uncertain){
     setPendingSend({requestId,kind,targetId:selected});
     toast.warning("Email delivery is not confirmed. Check status or Gmail Sent before attempting another send.");
@@ -393,7 +402,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   if(!ids.length)return toast.error("Select cases from the inbox");
   setBusy("bulk-preview");setBulkPreview([]);setBulkApproval(false);setBatchSummary(null);
   try{
-   const response=await premium({action:"bulk_preview",kind,ids,template_key:"smart",message:note});
+   const response=await premium({action:"bulk_preview",kind,ids,template_key:bulkTemplate,message:fixedBulkTriage?"":note});
    setBulkPreview(response.items||[]);
    toast.info((response.eligible||0)+" of "+ids.length+" cases eligible");
   }catch(e){showError(e);}finally{setBusy(null);}
@@ -401,7 +410,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const sendBulk=async()=>{
   if(updateAvailable)return toast.warning("A new ResKonnect version is available. Refresh the page before sending a bulk batch.");
   if(!connection?.connected||!bulkApproval||!bulkPreview.length)return;
-  if(needsReview&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))return toast.error("Review every selected student’s documents before a bulk send");
+  if(needsReview&&!fixedBulkTriage&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))return toast.error("Review every selected student’s documents before a bulk send");
   const ids=bulkPreview.filter(x=>x.ok).map(x=>x.id);
   if(!ids.length)return toast.error("No eligible case emails");
   if(!window.confirm("Send "+ids.length+" individualized Gmail messages, each with its own ResKonnect PDF?"))return;
@@ -420,7 +429,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
      document_review_id:reviewReceiptFor(id)?.id||null};
     try{
      const response=await premium({action:"bulk_send",kind,ids:[id],requests:[request],confirmed:true,
-      batch_id:batchId,template_key:"smart",message:note});
+      batch_id:batchId,template_key:bulkTemplate,message:fixedBulkTriage?"":note});
      const outcome=response.results?.[0];
      if(outcome?.sent)ok++;
      else if(outcome?.uncertain||!outcome){unconfirmed++;incompleteIds.push(id);}
@@ -780,7 +789,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
            {busy==="send-status"?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<RefreshCw className="mr-2 h-4 w-4"/>}Check delivery status
           </Button>
          </div>}
-         <Button className="w-full" disabled={!approved||!connection?.connected||!!busy||!reviewedNow||(pendingSend?.targetId===selected&&pendingSend.kind===kind)} onClick={()=>void sendOne()}>
+         <Button className="w-full" disabled={!approved||!connection?.connected||!!busy||(needsReview&&!fixedTriage&&!reviewedNow)||(pendingSend?.targetId===selected&&pendingSend.kind===kind)} onClick={()=>void sendOne()}>
          {busy==="send"?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<Send className="mr-2 h-4 w-4"/>}Send official email + PDF
         </Button>
        </div>:<div className="rounded-xl border border-dashed bg-card p-8 text-center">
@@ -797,10 +806,21 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
       <TabsContent value="bulk" className="m-0 space-y-4 px-4 pb-5">
        <div className="rounded-xl border bg-card p-4"><p className="flex items-center gap-2 font-semibold"><Users className="h-4 w-4 text-primary"/>Bulk communication</p>
         <p className="mt-1 text-xs text-muted-foreground">{selectedCount} selected · individualized case context and PDF per recipient · five sends per batch</p>
-        <p className="mt-1 text-xs font-semibold text-primary">Bulk emails always use each student’s own Smart template, not the single-case template selection.</p>
+        <p className="mt-1 text-xs font-semibold text-primary">One unified sending engine: select Smart correspondence or a fixed ResKonnect triage notice with MFA.</p>
+        {mode==="admin"&&needsReview&&<div className="space-y-2 rounded-lg border p-3">
+         <Label>Batch template</Label>
+         <Select value={bulkTemplate} onValueChange={v=>{setBulkTemplate(v as typeof bulkTemplate);setBulkPreview([]);setBulkApproval(false);}}>
+          <SelectTrigger><SelectValue/></SelectTrigger><SelectContent>
+           <SelectItem value="smart">Smart · recorded case status, document review required</SelectItem>
+           <SelectItem value="triage_received">ResKonnect · submission received (MFA only)</SelectItem>
+           <SelectItem value="triage_under_review">ResKonnect · review started (MFA only)</SelectItem>
+          </SelectContent></Select>
+         </Select>
+         {fixedBulkTriage&&<p className="text-xs text-amber-700">Fixed factual wording only. MFA-verified administrators may acknowledge a case before document review; this never approves accommodation or funding.</p>}
+        </div>}
         <Button className="mt-3 w-full" variant="secondary" onClick={()=>void previewBulk()} disabled={!selectedCount||!!busy}><FileCheck2 className="mr-2 h-4 w-4"/>Review selected messages</Button>
         {bulkPreview.length>0&&<div className="mt-3 space-y-2">{bulkPreview.map(messageCard)}
-         {needsReview&&bulkPreview.some(x=>x.ok&&!reviewReceiptFor(x.id))&&<div className="rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-950">
+         {needsReview&&!fixedBulkTriage&&bulkPreview.some(x=>x.ok&&!reviewReceiptFor(x.id))&&<div className="rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-950">
           <p className="font-bold">Document review needed before bulk sending</p>
           <p className="mt-1">Review each recipient's files individually. Your reviewed cases will stay recorded while you move between students.</p>
           <div className="mt-2 flex flex-wrap gap-1.5">{bulkPreview.filter(x=>x.ok&&!reviewReceiptFor(x.id)).map(x=>
@@ -810,7 +830,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
           <Checkbox checked={bulkApproval} onCheckedChange={v=>setBulkApproval(v===true)}/>
           <span>I reviewed these recipients and understand each will get an individualized Gmail email and PDF.</span>
          </label>
-         <Button className="w-full" disabled={!bulkApproval||!connection?.connected||!!busy||!bulkPreview.some(x=>x.ok)||(needsReview&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))} onClick={()=>void sendBulk()}>
+         <Button className="w-full" disabled={!bulkApproval||!connection?.connected||!!busy||!bulkPreview.some(x=>x.ok)||(needsReview&&!fixedBulkTriage&&bulkPreview.filter(x=>x.ok).some(x=>!reviewReceiptFor(x.id)))} onClick={()=>void sendBulk()}>
           <Send className="mr-2 h-4 w-4"/>{busy==="bulk-send"?"Sending approved batches…":"Send reviewed emails"}
          </Button>
         </div>}
