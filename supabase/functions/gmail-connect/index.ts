@@ -38,12 +38,12 @@ Deno.serve(async (req: Request) => {
   const action = body.action || "status";
   if(action==="status"){
     const {data,error}=await admin.from("landlord_gmail_connections")
-      .select("gmail_address,connected_at,last_used_at,enabled")
+      .select("gmail_address,connected_at,last_used_at,enabled,reply_read_enabled")
       .eq("user_id",user.id).maybeSingle();
     if(error) return respond({error:"Unable to retrieve connection status"},503);
-    return respond({connected:!!data?.enabled,email:data?.enabled?data.gmail_address:null,connected_at:data?.connected_at || null,last_used_at:data?.last_used_at||null});
+    return respond({connected:!!data?.enabled,email:data?.enabled?data.gmail_address:null,connected_at:data?.connected_at || null,last_used_at:data?.last_used_at||null,reply_sync_enabled:!!data?.enabled&&!!data?.reply_read_enabled});
   }
-  if(action==="connect"){
+  if(action==="connect"||action==="connect_replies"){
     const clientId=Deno.env.get("GOOGLE_GMAIL_CLIENT_ID");
     const redirect=Deno.env.get("GOOGLE_GMAIL_REDIRECT_URI");
     if(!clientId || !redirect) return respond({error:"Google OAuth configuration missing"},503);
@@ -60,7 +60,7 @@ Deno.serve(async (req: Request) => {
     u.searchParams.set("client_id",clientId);
     u.searchParams.set("redirect_uri",redirect);
     u.searchParams.set("response_type","code");
-    u.searchParams.set("scope","openid email https://www.googleapis.com/auth/gmail.send");
+    u.searchParams.set("scope",action==="connect_replies"?"openid email https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly":"openid email https://www.googleapis.com/auth/gmail.send");
     u.searchParams.set("access_type","offline");
     u.searchParams.set("prompt","consent");
     u.searchParams.set("include_granted_scopes","true");
