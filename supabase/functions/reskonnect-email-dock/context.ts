@@ -12,7 +12,7 @@ export const canView=(s:EmailSession,id:string|null)=>s.isAdmin||!!id&&s.residen
 export const safe=(v:unknown,max=120)=>String(v||"").replace(/[\r\n<>]/g," ").trim().slice(0,max);
 export const recipientHint=(s:EmailSession,email:string)=>s.isAdmin?email.slice(0,2)+"***@"+email.split("@")[1]:"Verified private recipient";
 export const publicCase=(s:EmailSession,c:CaseContext)=>({
- id:c.id,kind:c.kind,label:c.studentName,status:c.status,property:c.property,reference:c.reference,
+ id:c.id,kind:c.kind,label:c.studentName,status:c.status,property:c.property,residence_id:c.residenceId,reference:c.reference,
  academic_year:c.year,document_signal:c.documents,recommended_template:smartTemplate(c),
  recipient_hint:validEmail(c.email)?recipientHint(s,c.email):null,can_email:validEmail(c.email)&&c.contactAllowed,
  residence_image_url:c.residenceImageUrl||null,has_whatsapp:!!c.phoneE164
