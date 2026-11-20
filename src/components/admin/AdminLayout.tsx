@@ -49,7 +49,9 @@ const AdminSidebar=({
   const location=useLocation();
   const {state}=useSidebar();
   const collapsed=state==="collapsed";
-  const visibleDepartments=ADMIN_DEPARTMENTS.filter((department)=>isGodMode||departments.includes(department.key));
+  const visibleDepartments=ADMIN_DEPARTMENTS.filter((department)=>
+    (isGodMode||departments.includes(department.key))&&
+    (!isGodMode||!["executive","communications_service"].includes(department.key)));
 
   const handleLogout=async()=>{await supabase.auth.signOut();navigate("/");};
   const handleRefresh=()=>{toast.info("Refreshing live administration data…");window.location.reload();};
@@ -77,7 +79,9 @@ const AdminSidebar=({
            ["/admin/users","People & Journeys",UsersRound],
            ["/admin/golden-cycle","Needs My Decision",ClipboardCheck],
            ["/admin/applications","Bulk Applications",Building2],
-           ["/admin/communications","Communication Centre",MessageCircle]
+           ["/admin/communications","Communication Centre",MessageCircle],
+           ["/admin/cases","Case Command Center",ClipboardCheck],
+           ["/admin/studio","Visual Studio",Paintbrush]
          ] as const).map(([path,label,Icon])=><SidebarMenuItem key={path}>
           <SidebarMenuButton asChild isActive={location.pathname===path||(path==="/admin/brain"&&location.pathname==="/admin")
            ||(path==="/admin/users"&&location.pathname.startsWith("/admin/students/"))} tooltip={path==="/admin/golden-cycle"?"Golden Service Cycle":label}>
@@ -89,7 +93,7 @@ const AdminSidebar=({
       <SidebarGroup>
         <details className="w-full" open={!isGodMode}>
           <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-2 text-xs font-bold text-sidebar-foreground/70 hover:text-sidebar-foreground">
-           <Settings2 className="h-4 w-4"/>{!collapsed&&<span>{isGodMode?"Specialist tools & old departments":"Departments & Offices"}</span>}
+           <Settings2 className="h-4 w-4"/>{!collapsed&&<span>{isGodMode?"Department workspaces":"Departments & Offices"}</span>}
           </summary>
           <SidebarGroupContent><SidebarMenu>
            {visibleDepartments.map((department)=>{
@@ -104,10 +108,7 @@ const AdminSidebar=({
               </SidebarMenuButton>
              </SidebarMenuItem>;
            })}
-           {isGodMode&&<>
-            <SidebarMenuItem><SidebarMenuButton asChild tooltip="Visual Studio"><Link to="/admin/studio"><Paintbrush className="h-4 w-4"/><span>Visual Studio</span></Link></SidebarMenuButton></SidebarMenuItem>
-            <SidebarMenuItem><SidebarMenuButton asChild tooltip="Case Command Center"><Link to="/admin/cases"><ClipboardCheck className="h-4 w-4"/><span>Case Command Center</span></Link></SidebarMenuButton></SidebarMenuItem>
-           </>}
+
           </SidebarMenu></SidebarGroupContent>
         </details>
       </SidebarGroup>
