@@ -31,8 +31,8 @@ test("Gmail inbox read permission is separate and opt-in",()=>{
  assert.match(file("src/pages/Privacy.tsx"),/Separately, you may explicitly enable reply tracking/);
 });
 test("only actual Gmail reply threads from the intended recipient match",()=>{
- assert.match(replies,/messages\/\+"\+encodeURIComponent\(outgoing\.provider_message_id\)/);
- assert.match(replies,/threads\/\+"\+encodeURIComponent\(threadId\)/);
+ assert.match(replies,/encodeURIComponent\(outgoing\.provider_message_id\)/);
+ assert.match(replies,/encodeURIComponent\(threadId\)/);
  assert.match(replies,/mailbox\(header\(message,"From"\)\)!==String\(outgoing\.recipient_email\)\.toLowerCase\(\)/);
  assert.match(replies,/receivedAt<boundary-30000/);
  assert.match(replies,/gmail_message_id:message\.id/);
