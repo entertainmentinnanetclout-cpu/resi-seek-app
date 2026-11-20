@@ -105,7 +105,8 @@ test("monthly editorial selection is admin-only, isolated from organic analytics
  assert.match(editorialSql,/from public.reskonnect_public_top3_monthly\(\)/);
  assert.match(editorialSql,/'editorial'::text/);
  assert.match(editorialSql,/from generate_series\(1,3\)/);
- assert.match(admin,/MonthlyTopThreeManager residences=\{residences\}/);
+ assert.match(admin,/\/admin\/studio\?tab=showcases/);
+ assert.match(read("src/pages/admin/AdminVisualStudio.tsx"),/MonthlyTopThreeManager residences=\{residences\}/);
  assert.match(manager,/onConflict:"month_start,position"/);
  assert.match(manager,/reskonnect_admin_top3_monthly/);
  assert.match(manager,/Automatic · student demand/);
