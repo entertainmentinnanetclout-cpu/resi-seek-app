@@ -214,11 +214,11 @@ export default function AdminCaseCommandCenter(){
       <p className="rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-900">A triage notice is not a placement, application or funding decision. The unified dock verifies God Mode MFA and uses one Gmail delivery audit.</p>
       <Button className="w-full" asChild>
        <Link to={"/admin/communications?tab=email&kind="+kind+"&template="+emailMode+
-        (chosen.length?"&cases="+encodeURIComponent(chosen.slice(0,25).join(",")):"")}>
-        <Mail className="mr-2 h-4 w-4"/>Open one Email Dock · {Math.min(chosen.length,25)} selected <ArrowRight className="ml-1 h-4 w-4"/>
+        (chosen.length?"&cases="+encodeURIComponent(chosen.slice(0,10).join(",")):"")}>
+        <Mail className="mr-2 h-4 w-4"/>Open one Email Dock · {Math.min(chosen.length,10)} selected <ArrowRight className="ml-1 h-4 w-4"/>
        </Link>
       </Button>
-      {chosen.length>25&&<p className="text-xs text-muted-foreground">The first 25 selected cases can be transferred per review batch. All case records remain available in the unified dock.</p>}
+      {chosen.length>10&&<p className="text-xs text-muted-foreground">The first 10 selected cases can be transferred per email batch. All case records remain available in the unified dock.</p>}
      </>}
     </CardContent></Card>
    </div>
