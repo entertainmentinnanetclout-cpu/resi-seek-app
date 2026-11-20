@@ -46,7 +46,8 @@ test("local PDF and Gmail MIME preparation happen before the sending claim",()=>
  const preparation=send.indexOf("const packet=await previewPacket(s,ctx,key,note);",send.indexOf("export async function sendOne("));
  const pdfMade=send.indexOf("pdf=await createBrandedPdf(",preparation);
  const mimeMade=send.indexOf("raw=createGmailMime(",pdfMade);
- const claim=send.indexOf('.insert({',mimeMade);
+ // The sending row is now atomically reserved by the PostgreSQL RPC.
+ const claim=send.indexOf('rpc("rk_gmail_reserve_send"',mimeMade);
  const gmailRequest=send.indexOf('fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send"',claim);
  assert.ok(preparation>=0&&pdfMade>preparation&&mimeMade>pdfMade&&claim>mimeMade&&gmailRequest>claim,
   "do not create an ambiguous sending row while building the PDF");
