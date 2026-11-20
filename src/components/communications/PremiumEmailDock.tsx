@@ -132,6 +132,7 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
  const [coverage,setCoverage]=useState<DeliveryCoverage|null>(null);
  const [coverageError,setCoverageError]=useState("");
  const [coverageLoading,setCoverageLoading]=useState(false);
+ const coverageRequestRef=useRef(0);
  const [updateAvailable,setUpdateAvailable]=useState(false);
  const lastPreviewRef=useRef("");
  const deepLinkedIdRef=useRef(params.get("target"));
@@ -160,17 +161,18 @@ export default function PremiumEmailDock({mode}:{mode:Mode}){
   try{const r=await premium({action:"history"});setHistory(r.items||[]);}catch(e){console.warn("History unavailable",e);}
  },[premium]);
  const loadCoverage=useCallback(async()=>{
+  const requestId=++coverageRequestRef.current;
   if(!selectedResidence||!(kind==="reservation"||kind==="application")){
-   setCoverage(null);setCoverageError("");return;
+   setCoverage(null);setCoverageError("");setCoverageLoading(false);return;
   }
   setCoverage(null);setCoverageError("");setCoverageLoading(true);
   try{
    const result=await premium({action:"delivery_coverage",kind,residence_id:selectedResidence,
     academic_year:Number(academicYear)});
    if(!result.verified)throw Error("Coverage was not independently verified");
-   setCoverage(result as DeliveryCoverage);
-  }catch(e){setCoverageError(e instanceof Error?e.message:"Cannot reconcile emails");}
-  finally{setCoverageLoading(false);}
+   if(requestId===coverageRequestRef.current)setCoverage(result as DeliveryCoverage);
+  }catch(e){if(requestId===coverageRequestRef.current)setCoverageError(e instanceof Error?e.message:"Cannot reconcile emails");}
+  finally{if(requestId===coverageRequestRef.current)setCoverageLoading(false);}
  },[premium,kind,academicYear,selectedResidence]);
  useEffect(()=>{void loadCoverage();},[loadCoverage]);
  const loadTemplates=useCallback(async()=>{
