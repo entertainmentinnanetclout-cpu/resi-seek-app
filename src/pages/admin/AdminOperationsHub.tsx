@@ -36,8 +36,18 @@ const normalize=(value:string|null)=>{
 
 export default function AdminOperationsHub(){
   const[searchParams,setSearchParams]=useSearchParams();
-  const activeTab=normalize(searchParams.get("tab"));
+  const requestedTab=searchParams.get("tab");
+  const activeTab=normalize(requestedTab);
+  // Legacy deep links continue opening their original tool, not merely the parent tab.
+  const requestedView=searchParams.get("view");
+  const applicationView=["applications","reservations","automation","follow-up"].includes(requestedView||"")?
+   String(requestedView):requestedTab==="2027-reservations"?"reservations":
+   requestedTab==="follow-up"?"follow-up":"applications";
   const setTab=(tab:string)=>{const next=new URLSearchParams(searchParams);next.set("tab",tab);setSearchParams(next);};
+  const setApplicationView=(view:string)=>{
+   const next=new URLSearchParams(searchParams);
+   next.set("tab","applications-reservations");next.set("view",view);setSearchParams(next);
+  };
 
   return <AdminLayout>
     <SEO noIndex title="Accommodation Department | ResKonnect Admin" description="Accommodation applications, reservations, property compliance, accreditation-readiness control, occupancy intelligence, residences and operational delivery."/>
@@ -58,7 +68,7 @@ export default function AdminOperationsHub(){
         </TabsList>
 
         <TabsContent value="applications-reservations" className="space-y-4">
-          <Tabs defaultValue="applications">
+          <Tabs value={applicationView} onValueChange={setApplicationView}>
             <TabsList className="flex h-auto flex-wrap gap-1 rounded-xl bg-muted/45 p-1"><TabsTrigger value="applications">Applications</TabsTrigger><TabsTrigger value="reservations">Reservations / Academic intake</TabsTrigger><TabsTrigger value="automation">RG7 Automation</TabsTrigger><TabsTrigger value="follow-up">Follow-up & conversion</TabsTrigger></TabsList>
             <TabsContent value="applications"><AdminApplicationsContent /></TabsContent>
             <TabsContent value="reservations"><AdminReservations2027Content /></TabsContent>
