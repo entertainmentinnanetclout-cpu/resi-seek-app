@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Contact, MessageCircle, MessagesSquare, Mail, Sparkles, Target, WandSparkles } from "lucide-react";
 import AdminOSWhatsAppDeskNext from "@/components/admin/AdminOSWhatsAppDeskNext";
 import AdminOSContactsDirectory from "@/components/admin/AdminOSContactsDirectory";
+import AdminOSCustomer360 from "@/components/admin/AdminOSCustomer360";
 import AdminOSWhatsAppConcierge from "@/components/admin/AdminOSWhatsAppConcierge";
 import AdminOSServiceIntelligence from "@/components/admin/AdminOSServiceIntelligence";
 import AdminWhatsAppConversionPipeline from "@/components/admin/AdminWhatsAppConversionPipeline";
@@ -19,6 +20,8 @@ export default function AdminCommunicationsDepartment(){
   const requested=params.get("tab");
   const active=tabs.includes(requested||"")?String(requested):"desk";
   const setTab=(value:string)=>{const next=new URLSearchParams(params);next.set("tab",value);setParams(next);};
+  const contactId=params.get("contact");
+  const closeContact=()=>{const next=new URLSearchParams(params);next.delete("contact");setParams(next,{replace:true});};
 
   return <AdminLayout>
     <SEO noIndex title="Communications & Service | ResKonnect Admin" description="WhatsApp, customer communication, conversion automation, service intelligence, contacts and messaging templates."/>
@@ -46,6 +49,7 @@ export default function AdminCommunicationsDepartment(){
         <TabsContent value="service"><AdminOSServiceIntelligence/></TabsContent>
         <TabsContent value="templates"><AdminWhatsAppTemplatesContent/></TabsContent>
       </Tabs>
+      <AdminOSCustomer360 contactId={contactId} open={Boolean(contactId)} onClose={closeContact}/>
     </div>
   </AdminLayout>;
 }

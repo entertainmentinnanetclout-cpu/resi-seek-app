@@ -44,8 +44,9 @@ export async function previewPacket(s:EmailSession,ctx:CaseContext,key:TemplateK
  if(error)throw Error("Saved template could not be loaded");
  if(["viewing_invite","move_in_arrangements"].includes(resolved)&&note.trim().length<10)
    throw Error("Add practical details such as the viewing date/time or move-in instructions before sending");
-  const letter=renderLetter(ctx,key,note,custom||undefined);
- return {...letter,html:htmlEmail(ctx,letter.subject,letter.body)};
+  const issuer=s.isAdmin?"reskonnect":"residence";
+ const letter=renderLetter(ctx,key,note,custom||undefined,issuer);
+ return {...letter,issuer,html:htmlEmail(ctx,letter.subject,letter.body,issuer)};
 }
 async function bearerToken(s:EmailSession){
  const {data:connected,error:connectedError}=await s.db.from("landlord_gmail_connections")
@@ -108,6 +109,7 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
  }catch(e){console.error("Branded PDF generation failed",e);return {sent:false,error:"Could not generate the official PDF attachment; no email was sent",status:502};}
  const attachment="ResKonnect-"+ctx.kind+"-"+ctx.reference+".pdf";
  const senderName=s.isAdmin?"ResKonnect":(ctx.property==="ResKonnect"?"ResKonnect":ctx.property);
+ const senderScope=s.isAdmin?"reskonnect":"residence";
  let raw:string;
  try{
   raw=createGmailMime(ctx.email,packet.subject,packet.body,packet.html,pdf,attachment,
@@ -127,7 +129,9 @@ export async function sendOne(s:EmailSession,ctx:CaseContext,key:TemplateKey,not
   idempotency_key:requestId,recipient_email:ctx.email,recipient_user_id:ctx.userId,
   subject:packet.subject,delivery_status:"sending",batch_id:batchId,pdf_attached:false,
   context_snapshot:{recorded_status:ctx.status,document_stage:ctx.documents.stage,
-   missing_count:ctx.documents.missing.length,template_key:selected}
+   missing_count:ctx.documents.missing.length,template_key:selected,
+   sender_scope:senderScope,sender_display_name:senderName,sender_email:sender.fromEmail,
+   accommodation_name:ctx.property}
  }).select("id").single();
  if(logErr)return {sent:false,error:logErr.code==="23505"?"An email with this request ID already exists; check delivery status before retrying":"Could not record email request",status:409,uncertain:logErr.code==="23505"};
  const mark=async(status:"failed"|"unknown",code:string)=>{

@@ -40,7 +40,7 @@ good(queue.includes("'student_user_id',case when p_scope='admin' then student_id
  &&queue.includes("rk_godmode_authorized()"),"Landlords do not receive the new direct Student 360 link");
 good(app.includes('path="/admin/students/:userId"')&&app.includes('path="/admin/brain"')
  &&app.includes("<AdminHomeSwitch />"),"One Brain is the protected God Mode home with a lifelong profile route");
-good(sidebar.includes("Student 360 · One Brain")&&sidebar.includes("Specialist tools & old departments"),
+good(sidebar.includes("Student 360 · One Brain")&&sidebar.includes("Department workspaces"),
  "Solo operator sees five large operational commands, with advanced tools collapsed");
 good(brain.includes("rk_student_360_search")&&brain.includes("rk_golden_service_queue")
  &&brain.includes("Six interconnected command actions"),"One Brain resolves people and live operational exceptions");

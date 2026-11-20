@@ -60,13 +60,16 @@ test("single and bulk sends preserve uncertain delivery states and reveal genuin
  assert.match(dock,/failureReasons\.push/);
 });
 
-test("God Mode and Communications Dock both send one PDF per request",()=>{
+test("one consolidated Dock owns Gmail send and God Mode transfers selected cases",()=>{
  const godmode=file("src/pages/admin/AdminCaseCommandCenter.tsx");
- assert.match(godmode,/for\(const draft of eligible\)/);
- assert.match(godmode,/ids:\[draft\.id\],requests:\[request\]/);
- assert.doesNotMatch(godmode,/action:"bulk_send",kind,ids,requests/);
- assert.match(godmode,/action:"send_status",request_id:requestId/);
+ assert.doesNotMatch(godmode,/const sendEmails=async/);
+ assert.doesNotMatch(godmode,/const whatsappPreview=async/);
+ assert.doesNotMatch(godmode,/action:"bulk_send"/);
+ assert.match(godmode,/&cases=/);
+ assert.match(godmode,/&template=/);
  assert.match(dock,/ids:\[id\],requests:\[request\]/);
+ assert.match(dock,/fixedBulkTriage/);
+ assert.match(api,/if\(!fixedTriage\)await assertReviewed/);
 });
 test("legacy batch fanout is bounded, JWT-protected, and never retries unknown sends",()=>{
  assert.match(api,/const anonKey=Deno\.env\.get\("SUPABASE_ANON_KEY"\)/);
@@ -80,7 +83,19 @@ test("bulk UI no longer labels unknown outcomes as definitely unsent",()=>{
  assert.match(dock,/batchSummary\.unconfirmed/);
  assert.match(dock,/incompleteIds\.push\(id\)/);
  assert.match(dock,/controllerchange/);
- const godmode=file("src/pages/admin/AdminCaseCommandCenter.tsx");
- assert.match(godmode,/status:"accepted"\|"failed"\|"unconfirmed"/);
- assert.match(godmode,/Do not resend unconfirmed emails/);
+ assert.match(dock,/batchSummary\.failed/);
+ assert.match(dock,/Do not resend unconfirmed messages/);
+});
+
+test("official ResKonnect messages distinguish company identity from case residence",()=>{
+ const letters=file("supabase/functions/reskonnect-email-dock/correspondence.ts");
+ const ledger=file("supabase/functions/reskonnect-email-dock/reply-intelligence.ts");
+ const history=file("src/components/communications/ReplyIntelligencePanel.tsx");
+ assert.match(letters,/issuer:"reskonnect"\|"residence"/);
+ assert.match(letters,/const signoff=issuer==="reskonnect"\?"ResKonnect"/);
+ assert.match(letters,/ResKonnect \| /);
+ assert.match(send,/sender_scope:senderScope/);
+ assert.match(send,/sender_email:sender\.fromEmail/);
+ assert.match(ledger,/sender_scope:x\.context_snapshot\?\.sender_scope/);
+ assert.match(history,/Historical sender category not recorded/);
 });

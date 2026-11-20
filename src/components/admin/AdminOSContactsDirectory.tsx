@@ -73,7 +73,7 @@ export default function AdminOSContactsDirectory() {
   const openCustomer = (id: string) => {
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      next.set("tab", "communications");
+      next.set("tab", "contacts");
       next.set("contact", id);
       return next;
     });

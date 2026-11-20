@@ -1,3 +1,4 @@
+import {Link} from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +7,6 @@ import { BarChart3, Brain, MessageSquareText, Radar } from "lucide-react";
 import { AdminAnalyticsContent } from "./AdminAnalytics";
 import AdminSocialDemandAnalytics from "@/components/admin/AdminSocialDemandAnalytics";
 import AdminOSLunaGrowth from "@/components/admin/AdminOSLunaGrowth";
-import AdminOSServiceIntelligence from "@/components/admin/AdminOSServiceIntelligence";
 import AdminOccupancyIntelligence from "@/components/admin/AdminOccupancyIntelligence";
 import AdminMarketplaceEvidence from "@/components/admin/AdminMarketplaceEvidence";
 
@@ -31,7 +31,11 @@ export default function AdminIntelligenceAnalytics(){
         <TabsContent value="company"><AdminAnalyticsContent/></TabsContent>
         <TabsContent value="demand"><AdminOSLunaGrowth/></TabsContent>
         <TabsContent value="social"><AdminSocialDemandAnalytics/></TabsContent>
-        <TabsContent value="service"><AdminOSServiceIntelligence/></TabsContent>
+        <TabsContent value="service"><div className="rounded-xl border p-5">
+  <p className="font-bold">Service Intelligence is part of Communications.</p>
+  <p className="mt-1 text-sm text-muted-foreground">Use one canonical service analytics panel to avoid mismatched metrics and duplicate actions.</p>
+  <Link className="mt-3 inline-block font-semibold text-primary underline" to="/admin/communications?tab=service">Open service intelligence</Link>
+ </div></TabsContent>
         <TabsContent value="occupancy"><AdminOccupancyIntelligence/></TabsContent>
         <TabsContent value="marketplace"><AdminMarketplaceEvidence/></TabsContent>
       </Tabs>
