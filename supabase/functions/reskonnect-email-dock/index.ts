@@ -70,6 +70,27 @@ Deno.serve(async(req:Request)=>{
  }
  if(fixedTriage&&(note.length>0||!["application","reservation"].includes(kind)))return res({error:"Triage correspondence must use the fixed factual template without a custom note"},400);
 
+ if(action==="delivery_coverage"){
+  if(!isKind(kind)||!["reservation","application"].includes(kind)||!validUuid(input.residence_id))
+   return res({error:"Select a valid accommodation and case type"},400);
+  if(!s.isAdmin&&!s.residences.has(input.residence_id))
+   return res({error:"Accommodation email coverage is restricted to its authorized staff"},403);
+  const year=Number(input.academic_year);
+  if(![2026,2027,2028].includes(year))return res({error:"Choose a valid academic year"},400);
+  try{
+   const {data,error}=await db.rpc("rk_email_delivery_coverage",{
+    p_kind:kind,p_residence_id:input.residence_id,p_year:year});
+   if(error||!data)throw Error("Cannot reconcile verified case-level delivery totals");
+   const total=Number(data.total_cases),emailed=Number(data.emailed_cases),
+      notSent=Number(data.unemailed_cases),never=Number(data.never_attempted),
+      uncertain=Number(data.uncertain_only),failed=Number(data.failed_only),
+      messages=Number(data.sent_messages);
+   if([total,emailed,notSent,never,uncertain,failed,messages].some(v=>!Number.isSafeInteger(v)||v<0)||
+      emailed+notSent!==total||never+uncertain+failed!==notSent||messages<emailed)
+    return res({error:"Delivery reconciliation failed its mathematical invariants; report this before emailing anyone"},503);
+   return res({...data,kind,residence_id:input.residence_id,academic_year:year,verified:true});
+  }catch(e){return res({error:e instanceof Error?e.message:"Delivery coverage unavailable"},503);}
+ }
  if(action==="reply_overview"){
   try{return res(await replyOverview(s,input.day));}
   catch(e){return failure(e);}
@@ -225,7 +246,7 @@ Deno.serve(async(req:Request)=>{
   }catch(e){return failure(e);}
  }
  if(["bulk_preview","bulk_send","bulk_status_preview","bulk_status_apply"].includes(action)){
-  const max=action==="bulk_send"?5:25;
+  const max=action==="bulk_send"||action==="bulk_preview"?10:25;
   const ids=idsFrom(input.ids,max);
   if(!ids)return res({error:"Select 1 to "+max+" unique case records"},400);
   if(action==="bulk_preview"){
@@ -240,7 +261,7 @@ Deno.serve(async(req:Request)=>{
   if(action==="bulk_send"){
    if(input.confirmed!==true||!validUuid(input.batch_id)||!Array.isArray(input.requests)||input.requests.length!==ids.length||
       input.requests.some((r:any,i:number)=>r?.id!==ids[i]||!validUuid(r.request_id)))
-    return res({error:"Review and explicitly approve each batch of up to five emails"},400);
+    return res({error:"Review and explicitly approve each batch of up to ten emails"},400);
 
    if(ids.length>1){
     // Compatibility for already-open browser/PWA tabs that submit 2-5 messages
