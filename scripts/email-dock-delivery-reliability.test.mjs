@@ -70,7 +70,7 @@ test("God Mode and Communications Dock both send one PDF per request",()=>{
 });
 test("legacy batch fanout is bounded, JWT-protected, and never retries unknown sends",()=>{
  assert.match(api,/const anonKey=Deno\.env\.get\("SUPABASE_ANON_KEY"\)/);
- assert.match(api,/\["Authorization":"Bearer "\+bearer,"apikey":anonKey/);
+ assert.match(api,/\{"Authorization":"Bearer "\+bearer,"apikey":anonKey/);
  assert.match(api,/\.eq\("actor_user_id",actor\)/);
  assert.match(api,/uncertain:true/);
  assert.match(api,/for\(let offset=0;offset<input\.requests\.length;offset\+=2\)/);
