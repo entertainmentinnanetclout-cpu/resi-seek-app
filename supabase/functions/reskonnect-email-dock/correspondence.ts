@@ -113,7 +113,7 @@ export function validateTemplate(value:string,max:number):boolean{
  const matches=[...value.matchAll(/\{\{([^}]+)\}\}/g)];
  return matches.every(m=>["student_name","property","reference","status","document_list","next_step","custom_note","kind_label","year","contact_email"].includes(m[1].trim()));
 }
-export function renderLetter(c:CaseContext,key:TemplateKey,customNote:string="",override?:{subject_template:string;body_template:string}){
+export function renderLetter(c:CaseContext,key:TemplateKey,customNote:string="",override?:{subject_template:string;body_template:string},issuer:"reskonnect"|"residence"="residence"){
  const resolved=key==="smart"?smartTemplate(c):key;
  const def=TEMPLATES[resolved];
  if(!def)throw Error("Unknown correspondence template");
@@ -126,13 +126,18 @@ export function renderLetter(c:CaseContext,key:TemplateKey,customNote:string="",
    kind_label:KIND_LABELS[c.kind],year:clean(c.year,8),contact_email:"reskonnect@gmail.com"
  };
  const expand=(v:string)=>v.replace(/\{\{([^}]+)\}\}/g,(_,name)=>variables[name.trim()]??"").replace(/\n{3,}/g,"\n\n").trim();
- const subject=expand(override?.subject_template||def.subject).replace(/[\r\n]/g," ").slice(0,180);
+ const originalSubject=expand(override?.subject_template||def.subject).replace(/[\r\n]/g," ").trim();
+ const residencePrefix=clean(c.property,140)+" | ";
+ const officialTopic=originalSubject.startsWith(residencePrefix)?originalSubject.slice(residencePrefix.length):originalSubject;
+ const subject=(issuer==="reskonnect"&&!/^reskonnect\s*\|/i.test(officialTopic)
+  ?"ResKonnect | "+officialTopic:officialTopic).slice(0,180);
  const message=expand(override?.body_template||def.body);
- const signoff=c.property==="ResKonnect"?"ResKonnect":clean(c.property,140)+" via ResKonnect";
+ // Residence details remain case context, not the organization sending the notice.
+ const signoff=issuer==="reskonnect"?"ResKonnect":c.property==="ResKonnect"?"ResKonnect":clean(c.property,140)+" via ResKonnect";
   const body="Hello "+clean(c.studentName,90)+",\n\n"+message+"\n\nKind regards,\n"+signoff;
  return {subject,body,resolved_key:resolved,template_name:def.name,next_step:nextStep(c)};
 }
-export function htmlEmail(c:CaseContext,subject:string,body:string):string{
+export function htmlEmail(c:CaseContext,subject:string,body:string,issuer:"reskonnect"|"residence"="residence"):string{
  const esc=(x:string)=>x.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
  const status=friendly(c.status);
  const step=nextStep(c);
@@ -147,7 +152,7 @@ export function htmlEmail(c:CaseContext,subject:string,body:string):string{
  '<tr><td style="padding:29px 32px 20px;background:#ffffff"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'+
  '<td style="vertical-align:middle;width:46px"><img src="https://www.reskonnect.org/favicon-transparent.png" width="42" height="42" alt="ResKonnect logo" style="display:block;width:42px;height:42px;object-fit:contain;border:0"></td>'+
  '<td style="vertical-align:middle"><div style="font-size:22px;font-weight:700;letter-spacing:0.4px;color:#071326">RES<span style="color:#B78A3C">KONNECT</span></div><div style="font-size:10px;color:#75839a;letter-spacing:2px;margin-top:3px">STUDENT LIVING &amp; OPPORTUNITY</div></td>'+
- '<td align="right" style="vertical-align:middle;font-size:10px;letter-spacing:1.2px;color:#7f8a9a">CASE UPDATE</td></tr></table></td></tr>'+
+ '<td align="right" style="vertical-align:middle;font-size:10px;letter-spacing:1.2px;color:#7f8a9a">'+(issuer==="reskonnect"?"OFFICIAL RESKONNECT NOTICE":"RESIDENCE CORRESPONDENCE")+'</td></tr></table></td></tr>'+
  '<tr><td style="padding:0 32px"><div style="height:1px;background:#e6eaf0"></div></td></tr>'+
  '<tr><td style="padding:28px 32px 20px"><p style="font-size:11px;letter-spacing:1.5px;color:#B18A46;text-transform:uppercase;margin:0 0 10px">Personalised correspondence</p>'+
  '<h1 style="font-size:25px;line-height:1.35;letter-spacing:-0.4px;font-weight:600;color:#0a1d37;margin:0 0 18px">'+esc(subject)+'</h1>'+
