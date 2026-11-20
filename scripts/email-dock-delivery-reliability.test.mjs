@@ -26,6 +26,7 @@ test("PDF generation avoids CPU-expensive embedded residence PNGs and oversized 
  assert.match(pdf,/readPublishedPhotoBytes\(details\.residenceImageUrl,350_000\)/);
  assert.match(pdf,/realPhoto\?\.mime==="image\/jpeg"/);
  assert.doesNotMatch(pdf,/pdf\.embedPng\(realPhoto\.bytes\)/);
+ assert.match(pdf,/pdf\.save\(\{useObjectStreams:false\}\)/);
 });
 test("bulk Gmail sends use one PDF per Edge Function request",()=>{
  assert.match(dock,/for\(const id of ids\)/);
