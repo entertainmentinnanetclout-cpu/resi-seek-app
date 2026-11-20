@@ -12,6 +12,7 @@ const app=read("src/App.tsx");
 const adminNav=read("src/components/admin/AdminLayout.tsx");
 const landlordNav=read("src/pages/residence/ResidenceLayout.tsx");
 const admin=read("src/pages/admin/AdminCaseCommandCenter.tsx");
+const dock=read("src/components/communications/PremiumEmailDock.tsx");
 const landlord=read("src/pages/residence/ResidenceEligibilityDesk.tsx");
 const landlordDetail=read("src/pages/residence/ResidenceApplicationDetail.tsx");
 const landlordReservations=read("src/pages/residence/ResidenceReservations2027.tsx");
@@ -106,12 +107,13 @@ test("fixed receipt and review-start messages may be sent without document-revie
  assert.match(communications,/if\(!isAdmin\|\|!verifiedAal\)/);
  assert.match(context,/rk_case_workflows/);
  assert.match(fingerprint,/reviewStage:c\.reviewStage/);
- assert.match(admin,/bulk_preview/);
- assert.match(admin,/bulk_send/);
- assert.match(admin,/whatsapp_handoff/);
- assert.match(admin,/Preview up to 5 selected WhatsApp messages/);
- assert.match(admin,/Open WhatsApp to send/);
- assert.match(admin,/operator_confirmed:true/);
+ assert.match(dock,/bulk_preview/);
+ assert.match(dock,/bulk_send/);
+ assert.match(dock,/ManualWhatsAppPanel/);
+ assert.match(dock,/operator_confirmed|ManualWhatsAppPanel/);
+ assert.match(admin,/One Communications Dock/);
+ assert.doesNotMatch(admin,/const emailPreview=async/);
+ assert.doesNotMatch(admin,/const whatsappPreview=async/);
  assert.doesNotMatch(admin,/sendGrid|massWhatsappAutomation/);
 });
 test("React routes and private operations drawers are part of the original ResKonnect app",()=>{
