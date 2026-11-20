@@ -76,8 +76,8 @@ test("a failed or uncertain Gmail request cannot update a student status",()=>{
   "only the provider-confirmed new-send path may attempt status reconciliation");
  assert.ok(recoveredReconcile>=0&&recoveredReconcile<accepted,
   "recovery may reconcile an existing confirmed send without sending Gmail again");
- assert.match(mail,/if\\(existing\\.delivery_status==="sent"\\)\\{/);
- assert.match(mail,/if\\(existing\\.provider_message_id\\)\\{/);
+ assert.match(mail,/if\(existing\.delivery_status==="sent"\)\{/);
+ assert.match(mail,/if\(existing\.provider_message_id\)\{/);
  assert.match(mail,/if\(providerId\)\{/);
  assert.match(mail,/status_sync:statusSync/);
  assert.match(mail,/recoveredSync/);
