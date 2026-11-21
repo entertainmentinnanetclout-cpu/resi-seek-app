@@ -12,6 +12,12 @@ const pages = [
     "ResKonnect — Building Africa's First AI/SI-Powered Student Platform",
   ],
   [
+    "/directory/residences",
+    "Student Accommodation Directory A-Z | ResKonnect",
+    "Find published South African student residences by exact name, address, campus or city, including basic photo-pending listings.",
+    "Accommodation Directory A-Z",
+  ],
+  [
     "/living",
     "ResKonnect Living | Student Accommodation & Private Rentals",
     "Browse student accommodation, private residences, NSFAS-related accommodation information and private rental support through ResKonnect.",
