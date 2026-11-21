@@ -35,7 +35,8 @@ test("commercial classification and browse placement never change publication, a
 
 test("all published properties remain name-searchable, direct-link accessible and indexable",()=>{
  assert.match(finder,/const searchingByName=filters\.searchQuery\.trim\(\)\.length>0/);
- assert.match(finder,/const mainResults=searchingByName\?filteredResidences:promotedMatches/);
+ assert.match(finder,/filteredResidences\.filter\(r=>isPromotedResidence\(r\)\|\|isRequestedByName\(r\)\)/);
+ assert.match(finder,/const isRequestedByName=/);
  assert.match(finder,/const directoryMatches=filteredResidences\.filter\(isDirectoryOnlyResidence\)/);
  assert.match(finder,/directoryResults\.slice\(0,directoryCount\)/);
  assert.match(finder,/Searchable A–Z|Full searchable A–Z residence directory/);
