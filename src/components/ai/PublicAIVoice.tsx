@@ -29,6 +29,7 @@ export function PublicAIVoice({
   const [issue,setIssue]=useState("");
   const [lastTurn,setLastTurn]=useState("");
   const active=useRef(false),seq=useRef(0),recognition=useRef<Recognition|null>(null);
+  const finishSpeech=useRef<(()=>void)|null>(null);
   const askRef=useRef(ask),navigateRef=useRef(navigateTo);
   askRef.current=ask;navigateRef.current=navigateTo;
   const available=Boolean(recognitionType()&&typeof window!=="undefined"&&"speechSynthesis" in window);
@@ -36,10 +37,11 @@ export function PublicAIVoice({
     active.current=false;seq.current++;
     recognition.current?.abort();recognition.current=null;
     if("speechSynthesis" in window)window.speechSynthesis.cancel();
+    finishSpeech.current?.();finishSpeech.current=null;
     setPhase("idle");
   };
   useEffect(()=>()=>{active.current=false;seq.current++;recognition.current?.abort();recognition.current=null;
-    if("speechSynthesis" in window)window.speechSynthesis.cancel();},[]);
+    if("speechSynthesis" in window)window.speechSynthesis.cancel();finishSpeech.current?.();finishSpeech.current=null;},[]);
   async function answerToSpeech(text:string,turn:number){
     return new Promise<void>((resolve)=>{
       if(!active.current||turn!==seq.current||!("speechSynthesis" in window))return resolve();
@@ -50,7 +52,8 @@ export function PublicAIVoice({
       const utterance=new SpeechSynthesisUtterance(plain);
       utterance.lang="en-ZA";utterance.rate=1;
       let settled=false;
-      const done=()=>{if(settled)return;settled=true;resolve();};
+      const done=()=>{if(settled)return;settled=true;if(finishSpeech.current===done)finishSpeech.current=null;resolve();};
+      finishSpeech.current=done;
       utterance.onend=done;utterance.onerror=done;
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utterance);
@@ -117,7 +120,10 @@ export function PublicAIVoice({
     </div>
     <div className="mt-2 flex flex-wrap items-center gap-2">
       {phase==="listening"||phase==="thinking"||phase==="speaking"?
-        <Button type="button" variant="outline" size="sm" onClick={stop}><Square className="mr-1 h-3.5 w-3.5"/>Stop voice</Button>:
+        <div className="flex flex-wrap gap-2">
+          {phase==="speaking"&&<Button type="button" variant="secondary" size="sm" onClick={()=>{if("speechSynthesis" in window)window.speechSynthesis.cancel();finishSpeech.current?.();}}><Mic className="mr-1 h-3.5 w-3.5"/>Interrupt and speak</Button>}
+          <Button type="button" variant="outline" size="sm" onClick={stop}><Square className="mr-1 h-3.5 w-3.5"/>Stop voice</Button>
+        </div>:
         <Button type="button" variant="outline" size="sm" disabled={!available||disabled} onClick={start}><Mic className="mr-1 h-3.5 w-3.5"/>Start voice chat</Button>}
       {phase==="speaking"?<Volume2 className="h-4 w-4 text-primary"/>:phase==="listening"?<Mic className="h-4 w-4 animate-pulse text-primary"/>:<MicOff className="h-4 w-4 text-muted-foreground"/>}
     </div>
