@@ -15,7 +15,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "link:check": "node scripts/link-routing-qa.mjs",
-    "luna:check": "node scripts/luna-growth-qa.mjs",
+    "luna:check": "node scripts/luna-growth-qa.mjs && npm run ai:qwen-intent:check",
     "platform:check": "node scripts/platform-rg3-rg4-qa.mjs",
     "seo:check": "node scripts/seo-qa.mjs",
     "360:check": "node scripts/virtual-tour-qa.mjs",
@@ -27,7 +27,8 @@
     "platform:p9": "node scripts/p9-performance-budget.mjs",
     "platform:p10": "node scripts/p10-android-device-matrix.mjs",
     "release:p11": "node scripts/p11-release-gate.mjs",
-    "release:p12": "node scripts/p12-release-candidate-audit.mjs"
+    "release:p12": "node scripts/p12-release-candidate-audit.mjs",
+    "ai:qwen-intent:check": "node scripts/local-qwen-housing-intent.test.mjs"
   },
   "dependencies": {
     "@capacitor/background-runner": "3.0.0",

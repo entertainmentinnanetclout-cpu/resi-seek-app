@@ -1,12 +1,13 @@
-import { lazy, Suspense, useMemo } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Building2, MapPinned, Search, Sparkles, WandSparkles } from "lucide-react";
+import { Building2, MapPinned, Search, Sparkles, WandSparkles, Loader2, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import { getCampusOptions } from "@/constants/institutionOptions";
 import type { ResidenceFilters } from "@/hooks/useResidenceFilters";
 import { FindMyResLocationPrompt } from "@/components/findmyres/FindMyResLocationPrompt";
@@ -24,6 +25,8 @@ interface SmartSearchBarProps {
 
 /** All finder overlays are URL-driven. An in-page link from a match can open its map without remounting FindMyRes. */
 export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount,cityOptions }: SmartSearchBarProps) {
+  const [enhancing,setEnhancing]=useState(false);
+  const localQwenSearchEnabled=import.meta.env.VITE_RK_QWEN_SEARCH_ENABLED==="true";
   const location = useLocation();
   const navigate = useNavigate();
   const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
@@ -37,6 +40,42 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount,
     navigate({ pathname: location.pathname, search: params.toString() ? `?${params}` : "" }, { replace: true, preventScrollReset: true });
   };
 
+  async function enhanceWithLocalAI(){
+    const query=filters.searchQuery.trim();
+    if(enhancing||query.length<4)return;
+    setEnhancing(true);
+    try{
+      const response=await fetch("/api/local-ai-housing-intent",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({query}),signal:AbortSignal.timeout(23000)
+      });
+      if(!response.ok)throw new Error("Local inference unavailable");
+      const data=await response.json();
+      if(data.provider!=="local-qwen"||data.actualListingsVerified!==false||!data.intent)
+        throw new Error("Unsupported intent response");
+      const intent=data.intent as {
+        city:string|null;campus:string|null;budgetMax:number|null;funding:"nsfas"|"private"|null;
+        roomTypes:string[];amenities:string[];
+      };
+      // Every filter is applied only through the existing grounded residence finder.
+      if(intent.budgetMax!==null && Number.isFinite(intent.budgetMax) && intent.budgetMax>=500 && intent.budgetMax<=25000)
+        updateFilter("priceMax",intent.budgetMax);
+      if(intent.funding==="nsfas")updateFilter("nsfasOnly",true);
+      if(intent.funding==="private")updateFilter("privatePayingOnly",true);
+      if(intent.roomTypes?.includes("single"))updateFilter("singlesOnly",true);
+      if(intent.amenities?.includes("wifi"))updateFilter("wifiOnly",true);
+      if(intent.amenities?.includes("parking"))updateFilter("parkingOnly",true);
+      if(intent.amenities?.includes("furnished"))updateFilter("furnishedOnly",true);
+      const city=cityOptions.find(c=>c.toLowerCase()===intent.city?.toLowerCase());
+      if(city)updateFilter("city",city);
+      const campuses=getCampusOptions(filters.institutionType ?? (filters.audience==="tvet"?"tvet":filters.audience==="university"?"university":undefined));
+      const campus=campuses.find(c=>c.label.toLowerCase()===intent.campus?.toLowerCase()||c.value.toLowerCase()===intent.campus?.toLowerCase());
+      if(campus)updateFilter("campus",campus.value);
+      toast.success("Your search preferences were interpreted by local Qwen. Only ResKonnect listings are used.");
+    }catch{
+      toast.info("Local AI is unavailable. Normal Find My Res search still works.");
+    }finally{setEnhancing(false);}
+  }
   const resetMapFilters = () => {
     updateFilter("searchQuery", ""); updateFilter("city","all"); updateFilter("campus", "all"); updateFilter("category", "all"); updateFilter("gender", "all");
     updateFilter("audience", "all"); updateFilter("institutionTag", undefined); updateFilter("priceMin", 0); updateFilter("priceMax", 10000);
@@ -62,6 +101,10 @@ export function SmartSearchBar({ filters, updateFilter, resultCount, totalCount,
         <div className="rk-glass-panel space-y-4 rounded-[24px] p-4 text-[#071326] sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Search by residence, city, neighbourhood or campus…" className="rk-neo-inset h-12 pl-10 text-base" value={filters.searchQuery} onChange={(e) => updateFilter("searchQuery", e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter")document.getElementById("results")?.scrollIntoView({behavior:"smooth"});}} /></div>
+            {localQwenSearchEnabled&&<Button type="button" variant="outline" disabled={enhancing||filters.searchQuery.trim().length<4}
+              onClick={()=>void enhanceWithLocalAI()} className="h-12 gap-2 rounded-xl border-[#f5b32f]/50 text-[#071326]">
+              {enhancing?<Loader2 className="h-4 w-4 animate-spin"/>:<Cpu className="h-4 w-4"/>}Local AI filters
+            </Button>}
             <div className="grid grid-cols-2 gap-2 sm:order-last sm:ml-auto">
               <Button type="button" onClick={()=>document.getElementById("results")?.scrollIntoView({behavior:"smooth"})}
                 className="rk-blue-action h-12 rounded-xl px-5 font-black text-white">
