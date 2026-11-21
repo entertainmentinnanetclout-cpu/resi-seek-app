@@ -14,7 +14,7 @@ const session={access_token:token,refresh_token:"fixture-refresh",token_type:"be
 const storageKey="sb-mefjzkhobkltlbmhusdh-auth-token";
 const guideStorageKey=`rk_native_guide_v1_${user.id}`;
 const profile={id:user.id,full_name:"Device Matrix Student",phone:"0820000000",student_number:"DEVICE001",campus:"Pretoria West (Main Campus)",course:"Marketing",year_of_study:"3",applicant_stage:"university_student"};
-const residence={id:"92000000-0000-4000-8000-000000000001",slug:"device-fixture-residence",name:"Device Fixture Residence",address:"Pretoria",campus:"Pretoria West (Main Campus)",price:3500,private_price:3500,available_spots:5,is_visible:true,latitude:-25.754,longitude:28.188,room_type:"single",images:[],image_url:null};
+const residence={id:"92000000-0000-4000-8000-000000000001",slug:"device-fixture-residence",name:"Device Fixture Residence",address:"Pretoria",campus:"Pretoria West (Main Campus)",price:3500,private_price:3500,available_spots:5,is_visible:true,discovery_placement:"promote",latitude:-25.754,longitude:28.188,room_type:"single",images:[],image_url:null};
 const tour={tour:{id:"93000000-0000-4000-8000-000000000001",title:"Native Device Fixture 360",workspace_type:"standalone"},workspace:{type:"standalone",label:"Native Device Fixture 360"},residence:null,scenes:[{id:"94000000-0000-4000-8000-000000000001",name:"Room",area_type:"room",is_start:true,panorama_url:"data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2216%22%3E%3Crect width=%2232%22 height=%2216%22 fill=%22%23111%22/%3E%3C/svg%3E",quality_score:90}],hotspots:[],connections:[]};
 
 const profiles=[
