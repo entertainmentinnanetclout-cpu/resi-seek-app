@@ -4,6 +4,7 @@ import {Link} from "react-router-dom";
 import {supabase} from "@/integrations/supabase/client";
 import {usePublicLivingSignals,type MonthlyWinner} from "@/hooks/usePublicLivingSignals";
 import ResidenceDiscoveryCard from "./ResidenceDiscoveryCard";
+import {isPromotedResidence} from "@/lib/residenceDiscoveryPolicy";
 
 type Signals=ReturnType<typeof usePublicLivingSignals>;
 type Props={residences?:any[];signals:Signals;surface:"landing"|"find";headline?:string;subtitle?:string};
@@ -20,12 +21,12 @@ export default function MonthlyTopThree({residences=NO_RESIDENCES,signals,surfac
   const missing=ids.filter(id=>!residences.some(r=>r.id===id));
   if(!missing.length){setLoaded([]);return;}
   void (supabase as any).from("residences")
-   .select("id,name,slug,address,city,campus,place_label,cover_image_url,image_url,images,private_price,price,promo_price,promo_active,promo_starts_at,promo_ends_at,price_verified_at,available_spots,accepts_nsfas,accepts_university,accepts_tvet,institution_tags,is_spotlight,is_visible,room_types,room_type")
+   .select("id,name,slug,address,city,campus,place_label,cover_image_url,image_url,images,private_price,price,promo_price,promo_active,promo_starts_at,promo_ends_at,price_verified_at,available_spots,accepts_nsfas,accepts_university,accepts_tvet,institution_tags,is_spotlight,is_visible,discovery_placement,listing_relationship,room_types,room_type")
    .in("id",missing).eq("is_visible",true)
    .then(({data,error}:any)=>{if(active&&!error)setLoaded(Array.isArray(data)?data:[]);});
   return()=>{active=false;};
  },[keys]);
- const all=useMemo(()=>new Map([...residences,...loaded].filter(r=>r?.id&&r.is_visible!==false).map(r=>[r.id,r])),[residences,loaded]);
+ const all=useMemo(()=>new Map([...residences,...loaded].filter(r=>r?.id&&isPromotedResidence(r)).map(r=>[r.id,r])),[residences,loaded]);
  const winners=signals.top3.flatMap(rank=>{const residence=all.get(rank.residence_id);return residence?[{rank,residence}]:[];});
  if(!winners.length)return null;
  const hasEditorial=winners.some(item=>item.rank.selection_type==="editorial");
