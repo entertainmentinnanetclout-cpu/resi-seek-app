@@ -51,6 +51,7 @@ import { captureApplicationReferral } from "@/lib/referrals/referralApi";
 import { readReferral, savePendingApplication } from "@/lib/referrals/referralStorage";
 import { toast } from "sonner";
 import { publicPrivateMonthlyRent, hasVerifiedPrivateRent, isPublishedPromotionCurrent, hasVerifiedLocation } from "@/lib/residenceListingEvidence";
+import {isDirectoryOnlyResidence,hasMarketableResidencePhoto} from "@/lib/residenceDiscoveryPolicy";
 
 type RoomPrice = {
   id: string;
@@ -366,13 +367,21 @@ const ResidenceDetail = () => {
 
   return (
     <DashboardLayout>
-      <SEO title={`${residence.name}${residence.city ? ` · ${residence.city}` : ""} | Student Accommodation | ResKonnect`} description={residence.description || `View published room details, photos, funding acceptance and reservation information for ${residence.name}${residence.city ? ` in ${residence.city}` : ""}. Confirm current availability and pricing with the residence.`} canonicalPath={canonicalPath} noIndex={residence.is_visible === false} imageUrl={schemaImage} jsonLd={jsonLd} />
+      <SEO title={`${residence.name}${residence.city ? ` · ${residence.city}` : ""} | Student Accommodation | ResKonnect`} description={residence.description || `View published accommodation information for ${residence.name}${residence.city ? ` in ${residence.city}` : ""}${residence.campus ? ` near ${residence.campus}` : ""}. Confirm photos, room details, availability and pricing with the residence.`} canonicalPath={canonicalPath} noIndex={residence.is_visible === false} imageUrl={schemaImage} jsonLd={jsonLd} />
       <div className="rk-motion rk-living-surface min-w-0 max-w-full overflow-x-hidden">
         <div className="mx-auto max-w-7xl space-y-5 px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
           <ReferralBanner />
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Link to="/" className="hover:text-foreground">Home</Link><span>/</span><Link to="/find" className="hover:text-foreground">Accommodation</Link><span>/</span><span className="max-w-[55vw] truncate font-semibold text-foreground">{residence.name}</span>
           </div>
+
+          {isDirectoryOnlyResidence(residence)&&<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.045] px-4 py-3 text-sm">
+            <div className="min-w-0">
+              <p className="font-bold">Basic directory listing</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">This residence is available by name and direct link, but is not part of ResKonnect's current promoted accommodation collection. {hasMarketableResidencePhoto(residence)?"Check details and availability directly before continuing.":"Property photographs and other details may still be pending."}</p>
+            </div>
+            <Link to="/findmyres#results" className="shrink-0 text-xs font-bold text-primary underline underline-offset-4">Compare photo-ready residences</Link>
+          </div>}
 
           <section className="rk-skeuo-frame relative isolate overflow-hidden rounded-[28px] bg-[#000F2F] text-white shadow-2xl">
             <div className="absolute inset-0 bg-[linear-gradient(145deg,#000F2F_0%,#000F2F_52%,#06285a_100%)]" />
