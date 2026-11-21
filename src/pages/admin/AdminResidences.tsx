@@ -113,6 +113,7 @@ export const AdminResidencesContent = () => {
   const [additionalImages, setAdditionalImages] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDirectoryBusy,setBulkDirectoryBusy]=useState(false);
   const { sections: dbSections } = useResidenceSections();
 
   const fetchResidences = async () => {
@@ -282,6 +283,33 @@ export const AdminResidencesContent = () => {
     if (audienceFilter === "spotlight") return r.is_spotlight === true;
     return true;
   });
+
+  const bulkUpdateListingControls=async(field:"listing_relationship"|"discovery_placement",value:string)=>{
+    const ids=[...selectedIds];
+    if(ids.length===0)return toast.error("Select at least one residence first");
+    if(!window.confirm(`Update ${ids.length} selected residence(s) to ${value.replaceAll("_"," ")}? Publication, existing applications and old links will not change.`))return;
+    setBulkDirectoryBusy(true);
+    try{
+      // Keep PostgREST URLs bounded. A failed batch is visible and must not be represented as complete.
+      let changed=0;
+      for(let i=0;i<ids.length;i+=50){
+        const batch=ids.slice(i,i+50);
+        const {data,error}=await (supabase as any).from("residences")
+          .update({[field]:value}).in("id",batch).select("id");
+        if(error)throw error;
+        if(!Array.isArray(data)||data.length!==batch.length)
+          throw new Error(`Only ${data?.length||0} of ${batch.length} selected records updated; verify role permissions and reload.`);
+        changed+=data.length;
+      }
+      toast.success(`${changed} residence classifications updated`);
+      setSelectedIds([]);
+    }catch(error){
+      toast.error(error instanceof Error?error.message:"Bulk directory control failed; check the refreshed rows before retrying");
+    }finally{
+      await fetchResidences();
+      setBulkDirectoryBusy(false);
+    }
+  };
 
   const toggleSelect = (id: string, checked: boolean) => {
     setSelectedIds((prev) => checked ? Array.from(new Set([...prev, id])) : prev.filter((x) => x !== id));
@@ -929,6 +957,19 @@ export const AdminResidencesContent = () => {
               onDone={() => { setSelectedIds([]); fetchResidences(); }}
               onClear={() => setSelectedIds([])}
             />
+            {selectedIds.length>0&&<div className="mb-4 space-y-2 rounded-xl border border-primary/25 bg-primary/[0.03] p-3">
+              <p className="text-xs font-bold">{selectedIds.length} selected · batch controls</p>
+              <p className="text-[11px] text-muted-foreground">Use the search-only filter and Select All to classify incomplete directory entries. Bulk actions never alter published URLs, records, reservations, applications or payment status.</p>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" disabled={bulkDirectoryBusy}
+                  onClick={()=>void bulkUpdateListingControls("listing_relationship","free")}>Mark selected as Free directory</Button>
+                <Button size="sm" variant="outline" disabled={bulkDirectoryBusy}
+                  onClick={()=>void bulkUpdateListingControls("discovery_placement","directory_only")}>Move selected to search & map</Button>
+                <Button size="sm" variant="outline" disabled={bulkDirectoryBusy}
+                  onClick={()=>void bulkUpdateListingControls("discovery_placement","automatic")}>Restore automatic photo-first</Button>
+                <Button size="sm" variant="ghost" disabled={bulkDirectoryBusy} onClick={()=>setSelectedIds([])}>Clear selection</Button>
+              </div>
+            </div>}
             {loading ? (
               <p className="text-center py-8 text-muted-foreground">Loading...</p>
             ) : filteredResidences.length === 0 ? (
