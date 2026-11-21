@@ -66,9 +66,9 @@ export default function ResDiscoveryEngine({ filters, initialQuery="", onClose }
     };
   },[localDNA,visual,searchIntent]);
   const ranked=useMemo(()=>{
-    const nameQuery=searchText.trim().toLowerCase().replace(/\\s+/g," ");
+    const nameQuery=searchText.trim().toLowerCase().replace(/\s+/g," ");
     return residences.filter((r:any)=>r.is_visible!==false&&
-      (isPromotedResidence(r)||(Boolean(nameQuery)&&String(r.name||"").toLowerCase().replace(/\\s+/g," ").includes(nameQuery)))&&
+      (isPromotedResidence(r)||(Boolean(nameQuery)&&String(r.name||"").toLowerCase().replace(/\s+/g," ").includes(nameQuery)))&&
       (!searchText.trim()||residenceMatchesHousingSearch(r,searchIntent)))
     .map((residence:any)=>({residence,score:scoreResidenceForDNA(residence,effectiveDNA)}))
     .sort((a,b)=>b.score.score-a.score.score||
