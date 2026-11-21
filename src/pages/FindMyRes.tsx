@@ -525,7 +525,10 @@ const FindMyRes = () => {
                       <Button className="mt-4" variant="outline" size="sm" onClick={()=>setDirectoryCount(x=>x+24)}>
                         Show more directory names ({directoryResults.length-directoryCount} remaining)
                       </Button>}
-                    <p className="mt-3 text-[11px] text-muted-foreground">Prefer the map? Open Map / 3D at the top to see geographically available listings.</p>
+                    <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
+                      <Link to="/directory/residences" className="font-bold text-primary underline underline-offset-4">Full searchable A–Z residence directory</Link>
+                      <span className="text-muted-foreground">Map / 3D is available from the search bar.</span>
+                    </div>
                   </div>
                 </details>
               )}
