@@ -7,6 +7,7 @@ import { useLiveLocation, distanceKm } from "@/lib/resmap/liveLocation";
 import { isMockResidence } from "@/hooks/useResidenceFilters";
 import { residenceMatchesCampus } from "@/constants/institutionOptions";
 import ResidenceInstitutionBadges from "@/components/findmyres/ResidenceInstitutionBadges";
+import {isPromotedResidence} from "@/lib/residenceDiscoveryPolicy";
 
 const hasPhoto = (residence: any) => [residence.cover_image_url, ...(Array.isArray(residence.images) ? residence.images : []), residence.image_url]
   .some(image => typeof image === "string" && /^https?:\/\//i.test(image.trim()) && !/placeholder|default-image|no-image/i.test(image));
@@ -25,7 +26,7 @@ export default function NearbySuggestedResidences({ residences }: { residences: 
   const position = live.status === "granted" && live.position ? live.position : null;
   const items = useMemo(() => {
     if (!campus && !position) return [];
-    return residences.filter(r => !isMockResidence(r) && r.is_visible !== false && r.is_active !== false)
+    return residences.filter(r => !isMockResidence(r) && isPromotedResidence(r) && r.is_active !== false)
       .map(r => {
         const pin = coordinate(r);
         const km = position && pin ? distanceKm(position, pin) : null;
