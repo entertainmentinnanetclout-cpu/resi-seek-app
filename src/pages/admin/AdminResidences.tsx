@@ -24,6 +24,8 @@ import AdminListingReview from "@/components/admin/AdminListingReview";
 import AdminMarketplaceReadiness from "@/components/admin/AdminMarketplaceReadiness";
 import AdminResidenceReviewModeration from "@/components/admin/residences/AdminResidenceReviewModeration";
 import {INSTITUTION_SUGGESTIONS,normalizeInstitutionTags} from "@/components/findmyres/ResidenceInstitutionBadges";
+import {DISCOVERY_PLACEMENTS,LISTING_RELATIONSHIPS,discoveryPlacementLabel,listingRelationshipLabel,hasMarketableResidencePhoto,isPromotedResidence} from "@/lib/residenceDiscoveryPolicy";
+import type {DiscoveryPlacement,ListingRelationship} from "@/lib/residenceDiscoveryPolicy";
 
 interface Residence {
   id: string;
@@ -57,6 +59,8 @@ interface Residence {
   city?: string | null;
   is_spotlight?: boolean | null;
   spotlight_rank?: number | null;
+  listing_relationship?: ListingRelationship;
+  discovery_placement?: DiscoveryPlacement;
 }
 
 const ROOM_TYPE_OPTIONS = ["Single", "Sharing", "Bachelor", "Commune"];
@@ -93,6 +97,8 @@ const emptyResidence: Partial<Residence> = {
   accepts_nsfas: false,
   institution_tags: [],
   is_spotlight: false,
+  listing_relationship: "unclassified",
+  discovery_placement: "automatic",
 };
 
 export const AdminResidencesContent = () => {
@@ -100,6 +106,7 @@ export const AdminResidencesContent = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [audienceFilter, setAudienceFilter] = useState<"all" | "university" | "tvet" | "private" | "spotlight">("all");
+  const [directoryFilter,setDirectoryFilter]=useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<Partial<Residence> | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -206,6 +213,8 @@ export const AdminResidencesContent = () => {
         accepts_nsfas: editingResidence.accepts_nsfas ?? false,
         institution_tags: editingResidence.institution_tags ?? [],
         is_spotlight: editingResidence.is_spotlight ?? false,
+        listing_relationship: editingResidence.listing_relationship || "unclassified",
+        discovery_placement: editingResidence.discovery_placement || "automatic",
       };
 
       if (editingResidence.id) {
@@ -264,6 +273,9 @@ export const AdminResidencesContent = () => {
       (r.name ?? '').toLowerCase().includes(q) ||
       (r.address ?? '').toLowerCase().includes(q);
     if (!matchesSearch) return false;
+    if (directoryFilter==="promoted"&&!isPromotedResidence(r))return false;
+    if (directoryFilter==="directory"&&isPromotedResidence(r))return false;
+    if (LISTING_RELATIONSHIPS.includes(directoryFilter as ListingRelationship)&&r.listing_relationship!==directoryFilter)return false;
     if (audienceFilter === "university") return r.accepts_university !== false;
     if (audienceFilter === "tvet") return r.accepts_tvet === true;
     if (audienceFilter === "private") return r.accepts_private === true;
@@ -288,6 +300,23 @@ export const AdminResidencesContent = () => {
     } else {
       toast.success(next ? "Added to spotlight" : "Removed from spotlight");
     }
+  };
+
+  const updateDirectoryControl=async(r:Residence,field:"listing_relationship"|"discovery_placement",value:ListingRelationship|DiscoveryPlacement)=>{
+    const old=r[field];
+    setResidences(rows=>rows.map(x=>x.id===r.id?{...x,[field]:value}:x));
+    const {data,error}=await (supabase as any).from("residences")
+      .update({[field]:value}).eq("id",r.id).select(`id,${field}`).maybeSingle();
+    if(error||!data||data[field]!==value){
+      setResidences(rows=>rows.map(x=>x.id===r.id?{...x,[field]:old}:x));
+      toast.error(error?.message||"Could not update residence directory settings");
+      void fetchResidences();
+      return;
+    }
+    toast.success(field==="discovery_placement"?
+      value==="directory_only"?"This residence is search & map only":
+      value==="promote"?"Residence promoted in regular browse":"Automatic photo-first placement restored":
+      "Relationship classification saved. Paid placement requires separate verified billing.");
   };
 
   const toggleAudience = async (r: Residence, field: "accepts_tvet" | "accepts_private" | "accepts_university") => {
@@ -581,6 +610,31 @@ export const AdminResidencesContent = () => {
                         onCheckedChange={(v) => setEditingResidence({ ...editingResidence, is_spotlight: v })}
                       />
                     </label>
+                  </div>
+
+                  <div className="rounded-xl border border-primary/20 bg-primary/[0.025] p-4">
+                    <h4 className="font-bold">Listing partnership & discovery</h4>
+                    <p className="mt-1 text-xs text-muted-foreground">These settings decide whether this residence is prominently browsed or retained in name search, ResMap and Google. No status changes existing reservations or application records.</p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Commercial relationship</Label>
+                        <Select value={editingResidence.listing_relationship||"unclassified"} onValueChange={v=>setEditingResidence({...editingResidence,listing_relationship:v as ListingRelationship})}>
+                          <SelectTrigger aria-label="Residence commercial relationship"><SelectValue/></SelectTrigger>
+                          <SelectContent>{LISTING_RELATIONSHIPS.map(v=><SelectItem key={v} value={v}>{listingRelationshipLabel(v)}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <p className="text-[11px] text-muted-foreground">Only choose Paying client after verifying a live agreement/payment. This does not add a Sponsored badge by itself.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Discovery placement</Label>
+                        <Select value={editingResidence.discovery_placement||"automatic"} onValueChange={v=>setEditingResidence({...editingResidence,discovery_placement:v as DiscoveryPlacement})}>
+                          <SelectTrigger aria-label="Residence browse or directory placement"><SelectValue/></SelectTrigger>
+                          <SelectContent>{DISCOVERY_PLACEMENTS.map(v=><SelectItem key={v} value={v}>{discoveryPlacementLabel(v)}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <p className="text-[11px] text-muted-foreground">Automatic: real photos are promoted. Search & map only: excluded from normal recommendations; still linked and indexable.</p>
+                      </div>
+                    </div>
+                    {editingResidence.discovery_placement==="promote"&&!hasMarketableResidencePhoto(editingResidence)&&!imageFile&&additionalImages.length===0&&
+                      <p role="status" className="mt-3 text-xs font-medium text-amber-700">Admin override without a photo: this listing will display a placeholder until you upload images.</p>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
