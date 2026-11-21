@@ -8,11 +8,13 @@ import ResidencePosterDownloadButton from "@/components/findmyres/ResidencePoste
 import NearbySuggestedResidences from "@/components/findmyres/NearbySuggestedResidences";
 import ResidenceInstitutionBadges from "./ResidenceInstitutionBadges";
 import { cn } from "@/lib/utils";
+import {isPromotedResidence} from "@/lib/residenceDiscoveryPolicy";
 
 interface ResidenceSpotlightSliderProps { residences: any[]; loading?: boolean; }
 export function ResidenceSpotlightSlider({ residences, loading }: ResidenceSpotlightSliderProps) {
-  const spot = residences.filter(r => r.is_spotlight === true);
-  const items = (spot.length ? spot : residences.filter(r => r.is_featured || r.featured)).slice(0, 8);
+  const eligible=residences.filter(isPromotedResidence);
+  const spot = eligible.filter(r => r.is_spotlight === true);
+  const items = (spot.length ? spot : eligible.filter(r => r.is_featured || r.featured)).slice(0, 8);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
@@ -34,7 +36,7 @@ export function ResidenceSpotlightSlider({ residences, loading }: ResidenceSpotl
   }, [emblaApi, items.length]);
   if (loading) return <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8"><div className="h-64 animate-pulse rounded-2xl bg-muted sm:h-80" /></div>;
   return <>
-    <NearbySuggestedResidences residences={residences} />
+    <NearbySuggestedResidences residences={eligible} />
     {items.length > 0 && <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
       <div className="mb-3 flex items-center gap-2"><span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-spotlight text-white shadow-glow"><Sparkles className="h-4 w-4" /></span><div><h2 className="bg-gradient-spotlight bg-clip-text text-lg font-bold text-transparent sm:text-xl">Spotlight Accommodation</h2><p className="text-xs text-muted-foreground">Handpicked residences shining this week</p></div></div>
       <div className="group relative">
