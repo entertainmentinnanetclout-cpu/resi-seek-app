@@ -224,11 +224,19 @@ const FindMyRes = () => {
   // promotes only the image-ready or admin-approved residences. All other
   // records remain in the secondary directory, map and canonical detail URLs.
   const searchingByName=filters.searchQuery.trim().length>0;
+  const normalizedNameQuery=filters.searchQuery.trim().toLocaleLowerCase("en-ZA").replace(/\\s+/g," ");
+  // A broad place/campus search must not turn all unpartnered directory entries
+  // into high-visibility cards. Only matches to an actual residence NAME can
+  // bring search-only entries into the main search results.
+  const isRequestedByName=(r:any)=>Boolean(normalizedNameQuery)&&
+    String(r.name||"").toLocaleLowerCase("en-ZA").replace(/\\s+/g," ").includes(normalizedNameQuery);
   const promotedMatches=filters.sortBy==="match"
     ? sortResidencesForDiscovery(filteredResidences.filter(isPromotedResidence))
     : filteredResidences.filter(isPromotedResidence);
   const directoryMatches=filteredResidences.filter(isDirectoryOnlyResidence);
-  const mainResults=searchingByName?filteredResidences:promotedMatches;
+  const mainResults=searchingByName
+    ? filteredResidences.filter(r=>isPromotedResidence(r)||isRequestedByName(r))
+    : promotedMatches;
   const visibleResidences=mainResults.slice(0,visibleCount);
   const hasMore=visibleCount<mainResults.length;
   const directoryResults=searchingByName?[]:directoryMatches;
