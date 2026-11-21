@@ -92,6 +92,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Updates = lazy(() => import("./pages/Updates"));
 const CampusNews = lazy(() => import("./pages/CampusNews"));
 const FindMyRes = lazy(() => import("./pages/FindMyRes"));
+const ResidenceDirectory = lazy(() => import("./pages/ResidenceDirectory"));
 const Applications = lazy(() => import("./pages/Applications"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Messages = lazy(() => import("./pages/Messages"));
@@ -532,6 +533,7 @@ const App = () => {
                     <Route path="/install" element={<InstallResKonnect />} />
                     <Route path="/find" element={<FindMyRes />} />
                     <Route path="/findmyres" element={<FindMyRes />} />
+                    <Route path="/directory/residences" element={<ResidenceDirectory />} />
                     <Route
                       path="/accommodation-request"
                       element={<AccommodationDemand />}

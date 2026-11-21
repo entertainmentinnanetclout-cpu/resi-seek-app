@@ -24,6 +24,8 @@ import AdminListingReview from "@/components/admin/AdminListingReview";
 import AdminMarketplaceReadiness from "@/components/admin/AdminMarketplaceReadiness";
 import AdminResidenceReviewModeration from "@/components/admin/residences/AdminResidenceReviewModeration";
 import {INSTITUTION_SUGGESTIONS,normalizeInstitutionTags} from "@/components/findmyres/ResidenceInstitutionBadges";
+import {DISCOVERY_PLACEMENTS,LISTING_RELATIONSHIPS,discoveryPlacementLabel,listingRelationshipLabel,hasMarketableResidencePhoto,isPromotedResidence} from "@/lib/residenceDiscoveryPolicy";
+import type {DiscoveryPlacement,ListingRelationship} from "@/lib/residenceDiscoveryPolicy";
 
 interface Residence {
   id: string;
@@ -57,6 +59,8 @@ interface Residence {
   city?: string | null;
   is_spotlight?: boolean | null;
   spotlight_rank?: number | null;
+  listing_relationship?: ListingRelationship;
+  discovery_placement?: DiscoveryPlacement;
 }
 
 const ROOM_TYPE_OPTIONS = ["Single", "Sharing", "Bachelor", "Commune"];
@@ -93,6 +97,8 @@ const emptyResidence: Partial<Residence> = {
   accepts_nsfas: false,
   institution_tags: [],
   is_spotlight: false,
+  listing_relationship: "unclassified",
+  discovery_placement: "automatic",
 };
 
 export const AdminResidencesContent = () => {
@@ -100,12 +106,14 @@ export const AdminResidencesContent = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [audienceFilter, setAudienceFilter] = useState<"all" | "university" | "tvet" | "private" | "spotlight">("all");
+  const [directoryFilter,setDirectoryFilter]=useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<Partial<Residence> | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [additionalImages, setAdditionalImages] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDirectoryBusy,setBulkDirectoryBusy]=useState(false);
   const { sections: dbSections } = useResidenceSections();
 
   const fetchResidences = async () => {
@@ -206,6 +214,8 @@ export const AdminResidencesContent = () => {
         accepts_nsfas: editingResidence.accepts_nsfas ?? false,
         institution_tags: editingResidence.institution_tags ?? [],
         is_spotlight: editingResidence.is_spotlight ?? false,
+        listing_relationship: editingResidence.listing_relationship || "unclassified",
+        discovery_placement: editingResidence.discovery_placement || "automatic",
       };
 
       if (editingResidence.id) {
@@ -264,12 +274,42 @@ export const AdminResidencesContent = () => {
       (r.name ?? '').toLowerCase().includes(q) ||
       (r.address ?? '').toLowerCase().includes(q);
     if (!matchesSearch) return false;
+    if (directoryFilter==="promoted"&&!isPromotedResidence(r))return false;
+    if (directoryFilter==="directory"&&isPromotedResidence(r))return false;
+    if (LISTING_RELATIONSHIPS.includes(directoryFilter as ListingRelationship)&&r.listing_relationship!==directoryFilter)return false;
     if (audienceFilter === "university") return r.accepts_university !== false;
     if (audienceFilter === "tvet") return r.accepts_tvet === true;
     if (audienceFilter === "private") return r.accepts_private === true;
     if (audienceFilter === "spotlight") return r.is_spotlight === true;
     return true;
   });
+
+  const bulkUpdateListingControls=async(field:"listing_relationship"|"discovery_placement",value:string)=>{
+    const ids=[...selectedIds];
+    if(ids.length===0)return toast.error("Select at least one residence first");
+    if(!window.confirm(`Update ${ids.length} selected residence(s) to ${value.replaceAll("_"," ")}? Publication, existing applications and old links will not change.`))return;
+    setBulkDirectoryBusy(true);
+    try{
+      // Keep PostgREST URLs bounded. A failed batch is visible and must not be represented as complete.
+      let changed=0;
+      for(let i=0;i<ids.length;i+=50){
+        const batch=ids.slice(i,i+50);
+        const {data,error}=await (supabase as any).from("residences")
+          .update({[field]:value}).in("id",batch).select("id");
+        if(error)throw error;
+        if(!Array.isArray(data)||data.length!==batch.length)
+          throw new Error(`Only ${data?.length||0} of ${batch.length} selected records updated; verify role permissions and reload.`);
+        changed+=data.length;
+      }
+      toast.success(`${changed} residence classifications updated`);
+      setSelectedIds([]);
+    }catch(error){
+      toast.error(error instanceof Error?error.message:"Bulk directory control failed; check the refreshed rows before retrying");
+    }finally{
+      await fetchResidences();
+      setBulkDirectoryBusy(false);
+    }
+  };
 
   const toggleSelect = (id: string, checked: boolean) => {
     setSelectedIds((prev) => checked ? Array.from(new Set([...prev, id])) : prev.filter((x) => x !== id));
@@ -288,6 +328,23 @@ export const AdminResidencesContent = () => {
     } else {
       toast.success(next ? "Added to spotlight" : "Removed from spotlight");
     }
+  };
+
+  const updateDirectoryControl=async(r:Residence,field:"listing_relationship"|"discovery_placement",value:ListingRelationship|DiscoveryPlacement)=>{
+    const old=r[field];
+    setResidences(rows=>rows.map(x=>x.id===r.id?{...x,[field]:value}:x));
+    const {data,error}=await (supabase as any).from("residences")
+      .update({[field]:value}).eq("id",r.id).select(`id,${field}`).maybeSingle();
+    if(error||!data||data[field]!==value){
+      setResidences(rows=>rows.map(x=>x.id===r.id?{...x,[field]:old}:x));
+      toast.error(error?.message||"Could not update residence directory settings");
+      void fetchResidences();
+      return;
+    }
+    toast.success(field==="discovery_placement"?
+      value==="directory_only"?"This residence is search & map only":
+      value==="promote"?"Residence promoted in regular browse":"Automatic photo-first placement restored":
+      "Relationship classification saved. Paid placement requires separate verified billing.");
   };
 
   const toggleAudience = async (r: Residence, field: "accepts_tvet" | "accepts_private" | "accepts_university") => {
@@ -583,6 +640,31 @@ export const AdminResidencesContent = () => {
                     </label>
                   </div>
 
+                  <div className="rounded-xl border border-primary/20 bg-primary/[0.025] p-4">
+                    <h4 className="font-bold">Listing partnership & discovery</h4>
+                    <p className="mt-1 text-xs text-muted-foreground">These settings decide whether this residence is prominently browsed or retained in name search, ResMap and Google. No status changes existing reservations or application records.</p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Commercial relationship</Label>
+                        <Select value={editingResidence.listing_relationship||"unclassified"} onValueChange={v=>setEditingResidence({...editingResidence,listing_relationship:v as ListingRelationship})}>
+                          <SelectTrigger aria-label="Residence commercial relationship"><SelectValue/></SelectTrigger>
+                          <SelectContent>{LISTING_RELATIONSHIPS.map(v=><SelectItem key={v} value={v}>{listingRelationshipLabel(v)}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <p className="text-[11px] text-muted-foreground">Only choose Paying client after verifying a live agreement/payment. This does not add a Sponsored badge by itself.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Discovery placement</Label>
+                        <Select value={editingResidence.discovery_placement||"automatic"} onValueChange={v=>setEditingResidence({...editingResidence,discovery_placement:v as DiscoveryPlacement})}>
+                          <SelectTrigger aria-label="Residence browse or directory placement"><SelectValue/></SelectTrigger>
+                          <SelectContent>{DISCOVERY_PLACEMENTS.map(v=><SelectItem key={v} value={v}>{discoveryPlacementLabel(v)}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <p className="text-[11px] text-muted-foreground">Automatic: real photos are promoted. Search & map only: excluded from normal recommendations; still linked and indexable.</p>
+                      </div>
+                    </div>
+                    {editingResidence.discovery_placement==="promote"&&!hasMarketableResidencePhoto(editingResidence)&&!imageFile&&additionalImages.length===0&&
+                      <p role="status" className="mt-3 text-xs font-medium text-amber-700">Admin override without a photo: this listing will display a placeholder until you upload images.</p>}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Verification Level</Label>
@@ -792,6 +874,26 @@ export const AdminResidencesContent = () => {
           </Dialog>
         </div>
 
+        <section className="rounded-2xl border border-primary/20 bg-primary/[0.035] p-4" aria-label="Residence directory and partner placement controls">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-black">Discoverability & partner relationships</h3>
+              <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">Default browsing prioritizes residences with real photo references; incomplete entries remain searchable by exact name, map and public URLs. Your classifications control partnerships, not accreditation or billing.</p>
+            </div>
+            <Link to="/findmyres#results" className="text-xs font-bold text-primary underline underline-offset-4">Preview Find My Res</Link>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
+            <div className="rounded-xl border bg-background p-3"><p className="text-[11px] text-muted-foreground">Published</p><p className="text-2xl font-black">{residences.filter(r=>r.is_visible!==false).length}</p></div>
+            <div className="rounded-xl border bg-background p-3"><p className="text-[11px] text-muted-foreground">Normal discovery</p><p className="text-2xl font-black">{residences.filter(isPromotedResidence).length}</p></div>
+            <div className="rounded-xl border bg-background p-3"><p className="text-[11px] text-muted-foreground">Search & map only</p><p className="text-2xl font-black">{residences.filter(r=>r.is_visible!==false&&!isPromotedResidence(r)).length}</p></div>
+            <div className="rounded-xl border bg-background p-3"><p className="text-[11px] text-muted-foreground">Paid classifications</p><p className="text-2xl font-black">{residences.filter(r=>r.listing_relationship==="paying").length}</p></div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" asChild><Link to="/admin/studio?tab=showcases">Manage Spotlight, Trusted & Top 3</Link></Button>
+            <Button variant="outline" size="sm" asChild><Link to="/admin/accommodation?tab=commercial">Commercial agreements & billing</Link></Button>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">Use the per-residence dropdowns below for immediate placement changes. Empty photos never create false trusted or paying claims.</p>
+        </section>
         <div className="rounded-xl border bg-muted/30 p-4">
           <p className="font-bold">Spotlight, Top 3 and trusted residence curation</p>
           <p className="mt-1 text-sm text-muted-foreground">The Visual Studio is the single editor for public website showcases. Residence records and moderation remain here.</p>
@@ -811,6 +913,18 @@ export const AdminResidencesContent = () => {
                     className="pl-10"
                   />
                 </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Label htmlFor="residence-discovery-filter" className="text-xs">Show:</Label>
+                <Select value={directoryFilter} onValueChange={setDirectoryFilter}>
+                  <SelectTrigger id="residence-discovery-filter" className="h-9 w-[min(100%,235px)]"><SelectValue/></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All directory entries</SelectItem>
+                    <SelectItem value="promoted">Promoted in browse</SelectItem>
+                    <SelectItem value="directory">Search & map only</SelectItem>
+                    {LISTING_RELATIONSHIPS.map(v=><SelectItem key={v} value={v}>{listingRelationshipLabel(v)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -843,6 +957,19 @@ export const AdminResidencesContent = () => {
               onDone={() => { setSelectedIds([]); fetchResidences(); }}
               onClear={() => setSelectedIds([])}
             />
+            {selectedIds.length>0&&<div className="mb-4 space-y-2 rounded-xl border border-primary/25 bg-primary/[0.03] p-3">
+              <p className="text-xs font-bold">{selectedIds.length} selected · batch controls</p>
+              <p className="text-[11px] text-muted-foreground">Use the search-only filter and Select All to classify incomplete directory entries. Bulk actions never alter published URLs, records, reservations, applications or payment status.</p>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" disabled={bulkDirectoryBusy}
+                  onClick={()=>void bulkUpdateListingControls("listing_relationship","free")}>Mark selected as Free directory</Button>
+                <Button size="sm" variant="outline" disabled={bulkDirectoryBusy}
+                  onClick={()=>void bulkUpdateListingControls("discovery_placement","directory_only")}>Move selected to search & map</Button>
+                <Button size="sm" variant="outline" disabled={bulkDirectoryBusy}
+                  onClick={()=>void bulkUpdateListingControls("discovery_placement","automatic")}>Restore automatic photo-first</Button>
+                <Button size="sm" variant="ghost" disabled={bulkDirectoryBusy} onClick={()=>setSelectedIds([])}>Clear selection</Button>
+              </div>
+            </div>}
             {loading ? (
               <p className="text-center py-8 text-muted-foreground">Loading...</p>
             ) : filteredResidences.length === 0 ? (
@@ -865,6 +992,8 @@ export const AdminResidencesContent = () => {
                       <TableHead>Available</TableHead>
                       <TableHead>Audience</TableHead>
                       <TableHead>Spotlight</TableHead>
+                      <TableHead>Relationship</TableHead>
+                      <TableHead>Browse placement</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -932,6 +1061,21 @@ export const AdminResidencesContent = () => {
                             <Sparkles className="w-3 h-3" />
                             {residence.is_spotlight ? "On" : "Off"}
                           </button>
+                        </TableCell>
+                        <TableCell>
+                          <Select value={residence.listing_relationship||"unclassified"}
+                            onValueChange={v=>void updateDirectoryControl(residence,"listing_relationship",v as ListingRelationship)}>
+                            <SelectTrigger className="h-9 min-w-[138px]" aria-label={`Commercial relationship for ${residence.name}`}><SelectValue/></SelectTrigger>
+                            <SelectContent>{LISTING_RELATIONSHIPS.map(v=><SelectItem key={v} value={v}>{listingRelationshipLabel(v)}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Select value={residence.discovery_placement||"automatic"}
+                            onValueChange={v=>void updateDirectoryControl(residence,"discovery_placement",v as DiscoveryPlacement)}>
+                            <SelectTrigger className="h-9 min-w-[173px]" aria-label={`Discovery placement for ${residence.name}`}><SelectValue/></SelectTrigger>
+                            <SelectContent>{DISCOVERY_PLACEMENTS.map(v=><SelectItem key={v} value={v}>{discoveryPlacementLabel(v)}</SelectItem>)}</SelectContent>
+                          </Select>
+                          <p className="mt-1 text-[10px] text-muted-foreground">{hasMarketableResidencePhoto(residence)?"Photo linked":"Photos pending"} · {isPromotedResidence(residence)?"Browsed":"Search only"}</p>
                         </TableCell>
                         <TableCell>
                           <Badge variant={residence.verification_level === "verified" || residence.verification_level === "premium" ? "default" : "secondary"}>

@@ -15,7 +15,13 @@ const TEMPORARY_DEV_ADVISORIES = new Set([
 // The braces advisory currently has no patched npm release. Keep this exception
 // deliberately short-lived so upstream status must be reviewed rather than
 // becoming a permanent blanket waiver.
-const EXCEPTION_REVIEW_BEFORE = new Date("2026-11-21T00:00:00Z");
+// Reviewed on 2026-11-21 during PR #242. Production's npm --omit=dev audit
+// had zero known vulnerabilities. The only residual findings are specific
+// Workbox/PWA and other build/dev-tool advisories enumerated above, several
+// without upstream patched releases. Keep the exception narrow and short:
+// no additional advisory is permitted and the whole gate hard-fails again
+// after the next seven-day review window. Do NOT allowlist runtime packages.
+const EXCEPTION_REVIEW_BEFORE = new Date("2026-11-28T00:00:00Z");
 
 function runAudit(args) {
   const result = spawnSync("npm", ["audit", ...args, "--json"], {

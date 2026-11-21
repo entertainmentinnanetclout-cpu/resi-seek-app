@@ -25,7 +25,7 @@ test("highest-visibility residence showcase is shared across public entry points
 });
 
 test("editorial prominence is opt-in, photo-backed, visible and stable, not a popularity score",()=>{
- assert.match(ranking,/r\.is_visible!==false&&r\.is_spotlight===true&&hasPropertyPhotoReference\(r\)/);
+ assert.match(ranking,/isPromotedResidence\(r\)&&r\.is_spotlight===true&&hasPropertyPhotoReference\(r\)/);
  assert.match(ranking,/spotlightPriority\(a\)-spotlightPriority\(b\)/);
  assert.match(ranking,/\.slice\(0,limit\)/);
  assert.match(showcase,/rankSpotlightResidences\(residences,5\)/);
@@ -54,6 +54,7 @@ test("paid placements remain in a separately disclosed section",()=>{
  assert.match(sponsored,/disclosure_label==="Sponsored"/);
  assert.match(sponsored,/Sponsorship is not an accreditation/);
  assert.match(find,/\.filter\(\(r:any\)=>r\.is_visible!==false&&\(r\.is_featured===true\|\|r\.featured===true\)\&\&r\.is_spotlight!==true\)/);
+ assert.match(find,/isPromotedResidence\(r\)/);
 });
 
 test("admin can select and reorder editorial hero placements without new public mutation rights",()=>{

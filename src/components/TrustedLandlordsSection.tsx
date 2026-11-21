@@ -6,6 +6,7 @@ import { MapPin, Star, Shield, ArrowRight, Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import ResidencePosterDownloadButton from '@/components/findmyres/ResidencePosterDownloadButton';
+import {isPromotedResidence} from '@/lib/residenceDiscoveryPolicy';
 
 interface Residence {
   id: string;
@@ -63,13 +64,16 @@ const TrustedLandlordsSection = () => {
   useEffect(() => {
     const fetchTopResidences = async () => {
       try {
-        const { data, error } = await supabase
+        // Keep the broad generated Supabase residence row union from expanding recursively.
+        // The resulting response still obeys the caller's original RLS and selected fields.
+        const { data, error } = await (supabase as any)
           .from('residences')
-          .select('id, slug, name, address, price, private_price, nsfas_price, promo_price, image_url, cover_image_url, images, campus, province, city, place_label, available_spots, capacity, verification_level, display_order, room_type, room_types, amenities, has_wifi, has_parking, is_furnished, utilities_included, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, reservations_2027_open')
+          .select('id, slug, name, address, price, private_price, nsfas_price, promo_price, image_url, cover_image_url, images, campus, province, city, place_label, available_spots, capacity, verification_level, display_order, room_type, room_types, amenities, has_wifi, has_parking, is_furnished, utilities_included, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, reservations_2027_open, discovery_placement, listing_relationship, is_visible')
+          .eq('is_visible',true)
           .order('display_order', { ascending: true })
-          .limit(30);
+          .limit(200);
         if (error) throw error;
-        const safeData = (data || []).map((r) => ({ ...r, verification_level: r.verification_level || 'basic', province: r.province || 'South Africa' })) as Residence[];
+        const safeData = (data || []).filter(isPromotedResidence).slice(0,30).map((r: any) => ({ ...r, verification_level: r.verification_level || 'basic', province: r.province || 'South Africa' })) as Residence[];
         setResidences(safeData);
         setFilteredResidences(safeData);
       } catch (err) {

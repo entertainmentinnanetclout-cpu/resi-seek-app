@@ -15,6 +15,7 @@ import { useResPreferenceDNA } from "@/hooks/useResPreferenceDNA";
 import { DNAFromFilters, scoreResidenceForDNA, type PreferenceDNA } from "@/lib/resmap/match";
 import {interpretHousingSearch,residenceMatchesHousingSearch} from "@/lib/resmap/housingSearchIntent";
 import { publicPrivateMonthlyRent } from "@/lib/residenceListingEvidence";
+import {isPromotedResidence,residenceDiscoveryPriority} from "@/lib/residenceDiscoveryPolicy";
 import type { ResidenceFilters } from "@/hooks/useResidenceFilters";
 import { toast } from "sonner";
 
@@ -64,10 +65,17 @@ export default function ResDiscoveryEngine({ filters, initialQuery="", onClose }
       amenities:Array.from(new Set([...(base.amenities||[]),...searchIntent.amenities]))
     };
   },[localDNA,visual,searchIntent]);
-  const ranked=useMemo(()=>residences.filter((r:any)=>r.is_visible!==false&&
-    (!searchText.trim()||residenceMatchesHousingSearch(r,searchIntent)))
+  const ranked=useMemo(()=>{
+    const nameQuery=searchText.trim().toLowerCase().replace(/\s+/g," ");
+    return residences.filter((r:any)=>r.is_visible!==false&&
+      (isPromotedResidence(r)||(Boolean(nameQuery)&&String(r.name||"").toLowerCase().replace(/\s+/g," ").includes(nameQuery)))&&
+      (!searchText.trim()||residenceMatchesHousingSearch(r,searchIntent)))
     .map((residence:any)=>({residence,score:scoreResidenceForDNA(residence,effectiveDNA)}))
-    .sort((a,b)=>b.score.score-a.score.score||b.score.evidenceCount-a.score.evidenceCount||Number(b.residence.available_spots||0)-Number(a.residence.available_spots||0)),[residences,effectiveDNA,searchIntent,searchText]);
+    .sort((a,b)=>b.score.score-a.score.score||
+      residenceDiscoveryPriority(b.residence)-residenceDiscoveryPriority(a.residence)||
+      b.score.evidenceCount-a.score.evidenceCount||
+      Number(b.residence.available_spots||0)-Number(a.residence.available_spots||0));
+  },[residences,effectiveDNA,searchIntent,searchText]);
   const groupMatches=useMemo(()=>ranked.filter(({residence})=>{
     const rent=publicPrivateMonthlyRent(residence);
     const hasReportedCapacity=Number(residence.available_spots||0)>=groupSize;

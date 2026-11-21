@@ -3,6 +3,7 @@ import {Sparkles} from "lucide-react";
 import {Badge} from "@/components/ui/badge";
 import {supabase} from "@/integrations/supabase/client";
 import {isMockResidence} from "@/hooks/useResidenceFilters";
+import {isPromotedResidence} from "@/lib/residenceDiscoveryPolicy";
 import {ResidencePropertyCard} from "./ResidencePropertyCard";
 
 type Placement={residence_id:string;title:string;description:string;placement:string;disclosure_label:string};
@@ -19,7 +20,7 @@ export default function SponsoredResidenceRail({residences,onApply}:{residences:
   return()=>{active=false;};
  },[]);
  const approved=useMemo(()=>{
-  const byId=new Map(residences.filter(r=>r?.is_visible!==false&&!isMockResidence(r)).map(r=>[r.id,r]));
+  const byId=new Map(residences.filter(r=>isPromotedResidence(r)&&!isMockResidence(r)).map(r=>[r.id,r]));
   const found=new Set<string>();
   return placements.flatMap(p=>{
    const residence=byId.get(p.residence_id);

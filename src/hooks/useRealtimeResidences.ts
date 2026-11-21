@@ -4,7 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 // A WebView can resume with a stale network connection. A request must never
 // leave Find My Res on a permanent skeleton, even if the network never replies.
 const RESIDENCE_REQUEST_TIMEOUT_MS = 12_000;
-const RESIDENCE_CACHE_KEY = 'rk_public_residences_cache_v2';
+// Versioned after adding discovery placement metadata; offline fallback must
+// not resurrect pre-curation records with missing directory-only overrides.
+const RESIDENCE_CACHE_KEY = 'rk_public_residences_cache_v3';
 const RESIDENCE_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 export const useRealtimeResidences = () => {

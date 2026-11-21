@@ -4,6 +4,7 @@ import {Link} from "react-router-dom";
 import {supabase} from "@/integrations/supabase/client";
 import {usePublicLivingSignals} from "@/hooks/usePublicLivingSignals";
 import ResidenceDiscoveryCard from "@/components/findmyres/ResidenceDiscoveryCard";
+import {isPromotedResidence} from "@/lib/residenceDiscoveryPolicy";
 
 type Signals=ReturnType<typeof usePublicLivingSignals>;
 type Filter="all"|"nsfas"|"private";
@@ -15,10 +16,10 @@ export default function TrustedLivingShowcase({signals,headline,subtitle}:{signa
   let active=true;
   const load=async()=>{
    const {data,error}=await (supabase as any).from("residences").select(
-    "id,slug,name,address,city,place_label,campus,cover_image_url,image_url,images,room_type,room_types,is_visible,is_trusted,verification_level,available_spots,private_price,price,price_verified_at,accepts_nsfas,accepts_private,accepts_university,accepts_tvet,institution_tags,promo_active,promo_price,promo_starts_at,promo_ends_at"
+    "id,slug,name,address,city,place_label,campus,cover_image_url,image_url,images,room_type,room_types,is_visible,is_trusted,discovery_placement,listing_relationship,verification_level,available_spots,private_price,price,price_verified_at,accepts_nsfas,accepts_private,accepts_university,accepts_tvet,institution_tags,promo_active,promo_price,promo_starts_at,promo_ends_at"
    ).eq("is_visible",true).eq("is_trusted",true).order("display_order",{ascending:true}).limit(12);
    if(!active)return;
-   if(!error)setRows(Array.isArray(data)?data:[]);
+   if(!error)setRows(Array.isArray(data)?data.filter(isPromotedResidence):[]);
    setLoading(false);
   };
   void load();

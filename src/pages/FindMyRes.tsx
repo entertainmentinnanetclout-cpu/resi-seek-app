@@ -1,7 +1,7 @@
 import SEO from "@/components/SEO";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AlertTriangle, Building2, ArrowUpDown, RefreshCw } from "lucide-react";
+import { AlertTriangle, Building2, ArrowUpDown, RefreshCw, ChevronDown, Search } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeResidences } from "@/hooks/useRealtimeResidences";
 import { useResidenceFilters, isMockResidence } from "@/hooks/useResidenceFilters";
+import {isPromotedResidence,isDirectoryOnlyResidence,sortResidencesForDiscovery} from "@/lib/residenceDiscoveryPolicy";
 import { useResidenceSections } from "@/hooks/useResidenceSections";
 import { supabase } from "@/integrations/supabase/client";
 import {getResidenceIntake,canApplyToResidence,ACCOMMODATION_APPLICATION_YEAR} from "@/lib/residenceIntake";
@@ -79,6 +80,7 @@ const FindMyRes = () => {
 
   const [compareList, setCompareList] = useState<any[]>([]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [directoryCount,setDirectoryCount]=useState(24);
   const [showFirstVisitModal, setShowFirstVisitModal] = useState(false);
   const [showFloatingBar, setShowFloatingBar] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -218,11 +220,31 @@ const FindMyRes = () => {
     }
   };
 
-  const visibleResidences = filteredResidences.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredResidences.length;
+  // Explicit name searches include EVERY published residence; normal browsing
+  // promotes only the image-ready or admin-approved residences. All other
+  // records remain in the secondary directory, map and canonical detail URLs.
+  const searchingByName=filters.searchQuery.trim().length>0;
+  const normalizedNameQuery=filters.searchQuery.trim().toLocaleLowerCase("en-ZA").replace(/\s+/g," ");
+  // A broad place/campus search must not turn all unpartnered directory entries
+  // into high-visibility cards. Only matches to an actual residence NAME can
+  // bring search-only entries into the main search results.
+  const isRequestedByName=(r:any)=>Boolean(normalizedNameQuery)&&
+    String(r.name||"").toLocaleLowerCase("en-ZA").replace(/\s+/g," ").includes(normalizedNameQuery);
+  const promotedMatches=filters.sortBy==="match"
+    ? sortResidencesForDiscovery(filteredResidences.filter(isPromotedResidence))
+    : filteredResidences.filter(isPromotedResidence);
+  const directoryMatches=filteredResidences.filter(isDirectoryOnlyResidence);
+  const mainResults=searchingByName
+    ? filteredResidences.filter(r=>isPromotedResidence(r)||isRequestedByName(r))
+    : promotedMatches;
+  const visibleResidences=mainResults.slice(0,visibleCount);
+  const hasMore=visibleCount<mainResults.length;
+  const directoryResults=searchingByName?[]:directoryMatches;
+  const nearbyMatches=searchingByName?closestResidences:closestResidences.filter(isPromotedResidence);
 
-  // Real listings only — seed/demo rows never appear beside real ones.
-  const realResidences = residences.filter((r: any) => !isMockResidence(r));
+  // Real listings only; sponsorship/editorial placement never lifts search-only records.
+  const realResidences = residences.filter((r: any) =>
+    !isMockResidence(r)&&isPromotedResidence(r));
 
   // Group residences by category for rails (only when no filters active)
   const byCategory = CATEGORY_SECTIONS.map((s) => ({
@@ -273,7 +295,7 @@ const FindMyRes = () => {
             cityOptions={cityOptions}
           filters={filters}
           updateFilter={updateFilter}
-          resultCount={filteredResidences.length}
+          resultCount={mainResults.length}
           totalCount={residences.length}
         />
         </VisualPageBlock>
@@ -285,7 +307,7 @@ const FindMyRes = () => {
         <VisualPageBlock page="findmyres" sectionKey="top3" slot={byKey["top3"]} preview={isPreview}>
         {!hasActiveFilters&&!loading&&<MonthlyTopThree residences={realResidences} signals={livingSignals} surface="find" headline={byKey.top3?.headline} subtitle={byKey.top3?.subtitle}/>}
         </VisualPageBlock>
-        <VisualPageBlock page="findmyres" sectionKey="nearby" slot={byKey["nearby"]} preview={isPreview}><NearbySuggestedResidences residences={residences}/></VisualPageBlock>
+        <VisualPageBlock page="findmyres" sectionKey="nearby" slot={byKey["nearby"]} preview={isPreview}><NearbySuggestedResidences residences={realResidences}/></VisualPageBlock>
         <VisualPageBlock page="findmyres" sectionKey="sponsored" slot={byKey["sponsored"]} preview={isPreview}>{!hasActiveFilters&&!loading&&<SponsoredResidenceRail residences={realResidences} onApply={handleApply}/>}</VisualPageBlock>
         <VisualPageBlock page="findmyres" sectionKey="referral" slot={byKey["referral"]} preview={isPreview}><ReferralBanner /></VisualPageBlock>
         {residenceError && (
@@ -356,7 +378,7 @@ const FindMyRes = () => {
                   <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">{byKey.results?.headline||"Discover student living the ResKonnect way"}</h2>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">{byKey.results?.subtitle||"Your filters shape these results. Residence-reported availability is not a booking guarantee."}</p>
                 </div>
-                <span className="rk-neo-stat rounded-full px-3 py-1.5 text-xs font-bold">{filteredResidences.length} matching residences</span>
+                <span className="rk-neo-stat rounded-full px-3 py-1.5 text-xs font-bold">{mainResults.length} {searchingByName?"matching listings":"photo-ready & selected residences"}</span>
               </div>
                             {/* Top bar: chips + sort */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -407,7 +429,7 @@ const FindMyRes = () => {
                     </Card>
                   ))}
                 </div>
-              ) : filteredResidences.length === 0 ? (
+              ) : mainResults.length === 0 ? (
                 <div className="space-y-6">
                   <Card>
                     <CardContent className="text-center py-12">
@@ -439,7 +461,7 @@ const FindMyRes = () => {
                     </CardContent>
                   </Card>
 
-                  {closestResidences.length > 0 && (
+                  {nearbyMatches.length > 0 && (
                     <div className="space-y-3">
                       <div>
                         <h4 className="text-lg font-semibold">Closest matches</h4>
@@ -448,7 +470,7 @@ const FindMyRes = () => {
                         </p>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {closestResidences.map((r: any) => (
+                        {nearbyMatches.map((r: any) => (
                           <ResidencePropertyCard key={r.id} residence={r} onApply={handleApply} />
                         ))}
                       </div>
@@ -477,11 +499,48 @@ const FindMyRes = () => {
                         size="lg"
                         onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
                       >
-                        Load More ({filteredResidences.length - visibleCount} remaining)
+                        Load More ({mainResults.length - visibleCount} remaining)
                       </Button>
                     </div>
                   )}
                 </>
+              )}
+
+              {!loading&&!searchingByName&&directoryResults.length>0&&(
+                <details className="mt-8 overflow-hidden rounded-2xl border border-border/70 bg-muted/25">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-left text-xs text-muted-foreground hover:bg-muted/40"
+                    aria-label="Expand the full searchable accommodation directory">
+                    <span className="flex items-start gap-2">
+                      <Search className="mt-0.5 h-4 w-4 shrink-0"/>
+                      <span><strong className="block text-sm text-foreground">Looking for a specific residence?</strong>
+                      <span className="mt-1 block">Explore {directoryResults.length} additional directory listings, or search the exact residence name above. Many have photos or property details pending.</span></span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 shrink-0"/>
+                  </summary>
+                  <div className="border-t px-4 pb-4 pt-3">
+                    <p className="mb-3 text-[11px] text-muted-foreground">These listings remain published, searchable, available through the map and accessible from their own links. They are not part of the default photo-first showcase.</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {directoryResults.slice(0,directoryCount).map((residence:any)=>(
+                        <Link key={residence.id} to={`/find-my-res/${encodeURIComponent(residence.slug||residence.id)}`}
+                          className="flex min-w-0 items-center justify-between gap-3 rounded-xl border bg-background p-3 text-sm hover:border-primary/40 hover:bg-primary/[0.03]">
+                          <span className="min-w-0">
+                            <span className="block truncate font-semibold">{residence.name}</span>
+                            <span className="block truncate text-[11px] text-muted-foreground">{residence.city||residence.campus||residence.address||"Directory listing"} · Details may be incomplete</span>
+                          </span>
+                          <span className="shrink-0 text-xs font-bold text-primary">View</span>
+                        </Link>
+                      ))}
+                    </div>
+                    {directoryCount<directoryResults.length&&
+                      <Button className="mt-4" variant="outline" size="sm" onClick={()=>setDirectoryCount(x=>x+24)}>
+                        Show more directory names ({directoryResults.length-directoryCount} remaining)
+                      </Button>}
+                    <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
+                      <Link to="/directory/residences" className="font-bold text-primary underline underline-offset-4">Full searchable A–Z residence directory</Link>
+                      <span className="text-muted-foreground">Map / 3D is available from the search bar.</span>
+                    </div>
+                  </div>
+                </details>
               )}
             </div>
           </div>

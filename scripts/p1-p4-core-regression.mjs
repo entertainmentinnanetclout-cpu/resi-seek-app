@@ -38,6 +38,10 @@ const residence = {
   available_spots:5,
   capacity:20,
   is_visible:true,
+  // Explicit editorial selection allows a no-photo fixture in default browse;
+  // ordinary photo-poor free listings remain secondary/search-only.
+  discovery_placement:"promote",
+  listing_relationship:"unclassified",
   latitude:-25.754,
   longitude:28.188,
   room_type:"single",
@@ -314,7 +318,7 @@ try {
   console.log("PASS dashboard partial outage recovery");
 
   // Find My Res exposes its own query failure and retry rather than staying on skeletons.
-  await page.evaluate(()=>localStorage.removeItem("rk_public_residences_cache_v1"));
+  await page.evaluate(()=>localStorage.removeItem("rk_public_residences_cache_v3"));
   failure.residencesOnce=true;
   await page.goto(origin+"/findmyres");
   await page.getByText("Accommodation connection needs attention").waitFor({timeout:15000});
