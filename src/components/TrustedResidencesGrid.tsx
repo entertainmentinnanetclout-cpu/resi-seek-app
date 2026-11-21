@@ -46,7 +46,8 @@ const TrustedResidencesGrid = () => {
   useEffect(() => {
     const fetchTopResidences = async () => {
       try {
-        const { data, error } = await supabase.from('residences')
+        // Avoid recursive TypeScript expansion of the generated Supabase residence shape.
+        const { data, error } = await (supabase as any).from('residences')
           .select('id, name, address, image_url, cover_image_url, images, campus, available_spots, verification_level, province, display_order, section_category, room_types, room_type, price, amenities, distance_from_campus, discovery_placement, listing_relationship, is_visible')
           .eq('is_trusted', true).eq('is_visible',true).order('display_order', { ascending: true }).limit(100);
         if (error) throw error;
