@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Bot, BrainCircuit, BriefcaseBusiness, Building2, CheckCircle2, FileSearch, Loader2, Send, ShieldCheck, Sparkles } from "lucide-react";
 import PublicLayout from "@/components/PublicLayout";
 import PublicQuickSearch from "@/components/PublicQuickSearch";
+import { PublicAIVoice } from "@/components/ai/PublicAIVoice";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ const capabilities = [
 
 const ResKonnectAI = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const [input, setInput] = useState(params.get("q") || "");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -59,9 +61,9 @@ const ResKonnectAI = () => {
     [user],
   );
 
-  const send = async (prompt?: string) => {
+  const send = async (prompt?: string): Promise<string> => {
     const text = (prompt ?? input).trim();
-    if (!text || sending) return;
+    if (!text || sending) return "";
 
     setMessages((prev) => [...prev, { id: `u-${Date.now()}`, role: "user", content: text }]);
     setInput("");
@@ -94,15 +96,18 @@ const ResKonnectAI = () => {
       }
       if (data.thread_id) setThreadId(String(data.thread_id));
       setMessages((prev) => [...prev, { id: `a-${Date.now()}`, role: "assistant", content: answer }]);
+      return answer;
     } catch (error) {
       const message = controller.signal.aborted
         ? "ResKonnect AI took too long to respond. Check your connection and try again."
         : error instanceof Error ? error.message : "ResKonnect AI is temporarily unavailable.";
+      const fallback = `${message} You can still use Search ResKonnect or open the relevant Living, Applications or Opportunities service below.`;
       setMessages((prev) => [...prev, {
         id: `a-${Date.now()}`,
         role: "assistant",
-        content: `${message} You can still use Search ResKonnect or open the relevant Living, Applications or Opportunities service below.`,
+        content: fallback,
       }]);
+      return fallback;
     } finally {
       window.clearTimeout(timeout);
       setSending(false);
@@ -178,6 +183,7 @@ const ResKonnectAI = () => {
                   </Button>
                 </div>
 
+                <PublicAIVoice ask={async question=>send(question)} navigateTo={path=>navigate(path)} disabled={sending}/>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {suggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => void send(suggestion)} disabled={sending} className="rounded-full border px-3 py-1.5 text-left text-[11px] font-semibold text-muted-foreground transition hover:border-primary/40 hover:text-primary disabled:opacity-50">{suggestion}</button>)}
                 </div>
