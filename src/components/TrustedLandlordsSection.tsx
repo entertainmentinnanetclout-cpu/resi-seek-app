@@ -64,7 +64,9 @@ const TrustedLandlordsSection = () => {
   useEffect(() => {
     const fetchTopResidences = async () => {
       try {
-        const { data, error } = await supabase
+        // Keep the broad generated Supabase residence row union from expanding recursively.
+        // The resulting response still obeys the caller's original RLS and selected fields.
+        const { data, error } = await (supabase as any)
           .from('residences')
           .select('id, slug, name, address, price, private_price, nsfas_price, promo_price, image_url, cover_image_url, images, campus, province, city, place_label, available_spots, capacity, verification_level, display_order, room_type, room_types, amenities, has_wifi, has_parking, is_furnished, utilities_included, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, reservations_2027_open, discovery_placement, listing_relationship, is_visible')
           .eq('is_visible',true)
