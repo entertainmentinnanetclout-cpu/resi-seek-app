@@ -1,4 +1,5 @@
 import {hasPropertyPhotoReference,hasVerifiedPrivateRent,publicPrivateMonthlyRent} from "@/lib/residenceListingEvidence";
+import {isPromotedResidence} from "@/lib/residenceDiscoveryPolicy";
 
 /**
  * Editorial placements only. This is not a verification, accreditation, payment
@@ -12,7 +13,7 @@ export function spotlightPriority(residence:any):number {
 
 export function rankSpotlightResidences(residences:any[],limit=5):any[] {
  return (Array.isArray(residences)?residences:[])
-  .filter(r=>r?.id&&r.is_visible!==false&&r.is_spotlight===true&&hasPropertyPhotoReference(r))
+  .filter(r=>r?.id&&isPromotedResidence(r)&&r.is_spotlight===true&&hasPropertyPhotoReference(r))
   .sort((a,b)=>
    spotlightPriority(a)-spotlightPriority(b)
    ||String(a.name||"").localeCompare(String(b.name||""))
