@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import ResidencePosterDownloadButton from "@/components/findmyres/ResidencePosterDownloadButton";
 import { supabase } from "@/integrations/supabase/client";
 import { publicPrivateMonthlyRent, hasVerifiedPrivateRent } from "@/lib/residenceListingEvidence";
+import {isPromotedResidence,sortResidencesForDiscovery} from "@/lib/residenceDiscoveryPolicy";
 
 export interface ListingQuery {
   audience?: "university" | "tvet" | "private";
@@ -88,7 +89,7 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
         let req = (supabase as any)
           .from("residences")
           .select(
-            "id, slug, name, address, campus, province, city, place_label, price, private_price, nsfas_price, promo_price, promo_active, promo_starts_at, promo_ends_at, price_verified_at, image_url, cover_image_url, images, available_spots, capacity, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, room_type, room_types, singles_available, amenities, has_wifi, has_parking, is_furnished, utilities_included, reservations_2027_open",
+            "id, slug, name, address, campus, province, city, place_label, price, private_price, nsfas_price, promo_price, promo_active, promo_starts_at, promo_ends_at, price_verified_at, image_url, cover_image_url, images, available_spots, capacity, accepts_nsfas, accepts_private, accepts_tvet, accepts_university, room_type, room_types, singles_available, amenities, has_wifi, has_parking, is_furnished, utilities_included, reservations_2027_open, discovery_placement, listing_relationship, is_spotlight, is_trusted",
           )
           .eq("is_visible", true)
           .order("display_order", { ascending: true })
@@ -125,7 +126,9 @@ const SeoListingResults = ({ heading, query, emptyText, fallbackTo = "/find" }: 
             [r.room_type, ...(r.room_types || [])].some((v) => /\\bsingle\\b/i.test(String(v || ""))));
         }
 
-        if (!cancelled) setResidences(rows.slice(0, query.limit ?? 6));
+        // Broad area pages should not present incomplete free directory records as featured recommendations.
+        // Every published property remains discoverable by the exact-name finder, sitemap and A-Z directory.
+        if (!cancelled) setResidences(sortResidencesForDiscovery(rows.filter(isPromotedResidence)).slice(0, query.limit ?? 6));
       } catch (err) {
         console.error("[SeoListingResults]", err);
         if (!cancelled) setError(true);
