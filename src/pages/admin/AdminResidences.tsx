@@ -846,6 +846,26 @@ export const AdminResidencesContent = () => {
           </Dialog>
         </div>
 
+        <section className="rounded-2xl border border-primary/20 bg-primary/[0.035] p-4" aria-label="Residence directory and partner placement controls">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-black">Discoverability & partner relationships</h3>
+              <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">Default browsing prioritizes residences with real photo references; incomplete entries remain searchable by exact name, map and public URLs. Your classifications control partnerships, not accreditation or billing.</p>
+            </div>
+            <Link to="/findmyres#results" className="text-xs font-bold text-primary underline underline-offset-4">Preview Find My Res</Link>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
+            <div className="rounded-xl border bg-background p-3"><p className="text-[11px] text-muted-foreground">Published</p><p className="text-2xl font-black">{residences.filter(r=>r.is_visible!==false).length}</p></div>
+            <div className="rounded-xl border bg-background p-3"><p className="text-[11px] text-muted-foreground">Normal discovery</p><p className="text-2xl font-black">{residences.filter(isPromotedResidence).length}</p></div>
+            <div className="rounded-xl border bg-background p-3"><p className="text-[11px] text-muted-foreground">Search & map only</p><p className="text-2xl font-black">{residences.filter(r=>r.is_visible!==false&&!isPromotedResidence(r)).length}</p></div>
+            <div className="rounded-xl border bg-background p-3"><p className="text-[11px] text-muted-foreground">Paid classifications</p><p className="text-2xl font-black">{residences.filter(r=>r.listing_relationship==="paying").length}</p></div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" asChild><Link to="/admin/studio?tab=showcases">Manage Spotlight, Trusted & Top 3</Link></Button>
+            <Button variant="outline" size="sm" asChild><Link to="/admin/accommodation?tab=commercial">Commercial agreements & billing</Link></Button>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">Use the per-residence dropdowns below for immediate placement changes. Empty photos never create false trusted or paying claims.</p>
+        </section>
         <div className="rounded-xl border bg-muted/30 p-4">
           <p className="font-bold">Spotlight, Top 3 and trusted residence curation</p>
           <p className="mt-1 text-sm text-muted-foreground">The Visual Studio is the single editor for public website showcases. Residence records and moderation remain here.</p>
@@ -865,6 +885,18 @@ export const AdminResidencesContent = () => {
                     className="pl-10"
                   />
                 </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Label htmlFor="residence-discovery-filter" className="text-xs">Show:</Label>
+                <Select value={directoryFilter} onValueChange={setDirectoryFilter}>
+                  <SelectTrigger id="residence-discovery-filter" className="h-9 w-[min(100%,235px)]"><SelectValue/></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All directory entries</SelectItem>
+                    <SelectItem value="promoted">Promoted in browse</SelectItem>
+                    <SelectItem value="directory">Search & map only</SelectItem>
+                    {LISTING_RELATIONSHIPS.map(v=><SelectItem key={v} value={v}>{listingRelationshipLabel(v)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -919,6 +951,8 @@ export const AdminResidencesContent = () => {
                       <TableHead>Available</TableHead>
                       <TableHead>Audience</TableHead>
                       <TableHead>Spotlight</TableHead>
+                      <TableHead>Relationship</TableHead>
+                      <TableHead>Browse placement</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -986,6 +1020,21 @@ export const AdminResidencesContent = () => {
                             <Sparkles className="w-3 h-3" />
                             {residence.is_spotlight ? "On" : "Off"}
                           </button>
+                        </TableCell>
+                        <TableCell>
+                          <Select value={residence.listing_relationship||"unclassified"}
+                            onValueChange={v=>void updateDirectoryControl(residence,"listing_relationship",v as ListingRelationship)}>
+                            <SelectTrigger className="h-9 min-w-[138px]" aria-label={`Commercial relationship for ${residence.name}`}><SelectValue/></SelectTrigger>
+                            <SelectContent>{LISTING_RELATIONSHIPS.map(v=><SelectItem key={v} value={v}>{listingRelationshipLabel(v)}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Select value={residence.discovery_placement||"automatic"}
+                            onValueChange={v=>void updateDirectoryControl(residence,"discovery_placement",v as DiscoveryPlacement)}>
+                            <SelectTrigger className="h-9 min-w-[173px]" aria-label={`Discovery placement for ${residence.name}`}><SelectValue/></SelectTrigger>
+                            <SelectContent>{DISCOVERY_PLACEMENTS.map(v=><SelectItem key={v} value={v}>{discoveryPlacementLabel(v)}</SelectItem>)}</SelectContent>
+                          </Select>
+                          <p className="mt-1 text-[10px] text-muted-foreground">{hasMarketableResidencePhoto(residence)?"Photo linked":"Photos pending"} · {isPromotedResidence(residence)?"Browsed":"Search only"}</p>
                         </TableCell>
                         <TableCell>
                           <Badge variant={residence.verification_level === "verified" || residence.verification_level === "premium" ? "default" : "secondary"}>
