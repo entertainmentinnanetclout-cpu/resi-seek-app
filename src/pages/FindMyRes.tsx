@@ -224,7 +224,9 @@ const FindMyRes = () => {
   // promotes only the image-ready or admin-approved residences. All other
   // records remain in the secondary directory, map and canonical detail URLs.
   const searchingByName=filters.searchQuery.trim().length>0;
-  const promotedMatches=sortResidencesForDiscovery(filteredResidences.filter(isPromotedResidence));
+  const promotedMatches=filters.sortBy==="match"
+    ? sortResidencesForDiscovery(filteredResidences.filter(isPromotedResidence))
+    : filteredResidences.filter(isPromotedResidence);
   const directoryMatches=filteredResidences.filter(isDirectoryOnlyResidence);
   const mainResults=searchingByName?filteredResidences:promotedMatches;
   const visibleResidences=mainResults.slice(0,visibleCount);
