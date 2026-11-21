@@ -50,7 +50,8 @@ const MatchingResidencesPreview = ({ onRequestHelp, onBack }: MatchingResidences
       ].join(",");
 
       const base = () => {
-        let q = supabase.from("residences").select(columns);
+        // The bounded selected columns are checked at runtime; avoid recursive generated query typing.
+        let q = (supabase as any).from("residences").select(columns);
         if (patch.audience === "tvet") q = q.eq("accepts_tvet", true);
         if (patch.audience === "university") q = q.eq("accepts_university", true);
         if (patch.privatePayingOnly || patch.audience === "private") q = q.eq("accepts_private", true);
