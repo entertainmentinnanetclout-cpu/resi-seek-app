@@ -10,6 +10,7 @@ import ResidenceImageSlideshow from './ResidenceImageSlideshow';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useResidenceSections } from '@/hooks/useResidenceSections';
 import TumeloCareerPreview from '@/components/landing/TumeloCareerPreview';
+import {isPromotedResidence} from '@/lib/residenceDiscoveryPolicy';
 
 interface Residence {
   id: string; name: string; address: string; image_url: string | null; images: string[] | null; campus: string | null;
@@ -46,10 +47,10 @@ const TrustedResidencesGrid = () => {
     const fetchTopResidences = async () => {
       try {
         const { data, error } = await supabase.from('residences')
-          .select('id, name, address, image_url, images, campus, available_spots, verification_level, province, display_order, section_category, room_types, room_type, price, amenities, distance_from_campus')
-          .eq('is_trusted', true).order('display_order', { ascending: true }).limit(30);
+          .select('id, name, address, image_url, cover_image_url, images, campus, available_spots, verification_level, province, display_order, section_category, room_types, room_type, price, amenities, distance_from_campus, discovery_placement, listing_relationship, is_visible')
+          .eq('is_trusted', true).eq('is_visible',true).order('display_order', { ascending: true }).limit(100);
         if (error) throw error;
-        setResidences((data || []).map((r: any) => ({ ...r, verification_level: r.verification_level || 'basic', province: r.province || 'Gauteng', images: r.images || [], room_types: r.room_types || [], amenities: Array.isArray(r.amenities) ? r.amenities : [] })));
+        setResidences((data || []).filter(isPromotedResidence).slice(0,30).map((r: any) => ({ ...r, verification_level: r.verification_level || 'basic', province: r.province || 'Gauteng', images: r.images || [], room_types: r.room_types || [], amenities: Array.isArray(r.amenities) ? r.amenities : [] })));
       } catch (err) { console.error('[TrustedResidencesGrid] Error:', err); } finally { setLoading(false); }
     };
     fetchTopResidences();
