@@ -12,6 +12,7 @@ import { isMockResidence } from "@/hooks/useResidenceFilters";
 import { residenceMatchesCampus } from "@/constants/institutionOptions";
 import { deriveFiltersFromIntent } from "@/lib/intent/intentFilters";
 import { BRAND } from "@/constants/brand";
+import {isPromotedResidence} from "@/lib/residenceDiscoveryPolicy";
 
 interface MatchingResidencesPreviewProps {
   onRequestHelp: () => void;
@@ -45,7 +46,7 @@ const MatchingResidencesPreview = ({ onRequestHelp, onBack }: MatchingResidences
         "image_url", "images", "cover_image_url", "price", "private_price", "nsfas_price", "promo_price",
         "available_spots", "capacity", "room_type", "room_types", "amenities", "has_wifi", "has_parking",
         "is_furnished", "utilities_included", "reservations_2027_open", "is_trusted", "is_tut_accredited",
-        "accepts_university", "accepts_tvet", "accepts_private", "accepts_nsfas", "institution_tags", "verification_level",
+        "accepts_university", "accepts_tvet", "accepts_private", "accepts_nsfas", "institution_tags", "verification_level", "discovery_placement", "listing_relationship",
       ].join(",");
 
       const base = () => {
@@ -62,10 +63,12 @@ const MatchingResidencesPreview = ({ onRequestHelp, onBack }: MatchingResidences
           ? rows.filter((r) => residenceMatchesCampus(r, patch.campus, patch.institutionType))
           : rows;
 
-      const { data, error } = await base().order("price", { ascending: true }).limit(60);
+      // The first 60 low-priced entries may be basic/free listings with no photos.
+      // Fetch the bounded public set before applying the shared curated policy.
+      const { data, error } = await base().order("price", { ascending: true }).limit(500);
       if (error) throw error;
 
-      const scoped = applyCampus((data ?? []).filter((r: any) => !isMockResidence(r)));
+      const scoped = applyCampus((data ?? []).filter((r: any) => !isMockResidence(r)&&isPromotedResidence(r)));
       const budget = Number(patch.priceMax) || 0;
       const exact = budget ? scoped.filter((r: any) => Number(r.price || 0) <= budget) : scoped;
 
