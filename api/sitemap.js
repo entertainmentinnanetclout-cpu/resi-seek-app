@@ -7,6 +7,7 @@ const STATIC_PAGE_PATHS = [
   "/get-started",
   "/find",
   "/findmyres",
+  "/directory/residences",
   "/living",
   "/living/student-accommodation",
   "/living/private-rentals",
