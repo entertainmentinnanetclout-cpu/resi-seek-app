@@ -45,6 +45,10 @@ const descriptiveCompounds: readonly [RegExp,string][] = [
 /** Only conversational and editorial punctuation, never URL or code grammar. */
 export function polishEditorialCopy(value:string):string{
  if(!/[\u2010-\u2015]|\s-\s|[A-Za-z]-[A-Za-z]|\d-[a-z]/.test(value))return value;
+ // A bare kebab case slug is usually a route key, status or machine label.
+ // Only rewrite recognised human descriptive phrases in this shape.
+ if(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/.test(value)&&
+    !descriptiveCompounds.some(([pattern])=>new RegExp(pattern.source,"i").test(value)))return value;
  // Keep user-visible route paths, emails and URLs byte-for-byte intact,
  // including when they occur within a longer sentence.
  const technicalTokens=/(https?:\/\/[^\s"'<>]+|mailto:[^\s"'<>]+|tel:[^\s"'<>]+|\/[A-Za-z0-9][A-Za-z0-9\/_.?&=%+#-]*|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/g;
