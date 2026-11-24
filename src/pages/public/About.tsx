@@ -51,8 +51,8 @@ const audiences = [
 const About = () => (
   <div className="flex min-h-screen flex-col bg-background text-foreground">
     <SEO
-      title="Our Story | ResKonnect — Born from a Student’s Real-Life Struggle"
-      description="ResKonnect began when a TUT student lost NSFAS funding and stable accommodation in their final year. Discover the real experience that inspired a lasting student-first solution."
+      title="Our Story | ResKonnect | Inspired by a Real Student Experience"
+      description="ResKonnect began when a TUT student lost NSFAS funding and stable accommodation in their final year. Discover the real experience that inspired a lasting practical solution for students."
       canonicalPath="/about"
     />
     <SiteHeader />
@@ -93,7 +93,7 @@ const About = () => (
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">Our vision</p>
                 <h2 className="mt-3 text-2xl font-black sm:text-3xl">A generation prepared to shape the digital future.</h2>
                 <p className="mt-4 leading-7 text-muted-foreground">
-                  We envision a South Africa where young people have the intellectual confidence, digital fluency and practical access needed to flourish in the Fourth Industrial Revolution — not as passive users of technology, but as informed participants, builders, leaders and innovators.
+                  We envision a South Africa where young people have the intellectual confidence, digital fluency and practical access needed to flourish in the Fourth Industrial Revolution, not as passive users of technology, but as informed participants, builders, leaders and innovators.
                 </p>
               </CardContent>
             </Card>
@@ -130,7 +130,7 @@ const About = () => (
           <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">Built for society, starting with youth</p>
-              <h2 className="mt-2 text-3xl font-black">Student-centred does not mean student-only.</h2>
+              <h2 className="mt-2 text-3xl font-black">Students come first. Our vision goes further.</h2>
               <p className="mt-4 leading-7 text-muted-foreground">
                 Students are at the centre of many ResKonnect products, but the wider objective is national digital enablement. Better tools can also help educators, institutions, public-sector teams, families, citizens and businesses connect to the same journey more effectively.
               </p>

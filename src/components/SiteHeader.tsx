@@ -100,7 +100,7 @@ const SiteHeader = ({ search }: SiteHeaderProps) => {
               to="/find?reserve=2027"
               className="min-w-0 text-foreground hover:text-primary"
             >
-              2027 accommodation reservations are open — browse available
+              2027 accommodation reservations are open. Browse available
               residences
             </Link>
           </div>

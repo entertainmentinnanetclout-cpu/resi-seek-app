@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import { initLunaAttribution } from "@/lib/lunaGrowth";
+import { installEditorialCopy } from "@/lib/editorialCopy";
 import "./index.css";
 import "./styles/mobile-foundation.css";
 import "./styles/reskonnect-tactile-motion.css";
@@ -129,6 +130,9 @@ if (shouldCanonicalize) {
   }
 
   if (!native) scheduleNonCriticalBoot();
+  // Apply the same editorial typography to pages, cards, CMS text, modals and toasts.
+  // Technical values, code blocks, forms and persisted database records are unchanged.
+  installEditorialCopy(document.body);
   createRoot(document.getElementById("root")!).render(
     <HelmetProvider>
       <App />
