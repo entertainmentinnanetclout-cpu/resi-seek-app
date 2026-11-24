@@ -47,6 +47,16 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const action = String(body?.action || "upsert");
 
+  if (action === "status") {
+    const endpoint=String(body?.endpoint||"").trim();
+    if(!endpoint.startsWith("https://")||endpoint.length>4096)
+      return json(req,{error:"Invalid push endpoint"},400);
+    const {data,error}=await client.from("push_subscriptions")
+      .select("id").eq("user_id",user.id).eq("endpoint",endpoint).maybeSingle();
+    if(error)return json(req,{error:"Subscription verification unavailable"},503);
+    return json(req,{ok:true,registered:!!data});
+  }
+
   if (action === "remove") {
     const endpoint = String(body?.endpoint || "").trim();
     if (!endpoint) return json(req, { error: "Endpoint required" }, 400);
