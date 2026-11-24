@@ -46,6 +46,7 @@ import { BRAND } from "@/constants/brand";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {getResidenceIntake,canApplyToResidence,ACCOMMODATION_APPLICATION_YEAR,type ResidenceIntakeRule} from "@/lib/residenceIntake";
+import {checkStudentHousingChoice} from "@/lib/studentHousingLimit";
 import { RESKONNECT_WHATSAPP } from "@/lib/constants";
 import { captureApplicationReferral } from "@/lib/referrals/referralApi";
 import { readReferral, savePendingApplication } from "@/lib/referrals/referralStorage";
@@ -260,6 +261,8 @@ const ResidenceDetail = () => {
     if(!privateTenantConfirmed){toast.error("Please confirm you are applying as a private-paying tenant.");return;}
     setSubmitting(true);
     try {
+      const choice=await checkStudentHousingChoice(user.id,residenceId,ACCOMMODATION_APPLICATION_YEAR,"application");
+      if(!choice.allowed)throw new Error(choice.reason);
       const { data, error } = await supabase.from("applications").insert({
         user_id: user.id,
         residence_id: residenceId,
@@ -289,6 +292,8 @@ const ResidenceDetail = () => {
     if (!user || !residenceId) return;
     setSubmitting(true);
     try {
+      const choice=await checkStudentHousingChoice(user.id,residenceId,2027,"reservation");
+      if(!choice.allowed)throw new Error(choice.reason);
       const { data, error } = await (supabase as any).rpc("reskonnect_save_reservation_interest",{
         p_residence_id:residenceId,
         p_funding_type:fundingType,
