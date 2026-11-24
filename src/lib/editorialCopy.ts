@@ -44,7 +44,7 @@ const descriptiveCompounds: readonly [RegExp,string][] = [
 
 /** Only conversational and editorial punctuation, never URL or code grammar. */
 export function polishEditorialCopy(value:string):string{
- if(!/[\u2010-\u2015]|\s-\s|[A-Za-z]-[A-Za-z]/.test(value))return value;
+ if(!/[\u2010-\u2015]|\s-\s|[A-Za-z]-[A-Za-z]|\d-[a-z]/.test(value))return value;
  // Keep user-visible route paths, emails and URLs byte-for-byte intact,
  // including when they occur within a longer sentence.
  const technicalTokens=/(https?:\/\/[^\s"'<>]+|mailto:[^\s"'<>]+|tel:[^\s"'<>]+|\/[A-Za-z0-9][A-Za-z0-9\/_.?&=%+#-]*|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/g;
@@ -52,6 +52,10 @@ export function polishEditorialCopy(value:string):string{
   if(index%2===1)return fragment;
   let result=fragment;
   for(const [pattern,replacement] of descriptiveCompounds)result=result.replace(pattern,replacement);
+  // Also clean ordinary descriptive compounds not in the curated list.
+  // Keep official proper nouns with a capitalized second word unchanged.
+  result=result.replace(/\b([A-Za-z]{2,})-([a-z]{2,})\b/g,(_full,left:string,right:string)=>`${left} ${right}`);
+  result=result.replace(/\b(\d+)-([a-z]{2,})\b/g,"$1 $2");
   // Written ranges read naturally instead of looking like symbolic intervals.
   result=result.replace(/(\b\d{4})\s*(?:[\u2012\u2013]|\s-\s)\s*(\d{4}\b)/g,"$1 to $2");
   result=result.replace(/(\bR\s*\d[\d ,]*)\s*(?:[\u2012\u2013]|\s-\s)\s*(R\s*\d[\d ,]*)/g,"$1 to $2");
