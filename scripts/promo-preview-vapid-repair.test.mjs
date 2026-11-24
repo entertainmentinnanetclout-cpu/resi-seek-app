@@ -52,6 +52,8 @@ test("permission and sound tests distinguish browser permission from connected s
  assert.match(push,/push-subscription/);
  assert.match(settings,/checkPushKeyAvailability/);
  assert.match(settings,/Test alert \+ audio/);
+ assert.match(settings,/Test server push/);
+ assert.match(settings,/user_ids:\[id\]/);
  assert.match(settings,/testBrowserAlert/);
  assert.match(settings,/showNotification/);
  assert.match(settings,/playNotificationTone/);
