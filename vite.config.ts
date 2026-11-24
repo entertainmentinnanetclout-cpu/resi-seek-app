@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
             "maskable-icon-512.png",
           ],
           manifest: {
-            name: "ResKonnect — Living, AI, Opportunity",
+            name: "ResKonnect | Living, AI and Opportunity",
             short_name: "ResKonnect",
             description:
               "Student accommodation, application readiness, live ResMap navigation, opportunities and AI guidance.",
