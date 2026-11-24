@@ -55,4 +55,10 @@ test("permission and sound tests distinguish browser permission from connected s
  assert.match(settings,/testBrowserAlert/);
  assert.match(settings,/showNotification/);
  assert.match(settings,/playNotificationTone/);
+ const sounds=file("src/lib/notificationSounds.ts");
+ const realtime=file("src/hooks/useRealtimeNotifications.ts");
+ assert.match(sounds,/armNotificationAudioOnInteraction/);
+ assert.match(realtime,/armNotificationAudioOnInteraction\(userId\)/);
+ assert.match(sounds,/pointerdown/);
+ assert.match(sounds,/preferences\.enabled|readNotificationSounds\(userId\)\.enabled/);
 });
