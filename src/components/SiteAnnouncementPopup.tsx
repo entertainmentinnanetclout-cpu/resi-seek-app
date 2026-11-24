@@ -6,7 +6,7 @@ import {Badge} from "@/components/ui/badge";
 import {BRAND} from "@/constants/brand";
 import {supabase} from "@/integrations/supabase/client";
 
-type Announcement={
+export type Announcement={
  id:string;title:string;subtitle:string|null;body:string;badge:string|null;
  cta_label:string|null;cta_url:string|null;image_url:string|null;
  graphic_variant:string|null;dismissible:boolean;
@@ -43,11 +43,12 @@ const safeAction=(value:string|null)=>{
  return null;
 };
 
-export default function SiteAnnouncementPopup(){
+export default function SiteAnnouncementPopup({previewCampaign,onPreviewClose}:{previewCampaign?:Partial<Announcement>|null;onPreviewClose?:()=>void}={}){
  const [campaign,setCampaign]=useState<Announcement|null>(null);
  const [visible,setVisible]=useState(false);
  const [userId,setUserId]=useState<string|null>(null);
  useEffect(()=>{
+  if(previewCampaign)return;
   let mounted=true;
   void supabase.auth.getUser().then(({data})=>{
    if(mounted)setUserId(data.user?.id||null);
@@ -56,8 +57,9 @@ export default function SiteAnnouncementPopup(){
    if(mounted)setUserId(session?.user?.id||null);
   });
   return()=>{mounted=false;subscription.unsubscribe();};
- },[]);
+ },[Boolean(previewCampaign)]);
  useEffect(()=>{
+  if(previewCampaign)return;
   let cancelled=false;let timer:number|undefined;
   const load=async()=>{
    const {data,error}=await(supabase as any).from("site_announcements")
@@ -90,43 +92,48 @@ export default function SiteAnnouncementPopup(){
     window.clearInterval(interval);
     void supabase.removeChannel(channel);
   };
- },[userId]);
+ },[userId,Boolean(previewCampaign)]);
 
- const action=useMemo(()=>safeAction(campaign?.cta_url||null),[campaign?.cta_url]);
- const width=Math.min(760,Math.max(280,Number(campaign?.width_px)||440));
- const isPoster=Boolean(campaign?.poster_only&&campaign?.image_url);
- const corner=campaign?.display_surface==="corner";
- const is2027=campaign?.graphic_variant==="reskonnect_2027"||/2027/.test(`${campaign?.badge||""} ${campaign?.title||""}`);
+ // Preview runs this exact production renderer without publishing or storing impression state.
+ const activeCampaign=previewCampaign?({id:"draft-preview",updated_at:"preview",show_frequency:"once_per_day",audience:"all",dismissible:true,display_surface:"modal",width_px:420,poster_only:true,...previewCampaign} as Announcement):campaign;
+ const action=useMemo(()=>safeAction(activeCampaign?.cta_url||null),[activeCampaign?.cta_url]);
+ const width=Math.min(760,Math.max(280,Number(activeCampaign?.width_px)||440));
+ const isPoster=Boolean(activeCampaign?.poster_only&&activeCampaign?.image_url);
+ const corner=activeCampaign?.display_surface==="corner";
+ const is2027=activeCampaign?.graphic_variant==="reskonnect_2027"||/2027/.test(`${activeCampaign?.badge||""} ${activeCampaign?.title||""}`);
 
- if(!campaign||!visible)return null;
+ if(!activeCampaign||(!previewCampaign&&!visible))return null;
  const dismiss=()=>{
-  if(campaign.dismissible!==false)recordDismissal(campaign);
+  if(previewCampaign){onPreviewClose?.();return;}
+  if(activeCampaign.dismissible!==false)recordDismissal(activeCampaign);
   setVisible(false);
  };
- const closeAllowed=campaign.dismissible!==false;
- const cta=action&&campaign.cta_label?(
+ const closeAllowed=Boolean(previewCampaign)||activeCampaign.dismissible!==false;
+ const cta=action&&activeCampaign.cta_label?(
+   previewCampaign?<Button type="button" className="min-h-10 w-full rounded-xl text-sm font-black" onClick={()=>{}} title="Preview only: no navigation"><span>{activeCampaign.cta_label} <ArrowRight className="ml-2 inline h-4 w-4"/></span></Button>:
    action.kind==="internal"
     ?<Button asChild className="min-h-10 w-full rounded-xl text-sm font-black" onClick={dismiss}>
-      <Link to={action.url}>{campaign.cta_label}<ArrowRight className="ml-2 h-4 w-4"/></Link></Button>
+      <Link to={action.url}>{activeCampaign.cta_label}<ArrowRight className="ml-2 h-4 w-4"/></Link></Button>
     :<Button asChild className="min-h-10 w-full rounded-xl text-sm font-black" onClick={dismiss}>
-      <a href={action.url} target="_blank" rel="noopener noreferrer">{campaign.cta_label}<ArrowRight className="ml-2 h-4 w-4"/></a></Button>
+      <a href={action.url} target="_blank" rel="noopener noreferrer">{activeCampaign.cta_label}<ArrowRight className="ml-2 h-4 w-4"/></a></Button>
  ):null;
  return <div
    className={corner
     ?"pointer-events-none fixed inset-0 z-[120] flex items-end justify-end p-3 sm:p-5"
     :"fixed inset-0 z-[120] flex items-center justify-center bg-black/55 p-3 backdrop-blur-sm"}
    role="presentation">
+   {previewCampaign&&<span className="pointer-events-none absolute left-3 top-3 z-[121] rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-900 shadow-md">Preview only · not published</span>}
    {closeAllowed&&!corner&&<button type="button" onClick={dismiss}
      aria-label="Close promotion backdrop" className="absolute inset-0" tabIndex={-1}/>}
-   <section role="dialog" aria-modal={!corner} aria-label={campaign.title}
+   <section role="dialog" aria-modal={!corner} aria-label={activeCampaign.title}
     className={`pointer-events-auto relative isolate w-full overflow-x-hidden overflow-y-auto rounded-2xl border border-border/40 bg-background shadow-2xl ${corner?"max-h-[min(78dvh,690px)]":"max-h-[calc(100dvh-1.5rem)]"}`}
     style={{maxWidth:`min(${width}px,calc(100vw - 24px))`}}>
     {closeAllowed&&<button type="button" onClick={dismiss}
       aria-label="Close promotion" className="absolute right-2 top-2 z-20 grid h-9 w-9 place-items-center rounded-full bg-black/65 text-white shadow-lg backdrop-blur hover:bg-black/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
       <X className="h-5 w-5"/></button>}
-    {campaign.image_url?(
+    {activeCampaign.image_url?(
       <div className={`relative overflow-hidden ${isPoster?"bg-[#061633]":"h-36 bg-muted sm:h-48"}`}>
-        <img src={campaign.image_url} alt={isPoster?campaign.title:""}
+        <img src={activeCampaign.image_url} alt={isPoster?campaign.title:""}
           className={isPoster?"block max-h-[min(66dvh,620px)] w-full object-contain":"h-full w-full object-cover"}/>
         {!isPoster&&<div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"/>}
       </div>
@@ -142,17 +149,17 @@ export default function SiteAnnouncementPopup(){
     )}
     {isPoster?(
       <div className="space-y-2 p-3 sm:p-4">
-        <p className="sr-only">{campaign.body}</p>
+        <p className="sr-only">{activeCampaign.body}</p>
         {cta}
         {closeAllowed&&<button type="button" className="block w-full py-1 text-center text-xs text-muted-foreground underline underline-offset-2" onClick={dismiss}>Not now</button>}
       </div>
     ):(
       <div className="space-y-3 p-4 sm:p-6">
-        <div className="flex items-center gap-2"><Badge>{campaign.badge||"RESKONNECT UPDATE"}</Badge>
+        <div className="flex items-center gap-2"><Badge>{activeCampaign.badge||"RESKONNECT UPDATE"}</Badge>
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><BellRing className="h-3 w-3"/>Latest update</span></div>
-        <h2 className="text-xl font-black sm:text-2xl">{campaign.title}</h2>
-        {campaign.subtitle&&<p className="text-sm font-bold text-primary">{campaign.subtitle}</p>}
-        <p className="text-sm leading-6 text-muted-foreground">{campaign.body}</p>
+        <h2 className="text-xl font-black sm:text-2xl">{activeCampaign.title}</h2>
+        {activeCampaign.subtitle&&<p className="text-sm font-bold text-primary">{activeCampaign.subtitle}</p>}
+        <p className="text-sm leading-6 text-muted-foreground">{activeCampaign.body}</p>
         {cta}
         {closeAllowed&&<Button variant="ghost" size="sm" className="w-full" onClick={dismiss}>Not now</Button>}
       </div>
