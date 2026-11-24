@@ -75,6 +75,32 @@ export async function playNotificationTone(tone:AlertTone,preview=false){
   return true;
  }catch{return false;}
 }
+/** Browsers block unattended Web Audio after reload. Arm a previously opted-in
+ * user's tone on their first ordinary interaction; never change preferences. */
+export function armNotificationAudioOnInteraction(userId:string):()=>void{
+ if(typeof window==="undefined"||!userId||!readNotificationSounds(userId).enabled)return ()=>{};
+ let active=true;
+ const cleanup=()=>{
+   if(!active)return;
+   active=false;
+   document.removeEventListener("pointerdown",unlock);
+   document.removeEventListener("keydown",unlock);
+ };
+ const unlock=()=>{
+   if(!active)return;
+   const Audio=(window.AudioContext||(window as any).webkitAudioContext) as typeof AudioContext|undefined;
+   if(Audio){
+     try{
+       ctx=ctx||new Audio();
+       if(ctx.state==="suspended")void ctx.resume().catch(()=>{});
+     }catch{/* OS audio is optional; push notifications remain independent. */}
+   }
+   cleanup();
+ };
+ document.addEventListener("pointerdown",unlock,{passive:true,once:true});
+ document.addEventListener("keydown",unlock,{once:true});
+ return cleanup;
+}
 export function playNoticeSound(userId:string,type:string){
  if(!userId||typeof document==="undefined"||document.visibilityState!=="visible")return;
  const preferences=readNotificationSounds(userId);

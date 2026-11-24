@@ -1,28 +1,50 @@
 import { supabase, EXTERNAL_SUPABASE_ANON_KEY, externalFunctionUrl } from "@/integrations/supabase/client";
 
-let VAPID_PUBLIC_KEY = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string) || "";
+let VAPID_PUBLIC_KEY = "";
+type PushKeyResult={ready:boolean;reason:string;publicKey:string};
+let keyInflight:Promise<PushKeyResult>|null=null;
 
 export function isNativeShell() {
   return typeof window !== "undefined" && Boolean((window as any).Capacitor?.isNativePlatform?.());
 }
 
-async function getVapidKey(): Promise<string> {
-  if (VAPID_PUBLIC_KEY) return VAPID_PUBLIC_KEY;
-  try {
-    const res = await fetch(externalFunctionUrl("vapid-public-key"), {
-      headers: {
-        apikey: EXTERNAL_SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${EXTERNAL_SUPABASE_ANON_KEY}`,
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error(`VAPID key unavailable (${res.status})`);
-    const json = await res.json().catch(() => ({}));
-    VAPID_PUBLIC_KEY = typeof json.publicKey === "string" ? json.publicKey.trim() : "";
-  } catch (error) {
-    console.warn("[push] VAPID key unavailable:", error);
-  }
-  return VAPID_PUBLIC_KEY;
+/** Safe public-only check. The signing private key never leaves Supabase Vault. */
+async function resolveVapidKey(): Promise<PushKeyResult> {
+  if(VAPID_PUBLIC_KEY)return {ready:true,publicKey:VAPID_PUBLIC_KEY,reason:"Signing key available"};
+  if(keyInflight)return keyInflight;
+  keyInflight=(async()=>{
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),10000);
+    try{
+      const response=await fetch(externalFunctionUrl("vapid-public-key"),{
+        headers:{apikey:EXTERNAL_SUPABASE_ANON_KEY},
+        signal:controller.signal,
+        cache:"no-store",
+      });
+      const body=await response.json().catch(()=>({}));
+      if(!response.ok){
+        const detail=String(body.error||"Web Push credentials are unavailable");
+        return {ready:false,publicKey:"",reason:`Notification server returned ${response.status}: ${detail}. Please contact the ResKonnect administrator.`};
+      }
+      const value=typeof body.publicKey==="string"?body.publicKey.trim():"";
+      let valid=false;
+      try{
+        const decoded=urlBase64ToUint8Array(value);
+        valid=decoded.length===65&&decoded[0]===4;
+      }catch{/* Invalid base64url is never accepted. */}
+      if(!valid)return {ready:false,publicKey:"",reason:"ResKonnect returned an invalid Web Push public key. An administrator needs to repair its server configuration."};
+      VAPID_PUBLIC_KEY=value;
+      return {ready:true,publicKey:value,reason:"Web Push key available"};
+    }catch(error){
+      console.warn("[push] Public VAPID key lookup failed",error);
+      return {ready:false,publicKey:"",reason:"Unable to contact the ResKonnect notification service. Check your internet connection, then retry."};
+    }finally{clearTimeout(timer);}
+  })().finally(()=>{keyInflight=null;});
+  return keyInflight;
+}
+export async function checkPushKeyAvailability():Promise<{ready:boolean;reason:string}>{
+  const {ready,reason}=await resolveVapidKey();
+  return {ready,reason};
 }
 
 function urlBase64ToUint8Array(base64: string) {
@@ -69,13 +91,24 @@ export async function subscribePushDetailed(): Promise<PushSetupResult> {
     return {ok:false,reason:"Sign in before registering a notification subscription.",permission};
   }
 
-  const key=await getVapidKey();
-  if(!key)return {ok:false,reason:"ResKonnect notification key is temporarily unavailable. Try again shortly.",permission};
+  const keyResult=await resolveVapidKey();
+  if(!keyResult.ready)return {ok:false,reason:keyResult.reason,permission};
+  const key=keyResult.publicKey;
   const registration=await ensureServiceWorker();
   if(!registration)return {ok:false,reason:"The service worker could not start. Refresh or install the ResKonnect app and retry.",permission};
 
   try {
     let subscription = await registration.pushManager.getSubscription();
+    // A browser may retain a subscription signed with an older application
+    // server key. Replace it rather than reporting a false successful repair.
+    if(subscription?.options.applicationServerKey){
+      const oldKey=new Uint8Array(subscription.options.applicationServerKey);
+      const newKey=urlBase64ToUint8Array(key);
+      if(oldKey.length!==newKey.length||oldKey.some((v,i)=>v!==newKey[i])){
+        await subscription.unsubscribe();
+        subscription=null;
+      }
+    }
     if (!subscription) {
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,

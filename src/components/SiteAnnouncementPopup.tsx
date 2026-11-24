@@ -5,6 +5,7 @@ import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
 import {BRAND} from "@/constants/brand";
 import {supabase} from "@/integrations/supabase/client";
+import {toast} from "sonner";
 
 type Announcement={
  id:string;title:string;subtitle:string|null;body:string;badge:string|null;
@@ -92,19 +93,36 @@ export default function SiteAnnouncementPopup(){
   };
  },[userId]);
 
- const action=useMemo(()=>safeAction(campaign?.cta_url||null),[campaign?.cta_url]);
- const width=Math.min(760,Math.max(280,Number(campaign?.width_px)||440));
- const isPoster=Boolean(campaign?.poster_only&&campaign?.image_url);
- const corner=campaign?.display_surface==="corner";
- const is2027=campaign?.graphic_variant==="reskonnect_2027"||/2027/.test(`${campaign?.badge||""} ${campaign?.title||""}`);
-
  if(!campaign||!visible)return null;
  const dismiss=()=>{
-  if(campaign.dismissible!==false)recordDismissal(campaign);
-  setVisible(false);
+   if(campaign.dismissible!==false)recordDismissal(campaign);
+   setVisible(false);
  };
+ return <SitePromotionPresentation campaign={campaign} onDismiss={dismiss}/>;
+}
+
+/** Shared rendering between the public landing pop-up and the AdminOS media preview. */
+export type PromotionCardData=Pick<Announcement,
+ "title"|"subtitle"|"body"|"badge"|"cta_label"|"cta_url"|"image_url"|
+ "graphic_variant"|"dismissible"|"display_surface"|"width_px"|"poster_only">;
+
+export function SitePromotionPresentation({
+ campaign,onDismiss,preview=false,device="desktop",
+}:{
+ campaign:PromotionCardData;
+ onDismiss?:()=>void;
+ preview?:boolean;
+ device?:"desktop"|"mobile";
+}){
+ const action=useMemo(()=>safeAction(campaign.cta_url||null),[campaign.cta_url]);
+ const width=Math.min(760,Math.max(280,Number(campaign.width_px)||440));
+ const isPoster=Boolean(campaign.poster_only&&campaign.image_url);
+ const corner=campaign.display_surface==="corner";
+ const is2027=campaign.graphic_variant==="reskonnect_2027"||/2027/.test(`${campaign.badge||""} ${campaign.title||""}`);
+ const dismiss=()=>onDismiss?.();
  const closeAllowed=campaign.dismissible!==false;
  const cta=action&&campaign.cta_label?(
+    preview?<Button type="button" className="min-h-10 w-full rounded-xl text-sm font-black" onClick={()=>toast.info(`Preview only. The live button opens ${action.url}`)}>{campaign.cta_label}<ArrowRight className="ml-2 h-4 w-4"/></Button>:
    action.kind==="internal"
     ?<Button asChild className="min-h-10 w-full rounded-xl text-sm font-black" onClick={dismiss}>
       <Link to={action.url}>{campaign.cta_label}<ArrowRight className="ml-2 h-4 w-4"/></Link></Button>
@@ -112,15 +130,17 @@ export default function SiteAnnouncementPopup(){
       <a href={action.url} target="_blank" rel="noopener noreferrer">{campaign.cta_label}<ArrowRight className="ml-2 h-4 w-4"/></a></Button>
  ):null;
  return <div
-   className={corner
+   className={preview
+    ?`relative flex w-full ${device==="mobile"?"min-h-[620px]":"min-h-[580px]"} ${corner?"items-end justify-end":"items-center justify-center"} bg-[#07172d] p-3 sm:p-5`
+    :corner
     ?"pointer-events-none fixed inset-0 z-[120] flex items-end justify-end p-3 sm:p-5"
     :"fixed inset-0 z-[120] flex items-center justify-center bg-black/55 p-3 backdrop-blur-sm"}
-   role="presentation">
-   {closeAllowed&&!corner&&<button type="button" onClick={dismiss}
+   role="presentation" style={preview?{maxWidth:device==="mobile"?390:960,margin:"auto"}:undefined}>
+   {closeAllowed&&!corner&&!preview&&<button type="button" onClick={dismiss}
      aria-label="Close promotion backdrop" className="absolute inset-0" tabIndex={-1}/>}
-   <section role="dialog" aria-modal={!corner} aria-label={campaign.title}
+   <section role={preview?"group":"dialog"} aria-modal={!preview&&!corner} aria-label={campaign.title}
     className={`pointer-events-auto relative isolate w-full overflow-x-hidden overflow-y-auto rounded-2xl border border-border/40 bg-background shadow-2xl ${corner?"max-h-[min(78dvh,690px)]":"max-h-[calc(100dvh-1.5rem)]"}`}
-    style={{maxWidth:`min(${width}px,calc(100vw - 24px))`}}>
+    style={{maxWidth:`min(${width}px,${preview?"100%":"calc(100vw - 24px)"})`}}>
     {closeAllowed&&<button type="button" onClick={dismiss}
       aria-label="Close promotion" className="absolute right-2 top-2 z-20 grid h-9 w-9 place-items-center rounded-full bg-black/65 text-white shadow-lg backdrop-blur hover:bg-black/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
       <X className="h-5 w-5"/></button>}

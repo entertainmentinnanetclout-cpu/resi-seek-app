@@ -5,12 +5,28 @@ const env = (name: string) => Deno.env.get(name) || "";
 const SUPABASE_URL = env("EXTERNAL_SUPABASE_URL") || env("SUPABASE_URL");
 const ANON_KEY = env("SUPABASE_ANON_KEY") || env("EXTERNAL_SUPABASE_ANON_KEY");
 const SERVICE_KEY = env("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY") || env("SUPABASE_SERVICE_ROLE_KEY");
-const VAPID_PUBLIC = env("VAPID_PUBLIC_KEY");
-const VAPID_PRIVATE = env("VAPID_PRIVATE_KEY");
 const VAPID_SUBJECT = env("VAPID_SUBJECT") || "mailto:reskonnect@gmail.com";
 const FIREBASE_SERVICE_ACCOUNT_JSON = env("FIREBASE_SERVICE_ACCOUNT_JSON");
 
-if (VAPID_PUBLIC && VAPID_PRIVATE) webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+// Resolve the private signing key server-side through a service-role-only Vault RPC.
+// Never return, log, or embed the private VAPID credential in browser code.
+let vapidInstalled = false;
+async function configureWebPush(service:any):Promise<boolean>{
+  if(vapidInstalled)return true;
+  const {data,error}=await service.rpc("rk_web_push_server_keys");
+  if(error||!data?.publicKey||!data?.privateKey){
+    console.warn("[send-push] Vault signing credentials unavailable",error?.code||"not_configured");
+    return false;
+  }
+  try{
+    webpush.setVapidDetails(VAPID_SUBJECT,String(data.publicKey),String(data.privateKey));
+    vapidInstalled=true;
+    return true;
+  }catch(error){
+    console.error("[send-push] Invalid Vault signing configuration",error instanceof Error?error.message:"unknown");
+    return false;
+  }
+}
 
 const allowedOrigins = new Set(["https://www.reskonnect.org", "https://reskonnect.org"]);
 const cors = (req: Request) => {
@@ -143,9 +159,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json(req, { error: "Method not allowed" }, 405);
   if (!SUPABASE_URL || !ANON_KEY || !SERVICE_KEY) return json(req, { error: "Push service unavailable" }, 503);
 
-  const webEnabled = Boolean(VAPID_PUBLIC && VAPID_PRIVATE);
   const fcmEnabled = Boolean(getFirebaseAccount());
-  if (!webEnabled && !fcmEnabled) return json(req, { error: "No push transport is configured" }, 503);
 
   try {
     const authorization = req.headers.get("Authorization") || "";
@@ -166,6 +180,8 @@ Deno.serve(async (req) => {
       }
     }
     if (!authorized) return json(req, { error: "Staff authorization required" }, 403);
+    const webEnabled = await configureWebPush(service);
+    if (!webEnabled && !fcmEnabled) return json(req, { error: "No push transport is configured" }, 503);
 
     const body = await req.json().catch(() => ({}));
     const title = String(body?.title || "").trim();
