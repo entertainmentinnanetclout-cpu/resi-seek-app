@@ -6,23 +6,44 @@ export function isNativeShell() {
   return typeof window !== "undefined" && Boolean((window as any).Capacitor?.isNativePlatform?.());
 }
 
-async function getVapidKey(): Promise<string> {
-  if (VAPID_PUBLIC_KEY) return VAPID_PUBLIC_KEY;
-  try {
-    const res = await fetch(externalFunctionUrl("vapid-public-key"), {
-      headers: {
-        apikey: EXTERNAL_SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${EXTERNAL_SUPABASE_ANON_KEY}`,
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error(`VAPID key unavailable (${res.status})`);
-    const json = await res.json().catch(() => ({}));
-    VAPID_PUBLIC_KEY = typeof json.publicKey === "string" ? json.publicKey.trim() : "";
-  } catch (error) {
-    console.warn("[push] VAPID key unavailable:", error);
+const validVapidKey=(value:unknown):value is string=>
+  typeof value==="string" && /^B[A-Za-z0-9_-]{86}$/.test(value.trim());
+
+async function getVapidKey():Promise<string>{
+  // The public verification key is stored in Supabase Vault and exposed by an
+  // authenticated-safe, no-argument RPC. The key itself is not a secret.
+  if(validVapidKey(VAPID_PUBLIC_KEY))return VAPID_PUBLIC_KEY.trim();
+  let cause="Public notification key could not be retrieved.";
+  try{
+    const {data,error}=await (supabase as any).rpc("rk_web_push_public_key");
+    if(!error&&validVapidKey(data)){
+      VAPID_PUBLIC_KEY=data.trim();return VAPID_PUBLIC_KEY;
+    }
+    cause=error?.message||"The public key lookup returned an invalid key.";
+  }catch(error){
+    cause=error instanceof Error?error.message:cause;
   }
-  return VAPID_PUBLIC_KEY;
+  // An independent Edge endpoint lets registration recover if Data API/RPC
+  // access is temporarily degraded. Never use a fabricated VAPID key.
+  try{
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),8000);
+    try{
+      const res=await fetch(externalFunctionUrl("vapid-public-key"),{
+        method:"GET",
+        headers:{apikey:EXTERNAL_SUPABASE_ANON_KEY},
+        cache:"no-store",signal:controller.signal
+      });
+      const body=await res.json().catch(()=>({}));
+      if(res.ok&&validVapidKey(body.publicKey)){
+        VAPID_PUBLIC_KEY=body.publicKey.trim();return VAPID_PUBLIC_KEY;
+      }
+      cause=body?.error||`Notification key endpoint returned HTTP ${res.status}`;
+    }finally{clearTimeout(timeout);}
+  }catch(error){
+    cause=error instanceof Error?error.message:cause;
+  }
+  throw new Error(cause);
 }
 
 function urlBase64ToUint8Array(base64: string) {
@@ -69,8 +90,12 @@ export async function subscribePushDetailed(): Promise<PushSetupResult> {
     return {ok:false,reason:"Sign in before registering a notification subscription.",permission};
   }
 
-  const key=await getVapidKey();
-  if(!key)return {ok:false,reason:"ResKonnect notification key is temporarily unavailable. Try again shortly.",permission};
+  let key:string;
+  try{key=await getVapidKey();}
+  catch(error){
+    const reason=error instanceof Error?error.message:"Notification key could not be retrieved";
+    return {ok:false,reason:`Browser permission is granted, but ResKonnect could not load its public push key: ${reason}. Refresh and try Connect / repair; in the meantime you can enable in-app sounds separately.`,permission};
+  }
   const registration=await ensureServiceWorker();
   if(!registration)return {ok:false,reason:"The service worker could not start. Refresh or install the ResKonnect app and retry.",permission};
 
