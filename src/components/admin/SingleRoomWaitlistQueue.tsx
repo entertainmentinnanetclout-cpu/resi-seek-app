@@ -9,6 +9,8 @@ import {supabase} from "@/integrations/supabase/client";
 import {readAllPages,friendlyStatus} from "@/lib/studentCare";
 import {downloadText,toCsv} from "@/lib/contactExport";
 import {toast} from "sonner";
+import {useAuth} from "@/contexts/AuthContext";
+import GodModeMfaGate from "@/components/admin/GodModeMfaGate";
 
 type RoomStatus="waiting"|"searching"|"matched"|"placed"|"withdrawn";
 type WaitlistRecord={
@@ -26,6 +28,7 @@ const isActive=(s:RoomStatus)=>s==="waiting"||s==="searching"||s==="matched";
 const date=(value:string)=>new Date(value).toLocaleDateString("en-ZA",{year:"numeric",month:"short",day:"numeric",timeZone:"Africa/Johannesburg"});
 
 function RoomQueueRecord({record,onSaved}:{record:WaitlistRecord;onSaved:()=>Promise<void>}){
+  const {isGodMode}=useAuth();
   const[status,setStatus]=useState<RoomStatus>(record.status);
   const[response,setResponse]=useState(record.staff_response||"");
   const[verified,setVerified]=useState(false);
@@ -67,7 +70,7 @@ function RoomQueueRecord({record,onSaved}:{record:WaitlistRecord;onSaved:()=>Pro
         <p className="mt-1 text-xs text-muted-foreground">{record.academic_year} · {period(record.semester)} · {record.campus}</p>
         <p className="mt-1 text-xs text-muted-foreground">Submitted {date(record.created_at)} · {money(record.budget)} · {friendlyStatus(record.funding_type)}</p>
       </div>
-      <Button variant="outline" size="sm" asChild><Link to={`/admin/students/${record.user_id}`}>Student 360</Link></Button>
+      {isGodMode&&<Button variant="outline" size="sm" asChild><Link to={`/admin/students/${record.user_id}`}>Student 360</Link></Button>}
     </div>
     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs">
       <a className="font-semibold text-primary underline underline-offset-2" href={`tel:${record.phone.replace(/[^+\d]/g,"")}`}>{record.phone}</a>
@@ -106,7 +109,7 @@ function RoomQueueRecord({record,onSaved}:{record:WaitlistRecord;onSaved:()=>Pro
  * marketing partners and legacy Student Care joins. A failing workspace must never
  * conceal a valid waitlist record.
  */
-export default function SingleRoomWaitlistQueue(){
+function SingleRoomWaitlistQueueContent(){
   const[records,setRecords]=useState<WaitlistRecord[]>([]);
   const[loading,setLoading]=useState(true);
   const[error,setError]=useState("");
@@ -257,4 +260,13 @@ export default function SingleRoomWaitlistQueue(){
         </div>}
     </>}
   </section>;
+}
+
+/** Assigned Accommodation staff must step up to AAL2 before touching private requests.
+ * God Mode is already wrapped by the parent department/administrator gate. */
+export default function SingleRoomWaitlistQueue(){
+  const {isGodMode}=useAuth();
+  return isGodMode
+    ? <SingleRoomWaitlistQueueContent/>
+    : <GodModeMfaGate mode="care"><SingleRoomWaitlistQueueContent/></GodModeMfaGate>;
 }
