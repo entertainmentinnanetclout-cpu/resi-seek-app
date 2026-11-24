@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
 import { DEFAULT_OG_IMAGE, canonicalUrl, getRouteMeta, isNoIndexPath } from "@/lib/seo/seoConfig";
 import { organizationSchema, webSiteSchema } from "@/lib/seo/jsonLd";
+import { polishEditorialCopy } from "@/lib/editorialCopy";
 
 interface SEOProps {
   title?: string;
@@ -28,11 +29,12 @@ const SEO: React.FC<SEOProps> = ({
   const location = useLocation();
   const currentPath = canonicalPath || location.pathname;
   const routeMeta = getRouteMeta(currentPath);
-  const resolvedTitle = title || routeMeta?.title || "ResKonnect | Student Accommodation & Application Readiness";
-  const resolvedDescription =
+  const resolvedTitle = polishEditorialCopy(title || routeMeta?.title || "ResKonnect | Student Accommodation & Application Readiness");
+  const resolvedDescription = polishEditorialCopy(
     description ||
     routeMeta?.description ||
-    "Find student accommodation, prepare applications, discover opportunities and explore student-housing intelligence with ResKonnect.";
+    "Find student accommodation, prepare applications, discover opportunities and explore student housing intelligence with ResKonnect."
+  );
   const canonical = canonicalUrl(currentPath);
   const defaultImage = routeMeta?.ogImage || DEFAULT_OG_IMAGE;
   // Only emit geographic metadata when the page unambiguously describes
