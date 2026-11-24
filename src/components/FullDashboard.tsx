@@ -1,6 +1,7 @@
 import SEO from "@/components/SEO";
 import DashboardLayout from "@/components/DashboardLayout";
 import MyResKonnectCommandCentre from "@/components/MyResKonnectCommandCentre";
+import StudentHousingJourney from "@/components/StudentHousingJourney";
 import NativeDashboardHighlights from "@/components/native/NativeDashboardHighlights";
 import SafeRenderBoundary from "@/components/SafeRenderBoundary";
 import { isNativeApp } from "@/lib/accountRouting";
@@ -24,5 +25,6 @@ export default function FullDashboard() {
     }>
       <MyResKonnectCommandCentre />
     </SafeRenderBoundary>
+    <div className="mt-8"><SafeRenderBoundary name="student-housing-journey"><StudentHousingJourney/></SafeRenderBoundary></div>
   </DashboardLayout>;
 }
