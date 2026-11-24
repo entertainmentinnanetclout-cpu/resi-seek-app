@@ -10,6 +10,9 @@ test("Public copy uses sentences instead of decorative dashes",()=>{
  assert.equal(polishEditorialCopy("Residence booking - request a room"),"Residence booking, request a room");
  assert.equal(polishEditorialCopy("Living – Applications – Opportunity"),"Living, Applications, Opportunity");
  assert.equal(polishEditorialCopy("Academic years 2026–2027"),"Academic years 2026 to 2027");
+ assert.equal(polishEditorialCopy("Academic years 2026 - 2027"),"Academic years 2026 to 2027");
+ assert.equal(polishEditorialCopy("R1 500 - R3 000"),"R1 500 to R3 000");
+ assert.equal(polishEditorialCopy("5 - 2 = 3"),"5 - 2 = 3");
  assert.equal(polishEditorialCopy("A student-first, AI-powered service"),"A student focused, AI supported service");
  assert.equal(polishEditorialCopy("single-room waiting list"),"single room waiting list");
  assert.equal(polishEditorialCopy("An end-to-end student-led journey"),"An integrated student led journey");
