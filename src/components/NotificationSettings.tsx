@@ -73,6 +73,8 @@ export default function NotificationSettings(){
      return;
    }
    try{
+     // Start audio from the button gesture before awaiting service-worker work.
+     const audioTest=preferences.enabled?playNotificationTone(preferences.tones.general,true):Promise.resolve(false);
      const reg=await ensureServiceWorker();
      if(!reg)throw new Error("The notification service worker has not started");
      await reg.showNotification("ResKonnect test alert",{
@@ -80,7 +82,7 @@ export default function NotificationSettings(){
        icon:"/icon-192.png",
        tag:"rk-notification-local-test",
      });
-     if(preferences.enabled)await playNotificationTone(preferences.tones.general,true);
+     await audioTest;
      toast.success("Test alert submitted to your device. This is a local test, not a server-push delivery confirmation.");
    }catch(error){toast.error(error instanceof Error?error.message:"The device could not display a test notification.");}
  };
