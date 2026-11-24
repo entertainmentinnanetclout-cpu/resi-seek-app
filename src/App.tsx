@@ -502,9 +502,9 @@ const App = () => {
                       path="/admin/single-room-waiting-list"
                       element={
                         <ProtectedRoute>
-                          <AdminRoute>
+                          <DepartmentRoute department="accommodation">
                             <AdminSingleRoomWaitlist />
-                          </AdminRoute>
+                          </DepartmentRoute>
                         </ProtectedRoute>
                       }
                     />
