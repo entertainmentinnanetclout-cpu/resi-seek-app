@@ -4,11 +4,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { isNativeShell, isPushSupported, pushPermission, subscribePushDetailed } from "@/lib/push";
+import {supabase} from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const DISMISS_PREFIX = "rk_push_dismissed_at:";
-const ELIGIBLE_PATHS = ["/", "/find", "/dashboard", "/profile", "/my-applications", "/applications", "/opportunities", "/wil"];
+const ELIGIBLE_PATHS = ["/", "/find", "/findmyres", "/dashboard", "/profile", "/my-applications", "/applications", "/opportunities", "/wil", "/admin", "/single-room-waiting-list"];
 
 export default function PushPrompt() {
   const [show, setShow] = useState(false);
@@ -23,19 +24,29 @@ export default function PushPrompt() {
     if (isLoading || isNativeShell() || !isPushSupported()) return;
     if (!ELIGIBLE_PATHS.some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`))) return;
     const permission=pushPermission();
-    if(permission==="denied"||permission==="unsupported")return;
+    if(permission==="unsupported")return;
 
     const key = `${DISMISS_PREFIX}${user?.id||"visitor"}`;
-    const dismissed = Number(localStorage.getItem(key) || 0);
+    let dismissed=0;
+    try{dismissed=Number(localStorage.getItem(key)||0);}catch{}
     if (dismissed && Date.now() - dismissed < 7 * 86_400_000) return;
     let active=true;
     const timer = window.setTimeout(()=>{
       if(!user?.id||permission!=="granted"){if(active)setShow(true);return;}
-      // Permission may have been granted on a previous attempt while the
-      // VAPID key or subscription persistence failed. Offer retry.
-      void navigator.serviceWorker.getRegistration("/").then(reg=>reg?.pushManager.getSubscription())
-        .then(sub=>{if(active&&!sub)setShow(true);}).catch(()=>{if(active)setShow(true);});
-    }, 6_000);
+      // A browser PushManager endpoint alone is insufficient: a previous
+      // server upsert may have failed, leaving the production DB at zero.
+      void (async()=>{
+        try{
+          const reg=await navigator.serviceWorker.getRegistration("/");
+          const sub=await reg?.pushManager.getSubscription();
+          if(!sub){if(active)setShow(true);return;}
+          const {data,error}=await supabase.functions.invoke("push-subscription",{
+            body:{action:"status",endpoint:sub.endpoint}
+          });
+          if(active)setShow(Boolean(error)||data?.registered!==true);
+        }catch{if(active)setShow(true);}
+      })();
+    }, 10_000);
     return () => {active=false;window.clearTimeout(timer);};
   }, [isLoading, location.pathname, user?.id]);
 
@@ -53,6 +64,10 @@ export default function PushPrompt() {
       return;
     }
     if(busy)return;
+    if(pushPermission()==="denied"){
+      setProblem("Notifications were blocked for this website. In your browser open Site Settings → Notifications and choose Allow. On a Mac, also check System Settings → Notifications → your browser. On iPhone, first install ResKonnect to the Home Screen.");
+      return;
+    }
     setBusy(true);setProblem("");
     const result=await subscribePushDetailed();
     setBusy(false);
@@ -68,11 +83,12 @@ export default function PushPrompt() {
         <div className="rounded-full bg-primary/10 p-2"><Bell className="h-5 w-5 text-primary" /></div>
         <div className="flex-1">
           <h4 className="text-sm font-semibold">Get account updates</h4>
-          <p className="mt-1 text-xs text-muted-foreground">Sign in and allow browser notifications for application, residence and ResKonnect account updates. If you previously allowed access, you can finish the subscription here.</p>
+<p className="mt-1 text-xs text-muted-foreground">Receive applications, reservations and account alerts. Enable through your browser permission prompt, then ResKonnect verifies the saved subscription. You can adjust sounds in notification settings.</p>
           {problem&&<p role="alert" className="mt-2 text-xs text-amber-700 dark:text-amber-400">{problem}</p>}
           <div className="mt-3 flex gap-2">
-            <Button size="sm" onClick={() => void enable()} disabled={busy}>{!user?.id?"Sign in to enable":busy?"Enabling…":pushPermission()==="granted"?"Finish setup":"Enable"}</Button>
+            <Button size="sm" onClick={() => void enable()} disabled={busy}>{!user?.id?"Sign in to enable":busy?"Enabling…":pushPermission()==="denied"?"How to unblock":pushPermission()==="granted"?"Connect push":"Enable"}</Button>
             <Button size="sm" variant="ghost" onClick={dismiss}>Not now</Button>
+            {user?.id&&<Button size="sm" variant="outline" onClick={()=>navigate(location.pathname.startsWith("/admin")?"/admin/technology?tab=notifications":"/dashboard/updates")}>Settings</Button>}
           </div>
         </div>
         <button onClick={dismiss} className="text-muted-foreground hover:text-foreground" aria-label="Dismiss notification prompt"><X className="h-4 w-4" /></button>

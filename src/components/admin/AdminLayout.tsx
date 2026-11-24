@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3, BriefcaseBusiness, Building2, Cpu, Handshake, Home, Landmark, LayoutDashboard,
-  LogOut, Megaphone, MessageCircle, RefreshCw, Settings2, UsersRound, Paintbrush, ClipboardCheck, Sparkles
+  LogOut, Megaphone, MessageCircle, RefreshCw, Settings2, UsersRound, Paintbrush, ClipboardCheck, Sparkles, BellRing
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import DashboardUserManual from "@/components/manuals/DashboardUserManual";
@@ -157,6 +157,12 @@ const AdminLayout=({children}:AdminLayoutProps)=>{
           <SidebarTrigger/>
           <div className="flex min-w-0 flex-1 justify-center"><AdminOSCommandBar/></div>
           <div className="flex shrink-0 items-center gap-2">
+            <Link to="/admin/technology?tab=notifications"
+              aria-label="Notification preferences"
+              title="Notification preferences"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-muted">
+              <BellRing className="h-4 w-4" />
+            </Link>
             {isGodMode&&<AdminAccessControl/>}
             <DashboardUserManual role="admin" inline/>
             <ThemeToggle/>

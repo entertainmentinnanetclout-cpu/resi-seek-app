@@ -39,7 +39,7 @@ const TARGETS:Record<string,{label:string;tab:string;url?:string}>={
 };
 const mediaLinks=[
  ["News articles","/admin/media?tab=news"],["Events","/admin/media?tab=events"],
- ["Marketplace banners","/admin/media?tab=banners"],["Accommodation filters","/admin/accommodation?tab=configuration"],
+ ["Marketplace banners","/admin/media?tab=banners"],["Promotional pop-ups","/admin/media?tab=campaigns"],["Accommodation filters","/admin/accommodation?tab=configuration"],
  ["Accreditation checks","/admin/accommodation?tab=compliance"],
 ];
 

@@ -3,7 +3,8 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, Bot, BrainCircuit, Cable, ShieldCheck } from "lucide-react";
+import { Activity, Bot, BrainCircuit, Cable, ShieldCheck, BellRing } from "lucide-react";
+import NotificationSettings from "@/components/NotificationSettings";
 import AdminOSTwilioSetup from "@/components/admin/AdminOSTwilioSetup";
 import { AdminBackendHealthContent } from "./AdminBackendHealth";
 import { AdminSystemStatusContent } from "./AdminSystemStatus";
@@ -15,7 +16,7 @@ import DimphoReleaseControl from "@/components/admin/DimphoReleaseControl";
 export default function AdminTechnologySystems(){
   const [params,setParams]=useSearchParams();
   const tab=params.get("tab");
-  const active=["health","integrations","ai","release","advanced"].includes(tab||"")?String(tab):"health";
+  const active=["health","integrations","ai","release","advanced","notifications"].includes(tab||"")?String(tab):"health";
   const changeTab=(value:string)=>{const next=new URLSearchParams(params);next.set("tab",value);setParams(next);};
   return <AdminLayout>
     <SEO noIndex title="Technology & Systems | ResKonnect Admin" description="Platform health, AI runtime, integrations, system settings and release governance."/>
@@ -29,12 +30,14 @@ export default function AdminTechnologySystems(){
         <TabsList className="flex h-auto flex-wrap gap-1">
           <TabsTrigger value="health" className="gap-2"><Activity className="h-4 w-4"/>Platform Health</TabsTrigger>
           <TabsTrigger value="integrations" className="gap-2"><Cable className="h-4 w-4"/>Integrations</TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-2"><BellRing className="h-4 w-4"/>Notifications & Sounds</TabsTrigger>
           <TabsTrigger value="ai" className="gap-2"><BrainCircuit className="h-4 w-4"/>AI Operations</TabsTrigger>
           <TabsTrigger value="release" className="gap-2"><ShieldCheck className="h-4 w-4"/>Release Control</TabsTrigger>
           <TabsTrigger value="advanced" className="gap-2"><Bot className="h-4 w-4"/>Advanced AdminOS</TabsTrigger>
         </TabsList>
         <TabsContent value="health" className="space-y-5"><AdminBackendHealthContent/><AdminSystemStatusContent/></TabsContent>
         <TabsContent value="integrations"><AdminOSTwilioSetup/></TabsContent>
+        <TabsContent value="notifications"><div className="max-w-3xl"><NotificationSettings/></div></TabsContent>
         <TabsContent value="ai" className="space-y-5"><ResKonnectBrainControl/><DimphoIntelligenceStudio/></TabsContent>
         <TabsContent value="release"><DimphoReleaseControl/></TabsContent>
         <TabsContent value="advanced"><AdminOSMasterContent/></TabsContent>

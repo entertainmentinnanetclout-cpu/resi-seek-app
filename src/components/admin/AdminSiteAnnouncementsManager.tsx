@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BellRing, CalendarDays, Edit3, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
+import { BellRing, CalendarDays, Edit3, Eye, EyeOff, Plus, Trash2, Upload, Building2, Monitor, Smartphone, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -21,6 +23,12 @@ type Announcement = {
   cta_url: string | null;
   image_url: string | null;
   graphic_variant: string | null;
+  display_surface: "modal" | "corner";
+  width_px: number;
+  poster_only: boolean;
+  show_frequency: "once_per_session" | "once_per_day" | "once_per_campaign";
+  residence_id: string | null;
+  audience: "all"|"logged_in"|"visitors";
   is_active: boolean;
   dismissible: boolean;
   priority: number;
@@ -45,7 +53,13 @@ const emptyDraft: Draft = {
   cta_url: "/find",
   image_url: "",
   graphic_variant: "reskonnect",
-  is_active: true,
+  display_surface: "modal",
+  width_px: 400,
+  poster_only: true,
+  show_frequency: "once_per_day",
+  residence_id: null,
+  audience: "all",
+  is_active: false,
   dismissible: true,
   priority: 100,
   starts_at: null,
@@ -63,6 +77,11 @@ export default function AdminSiteAnnouncementsManager() {
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [saving, setSaving] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [uploading,setUploading]=useState(false);
+  const [residenceQuery,setResidenceQuery]=useState("");
+  const [residences,setResidences]=useState<Array<{id:string;name:string;slug:string|null;cover_image_url:string|null;image_url:string|null}>>([]);
+  const matchingResidences=useMemo(()=>residences.filter(x=>
+    x.name.toLowerCase().includes(residenceQuery.trim().toLowerCase())).slice(0,8),[residences,residenceQuery]);
 
   const db = supabase as any;
   const activeCount = useMemo(() => items.filter((x) => x.is_active).length, [items]);
@@ -75,9 +94,18 @@ export default function AdminSiteAnnouncementsManager() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    void load();
+    void (async()=>{
+      const {data,error}=await db.from("residences")
+        .select("id,name,slug,cover_image_url,image_url")
+        .eq("is_visible",true).order("name",{ascending:true}).limit(750);
+      if(!error&&Array.isArray(data))setResidences(data);
+    })();
+  }, []);
 
   const createNew = () => {
+    setResidenceQuery("");
     setEditingId(null);
     setDraft({ ...emptyDraft });
     setOpen(true);
@@ -94,6 +122,12 @@ export default function AdminSiteAnnouncementsManager() {
       cta_url: item.cta_url || "",
       image_url: item.image_url || "",
       graphic_variant: item.graphic_variant || "reskonnect",
+      display_surface:item.display_surface||"modal",
+      width_px:Number(item.width_px)||440,
+      poster_only:item.poster_only===true,
+      show_frequency:item.show_frequency||"once_per_day",
+      residence_id:item.residence_id||null,
+      audience:item.audience==="logged_in"||item.audience==="visitors"?item.audience:"all",
       is_active: item.is_active,
       dismissible: item.dismissible,
       priority: item.priority,
@@ -103,11 +137,55 @@ export default function AdminSiteAnnouncementsManager() {
     setOpen(true);
   };
 
+  const createSingleRoom=()=>{
+    setEditingId(null);setResidenceQuery("");
+    setDraft({...emptyDraft,title:"2027 Single Room Requests",
+      subtitle:"Your own space starts here",badge:"PRIVATE ROOM SUPPORT",
+      body:"Need a single room at any suitable residence? Share your details to join our single-room request list. Matches depend on actual availability.",
+      cta_label:"Request a single room",cta_url:"/single-room-waiting-list",
+      poster_only:true,width_px:420,is_active:false});
+    setOpen(true);
+  };
+  const selectResidence=(r:{id:string;name:string;slug:string|null;cover_image_url:string|null;image_url:string|null})=>{
+    setDraft(d=>({...d,residence_id:r.id,
+      title:r.name,badge:"FEATURED RESIDENCE",subtitle:"Explore this accommodation",
+      body:"View the latest residence details, room information and enquiry options. Availability and placement are not guaranteed.",
+      cta_label:"View residence",cta_url:`/find-my-res/${encodeURIComponent(r.slug||r.id)}`,
+      image_url:d.image_url||(r.cover_image_url||r.image_url||""),
+      poster_only:Boolean(d.image_url||r.cover_image_url||r.image_url)}));
+    setResidenceQuery(r.name);
+  };
+  const uploadPoster=async(file?:File)=>{
+    if(!file)return;
+    if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>6*1024*1024){
+      toast.error("Upload JPG, PNG or WebP artwork under 6 MB.");return;
+    }
+    setUploading(true);
+    try{
+      const {data:{user},error:authError}=await supabase.auth.getUser();
+      if(authError||!user)throw new Error("Sign in to upload promotion graphics.");
+      const extension=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";
+      const path=`promotions/${user.id}/${crypto.randomUUID()}.${extension}`;
+      const {error}=await supabase.storage.from("admin-images").upload(path,file,{upsert:false,contentType:file.type,cacheControl:"3600"});
+      if(error)throw error;
+      const publicUrl=supabase.storage.from("admin-images").getPublicUrl(path).data.publicUrl;
+      if(!publicUrl)throw new Error("The image was uploaded but its public URL is unavailable.");
+      setDraft(d=>({...d,image_url:publicUrl,poster_only:true}));
+      toast.success("Poster uploaded. Save the campaign to publish its settings.");
+    }catch(error:any){toast.error(error?.message||"Poster upload failed");}
+    finally{setUploading(false);}
+  };
+
   const save = async () => {
     if (!draft.title.trim() || !draft.body.trim()) {
       toast.error("Title and message are required");
       return;
     }
+    if(draft.cta_url&&!(draft.cta_url.startsWith("/")&&!draft.cta_url.startsWith("//"))&&
+      !/^https:\/\//i.test(draft.cta_url))return toast.error("Use a relative ResKonnect URL or full HTTPS link.");
+    if(draft.poster_only&&!draft.image_url?.trim())return toast.error("Upload or paste the poster image first, or turn off Poster-only.");
+    if(draft.starts_at&&draft.ends_at&&new Date(draft.starts_at)>=new Date(draft.ends_at))
+      return toast.error("The end time must come after the start time.");
     setSaving(true);
     const { data: auth } = await supabase.auth.getUser();
     const payload = {
@@ -118,6 +196,8 @@ export default function AdminSiteAnnouncementsManager() {
       cta_url: draft.cta_url?.trim() || null,
       image_url: draft.image_url?.trim() || null,
       priority: Number(draft.priority) || 0,
+      width_px:Math.min(760,Math.max(280,Math.round(Number(draft.width_px)||400))),
+      residence_id:draft.residence_id||null,
       updated_by: auth.user?.id || null,
       ...(editingId ? {} : { created_by: auth.user?.id || null }),
     };
@@ -166,10 +246,13 @@ export default function AdminSiteAnnouncementsManager() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="flex items-center gap-2"><BellRing className="h-5 w-5 text-primary" /><h2 className="text-2xl font-bold">Site Updates & Landing Popup</h2></div>
-          <p className="mt-1 text-sm text-muted-foreground">Create and schedule public updates with RG11 statement-risk governance. Partnership, government, pricing, legal and crisis-sensitive notices require Executive approval before activation.</p>
+          <div className="flex items-center gap-2"><BellRing className="h-5 w-5 text-primary" /><h2 className="text-2xl font-bold">Promotion Studio · pop-ups & residence campaigns</h2></div>
+          <p className="mt-1 text-sm text-muted-foreground">Upload the square poster, set the CTA, adjust size and schedule, or select a residence to promote. Use Hero Slides and Promotional Banners for wider placements. Risk-sensitive claims still require executive approval.</p>
         </div>
-        <Button onClick={createNew}><Plus className="mr-2 h-4 w-4" />New update</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={createSingleRoom}><Plus className="mr-2 h-4 w-4" />Single-room campaign</Button>
+          <Button onClick={createNew}><Plus className="mr-2 h-4 w-4" />New promotion</Button>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -192,6 +275,7 @@ export default function AdminSiteAnnouncementsManager() {
                     <Badge variant={item.risk_level === "red" ? "destructive" : "outline"}>{(item.risk_level || "green").toUpperCase()} risk</Badge>
                     {item.requires_executive_approval && <Badge variant="secondary">Approval: {(item.approval_status || "pending").replaceAll("_", " ")}</Badge>}
                     {item.badge && <Badge variant="outline">{item.badge}</Badge>}
+                    <Badge variant="outline">{item.display_surface==="corner"?"Floating ad":"Center popup"} · {item.width_px||440}px</Badge>
                     <span className="text-xs text-muted-foreground">Priority {item.priority}</span>
                   </div>
                   <h3 className="mt-2 font-bold">{item.title}</h3>
@@ -219,7 +303,7 @@ export default function AdminSiteAnnouncementsManager() {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-          <DialogHeader><DialogTitle>{editingId ? "Edit site update" : "Create site update"}</DialogTitle><DialogDescription>The popup uses ResKonnect branding automatically. Add an optional campaign image only when you have an approved graphic.</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>{editingId?"Edit campaign":"Create promotion"}</DialogTitle><DialogDescription>Upload your branded poster and set its placement, size, audience and schedule. Start disabled, then enable when ready.</DialogDescription></DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="space-y-2"><Label>Headline *</Label><Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="2027 accommodation reservations are now open" /></div>
             <div className="space-y-2"><Label>Subheading</Label><Input value={draft.subtitle || ""} onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })} /></div>
@@ -232,7 +316,70 @@ export default function AdminSiteAnnouncementsManager() {
               <div className="space-y-2"><Label>CTA label</Label><Input value={draft.cta_label || ""} onChange={(e) => setDraft({ ...draft, cta_label: e.target.value })} /></div>
               <div className="space-y-2"><Label>CTA link</Label><Input value={draft.cta_url || ""} onChange={(e) => setDraft({ ...draft, cta_url: e.target.value })} placeholder="/find?reserve=2027" /></div>
             </div>
-            <div className="space-y-2"><Label>Optional campaign image URL</Label><Input value={draft.image_url || ""} onChange={(e) => setDraft({ ...draft, image_url: e.target.value })} placeholder="Leave blank to use the premium ResKonnect graphic" /></div>
+            
+            <div className="rounded-2xl border border-primary/20 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div><Label className="text-base font-black">Campaign artwork</Label><p className="text-xs text-muted-foreground">Upload the square pop-up graphic; the image is displayed uncropped in poster mode.</p></div>
+                <label className="inline-flex cursor-pointer items-center rounded-lg border px-3 py-2 text-xs font-bold hover:bg-muted">
+                  <Upload className="mr-2 h-4 w-4"/>{uploading?"Uploading…":"Upload image"}
+                  <input className="sr-only" aria-label="Upload promotion artwork" type="file" accept="image/png,image/jpeg,image/webp" disabled={uploading} onChange={e=>{void uploadPoster(e.target.files?.[0]);e.target.value="";}}/>
+                </label>
+              </div>
+              <Input aria-label="Campaign image URL" value={draft.image_url||""} onChange={e=>setDraft({...draft,image_url:e.target.value})} placeholder="Or paste approved https:// image URL"/>
+              {draft.image_url&&<div className="mx-auto max-w-[220px] overflow-hidden rounded-xl border bg-muted/30"><img src={draft.image_url} alt="Current campaign artwork preview" className="max-h-[250px] w-full object-contain"/></div>}
+            </div>
+            <div className="rounded-2xl border p-4 space-y-3">
+              <Label className="flex items-center gap-2"><Building2 className="h-4 w-4"/>Feature a specific residence (optional)</Label>
+              <Input value={residenceQuery} onChange={e=>setResidenceQuery(e.target.value)} placeholder="Search published residence by name"/>
+              {residenceQuery.trim()&&<div className="max-h-40 space-y-1 overflow-y-auto">
+                {matchingResidences.map(r=><button key={r.id} type="button" className="w-full rounded-lg border px-3 py-2 text-left text-xs hover:bg-muted" onClick={()=>selectResidence(r)}>
+                  {r.name}{r.id===draft.residence_id&&" · Selected"}
+                </button>)}
+              </div>}
+              {draft.residence_id&&<Button type="button" variant="ghost" size="sm" onClick={()=>setDraft({...draft,residence_id:null})}>Clear residence targeting</Button>}
+              <p className="text-xs text-muted-foreground">Linking a residence does not claim it is paying, accredited, available or automatically approved.</p>
+            </div>
+            <div className="rounded-2xl border bg-muted/20 p-4 space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2"><Label>Audience</Label>
+                  <Select value={draft.audience} onValueChange={v=>setDraft({...draft,audience:v as Draft["audience"]})}>
+                    <SelectTrigger><SelectValue/></SelectTrigger><SelectContent>
+                      <SelectItem value="all">Everyone browsing</SelectItem>
+                      <SelectItem value="visitors">Signed-out visitors</SelectItem>
+                      <SelectItem value="logged_in">Signed-in users only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2"><Label>Where to display</Label>
+                  <Select value={draft.display_surface} onValueChange={v=>setDraft({...draft,display_surface:v as Draft["display_surface"]})}>
+                    <SelectTrigger><SelectValue/></SelectTrigger><SelectContent>
+                      <SelectItem value="modal">Center pop-up with soft backdrop</SelectItem>
+                      <SelectItem value="corner">Floating ad card · bottom right</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2"><Label>Repeat frequency</Label>
+                  <Select value={draft.show_frequency} onValueChange={v=>setDraft({...draft,show_frequency:v as Draft["show_frequency"]})}>
+                    <SelectTrigger><SelectValue/></SelectTrigger><SelectContent>
+                      <SelectItem value="once_per_session">Once per browser session</SelectItem>
+                      <SelectItem value="once_per_day">Once per 24 hours</SelectItem>
+                      <SelectItem value="once_per_campaign">Once for this version of campaign</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="campaign-width">Card maximum width: {draft.width_px}px</Label>
+                <input id="campaign-width" type="range" min={280} max={760} step={20} className="w-full accent-primary"
+                  value={draft.width_px} onChange={e=>setDraft({...draft,width_px:Number(e.target.value)})}/>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground"><Monitor className="h-3.5 w-3.5"/>Desktop {draft.width_px}px <Smartphone className="ml-2 h-3.5 w-3.5"/>Mobile clamps automatically to screen width</div>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <div><Label>Poster-only design</Label><p className="text-xs text-muted-foreground">Show the complete image with only the action button below. Perfect for your branded square graphic.</p></div>
+                <Switch checked={draft.poster_only} onCheckedChange={v=>setDraft({...draft,poster_only:v})}/>
+              </div>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2"><Label>Starts</Label><Input type="datetime-local" value={toLocalInput(draft.starts_at)} onChange={(e) => setDraft({ ...draft, starts_at: toIso(e.target.value) })} /></div>
               <div className="space-y-2"><Label>Ends</Label><Input type="datetime-local" value={toLocalInput(draft.ends_at)} onChange={(e) => setDraft({ ...draft, ends_at: toIso(e.target.value) })} /></div>
