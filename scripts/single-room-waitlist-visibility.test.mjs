@@ -30,6 +30,7 @@ test("the student landing and mobile home keep public single-room entry points",
  assert.match(student,/Preferred residence \(optional/);
  assert.match(student,/rk_join_single_room_waitlist/);
  assert.match(student,/rk_withdraw_single_room/);
+ assert.match(student,/\\[user\\?\\.id,waiting\\]/);
 });
 
 test("the student waitlist does not depend on unrelated feedback campaigns",()=>{
@@ -45,6 +46,7 @@ test("the student waitlist does not depend on unrelated feedback campaigns",()=>
 test("the same standalone waitlist is accessible from every admin discovery path",()=>{
  assert.match(app,/path="\/admin\/single-room-waiting-list"/);
  assert.match(app,/AdminSingleRoomWaitlist/);
+ assert.match(app,/path="\\/admin\\/single-room-waiting-list"[\\s\\S]*?<DepartmentRoute department="accommodation">/);
  assert.match(adminRoute,/AdminLayout/);
  assert.match(adminRoute,/SingleRoomWaitlistQueue/);
  assert.match(adminSidebar,/\/admin\/single-room-waiting-list/);
@@ -58,6 +60,8 @@ test("the same standalone waitlist is accessible from every admin discovery path
 test("admin loads only the private waitlist and does not silently show 0 after denied RLS",()=>{
  assert.match(admin,/rpc\("adminos_is_staff"\)/);
  assert.match(admin,/AAL2/);
+ assert.match(admin,/GodModeMfaGate mode="care"/);
+ assert.match(admin,/isGodMode/);
  assert.match(admin,/setAuthorized\(access\.data===true\)/);
  assert.match(admin,/readAllPages<WaitlistRecord>/);
  assert.match(admin,/from\("single_room_waitlist"\)/);
