@@ -171,3 +171,6 @@ verify_jwt = false
 
 [functions.seo-search-console-sync]
 verify_jwt = false
+
+[functions.notification-event]
+verify_jwt = false # SQL webhook uses Vault-backed HMAC validation
