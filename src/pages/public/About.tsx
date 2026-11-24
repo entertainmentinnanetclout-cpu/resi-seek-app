@@ -169,7 +169,7 @@ const About = () => (
               <div className="mt-8 flex items-start gap-3 rounded-2xl border border-white/15 bg-white/10 p-4">
                 <GraduationCap className="mt-0.5 h-6 w-6 shrink-0 text-amber-300" aria-hidden="true" />
                 <p className="text-sm leading-6 text-white/90">
-                  Founded and led by a <strong>Tshwane University of Technology marketing graduate.</strong> The founder’s identity remains private; the mission speaks for itself.
+                  Founded and led by a <strong>Tshwane University of Technology marketing graduate.</strong> Built from lived student experience, with a lasting commitment to making the journey easier for others.
                 </p>
               </div>
             </div>
