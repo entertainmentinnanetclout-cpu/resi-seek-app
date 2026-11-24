@@ -38,7 +38,7 @@ export async function ensureServiceWorker(): Promise<ServiceWorkerRegistration |
   if (isNativeShell() || typeof navigator === "undefined" || !("serviceWorker" in navigator)) return null;
   try {
     const existing = await navigator.serviceWorker.getRegistration("/");
-    if (existing) return existing;
+    if (existing) return await navigator.serviceWorker.ready;
     await navigator.serviceWorker.register("/sw.js", { scope: "/" });
     return await navigator.serviceWorker.ready;
   } catch (error) {
@@ -49,7 +49,11 @@ export async function ensureServiceWorker(): Promise<ServiceWorkerRegistration |
 
 export type PushSetupResult={ok:boolean;reason:string;permission:NotificationPermission|"unsupported"};
 export async function subscribePushDetailed(): Promise<PushSetupResult> {
-  if (!isPushSupported()) return {ok:false,reason:"This browser cannot register web push here. On iPhone, add ResKonnect to your Home Screen first.",permission:"unsupported"};
+  if (!isPushSupported()) return {ok:false,reason:"Web push is unavailable in this browser or app mode. On iPhone, first add ResKonnect to your Home Screen and open it from that icon.",permission:"unsupported"};
+  if(Notification.permission==="denied")return {
+    ok:false,reason:"Notifications are blocked in your browser's site settings. Enable them there and in your device's Notifications settings, then retry.",
+    permission:"denied"
+  };
 
   // IMPORTANT: invoke the browser permission request synchronously from the
   // Enable button gesture. Awaiting Supabase/network calls first loses user
@@ -90,11 +94,18 @@ export async function subscribePushDetailed(): Promise<PushSetupResult> {
       },
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
-    if (error) throw error;
+    if(error){
+      const context=(error as any)?.context;
+      let detail="";
+      try{const json=typeof context?.json==="function"?await context.json():null;detail=String(json?.error||"");}
+      catch{/* Some Edge errors do not have an HTTP response body. */}
+      throw new Error(detail||error.message||"Could not save the subscription");
+    }
     return {ok:true,reason:"Notifications enabled",permission};
   } catch (error) {
     console.error("[push] Subscription registration failed:", error);
-    return {ok:false,reason:"Permission was granted, but the subscription could not be saved. Retry or refresh the app.",permission};
+    const description=error instanceof Error?error.message:"Unknown subscription error";
+    return {ok:false,reason:`Browser permission is granted, but the device could not be registered: ${description}. Check network settings and retry.`,permission};
   }
 }
 
