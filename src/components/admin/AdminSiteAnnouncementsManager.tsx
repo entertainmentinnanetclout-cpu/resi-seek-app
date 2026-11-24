@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import {SitePromotionPresentation,type PromotionCardData} from "@/components/SiteAnnouncementPopup";
 import { toast } from "sonner";
 
 type Announcement = {
@@ -78,6 +79,9 @@ export default function AdminSiteAnnouncementsManager() {
   const [saving, setSaving] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [uploading,setUploading]=useState(false);
+  const [previewItem,setPreviewItem]=useState<PromotionCardData|null>(null);
+  const [previewDevice,setPreviewDevice]=useState<"desktop"|"mobile">("desktop");
+  const [previewFromEditor,setPreviewFromEditor]=useState(false);
   const [residenceQuery,setResidenceQuery]=useState("");
   const [residences,setResidences]=useState<Array<{id:string;name:string;slug:string|null;cover_image_url:string|null;image_url:string|null}>>([]);
   const matchingResidences=useMemo(()=>residences.filter(x=>
@@ -234,6 +238,18 @@ export default function AdminSiteAnnouncementsManager() {
     await load();
   };
 
+  const preview = (campaign:PromotionCardData, fromEditor=false) => {
+    setPreviewDevice("desktop");
+    setPreviewFromEditor(fromEditor);
+    setPreviewItem({...campaign});
+    if(fromEditor)setOpen(false);
+  };
+  const closePreview = () => {
+    setPreviewItem(null);
+    if(previewFromEditor)setOpen(true);
+    setPreviewFromEditor(false);
+  };
+
   const remove = async (item: Announcement) => {
     if (!window.confirm(`Delete “${item.title}”?`)) return;
     const { error } = await db.from("site_announcements").delete().eq("id", item.id);
@@ -292,7 +308,8 @@ export default function AdminSiteAnnouncementsManager() {
                     <Button size="sm" onClick={() => void approveAnnouncement(item, true, true)} disabled={approvingId === item.id}>Executive approve & activate</Button>
                   </>}
                   <Button size="sm" variant="outline" onClick={() => void toggle(item)}>{item.is_active ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}{item.is_active ? "Disable" : "Enable"}</Button>
-                  <Button size="sm" variant="outline" onClick={() => edit(item)}><Edit3 className="mr-2 h-4 w-4" />Edit</Button>
+                  <Button size="sm" variant="outline" onClick={() => preview(item)}><Eye className="mr-2 h-4 w-4" />Preview</Button>
+                   <Button size="sm" variant="outline" onClick={() => edit(item)}><Edit3 className="mr-2 h-4 w-4" />Edit</Button>
                   <Button size="sm" variant="outline" className="text-destructive" onClick={() => remove(item)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
                 </div>
               </div>
@@ -389,7 +406,31 @@ export default function AdminSiteAnnouncementsManager() {
               <div className="flex items-center justify-between gap-3"><div><Label>Dismissible</Label><p className="text-xs text-muted-foreground">Allow visitors to close it.</p></div><Switch checked={draft.dismissible} onCheckedChange={(v) => setDraft({ ...draft, dismissible: v })} /></div>
             </div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save update"}</Button></DialogFooter>
+          <DialogFooter className="flex-wrap gap-2">
+              <Button type="button" variant="secondary" onClick={()=>preview(draft,true)}><Eye className="mr-2 h-4 w-4"/>Preview pop-up</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save update"}</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!previewItem} onOpenChange={opened=>{if(!opened)closePreview();}}>
+        <DialogContent className="max-h-[94dvh] w-[min(96vw,1060px)] max-w-none overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Campaign preview · exactly as it appears on ResKonnect</DialogTitle>
+            <DialogDescription>Preview active or draft promotions before publishing. This view does not activate them, record impressions or navigate the CTA.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex gap-2">
+              <Button type="button" variant={previewDevice==="desktop"?"default":"outline"} size="sm" onClick={()=>setPreviewDevice("desktop")}><Monitor className="mr-1 h-4 w-4"/>Desktop</Button>
+              <Button type="button" variant={previewDevice==="mobile"?"default":"outline"} size="sm" onClick={()=>setPreviewDevice("mobile")}><Smartphone className="mr-1 h-4 w-4"/>Mobile</Button>
+            </div>
+            {previewItem&&<Badge variant="outline">Configured width: {Math.min(760,Math.max(280,Number(previewItem.width_px)||440))} px</Badge>}
+          </div>
+          {previewItem&&<div className="overflow-x-auto rounded-xl border" data-testid="promotion-live-preview">
+            <SitePromotionPresentation campaign={previewItem} preview device={previewDevice} onDismiss={closePreview}/>
+          </div>}
+          <p className="break-all text-xs text-muted-foreground">Button destination: {previewItem?.cta_url||"Not configured"}</p>
+          <DialogFooter><Button type="button" onClick={closePreview}>Close preview</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
