@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { nativeForegroundAlert, listenForNativeNotificationAction } from "@/lib/nativeNotifications";
 import { listenForBackgroundNotificationAction } from "@/lib/backgroundNotifications";
+import { playNoticeSound } from "@/lib/notificationSounds";
 
 export interface AccountNotification {
   id: string;
@@ -68,8 +69,11 @@ function connect(userId: string) {
         .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 100);
       publish(userId, { notifications: rows, unreadCount: rows.filter(n => !n.is_read).length, loading: false });
       if (payload.eventType === "INSERT" && !already && !next.is_read) {
-        const path = `/dashboard/updates?id=${encodeURIComponent(next.id)}`;
+        const requested=(next.metadata as any)?.route;
+        const path=typeof requested==="string"&&requested.startsWith("/")&&!requested.startsWith("//")&&!requested.startsWith("/\\")
+          ? requested:`/dashboard/updates?id=${encodeURIComponent(next.id)}`;
         toast.info(next.title || "New ResKonnect update", { description: "Open to read the complete account message.", action: { label: "Open", onClick: () => window.location.assign(path) } });
+        playNoticeSound(userId,next.type||"general");
         void nativeForegroundAlert(userId, next.id);
       }
     }).subscribe(status => { if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") void load(userId, true); });
