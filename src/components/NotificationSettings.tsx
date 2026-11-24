@@ -14,7 +14,7 @@ import {toast} from "sonner";
  * Sounds play only while this tab or installed web app is active.
  */
 export default function NotificationSettings(){
- const {user}=useAuth();
+ const {user,staffRole}=useAuth();
  const id=user?.id||"";
  const [preferences,setPreferences]=useState<NotificationSoundPreferences>(()=>readNotificationSounds(id));
  const [permission,setPermission]=useState<string>(()=>pushPermission());
@@ -23,6 +23,7 @@ export default function NotificationSettings(){
  const [keyReady,setKeyReady]=useState<boolean|null>(null);
  const [keyStatus,setKeyStatus]=useState("");
  const [busy,setBusy]=useState(false);
+ const [sendingTest,setSendingTest]=useState(false);
  const [error,setError]=useState("");
  useEffect(()=>{setPreferences(readNotificationSounds(id));setPermission(String(pushPermission()));},[id]);
  const check=async()=>{
@@ -86,6 +87,21 @@ export default function NotificationSettings(){
      toast.success("Test alert submitted to your device. This is a local test, not a server-push delivery confirmation.");
    }catch(error){toast.error(error instanceof Error?error.message:"The device could not display a test notification.");}
  };
+ const canTestRealPush=["admin","super_admin","developer","owner","operations_lead","system_operator","support_agent","growth_lead"].includes(String(staffRole||""));
+ const testRealPush=async()=>{
+   if(!id||!connected)return toast.info("Connect this browser first to test remote push delivery.");
+   setSendingTest(true);
+   try{
+     const {data,error}=await supabase.functions.invoke("send-push",{
+       body:{title:"ResKonnect delivery test",body:"This is a server-sent notification for your device.",user_ids:[id],url:"/dashboard/updates"}
+     });
+     if(error)throw error;
+     const sent=Number(data?.web?.sent||0);
+     if(sent>0)toast.success(`Push accepted for ${sent} browser subscription(s). Verify that your device displays it.`);
+     else toast.info("No browser push message was delivered. Check this browser's registration and the server delivery summary.");
+   }catch(error){toast.error(error instanceof Error?error.message:"Remote push test failed");}
+   finally{setSendingTest(false);}
+ };
  const supported=isPushSupported();
  return <section className="space-y-4 rounded-2xl border bg-card p-4 sm:p-5" aria-label="Notification permission and sound settings">
    <header className="flex flex-wrap items-start justify-between gap-3">
@@ -104,6 +120,7 @@ export default function NotificationSettings(){
        </Button>
        <Button size="sm" variant="outline" onClick={()=>void check()} disabled={checking}><RefreshCw className="mr-1.5 h-3.5 w-3.5"/>{checking?"Checking…":"Check connection"}</Button>
        <Button size="sm" variant="outline" disabled={!supported||permission!=="granted"} onClick={()=>void testBrowserAlert()}>Test alert + audio</Button>
+       {canTestRealPush&&<Button size="sm" variant="outline" disabled={!connected||sendingTest} onClick={()=>void testRealPush()}>{sendingTest?"Sending test…":"Test server push"}</Button>}
      </div>
      <p className="mt-2 text-xs leading-5 text-muted-foreground">
        {isNativeShell()?"For Android's native app, use Android notifications in your account settings. Browser push controls do not apply to the native shell.":
