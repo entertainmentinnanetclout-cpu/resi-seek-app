@@ -143,9 +143,8 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json(req, { error: "Method not allowed" }, 405);
   if (!SUPABASE_URL || !ANON_KEY || !SERVICE_KEY) return json(req, { error: "Push service unavailable" }, 503);
 
-  const webEnabled = Boolean(VAPID_PUBLIC && VAPID_PRIVATE);
+  let webEnabled = Boolean(VAPID_PUBLIC && VAPID_PRIVATE);
   const fcmEnabled = Boolean(getFirebaseAccount());
-  if (!webEnabled && !fcmEnabled) return json(req, { error: "No push transport is configured" }, 503);
 
   try {
     const authorization = req.headers.get("Authorization") || "";
@@ -166,6 +165,19 @@ Deno.serve(async (req) => {
       }
     }
     if (!authorized) return json(req, { error: "Staff authorization required" }, 403);
+
+    // Resolve the same signing pair as the browser's public-key endpoint.
+    // Vault contents are available only to service_role through a restricted RPC;
+    // no signing secret is ever sent to a browser or written to GitHub.
+    const { data: signingPair, error: signingError } = await service.rpc("rk_web_push_vapid_pair_for_sender");
+    if (!signingError && typeof signingPair?.publicKey === "string" && typeof signingPair?.privateKey === "string" &&
+        /^B[A-Za-z0-9_-]{86}$/.test(signingPair.publicKey) && signingPair.privateKey.length >= 40) {
+      webpush.setVapidDetails(VAPID_SUBJECT, signingPair.publicKey, signingPair.privateKey);
+      webEnabled = true;
+    } else if (signingError) {
+      console.warn("[send-push] Vault VAPID signing pair lookup failed:", signingError.code || "unavailable");
+    }
+    if (!webEnabled && !fcmEnabled) return json(req, { error: "Push transport needs an administrator configuration check" }, 503);
 
     const body = await req.json().catch(() => ({}));
     const title = String(body?.title || "").trim();
