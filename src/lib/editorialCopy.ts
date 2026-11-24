@@ -45,19 +45,21 @@ const descriptiveCompounds: readonly [RegExp,string][] = [
 /** Only conversational and editorial punctuation, never URL or code grammar. */
 export function polishEditorialCopy(value:string):string{
  if(!/[\u2010-\u2015]|\s-\s|[A-Za-z]-[A-Za-z]/.test(value))return value;
- // Leave URLs, email addresses and machine identifiers entirely untouched.
- if(/^\s*(?:https?:\/\/|mailto:|tel:|\S+@\S+|[a-f\d]{8}-[a-f\d-]{12,})/i.test(value))return value;
- let result=value;
- for(const [pattern,replacement] of descriptiveCompounds)result=result.replace(pattern,replacement);
- // Written ranges read naturally rather than as symbolic intervals.
- result=result.replace(/(\b\d{4})\s*[\u2012\u2013]\s*(\d{4}\b)/g,"$1 to $2");
- result=result.replace(/(\bR\s*\d[\d ,]*)\s*[\u2012\u2013]\s*(R\s*\d[\d ,]*)/g,"$1 to $2");
- // Remove editorial em/en dashes and spaced hyphen separators. Use a pause
- // rather than mechanical punctuation that feels like generated marketing.
- result=result.replace(/[ \t]*[\u2013\u2014][ \t]*/g,", ");
- result=result.replace(/([^\s])\s+-\s+([^\s])/g,"$1, $2");
- result=result.replace(/,\s*,/g,",").replace(/ {2,}/g," ");
- return result;
+ // Keep user-visible route paths, emails and URLs byte-for-byte intact,
+ // including when they occur within a longer sentence.
+ const technicalTokens=/(https?:\/\/[^\s"'<>]+|mailto:[^\s"'<>]+|tel:[^\s"'<>]+|\/[A-Za-z0-9][A-Za-z0-9\/_.?&=%+#-]*|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/g;
+ return value.split(technicalTokens).map((fragment,index)=>{
+  if(index%2===1)return fragment;
+  let result=fragment;
+  for(const [pattern,replacement] of descriptiveCompounds)result=result.replace(pattern,replacement);
+  // Written ranges read naturally instead of looking like symbolic intervals.
+  result=result.replace(/(\b\d{4})\s*[\u2012\u2013]\s*(\d{4}\b)/g,"$1 to $2");
+  result=result.replace(/(\bR\s*\d[\d ,]*)\s*[\u2012\u2013]\s*(R\s*\d[\d ,]*)/g,"$1 to $2");
+  // These are decorative separators, never mathematical minus signs.
+  result=result.replace(/[ \t]*[\u2013\u2014][ \t]*/g,", ");
+  result=result.replace(/([^\s])\s+-\s+([^\s])/g,"$1, $2");
+  return result.replace(/,\s*,/g,",").replace(/ {2,}/g," ");
+ }).join("");
 }
 
 const skipSelector=[
