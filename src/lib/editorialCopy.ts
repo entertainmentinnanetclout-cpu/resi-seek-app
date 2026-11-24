@@ -53,11 +53,11 @@ export function polishEditorialCopy(value:string):string{
   let result=fragment;
   for(const [pattern,replacement] of descriptiveCompounds)result=result.replace(pattern,replacement);
   // Written ranges read naturally instead of looking like symbolic intervals.
-  result=result.replace(/(\b\d{4})\s*[\u2012\u2013]\s*(\d{4}\b)/g,"$1 to $2");
-  result=result.replace(/(\bR\s*\d[\d ,]*)\s*[\u2012\u2013]\s*(R\s*\d[\d ,]*)/g,"$1 to $2");
+  result=result.replace(/(\b\d{4})\s*(?:[\u2012\u2013]|\s-\s)\s*(\d{4}\b)/g,"$1 to $2");
+  result=result.replace(/(\bR\s*\d[\d ,]*)\s*(?:[\u2012\u2013]|\s-\s)\s*(R\s*\d[\d ,]*)/g,"$1 to $2");
   // These are decorative separators, never mathematical minus signs.
   result=result.replace(/[ \t]*[\u2013\u2014][ \t]*/g,", ");
-  result=result.replace(/([^\s])\s+-\s+([^\s])/g,"$1, $2");
+  result=result.replace(/([^\s])\s+-\s+([^\s])/g,(whole,left:string,right:string)=>/\d/.test(left)&&/\d/.test(right)?whole:`${left}, ${right}`);
   return result.replace(/,\s*,/g,",").replace(/ {2,}/g," ");
  }).join("");
 }
