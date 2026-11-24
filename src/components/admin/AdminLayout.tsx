@@ -158,7 +158,7 @@ const AdminLayout=({children}:AdminLayoutProps)=>{
           <div className="flex min-w-0 flex-1 justify-center"><AdminOSCommandBar/></div>
           <div className="flex shrink-0 items-center gap-2">
             <Link to="/admin/technology?tab=notifications" aria-label="Notification and sound settings" title="Notification & sound settings" className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-muted"><BellRing className="h-4 w-4"/></Link>
-            {isGodMode&&<AdminAccessControl/>
+            {isGodMode&&<AdminAccessControl/>}
             <DashboardUserManual role="admin" inline/>
             <ThemeToggle/>
           </div>
