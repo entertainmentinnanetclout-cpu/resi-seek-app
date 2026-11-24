@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BRAND } from "@/constants/brand";
-import ayandaProfile from "@/assets/team/ayanda-founder-profile.webp";
 
 const values = [
   {
@@ -49,39 +48,11 @@ const audiences = [
   { icon: BriefcaseBusiness, title: "Businesses & partners", text: "Practical ways to connect accommodation, work-integrated learning, recruitment, services and innovation to the student market." },
 ];
 
-const team = [
-  {
-    name: "Ayanda Lawrence Msizi Dube",
-    role: "Founder & Executive Director",
-    image: ayandaProfile,
-    initials: "AD",
-    description: "Founder of ResKonnect and product lead behind its student-facing digital systems, with a focus on turning everyday student challenges into scalable tools.",
-    statement:
-      "We are building more than apps. We are building intellectual infrastructure — practical tools that help young people understand their options, strengthen digital confidence, develop leadership capacity and participate meaningfully in the Fourth Industrial Revolution. Opportunity should be easier to find, easier to understand and easier to act on.",
-  },
-  {
-    name: "Big Boy Mapanga",
-    role: "Co-Founder",
-    image: null,
-    initials: "BM",
-    description: "Joined the ResKonnect journey as a co-founder, supporting student engagement, community activation, outreach and the growth of practical student-centred services.",
-    statement: null,
-  },
-  {
-    name: "Obakeng Junior Moswetsi",
-    role: "Junior Developer & Auditor",
-    image: null,
-    initials: "OM",
-    description: "Supports development, testing, quality assurance and system auditing as ResKonnect continues to strengthen its digital products and operational reliability.",
-    statement: null,
-  },
-];
-
 const About = () => (
   <div className="flex min-h-screen flex-col bg-background text-foreground">
     <SEO
-      title="About ResKonnect | Youth Innovation, Digital Tools & Student Opportunity"
-      description="Meet the ResKonnect team and learn about our mission to equip students and communities with practical digital tools for living, learning, opportunity and Fourth Industrial Revolution readiness."
+      title="Our Story | ResKonnect — Born from a Student’s Real-Life Struggle"
+      description="ResKonnect began when a TUT student lost NSFAS funding and stable accommodation in their final year. Discover the real experience that inspired a lasting student-first solution."
       canonicalPath="/about"
     />
     <SiteHeader />
@@ -92,10 +63,10 @@ const About = () => (
           <div className="max-w-4xl">
             <Badge className="rounded-full px-3 py-1">About ResKonnect</Badge>
             <h1 className="mt-6 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-              Building practical digital tools for a more capable generation.
+              Built from a student’s hardest chapter. Made for brighter futures.
             </h1>
             <p className="mt-6 max-w-3xl text-base leading-8 text-muted-foreground sm:text-lg">
-              ResKonnect is a youth-led innovation platform focused on making important parts of student and everyday life easier to navigate. We connect living, applications, opportunity and digital support so that people can move from information to action with greater confidence.
+              ResKonnect did not begin with a boardroom idea. It grew from the real experience of losing financial support and a safe place to stay while trying to finish university, far from home. Today, that experience drives practical support for students navigating accommodation, applications and opportunity.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg"><Link to="/get-started">Explore ResKonnect <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
@@ -182,38 +153,49 @@ const About = () => (
         </div>
       </section>
 
-      <section className="py-14 md:py-20">
+      <section aria-labelledby="our-origin-heading" className="relative isolate overflow-hidden py-16 md:py-24">
+        <div className="pointer-events-none absolute -right-32 top-0 -z-10 h-96 w-96 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <Badge variant="outline" className="rounded-full">Founding team</Badge>
-            <h2 className="mt-4 text-3xl font-black">People building the vision</h2>
-            <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-              ResKonnect is being built by a young team combining product development, student engagement, operations and quality assurance.
-            </p>
-          </div>
+          <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+            <div className="rounded-[32px] border border-primary/20 bg-gradient-to-br from-[#061633] via-[#123f82] to-[#0b274a] p-8 text-white shadow-2xl sm:p-10">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-300">The story behind ResKonnect</p>
+              <h2 id="our-origin-heading" className="mt-5 text-3xl font-black leading-tight tracking-tight sm:text-4xl">
+                Born from a struggle. Built so another student doesn’t have to face it alone.
+              </h2>
+              <div className="mt-8 h-1.5 w-20 rounded-full bg-amber-400" aria-hidden="true" />
+              <p className="mt-7 text-lg leading-8 text-white/90">
+                Some ideas are born from opportunity. Others are born from the moment you realise how difficult life can become when support disappears.
+              </p>
+              <div className="mt-8 flex items-start gap-3 rounded-2xl border border-white/15 bg-white/10 p-4">
+                <GraduationCap className="mt-0.5 h-6 w-6 shrink-0 text-amber-300" aria-hidden="true" />
+                <p className="text-sm leading-6 text-white/90">
+                  Founded and led by a <strong>Tshwane University of Technology marketing graduate.</strong> Built from lived student experience, with a lasting commitment to making the journey easier for others.
+                </p>
+              </div>
+            </div>
 
-          <div className="mx-auto mt-10 grid max-w-6xl gap-6 md:grid-cols-3">
-            {team.map((member) => (
-              <Card key={member.name} className="overflow-hidden">
-                <CardContent className="flex h-full flex-col p-6 text-center">
-                  {member.image ? (
-                    <img src={member.image} alt={`${member.name}, ${member.role}`} className="mx-auto h-36 w-36 rounded-full border-4 border-background object-cover shadow-lg ring-2 ring-primary/20" />
-                  ) : (
-                    <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-full border-4 border-background bg-primary/10 text-3xl font-black text-primary shadow-lg ring-2 ring-primary/20">{member.initials}</div>
-                  )}
-                  <h3 className="mt-5 text-xl font-black">{member.name}</h3>
-                  <p className="mt-1 text-sm font-semibold text-primary">{member.role}</p>
-                  <p className="mt-4 text-sm leading-6 text-muted-foreground">{member.description}</p>
-                  <div className="mt-5 border-t pt-5 text-left">
-                    {member.statement ? (
-                      <p className="text-sm italic leading-6 text-foreground/85">“{member.statement}”</p>
-                    ) : (
-                      <p className="text-xs leading-5 text-muted-foreground">Personal profile image and team statement will be added once the approved material is supplied.</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            <div className="space-y-5">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">A real problem. A reason to keep building.</p>
+              <h3 className="text-2xl font-black leading-tight sm:text-3xl">
+                In the final year, the funding was gone. Home was far away. A place to stay was no longer certain.
+              </h3>
+              <p className="text-base leading-8 text-muted-foreground">
+                In the founder’s final year at university, NSFAS funding fell away. Far from home, without secure student accommodation or the financial support needed to carry on with peace of mind, the dream of completing an education became a daily struggle for stability.
+              </p>
+              <p className="text-base leading-8 text-muted-foreground">
+                But that difficult chapter planted something lasting: a question about every other student caught between ambition and survival. How many young people are trying to stay in education while worrying about where they will sleep, how they will afford to live, and whether they will get the chance to finish?
+              </p>
+              <p className="text-base leading-8 text-muted-foreground">
+                <strong className="text-foreground">That is where ResKonnect began.</strong> Not as a passing trend, but as a response to a problem experienced first-hand. The platform connects students to accommodation, clearer applications and opportunities, with a commitment to making those journeys simpler, more dignified and more human.
+              </p>
+              <p className="text-base leading-8 text-muted-foreground">
+                The challenge did not disappear when one student’s final year ended. It continues to affect students across South Africa. That is the foundation of ResKonnect’s long-term purpose: as long as real barriers stand between a student and their future, there is a reason to keep building solutions.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-3">
+                <Button asChild size="lg" className="rounded-full"><Link to="/findmyres">Find student accommodation <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+                <Button asChild size="lg" variant="outline" className="rounded-full"><Link to="/get-started">Explore student services</Link></Button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
