@@ -484,7 +484,7 @@ const Landing = () => {
           <SeoInternalLinks
             heading="Explore ResKonnect"
             links={[
-              { label: "Find My Res", to: "/findmyres", description: "AI-assisted student accommodation discovery with ResMap." },
+              { label: "Find My Res", to: "/findmyres", description: "AI supported student accommodation discovery with ResMap." },
               { label: "Student accommodation", to: "/student-accommodation", description: "Student housing discovery and placement support." },
               { label: "Pretoria West accommodation", to: "/student-accommodation/pretoria-west", description: "Rooms in one of the busiest student areas." },
               { label: "Accommodation near TUT", to: "/student-accommodation/near-tut", description: "Mapped options around TUT campuses." },
