@@ -133,7 +133,7 @@ export default function SiteAnnouncementPopup({previewCampaign,onPreviewClose}:{
       <X className="h-5 w-5"/></button>}
     {activeCampaign.image_url?(
       <div className={`relative overflow-hidden ${isPoster?"bg-[#061633]":"h-36 bg-muted sm:h-48"}`}>
-        <img src={activeCampaign.image_url} alt={isPoster?campaign.title:""}
+        <img src={activeCampaign.image_url} alt={isPoster?activeCampaign.title:""}
           className={isPoster?"block max-h-[min(66dvh,620px)] w-full object-contain":"h-full w-full object-cover"}/>
         {!isPoster&&<div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"/>}
       </div>
