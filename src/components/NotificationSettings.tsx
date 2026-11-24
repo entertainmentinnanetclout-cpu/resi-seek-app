@@ -4,7 +4,7 @@ import {useAuth} from "@/contexts/AuthContext";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
 import {supabase} from "@/integrations/supabase/client";
-import {isNativeShell,isPushSupported,pushPermission,subscribePushDetailed} from "@/lib/push";
+import {isNativeShell,isPushSupported,pushPermission,subscribePushDetailed,ensureServiceWorker} from "@/lib/push";
 import {categories,categoryLabels,tones,toneLabels,
   readNotificationSounds,saveNotificationSounds,playNotificationTone,
   type NotificationSoundPreferences,type AlertTone} from "@/lib/notificationSounds";
@@ -58,6 +58,16 @@ export default function NotificationSettings(){
   const ok=await playNotificationTone(tone,true);
   if(!ok&&tone!=="off")toast.info("Audio is unavailable or blocked on this device; check browser sound permissions.");
  };
+ const testDesktopNotification=async()=>{
+  if(!isPushSupported()||Notification.permission!=="granted")return toast.error("First enable browser notifications in this device settings.");
+  try{
+   const reg=await ensureServiceWorker();
+   if(!reg)throw new Error("The service worker is unavailable.");
+   await reg.showNotification("ResKonnect test notification",{body:"Your device is ready to display notifications while ResKonnect is connected.",icon:"/icon-192.png",badge:"/icon-192.png",tag:"rk-notification-test",data:{url:"/dashboard/updates"}});
+   if(preferences.enabled)await testSound(preferences.tones.general);
+   toast.success("Test notification displayed. Device audio must also be enabled for sound.");
+  }catch(e:any){toast.error(e?.message||"The system blocked this test notification.");}
+ };
  const supported=isPushSupported();
  return <section className="space-y-4 rounded-2xl border bg-card p-4 sm:p-5" aria-label="Notification permission and sound settings">
    <header className="flex flex-wrap items-start justify-between gap-3">
@@ -72,6 +82,7 @@ export default function NotificationSettings(){
          {busy?"Connecting…":permission==="granted"?"Connect / repair notifications":"Enable browser notifications"}
        </Button>
        <Button size="sm" variant="outline" onClick={()=>void check()} disabled={checking}><RefreshCw className="mr-1.5 h-3.5 w-3.5"/>{checking?"Checking…":"Check connection"}</Button>
+       <Button size="sm" variant="outline" disabled={permission!=="granted"||!supported} onClick={()=>void testDesktopNotification()}>Test system alert + sound</Button>
      </div>
      <p className="mt-2 text-xs leading-5 text-muted-foreground">
        {isNativeShell()?"For Android's native app, use Android notifications in your account settings. Browser push controls do not apply to the native shell.":
@@ -81,6 +92,7 @@ export default function NotificationSettings(){
      </p>
      {error&&<p role="alert" className="mt-2 text-xs font-semibold text-amber-700">{error}</p>}
      {permission==="granted"&&!connected&&<p className="mt-2 text-xs font-semibold text-amber-700">Permission is granted, but the subscription is not yet verified on ResKonnect. Use Connect / repair.</p>}
+     <p className="mt-2 text-xs text-muted-foreground">You can enable and preview in-app tones independently of push registration. Use “Test system alert + sound” after granting device permission.</p>
    </div>
    <div className="space-y-3 rounded-xl border p-3">
      <div className="flex flex-wrap items-center justify-between gap-3">
