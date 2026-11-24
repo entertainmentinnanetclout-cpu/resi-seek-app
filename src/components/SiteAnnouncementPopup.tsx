@@ -130,10 +130,12 @@ export function SitePromotionPresentation({
       <a href={action.url} target="_blank" rel="noopener noreferrer">{campaign.cta_label}<ArrowRight className="ml-2 h-4 w-4"/></a></Button>
  ):null;
  return <div
-   className={corner
+   className={preview
+    ?`relative flex w-full ${device==="mobile"?"min-h-[620px]":"min-h-[580px]"} ${corner?"items-end justify-end":"items-center justify-center"} bg-[#07172d] p-3 sm:p-5`
+    :corner
     ?"pointer-events-none fixed inset-0 z-[120] flex items-end justify-end p-3 sm:p-5"
     :"fixed inset-0 z-[120] flex items-center justify-center bg-black/55 p-3 backdrop-blur-sm"}
-   role="presentation">
+   role="presentation" style={preview?{maxWidth:device==="mobile"?390:960,margin:"auto"}:undefined}>
    {closeAllowed&&!corner&&!preview&&<button type="button" onClick={dismiss}
      aria-label="Close promotion backdrop" className="absolute inset-0" tabIndex={-1}/>}
    <section role={preview?"group":"dialog"} aria-modal={!preview&&!corner} aria-label={campaign.title}
