@@ -4,7 +4,7 @@ import {useAuth} from "@/contexts/AuthContext";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
 import {supabase} from "@/integrations/supabase/client";
-import {isNativeShell,isPushSupported,pushPermission,subscribePushDetailed} from "@/lib/push";
+import {checkPushKeyAvailability,ensureServiceWorker,isNativeShell,isPushSupported,pushPermission,subscribePushDetailed} from "@/lib/push";
 import {categories,categoryLabels,tones,toneLabels,
   readNotificationSounds,saveNotificationSounds,playNotificationTone,
   type NotificationSoundPreferences,type AlertTone} from "@/lib/notificationSounds";
@@ -20,6 +20,8 @@ export default function NotificationSettings(){
  const [permission,setPermission]=useState<string>(()=>pushPermission());
  const [connected,setConnected]=useState(false);
  const [checking,setChecking]=useState(false);
+ const [keyReady,setKeyReady]=useState<boolean|null>(null);
+ const [keyStatus,setKeyStatus]=useState("");
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
  useEffect(()=>{setPreferences(readNotificationSounds(id));setPermission(String(pushPermission()));},[id]);
@@ -27,6 +29,11 @@ export default function NotificationSettings(){
   setChecking(true);
   try{
    setPermission(String(pushPermission()));
+   if(isPushSupported()){
+     const key=await checkPushKeyAvailability();
+     setKeyReady(key.ready);
+     setKeyStatus(key.reason);
+   }
    if(!isPushSupported()||!user?.id){setConnected(false);return;}
    const reg=await navigator.serviceWorker.getRegistration("/");
    const sub=await reg?.pushManager.getSubscription();
@@ -50,7 +57,9 @@ export default function NotificationSettings(){
   const result=await subscribePushDetailed();
   setPermission(String(result.permission));
   setBusy(false);
-  if(!result.ok){setError(result.reason);setConnected(false);return;}
+  if(!result.ok){setError(result.reason);setConnected(false);void check();return;}
+  setKeyReady(true);
+  setKeyStatus("Web Push key available");
   setConnected(true);
   toast.success("Browser notification subscription registered.");
  };
@@ -58,13 +67,33 @@ export default function NotificationSettings(){
   const ok=await playNotificationTone(tone,true);
   if(!ok&&tone!=="off")toast.info("Audio is unavailable or blocked on this device; check browser sound permissions.");
  };
+ const testBrowserAlert=async()=>{
+   if(!isPushSupported()||pushPermission()!=="granted"){
+     toast.info("Allow notifications in your browser first, then use this test.");
+     return;
+   }
+   try{
+     const reg=await ensureServiceWorker();
+     if(!reg)throw new Error("The notification service worker has not started");
+     await reg.showNotification("ResKonnect test alert",{
+       body:"This test checks your browser and operating-system notification settings.",
+       icon:"/icon-192.png",
+       tag:"rk-notification-local-test",
+     });
+     if(preferences.enabled)await playNotificationTone(preferences.tones.general,true);
+     toast.success("Test alert submitted to your device. This is a local test, not a server-push delivery confirmation.");
+   }catch(error){toast.error(error instanceof Error?error.message:"The device could not display a test notification.");}
+ };
  const supported=isPushSupported();
  return <section className="space-y-4 rounded-2xl border bg-card p-4 sm:p-5" aria-label="Notification permission and sound settings">
    <header className="flex flex-wrap items-start justify-between gap-3">
      <div><div className="flex items-center gap-2"><BellRing className="h-5 w-5 text-primary"/><h2 className="text-lg font-black">Notification preferences</h2></div>
        <p className="mt-1 text-xs leading-5 text-muted-foreground">Control browser alerts and separate sounds for applications, reservations and student enquiries. Settings are saved on this device.</p>
      </div>
-     <Badge variant={connected?"default":"secondary"}>{connected?"Push connected":permission==="denied"?"Blocked in browser":supported?"Setup needed":"Browser unavailable"}</Badge>
+     <div className="flex flex-wrap gap-2">
+       <Badge variant={keyReady===false?"destructive":"secondary"}>{keyReady===null?"Checking server key":keyReady?"Push key ready":"Push key unavailable"}</Badge>
+       <Badge variant={connected?"default":"secondary"}>{connected?"Push connected":permission==="denied"?"Blocked in browser":supported?"Setup needed":"Browser unavailable"}</Badge>
+     </div>
    </header>
    <div className="rounded-xl border bg-muted/25 p-3">
      <div className="flex flex-wrap items-center gap-2">
@@ -72,6 +101,7 @@ export default function NotificationSettings(){
          {busy?"Connecting…":permission==="granted"?"Connect / repair notifications":"Enable browser notifications"}
        </Button>
        <Button size="sm" variant="outline" onClick={()=>void check()} disabled={checking}><RefreshCw className="mr-1.5 h-3.5 w-3.5"/>{checking?"Checking…":"Check connection"}</Button>
+       <Button size="sm" variant="outline" disabled={!supported||permission!=="granted"} onClick={()=>void testBrowserAlert()}>Test alert + audio</Button>
      </div>
      <p className="mt-2 text-xs leading-5 text-muted-foreground">
        {isNativeShell()?"For Android's native app, use Android notifications in your account settings. Browser push controls do not apply to the native shell.":
@@ -79,6 +109,8 @@ export default function NotificationSettings(){
        permission==="denied"?"Your browser has already blocked this site. Change permission in the browser's site settings and your laptop's System Settings → Notifications, then return and retry.":
        "Tap Enable to request your browser's permission. You must approve the system prompt; a website cannot switch notification permission on for you."}
      </p>
+     {keyReady===false&&<p role="alert" className="mt-2 text-xs font-semibold text-destructive">{keyStatus}</p>}
+     {keyReady===true&&<p className="mt-2 text-xs text-muted-foreground">Server signing key is configured. Browser permission and successful subscription are checked separately.</p>}
      {error&&<p role="alert" className="mt-2 text-xs font-semibold text-amber-700">{error}</p>}
      {permission==="granted"&&!connected&&<p className="mt-2 text-xs font-semibold text-amber-700">Permission is granted, but the subscription is not yet verified on ResKonnect. Use Connect / repair.</p>}
    </div>
