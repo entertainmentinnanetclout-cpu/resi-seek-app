@@ -27,6 +27,8 @@ import { AdminNewsContent } from "./AdminNews";
 import { AdminEventsContent } from "./AdminEvents";
 import { AdminMarketplaceBannersContent } from "./AdminMarketplaceBanners";
 import { AdminCategoryCardsContent } from "./AdminCategoryCards";
+import AdminSiteAnnouncementsManager from "@/components/admin/AdminSiteAnnouncementsManager";
+import { Megaphone } from "lucide-react";
 import { formatDistanceToNow, format, isPast, isFuture } from "date-fns";
 
 interface MediaStats {
@@ -48,6 +50,7 @@ interface RecentItem {
 const tabs = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
   { value: "slides", label: "Hero Slides", icon: Image },
+  { value: "campaigns", label: "Promo pop-ups", icon: Megaphone },
   { value: "banners", label: "Promotional Banners", icon: Image },
   { value: "category-cards", label: "Category Cards", icon: LayoutDashboard },
   { value: "news", label: "News", icon: Newspaper },
@@ -356,6 +359,9 @@ export const AdminMediaHubContent = () => {
                   <Image className="w-4 h-4 text-blue-500" />
                   Add Hero Slide
                 </Button>
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setSearchParams({tab:"campaigns"})}>
+                  <Megaphone className="h-4 w-4 text-primary"/>Create Pop-up / Residence Ad
+                </Button>
                 <Button
                   variant="outline"
                   className="w-full justify-start gap-2"
@@ -477,6 +483,14 @@ export const AdminMediaHubContent = () => {
 
           <TabsContent value="overview">{renderOverview()}</TabsContent>
           <TabsContent value="slides"><AdminSlidesContent /></TabsContent>
+          <TabsContent value="campaigns" className="space-y-4">
+            <div className="rounded-2xl border bg-primary/[0.035] p-4">
+              <p className="font-black">One promotion system, multiple placements</p>
+              <p className="mt-1 text-sm text-muted-foreground">Create square poster pop-ups or floating residence advertisements here. Hero Slides and Promotional Banners stay in their existing tabs and share the same campaign image uploads.</p>
+              <div className="mt-3 flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={()=>setSearchParams({tab:"slides"})}>Manage 16:9 hero slides</Button><Button variant="outline" size="sm" onClick={()=>setSearchParams({tab:"banners"})}>Manage promotional banners</Button></div>
+            </div>
+            <AdminSiteAnnouncementsManager/>
+          </TabsContent>
           <TabsContent value="banners"><AdminMarketplaceBannersContent /></TabsContent>
           <TabsContent value="category-cards"><AdminCategoryCardsContent /></TabsContent>
           <TabsContent value="news"><AdminNewsContent /></TabsContent>
