@@ -28,6 +28,7 @@ type Announcement = {
   poster_only: boolean;
   show_frequency: "once_per_session" | "once_per_day" | "once_per_campaign";
   residence_id: string | null;
+  audience: "all"|"logged_in"|"visitors";
   is_active: boolean;
   dismissible: boolean;
   priority: number;
@@ -57,6 +58,7 @@ const emptyDraft: Draft = {
   poster_only: true,
   show_frequency: "once_per_day",
   residence_id: null,
+  audience: "all",
   is_active: false,
   dismissible: true,
   priority: 100,
@@ -125,6 +127,7 @@ export default function AdminSiteAnnouncementsManager() {
       poster_only:item.poster_only===true,
       show_frequency:item.show_frequency||"once_per_day",
       residence_id:item.residence_id||null,
+      audience:item.audience==="logged_in"||item.audience==="visitors"?item.audience:"all",
       is_active: item.is_active,
       dismissible: item.dismissible,
       priority: item.priority,
@@ -338,6 +341,15 @@ export default function AdminSiteAnnouncementsManager() {
             </div>
             <div className="rounded-2xl border bg-muted/20 p-4 space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2"><Label>Audience</Label>
+                  <Select value={draft.audience} onValueChange={v=>setDraft({...draft,audience:v as Draft["audience"]})}>
+                    <SelectTrigger><SelectValue/></SelectTrigger><SelectContent>
+                      <SelectItem value="all">Everyone browsing</SelectItem>
+                      <SelectItem value="visitors">Signed-out visitors</SelectItem>
+                      <SelectItem value="logged_in">Signed-in users only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2"><Label>Where to display</Label>
                   <Select value={draft.display_surface} onValueChange={v=>setDraft({...draft,display_surface:v as Draft["display_surface"]})}>
                     <SelectTrigger><SelectValue/></SelectTrigger><SelectContent>
