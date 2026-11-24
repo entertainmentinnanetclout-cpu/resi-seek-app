@@ -4,7 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 const destinations = [
   { path: "/findmyres", title: "Find My Res", description: "Search student accommodation and available rooms" },
   { path: "/my-applications", title: "My applications", description: "Track residence applications and next steps" },
-  { path: "/student-care", title: "Student care", description: "Residence feedback and single-room waiting list" },
+  { path: "/single-room-waiting-list", title: "Single-room waiting list", description: "Request a single room at any suitable residence" },
+  { path: "/student-care", title: "Student care", description: "Residence feedback and student support" },
   { path: "/application-assistance", title: "Application assistance", description: "Get help with university and TVET applications" },
   { path: "/opportunities", title: "Opportunities", description: "Discover WIL, internships and other opportunities" },
   { path: "/profile", title: "My profile", description: "Manage your details and documents" },
