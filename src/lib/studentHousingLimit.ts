@@ -8,9 +8,12 @@ export type HousingChoice={allowed:boolean;reason:string;slotsUsed:number};
  * Authoritative, race-safe enforcement is done in the database trigger.
  */
 export async function checkStudentHousingChoice(userId:string,residenceId:string,academicYear:number,kind:Kind):Promise<HousingChoice>{
+ // Production generated schema is very large; avoid recursively instantiating
+ // the full Supabase query generic for this narrow, read-only preflight.
+ const db=supabase as any;
  const [a,b]=await Promise.all([
-  supabase.from("applications").select("residence_id,status").eq("user_id",userId).eq("academic_year",academicYear),
-  (supabase as any).from("accommodation_reservations").select("residence_id,status").eq("user_id",userId).eq("academic_year",academicYear),
+  db.from("applications").select("residence_id,status").eq("user_id",userId).eq("academic_year",academicYear),
+  db.from("accommodation_reservations").select("residence_id,status").eq("user_id",userId).eq("academic_year",academicYear),
  ]);
  if(a.error||b.error)return {allowed:false,reason:"Could not verify your existing accommodation requests. Refresh your dashboard and try again.",slotsUsed:0};
  const active=(rows:any[])=>rows.filter(r=>r.residence_id&&!CLOSED.has(String(r.status||"").toLowerCase()));
