@@ -1,7 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {polishEditorialCopy} from "../src/lib/editorialCopy.ts";
+import typescript from "typescript";
+
+// This suite also runs on Node 20 (SEO gate), which cannot import TS natively.
+// Transpile the actual production module in memory, without duplicating logic.
+const tsSource=readFileSync(new URL("../src/lib/editorialCopy.ts",import.meta.url),"utf8");
+const compiled=typescript.transpileModule(tsSource,{
+ compilerOptions:{target:typescript.ScriptTarget.ES2022,module:typescript.ModuleKind.ESNext},
+});
+const {polishEditorialCopy}=await import(`data:text/javascript;base64,${Buffer.from(compiled.outputText).toString("base64")}`);
 
 const read=(path)=>readFileSync(path,"utf8");
 
