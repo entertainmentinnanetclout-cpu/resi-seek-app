@@ -140,7 +140,7 @@ export function SitePromotionPresentation({
      aria-label="Close promotion backdrop" className="absolute inset-0" tabIndex={-1}/>}
    <section role={preview?"group":"dialog"} aria-modal={!preview&&!corner} aria-label={campaign.title}
     className={`pointer-events-auto relative isolate w-full overflow-x-hidden overflow-y-auto rounded-2xl border border-border/40 bg-background shadow-2xl ${corner?"max-h-[min(78dvh,690px)]":"max-h-[calc(100dvh-1.5rem)]"}`}
-    style={{maxWidth:`min(${width}px,100%)`}}>
+    style={{maxWidth:`min(${width}px,${preview?"100%":"calc(100vw - 24px)"})`}}>
     {closeAllowed&&<button type="button" onClick={dismiss}
       aria-label="Close promotion" className="absolute right-2 top-2 z-20 grid h-9 w-9 place-items-center rounded-full bg-black/65 text-white shadow-lg backdrop-blur hover:bg-black/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
       <X className="h-5 w-5"/></button>}
