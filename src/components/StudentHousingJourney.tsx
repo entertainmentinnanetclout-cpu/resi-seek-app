@@ -95,10 +95,10 @@ export default function StudentHousingJourney(){
    </div>
    <div className="px-4 pb-5 sm:px-6">
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-primary/[.04] p-4">
-     <div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary"/><div><p className="text-sm font-black">{slots>=destinations?"Your residence selection limit is reached":`${Math.max(0,destinations-slots)} residence ${destinations-slots===1?"choice":"choices"} remaining`}</p><p className="text-xs text-muted-foreground">A reservation and application for the same residence use one selection, not two.</p></div></div>
+     <div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary"/><div><p className="text-sm font-black">{slots>destinations?`${slots} previously saved residence choices — new selections paused`:slots===destinations?"Your residence selection limit is reached":`${Math.max(0,destinations-slots)} residence ${destinations-slots===1?"choice":"choices"} remaining`}</p><p className="text-xs text-muted-foreground">A reservation and application for the same residence use one selection, not two.</p></div></div>
      <div className="flex gap-1" aria-label={`${slots} of 3 residences used`}>{Array.from({length:3},(_,i)=><span key={i} className={`h-3 w-9 rounded-full ${i<slots?"bg-primary":"bg-muted"}`}/>)}</div>
     </div>
-    {slots>=3&&<p className="mt-2 text-xs text-amber-700 dark:text-amber-300">Your three selections are in progress. Track them below rather than submitting a fourth residence.</p>}
+    {slots>=3&&<p className="mt-2 text-xs text-amber-700 dark:text-amber-300">Your selected residences are in progress. Historic choices remain visible; new submissions are limited to three distinct residences per academic year.</p>}
    </div>
   </div>
   {error&&<div role="status" className="rounded-xl border border-amber-400/50 p-3 text-sm">{error}</div>}
