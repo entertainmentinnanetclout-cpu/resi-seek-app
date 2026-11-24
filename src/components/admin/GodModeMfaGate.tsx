@@ -110,7 +110,7 @@ export default function GodModeMfaGate({ children, mode="god" }: Props) {
     setEnrollment(data as Enrollment);
     setFactor({ id: data.id, status: "unverified", friendly_name: staffCare?"ResKonnect Staff Care":"ResKonnect God Mode" });
     setState("enroll");
-  }, [session?.access_token]);
+  }, [session?.access_token, staffCare]);
 
   useEffect(() => {
     if (tokenAal === "aal2") {
