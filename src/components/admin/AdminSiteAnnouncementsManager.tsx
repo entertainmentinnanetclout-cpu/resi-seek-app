@@ -79,6 +79,8 @@ export default function AdminSiteAnnouncementsManager() {
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [uploading,setUploading]=useState(false);
   const [residenceQuery,setResidenceQuery]=useState("");
+  const [preview,setPreview]=useState<Announcement|Draft|null>(null);
+  const [previewMobile,setPreviewMobile]=useState(false);
   const [residences,setResidences]=useState<Array<{id:string;name:string;slug:string|null;cover_image_url:string|null;image_url:string|null}>>([]);
   const matchingResidences=useMemo(()=>residences.filter(x=>
     x.name.toLowerCase().includes(residenceQuery.trim().toLowerCase())).slice(0,8),[residences,residenceQuery]);
@@ -292,6 +294,7 @@ export default function AdminSiteAnnouncementsManager() {
                     <Button size="sm" onClick={() => void approveAnnouncement(item, true, true)} disabled={approvingId === item.id}>Executive approve & activate</Button>
                   </>}
                   <Button size="sm" variant="outline" onClick={() => void toggle(item)}>{item.is_active ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}{item.is_active ? "Disable" : "Enable"}</Button>
+                  <Button size="sm" variant="outline" onClick={() => {setPreviewMobile(false);setPreview(item);}}><Eye className="mr-2 h-4 w-4"/>Preview</Button>
                   <Button size="sm" variant="outline" onClick={() => edit(item)}><Edit3 className="mr-2 h-4 w-4" />Edit</Button>
                   <Button size="sm" variant="outline" className="text-destructive" onClick={() => remove(item)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
                 </div>
@@ -389,7 +392,36 @@ export default function AdminSiteAnnouncementsManager() {
               <div className="flex items-center justify-between gap-3"><div><Label>Dismissible</Label><p className="text-xs text-muted-foreground">Allow visitors to close it.</p></div><Switch checked={draft.dismissible} onCheckedChange={(v) => setDraft({ ...draft, dismissible: v })} /></div>
             </div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save update"}</Button></DialogFooter>
+          <DialogFooter className="flex-wrap gap-2"><Button variant="outline" onClick={() => {setPreviewMobile(false);setPreview({...draft});}}><Eye className="mr-2 h-4 w-4"/>Preview before publishing</Button><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save update"}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(preview)} onOpenChange={(value)=>{if(!value)setPreview(null);}}>
+        <DialogContent className="max-h-[95dvh] w-[min(96vw,960px)] max-w-[960px] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader><DialogTitle>Live-style campaign preview</DialogTitle>
+            <DialogDescription>This preview does not publish the campaign, record an impression or navigate when the call to action is pressed.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant={previewMobile?"outline":"default"} onClick={()=>setPreviewMobile(false)}><Monitor className="mr-1.5 h-4 w-4"/>Desktop</Button>
+            <Button size="sm" variant={previewMobile?"default":"outline"} onClick={()=>setPreviewMobile(true)}><Smartphone className="mr-1.5 h-4 w-4"/>Mobile</Button>
+            <Badge variant="outline">Configured width: {preview?.width_px||440}px</Badge>
+          </div>
+          {preview&&<div className={`relative flex min-h-[min(70dvh,600px)] w-full rounded-2xl border border-[#1c3871] bg-gradient-to-br from-[#061532] via-[#0d3978] to-[#1b5fa8] p-3 sm:p-6 ${preview.display_surface==="corner"?"items-end justify-end":"items-center justify-center"}`}>
+            <div className="w-full overflow-hidden rounded-2xl border border-white/15 bg-background text-foreground shadow-2xl"
+              style={{maxWidth:`min(${previewMobile?Math.min(Number(preview.width_px)||440,360):Math.min(Number(preview.width_px)||440,760)}px,100%)`}}>
+              <div className="relative">
+                {preview.dismissible&&<span aria-label="Preview close button" className="absolute right-2 top-2 z-10 rounded-full bg-black/75 px-2.5 py-1.5 text-xs font-bold text-white">×</span>}
+                {preview.image_url?
+                  <img src={preview.image_url} alt={preview.title} className={preview.poster_only?"mx-auto max-h-[min(54dvh,550px)] w-full object-contain":"h-44 w-full object-cover"}/>:
+                  <div className="flex min-h-36 flex-col justify-end bg-gradient-to-br from-[#061532] to-[#f6af22] p-5 text-white"><p className="text-xs font-bold uppercase tracking-wider">{preview.badge||"RESKONNECT UPDATE"}</p><p className="mt-2 text-xl font-black">{preview.title}</p></div>}
+              </div>
+              {!preview.poster_only&&<div className="space-y-2 px-4 pt-4"><Badge>{preview.badge||"RESKONNECT UPDATE"}</Badge><h3 className="text-lg font-black">{preview.title}</h3>{preview.subtitle&&<p className="text-sm font-semibold text-primary">{preview.subtitle}</p>}<p className="text-sm leading-6 text-muted-foreground">{preview.body}</p></div>}
+              <div className="space-y-2 p-3 sm:p-4">
+                {preview.cta_label&&preview.cta_url&&<Button className="w-full" type="button" onClick={()=>toast.info("Preview only — the live button links to "+preview.cta_url)}>{preview.cta_label}</Button>}
+                {preview.dismissible&&<p className="text-center text-xs text-muted-foreground">Not now</p>}
+              </div>
+            </div>
+          </div>}
         </DialogContent>
       </Dialog>
     </div>
