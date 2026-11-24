@@ -20,6 +20,7 @@ import { ResidenceRoute } from "./components/ResidenceRoute";
 import { SpecialistRoute } from "@/components/SpecialistRoute";
 import DepartmentRoute from "@/components/DepartmentRoute";
 import ConnectivityStatus from "@/components/ConnectivityStatus";
+import {useRealtimeNotifications} from "@/hooks/useRealtimeNotifications";
 
 const StudentCare = lazy(() => import("./pages/StudentCare"));
 const ApplicationPartners = lazy(() => import("./pages/ApplicationPartners"));
@@ -272,6 +273,13 @@ const RecruitLanding = lazy(() => import("./pages/recruit/RecruitLanding"));
 const RecruiterAuth = lazy(() => import("./pages/recruit/RecruiterAuth"));
 const RecruiterApply = lazy(() => import("./pages/recruit/RecruiterApply"));
 
+// Keep account events connected across admin, student and public routes after
+// sign-in; showing a notification should not depend on an open notification page.
+const NotificationLiveBridge=()=>{
+  useRealtimeNotifications();
+  return null;
+};
+
 const DeferredGlobalEnhancements = () => {
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -288,6 +296,7 @@ const DeferredGlobalEnhancements = () => {
   if (!ready) return null;
   return (
     <Suspense fallback={null}>
+      <NotificationLiveBridge />
       <ResBot />
       <PushPrompt />
       <InstallAppPrompt />
