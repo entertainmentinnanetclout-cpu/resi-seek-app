@@ -58,7 +58,7 @@ export default function StudentCare() {
       }
     }catch(e:any){setError(e.message||'Could not load student care');}
   };
-  useEffect(() => {void load();},[user?.id]);
+  useEffect(() => {void load();},[user?.id,waiting]);
   const save = async (event:React.FormEvent) => {
     event.preventDefault();
     if(!user) return navigate('/auth?returnTo='+encodeURIComponent(location.pathname+location.search));
