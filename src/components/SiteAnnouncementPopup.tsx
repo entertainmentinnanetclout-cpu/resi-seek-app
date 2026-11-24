@@ -120,7 +120,7 @@ export function SitePromotionPresentation({
  const corner=campaign.display_surface==="corner";
  const is2027=campaign.graphic_variant==="reskonnect_2027"||/2027/.test(`${campaign.badge||""} ${campaign.title||""}`);
  const dismiss=()=>onDismiss?.();
- const closeAllowed=preview||campaign.dismissible!==false;
+ const closeAllowed=campaign.dismissible!==false;
  const cta=action&&campaign.cta_label?(
     preview?<Button type="button" className="min-h-10 w-full rounded-xl text-sm font-black" onClick={()=>toast.info(`Preview only. The live button opens ${action.url}`)}>{campaign.cta_label}<ArrowRight className="ml-2 h-4 w-4"/></Button>:
    action.kind==="internal"
