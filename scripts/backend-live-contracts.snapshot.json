@@ -1,8 +1,10 @@
 {
   "project_id": "mefjzkhobkltlbmhusdh",
   "captured_date": "2026-11-24",
-  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles; 15 Nov verified service-only ResMap atomic AI budget function after scoped live migration; SEC05 privileged app-health recompute direct Auth execution revoked; 20 Nov verified service-only exact email coverage, RLS-locked status sync audit, and non-final Gmail sender progression; verified 20 Nov sender-aware atomic 450/1800 quota and residence WhatsApp/email/status audit; Nov 20 exact 2027 residence outreach command rollup (service-only, unique case vs message counts, WhatsApp and reply evidence)",
+  "purpose": "Verified production frontend/backend contracts; SEC04/05 twelve service-only admin/AI/WhatsApp handlers blocked for ordinary signed-in roles; 15 Nov verified service-only ResMap atomic AI budget function after scoped live migration; SEC05 privileged app-health recompute direct Auth execution revoked; 20 Nov verified service-only exact email coverage, RLS-locked status sync audit, and non-final Gmail sender progression; verified 20 Nov sender-aware atomic 450/1800 quota and residence WhatsApp/email/status audit; Nov 20 exact 2027 residence outreach command rollup (service-only, unique case vs message counts, WhatsApp and reply evidence); 24 Nov live-verified addition of HMAC-signed notification event dispatch, private service RPCs and shared three-residence intake guard.",
   "public_relations": [
+    "Bookings",
+    "Users",
     "academic_periods",
     "accommodation_compliance_cases",
     "accommodation_compliance_evidence",
@@ -154,7 +156,6 @@
     "assistance_document_requests",
     "assistance_submissions",
     "balances",
-    "Bookings",
     "bursaries",
     "call_logs",
     "campaigns",
@@ -384,6 +385,7 @@
     "rk_golden_service_rule_audit",
     "rk_golden_service_rules",
     "rk_native_device_tokens",
+    "rk_notification_push_dispatches",
     "rk_partner_account_audit",
     "rk_partner_decision_audit",
     "rk_partner_profiles",
@@ -449,7 +451,6 @@
     "user_phone_verification_attempts",
     "user_roles",
     "user_security_events",
-    "Users",
     "v_daily_operations_summary",
     "v_onboarding_command_center",
     "viewing_requests",
@@ -2861,6 +2862,12 @@
       "status": "ACTIVE"
     },
     {
+      "slug": "notification-event",
+      "version": 1,
+      "verify_jwt": false,
+      "status": "ACTIVE"
+    },
+    {
       "slug": "og-image",
       "version": 1,
       "verify_jwt": false,
@@ -2934,7 +2941,7 @@
     },
     {
       "slug": "send-push",
-      "version": 12,
+      "version": 14,
       "verify_jwt": true,
       "status": "ACTIVE"
     },
@@ -5698,6 +5705,13 @@
       "anon": true
     },
     {
+      "name": "rk_notification_dispatch_hmac_secret",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
       "name": "rk_partner_staff",
       "args": [
         "p_kind"
@@ -5890,6 +5904,13 @@
     },
     {
       "name": "rk_web_push_server_keys",
+      "args": [],
+      "service_role": true,
+      "authenticated": false,
+      "anon": false
+    },
+    {
+      "name": "rk_web_push_vapid_pair_for_sender",
       "args": [],
       "service_role": true,
       "authenticated": false,
@@ -6125,5 +6146,14 @@
     "reskonnect_email_replies",
     "reskonnect_email_response_cases",
     "reskonnect_gmail_sender_policies"
+  ],
+  "verified_schema_additions_2026_11_24": [
+    "rk_notification_push_dispatches",
+    "rk_web_push_vapid_pair_for_sender",
+    "rk_notification_dispatch_hmac_secret",
+    "notification-event",
+    "rk_limit_student_applications",
+    "rk_limit_student_reservations",
+    "rk_dispatch_notification_insert"
   ]
 }
