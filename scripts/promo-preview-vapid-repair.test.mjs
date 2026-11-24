@@ -17,7 +17,7 @@ test("admin previews use the exact public campaign renderer for unsaved and save
  assert.match(live,/device==="mobile"/);
  assert.match(live,/object-contain/);
  assert.match(live,/preview\?<Button/);
- assert.match(live,/min\(\$\{width\}px,100%\)/);
+ assert.match(live,/calc\(100vw - 24px\)/);
 });
 
 test("web push public key endpoint reads ONLY public key and fails closed",()=>{
