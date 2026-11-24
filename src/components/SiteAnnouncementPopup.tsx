@@ -81,11 +81,13 @@ export default function SiteAnnouncementPopup(){
   // Re-evaluate enabled/scheduled campaigns when tab becomes active and after admin edits.
   const refresh=()=>{if(document.visibilityState==="visible")void load();};
   document.addEventListener("visibilitychange",refresh);
+  const interval=window.setInterval(refresh,90_000);
   const channel=supabase.channel("rk-public-promotion-campaigns")
     .on("postgres_changes",{event:"*",schema:"public",table:"site_announcements"},refresh)
     .subscribe();
   return()=>{cancelled=true;if(timer)window.clearTimeout(timer);
     document.removeEventListener("visibilitychange",refresh);
+    window.clearInterval(interval);
     void supabase.removeChannel(channel);
   };
  },[userId]);
