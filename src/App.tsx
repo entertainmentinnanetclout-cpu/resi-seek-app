@@ -24,6 +24,7 @@ import ConnectivityStatus from "@/components/ConnectivityStatus";
 const StudentCare = lazy(() => import("./pages/StudentCare"));
 const ApplicationPartners = lazy(() => import("./pages/ApplicationPartners"));
 const AdminStudentCare = lazy(() => import("./pages/admin/AdminStudentCare"));
+const AdminSingleRoomWaitlist = lazy(() => import("./pages/admin/AdminSingleRoomWaitlist"));
 const Landing = lazy(() => import("./pages/Landing"));
 const Auth = lazy(() => import("./pages/Auth"));
 const MarketplaceComingSoon = lazy(
@@ -493,6 +494,16 @@ const App = () => {
                         <ProtectedRoute>
                           <AdminRoute>
                             <AdminStudentCare />
+                          </AdminRoute>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/single-room-waiting-list"
+                      element={
+                        <ProtectedRoute>
+                          <AdminRoute>
+                            <AdminSingleRoomWaitlist />
                           </AdminRoute>
                         </ProtectedRoute>
                       }
