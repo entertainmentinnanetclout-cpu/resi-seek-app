@@ -10,6 +10,8 @@ import { toast } from "sonner";
 
 interface Props {
   children: React.ReactNode;
+  /** Dedicated staff care routes can reuse AAL2 security without a God Mode label. */
+  mode?:"god"|"care";
 }
 
 type GateState = "checking" | "enroll" | "verify" | "ready" | "error";
@@ -52,7 +54,8 @@ function readAal(accessToken?: string | null): "aal1" | "aal2" | null {
   }
 }
 
-export default function GodModeMfaGate({ children }: Props) {
+export default function GodModeMfaGate({ children, mode="god" }: Props) {
+  const staffCare=mode==="care";
   const { session } = useAuth();
   const tokenAal = useMemo(() => readAal(session?.access_token), [session?.access_token]);
   const [state, setState] = useState<GateState>(() => tokenAal === "aal2" ? "ready" : "checking");
@@ -101,11 +104,11 @@ export default function GodModeMfaGate({ children }: Props) {
 
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: "totp",
-      friendlyName: "ResKonnect God Mode",
+      friendlyName: staffCare?"ResKonnect Staff Care":"ResKonnect God Mode",
     });
     if (error) throw error;
     setEnrollment(data as Enrollment);
-    setFactor({ id: data.id, status: "unverified", friendly_name: "ResKonnect God Mode" });
+    setFactor({ id: data.id, status: "unverified", friendly_name: staffCare?"ResKonnect Staff Care":"ResKonnect God Mode" });
     setState("enroll");
   }, [session?.access_token]);
 
@@ -147,7 +150,7 @@ export default function GodModeMfaGate({ children }: Props) {
 
       setCode("");
       setState("ready");
-      toast.success("God Mode unlocked with two-factor authentication.");
+      toast.success(staffCare?"Single-room staff workspace unlocked securely.":"God Mode unlocked with two-factor authentication.");
     } catch (error: any) {
       setCode("");
       setErrorMessage(error?.message || "The verification code was not accepted.");
@@ -173,11 +176,11 @@ export default function GodModeMfaGate({ children }: Props) {
         <CardHeader className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-500/15 text-cyan-300"><ShieldCheck className="h-6 w-6" /></div>
-            <Badge className="border border-cyan-400/20 bg-cyan-500/10 text-cyan-200">GOD MODE · AAL2 REQUIRED</Badge>
+            <Badge className="border border-cyan-400/20 bg-cyan-500/10 text-cyan-200">{staffCare?"STAFF CARE · AAL2 REQUIRED":"GOD MODE · AAL2 REQUIRED"}</Badge>
           </div>
           <div>
             <CardTitle className="text-2xl font-black text-white">Two-factor authentication</CardTitle>
-            <CardDescription className="mt-2 text-slate-300">Privileged ResKonnect administration requires a password/session plus a time-based authenticator code.</CardDescription>
+            <CardDescription className="mt-2 text-slate-300">{staffCare?"Private student-care records require your staff session and a time-based authenticator code.":"Privileged ResKonnect administration requires a password/session plus a time-based authenticator code."}</CardDescription>
           </div>
         </CardHeader>
 
@@ -220,7 +223,7 @@ export default function GodModeMfaGate({ children }: Props) {
 
           {errorMessage && state !== "error" && <p className="text-sm text-red-300">{errorMessage}</p>}
 
-          <div className="flex items-center justify-between border-t border-white/10 pt-4 text-xs text-slate-400"><span>God Mode remains locked until AAL2 is verified.</span><button type="button" onClick={() => void signOut()} className="inline-flex items-center gap-1.5 font-bold text-slate-200 hover:text-white"><LogOut className="h-3.5 w-3.5" />Sign out</button></div>
+          <div className="flex items-center justify-between border-t border-white/10 pt-4 text-xs text-slate-400"><span>{staffCare?"Student-care records remain locked until AAL2 is verified.":"God Mode remains locked until AAL2 is verified."}</span><button type="button" onClick={() => void signOut()} className="inline-flex items-center gap-1.5 font-bold text-slate-200 hover:text-white"><LogOut className="h-3.5 w-3.5" />Sign out</button></div>
         </CardContent>
       </Card>
     </div>
