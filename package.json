@@ -21,7 +21,7 @@
     "360:check": "node scripts/virtual-tour-qa.mjs",
     "preview": "vite preview",
     "brain:check": "node scripts/reskonnect-brain-qa.mjs",
-    "web:check": "node scripts/web-platform-readiness.mjs && node scripts/about-origin-real-3d.test.mjs",
+    "web:check": "node scripts/web-platform-readiness.mjs && node scripts/about-origin-real-3d.test.mjs && node --experimental-strip-types --test scripts/editorial-copy.test.mjs",
     "stability:check": "node scripts/p1-p4-stability-audit.mjs",
     "platform:p5-p8": "node scripts/p5-p8-stability-audit.mjs",
     "platform:p9": "node scripts/p9-performance-budget.mjs",
