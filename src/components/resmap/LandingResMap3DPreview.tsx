@@ -209,3 +209,4 @@ export default function LandingResMap3DPreview(){
   </div>
   <p className="px-2 pt-4 text-xs leading-5 text-slate-400 sm:px-4">Drag to orbit, pinch or scroll to zoom. Actual 3D availability depends on Google's geographic coverage, your device's WebGL support and network access. The full ResMap offers additional location and route tools.</p>
  </section>;
+}
