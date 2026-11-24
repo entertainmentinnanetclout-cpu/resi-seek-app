@@ -6,7 +6,7 @@ import { BadgePercent, Building2, FileText, FolderOpen, KeyRound, Layers, Rotate
 import { AdminResidencesContent } from "./AdminResidences";
 import { AdminResidencePortalsContent } from "./AdminResidencePortals";
 import { AdminApplicationsContent } from "./AdminApplications";
-import { AdminFollowUpContent } from "./AdminFollowUp";
+import AdminSingleRoomQueue from "@/components/admin/AdminSingleRoomQueue";
 import { AdminDocumentsContent } from "./AdminDocuments";
 import { AdminLandlordApplicationsContent } from "./AdminLandlordApplications";
 import SectionsManager from "@/components/admin/SectionsManager";
@@ -39,10 +39,10 @@ export default function AdminOperationsHub(){
   const requestedTab=searchParams.get("tab");
   const activeTab=normalize(requestedTab);
   // Legacy deep links continue opening their original tool, not merely the parent tab.
-  const requestedView=searchParams.get("view");
-  const applicationView=["applications","reservations","automation","follow-up"].includes(requestedView||"")?
+  const requestedView=searchParams.get("view")==="follow-up"?"single-rooms":searchParams.get("view");
+  const applicationView=["applications","reservations","automation","single-rooms"].includes(requestedView||"")?
    String(requestedView):requestedTab==="2027-reservations"?"reservations":
-   requestedTab==="follow-up"?"follow-up":"applications";
+   requestedTab==="follow-up"?"single-rooms":"applications";
   const setTab=(tab:string)=>{const next=new URLSearchParams(searchParams);next.set("tab",tab);setSearchParams(next);};
   const setApplicationView=(view:string)=>{
    const next=new URLSearchParams(searchParams);
@@ -69,11 +69,11 @@ export default function AdminOperationsHub(){
 
         <TabsContent value="applications-reservations" className="space-y-4">
           <Tabs value={applicationView} onValueChange={setApplicationView}>
-            <TabsList className="flex h-auto flex-wrap gap-1 rounded-xl bg-muted/45 p-1"><TabsTrigger value="applications">Applications</TabsTrigger><TabsTrigger value="reservations">Reservations / Academic intake</TabsTrigger><TabsTrigger value="automation">RG7 Automation</TabsTrigger><TabsTrigger value="follow-up">Follow-up & conversion</TabsTrigger></TabsList>
+            <TabsList className="flex h-auto flex-wrap gap-1 rounded-xl bg-muted/45 p-1"><TabsTrigger value="applications">Applications</TabsTrigger><TabsTrigger value="reservations">Reservations / Academic intake</TabsTrigger><TabsTrigger value="automation">RG7 Automation</TabsTrigger><TabsTrigger value="single-rooms">Single Room Requests</TabsTrigger></TabsList>
             <TabsContent value="applications"><AdminApplicationsContent /></TabsContent>
             <TabsContent value="reservations"><AdminReservations2027Content /></TabsContent>
             <TabsContent value="automation"><AdminApplicationOperationsPanel /></TabsContent>
-            <TabsContent value="follow-up"><AdminFollowUpContent /></TabsContent>
+            <TabsContent value="single-rooms"><AdminSingleRoomQueue /></TabsContent>
           </Tabs>
         </TabsContent>
 
