@@ -21,6 +21,7 @@ import {isPromotedResidence,isDirectoryOnlyResidence,sortResidencesForDiscovery}
 import { useResidenceSections } from "@/hooks/useResidenceSections";
 import { supabase } from "@/integrations/supabase/client";
 import {getResidenceIntake,canApplyToResidence,ACCOMMODATION_APPLICATION_YEAR} from "@/lib/residenceIntake";
+import {checkStudentHousingChoice} from "@/lib/studentHousingLimit";
 import { SmartSearchBar } from "@/components/findmyres/SmartSearchBar";
 import { FilterSidebar } from "@/components/findmyres/FilterSidebar";
 import { FilterBottomSheet } from "@/components/findmyres/FilterBottomSheet";
@@ -202,6 +203,8 @@ const FindMyRes = () => {
     if(!canApplyToResidence(await getResidenceIntake(selectedResidence.id))){setShowApplyModal(false);toast.info("Applications are closed; please reserve for 2027.");navigate("/res/"+selectedResidence.id+"#reservations");return;}
     if(!privateTenantConfirmed){toast.error("Please confirm your private-paying tenant application.");return;}
     try {
+      const choice=await checkStudentHousingChoice(user.id,selectedResidence.id,ACCOMMODATION_APPLICATION_YEAR,"application");
+      if(!choice.allowed)throw new Error(choice.reason);
       const { error } = await supabase.from("applications").insert({
         user_id: user.id,
         residence_id: selectedResidence.id,
