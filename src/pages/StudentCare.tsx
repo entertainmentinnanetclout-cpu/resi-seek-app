@@ -22,26 +22,43 @@ export default function StudentCare() {
   const [feedback,setFeedback] = useState(blankFeedback); const [room,setRoom] = useState(blankRoom);
   const [responses,setResponses] = useState<any[]>([]); const [requests,setRequests] = useState<any[]>([]);
   const [busy,setBusy] = useState(false); const [error,setError] = useState('');
+  // Single-room requests must work even if the feedback campaign or feedback
+  // tables are unavailable. The optional profile read cannot hide saved requests.
   const load = async () => {
     try {
-      const c = await db.from('residence_feedback_campaigns').select('*').eq('is_active',true).order('academic_year',{ascending:false});
-      if(c.error) throw c.error;
-      setCampaigns(c.data || []); setCampaign(v => v || c.data?.[0]?.id || '');
-      if(!user) {setResponses([]);setRequests([]);setError('');return;}
-      const [f,r,p] = await Promise.all([
+      if(waiting) {
+        if(!user){setRequests([]);setError('');return;}
+        const [r,p]=await Promise.all([
+          db.from('single_room_waitlist').select('*').eq('user_id',user.id).order('created_at',{ascending:false}),
+          db.from('profiles').select('full_name,phone,campus').eq('id',user.id).maybeSingle()
+        ]);
+        if(r.error)throw r.error;
+        setRequests(r.data||[]);
+        setError('');
+        if(p.data&&!p.error)setRoom(v=>({...v,
+          full_name:v.full_name||p.data.full_name||'',
+          phone:v.phone||p.data.phone||'',
+          campus:v.campus||p.data.campus||''
+        }));
+        return;
+      }
+      const c=await db.from('residence_feedback_campaigns').select('*').eq('is_active',true).order('academic_year',{ascending:false});
+      if(c.error)throw c.error;
+      setCampaigns(c.data||[]);setCampaign(v=>v||c.data?.[0]?.id||'');
+      if(!user){setResponses([]);setError('');return;}
+      const [f,p]=await Promise.all([
         db.from('residence_stay_feedback').select('*').eq('user_id',user.id).order('updated_at',{ascending:false}),
-        db.from('single_room_waitlist').select('*').eq('user_id',user.id).order('created_at',{ascending:false}),
         db.from('profiles').select('full_name,phone,campus').eq('id',user.id).maybeSingle()
       ]);
-      if(f.error || r.error || p.error) throw f.error || r.error || p.error;
-      setResponses(f.data || []);setRequests(r.data || []);setError('');
-      if(p.data) {
-        setRoom(v => ({...v,full_name:v.full_name || p.data.full_name || '',phone:v.phone || p.data.phone || '',campus:v.campus || p.data.campus || ''}));
-        setFeedback(v => ({...v,campus:v.campus || p.data.campus || ''}));
+      if(f.error)throw f.error;
+      setResponses(f.data||[]);
+      setError('');
+      if(p.data&&!p.error){
+        setFeedback(v=>({...v,campus:v.campus||p.data.campus||''}));
       }
-    } catch(e:any) {setError(e.message || 'Could not load student care');}
+    }catch(e:any){setError(e.message||'Could not load student care');}
   };
-  useEffect(() => {void load();},[user?.id]);
+  useEffect(() => {void load();},[user?.id,waiting]);
   const save = async (event:React.FormEvent) => {
     event.preventDefault();
     if(!user) return navigate('/auth?returnTo='+encodeURIComponent(location.pathname+location.search));
@@ -66,8 +83,8 @@ export default function StudentCare() {
           {waiting ? <>
             <Field label="Academic year"><Input required type="number" min="2026" max="2100" value={room.academic_year} onChange={e => setRoom({...room,academic_year:e.target.value})}/></Field>
             <Field label="When do you need the room?"><select className={selectStyle} value={room.semester} onChange={e => setRoom({...room,semester:e.target.value})}><option value="3">Both semesters / full academic year</option><option value="1">First semester</option><option value="2">Second semester</option></select></Field>
-            <p className="rounded-xl bg-primary/5 p-3 text-xs leading-5 text-muted-foreground sm:col-span-2">Your search period is not your move-out date. You may request accommodation for both semesters; the actual length of stay is determined by the residence offer and lease.</p>
-            {([['full_name','Full name'],['phone','WhatsApp / phone'],['campus','Campus'],['preferred_residence','Preferred residence (optional)']] as const).map(([key,label]) => <Field label={label} key={key}><Input required={key !== 'preferred_residence'} maxLength={200} value={room[key]} onChange={e => setRoom({...room,[key]:e.target.value})}/></Field>)}
+            <p className="rounded-xl bg-primary/5 p-3 text-xs leading-5 text-muted-foreground sm:col-span-2">Your request is for a private single-occupancy room at any suitable residence. Selecting a preferred residence is optional and does not restrict the search. Your search period is not your move-out date; the actual stay is determined by the residence offer and lease.</p>
+            {([['full_name','Full name'],['phone','WhatsApp / phone'],['campus','Campus'],['preferred_residence','Preferred residence (optional — any residence is fine)']] as const).map(([key,label]) => <Field label={label} key={key}><Input required={key !== 'preferred_residence'} maxLength={200} value={room[key]} onChange={e => setRoom({...room,[key]:e.target.value})}/></Field>)}
             <Field label="Maximum monthly budget (R, optional)"><Input type="number" min="0" step="0.01" value={room.budget} onChange={e => setRoom({...room,budget:e.target.value})}/></Field>
             <Field label="Funding"><select className={selectStyle} value={room.funding_type} onChange={e => setRoom({...room,funding_type:e.target.value})}>{['undecided','nsfas','private','bursary'].map(s => <option key={s} value={s}>{s === 'nsfas' ? 'NSFAS' : friendlyStatus(s)}</option>)}</select></Field>
             <Field label="Preferred move-in date"><Input type="date" value={room.move_in_date} onChange={e => setRoom({...room,move_in_date:e.target.value})}/></Field>

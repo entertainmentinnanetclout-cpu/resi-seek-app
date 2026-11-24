@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3, BriefcaseBusiness, Building2, Cpu, Handshake, Home, Landmark, LayoutDashboard,
-  LogOut, Megaphone, MessageCircle, RefreshCw, Settings2, UsersRound, Paintbrush, ClipboardCheck, Sparkles
+  LogOut, Megaphone, MessageCircle, RefreshCw, Settings2, UsersRound, Paintbrush, ClipboardCheck, Sparkles, BedSingle
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import DashboardUserManual from "@/components/manuals/DashboardUserManual";
@@ -138,6 +138,9 @@ const AdminSidebar=({
 
     <SidebarFooter className="shrink-0 space-y-1 border-t bg-sidebar p-2">
       <SidebarMenu>
+        <SidebarMenuItem><SidebarMenuButton asChild tooltip="Single-room waiting list" isActive={location.pathname==="/admin/single-room-waiting-list"}>
+          <Link to="/admin/single-room-waiting-list"><BedSingle className="h-4 w-4"/><span>Single-room waiting list</span></Link>
+        </SidebarMenuButton></SidebarMenuItem>
         {!isGodMode&&<SidebarMenuItem><SidebarMenuButton asChild tooltip="Student Care & Applications"><Link to="/admin/student-care"><UsersRound className="h-4 w-4"/><span>Student Care & Applications</span></Link></SidebarMenuButton></SidebarMenuItem>}
         <SidebarMenuItem><SidebarMenuButton onClick={handleRefresh} tooltip="Refresh Data"><RefreshCw className="h-4 w-4"/><span>Refresh Data</span></SidebarMenuButton></SidebarMenuItem>
         <SidebarMenuItem><SidebarMenuButton onClick={()=>navigate("/")} tooltip="Public Site"><Home className="h-4 w-4"/><span>View Public Site</span></SidebarMenuButton></SidebarMenuItem>

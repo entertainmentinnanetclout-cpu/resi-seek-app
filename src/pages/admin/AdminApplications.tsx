@@ -280,6 +280,7 @@ export const AdminApplicationsContent = () => {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div><h1 className="text-3xl font-black">Applications & Academic Cohorts</h1><p className="text-muted-foreground">Review applications by academic year, annual/semester/trimester cycle, study level and institutional context. Handover exports are available only through GOD MODE OS above.</p></div>
           <div className="flex flex-wrap items-center gap-2">
+           <Button asChild variant="outline"><Link to="/admin/single-room-waiting-list">Single-room waiting list</Link></Button>
            <Button asChild className="rk-clay-action"><Link to="/admin/cases"><CheckCheck className="mr-1.5 h-4 w-4"/>God Mode bulk case actions</Link></Button>
            <Badge variant="outline" className="w-fit gap-1.5"><ShieldCheck className="h-3.5 w-3.5" /> Legacy handover export disabled</Badge>
           </div>
