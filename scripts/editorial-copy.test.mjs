@@ -13,6 +13,8 @@ test("Public copy uses sentences instead of decorative dashes",()=>{
  assert.equal(polishEditorialCopy("A student-first, AI-powered service"),"A student focused, AI supported service");
  assert.equal(polishEditorialCopy("single-room waiting list"),"single room waiting list");
  assert.equal(polishEditorialCopy("An end-to-end student-led journey"),"An integrated student led journey");
+ assert.equal(polishEditorialCopy("Open /single-room-waiting-list — continue"),"Open /single-room-waiting-list, continue");
+ assert.equal(polishEditorialCopy("Check https://www.reskonnect.org/single-room-waiting-list — submit"),"Check https://www.reskonnect.org/single-room-waiting-list, submit");
 });
 
 test("Links, identifiers, real places, negative numbers and user content remain intact",()=>{
