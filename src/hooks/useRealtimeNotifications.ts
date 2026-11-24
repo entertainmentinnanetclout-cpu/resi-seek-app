@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { nativeForegroundAlert, listenForNativeNotificationAction } from "@/lib/nativeNotifications";
 import { listenForBackgroundNotificationAction } from "@/lib/backgroundNotifications";
-import { playNoticeSound } from "@/lib/notificationSounds";
+import { armNotificationAudioOnInteraction, playNoticeSound } from "@/lib/notificationSounds";
 
 export interface AccountNotification {
   id: string;
@@ -110,6 +110,10 @@ export function useRealtimeNotifications() {
       }
     };
   }, [userId]);
+  useEffect(()=>{
+    if(!userId)return;
+    return armNotificationAudioOnInteraction(userId);
+  },[userId]);
   const markAsRead = useCallback((id: string) => userId ? mark(userId, id) : Promise.resolve(), [userId]);
   const markAllAsRead = useCallback(() => userId ? mark(userId) : Promise.resolve(), [userId]);
   const refetch = useCallback(() => userId ? load(userId, true) : Promise.resolve(), [userId]);
