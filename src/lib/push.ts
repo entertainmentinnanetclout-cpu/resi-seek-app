@@ -1,5 +1,10 @@
 import { supabase, EXTERNAL_SUPABASE_ANON_KEY, externalFunctionUrl } from "@/integrations/supabase/client";
 
+// Non-secret public VAPID key mirrored from Supabase Vault. Keep this value in
+// sync with rk_push_vapid_pair_v1 when rotating the signing pair. No private key
+// is included in the client bundle.
+const BUILT_IN_VAPID_PUBLIC_KEY = "BELa3EBDTweIxgn9ih9rAyf9zh64NV8CX8cPXF-TwERJLp3EsRs5ZAqX-1_9TWE8-fFc_vauAHfMv4U0ti6oKvQ";
+const validVapidKey = (value: string) => /^B[A-Za-z0-9_-]{86}$/.test(value);
 let VAPID_PUBLIC_KEY = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string) || "";
 
 export function isNativeShell() {
@@ -7,22 +12,28 @@ export function isNativeShell() {
 }
 
 async function getVapidKey(): Promise<string> {
-  if (VAPID_PUBLIC_KEY) return VAPID_PUBLIC_KEY;
+  if (validVapidKey(VAPID_PUBLIC_KEY)) return VAPID_PUBLIC_KEY;
   try {
-    const res = await fetch(externalFunctionUrl("vapid-public-key"), {
-      headers: {
-        apikey: EXTERNAL_SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${EXTERNAL_SUPABASE_ANON_KEY}`,
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error(`VAPID key unavailable (${res.status})`);
-    const json = await res.json().catch(() => ({}));
-    VAPID_PUBLIC_KEY = typeof json.publicKey === "string" ? json.publicKey.trim() : "";
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const res = await fetch(externalFunctionUrl("vapid-public-key"), {
+        headers: { apikey: EXTERNAL_SUPABASE_ANON_KEY },
+        signal: controller.signal,
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("Public push key service unavailable");
+      const result = await res.json().catch(() => ({}));
+      const value = typeof result.publicKey === "string" ? result.publicKey.trim() : "";
+      if (validVapidKey(value)) { VAPID_PUBLIC_KEY = value; return value; }
+      throw new Error("The push key response was invalid");
+    } finally { clearTimeout(timeout); }
   } catch (error) {
-    console.warn("[push] VAPID key unavailable:", error);
+    console.warn("[push] Using the bundled public VAPID key after a lookup failure", error);
+    // This is a PUBLIC value, not a signing secret. Failover avoids blocking the
+    // permission flow during a transient public function or mobile network outage.
+    return BUILT_IN_VAPID_PUBLIC_KEY;
   }
-  return VAPID_PUBLIC_KEY;
 }
 
 function urlBase64ToUint8Array(base64: string) {
