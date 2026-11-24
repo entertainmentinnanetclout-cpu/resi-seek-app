@@ -182,7 +182,7 @@ export default function LandingResMap3DPreview(){
  if(engine==="fallback")return <div className="space-y-4">
   <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
    <div><p className="font-bold">Photorealistic 3D is unavailable on this device.</p><p className="mt-1 text-muted-foreground">{failure} · Showing an interactive street map instead of a simulated 3D view.</p></div>
-   <Button type="button" variant="outline" onClick={()=>setAttempt(x=>x+1)}><RefreshCw className="mr-2 h-4 w-4"/>Retry real 3D</Button>
+   <Button type="button" variant="outline" onClick={()=>{setEngine(null);setBusy(true);setAttempt(x=>x+1);}}><RefreshCw className="mr-2 h-4 w-4"/>Retry real 3D</Button>
   </div>
   <Suspense fallback={<div className="grid h-72 place-items-center rounded-2xl bg-muted text-sm">Opening street map…</div>}><Fallback2D/></Suspense>
  </div>;
