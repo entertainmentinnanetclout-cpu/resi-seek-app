@@ -44,7 +44,7 @@ const descriptiveCompounds: readonly [RegExp,string][] = [
 
 /** Only conversational and editorial punctuation, never URL or code grammar. */
 export function polishEditorialCopy(value:string):string{
- if(!/[\u2010-\u2015]|\s-\s/.test(value))return value;
+ if(!/[\u2010-\u2015]|\s-\s|[A-Za-z]-[A-Za-z]/.test(value))return value;
  // Leave URLs, email addresses and machine identifiers entirely untouched.
  if(/^\s*(?:https?:\/\/|mailto:|tel:|\S+@\S+|[a-f\d]{8}-[a-f\d-]{12,})/i.test(value))return value;
  let result=value;
