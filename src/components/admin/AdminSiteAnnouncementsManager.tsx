@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import SiteAnnouncementPopup,{type Announcement as PopupAnnouncement} from "@/components/SiteAnnouncementPopup";
 
 type Announcement = {
   id: string;
@@ -78,6 +79,7 @@ export default function AdminSiteAnnouncementsManager() {
   const [saving, setSaving] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [uploading,setUploading]=useState(false);
+  const [previewCampaign,setPreviewCampaign]=useState<Partial<PopupAnnouncement>|null>(null);
   const [residenceQuery,setResidenceQuery]=useState("");
   const [residences,setResidences]=useState<Array<{id:string;name:string;slug:string|null;cover_image_url:string|null;image_url:string|null}>>([]);
   const matchingResidences=useMemo(()=>residences.filter(x=>
@@ -292,6 +294,7 @@ export default function AdminSiteAnnouncementsManager() {
                     <Button size="sm" onClick={() => void approveAnnouncement(item, true, true)} disabled={approvingId === item.id}>Executive approve & activate</Button>
                   </>}
                   <Button size="sm" variant="outline" onClick={() => void toggle(item)}>{item.is_active ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}{item.is_active ? "Disable" : "Enable"}</Button>
+                  <Button size="sm" variant="outline" onClick={() => setPreviewCampaign(item)}><Eye className="mr-2 h-4 w-4"/>Preview pop-up</Button>
                   <Button size="sm" variant="outline" onClick={() => edit(item)}><Edit3 className="mr-2 h-4 w-4" />Edit</Button>
                   <Button size="sm" variant="outline" className="text-destructive" onClick={() => remove(item)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
                 </div>
@@ -389,9 +392,10 @@ export default function AdminSiteAnnouncementsManager() {
               <div className="flex items-center justify-between gap-3"><div><Label>Dismissible</Label><p className="text-xs text-muted-foreground">Allow visitors to close it.</p></div><Switch checked={draft.dismissible} onCheckedChange={(v) => setDraft({ ...draft, dismissible: v })} /></div>
             </div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save update"}</Button></DialogFooter>
+          <DialogFooter className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button variant="secondary" onClick={() => setPreviewCampaign(draft)}>Preview as visitor</Button><Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save update"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+      {previewCampaign && <SiteAnnouncementPopup previewCampaign={previewCampaign} onPreviewClose={()=>setPreviewCampaign(null)}/>}
     </div>
   );
 }
